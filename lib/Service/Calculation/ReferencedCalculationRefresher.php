@@ -36,12 +36,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Calculation;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Container\ContainerInterface;
@@ -56,7 +55,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A re-save reads the referrers, resolves their schemas
  *   and hands each row back in its stored form; each collaborator is one of those steps.
  */
-class ReferencedCalculationRefresher {
+class ReferencedCalculationRefresher implements ReferencedCalculationRefresherInterface {
 
 	/**
 	 * The most objects re-saved per dependency within one save.
@@ -85,20 +84,14 @@ class ReferencedCalculationRefresher {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapperInterface     $registers The registers.
-	 * @param SchemaMapperInterface       $schemas   The schemas.
-	 * @param MagicMapperInterface        $rows      Finds the referring objects.
-	 * @param ContainerInterface $container Hands out the object service on first use.
-	 * @param LoggerInterface    $logger    The logger.
-	 * @param SchemaTypeConverter $types    Restores the stored form of `type: string` values the read decoded.
+	 * @param SchemaCatalogInterface $catalog   The registers, the schemas and the rows that find the referring objects.
+	 * @param ContainerInterface     $container Hands out the object service on first use.
+	 * @param LoggerInterface        $logger    The logger.
 	 */
 	public function __construct(
-		private readonly RegisterMapperInterface $registers,
-		private readonly SchemaMapperInterface $schemas,
-		private readonly MagicMapperInterface $rows,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
-		private readonly SchemaTypeConverter $types=new SchemaTypeConverter(),
 	) {
 	}//end __construct()
 
@@ -119,8 +112,8 @@ class ReferencedCalculationRefresher {
 		}
 
 		try {
-			$target   = $this->schemas->find(id: (string) $updated->getSchema(), _rbac: false, _multitenancy: false);
-			$register = $this->registers->find(id: (string) $updated->getRegister(), _rbac: false, _multitenancy: false);
+			$target   = $this->catalog->schemas()->find(id: (string) $updated->getSchema(), _rbac: false, _multitenancy: false);
+			$register = $this->catalog->registers()->find(id: (string) $updated->getRegister(), _rbac: false, _multitenancy: false);
 		} catch (Throwable) {
 			return 0;
 		}
@@ -135,7 +128,8 @@ class ReferencedCalculationRefresher {
 
 		self::$depth++;
 		try {
-			return $this->refreshIn(register: $register, target: $target, uuid: $uuid, changed: $changed);
+			$table = new RegisterSchema(register: $register, schema: $target);
+			return $this->refreshIn(table: $table, change: new ReferencedChange(uuid: $uuid, changed: $changed));
 		} finally {
 			self::$depth--;
 		}
@@ -160,21 +154,20 @@ class ReferencedCalculationRefresher {
 	/**
 	 * Re-save, per schema of the register, the objects that point at the updated object and read a changed field.
 	 *
-	 * @param Register           $register The register.
-	 * @param Schema             $target   The updated object's schema.
-	 * @param string             $uuid     The updated object's uuid.
-	 * @param array<int, string> $changed  The fields that changed.
+	 * @param RegisterSchema   $table  The updated object's register and schema.
+	 * @param ReferencedChange $change The updated object's uuid and the fields that changed.
 	 *
 	 * @return integer The number of objects re-saved.
 	 */
-	private function refreshIn(Register $register, Schema $target, string $uuid, array $changed): int {
+	private function refreshIn(RegisterSchema $table, ReferencedChange $change): int {
 		$saved = 0;
-		foreach ($this->dependentsOf(register: $register, target: $target) as $dependent) {
-			if (array_intersect($dependent['reads'], $changed) === []) {
+		foreach ($this->dependentsOf(register: $table->register, target: $table->schema) as $dependent) {
+			if (array_intersect($dependent['reads'], $change->changed) === []) {
 				continue;
 			}
 
-			$saved += $this->resave(register: $register, schema: $dependent['schema'], field: $dependent['field'], uuid: $uuid);
+			$referrers = new RegisterSchema(register: $table->register, schema: $dependent['schema']);
+			$saved    += $this->resave(table: $referrers, pointer: new ReferencePointer(field: $dependent['field'], uuid: $change->uuid));
 		}
 
 		return $saved;
@@ -197,7 +190,7 @@ class ReferencedCalculationRefresher {
 		$dependents = [];
 		foreach ($register->getSchemas() as $schemaId) {
 			try {
-				$schema = $this->schemas->find(id: $schemaId, _rbac: false, _multitenancy: false);
+				$schema = $this->catalog->schemas()->find(id: $schemaId, _rbac: false, _multitenancy: false);
 			} catch (Throwable) {
 				continue;
 			}
@@ -296,53 +289,99 @@ class ReferencedCalculationRefresher {
 	/**
 	 * Re-save the objects of a schema whose field points at the updated object.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The pointing schema.
-	 * @param string   $field    The pointing field.
-	 * @param string   $uuid     The updated object's uuid.
+	 * @param RegisterSchema   $table   The register and the pointing schema.
+	 * @param ReferencePointer $pointer The pointing field and the updated object's uuid.
 	 *
 	 * @return integer The number of objects re-saved.
 	 */
-	private function resave(Register $register, Schema $schema, string $field, string $uuid): int {
-		try {
-			$rows = $this->rows->findAllInRegisterSchemaTable(register: $register, schema: $schema, limit: self::SYNC_LIMIT, filters: [$field => $uuid]);
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				'[ReferencedCalculationRefresher] referrers could not be read',
-				['schema' => $schema->getSlug(), 'reason' => $e->getMessage()]
-			);
+	private function resave(RegisterSchema $table, ReferencePointer $pointer): int {
+		$rows = $this->referrersOf(table: $table, pointer: $pointer);
+		if ($rows === null) {
 			return 0;
 		}
 
 		if (count($rows) >= self::SYNC_LIMIT) {
 			$this->logger->warning(
-				'[ReferencedCalculationRefresher] more objects point at '.$uuid
+				'[ReferencedCalculationRefresher] more objects point at '.$pointer->uuid
 					.' than one save refreshes; run occ openregister:rematerialise-calculations for the rest',
-				['register' => $register->getSlug(), 'schema' => $schema->getSlug()]
+				['register' => $table->register->getSlug(), 'schema' => $table->schema->getSlug()]
 			);
 		}
 
-		$service = $this->container->get(ObjectOperationsInterface::class);
-		$saved   = 0;
+		return $this->resaveRows(schema: $table->schema, rows: $rows);
+	}//end resave()
+
+	/**
+	 * The objects of a schema whose field points at the updated object, at most SYNC_LIMIT of them.
+	 *
+	 * @param RegisterSchema   $table   The register and the pointing schema.
+	 * @param ReferencePointer $pointer The pointing field and the updated object's uuid.
+	 *
+	 * @return array<int, ObjectEntity>|null The referring objects, or null when they could not be read.
+	 */
+	private function referrersOf(RegisterSchema $table, ReferencePointer $pointer): ?array {
+		try {
+			return $this->catalog->tables()->findAllInRegisterSchemaTable(
+				register: $table->register,
+				schema: $table->schema,
+				limit: self::SYNC_LIMIT,
+				filters: $pointer->filters()
+			);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'[ReferencedCalculationRefresher] referrers could not be read',
+				['schema' => $table->schema->getSlug(), 'reason' => $e->getMessage()]
+			);
+			return null;
+		}
+	}//end referrersOf()
+
+	/**
+	 * Re-save referring objects as the system, each in its stored form; a failed save is logged and not counted.
+	 *
+	 * @param Schema                   $schema The referring objects' schema.
+	 * @param array<int, ObjectEntity> $rows   The referring objects.
+	 *
+	 * @return integer The number of objects re-saved.
+	 */
+	private function resaveRows(Schema $schema, array $rows): int {
+		$saved = 0;
 		foreach ($rows as $row) {
-			try {
-				// The read decodes JSON held in a `type: string` property; hand it back as stored.
-				$service->saveObject(
-					object: $this->types->restoreStringTypedValues(data: ($row->getObject() ?? []), properties: ($schema->getProperties() ?? [])),
-					register: $row->getRegister(),
-					schema: $row->getSchema(),
-					uuid: $row->getUuid(),
-					_rbac: false,
-					_multitenancy: false
-				);
+			if ($this->resaveRow(schema: $schema, row: $row) === true) {
 				$saved++;
-			} catch (Throwable $e) {
-				$this->logger->warning('[ReferencedCalculationRefresher] re-save failed', ['uuid' => $row->getUuid(), 'reason' => $e->getMessage()]);
 			}
 		}
 
 		return $saved;
-	}//end resave()
+	}//end resaveRows()
+
+	/**
+	 * Re-save one referring object as the system, in its stored form.
+	 *
+	 * @param Schema       $schema The referring object's schema.
+	 * @param ObjectEntity $row    The referring object.
+	 *
+	 * @return boolean True when it was saved, false when the save failed (logged).
+	 */
+	private function resaveRow(Schema $schema, ObjectEntity $row): bool {
+		$service = $this->container->get(ObjectOperationsInterface::class);
+		try {
+			// The read decodes JSON held in a `type: string` property; hand it back as stored.
+			$service->saveObject(
+				object: (new SchemaTypeConverter())->restoreStringTypedValues(data: ($row->getObject() ?? []), properties: ($schema->getProperties() ?? [])),
+				register: $row->getRegister(),
+				schema: $row->getSchema(),
+				uuid: $row->getUuid(),
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (Throwable $e) {
+			$this->logger->warning('[ReferencedCalculationRefresher] re-save failed', ['uuid' => $row->getUuid(), 'reason' => $e->getMessage()]);
+			return false;
+		}
+
+		return true;
+	}//end resaveRow()
 
 	/**
 	 * The top-level fields whose value differs between the old and the new data.

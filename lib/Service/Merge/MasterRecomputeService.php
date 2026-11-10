@@ -56,7 +56,7 @@ use Throwable;
  *
  * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
  */
-class MasterRecomputeService {
+class MasterRecomputeService implements MasterRecomputeInterface {
 	/**
 	 * Wire collaborators.
 	 *

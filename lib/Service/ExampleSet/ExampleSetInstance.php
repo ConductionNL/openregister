@@ -58,6 +58,18 @@ class ExampleSetInstance {
 	public const FAILED = 'failed';
 
 	/**
+	 * The quota a set may declare, with the organisation's getter and setter of each.
+	 */
+	private const QUOTA = [
+		'storage'       => ['getStorageQuota', 'setStorageQuota'],
+		'requests'      => ['getRequestQuota', 'setRequestQuota'],
+		'bandwidth'     => ['getBandwidthQuota', 'setBandwidthQuota'],
+		'users'         => ['getUserQuota', 'setUserQuota'],
+		'objects'       => ['getObjectQuota', 'setObjectQuota'],
+		'objectsSchema' => ['getObjectQuotaSchema', 'setObjectQuotaSchema'],
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ContainerInterface $container Hands out the organisation mapper on first use.
@@ -107,21 +119,30 @@ class ExampleSetInstance {
 			return [];
 		}
 
-		$byName = [];
-		$bySlug = [];
-		foreach ($all as $organisation) {
-			$uuid = (string) $organisation->getUuid();
-			if ((string) $organisation->getName() !== '') {
-				$byName[(string) $organisation->getName()] = $uuid;
-			}
+		return array_merge(
+			$this->index(all: $all, key: static fn (Organisation $organisation): string => (string) $organisation->getName()),
+			$this->index(all: $all, key: static fn (Organisation $organisation): string => (string) $organisation->getSlug())
+		);
+	}//end uuids()
 
-			if ((string) $organisation->getSlug() !== '') {
-				$bySlug[(string) $organisation->getSlug()] = $uuid;
+	/**
+	 * The uuid of every organisation by one of its texts; an organisation without that text is left out.
+	 *
+	 * @param iterable<Organisation>            $all The organisations.
+	 * @param callable(Organisation): string    $key The text to index by.
+	 *
+	 * @return array<string, string>
+	 */
+	private function index(iterable $all, callable $key): array {
+		$index = [];
+		foreach ($all as $organisation) {
+			if ($key($organisation) !== '') {
+				$index[$key($organisation)] = (string) $organisation->getUuid();
 			}
 		}
 
-		return array_merge($byName, $bySlug);
-	}//end uuids()
+		return $index;
+	}//end index()
 
 	/**
 	 * Create an organisation with this slug unless one exists.
@@ -136,54 +157,131 @@ class ExampleSetInstance {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-an-organisation-the-set-made-gains-the-quota-it-declares-later
 	 */
 	public function ensure(array $declared, array $made=[]): array {
+		$found = $this->found(declared: $declared, made: $made);
+		if ($found !== null) {
+			return $found;
+		}
+
+		return $this->create(declared: $declared);
+	}//end ensure()
+
+	/**
+	 * The organisation with the declared slug, its missing quota filled when the set made it; null when there is none,
+	 * so it is created.
+	 *
+	 * @param array<string, mixed> $declared The declared organisation.
+	 * @param array<int, string>   $made     Uuids of the organisations this set created.
+	 *
+	 * @return array{uuid: string, created: bool, error: string}|null
+	 */
+	private function found(array $declared, array $made): ?array {
 		try {
-			$found = $this->mapper()->findBySlug(slug: $declared['slug']);
-			$uuid  = (string) $found->getUuid();
-			$error = '';
-			if (in_array($uuid, $made, true) === true) {
-				$error = $this->fillQuota(organisation: $found, quota: (array) ($declared['quota'] ?? []));
+			$organisation = $this->mapper()->findBySlug(slug: $declared['slug']);
+			$quota        = null;
+			if (in_array((string) $organisation->getUuid(), $made, true) === true) {
+				$quota = (array) ($declared['quota'] ?? []);
 			}
 
-			return ['uuid' => $uuid, 'created' => false, 'error' => $error];
+			return $this->kept(found: $organisation, quota: $quota);
 		} catch (DoesNotExistException) {
-			// Not there: created below.
+			return null;
 		} catch (Throwable $e) {
 			// A lookup that failed says nothing about the organisation; creating one now could duplicate the slug.
 			return ['uuid' => '', 'created' => false, 'error' => $e->getMessage()];
 		}
+	}//end found()
 
+	/**
+	 * An organisation that is there: kept, gaining the quota it lacks when the set made it.
+	 *
+	 * @param Organisation              $found The organisation as stored.
+	 * @param array<string, mixed>|null $quota The declared quota when this set made the organisation, null when it did not.
+	 *
+	 * @return array{uuid: string, created: bool, error: string}
+	 */
+	private function kept(Organisation $found, ?array $quota): array {
+		$error = '';
+		if ($quota !== null) {
+			$error = $this->fillQuota(organisation: $found, quota: $quota);
+		}
+
+		return ['uuid' => (string) $found->getUuid(), 'created' => false, 'error' => $error];
+	}//end kept()
+
+	/**
+	 * Create the declared organisation.
+	 *
+	 * @param array<string, mixed> $declared The declared organisation.
+	 *
+	 * @return array{uuid: string, created: bool, error: string}
+	 */
+	private function create(array $declared): array {
 		try {
-			$organisation = new Organisation();
-			$organisation->setName($declared['name']);
-			$organisation->setSlug($declared['slug']);
-			$organisation->setDescription($declared['description']);
-			// A partner (ketenpartner) is an organisation of type partner; empty keeps the default.
-			if (($declared['type'] ?? '') !== '') {
-				$organisation->setType($declared['type']);
-			}
-
-			if (($declared['contactEmail'] ?? '') !== '') {
-				$organisation->setContactEmail($declared['contactEmail']);
-			}
-
-			$quota = ($declared['quota'] ?? []);
-			$organisation->setStorageQuota($quota['storage'] ?? null);
-			$organisation->setRequestQuota($quota['requests'] ?? null);
-			$organisation->setBandwidthQuota($quota['bandwidth'] ?? null);
-			$organisation->setUserQuota($quota['users'] ?? null);
-			$organisation->setObjectQuota($quota['objects'] ?? null);
-			$organisation->setObjectQuotaSchema($quota['objectsSchema'] ?? null);
-			foreach (($declared['members'] ?? []) as $member) {
-				$organisation->addUser($member);
-			}
-
-			$saved = $this->mapper()->insert(entity: $organisation);
+			$organisation = $this->newOrganisation(declared: $declared);
+			$saved        = $this->mapper()->insert(entity: $organisation);
 		} catch (Throwable $e) {
 			return ['uuid' => '', 'created' => false, 'error' => $e->getMessage()];
 		}
 
 		return ['uuid' => (string) $saved->getUuid(), 'created' => true, 'error' => ''];
-	}//end ensure()
+	}//end create()
+
+	/**
+	 * The declared organisation, with its quota and members, as it is created.
+	 *
+	 * @param array<string, mixed> $declared The declared organisation.
+	 *
+	 * @return Organisation
+	 */
+	private function newOrganisation(array $declared): Organisation {
+		$organisation = new Organisation();
+		$organisation->setName($declared['name']);
+		$organisation->setSlug($declared['slug']);
+		$organisation->setDescription($declared['description']);
+		$this->setTypeAndContact(organisation: $organisation, declared: $declared);
+		$this->setQuota(organisation: $organisation, quota: ($declared['quota'] ?? []));
+		foreach (($declared['members'] ?? []) as $member) {
+			$organisation->addUser($member);
+		}
+
+		return $organisation;
+	}//end newOrganisation()
+
+	/**
+	 * Put the declared type and contact address on a new organisation; one not declared keeps the default.
+	 *
+	 * @param Organisation         $organisation The new organisation.
+	 * @param array<string, mixed> $declared     The declared organisation.
+	 *
+	 * @return void
+	 */
+	private function setTypeAndContact(Organisation $organisation, array $declared): void {
+		// A partner (ketenpartner) is an organisation of type partner; empty keeps the default.
+		if (($declared['type'] ?? '') !== '') {
+			$organisation->setType($declared['type']);
+		}
+
+		if (($declared['contactEmail'] ?? '') !== '') {
+			$organisation->setContactEmail($declared['contactEmail']);
+		}
+	}//end setTypeAndContact()
+
+	/**
+	 * Put the declared quota on a new organisation; a quota not declared is none.
+	 *
+	 * @param Organisation         $organisation The new organisation.
+	 * @param array<string, mixed> $quota        The declared quota.
+	 *
+	 * @return void
+	 */
+	private function setQuota(Organisation $organisation, array $quota): void {
+		$organisation->setStorageQuota($quota['storage'] ?? null);
+		$organisation->setRequestQuota($quota['requests'] ?? null);
+		$organisation->setBandwidthQuota($quota['bandwidth'] ?? null);
+		$organisation->setUserQuota($quota['users'] ?? null);
+		$organisation->setObjectQuota($quota['objects'] ?? null);
+		$organisation->setObjectQuotaSchema($quota['objectsSchema'] ?? null);
+	}//end setQuota()
 
 	/**
 	 * Give an organisation the declared quota where it has none; a quota it holds is never changed.
@@ -196,23 +294,7 @@ class ExampleSetInstance {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-an-organisation-the-set-made-gains-the-quota-it-declares-later
 	 */
 	private function fillQuota(Organisation $organisation, array $quota): string {
-		$fields  = [
-			'storage'       => ['getStorageQuota', 'setStorageQuota'],
-			'requests'      => ['getRequestQuota', 'setRequestQuota'],
-			'bandwidth'     => ['getBandwidthQuota', 'setBandwidthQuota'],
-			'users'         => ['getUserQuota', 'setUserQuota'],
-			'objects'       => ['getObjectQuota', 'setObjectQuota'],
-			'objectsSchema' => ['getObjectQuotaSchema', 'setObjectQuotaSchema'],
-		];
-		$changed = false;
-		foreach ($fields as $key => [$getter, $setter]) {
-			if (isset($quota[$key]) === true && $organisation->$getter() === null) {
-				$organisation->$setter($quota[$key]);
-				$changed = true;
-			}
-		}
-
-		if ($changed === false) {
+		if ($this->addMissingQuota(organisation: $organisation, quota: $quota) === false) {
 			return '';
 		}
 
@@ -224,6 +306,26 @@ class ExampleSetInstance {
 
 		return '';
 	}//end fillQuota()
+
+	/**
+	 * Give an organisation each declared quota it has none of.
+	 *
+	 * @param Organisation         $organisation The organisation as stored.
+	 * @param array<string, mixed> $quota        The declared quota.
+	 *
+	 * @return bool Whether any quota was added.
+	 */
+	private function addMissingQuota(Organisation $organisation, array $quota): bool {
+		$changed = false;
+		foreach (self::QUOTA as $key => [$getter, $setter]) {
+			if (isset($quota[$key]) === true && $organisation->$getter() === null) {
+				$organisation->$setter($quota[$key]);
+				$changed = true;
+			}
+		}
+
+		return $changed;
+	}//end addMissingQuota()
 
 	/**
 	 * Delete an organisation by uuid unless somebody else belongs to it.
@@ -243,18 +345,13 @@ class ExampleSetInstance {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
 	 */
 	public function delete(string $uuid, ?callable $ignorable = null): string {
-		try {
-			$organisation = $this->mapper()->findByUuid(uuid: $uuid);
-		} catch (DoesNotExistException) {
-			return self::DELETED;
-		} catch (Throwable) {
-			return self::FAILED;
+		$organisation = $this->lookup(uuid: $uuid);
+		if (is_string($organisation) === true) {
+			return $organisation;
 		}
 
-		foreach (($organisation->getUsers() ?? []) as $member) {
-			if ($ignorable === null || $ignorable((string) $member) === false) {
-				return self::LEFT;
-			}
+		if ($this->hasOtherMembers(organisation: $organisation, ignorable: $ignorable) === true) {
+			return self::LEFT;
 		}
 
 		try {
@@ -265,6 +362,41 @@ class ExampleSetInstance {
 
 		return self::DELETED;
 	}//end delete()
+
+	/**
+	 * The organisation with this uuid; `deleted` when the lookup says it does not exist, `failed` for any other error.
+	 *
+	 * @param string $uuid The organisation's uuid.
+	 *
+	 * @return Organisation|string
+	 */
+	private function lookup(string $uuid): Organisation|string {
+		try {
+			return $this->mapper()->findByUuid(uuid: $uuid);
+		} catch (DoesNotExistException) {
+			return self::DELETED;
+		} catch (Throwable) {
+			return self::FAILED;
+		}
+	}//end lookup()
+
+	/**
+	 * Whether an organisation has a member that keeps it: any member when nobody is ignorable.
+	 *
+	 * @param Organisation                  $organisation The organisation.
+	 * @param (callable(string): bool)|null $ignorable    Whether a member does not keep the organisation; null: none does.
+	 *
+	 * @return bool
+	 */
+	private function hasOtherMembers(Organisation $organisation, ?callable $ignorable): bool {
+		foreach (($organisation->getUsers() ?? []) as $member) {
+			if ($ignorable === null || $ignorable((string) $member) === false) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end hasOtherMembers()
 
 	/**
 	 * OpenRegister's organisation mapper.

@@ -318,6 +318,24 @@ interface SchemaMapperInterface {
 	public function updateEventCount(int $schemaId): int;
 
 	/**
+	 * From now on a notification url action that cannot be linked to only warns on save.
+	 *
+	 * @return bool Whether it already did.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	public function warnOnUnlinkableNotificationActions(): bool;
+
+	/**
+	 * From now on a notification url action that cannot be linked to refuses the save, as it does by default.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	public function refuseUnlinkableNotificationActions(): void;
+
+	/**
 	 * Updates a schema from an array
 	 *
 	 * @param int $id The id of the schema to update

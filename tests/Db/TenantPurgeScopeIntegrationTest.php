@@ -14,6 +14,7 @@ use OCA\OpenRegister\BackgroundJob\TenantPurgeJob;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\TenantUsageMapper;
+use OCA\OpenRegister\Db\UsageMeasurement;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
@@ -126,16 +127,12 @@ class TenantPurgeScopeIntegrationTest extends TestCase {
 		$this->usage->upsertUsage(
 			organisationUuid: $uuid,
 			period: new DateTime('2026-01-01 10:00:00'),
-			requestCount: 1,
-			bandwidthBytes: 1,
-			storageBytes: 1
+			measurement: new UsageMeasurement(requestCount: 1, bandwidthBytes: 1, storageBytes: 1)
 		);
 		$this->usage->upsertUsage(
 			organisationUuid: $uuid,
 			period: new DateTime('2026-06-01 10:00:00'),
-			requestCount: 1,
-			bandwidthBytes: 1,
-			storageBytes: 1
+			measurement: new UsageMeasurement(requestCount: 1, bandwidthBytes: 1, storageBytes: 1)
 		);
 
 		return $uuid;
@@ -204,13 +201,7 @@ class TenantPurgeScopeIntegrationTest extends TestCase {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueString')->willReturn('90');
 
-		$job = new TenantPurgeJob(
-			$this->createMock(ITimeFactory::class),
-			$mapper,
-			$this->usage,
-			$appConfig,
-			$this->createMock(LoggerInterface::class),
-		);
+		$job = new TenantPurgeJob(new \OCA\OpenRegister\BackgroundJob\Support\ScheduledJobRuntime($this->createMock(ITimeFactory::class), $appConfig, $this->createMock(LoggerInterface::class)), new \OCA\OpenRegister\BackgroundJob\Support\TenantRecords($mapper, $this->usage, $this->createMock(\OCA\OpenRegister\Service\TenantLifecycleServiceInterface::class)));
 
 		// Protected methods are invokable through reflection since PHP 8.1.
 		(new ReflectionMethod($job, 'run'))->invoke($job, null);

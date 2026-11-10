@@ -28,8 +28,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
-use OCA\OpenRegister\Service\Flow\FlowRunContext;
-use OCA\OpenRegister\Service\Object\RetentionDestruction;
+use OCA\OpenRegister\Service\Flow\FlowRunContextInterface;
+use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
@@ -48,12 +48,14 @@ use OCP\IUserSession;
 class ObjectStateDeleteGuardListener implements IEventListener {
 
 	/**
-	 * @param IUserSession   $userSession The caller.
-	 * @param FlowRunContext $runContext  The ambient flow run, so a lock a run took admits that run.
+	 * @param IUserSession                  $userSession The caller.
+	 * @param FlowRunContextInterface       $runContext  The ambient flow run, so a lock a run took admits that run.
+	 * @param RetentionDestructionInterface $retention   Whether the retention machinery is destroying, which no lock or archive stops.
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
-		private readonly FlowRunContext $runContext,
+		private readonly FlowRunContextInterface $runContext,
+		private readonly RetentionDestructionInterface $retention,
 	) {
 	}//end __construct()
 
@@ -67,7 +69,7 @@ class ObjectStateDeleteGuardListener implements IEventListener {
 	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-refuses-a-write-and-names-its-holder
 	 */
 	public function handle(Event $event): void {
-		if ($event instanceof ObjectDeletingEvent === false || (new RetentionDestruction())->isRunning() === true) {
+		if ($event instanceof ObjectDeletingEvent === false || $this->retention->isRunning() === true) {
 			return;
 		}
 
@@ -87,19 +89,17 @@ class ObjectStateDeleteGuardListener implements IEventListener {
 	 * @param ObjectEntity $object The object being deleted.
 	 *
 	 * @return array<string, mixed>|null
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) forObject() and archived() are the exceptions' named constructors, as in SaveObject.
 	 */
 	private function refusal(ObjectEntity $object): ?array {
 		$userId = $this->userSession->getUser()?->getUID();
 		if ($object->isLockedBySomeoneElse(userId: $userId, runUuid: $this->runContext->currentRunUuid()) === true) {
-			$locked = LockedException::forObject($object, 'delete');
+			$locked = (new LockedException())->forObject($object, 'delete');
 
 			return ['code' => 'object-locked', 'message' => $locked->getMessage(), 'status' => LockedException::HTTP_STATUS];
 		}
 
 		if ($object->isArchived() === true) {
-			$archived = ObjectStateWriteException::archived($object);
+			$archived = (new ObjectStateWriteException())->archived($object);
 
 			return ['code' => 'object-archived', 'message' => $archived->getMessage(), 'status' => ObjectStateWriteException::HTTP_STATUS];
 		}

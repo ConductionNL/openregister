@@ -41,7 +41,7 @@ class LlmSettingsHandlerTest extends TestCase {
 		parent::setUp();
 
 		$this->appConfig = $this->createMock(IAppConfig::class);
-		$this->handler = new LlmSettingsHandler($this->appConfig, 'openregister');
+		$this->handler = new LlmSettingsHandler($this->appConfig);
 	}
 
 	/**

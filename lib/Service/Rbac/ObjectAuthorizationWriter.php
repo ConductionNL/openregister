@@ -74,29 +74,31 @@ class ObjectAuthorizationWriter {
 	 *
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
-	public function writeAuthorizationBlock(
-		Register $register,
-		Schema $schema,
-		string $objectUuid,
-		array $block,
-	): void {
+	public function writeAuthorizationBlock(Register $register, Schema $schema, string $objectUuid, array $block): void {
 		$table = $this->mapper->getTableNameForRegisterSchema($register, $schema);
+		$this->writeBlockTo(table: $table, assignment: new AuthorizationAssignment(objectUuid: $objectUuid, block: $block));
+	}//end writeAuthorizationBlock()
 
+	/**
+	 * Write the authorization block of one object into its magic table.
+	 *
+	 * @param string                  $table      The magic table the object is stored in.
+	 * @param AuthorizationAssignment $assignment The object and its block.
+	 *
+	 * @return void
+	 */
+	private function writeBlockTo(string $table, AuthorizationAssignment $assignment): void {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($table)
-			->set('_authorization', $qb->createNamedParameter(json_encode($block)))
-			->where($qb->expr()->eq('_uuid', $qb->createNamedParameter($objectUuid)));
+			->set('_authorization', $qb->createNamedParameter(json_encode($assignment->block)))
+			->where($qb->expr()->eq('_uuid', $qb->createNamedParameter($assignment->objectUuid)));
 		$qb->executeStatement();
 
+		$scope = ($assignment->block[ObjectScopeResolverInterface::SCOPE_KEY] ?? null);
 		$this->logger->info(
 			message: '[ObjectAuthorizationWriter] Wrote the authorization block for an object',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'uuid' => $objectUuid,
-				'scope' => ($block[ObjectScopeResolver::SCOPE_KEY] ?? null),
-			]
+			context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $assignment->objectUuid, 'scope' => $scope]
 		);
-	}//end writeAuthorizationBlock()
+	}//end writeBlockTo()
 
 }//end class

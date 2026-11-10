@@ -72,57 +72,80 @@ class OAuth2AccountIdentity {
 	/**
 	 * Ask who the connection belongs to, and record the answer on the credential.
 	 *
-	 * @param array<string, mixed> $provider The catalogue provider entry.
-	 * @param string $credentialId The credential just minted or repaired.
-	 * @param string $scope The credential scope.
-	 * @param OAuth2TokenSet $set The token set just stored.
-	 * @param string $owner The credential's owner, asserted for this sessionless call.
+	 * The call is made as the connection's owner, asserted for this sessionless call.
+	 *
+	 * @param RedeemedConnection $connection The provider and the token set just stored.
+	 * @param TokenSetAddress    $address    The credential just minted or repaired, and its scope.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-connection-records-the-account-it-speaks-for
 	 */
-	public function record(
-		array $provider,
-		string $credentialId,
-		string $scope,
-		OAuth2TokenSet $set,
-		string $owner,
-	): void {
-		$identity = ($provider['identity'] ?? null);
+	public function record(RedeemedConnection $connection, TokenSetAddress $address): void {
+		$identity = ($connection->provider['identity'] ?? null);
 		if (is_array($identity) === false || trim((string)($identity['path'] ?? '')) === '') {
 			return;
 		}
 
 		try {
-			$response = $this->broker->request(
-				credentialId: $credentialId,
-				appId: self::BROKER_APP_ID,
-				method: (string)($identity['method'] ?? 'GET'),
-				path: (string)$identity['path'],
-				actingUserId: $owner
-			);
-
-			$decoded = json_decode($response['body'], true);
-			if (is_array($decoded) === false) {
-				return;
+			$decoded = $this->answer(connection: $connection, credentialId: $address->credentialId);
+			if ($decoded !== null) {
+				$this->refresh->persist(address: $address, set: $this->withAccount(connection: $connection, decoded: $decoded));
 			}
-
-			$this->refresh->persist(
-				credentialId: $credentialId,
-				scope: $scope,
-				set: $set->withAccount(
-					id: $this->fieldAt(payload: $decoded, path: (string)($identity['idField'] ?? '')),
-					handle: $this->fieldAt(payload: $decoded, path: (string)($identity['handleField'] ?? '')),
-					displayName: $this->fieldAt(payload: $decoded, path: (string)($identity['displayNameField'] ?? ''))
-				)
-			);
 		} catch (Throwable $failure) {
 			$this->logger->warning(
-				'[OAuth2AccountIdentity] could not read the connected account for ' . $credentialId . ': ' . $failure->getMessage()
+				'[OAuth2AccountIdentity] could not read the connected account for ' . $address->credentialId . ': ' . $failure->getMessage()
 			);
-		}//end try
+		}
 	}//end record()
+
+	/**
+	 * Make the one bounded identity call and decode its answer.
+	 *
+	 * @param RedeemedConnection $connection   The connection, whose provider declares an identity path.
+	 * @param string             $credentialId The credential to call as.
+	 *
+	 * @return array<mixed>|null The decoded answer, or null when it is not JSON.
+	 *
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-connection-records-the-account-it-speaks-for
+	 */
+	private function answer(RedeemedConnection $connection, string $credentialId): ?array {
+		$identity = (array)$connection->provider['identity'];
+		$response = $this->broker->request(
+			credentialId: $credentialId,
+			appId: self::BROKER_APP_ID,
+			method: (string)($identity['method'] ?? 'GET'),
+			path: (string)$identity['path'],
+			actingUserId: $connection->owner()
+		);
+
+		$decoded = json_decode($response['body'], true);
+		if (is_array($decoded) === false) {
+			return null;
+		}
+
+		return $decoded;
+	}//end answer()
+
+	/**
+	 * The token set carrying the account the answer names.
+	 *
+	 * @param RedeemedConnection $connection The token set just stored and the provider's identity block.
+	 * @param array<mixed>       $decoded    The decoded identity answer.
+	 *
+	 * @return OAuth2TokenSet The set with its account filled in.
+	 *
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-connection-records-the-account-it-speaks-for
+	 */
+	private function withAccount(RedeemedConnection $connection, array $decoded): OAuth2TokenSet {
+		$identity = (array)$connection->provider['identity'];
+
+		return $connection->tokenSet->withAccount(
+			id: $this->fieldAt(payload: $decoded, path: (string)($identity['idField'] ?? '')),
+			handle: $this->fieldAt(payload: $decoded, path: (string)($identity['handleField'] ?? '')),
+			displayName: $this->fieldAt(payload: $decoded, path: (string)($identity['displayNameField'] ?? ''))
+		);
+	}//end withAccount()
 
 	/**
 	 * Read one scalar out of a decoded response by dotted path.
@@ -148,10 +171,23 @@ class OAuth2AccountIdentity {
 			$cursor = $cursor[$segment];
 		}
 
-		if (is_scalar($cursor) === false) {
+		return $this->scalarText(value: $cursor);
+	}//end fieldAt()
+
+	/**
+	 * A scalar as text, or an empty string for anything else.
+	 *
+	 * @param mixed $value The value found.
+	 *
+	 * @return string The text.
+	 *
+	 * @spec exclude private response accessor with no behaviour of its own
+	 */
+	private function scalarText(mixed $value): string {
+		if (is_scalar($value) === false) {
 			return '';
 		}
 
-		return (string)$cursor;
-	}//end fieldAt()
+		return (string)$value;
+	}//end scalarText()
 }//end class

@@ -233,6 +233,14 @@ class MessageDispatchProviderTest extends TestCase {
 		$this->assertSame('whatsapp-cloud-api', $this->provider->getOpenConnectorSource());
 	}//end testDispatchDegradesOnUpstreamDown()
 
+	public function testDispatchDegradesOnATransportFailure(): void {
+		$this->router->method('call')->willThrowException(new \RuntimeException('connection reset'));
+
+		$result = $this->provider->dispatch(source: 'twilio-sms', body: ['x' => 1], path: 'messages');
+		$this->assertSame(['unavailable' => true, 'cause' => 'upstream-service-down'], $result);
+		$this->assertSame('whatsapp-cloud-api', $this->provider->getOpenConnectorSource());
+	}//end testDispatchDegradesOnATransportFailure()
+
 	public function testHealthDefersToRouterProbe(): void {
 		$probe = ['status' => 'ok', 'authStatus' => 'configured', 'message' => null];
 		$this->router->expects($this->once())->method('probe')->with($this->provider)->willReturn($probe);

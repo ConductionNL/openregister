@@ -38,16 +38,13 @@ interface NotificationRecipientResolverInterface {
 	 * object at dispatch time.
 	 *
 	 * @param array<int, mixed> $recipientsSpec The rule's `recipients` declaration.
-	 * @param array<string, mixed> $data The object's stored data (or a flow item's json).
-	 * @param ObjectEntity|null $object The object, for `object-acl` and `expression` kinds.
-	 * @param array<string, mixed> $context Trigger-specific extras handed to expression resolvers.
-	 * @param array<string, array<int, string>> $roleGroups Role name to assigned group ids, for the `role` kind.
+	 * @param RecipientSource $source The object, its data, the trigger context and the role assignment.
 	 *
 	 * @return array<int, string> Verified, deduplicated uids.
 	 *
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
-	public function resolve(array $recipientsSpec, array $data, ?ObjectEntity $object = null, array $context = [], array $roleGroups = []): array;
+	public function resolve(array $recipientsSpec, RecipientSource $source): array;
 
 	/**
 	 * Resolve a recipients spec, and say which entries resolved to nobody.
@@ -77,6 +74,20 @@ interface NotificationRecipientResolverInterface {
 	public function resolveWithDiagnostics(
 		array $recipientsSpec, array $data, ?ObjectEntity $object = null, array $context = [], array $roleGroups = []
 	): array;
+
+	/**
+	 * Resolve a recipients spec against one source, and say which entries resolved to nobody.
+	 *
+	 * The outcome of {@see resolveWithDiagnostics()}, for a caller that holds the source.
+	 *
+	 * @param array<int, mixed> $recipientsSpec The rule's `recipients` declaration.
+	 * @param RecipientSource   $source         The object, its data, the trigger context and the role assignment.
+	 *
+	 * @return array{uids: array<int, string>, unresolved: array<int, array{kind: string, id: string, reason: string}>}
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-group-or-a-declared-role-is-a-recipient-req-nrg-001
+	 */
+	public function resolveFromSource(array $recipientsSpec, RecipientSource $source): array;
 
 	/**
 	 * Verify that a uid corresponds to an actual Nextcloud user.

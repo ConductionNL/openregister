@@ -24,11 +24,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -179,7 +181,16 @@ class MagicRbacHandlerHasPermissionGoldenTest extends TestCase {
 
 		$outcome = [];
 		try {
-			$decide = fn () => $handler->hasPermission($schema, $action, $owner, $data, $objectAuthorization, $uuid);
+			$decide = fn () => $handler->hasPermission($schema, $action);
+			if ($uuid !== null) {
+				$row = new ObjectEntity();
+				$row->setOwner($owner);
+				$row->setObject($data);
+				$row->setAuthorization($objectAuthorization);
+				$row->setUuid($uuid);
+				$decide = fn () => $handler->hasRowPermission($schema, $action, $row);
+			}
+
 			if ($uid === '@anonymous') {
 				$outcome['verdict'] = AnonymousEvaluationContext::run($decide);
 			} else {
@@ -194,7 +205,7 @@ class MagicRbacHandlerHasPermissionGoldenTest extends TestCase {
 	}//end decide()
 
 	private function container(string $wiring): ContainerInterface {
-		$permissionHandler = $this->createMock(PermissionHandler::class);
+		$permissionHandler = $this->createMock(PermissionHandlerInterface::class);
 		$permissionHandler->method('resolveAuthorization')->willReturnCallback(
 			function (Schema $schema) use ($wiring): ?array {
 				$this->calls[] = 'resolveAuthorization';

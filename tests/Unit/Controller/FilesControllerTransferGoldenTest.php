@@ -45,7 +45,8 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Files\Controller\Support\FileGuards
  * @uses \OCA\OpenRegister\Files\Controller\Support\FileEditing
  * @uses \OCA\OpenRegister\Files\Controller\Support\FileTransfer
- * @uses \OCA\OpenRegister\Controller\Support\ObjectLinkRoute
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FileAccessCheck
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FileObjectRoute
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Event\FileCopiedEvent
  * @uses \OCA\OpenRegister\Event\AbstractObjectFileEvent
@@ -107,7 +108,6 @@ class FilesControllerTransferGoldenTest extends TestCase {
 	public function testTransferMatchesTheRecording(string $action, array $case): void {
 		$this->calls = [];
 		$controller = FilesControllerFactory::create(
-			'openregister',
 			$this->request(case: $case),
 			$this->fileService(case: $case),
 			$this->objectService(case: $case),

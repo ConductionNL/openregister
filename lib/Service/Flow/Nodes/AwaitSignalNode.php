@@ -75,7 +75,7 @@ use UnexpectedValueException;
 /**
  * Suspends the run until an external signal decides how it continues.
  */
-class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
+class AwaitSignalNode implements IFlowNode, AwaitSignalNodeInterface, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
 
 	/**
 	 * Minutes between heartbeats when the flow does not choose.
@@ -269,44 +269,107 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
 	public function execute(array $items, array $config, array $context): array {
-		$signal = $this->decisionFrom(context: $context);
+		return $this->await(step: new NodeInvocation(items: $items, config: $config, context: $context));
+	}//end execute()
+
+	/**
+	 * Suspend until answered, or pass the answer on; see {@see self::execute()}.
+	 *
+	 * @param NodeInvocation $step The items, the step configuration and the run metadata.
+	 *
+	 * @return array The items, each carrying the answer.
+	 *
+	 * @throws FlowSuspension While no decision has arrived.
+	 * @throws FlowStop When rejected and the step asked to fail on rejection.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
+	 */
+	private function await(NodeInvocation $step): array {
+		$signal = $this->decisionFrom(context: $step->context);
 
 		if ($signal === null) {
-			$this->recordRequest(config: $config, context: $context, items: $items);
+			$this->recordRequest(step: $step);
 
 			throw new FlowSuspension(
-				resumeAt: $this->heartbeatAt(config: $config),
-				reason: sprintf(
-					'waiting for an answer: %s',
-					trim((string)($config['question'] ?? 'approval'))
-				)
+				resumeAt: $this->heartbeatAt(config: $step->config),
+				reason: sprintf('waiting for an answer: %s', trim((string)($step->config['question'] ?? 'approval')))
 			);
 		}
 
-		$decision = strtolower(trim((string)($signal['decision'] ?? '')));
+		$this->refuseIfRejected(signal: $signal, config: $step->config);
 
-		if ($decision === 'reject' || $decision === 'rejected') {
-			if (($config['failOnReject'] ?? false) === true) {
-				throw new FlowStop(
-					reason: sprintf(
-						'Rejected: %s',
-						trim((string)($signal['reason'] ?? $config['question'] ?? 'no reason given'))
-					),
-					isError: true
-				);
-			}
+		return $this->placeAnswer(step: $step, signal: $signal);
+	}//end await()
+
+	/**
+	 * Stop the run on a rejection, when the step opted in with `failOnReject`.
+	 *
+	 * @param array<string, mixed> $signal The decision payload.
+	 * @param array                $config The step configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws FlowStop On an opted-in rejection.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
+	 */
+	private function refuseIfRejected(array $signal, array $config): void {
+		$decision = strtolower(trim((string)($signal['decision'] ?? '')));
+		if ($decision !== 'reject' && $decision !== 'rejected') {
+			return;
 		}
 
+		if (($config['failOnReject'] ?? false) === true) {
+			throw new FlowStop(
+				reason: sprintf(
+					'Rejected: %s',
+					trim((string)($signal['reason'] ?? $config['question'] ?? 'no reason given'))
+				),
+				isError: true
+			);
+		}
+
+	}//end refuseIfRejected()
+
+	/**
+	 * The item key the answer lands under: `signalKey`, or `signal` when unset.
+	 *
+	 * @param array $config The step configuration.
+	 *
+	 * @return string The key.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
+	 */
+	private function answerKey(array $config): string {
 		$key = trim((string)($config['signalKey'] ?? ''));
 		if ($key === '') {
 			$key = 'signal';
 		}
 
-		// Into every item's record (`json`), not beside it, and not into the
-		// token: the steps that follow route per item and read `json.<key>`
-		// (FlowExpression::dataFor exposes json.*, and a rebuilding node like
-		// set-fields keeps only [json, binary]). A key at the envelope level
-		// is invisible to a Switch and silently dropped by the next rebuild.
+		return $key;
+	}//end answerKey()
+
+	/**
+	 * Write the answer onto every item's record.
+	 *
+	 * Into every item's record (`json`), not beside it, and not into the
+	 * token: the steps that follow route per item and read `json.<key>`
+	 * (FlowExpression::dataFor exposes json.*, and a rebuilding node like
+	 * set-fields keeps only [json, binary]). A key at the envelope level
+	 * is invisible to a Switch and silently dropped by the next rebuild.
+	 *
+	 * The answer lands under the step's {@see self::answerKey()}.
+	 *
+	 * @param NodeInvocation       $step   The items to pass on, and the step configuration.
+	 * @param array<string, mixed> $signal The decision payload.
+	 *
+	 * @return array The items, each carrying the answer.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
+	 */
+	private function placeAnswer(NodeInvocation $step, array $signal): array {
+		$key = $this->answerKey(config: $step->config);
+		$items = $step->items;
 		foreach ($items as $index => $item) {
 			if (is_array($item) === false) {
 				continue;
@@ -319,7 +382,7 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		}
 
 		return $items;
-	}//end execute()
+	}//end placeAnswer()
 
 	/**
 	 * The decision this node is waiting for, if it has arrived.
@@ -361,16 +424,16 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * somebody has been waiting resets every quarter of an hour — and "waiting
 	 * 15 minutes" is exactly the reading that would stop anyone chasing it.
 	 *
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
-	 * @param array $items The input items, for correlation-key resolution.
+	 * @param NodeInvocation $step The step configuration, the run metadata and
+	 *                             the input items, for correlation-key resolution.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
-	private function recordRequest(array $config, array $context, array $items): void {
-		$resume = ($context[FlowNodeResumeState::CONTEXT_KEY] ?? null);
+	private function recordRequest(NodeInvocation $step): void {
+		$config = $step->config;
+		$resume = ($step->context[FlowNodeResumeState::CONTEXT_KEY] ?? null);
 		if ($resume instanceof FlowNodeResumeState === false) {
 			return;
 		}
@@ -384,7 +447,7 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 				'askedAt' => (new DateTime())->format('c'),
 				'question' => trim((string)($config['question'] ?? '')),
 				'assignee' => trim((string)($config['assignee'] ?? '')),
-				'correlationKey' => $this->resolvedCorrelationKey(config: $config, items: $items),
+				'correlationKey' => $this->resolvedCorrelationKey(config: $config, items: $step->items),
 			]
 		);
 

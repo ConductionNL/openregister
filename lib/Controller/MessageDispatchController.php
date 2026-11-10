@@ -50,7 +50,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Service\Integration\Providers\MessageDispatcherInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -67,16 +68,14 @@ class MessageDispatchController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param MessageDispatchProvider $provider Outbound-messaging dispatch leaf.
+	 * @param MessageDispatcherInterface $provider Outbound-messaging dispatch leaf.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly MessageDispatchProvider $provider,
+		private readonly MessageDispatcherInterface $provider,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -148,47 +147,117 @@ class MessageDispatchController extends Controller {
 	private function relaySend(array $allowedKinds): JSONResponse {
 		$source = trim((string)$this->request->getParam('source', ''));
 		$path = trim((string)$this->request->getParam('path', ''));
-		$body = $this->request->getParam('body', []);
-		$headers = $this->request->getParam('headers', []);
 
-		if ($source === '' || $path === '') {
-			return new JSONResponse(['error' => 'source and path are required'], 400);
+		$refusal = $this->refuseMissingTarget(source: $source, path: $path)
+			?? $this->refuseWrongChannel(source: $source, allowedKinds: $allowedKinds);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
-		if (in_array($source, $allowedKinds, true) === false) {
-			return new JSONResponse(
-				['error' => sprintf('source "%s" is not valid for this channel', $source)],
-				400
-			);
-		}
+		$result = $this->sendThroughProvider(source: $source, path: $path);
 
-		if (is_array($body) === false) {
-			$body = [];
-		}
-
-		if (is_array($headers) === false) {
-			$headers = [];
-		}
-
-		$result = $this->provider->dispatch(
-			source: $source,
-			body: $body,
-			path: $path,
-			headers: $this->stringifyHeaders(headers: $headers),
-		);
-
-		if (($result['unavailable'] ?? false) === true) {
-			return new JSONResponse(
-				[
-					'error' => sprintf('messaging source "%s" is not available', $source),
-					'details' => ['cause' => $result['cause']],
-				],
-				503
-			);
-		}
-
-		return new JSONResponse($result);
+		return $this->relayResult(source: $source, result: $result);
 	}//end relaySend()
+
+	/**
+	 * Refuse a send without a source or a path.
+	 *
+	 * @param string $source The trimmed source slug.
+	 * @param string $path The trimmed send path.
+	 *
+	 * @return JSONResponse|null A 400, or null when both are present.
+	 *
+	 * @spec exclude Private input validation; the dispatch contract is owned by the spec.
+	 */
+	private function refuseMissingTarget(string $source, string $path): ?JSONResponse {
+		if ($source !== '' && $path !== '') {
+			return null;
+		}
+
+		return new JSONResponse(['error' => 'source and path are required'], 400);
+	}//end refuseMissingTarget()
+
+	/**
+	 * Refuse a source that is not valid for this channel.
+	 *
+	 * @param string $source The trimmed source slug.
+	 * @param array<int,string> $allowedKinds The source slugs valid for this channel.
+	 *
+	 * @return JSONResponse|null A 400, or null when the source fits the channel.
+	 *
+	 * @spec exclude Private input validation; the dispatch contract is owned by the spec.
+	 */
+	private function refuseWrongChannel(string $source, array $allowedKinds): ?JSONResponse {
+		if (in_array($source, $allowedKinds, true) === true) {
+			return null;
+		}
+
+		return new JSONResponse(
+			['error' => sprintf('source "%s" is not valid for this channel', $source)],
+			400
+		);
+	}//end refuseWrongChannel()
+
+	/**
+	 * Dispatch the request's body and headers through the provider.
+	 *
+	 * @param string $source The validated source slug.
+	 * @param string $path The send path.
+	 *
+	 * @return array<string,mixed> The provider's result descriptor.
+	 *
+	 * @spec exclude Private relay to MessageDispatchProvider::dispatch.
+	 */
+	private function sendThroughProvider(string $source, string $path): array {
+		return $this->provider->dispatch(
+			source: $source,
+			body: $this->arrayParam(name: 'body'),
+			path: $path,
+			headers: $this->stringifyHeaders(headers: $this->arrayParam(name: 'headers')),
+		);
+	}//end sendThroughProvider()
+
+	/**
+	 * A request parameter that must be an array, empty when it is not.
+	 *
+	 * @param string $name The parameter name.
+	 *
+	 * @return array<mixed> The parameter, or an empty array.
+	 *
+	 * @spec exclude Private input coercion.
+	 */
+	private function arrayParam(string $name): array {
+		$value = $this->request->getParam($name, []);
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		return $value;
+	}//end arrayParam()
+
+	/**
+	 * Map a degraded descriptor to a 503-with-cause, or relay the result.
+	 *
+	 * @param string $source The source slug.
+	 * @param array<string,mixed> $result The provider's result descriptor.
+	 *
+	 * @return JSONResponse The relayed result or the 503.
+	 *
+	 * @spec exclude Private response mapping (AD-23).
+	 */
+	private function relayResult(string $source, array $result): JSONResponse {
+		if (($result['unavailable'] ?? false) !== true) {
+			return new JSONResponse($result);
+		}
+
+		return new JSONResponse(
+			[
+				'error' => sprintf('messaging source "%s" is not available', $source),
+				'details' => ['cause' => $result['cause']],
+			],
+			503
+		);
+	}//end relayResult()
 
 	/**
 	 * Coerce a headers bag to `array<string,string>` — the dispatch contract

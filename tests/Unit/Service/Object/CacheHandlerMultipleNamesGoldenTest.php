@@ -21,6 +21,9 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerRuntime;
+use OCA\OpenRegister\Service\Object\CacheHandlerStores;
+use OCA\OpenRegister\Service\Object\CacheNameScopeSources;
 use OCP\AppFramework\IAppContainer;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
@@ -119,16 +122,16 @@ class CacheHandlerMultipleNamesGoldenTest extends TestCase {
 			'object found by slug'        => $this->scenario(identifiers: ['one', self::U2], objects: [$objects['u1'], $objects['u2-free']], readable: $readable),
 			'object found by id'          => $this->scenario(identifiers: ['101'], objects: [$objects['u1']], readable: $readable),
 			'object found by uri'         => $this->scenario(identifiers: ['https://x/one'], objects: [$objects['u1']], readable: $readable),
-			'object without table'        => $this->scenario(identifiers: [self::U4], objects: [$objects['u4-tableless']], rows: ['oc_openregister_table_1_2' => [[self::U4, 'Four from table', self::ORG_A]]], readable: $readable),
-			'mixed sources'               => $this->scenario(identifiers: [self::ORG_A, 'one', self::U4, self::U3, 'gone'], organisations: [[self::ORG_A, 'Org A']], objects: [$objects['u1'], $objects['u3-nameless']], rows: ['oc_openregister_table_1_2' => [[self::U4, 'Four from table', 7]]], readable: $readable),
-			'table rows, blank name'      => $this->scenario(identifiers: [self::U4], rows: ['oc_openregister_table_1_2' => [[self::U4, '  ', self::ORG_A]]], readable: $readable),
-			'table on second schema'      => $this->scenario(identifiers: [self::U4, self::U2], rows: ['oc_openregister_table_1_3' => [[self::U4, 'Four', self::ORG_A], [self::U2, 'Two', null]]], readable: $readable),
+			'object without table'        => $this->scenario(identifiers: [self::U4], objects: [$objects['u4-tableless']], rows: ['*PREFIX*openregister_table_1_2' => [[self::U4, 'Four from table', self::ORG_A]]], readable: $readable),
+			'mixed sources'               => $this->scenario(identifiers: [self::ORG_A, 'one', self::U4, self::U3, 'gone'], organisations: [[self::ORG_A, 'Org A']], objects: [$objects['u1'], $objects['u3-nameless']], rows: ['*PREFIX*openregister_table_1_2' => [[self::U4, 'Four from table', 7]]], readable: $readable),
+			'table rows, blank name'      => $this->scenario(identifiers: [self::U4], rows: ['*PREFIX*openregister_table_1_2' => [[self::U4, '  ', self::ORG_A]]], readable: $readable),
+			'table on second schema'      => $this->scenario(identifiers: [self::U4, self::U2], rows: ['*PREFIX*openregister_table_1_3' => [[self::U4, 'Four', self::ORG_A], [self::U2, 'Two', null]]], readable: $readable),
 			'organisation load throws'    => $this->scenario(identifiers: [self::U1, self::ORG_A], organisationsThrow: true, memory: [self::U2 => ['Kept', self::ORG_A, '1:2']], extraIdentifiers: [self::U2], readable: $readable),
 			'object load throws'          => $this->scenario(identifiers: [self::ORG_A, self::U1], organisations: [[self::ORG_A, 'Org A']], objectsThrow: true, readable: $readable),
 			'another session user'        => $this->scenario(identifiers: [self::U1, self::ORG_A, self::ORG_B], organisations: [[self::ORG_A, 'Org A'], [self::ORG_B, 'Org B']], objects: [$objects['u1']], readable: $readable, uid: 'mallory'),
 			'read path throws'            => $this->scenario(identifiers: [self::U1, self::ORG_A], organisations: [[self::ORG_A, 'Org A']], objects: [$objects['u1']], readable: $readable, oracleThrows: true),
 			'second call, disjoint identifiers' => $this->scenario(identifiers: [self::U1], objects: [$objects['u1'], $objects['u2-free']], readable: $readable, thenAsk: [self::U2]),
-			'sourceless table rows'           => $this->scenario(identifiers: [self::U4], rows: ['oc_openregister_table__2' => [[self::U4, 'Four without source', self::ORG_A]]], readable: $readable, idlessRegister: true),
+			'sourceless table rows'           => $this->scenario(identifiers: [self::U4], rows: ['*PREFIX*openregister_table__2' => [[self::U4, 'Four without source', self::ORG_A]]], readable: $readable, idlessRegister: true),
 			'other tenant organisation envelope' => $this->scenario(identifiers: [self::ORG_B, self::ORG_A], distributed: ['name_' . self::ORG_B => ['n' => 'Org B', 'o' => self::ORG_B, 's' => 'organisation'], 'name_' . self::ORG_A => ['n' => 'Org A', 'o' => self::ORG_A, 's' => 'organisation']], readable: $readable),
 			'second call as another user'     => $this->scenario(identifiers: [self::ORG_A, self::U1], organisations: [[self::ORG_A, 'Org A']], objects: [$objects['u1']], readable: $readable, thenAs: 'mallory'),
 			'duplicate identifiers'       => $this->scenario(identifiers: [self::U1, self::U1, 'one'], objects: [$objects['u1']], readable: $readable),
@@ -415,15 +418,21 @@ class CacheHandlerMultipleNamesGoldenTest extends TestCase {
 		}
 
 		return new CacheHandler(
-			organisationMapper: $organisationMapper,
-			logger: $logger,
-			cacheFactory: $cacheFactory,
-			userSession: $session,
-			container: $container,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
-			db: $db,
-			groupManager: $groupManager
+			stores: new CacheHandlerStores(
+				organisationMapper: $organisationMapper,
+				registerMapper: $registerMapper,
+				schemaMapper: $schemaMapper,
+				db: $db
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $logger,
+				cacheFactory: $cacheFactory,
+				container: $container
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $session,
+				groupManager: $groupManager
+			)
 		);
 	}//end handler()
 }//end class

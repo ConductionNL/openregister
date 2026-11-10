@@ -28,9 +28,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Source;
-use OCA\OpenRegister\Db\SourceMapper;
-use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
+use OCA\OpenRegister\Db\SourceMapperInterface;
+use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -52,17 +53,17 @@ class DbalIntrospectionJob extends TimedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Time factory for scheduling.
-	 * @param SourceMapper $sourceMapper Loads database sources.
-	 * @param DatabaseIntrospectionService $introspectionService Re-introspects a source and applies diffs.
-	 * @param LoggerInterface $logger Secret-free diagnostics.
+	 * @param ITimeFactory                          $time                 Time factory for scheduling.
+	 * @param SourceMapperInterface                          $sourceMapper         Loads database sources.
+	 * @param DatabaseIntrospectionServiceInterface $introspectionService Re-introspects a source and applies diffs.
+	 * @param LoggerInterface                       $logger               Secret-free diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly SourceMapper $sourceMapper,
-		private readonly DatabaseIntrospectionService $introspectionService,
+		private readonly SourceMapperInterface $sourceMapper,
+		private readonly DatabaseIntrospectionServiceInterface $introspectionService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
@@ -137,7 +138,7 @@ class DbalIntrospectionJob extends TimedJob {
 	 */
 	private function loadDatabaseSources(): array {
 		try {
-			return $this->sourceMapper->findAll(filters: ['type' => self::DATABASE_SOURCE_TYPE]);
+			return $this->sourceMapper->findList(query: ListQuery::unbounded(filters: ['type' => self::DATABASE_SOURCE_TYPE]));
 		} catch (Throwable $e) {
 			$this->logger->warning('[DbalIntrospectionJob] could not list database sources: ' . $e->getMessage());
 			return [];

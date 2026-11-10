@@ -29,6 +29,8 @@ use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Files\Service\FileSidebarEntityStore;
+use OCA\OpenRegister\Files\Service\FileSidebarSchemaLookup;
 use OCA\OpenRegister\Files\Service\FileSidebarService;
 use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCP\IDBConnection;
@@ -68,12 +70,16 @@ class FileSidebarServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new FileSidebarService(
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->db,
-			$this->chunkMapper,
-			$this->entityRelationMapper,
-			$this->gdprEntityMapper,
+			new FileSidebarSchemaLookup(
+				$this->registerMapper,
+				$this->schemaMapper
+			),
+			new FileSidebarEntityStore(
+				$this->db,
+				$this->chunkMapper,
+				$this->entityRelationMapper,
+				$this->gdprEntityMapper
+			),
 			$this->riskLevelService,
 			$this->logger
 		);

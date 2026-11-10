@@ -73,28 +73,25 @@ class ObjectCalendarFeedService {
 	private array $declarationCache = [];
 
 	/**
+	 * Builds one VEVENT per declared date.
+	 *
+	 * @var ObjectDateEventBuilder
+	 */
+	private readonly ObjectDateEventBuilder $eventBuilder;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectOperationsInterface $objects The object search path, RBAC included.
-	 * @param SchemaMapperInterface $schemas The schema store.
-	 * @param ViewMapperInterface $views The saved-view store.
-	 * @param IUserManager $userManager Resolves the principal a token names.
-	 * @param IDateTimeZone $dateTimeZone The tenant time zone.
-	 * @param ObjectDateEventBuilder $eventBuilder Builds one VEVENT per declared date.
-	 * @param IcalendarWriter $writer Folds and assembles the body.
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param ObjectCalendarFeedSources   $sources   The stores the object calendar feed reads from.
+	 * @param ObjectCalendarFeedRendering $rendering The collaborators that turn object dates into an iCalendar body.
+	 * @param LoggerInterface             $logger    PSR logger.
 	 */
 	public function __construct(
-		private readonly ObjectOperationsInterface $objects,
-		private readonly SchemaMapperInterface $schemas,
-		private readonly ViewMapperInterface $views,
-		private readonly IUserManager $userManager,
-		private readonly IDateTimeZone $dateTimeZone,
-		private readonly ObjectDateEventBuilder $eventBuilder,
-		private readonly IcalendarWriter $writer,
+		private readonly ObjectCalendarFeedSources $sources,
+		private readonly ObjectCalendarFeedRendering $rendering,
 		private readonly LoggerInterface $logger,
 	) {
-
+		$this->eventBuilder = $rendering->eventBuilder;
 	}//end __construct()
 
 	/**
@@ -110,7 +107,7 @@ class ObjectCalendarFeedService {
 	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function render(CalendarFeedToken $token): ?string {
-		$user = $this->userManager->get((string)$token->getUserId());
+		$user = $this->sources->userManager->get((string)$token->getUserId());
 
 		if ($user === null) {
 			// An unresolvable principal answers nothing, never the register.
@@ -121,7 +118,7 @@ class ObjectCalendarFeedService {
 		}
 
 		try {
-			return $this->objects->runAs(
+			return $this->sources->objects->runAs(
 				$user,
 				function () use ($token): ?string {
 					return $this->renderAsCurrentUser(token: $token);
@@ -154,39 +151,75 @@ class ObjectCalendarFeedService {
 		$timeZone = $this->tenantTimeZone();
 		$objects = $this->listObjects(token: $token, scope: $scope);
 
-		$lines = [];
-		$years = [(int)date('Y')];
+		$events = $this->collectEvents(objects: $objects, timeZone: $timeZone);
+
+		return $this->rendering->writer->calendar(
+			contents: new CalendarContents(
+				calendarName: $scope['name'],
+				timeZone: $timeZone,
+				componentLines: $events['lines'],
+				years: new CalendarYearSpan(fromYear: min($events['years']), toYear: max($events['years']))
+			)
+		);
+	}//end renderAsCurrentUser()
+
+	/**
+	 * The events of every publishable object, with the years they touch.
+	 *
+	 * The current year is always covered, so an empty feed still carries a
+	 * usable VTIMEZONE.
+	 *
+	 * @param array<int, mixed> $objects The objects the scope lists.
+	 * @param DateTimeZone $timeZone The tenant zone.
+	 *
+	 * @return array{lines: array<int, string>, years: array<int, int>} The unfolded lines and years.
+	 */
+	private function collectEvents(array $objects, DateTimeZone $timeZone): array {
+		$events = ['lines' => [], 'years' => [(int)date('Y')]];
 
 		foreach ($objects as $object) {
 			if ($object instanceof ObjectEntity === false || $this->isPublishable(object: $object) === false) {
 				continue;
 			}
 
-			foreach ($this->declarationsFor(object: $object) as $declaration) {
-				$event = $this->eventBuilder->build(
+			$added = $this->objectEvents(object: $object, timeZone: $timeZone);
+			$events['lines'] = array_merge($events['lines'], $added['lines']);
+			$events['years'] = array_merge($events['years'], $added['years']);
+		}
+
+		return $events;
+	}//end collectEvents()
+
+	/**
+	 * The events of every date one object declares.
+	 *
+	 * @param ObjectEntity $object The publishable object.
+	 * @param DateTimeZone $timeZone The tenant zone.
+	 *
+	 * @return array{lines: array<int, string>, years: array<int, int>} The object's lines and years.
+	 */
+	private function objectEvents(ObjectEntity $object, DateTimeZone $timeZone): array {
+		$events = ['lines' => [], 'years' => []];
+		foreach ($this->declarationsFor(object: $object) as $declaration) {
+			$event = $this->eventBuilder->build(
+				occurrence: new ObjectDateOccurrence(
 					object: $object,
 					schemaId: (string)$object->getSchema(),
 					declaration: $declaration,
 					timeZone: $timeZone
-				);
+				)
+			);
 
-				if ($event === null) {
-					continue;
-				}
-
-				$lines = array_merge($lines, $event['lines']);
-				$years = array_merge($years, $event['years']);
+			if ($event === null) {
+				continue;
 			}
+
+			$events['lines'] = array_merge($events['lines'], $event['lines']);
+			$events['years'] = array_merge($events['years'], $event['years']);
 		}
 
-		return $this->writer->calendar(
-			calendarName: $scope['name'],
-			timeZone: $timeZone,
-			componentLines: $lines,
-			fromYear: min($years),
-			toYear: max($years)
-		);
-	}//end renderAsCurrentUser()
+		return $events;
+	}//end objectEvents()
 
 	/**
 	 * Resolve what a token covers: one schema, or one saved view.
@@ -201,7 +234,7 @@ class ObjectCalendarFeedService {
 
 		try {
 			if ($token->getScopeType() === CalendarFeedToken::SCOPE_VIEW) {
-				$view = $this->views->find($scopeId);
+				$view = $this->sources->views->find($scopeId);
 				return [
 					'name' => $this->displayName(candidate: (string)$view->getName()),
 					'schemaId' => null,
@@ -209,7 +242,7 @@ class ObjectCalendarFeedService {
 				];
 			}
 
-			$schema = $this->schemas->find($scopeId);
+			$schema = $this->sources->schemas->find($scopeId);
 			return [
 				'name' => $this->displayName(candidate: (string)$schema->getTitle()),
 				'schemaId' => (string)$schema->getId(),
@@ -266,7 +299,7 @@ class ObjectCalendarFeedService {
 			$query['@self'] = ['schema' => $scope['schemaId']];
 		}
 
-		$results = $this->objects->searchObjects(
+		$results = $this->sources->objects->searchObjects(
 			query: $query,
 			_rbac: true,
 			_multitenancy: true,
@@ -318,7 +351,7 @@ class ObjectCalendarFeedService {
 		$this->declarationCache[$schemaId] = [];
 
 		try {
-			$schema = $this->schemas->find($schemaId);
+			$schema = $this->sources->schemas->find($schemaId);
 			$this->declarationCache[$schemaId] = $this->declarationsOn(schema: $schema);
 		} catch (Throwable $failure) {
 			$this->logger->warning(
@@ -362,7 +395,7 @@ class ObjectCalendarFeedService {
 	 */
 	private function tenantTimeZone(): DateTimeZone {
 		try {
-			return $this->dateTimeZone->getTimeZone();
+			return $this->rendering->dateTimeZone->getTimeZone();
 		} catch (Throwable $failure) {
 			unset($failure);
 			return new DateTimeZone('UTC');

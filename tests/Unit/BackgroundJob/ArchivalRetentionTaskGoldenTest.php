@@ -31,6 +31,8 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\OpenRegister\BackgroundJob\Support\ArchivalRetentionSources;
+use OCA\OpenRegister\BackgroundJob\Support\ArchivalRetentionPlatform;
 
 /**
  * Golden test for ArchivalRetentionTask::run().
@@ -104,14 +106,8 @@ class ArchivalRetentionTaskGoldenTest extends TestCase
     {
         $task = new ArchivalRetentionTask(
             $this->createMock(ITimeFactory::class),
-            $this->db($case),
-            $this->registers($case),
-            $this->schemas($case),
-            $this->magic($case),
-            $this->objects(),
-            $this->holds(),
-            $this->container($case),
-            $this->logger()
+            new ArchivalRetentionSources($this->db($case), $this->registers($case), $this->schemas($case), $this->magic($case)),
+            new ArchivalRetentionPlatform($this->objects(), $this->holds(), $this->container($case), $this->logger())
         );
         $run = new ReflectionMethod($task, 'run');
         $run->invoke($task, null);

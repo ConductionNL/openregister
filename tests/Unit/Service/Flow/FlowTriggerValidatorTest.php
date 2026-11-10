@@ -255,13 +255,16 @@ class FlowTriggerValidatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAcceptedTriggerIsNotRefused(): void {
-		$this->givenTriggerNode('openregister.trigger-schedule');
+		$asked = $this->givenRecordingTriggerNode('openregister.trigger-schedule');
 
-		$this->validator()->validate(
+		$refusal = $this->refusalOf(
+			$this->validator(),
 			$this->flowWith([['id' => 'start', 'type' => 'openregister.trigger-schedule', 'config' => ['cron' => '*/5 * * * *']]])
 		);
 
-		$this->addToAssertionCount(1);
+		// Pair: testATriggersRefusalPropagates, same node refusing its config.
+		$this->assertNull($refusal);
+		$this->assertSame(['*/5 * * * *'], array_column($asked->getArrayCopy(), 'cron'), 'the trigger was not asked about its config');
 	}
 
 	/**
@@ -297,13 +300,16 @@ class FlowTriggerValidatorTest extends TestCase {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAStepNodeIsNotAsked(): void {
+		// The step double throws if validateConfig() is called, so no refusal
+		// means it was not asked. Pair: testATriggersRefusalPropagates.
 		$this->givenStepNode('openregister.set-fields');
 
-		$this->validator()->validate(
+		$refusal = $this->refusalOf(
+			$this->validator(),
 			$this->flowWith([['id' => 'step', 'type' => 'openregister.set-fields', 'config' => []]])
 		);
 
-		$this->addToAssertionCount(1);
+		$this->assertNull($refusal, 'a step node was asked to validate its config');
 	}
 
 	/**
@@ -317,11 +323,12 @@ class FlowTriggerValidatorTest extends TestCase {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAnUnknownNodeTypeIsSkipped(): void {
-		$this->validator()->validate(
+		$refusal = $this->refusalOf(
+			$this->validator(),
 			$this->flowWith([['id' => 'x', 'type' => 'someleafapp.exotic-trigger', 'config' => []]])
 		);
 
-		$this->addToAssertionCount(1);
+		$this->assertNull($refusal, 'an unknown node type refused the save');
 	}
 
 	/**
@@ -336,11 +343,13 @@ class FlowTriggerValidatorTest extends TestCase {
 	public function testAnUnavailableRegistryDoesNotRefuseTheSave(): void {
 		$this->givenTriggerNode('openregister.trigger-schedule', 'would refuse');
 
-		$this->validator(registryResolves: false)->validate(
+		$refusal = $this->refusalOf(
+			$this->validator(registryResolves: false),
 			$this->flowWith([['id' => 'start', 'type' => 'openregister.trigger-schedule', 'config' => []]])
 		);
 
-		$this->addToAssertionCount(1);
+		// Pair: testATriggersRefusalPropagates, the same refusing node with a registry.
+		$this->assertNull($refusal, 'an unavailable registry refused the save');
 	}
 
 	/**
@@ -353,9 +362,10 @@ class FlowTriggerValidatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testMalformedNodesAreSteppedOver(): void {
-		$this->givenTriggerNode('openregister.trigger-schedule');
+		$asked = $this->givenRecordingTriggerNode('openregister.trigger-schedule');
 
-		$this->validator()->validate(
+		$refusal = $this->refusalOf(
+			$this->validator(),
 			$this->flowWith(
 				[
 					'not-an-array',
@@ -366,7 +376,10 @@ class FlowTriggerValidatorTest extends TestCase {
 			)
 		);
 
-		$this->addToAssertionCount(1);
+		// The malformed entries are stepped over AND the well-formed trigger
+		// after them is still validated.
+		$this->assertNull($refusal);
+		$this->assertSame(['*/5 * * * *'], array_column($asked->getArrayCopy(), 'cron'));
 	}
 
 	/**
@@ -395,9 +408,79 @@ class FlowTriggerValidatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnEmptyFlowIsAccepted(): void {
-		$this->validator()->validate($this->flowWith([]));
+		$flow = $this->flowWith([]);
 
-		$this->addToAssertionCount(1);
+		$refusal = $this->refusalOf($this->validator(), $flow);
+
+		// Pair: testATriggersRefusalPropagates, one refusing trigger node.
+		$this->assertNull($refusal);
+		$this->assertSame([], $flow->getNodes(), 'validating an empty flow invented nodes');
+	}
+
+	/**
+	 * Validate a flow and return the refusal, or null when the save may go on.
+	 *
+	 * @param FlowTriggerValidator $validator The validator.
+	 * @param Flow                 $flow      The flow.
+	 *
+	 * @return InvalidArgumentException|null The refusal.
+	 */
+	private function refusalOf(FlowTriggerValidator $validator, Flow $flow): ?InvalidArgumentException {
+		try {
+			$validator->validate($flow);
+		} catch (InvalidArgumentException $refusal) {
+			return $refusal;
+		}
+
+		return null;
+	}
+
+	/**
+	 * Register an accepting trigger node double that records every config it is asked about.
+	 *
+	 * @param string $type The node type id.
+	 *
+	 * @return \ArrayObject<int, array> The configs, in the order asked.
+	 */
+	private function givenRecordingTriggerNode(string $type): \ArrayObject {
+		$asked = new \ArrayObject();
+		$this->nodes[$type] = new class($asked) implements IFlowNode, IFlowTriggerNode {
+			/**
+			 * @param \ArrayObject<int, array> $asked The log.
+			 */
+			public function __construct(private readonly \ArrayObject $asked) {
+			}
+
+			public function getId(): string {
+				return 'recording';
+			}
+
+			public function getDisplayName(): string {
+				return 'Recording';
+			}
+
+			public function getDescription(): string {
+				return 'A trigger node double that records its configs.';
+			}
+
+			public function getIcon(): string {
+				return '/icon.svg';
+			}
+
+			public function isAvailableForScope(int $scope): bool {
+				return true;
+			}
+
+			public function validateConfig(array $config): void {
+				$this->asked->append($config);
+			}
+
+			public function execute(array $items, array $config, array $context): array {
+				return $items;
+			}
+		};
+
+		return $asked;
 	}
 
 	/**

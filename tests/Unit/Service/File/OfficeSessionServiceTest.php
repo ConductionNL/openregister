@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use OCA\OpenRegister\Exception\OfficeOpenRefusedException;
 use OCA\OpenRegister\Files\Service\File\OfficeSessionService;
+use OCA\OpenRegister\Files\Service\File\OfficeSessionSettings;
 use OCP\App\IAppManager;
 use OCP\Files\File;
 use OCP\IAppConfig;
@@ -102,7 +103,15 @@ class OfficeSessionServiceTest extends TestCase {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueString')->willReturn('');
 
-		return new OfficeSessionService($apps, $container, $urls, $config, $appConfig);
+		return new OfficeSessionService(
+			appManager: $apps,
+			container: $container,
+			urlGenerator: $urls,
+			settings: new OfficeSessionSettings(
+				config: $config,
+				appConfig: $appConfig
+			)
+		);
 	}//end service()
 
 	private function file(): File {

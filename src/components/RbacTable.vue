@@ -284,12 +284,13 @@ export default {
 		},
 
 		/**
-		 * Check if any permissions are set for this entity type
+		 * The permissions of this entity type: the nested entry for an
+		 * organisation, the flat authorization for an application.
 		 *
-		 * @return {boolean} True if permissions are set
-		 * @spec exclude computed read of authorization prop presence, RBAC contract owned by rbac capability
+		 * @return {object} Group lists by action
+		 * @spec exclude computed read of the entity's authorization slice, RBAC contract owned by rbac capability
 		 */
-		hasAnyPermissions() {
+		entityAuth() {
 			// For applications, authorization is flat (just {create: [], read: [], ...})
 			// For organisations, authorization is nested ({register: {create: [], ...}, ...})
 			let entityAuth
@@ -305,7 +306,17 @@ export default {
 			} else {
 				entityAuth = {}
 			}
+			return entityAuth
+		},
 
+		/**
+		 * Check if any permissions are set for this entity type
+		 *
+		 * @return {boolean} True if permissions are set
+		 * @spec exclude computed read of authorization prop presence, RBAC contract owned by rbac capability
+		 */
+		hasAnyPermissions() {
+			const entityAuth = this.entityAuth
 			return Object.keys(entityAuth).some(
 				(action) =>
 					Array.isArray(entityAuth[action])
@@ -333,22 +344,7 @@ export default {
 		 * @spec exclude permission-check read helper, RBAC contract owned by rbac capability
 		 */
 		hasPermission(groupId, action) {
-			// For applications, authorization is flat (just {create: [], read: [], ...})
-			// For organisations, authorization is nested ({register: {create: [], ...}, ...})
-			let entityAuth
-			if (this.authorization[this.entityType]) {
-				// Nested structure (organisations)
-				entityAuth = this.authorization[this.entityType]
-			} else if (
-				this.entityType === 'application'
-				&& this.authorization.create !== undefined
-			) {
-				// Flat structure (applications)
-				entityAuth = this.authorization
-			} else {
-				entityAuth = {}
-			}
-
+			const entityAuth = this.entityAuth
 			if (!entityAuth[action] || !Array.isArray(entityAuth[action])) {
 				return false
 			}

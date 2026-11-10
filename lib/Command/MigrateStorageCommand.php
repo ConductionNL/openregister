@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\MigrationService;
+use OCA\OpenRegister\Service\MigrationServiceInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -42,12 +42,12 @@ class MigrateStorageCommand extends Command {
 	/**
 	 * Constructor for MigrateStorageCommand.
 	 *
-	 * @param MigrationService $migrationService Migration service instance.
+	 * @param MigrationServiceInterface $migrationService Migration service instance.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly MigrationService $migrationService,
+		private readonly MigrationServiceInterface $migrationService,
 	) {
 		parent::__construct();
 	}//end __construct()

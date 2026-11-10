@@ -143,7 +143,7 @@ class ObjectRetentionHandlerGoldenTest extends TestCase {
 			}
 		);
 
-		$handler = new ObjectRetentionHandler($appConfig, 'openregister', $recorder);
+		$handler = new ObjectRetentionHandler($appConfig, $recorder);
 
 		try {
 			if ($argument === null) {

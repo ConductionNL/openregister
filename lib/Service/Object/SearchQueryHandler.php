@@ -30,9 +30,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Exception\RegisterNotFoundException;
-use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
@@ -70,6 +69,23 @@ class SearchQueryHandler {
 	 * @var string
 	 */
 	private const NO_WATCHED_OBJECTS = '__no-watched-objects__';
+
+	/**
+	 * The parameters that filter on an object's metadata, moved into `@self`.
+	 *
+	 * @var array<int, string>
+	 */
+	private const METADATA_FIELDS = [
+		'register',
+		'schema',
+		'uuid',
+		'organisation',
+		'owner',
+		'application',
+		'created',
+		'updated',
+		'deleted',
+	];
 
 	/**
 	 * The id an `_unread=true` query falls back to when there is no caller.
@@ -248,6 +264,10 @@ class SearchQueryHandler {
 	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
 	 */
 	private function applyUnreadLens(array $query): array {
+		// Never trust a resolved key from the outside: a caller must not hand
+		// in somebody else's uid.
+		unset($query['_unreadFor']);
+
 		if (array_key_exists('_unread', $query) === false) {
 			return $query;
 		}
@@ -380,14 +400,23 @@ class SearchQueryHandler {
 			return false;
 		}
 
-		try {
-			$entity = $this->schemaMapper->find(id: $schema, _rbac: false, _multitenancy: false);
-		} catch (\Throwable $e) {
-			return false;
-		}
-
-		return ($entity->getObjectSource() !== null);
+		return ($this->schemaOrNull(reference: $schema)?->getObjectSource() !== null);
 	}//end schemaHasObjectSource()
+
+	/**
+	 * Read one schema, answering null when it cannot be read.
+	 *
+	 * @param mixed $reference The schema reference, as a schema list may hold it.
+	 *
+	 * @return Schema|null The schema.
+	 */
+	private function schemaOrNull(mixed $reference): ?Schema {
+		try {
+			return $this->schemaMapper->find(id: $reference, _rbac: false, _multitenancy: false);
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end schemaOrNull()
 
 	/**
 	 * Whether the target schema declares a property literally named `filter`.
@@ -408,139 +437,15 @@ class SearchQueryHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-both-filter-spellings-mean-the-same-filter-on-object-search-and-the-aggregations
 	 */
 	private function schemaDeclaresFilterProperty(int|string|array|null $schema): bool {
-		if ($schema === null) {
-			return false;
-		}
-
-		$schemaRefs = [$schema];
-		if (is_array($schema) === true) {
-			$schemaRefs = $schema;
-		}
-
-		foreach ($schemaRefs as $schemaRef) {
-			try {
-				$entity = $this->schemaMapper->find(id: $schemaRef, _rbac: false, _multitenancy: false);
-			} catch (\Throwable $e) {
-				continue;
-			}
-
-			if (array_key_exists(FilterParams::FILTER_KEY, ($entity->getProperties() ?? [])) === true) {
+		foreach ((array)$schema as $schemaRef) {
+			$properties = ($this->schemaOrNull(reference: $schemaRef)?->getProperties() ?? []);
+			if (array_key_exists(FilterParams::FILTER_KEY, $properties) === true) {
 				return true;
 			}
 		}
 
 		return false;
 	}//end schemaDeclaresFilterProperty()
-
-	/**
-	 * Resolve a register or schema reference for the query being built.
-	 *
-	 * Delegates to {@see SearchReferenceResolver} when the container wired one.
-	 * Without it — a handler built positionally in a unit test — the reference
-	 * is still never int-cast into an empty page: what can be read as an id is
-	 * read as one, what says nothing becomes `null` (which reaches the global
-	 * fallbacks), and everything else is refused by name. That is the whole
-	 * point of openregister#3990: a reference nobody can resolve must not look
-	 * like a register with no objects in it.
-	 *
-	 * @param int|string|array|null $reference The register/schema id, uuid, slug, or a list.
-	 * @param string $kind Either `register` or `schema`.
-	 *
-	 * @return int|array|null The numeric id(s), or null when the reference says nothing.
-	 *
-	 * @psalm-return int|array<int, int>|null
-	 *
-	 * @throws \OCA\OpenRegister\Exception\RegisterNotFoundException When a register reference names no register.
-	 * @throws \OCA\OpenRegister\Exception\SchemaNotFoundException When a schema reference names no schema.
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md
-	 */
-	private function resolveReference(int|string|array|null $reference, string $kind): int|array|null {
-		if ($reference === null) {
-			return null;
-		}
-
-		if ($this->referenceResolver !== null) {
-			if ($kind === 'register') {
-				return $this->referenceResolver->register(reference: $reference);
-			}
-
-			return $this->referenceResolver->schema(reference: $reference);
-		}
-
-		if (is_array($reference) === true) {
-			return $this->readReferenceList(references: $reference, kind: $kind);
-		}
-
-		return $this->readReference(reference: $reference, kind: $kind);
-	}//end resolveReference()
-
-	/**
-	 * Read a list of references without a resolver.
-	 *
-	 * @param array<int|string, mixed> $references The references.
-	 * @param string $kind Either `register` or `schema`.
-	 *
-	 * @return array<int, int> The ids the list names.
-	 *
-	 * @throws \OCA\OpenRegister\Exception\RegisterNotFoundException When a register reference names no register.
-	 * @throws \OCA\OpenRegister\Exception\SchemaNotFoundException When a schema reference names no schema.
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md
-	 */
-	private function readReferenceList(array $references, string $kind): array {
-		$ids = [];
-		foreach ($references as $item) {
-			if (is_int($item) === false && is_string($item) === false) {
-				continue;
-			}
-
-			$id = $this->readReference(reference: $item, kind: $kind);
-			if ($id !== null) {
-				$ids[] = $id;
-			}
-		}
-
-		return $ids;
-	}//end readReferenceList()
-
-	/**
-	 * Read one reference without a resolver.
-	 *
-	 * Only what can be read as an id is read as one. Nothing is int-cast into
-	 * an empty page, and nothing is resolved either, because there is no mapper
-	 * here to ask.
-	 *
-	 * @param int|string $reference The id, uuid or slug.
-	 * @param string $kind Either `register` or `schema`.
-	 *
-	 * @return int|null The id, or null when the reference says nothing.
-	 *
-	 * @throws \OCA\OpenRegister\Exception\RegisterNotFoundException When a register reference names no register.
-	 * @throws \OCA\OpenRegister\Exception\SchemaNotFoundException When a schema reference names no schema.
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md
-	 */
-	private function readReference(int|string $reference, string $kind): ?int {
-		if (is_int($reference) === true && $reference > 0) {
-			return $reference;
-		}
-
-		$trimmed = trim((string)$reference);
-		if ($trimmed === '') {
-			return null;
-		}
-
-		if (ctype_digit($trimmed) === true && (int)$trimmed > 0) {
-			return (int)$trimmed;
-		}
-
-		if ($kind === 'register') {
-			throw new RegisterNotFoundException(registerSlugOrId: $trimmed);
-		}
-
-		throw new SchemaNotFoundException(schemaSlugOrId: $trimmed);
-	}//end readReference()
 
 	/**
 	 * Build search query from request parameters
@@ -566,49 +471,71 @@ class SearchQueryHandler {
 		int|string|array|null $schema = null,
 		?array $ids = null,
 	): array {
-		$params = $this->filterableParams(
-			params: $this->liftBracketFilterUnlessDeclared(
-				params: $this->restoreDottedParams(requestParams: $requestParams, schema: $schema),
-				schema: $schema
-			)
-		);
-
-		$parts = $this->splitSearchParams(
-			params: $params,
-			self: $this->scopeFilters(register: $register, schema: $schema)
-		);
-
-		// STEP 2b: expand a branch filter into the concepts it stands for.
-		// `?categorie[branch]=<uri>` becomes `categorie` IN (the branch root
-		// plus every narrower concept under it), walked at query time and
-		// bounded by depth, so moving a concept in the scheme changes what the
-		// filter matches with no reindex anywhere.
-		$objectFilters = $parts->objectFilters;
-		if ($this->codedFilters !== null) {
-			$objectFilters = $this->codedFilters->expand(filters: $objectFilters, schemaRef: $schema);
-		}
-
-		$query = array_merge(['@self' => $parts->self], $objectFilters);
+		$params = $this->searchableParams(requestParams: $requestParams, schema: $schema);
+		$scope = (new SearchScopeFilters(resolver: $this->referenceResolver))->forScope(register: $register, schema: $schema);
+		$parts = $this->splitSearchParams(params: $params, self: $scope);
+		$query = array_merge(['@self' => $parts->self], $this->expandedFilters(filters: $parts->objectFilters, schema: $schema));
 
 		if ($ids !== null) {
 			$query['_ids'] = $ids;
 		}
 
-		$query = $this->mergeSpecialParams(query: $query, special: $parts->special);
-
-		// The `_watching=true` lens, applied AFTER `_ids` is normalised to an
-		// array so the two can intersect rather than fight.
-		$query = $this->applyWatchingLens(query: $query);
-
-		// The `_unread=true` lens, after the watching lens so that "unread among
-		// what I follow" narrows twice rather than one overwriting the other.
-		$query = $this->applyUnreadLens(query: $query);
-
-		// The `_favourite=true` and `_recent=true` lenses, last, so that every
-		// earlier lens has already narrowed `_ids` and these two compose with it
-		// rather than replacing it.
-		return $this->applyPersonalLenses(query: $query);
+		return $this->applyLenses(query: $this->mergeSpecialParams(query: $query, special: $parts->special));
 	}//end buildSearchQuery()
+
+	/**
+	 * The request parameters a search can filter on, under their real names.
+	 *
+	 * @param array                 $requestParams The request parameters.
+	 * @param int|string|array|null $schema        The schema, or schemas, searched.
+	 *
+	 * @return array The parameters.
+	 */
+	private function searchableParams(array $requestParams, int|string|array|null $schema): array {
+		return $this->filterableParams(
+			params: $this->liftBracketFilterUnlessDeclared(
+				params: $this->restoreDottedParams(requestParams: $requestParams, schema: $schema),
+				schema: $schema
+			)
+		);
+	}//end searchableParams()
+
+	/**
+	 * Expand a branch filter into the concepts it stands for.
+	 *
+	 * `?categorie[branch]=<uri>` becomes `categorie` IN (the branch root plus
+	 * every narrower concept under it), walked at query time and bounded by
+	 * depth, so moving a concept in the scheme changes what the filter matches
+	 * with no reindex anywhere.
+	 *
+	 * @param array                 $filters The object filters.
+	 * @param int|string|array|null $schema  The schema, or schemas, searched.
+	 *
+	 * @return array The filters.
+	 */
+	private function expandedFilters(array $filters, int|string|array|null $schema): array {
+		if ($this->codedFilters === null) {
+			return $filters;
+		}
+
+		return $this->codedFilters->expand(filters: $filters, schemaRef: $schema);
+	}//end expandedFilters()
+
+	/**
+	 * Apply the lenses, in the order that lets them narrow each other.
+	 *
+	 * The watching lens comes after `_ids` is normalised to an array, so the
+	 * two intersect. The unread lens comes next, so "unread among what I follow"
+	 * narrows twice. The personal lenses come last, so they compose with every
+	 * earlier narrowing of `_ids` rather than replacing it.
+	 *
+	 * @param array $query The query.
+	 *
+	 * @return array The query.
+	 */
+	private function applyLenses(array $query): array {
+		return $this->applyPersonalLenses(query: $this->applyUnreadLens(query: $this->applyWatchingLens(query: $query)));
+	}//end applyLenses()
 
 	/**
 	 * Undo PHP's dot-to-underscore mangling of parameter names (`@self_register` back to `@self.register`).
@@ -625,18 +552,11 @@ class SearchQueryHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function restoreDottedParams(array $requestParams, int|string|array|null $schema): array {
-		$isObjectSourceSchema = $this->schemaHasObjectSource(schema: $schema);
+		$keepsUnderscores = $this->schemaHasObjectSource(schema: $schema);
 
 		$tree = new DottedParamTree();
 		foreach ($requestParams as $key => $value) {
-			if (str_starts_with(haystack: $key, needle: '_') === true) {
-				$tree->set(key: $key, value: $value);
-				continue;
-			}
-
-			if (str_contains($key, '_') === true
-				&& ($isObjectSourceSchema === false || str_starts_with(haystack: $key, needle: '@') === true)
-			) {
+			if ($this->nestsAtUnderscores(key: $key, keepsUnderscores: $keepsUnderscores) === true) {
 				$tree->nest(key: $key, value: $value);
 				continue;
 			}
@@ -646,6 +566,22 @@ class SearchQueryHandler {
 
 		return $tree->params;
 	}//end restoreDottedParams()
+
+	/**
+	 * Whether the underscores in a parameter name stand for dots PHP mangled.
+	 *
+	 * @param string $key              The parameter name.
+	 * @param bool   $keepsUnderscores Whether the schema's columns are flat snake_case.
+	 *
+	 * @return bool True when the name nests.
+	 */
+	private function nestsAtUnderscores(string $key, bool $keepsUnderscores): bool {
+		if (str_starts_with(haystack: $key, needle: '_') === true || str_contains($key, '_') === false) {
+			return false;
+		}
+
+		return ($keepsUnderscores === false || str_starts_with(haystack: $key, needle: '@') === true);
+	}//end nestsAtUnderscores()
 
 	/**
 	 * Read the bracket spelling `filter[x]=v` as `x=v`, as the aggregation endpoints do (openregister#3611).
@@ -688,38 +624,6 @@ class SearchQueryHandler {
 	}//end filterableParams()
 
 	/**
-	 * The `@self` register and schema filters of the call, single values or lists.
-	 *
-	 * A reference is resolved the way the write path resolves it, and refused the way the write
-	 * path refuses it; an int cast turned a slug into register 0 and an empty page
-	 * (openregister#3990).
-	 *
-	 * @param int|string|array|null $register The register reference.
-	 * @param int|string|array|null $schema   The schema reference.
-	 *
-	 * @return array<string, mixed> The `@self` filters.
-	 *
-	 * @throws RegisterNotFoundException When the register reference cannot be read.
-	 * @throws SchemaNotFoundException When the schema reference cannot be read.
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md
-	 */
-	private function scopeFilters(int|string|array|null $register, int|string|array|null $schema): array {
-		$self = [];
-		$registerId = $this->resolveReference(reference: $register, kind: 'register');
-		if ($registerId !== null) {
-			$self['register'] = $registerId;
-		}
-
-		$schemaId = $this->resolveReference(reference: $schema, kind: 'schema');
-		if ($schemaId !== null) {
-			$self['schema'] = $schemaId;
-		}
-
-		return $self;
-	}//end scopeFilters()
-
-	/**
 	 * Sort the parameters into `@self` metadata filters, underscore parameters and object field filters.
 	 *
 	 * A metadata parameter never overrides the call's own register or schema. An underscore
@@ -733,35 +637,13 @@ class SearchQueryHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function splitSearchParams(array $params, array $self): SearchQueryParts {
-		$metadataFields = [
-			'register',
-			'schema',
-			'uuid',
-			'organisation',
-			'owner',
-			'application',
-			'created',
-			'updated',
-			'deleted',
-		];
-		$specialParams = [];
-		$objectFilters = [];
+		$metadata = array_flip(self::METADATA_FIELDS);
 
-		foreach ($params as $key => $value) {
-			if (str_starts_with(haystack: $key, needle: '_') === true) {
-				$specialParams[$key] = $value;
-			} elseif (in_array(needle: $key, haystack: $metadataFields) === true) {
-				if (isset($self[$key]) === false) {
-					$self[$key] = $value;
-				}
-
-				continue;
-			}
-
-			$objectFilters[$key] = $value;
-		}
-
-		return new SearchQueryParts(self: $self, special: $specialParams, objectFilters: $objectFilters);
+		return new SearchQueryParts(
+			self: ($self + array_intersect_key($params, $metadata)),
+			special: array_filter($params, static fn (string $key): bool => str_starts_with($key, '_'), ARRAY_FILTER_USE_KEY),
+			objectFilters: array_diff_key($params, $metadata)
+		);
 	}//end splitSearchParams()
 
 	/**
@@ -812,11 +694,11 @@ class SearchQueryHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function applyViewsToQuery(array $query, array $viewIds, bool $_viewScopeRequired = false): array {
-		return $this->viewScope->apply(
-			query: $query,
-			viewIds: $viewIds,
-			_viewScopeRequired: $_viewScopeRequired
-		);
+		if ($_viewScopeRequired === true) {
+			return $this->viewScope->applyRequired(query: $query, viewIds: $viewIds);
+		}
+
+		return $this->viewScope->apply(query: $query, viewIds: $viewIds);
 	}//end applyViewsToQuery()
 
 	/**

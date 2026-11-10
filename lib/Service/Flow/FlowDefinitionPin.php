@@ -38,7 +38,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use OCA\OpenRegister\Db\FlowDefinitionMapper;
+use OCA\OpenRegister\Db\FlowDefinition;
+use OCA\OpenRegister\Db\FlowDefinitionMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -47,7 +48,7 @@ use Throwable;
  *
  * @spec openspec/specs/flow-definition-versioning/spec.md
  */
-class FlowDefinitionPin {
+class FlowDefinitionPin implements FlowDefinitionPinInterface {
 	/**
 	 * The graph keys that are pinned.
 	 *
@@ -63,11 +64,11 @@ class FlowDefinitionPin {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowDefinitionMapper $mapper Stores and reads pinned definitions.
+	 * @param FlowDefinitionMapperInterface $mapper Stores and reads pinned definitions.
 	 * @param LoggerInterface      $logger Records pins that could not be taken.
 	 */
 	public function __construct(
-		private readonly FlowDefinitionMapper $mapper,
+		private readonly FlowDefinitionMapperInterface $mapper,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -103,7 +104,6 @@ class FlowDefinitionPin {
 		}
 
 		return ['hash' => hash('sha256', $json), 'json' => $json];
-
 	}//end canonicalise()
 
 	/**
@@ -131,27 +131,53 @@ class FlowDefinitionPin {
 			return null;
 		}
 
+		if ($this->store(canonical: $canonical, flowId: $flowId) === false) {
+			return null;
+		}
+
+		return $canonical['hash'];
+	}//end pin()
+
+	/**
+	 * Store a canonical definition, reporting whether a row now holds it.
+	 *
+	 * A storage failure is logged and answered with false, never thrown: see {@see self::pin()}.
+	 *
+	 * @param array{hash: string, json: string} $canonical The canonical form.
+	 * @param string                            $flowId    The flow uuid, for provenance.
+	 *
+	 * @return bool True when the definition is stored.
+	 */
+	private function store(array $canonical, string $flowId): bool {
 		try {
-			$stored = $this->mapper->store(
-				hash: $canonical['hash'],
-				definition: $canonical['json'],
-				flowUuid: $flowId
-			);
+			$stored = $this->mapper->store(definition: self::definitionOf(canonical: $canonical, flowId: $flowId));
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'[FlowDefinitionPin] Could not store the definition for flow "' . $flowId
 				. '"; the run will be unpinned: ' . $e->getMessage()
 			);
-			return null;
+			return false;
 		}
 
-		if ($stored === null) {
-			return null;
-		}
+		return $stored !== null;
+	}//end store()
 
-		return $canonical['hash'];
+	/**
+	 * The definition row a canonical form is stored as.
+	 *
+	 * @param array{hash: string, json: string} $canonical The canonical form.
+	 * @param string                            $flowId    The flow uuid, for provenance.
+	 *
+	 * @return FlowDefinition The unsaved row.
+	 */
+	private static function definitionOf(array $canonical, string $flowId): FlowDefinition {
+		$definition = new FlowDefinition();
+		$definition->setHash($canonical['hash']);
+		$definition->setDefinition($canonical['json']);
+		$definition->setFlowUuid($flowId);
 
-	}//end pin()
+		return $definition;
+	}//end definitionOf()
 
 	/**
 	 * The graph a hash names, or null when it is not there.
@@ -175,6 +201,24 @@ class FlowDefinitionPin {
 			return null;
 		}
 
+		$pinned = $this->find(hash: $hash);
+		if ($pinned === null) {
+			return null;
+		}
+
+		return $this->readable(pinned: $pinned, hash: $hash);
+	}//end graphFor()
+
+	/**
+	 * The stored definition row for a hash, logging when there is none.
+	 *
+	 * A lookup that fails is treated as a missing row.
+	 *
+	 * @param string $hash The definition hash.
+	 *
+	 * @return FlowDefinition|null The row, or null.
+	 */
+	private function find(string $hash): ?FlowDefinition {
 		try {
 			$pinned = $this->mapper->findByHash($hash);
 		} catch (Throwable $e) {
@@ -185,9 +229,20 @@ class FlowDefinitionPin {
 			$this->logger->warning(
 				'[FlowDefinitionPin] Definition "' . $hash . '" is missing.'
 			);
-			return null;
 		}
 
+		return $pinned;
+	}//end find()
+
+	/**
+	 * A stored row's graph, or null (logged) when it does not decode.
+	 *
+	 * @param FlowDefinition $pinned The stored row.
+	 * @param string         $hash   The definition hash, for the log line.
+	 *
+	 * @return array<string, mixed>|null The graph, or null.
+	 */
+	private function readable(FlowDefinition $pinned, string $hash): ?array {
 		$decoded = $pinned->decoded();
 		if ($decoded === []) {
 			$this->logger->warning(
@@ -197,11 +252,15 @@ class FlowDefinitionPin {
 		}
 
 		return $decoded;
-
-	}//end graphFor()
+	}//end readable()
 
 	/**
 	 * Sort an array recursively by key, in place.
+	 *
+	 * LISTS KEEP THEIR ORDER. `nodes` and `edges` are lists, and their order
+	 * can carry meaning; ksort on a list would renumber nothing but would still
+	 * be wrong the day a caller relies on position. Only associative arrays
+	 * are sorted.
 	 *
 	 * @param array<string, mixed> $value The array to sort.
 	 *
@@ -218,13 +277,8 @@ class FlowDefinitionPin {
 
 		unset($item);
 
-		// LISTS KEEP THEIR ORDER. `nodes` and `edges` are lists, and their
-		// order can carry meaning; ksort on a list would renumber nothing but
-		// would still be wrong the day a caller relies on position. Only
-		// associative arrays are sorted.
 		if (array_is_list($value) === false) {
 			ksort($value);
 		}
-
 	}//end sortRecursive()
 }//end class

@@ -35,12 +35,15 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Service\SchemaDeletionService;
 use OCA\OpenRegister\Service\SchemaTeardownOverride;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use RuntimeException;
 use Symfony\Component\Console\Tester\CommandTester;
 
 /**
@@ -88,8 +91,7 @@ class PruneRetiredSchemasArchivalTest extends TestCase {
 		$this->deletionService = $this->createMock(SchemaDeletionService::class);
 
 		$this->command = new PruneRetiredSchemasCommand(
-			$this->schemaMapper,
-			$this->registerMapper,
+			new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->magicMapper),
 			$this->deletionService
 		);
 
@@ -421,4 +423,77 @@ class PruneRetiredSchemasArchivalTest extends TestCase {
 		$this->assertStringContainsString('ARCHIVAL RECORDS', $display);
 
 	}//end testDryRunNamesTheArchivalRecordsWithoutDeleting()
+
+	/**
+	 * A teardown refused at the last moment leaves the register's schema list alone.
+	 *
+	 * The command's own check saw nothing kept, then a row froze: the service refuses,
+	 * and the schema must still be reachable through its registers.
+	 *
+	 * @return void
+	 */
+	public function testARefusedTeardownLeavesTheRegisterLinked(): void {
+		$this->stubOneRetiredSchema(archival: false);
+
+		$this->deletionService->method('cascadeDeleteSchema')
+			->willThrowException(new ObjectStateWriteException(message: 'row froze'));
+		$this->registerMapper->expects($this->never())->method('update');
+
+		$tester = $this->runPrune(['--apply' => true, '--force' => true]);
+
+		$this->assertStringContainsString('FAILED: row froze', $tester->getDisplay());
+		$this->assertStringContainsString('Pruned=0, skipped=1', $tester->getDisplay());
+
+	}//end testARefusedTeardownLeavesTheRegisterLinked()
+
+	/**
+	 * The register loses the schema after the teardown, with the other ids kept.
+	 *
+	 * @return void
+	 */
+	public function testTheRegisterIsUnlinkedAfterTheTeardown(): void {
+		$this->stubOneRetiredSchema(archival: false);
+		$order = [];
+
+		$this->deletionService->method('cascadeDeleteSchema')->willReturnCallback(
+			static function () use (&$order): array {
+				$order[] = 'teardown';
+				return ['deletedCount' => 2, 'tableDropped' => true];
+			}
+		);
+		$this->registerMapper->expects($this->once())->method('update')->willReturnCallback(
+			static function (Register $register) use (&$order): Register {
+				$order[] = 'unlink:' . json_encode($register->getSchemas());
+				return $register;
+			}
+		);
+
+		$tester = $this->runPrune(['--apply' => true, '--force' => true]);
+
+		$this->assertSame(['teardown', 'unlink:[]'], $order);
+		$this->assertStringContainsString('unlinked from register id=7 (archival-rig)', $tester->getDisplay());
+
+	}//end testTheRegisterIsUnlinkedAfterTheTeardown()
+
+	/**
+	 * A register that cannot be updated is named, and the run goes on to the next row.
+	 *
+	 * @return void
+	 */
+	public function testAFailedUnlinkIsReportedAndTheRunContinues(): void {
+		$this->stubTwoRetiredSchemas();
+
+		$this->deletionService->method('cascadeDeleteSchema')
+			->willReturn(['deletedCount' => 0, 'tableDropped' => true]);
+		$this->registerMapper->method('update')->willThrowException(new RuntimeException('database is gone'));
+
+		$tester = $this->runPrune(['--apply' => true]);
+
+		$this->assertStringContainsString(
+			'NOT UNLINKED: register id=7 (archival-rig) still lists removed schema 42: database is gone',
+			$tester->getDisplay()
+		);
+		$this->assertStringContainsString('Pruned=2', $tester->getDisplay());
+
+	}//end testAFailedUnlinkIsReportedAndTheRunContinues()
 }//end class

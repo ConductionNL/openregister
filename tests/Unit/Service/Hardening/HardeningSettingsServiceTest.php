@@ -21,6 +21,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Hardening;
 
+use OCA\OpenRegister\Service\Hardening\PlatformSecurityReader;
+use OCA\OpenRegister\Service\Hardening\HardeningAuditWriter;
+use OCA\OpenRegister\Service\Hardening\HardeningPosture;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -28,6 +31,7 @@ use OCA\OpenRegister\Service\Hardening\HardeningFloorException;
 use OCA\OpenRegister\Service\Hardening\HardeningFloorGuard;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
 use OCA\OpenRegister\Service\Hardening\HardeningSettingsService;
+use OCA\OpenRegister\Service\Hardening\HardeningSettingsStore;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -100,11 +104,13 @@ class HardeningSettingsServiceTest extends TestCase {
 		$policy = new HardeningPolicy($this->appConfig);
 
 		return new HardeningSettingsService(
-			$policy,
 			new HardeningFloorGuard($policy),
-			$this->appConfig,
-			$this->auditTrailMapper,
-			$this->createMock(LoggerInterface::class),
+			new HardeningPosture(
+				$policy,
+				new HardeningSettingsStore($this->appConfig, $this->auditTrailMapper, $this->createMock(LoggerInterface::class)),
+				$this->createMock(HardeningAuditWriter::class),
+				$this->createMock(PlatformSecurityReader::class)
+			)
 		);
 	}
 

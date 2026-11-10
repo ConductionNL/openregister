@@ -31,6 +31,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\LinkedEntityIntegrations;
+use OCA\OpenRegister\Service\LinkedEntityMappers;
 use OCA\OpenRegister\Service\LinkedEntityService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use PHPUnit\Framework\TestCase;
@@ -74,14 +76,16 @@ class LinkedEntityServiceTest extends TestCase {
 		$this->deepLinkRegistry = $this->createMock(DeepLinkRegistryService::class);
 
 		$this->service = new LinkedEntityService(
-			$this->magicMapper,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->organisationMapper,
-			$this->registry,
-			$this->logger,
-			$this->permissionHandler,
-			$this->deepLinkRegistry
+			new LinkedEntityMappers(
+				new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper),
+				$this->organisationMapper
+			),
+			new LinkedEntityIntegrations(
+				$this->registry,
+				$this->permissionHandler,
+				$this->deepLinkRegistry
+			),
+			$this->logger
 		);
 	}//end setUp()
 

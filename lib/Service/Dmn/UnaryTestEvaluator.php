@@ -92,55 +92,118 @@ class UnaryTestEvaluator {
 	 *                                     cannot be coerced to `$type`.
 	 *
 	 * @spec openspec/changes/shared-decision-table-evaluator/specs/shared-decision-tables/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) — one dispatch per grammar form; splitting hides the grammar
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      — same: the branches are a flat form-dispatch, not nested logic
 	 */
 	public function matches(string $expression, mixed $value, string $type): bool {
+		return $this->matchesValue(expression: $expression, subject: new UnaryTestValue(value: $value, type: $type));
+	}//end matches()
+
+	/**
+	 * Check whether a rule cell expression matches a value under test.
+	 *
+	 * @param string         $expression The raw cell text (e.g. `'[0..25000]'`, `'-'`, `'in (a,b)'`).
+	 * @param UnaryTestValue $subject    The runtime value, already coerced via {@see coerce()}, and its type.
+	 *
+	 * @return bool True when the expression matches the value.
+	 *
+	 * @throws DecisionEvaluationException `invalid_expression` on malformed grammar,
+	 *                                     `type_mismatch` when a literal in the expression
+	 *                                     cannot be coerced to the subject's type.
+	 *
+	 * @spec openspec/changes/shared-decision-table-evaluator/specs/shared-decision-tables/spec.md
+	 */
+	public function matchesValue(string $expression, UnaryTestValue $subject): bool {
 		$trimmed = trim($expression);
 
-		// Explicit quoted literal — bypasses the wildcard shortcut so a rule
-		// author can match the literal string "-" by writing `"-"`.
-		if (strlen($trimmed) >= 2 && $trimmed[0] === '"' && str_ends_with($trimmed, '"') === true) {
-			$literal = $this->unquote(raw: $trimmed);
-			return $this->equals(left: $value, right: $this->coerce(value: $literal, type: $type), type: $type);
+		// A quoted literal bypasses the wildcard, so `"-"` matches the string "-".
+		if ($this->isQuoted(raw: $trimmed) === true) {
+			return $subject->equals(coerced: $this->coerce(value: $this->unquote(raw: $trimmed), type: $subject->type));
 		}
 
 		if ($trimmed === '' || $trimmed === '-') {
 			return true;
 		}
 
-		if (preg_match('/^in\s*\((.*)\)$/is', $trimmed, $setMatch) === 1) {
-			$members = $this->parseSetMembers(inner: $setMatch[1]);
-			foreach ($members as $member) {
-				if ($this->equals(left: $value, right: $this->coerce(value: $member, type: $type), type: $type) === true) {
-					return true;
-				}
-			}
+		return $this->matchesForm(trimmed: $trimmed, subject: $subject);
+	}//end matchesValue()
 
-			return false;
+	/**
+	 * Match a non-wildcard, unquoted cell: a set, a range, a comparison or, failing those,
+	 * a bare literal by plain equality.
+	 *
+	 * @param string         $trimmed The trimmed cell text.
+	 * @param UnaryTestValue $subject The value under test.
+	 *
+	 * @return bool True when the cell matches the value.
+	 *
+	 * @throws DecisionEvaluationException `invalid_expression` or `type_mismatch`, as matches() documents.
+	 */
+	private function matchesForm(string $trimmed, UnaryTestValue $subject): bool {
+		if (preg_match('/^in\s*\((.*)\)$/is', $trimmed, $setMatch) === 1) {
+			return $this->matchesSet(inner: $setMatch[1], subject: $subject);
 		}
 
 		if (preg_match('/^([\[(])\s*(.*?)\s*\.\.\s*(.*?)\s*([\])])$/s', $trimmed, $rangeMatch) === 1) {
-			return $this->matchesRange(match: $rangeMatch, value: $value, type: $type);
+			return $this->matchesRange(match: $rangeMatch, subject: $subject);
 		}
 
+		if ($this->operatorOf(trimmed: $trimmed) !== null) {
+			return $this->matchesComparison(trimmed: $trimmed, subject: $subject);
+		}
+
+		return $subject->equals(coerced: $this->coerce(value: $trimmed, type: $subject->type));
+	}//end matchesForm()
+
+	/**
+	 * Whether any member of an `in (...)` set equals the value.
+	 *
+	 * Members are coerced in order; the first match answers, so a member after
+	 * it is never coerced.
+	 *
+	 * @param string         $inner   The text between the parentheses.
+	 * @param UnaryTestValue $subject The value under test.
+	 *
+	 * @return bool True when a member matches.
+	 *
+	 * @throws DecisionEvaluationException `type_mismatch` when a member before the match cannot be coerced.
+	 */
+	private function matchesSet(string $inner, UnaryTestValue $subject): bool {
+		foreach ($this->parseSetMembers(inner: $inner) as $member) {
+			if ($subject->equals(coerced: $this->coerce(value: $member, type: $subject->type)) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end matchesSet()
+
+	/**
+	 * The comparison operator a cell starts with, two-character operators first.
+	 *
+	 * @param string $trimmed The trimmed cell text.
+	 *
+	 * @return string|null The operator, or null when the cell starts with none.
+	 */
+	private function operatorOf(string $trimmed): ?string {
 		// Two-character operators BEFORE single-character ones (`<=` before `<`).
-		foreach (['<=', '>=', '!='] as $operator) {
+		foreach (['<=', '>=', '!=', '<', '>', '='] as $operator) {
 			if (str_starts_with($trimmed, $operator) === true) {
-				return $this->matchesComparison(operator: $operator, remainder: substr($trimmed, 2), value: $value, type: $type);
+				return $operator;
 			}
 		}
 
-		foreach (['<', '>', '='] as $operator) {
-			if (str_starts_with($trimmed, $operator) === true) {
-				return $this->matchesComparison(operator: $operator, remainder: substr($trimmed, 1), value: $value, type: $type);
-			}
-		}
+		return null;
+	}//end operatorOf()
 
-		// Bare literal — plain equality.
-		return $this->equals(left: $value, right: $this->coerce(value: $trimmed, type: $type), type: $type);
-	}//end matches()
+	/**
+	 * Whether a text is wrapped in double quotes.
+	 *
+	 * @param string $raw The text.
+	 *
+	 * @return bool True for at least two characters that open and close with a quote.
+	 */
+	private function isQuoted(string $raw): bool {
+		return (strlen($raw) >= 2 && $raw[0] === '"' && str_ends_with($raw, '"') === true);
+	}//end isQuoted()
 
 	/**
 	 * Coerce a raw scalar (runtime input or rule-cell literal) to `$type`.
@@ -262,90 +325,50 @@ class UnaryTestEvaluator {
 	/**
 	 * Evaluate a parsed range match against a coerced value.
 	 *
-	 * @param array<int, string> $match Regex capture groups: [0]=full, [1]=open bracket, [2]=low, [3]=high, [4]=close bracket.
-	 * @param mixed $value The already-coerced runtime value.
-	 * @param string $type Declared type.
+	 * @param array<int, string> $match   Regex capture groups: [0]=full, [1]=open bracket, [2]=low, [3]=high, [4]=close bracket.
+	 * @param UnaryTestValue     $subject The value under test.
 	 *
 	 * @return bool
 	 *
 	 * @throws DecisionEvaluationException `invalid_expression` on a missing bound, `type_mismatch` on an unparsable bound.
 	 */
-	private function matchesRange(array $match, mixed $value, string $type): bool {
+	private function matchesRange(array $match, UnaryTestValue $subject): bool {
 		[, $open, $lowRaw, $highRaw, $close] = $match;
 		if ($lowRaw === '' || $highRaw === '') {
 			throw new DecisionEvaluationException(errorCode: 'invalid_expression', details: ['reason' => 'missing_range_bound']);
 		}
 
-		$low = $this->coerce(value: $lowRaw, type: $type);
-		$high = $this->coerce(value: $highRaw, type: $type);
-
-		$lowOk = ($value > $low);
-		if ($open === '[') {
-			$lowOk = ($value >= $low);
-		}
-
-		$highOk = ($value < $high);
-		if ($close === ']') {
-			$highOk = ($value <= $high);
-		}
+		$low = $this->coerce(value: $lowRaw, type: $subject->type);
+		$high = $this->coerce(value: $highRaw, type: $subject->type);
+		$lowOk = $subject->compare(operator: (['[' => '>='][$open] ?? '>'), coerced: $low);
+		$highOk = $subject->compare(operator: ([']' => '<='][$close] ?? '<'), coerced: $high);
 
 		return ($lowOk === true && $highOk === true);
 	}//end matchesRange()
 
 	/**
-	 * Evaluate a comparison operator against a coerced value.
+	 * Evaluate a cell that starts with a comparison operator.
 	 *
-	 * @param string $operator One of `< > <= >= = !=`.
-	 * @param string $remainder The raw operand text (before the leading whitespace is trimmed).
-	 * @param mixed $value The already-coerced runtime value.
-	 * @param string $type Declared type.
+	 * @param string         $trimmed The trimmed cell text, starting with an operator.
+	 * @param UnaryTestValue $subject The value under test.
 	 *
 	 * @return bool
 	 *
 	 * @throws DecisionEvaluationException `invalid_expression` when the operand is empty, `type_mismatch` when it cannot be coerced.
 	 */
-	private function matchesComparison(string $operator, string $remainder, mixed $value, string $type): bool {
-		$operand = trim($remainder);
+	private function matchesComparison(string $trimmed, UnaryTestValue $subject): bool {
+		$operator = (string)$this->operatorOf(trimmed: $trimmed);
+		$operand = trim(substr($trimmed, strlen($operator)));
 		if ($operand === '') {
 			throw new DecisionEvaluationException(errorCode: 'invalid_expression', details: ['reason' => 'missing_operand', 'operator' => $operator]);
 		}
 
-		if (strlen($operand) >= 2 && $operand[0] === '"' && str_ends_with($operand, '"') === true) {
+		if ($this->isQuoted(raw: $operand) === true) {
 			$operand = $this->unquote(raw: $operand);
 		}
 
-		$coerced = $this->coerce(value: $operand, type: $type);
-
-		return match ($operator) {
-			'<' => ($value < $coerced),
-			'<=' => ($value <= $coerced),
-			'>' => ($value > $coerced),
-			'>=' => ($value >= $coerced),
-			'=' => $this->equals(left: $value, right: $coerced, type: $type),
-			'!=' => ($this->equals(left: $value, right: $coerced, type: $type) === false),
-			default => throw new DecisionEvaluationException(
-				errorCode: 'invalid_expression',
-				details: ['reason' => 'unknown_operator', 'operator' => $operator],
-			),
-		};
+		return $subject->compare(operator: $operator, coerced: $this->coerce(value: $operand, type: $subject->type));
 	}//end matchesComparison()
-
-	/**
-	 * Type-aware equality.
-	 *
-	 * @param mixed $left Left operand (already coerced).
-	 * @param mixed $right Right operand (already coerced).
-	 * @param string $type Declared type.
-	 *
-	 * @return bool
-	 */
-	private function equals(mixed $left, mixed $right, string $type): bool {
-		if ($type === 'number' || $type === 'date') {
-			return (abs(((float)$left) - ((float)$right)) < 1.0e-9);
-		}
-
-		return ($left === $right);
-	}//end equals()
 
 	/**
 	 * Split the inner text of `in (...)` into raw member strings, respecting

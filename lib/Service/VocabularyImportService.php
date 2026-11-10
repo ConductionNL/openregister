@@ -40,7 +40,6 @@ namespace OCA\OpenRegister\Service;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
 use Psr\Log\LoggerInterface;
 
@@ -50,6 +49,34 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/specs/skos-concept-registers/spec.md
  */
 class VocabularyImportService implements VocabularyImporterInterface {
+	/**
+	 * Reads predicate values out of JSON-LD nodes.
+	 *
+	 * @var SkosNodeReader
+	 */
+	private readonly SkosNodeReader $reader;
+
+	/**
+	 * Reads CSV value lists into nodes.
+	 *
+	 * @var VocabularyCsvReader
+	 */
+	private readonly VocabularyCsvReader $csvReader;
+
+	/**
+	 * Uri-keyed store for conceptScheme objects.
+	 *
+	 * @var VocabularyObjectStore
+	 */
+	private readonly VocabularyObjectStore $schemes;
+
+	/**
+	 * Uri-keyed store for concept objects.
+	 *
+	 * @var VocabularyObjectStore
+	 */
+	private readonly VocabularyObjectStore $concepts;
+
 	/**
 	 * Constructor.
 	 *
@@ -62,7 +89,10 @@ class VocabularyImportService implements VocabularyImporterInterface {
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
-
+		$this->reader = new SkosNodeReader();
+		$this->csvReader = new VocabularyCsvReader();
+		$this->schemes = new VocabularyObjectStore($objectService, self::SCHEMA_SCHEME);
+		$this->concepts = new VocabularyObjectStore($objectService, self::SCHEMA_CONCEPT);
 	}//end __construct()
 
 	/**
@@ -79,37 +109,13 @@ class VocabularyImportService implements VocabularyImporterInterface {
 	 * @spec openspec/specs/skos-concept-registers/spec.md#requirement-idempotent-skos-import-keyed-on-uri-skos-002
 	 */
 	public function importJsonLd(array $jsonLd): array {
-		$graph = $jsonLd['@graph'] ?? null;
-		if (is_array($graph) === false && isset($jsonLd['@id']) === true) {
-			$graph = [$jsonLd];
-		}
-
-		if (is_array($graph) === false) {
-			throw new InvalidArgumentException(
-				'JSON-LD document must contain an "@graph" array or a single top-level node with "@id".'
-			);
-		}
-
-		$schemeNode = null;
-		$conceptNodes = [];
-		foreach ($graph as $node) {
-			if (is_array($node) === false) {
-				continue;
-			}
-
-			$type = $this->localName(iriOrPrefixed: (string)($node['@type'] ?? ''));
-			if ($type === 'ConceptScheme' && $schemeNode === null) {
-				$schemeNode = $node;
-			} elseif ($type === 'Concept') {
-				$conceptNodes[] = $node;
-			}
-		}
-
+		$nodes = $this->partitionGraph(graph: $this->graphOf(jsonLd: $jsonLd));
+		$schemeNode = $nodes['scheme'];
 		if ($schemeNode === null || is_string($schemeNode['@id'] ?? null) === false) {
 			throw new InvalidArgumentException('JSON-LD document has no skos:ConceptScheme node with an "@id".');
 		}
 
-		return $this->importParsedGraph(schemeNode: $schemeNode, conceptNodes: $conceptNodes);
+		return $this->importParsedGraph(schemeNode: $schemeNode, conceptNodes: $nodes['concepts']);
 	}//end importJsonLd()
 
 	/**
@@ -130,76 +136,75 @@ class VocabularyImportService implements VocabularyImporterInterface {
 	 * @spec openspec/specs/skos-concept-registers/spec.md#requirement-idempotent-skos-import-keyed-on-uri-skos-002
 	 */
 	public function importCsvValueList(string $csvPath, array $schemeMeta): array {
-		$schemeUri = $schemeMeta['uri'] ?? null;
-		if (is_string($schemeUri) === false || trim($schemeUri) === '') {
-			throw new InvalidArgumentException('CSV import requires a non-empty schemeMeta["uri"].');
-		}
-
-		if (is_file($csvPath) === false) {
-			throw new InvalidArgumentException(sprintf('CSV value-list file not found: %s', $csvPath));
-		}
-
-		$handle = fopen($csvPath, 'rb');
-		if ($handle === false) {
-			throw new InvalidArgumentException(sprintf('Unable to open CSV value-list file: %s', $csvPath));
-		}
-
-		$header = fgetcsv(stream: $handle, length: null, separator: ',', enclosure: '"', escape: '');
-		if ($header === false) {
-			fclose($handle);
-			throw new InvalidArgumentException(sprintf('CSV value-list file is empty: %s', $csvPath));
-		}
-
-		$header = array_map(static fn (string $col): string => trim($col), $header);
-
-		$schemeNode = [
-			'@id' => $schemeUri,
-			'dct:title' => ($schemeMeta['title'] ?? $schemeUri),
-			'dct:publisher' => ($schemeMeta['publisher'] ?? ''),
-			'owl:versionInfo' => ($schemeMeta['version'] ?? '1.0'),
-			'dct:source' => ($schemeMeta['source'] ?? $schemeUri),
-		];
-
-		$conceptNodes = [];
-		while (($row = fgetcsv(stream: $handle, length: null, separator: ',', enclosure: '"', escape: '')) !== false) {
-			if (count($row) === 1 && trim((string)$row[0]) === '') {
-				continue;
-			}
-
-			$rowAssoc = array_combine($header, array_pad($row, count($header), null));
-			$uri = trim((string)($rowAssoc['uri'] ?? ''));
-			if ($uri === '') {
-				continue;
-			}
-
-			$prefLabel = [];
-			foreach ($rowAssoc as $column => $value) {
-				if (str_starts_with($column, 'prefLabel_') === true && trim((string)$value) !== '') {
-					$long = substr($column, strlen('prefLabel_'));
-					$prefLabel[$long] = trim((string)$value);
-				}
-			}
-
-			$broaderIds = [];
-			if (trim((string)($rowAssoc['broaderUri'] ?? '')) !== '') {
-				foreach (explode('|', (string)$rowAssoc['broaderUri']) as $broaderUri) {
-					$broaderIds[] = ['@id' => trim($broaderUri)];
-				}
-			}
-
-			$conceptNodes[] = [
-				'@id' => $uri,
-				'skos:notation' => ($rowAssoc['notation'] ?? null),
-				'skos:definition' => ($rowAssoc['definition'] ?? null),
-				'skos:prefLabel' => $prefLabel,
-				'skos:broader' => $broaderIds,
-			];
-		}//end while
-
-		fclose($handle);
+		$schemeNode = $this->csvReader->schemeNode(schemeMeta: $schemeMeta);
+		$conceptNodes = $this->csvReader->conceptNodes(csvPath: $csvPath);
 
 		return $this->importParsedGraph(schemeNode: $schemeNode, conceptNodes: $conceptNodes);
 	}//end importCsvValueList()
+
+	/**
+	 * The node list of a JSON-LD document: its `@graph`, or the document itself
+	 * when it is a single top-level node with `@id`.
+	 *
+	 * @param array<string,mixed> $jsonLd Decoded JSON-LD document.
+	 *
+	 * @return array<mixed>
+	 *
+	 * @throws InvalidArgumentException When the document has neither.
+	 */
+	private function graphOf(array $jsonLd): array {
+		$graph = $jsonLd['@graph'] ?? null;
+		if (is_array($graph) === false && isset($jsonLd['@id']) === true) {
+			$graph = [$jsonLd];
+		}
+
+		if (is_array($graph) === false) {
+			throw new InvalidArgumentException(
+				'JSON-LD document must contain an "@graph" array or a single top-level node with "@id".'
+			);
+		}
+
+		return $graph;
+	}//end graphOf()
+
+	/**
+	 * Split a graph into its first ConceptScheme node and its Concept nodes.
+	 *
+	 * @param array<mixed> $graph The graph nodes.
+	 *
+	 * @return array{scheme: array<string,mixed>|null, concepts: array<int,array<string,mixed>>}
+	 */
+	private function partitionGraph(array $graph): array {
+		$nodes = ['scheme' => null, 'concepts' => []];
+		foreach ($graph as $node) {
+			$type = $this->nodeType(node: $node);
+			if ($type === 'ConceptScheme' && $nodes['scheme'] === null) {
+				$nodes['scheme'] = $node;
+				continue;
+			}
+
+			if ($type === 'Concept') {
+				$nodes['concepts'][] = $node;
+			}
+		}
+
+		return $nodes;
+	}//end partitionGraph()
+
+	/**
+	 * The local name of a node's `@type`; empty for a non-node.
+	 *
+	 * @param mixed $node The graph entry.
+	 *
+	 * @return string
+	 */
+	private function nodeType(mixed $node): string {
+		if (is_array($node) === false) {
+			return '';
+		}
+
+		return $this->reader->localName(iriOrPrefixed: (string)($node['@type'] ?? ''));
+	}//end nodeType()
 
 	/**
 	 * Shared upsert pipeline for an already-parsed (scheme node, concept nodes) pair.
@@ -210,115 +215,59 @@ class VocabularyImportService implements VocabularyImporterInterface {
 	 * @return array{scheme: string, created: int, updated: int, unchanged: int, deprecated: int}
 	 */
 	private function importParsedGraph(array $schemeNode, array $conceptNodes): array {
-		$schemeUuid = $this->upsertScheme(node: $schemeNode);
-		$schemeUri = (string)$schemeNode['@id'];
-
-		$created = 0;
-		$updated = 0;
-		$unchanged = 0;
-		$seenUris = [];
-		$uuidByUri = [];
-
-		foreach ($conceptNodes as $node) {
-			$uri = (string)($node['@id'] ?? '');
-			if ($uri === '') {
-				continue;
-			}
-
-			$result = $this->upsertConcept(node: $node, schemeUuid: $schemeUuid);
-			$seenUris[] = $uri;
-			$uuidByUri[$uri] = $result['uuid'];
-			match ($result['status']) {
-				'created' => $created++,
-				'updated' => $updated++,
-				default => $unchanged++,
-			};
-		}
-
-		$this->applyRelations(conceptNodes: $conceptNodes, uuidByUri: $uuidByUri);
-		$deprecated = $this->deprecateMissing(schemeUuid: $schemeUuid, seenUris: $seenUris);
+		$schemeUuid = $this->schemes->upsertByUri(data: $this->schemeData(node: $schemeNode))['uuid'];
+		$tally = $this->upsertConcepts(conceptNodes: $conceptNodes, schemeUuid: $schemeUuid);
+		$this->applyRelations(conceptNodes: $conceptNodes, uuidByUri: $tally->uuidByUri);
+		$deprecated = $this->concepts->deprecateMissing(schemeUuid: $schemeUuid, seenUris: $tally->seenUris);
+		$report = $tally->report(schemeUri: (string)$schemeNode['@id'], deprecated: $deprecated);
 
 		$this->logger->info(
 			message: '[VocabularyImportService] import complete',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'scheme' => $schemeUri,
-				'created' => $created,
-				'updated' => $updated,
-				'unchanged' => $unchanged,
-				'deprecated' => $deprecated,
-			]
+			context: array_merge(['file' => __FILE__, 'line' => __LINE__], $report)
 		);
 
-		return [
-			'scheme' => $schemeUri,
-			'created' => $created,
-			'updated' => $updated,
-			'unchanged' => $unchanged,
-			'deprecated' => $deprecated,
-		];
+		return $report;
 	}//end importParsedGraph()
 
 	/**
-	 * Upsert the conceptScheme object for a parsed scheme node.
+	 * Upsert every concept node with an `@id`, tallying the outcomes.
+	 *
+	 * @param array<int,array<string,mixed>> $conceptNodes The parsed concept nodes.
+	 * @param string $schemeUuid The owning conceptScheme's uuid.
+	 *
+	 * @return VocabularyImportTally
+	 */
+	private function upsertConcepts(array $conceptNodes, string $schemeUuid): VocabularyImportTally {
+		$tally = new VocabularyImportTally();
+		foreach ($conceptNodes as $node) {
+			$uri = (string)($node['@id'] ?? '');
+			if ($uri !== '') {
+				$tally->record(uri: $uri, result: $this->upsertConcept(node: $node, schemeUuid: $schemeUuid));
+			}
+		}
+
+		return $tally;
+	}//end upsertConcepts()
+
+	/**
+	 * The conceptScheme object data for a parsed scheme node.
 	 *
 	 * @param array<string,mixed> $node The parsed scheme node.
 	 *
-	 * @return string The conceptScheme object's OpenRegister uuid.
+	 * @return array<string,mixed>
 	 */
-	private function upsertScheme(array $node): string {
+	private function schemeData(array $node): array {
 		$uri = (string)$node['@id'];
-
-		$version = $this->extractLiteral(value: $this->findPredicate(node: $node, localName: 'versionInfo'));
-		if ($version === null) {
-			$version = $this->extractLiteral(value: $this->findPredicate(node: $node, localName: 'version'));
-		}
-
-		if ($version === null) {
-			$version = '1.0';
-		}
-
 		$data = [
 			'uri' => $uri,
-			'title' => ($this->extractLiteral(value: $this->findPredicate(node: $node, localName: 'title')) ?? $uri),
-			'publisher' => ($this->extractLiteral(value: $this->findPredicate(node: $node, localName: 'publisher')) ?? ''),
-			'version' => $version,
-			'source' => ($this->extractLiteral(value: $this->findPredicate(node: $node, localName: 'source')) ?? $uri),
+			'title' => ($this->literalOf(node: $node, localName: 'title') ?? $uri),
+			'publisher' => ($this->literalOf(node: $node, localName: 'publisher') ?? ''),
+			'version' => ($this->literalOf(node: $node, localName: 'versionInfo') ?? $this->literalOf(node: $node, localName: 'version') ?? '1.0'),
+			'source' => ($this->literalOf(node: $node, localName: 'source') ?? $uri),
 		];
 
-		$description = $this->extractLiteral(value: $this->findPredicate(node: $node, localName: 'description'));
-		if ($description !== null) {
-			$data['description'] = $description;
-		}
-
-		$existing = $this->findByUri(schema: self::SCHEMA_SCHEME, uri: $uri);
-		if ($existing === null) {
-			$saved = $this->objectService->saveObject(
-				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_SCHEME
-			);
-			return (string)$saved->getUuid();
-		}
-
-		$existingData = ($existing->getObject() ?? []);
-		if ($this->dataChanged(existingData: $existingData, newData: $data) === false) {
-			return (string)$existing->getUuid();
-		}
-
-		// The saveObject call is PUT-semantic (omitted properties are cleared)
-		// — carry every existing field forward, only the compared keys are overridden.
-		$merged = array_merge($existingData, $data);
-		$this->objectService->saveObject(
-			object: $merged,
-			register: self::REGISTER,
-			schema: self::SCHEMA_SCHEME,
-			uuid: $existing->getUuid()
-		);
-
-		return (string)$existing->getUuid();
-	}//end upsertScheme()
+		return $this->withOptional(data: $data, optional: ['description' => $this->literalOf(node: $node, localName: 'description')]);
+	}//end schemeData()
 
 	/**
 	 * Upsert a single concept object for a parsed concept node.
@@ -331,62 +280,69 @@ class VocabularyImportService implements VocabularyImporterInterface {
 	 * @throws InvalidArgumentException When the concept has no Dutch prefLabel.
 	 */
 	private function upsertConcept(array $node, string $schemeUuid): array {
-		$uri = (string)$node['@id'];
-
-		$prefLabel = $this->extractLangMap(value: $this->findPredicate(node: $node, localName: 'prefLabel'));
-		if (isset($prefLabel['nl']) === false || trim($prefLabel['nl']) === '') {
-			throw new InvalidArgumentException(
-				sprintf('Concept "%s" has no Dutch (nl) prefLabel; refusing to import an invalid concept.', $uri)
-			);
-		}
-
 		$data = [
-			'uri' => $uri,
-			'prefLabel' => $prefLabel,
+			'uri' => (string)$node['@id'],
+			'prefLabel' => $this->dutchPrefLabel(node: $node),
 			'inScheme' => $schemeUuid,
 			'deprecated' => false,
 		];
-
-		$altLabel = $this->extractLangMap(value: $this->findPredicate(node: $node, localName: 'altLabel'));
-		if (empty($altLabel) === false) {
-			$data['altLabel'] = $altLabel;
-		}
-
-		$definition = $this->extractLiteral(value: $this->findPredicate(node: $node, localName: 'definition'));
-		if ($definition !== null) {
-			$data['definition'] = $definition;
-		}
-
-		$notation = $this->extractLiteral(value: $this->findPredicate(node: $node, localName: 'notation'));
-		if ($notation !== null) {
-			$data['notation'] = $notation;
-		}
-
-		$existing = $this->findByUri(schema: self::SCHEMA_CONCEPT, uri: $uri);
-		if ($existing === null) {
-			$saved = $this->objectService->saveObject(
-				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_CONCEPT
-			);
-			return ['status' => 'created', 'uuid' => (string)$saved->getUuid()];
-		}
-
-		$existingData = ($existing->getObject() ?? []);
-		if ($this->dataChanged(existingData: $existingData, newData: $data) === false) {
-			return ['status' => 'unchanged', 'uuid' => (string)$existing->getUuid()];
-		}
-
-		$merged = array_merge($existingData, $data);
-		$this->objectService->saveObject(
-			object: $merged,
-			register: self::REGISTER,
-			schema: self::SCHEMA_CONCEPT,
-			uuid: $existing->getUuid()
-		);
-
-		return ['status' => 'updated', 'uuid' => (string)$existing->getUuid()];
+		$optional = [
+			'altLabel' => $this->reader->langMap(value: $this->reader->findPredicate(node: $node, localName: 'altLabel')),
+			'definition' => $this->literalOf(node: $node, localName: 'definition'),
+			'notation' => $this->literalOf(node: $node, localName: 'notation'),
+		];
+		return $this->concepts->upsertByUri(data: $this->withOptional(data: $data, optional: $optional));
 	}//end upsertConcept()
+
+	/**
+	 * A concept node's prefLabel language map, which must carry a Dutch label.
+	 *
+	 * @param array<string,mixed> $node The parsed concept node.
+	 *
+	 * @return array<string,string>
+	 *
+	 * @throws InvalidArgumentException When the concept has no Dutch prefLabel.
+	 */
+	private function dutchPrefLabel(array $node): array {
+		$prefLabel = $this->reader->langMap(value: $this->reader->findPredicate(node: $node, localName: 'prefLabel'));
+		if (isset($prefLabel['nl']) === false || trim($prefLabel['nl']) === '') {
+			throw new InvalidArgumentException(
+				sprintf('Concept "%s" has no Dutch (nl) prefLabel; refusing to import an invalid concept.', (string)$node['@id'])
+			);
+		}
+
+		return $prefLabel;
+	}//end dutchPrefLabel()
+
+	/**
+	 * Add each optional field that has a value (not null, not an empty map).
+	 *
+	 * @param array<string,mixed> $data The required fields.
+	 * @param array<string,mixed> $optional Optional field => value, in output order.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function withOptional(array $data, array $optional): array {
+		foreach ($optional as $key => $value) {
+			if ($value !== null && $value !== []) {
+				$data[$key] = $value;
+			}
+		}
+
+		return $data;
+	}//end withOptional()
+
+	/**
+	 * The string literal of a node's predicate.
+	 *
+	 * @param array<string,mixed> $node The JSON-LD node.
+	 * @param string $localName The predicate local name.
+	 *
+	 * @return string|null
+	 */
+	private function literalOf(array $node, string $localName): ?string {
+		return $this->reader->literal(value: $this->reader->findPredicate(node: $node, localName: $localName));
+	}//end literalOf()
 
 	/**
 	 * Recompute broader/narrower/related on every re-imported concept, both
@@ -402,229 +358,91 @@ class VocabularyImportService implements VocabularyImporterInterface {
 	 * @return void
 	 */
 	private function applyRelations(array $conceptNodes, array $uuidByUri): void {
-		$broaderOf = [];
-		$narrowerOf = [];
-		$relatedOf = [];
-
-		// Seed every re-imported concept with an empty edge set so an edge
-		// removed from the source is cleared on re-import, not left stale.
-		foreach ($uuidByUri as $uuid) {
-			$broaderOf[$uuid] = ($broaderOf[$uuid] ?? []);
-			$narrowerOf[$uuid] = ($narrowerOf[$uuid] ?? []);
-			$relatedOf[$uuid] = ($relatedOf[$uuid] ?? []);
+		$edges = new VocabularyConceptEdges($uuidByUri);
+		foreach ($conceptNodes as $node) {
+			$uuid = ($uuidByUri[(string)($node['@id'] ?? '')] ?? null);
+			if ($uuid !== null) {
+				$edges->add(uuid: $uuid, targetsByPredicate: $this->assertedTargets(node: $node));
+			}
 		}
 
-		foreach ($conceptNodes as $node) {
-			$uri = (string)($node['@id'] ?? '');
-			$uuid = ($uuidByUri[$uri] ?? null);
-			if ($uuid === null) {
-				continue;
-			}
-
-			$this->collectEdges(node: $node, predicate: 'broader', uuid: $uuid, uuidByUri: $uuidByUri, forward: $broaderOf, reverse: $narrowerOf);
-			$this->collectEdges(node: $node, predicate: 'narrower', uuid: $uuid, uuidByUri: $uuidByUri, forward: $narrowerOf, reverse: $broaderOf);
-			// Related is symmetric: the same map serves as both forward and reverse.
-			$this->collectEdges(node: $node, predicate: 'related', uuid: $uuid, uuidByUri: $uuidByUri, forward: $relatedOf, reverse: $relatedOf);
-		}//end foreach
-
 		foreach ($uuidByUri as $uuid) {
-			$this->applyRelationFieldsToDraft(
-				uuid: $uuid,
-				broader: array_values(array_unique($broaderOf[$uuid] ?? [])),
-				narrower: array_values(array_unique($narrowerOf[$uuid] ?? [])),
-				related: array_values(array_unique($relatedOf[$uuid] ?? []))
-			);
+			$this->applyRelationFieldsToDraft(uuid: $uuid, relations: $edges->relationsOf(uuid: $uuid));
 		}
 	}//end applyRelations()
 
 	/**
-	 * Resolve one predicate's asserted edges on `$node` to uuids and record
-	 * both the forward edge (`$uuid` -> target) and the reverse edge (target
-	 * -> `$uuid`) so a relation asserted in only one direction by the source
-	 * is still readable from either concept.
+	 * The target uris a concept node asserts, per relation predicate.
 	 *
 	 * @param array<string,mixed> $node The parsed concept node.
-	 * @param string $predicate The relation predicate local name (broader|narrower|related).
-	 * @param string $uuid The concept's own uuid.
-	 * @param array<string,string> $uuidByUri uri => uuid map for this import.
-	 * @param array<string,array<string>> $forward Accumulator for `$uuid` -> targets (by reference).
-	 * @param array<string,array<string>> $reverse Accumulator for target -> `$uuid` (by reference; same
-	 *                                             array as `$forward` for a symmetric predicate like
-	 *                                             `related`).
 	 *
-	 * @return void
+	 * @return array<string,array<string>>
 	 */
-	private function collectEdges(array $node, string $predicate, string $uuid, array $uuidByUri, array &$forward, array &$reverse): void {
-		foreach ($this->extractIdRefs(value: $this->findPredicate(node: $node, localName: $predicate)) as $targetUri) {
-			$targetUuid = ($uuidByUri[$targetUri] ?? null);
-			if ($targetUuid === null) {
-				continue;
-			}
-
-			$forward[$uuid][] = $targetUuid;
-			$reverse[$targetUuid][] = $uuid;
+	private function assertedTargets(array $node): array {
+		$targets = [];
+		foreach (array_keys(VocabularyConceptEdges::INVERSE) as $predicate) {
+			$targets[$predicate] = $this->reader->idRefs(value: $this->reader->findPredicate(node: $node, localName: $predicate));
 		}
-	}//end collectEdges()
+
+		return $targets;
+	}//end assertedTargets()
 
 	/**
 	 * Write a concept's broader/narrower/related fields, skipping the save
 	 * when the resolved edge set already matches (idempotent re-import).
 	 *
 	 * @param string $uuid The concept's uuid.
-	 * @param array<string> $broader Resolved broader uuids.
-	 * @param array<string> $narrower Resolved narrower uuids.
-	 * @param array<string> $related Resolved related uuids.
+	 * @param array<string,array<string>> $relations Resolved broader/narrower/related uuids.
 	 *
 	 * @return void
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
-	private function applyRelationFieldsToDraft(string $uuid, array $broader, array $narrower, array $related): void {
+	private function applyRelationFieldsToDraft(string $uuid, array $relations): void {
 		$existing = WriteCause::asLookup(fn () => $this->objectService->find(id: $uuid, register: self::REGISTER, schema: self::SCHEMA_CONCEPT));
 		if ($existing === null) {
 			return;
 		}
 
 		$existingData = ($existing->getObject() ?? []);
-
-		$existingBroader = $this->normalizeUuidList(value: ($existingData['broader'] ?? []));
-		$existingNarrower = $this->normalizeUuidList(value: ($existingData['narrower'] ?? []));
-		$existingRelated = $this->normalizeUuidList(value: ($existingData['related'] ?? []));
-
-		sort($broader);
-		sort($narrower);
-		sort($related);
-		sort($existingBroader);
-		sort($existingNarrower);
-		sort($existingRelated);
-
-		if ($broader === $existingBroader && $narrower === $existingNarrower && $related === $existingRelated) {
+		$relations = array_map(fn (array $uuids): array => $this->sorted(values: $uuids), $relations);
+		if ($this->relationsMatch(existingData: $existingData, relations: $relations) === true) {
 			return;
 		}
 
-		$merged = $existingData;
-		$merged['broader'] = $broader;
-		$merged['narrower'] = $narrower;
-		$merged['related'] = $related;
-
-		$this->objectService->saveObject(
-			object: $merged,
-			register: self::REGISTER,
-			schema: self::SCHEMA_CONCEPT,
-			uuid: $uuid
-		);
-	}//end applyRelationFieldsToConcept()
+		$this->concepts->save(data: array_replace($existingData, $relations), uuid: $uuid);
+	}//end applyRelationFieldsToDraft()
 
 	/**
-	 * Mark concepts of a scheme absent from `$seenUris` as deprecated. Never deletes.
+	 * Whether every stored relation field already holds exactly `$relations`.
 	 *
-	 * @param string $schemeUuid The conceptScheme's uuid.
-	 * @param array<string> $seenUris URIs present in the just-completed import.
+	 * @param array<string,mixed> $existingData The stored concept data.
+	 * @param array<string,array<string>> $relations Sorted relation field => uuids.
 	 *
-	 * @return int Count of concepts newly marked deprecated.
+	 * @return bool
 	 */
-	private function deprecateMissing(string $schemeUuid, array $seenUris): int {
-		$count = 0;
-		$limit = 200;
-		$offset = 0;
-
-		do {
-			// The pair goes UNDER `filters`. `prepareFindAllConfig()` reads
-			// `$config['filters']['register']` / `['schema']` and no other key, so
-			// a top-level pair scopes NOTHING — the read ran on whatever the last
-			// write left on the shared ObjectService. In this loop that was
-			// self-concealing: the `saveObject()` below anchors the service on
-			// exactly this pair, so page 1 read an arbitrary scope and every later
-			// page read the right one, by accident. openregister#3408 is what the
-			// same shape costs when no write happens to precede the read.
-			$results = $this->objectService->findAll(
-				config: [
-					'filters' => [
-						'register' => self::REGISTER,
-						'schema' => self::SCHEMA_CONCEPT,
-						'inScheme' => $schemeUuid,
-					],
-					'limit' => $limit,
-					'offset' => $offset,
-				]
-			);
-
-			// Counted once per page, not re-counted by the loop condition.
-			// $results is replaced wholesale on every iteration and never
-			// mutated below, so this is the same value the condition read.
-			$pageSize = count($results);
-
-			foreach ($results as $entity) {
-				$data = ($entity->getObject() ?? []);
-				$uri = ($data['uri'] ?? null);
-				if ($uri === null
-					|| in_array($uri, $seenUris, true) === true
-					|| ($data['deprecated'] ?? false) === true
-				) {
-					continue;
-				}
-
-				$data['deprecated'] = true;
-				$this->objectService->saveObject(
-					object: $data,
-					register: self::REGISTER,
-					schema: self::SCHEMA_CONCEPT,
-					uuid: $entity->getUuid()
-				);
-				$count++;
-			}
-
-			$offset += $limit;
-		} while ($pageSize === $limit);
-
-		return $count;
-	}//end deprecateMissing()
-
-	/**
-	 * Find a conceptScheme/concept object by its durable source uri.
-	 *
-	 * @param string $schema Schema slug (self::SCHEMA_SCHEME or self::SCHEMA_CONCEPT).
-	 * @param string $uri The source uri to look up.
-	 *
-	 * @return ObjectEntity|null The matching object, or null when absent.
-	 */
-	private function findByUri(string $schema, string $uri): ?ObjectEntity {
-		// The pair goes UNDER `filters` — see deprecateMissing() for why a
-		// top-level pair is inert. This one is the import's identity lookup: an
-		// unscoped read here answers "does this uri already exist?" from the
-		// wrong table, and the import creates a duplicate rather than updating.
-		$results = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => self::REGISTER,
-					'schema' => $schema,
-					'uri' => $uri,
-				],
-				'limit' => 1,
-			]
-		);
-
-		return ($results[0] ?? null);
-	}//end findByUri()
-
-	/**
-	 * Whether any of the compared keys in `$newData` differ from `$existingData`.
-	 *
-	 * @param array<string,mixed> $existingData The stored object data.
-	 * @param array<string,mixed> $newData The newly computed data (subset of keys to compare).
-	 *
-	 * @return bool True when at least one compared key differs.
-	 */
-	private function dataChanged(array $existingData, array $newData): bool {
-		foreach ($newData as $key => $value) {
-			if (($existingData[$key] ?? null) !== $value) {
-				return true;
+	private function relationsMatch(array $existingData, array $relations): bool {
+		foreach ($relations as $field => $uuids) {
+			if ($this->sorted(values: $this->normalizeUuidList(value: ($existingData[$field] ?? []))) !== $uuids) {
+				return false;
 			}
 		}
 
-		return false;
-	}//end dataChanged()
+		return true;
+	}//end relationsMatch()
+
+	/**
+	 * A sorted copy of a list.
+	 *
+	 * @param array<string> $values The list.
+	 *
+	 * @return array<string>
+	 */
+	private function sorted(array $values): array {
+		sort($values);
+		return $values;
+	}//end sorted()
 
 	/**
 	 * Normalise a stored relation field value to a flat array of uuid strings.
@@ -645,192 +463,4 @@ class VocabularyImportService implements VocabularyImporterInterface {
 			)
 		);
 	}//end normalizeUuidList()
-
-	/**
-	 * Find the first value of a JSON-LD node whose key's local name (the
-	 * part after the last `#`, `/` or `:`) matches `$localName`.
-	 *
-	 * @param array<string,mixed> $node The JSON-LD node.
-	 * @param string $localName The predicate local name to find (e.g. "prefLabel").
-	 *
-	 * @return mixed The matched value, or null when absent.
-	 */
-	private function findPredicate(array $node, string $localName): mixed {
-		foreach ($node as $key => $value) {
-			if (str_starts_with($key, '@') === true) {
-				continue;
-			}
-
-			if ($this->localName(iriOrPrefixed: $key) === $localName) {
-				return $value;
-			}
-		}
-
-		return null;
-	}//end findPredicate()
-
-	/**
-	 * The local name of an IRI or prefixed name — the substring after the
-	 * rightmost `#`, `/` or `:`.
-	 *
-	 * @param string $iriOrPrefixed A full IRI, a `prefix:local` name, or a bare local name.
-	 *
-	 * @return string The local name.
-	 */
-	private function localName(string $iriOrPrefixed): string {
-		$pos = false;
-		foreach (['#', '/', ':'] as $separator) {
-			$candidate = strrpos($iriOrPrefixed, $separator);
-			if ($candidate !== false && ($pos === false || $candidate > $pos)) {
-				$pos = $candidate;
-			}
-		}
-
-		if ($pos === false) {
-			return $iriOrPrefixed;
-		}
-
-		return substr($iriOrPrefixed, $pos + 1);
-	}//end localName()
-
-	/**
-	 * Extract a single string literal from a JSON-LD predicate value.
-	 *
-	 * Accepts a bare string, a `{"@value": "..."}` literal node, or an array
-	 * of either (the first non-empty match wins).
-	 *
-	 * @param mixed $value The raw predicate value.
-	 *
-	 * @return string|null The extracted literal, or null when absent/empty.
-	 */
-	private function extractLiteral(mixed $value): ?string {
-		if ($value === null) {
-			return null;
-		}
-
-		if (is_string($value) === true) {
-			$trimmed = trim($value);
-			if ($trimmed === '') {
-				return null;
-			}
-
-			return $trimmed;
-		}
-
-		if (is_array($value) === true) {
-			if (isset($value['@value']) === true) {
-				return (string)$value['@value'];
-			}
-
-			foreach ($value as $item) {
-				$literal = $this->extractLiteral(value: $item);
-				if ($literal !== null) {
-					return $literal;
-				}
-			}
-		}
-
-		return null;
-	}//end extractLiteral()
-
-	/**
-	 * Extract a BCP-47-keyed language map from a JSON-LD predicate value.
-	 *
-	 * Accepts an array of `{"@value": "...", "@language": "xx"}` literal
-	 * nodes (canonical JSON-LD), a bare string (assumed `nl`), or an assoc
-	 * shorthand `{"nl": "...", "en": "..."}`.
-	 *
-	 * @param mixed $value The raw predicate value.
-	 *
-	 * @return array<string,string> BCP-47 tag => label.
-	 */
-	private function extractLangMap(mixed $value): array {
-		if ($value === null) {
-			return [];
-		}
-
-		if (is_string($value) === true) {
-			$trimmed = trim($value);
-			if ($trimmed === '') {
-				return [];
-			}
-
-			return ['nl' => $trimmed];
-		}
-
-		if (is_array($value) === false) {
-			return [];
-		}
-
-		if (isset($value['@value']) === true) {
-			$long = (string)($value['@language'] ?? 'nl');
-			return [$long => (string)$value['@value']];
-		}
-
-		$map = [];
-		if (array_is_list($value) === true) {
-			foreach ($value as $item) {
-				if (is_array($item) === true && isset($item['@value']) === true) {
-					$long = (string)($item['@language'] ?? 'nl');
-					$map[$long] = (string)$item['@value'];
-				} elseif (is_string($item) === true && trim($item) !== '') {
-					$map['nl'] = $item;
-				}
-			}
-
-			return $map;
-		}
-
-		foreach ($value as $long => $label) {
-			if (is_string($label) === true && trim($label) !== '') {
-				$map[(string)$long] = $label;
-			}
-		}
-
-		return $map;
-	}//end extractLangMap()
-
-	/**
-	 * Extract a list of referenced uris from a JSON-LD predicate value.
-	 *
-	 * Accepts a bare uri string, a `{"@id": "..."}` reference node, or an
-	 * array of either.
-	 *
-	 * @param mixed $value The raw predicate value.
-	 *
-	 * @return array<string> The referenced uris.
-	 */
-	private function extractIdRefs(mixed $value): array {
-		if ($value === null) {
-			return [];
-		}
-
-		if (is_string($value) === true) {
-			$trimmed = trim($value);
-			if ($trimmed === '') {
-				return [];
-			}
-
-			return [$trimmed];
-		}
-
-		if (is_array($value) === false) {
-			return [];
-		}
-
-		if (isset($value['@id']) === true) {
-			return [(string)$value['@id']];
-		}
-
-		$out = [];
-		foreach ($value as $item) {
-			if (is_array($item) === true && isset($item['@id']) === true) {
-				$out[] = (string)$item['@id'];
-			} elseif (is_string($item) === true && trim($item) !== '') {
-				$out[] = $item;
-			}
-		}
-
-		return $out;
-	}//end extractIdRefs()
 }//end class

@@ -22,6 +22,7 @@ use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\View\ViewAlert;
+use OCA\OpenRegister\Service\View\ViewObjectQuery;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -30,6 +31,8 @@ use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\BackgroundJob\Support\ViewAlertSweepSources;
+use OCA\OpenRegister\BackgroundJob\Support\ViewAlertSweepPlatform;
 
 class ViewAlertSweepJobTest extends TestCase {
 
@@ -77,11 +80,8 @@ class ViewAlertSweepJobTest extends TestCase {
 
 		$this->job = new ViewAlertSweepJob(
 			$this->createMock(ITimeFactory::class),
-			$this->views,
-			$this->objects,
-			$this->users,
-			$dispatcher,
-			new NullLogger()
+			new ViewAlertSweepSources($this->views, $this->objects, new ViewObjectQuery()),
+			new ViewAlertSweepPlatform($this->users, $dispatcher, new NullLogger())
 		);
 	}//end setUp()
 
@@ -208,11 +208,8 @@ class ViewAlertSweepJobTest extends TestCase {
 		$this->pass(
 			new ViewAlertSweepJob(
 				$this->createMock(ITimeFactory::class),
-				$views,
-				$objects,
-				$users,
-				$this->createMock(IEventDispatcher::class),
-				new NullLogger()
+				new ViewAlertSweepSources($views, $objects, new ViewObjectQuery()),
+				new ViewAlertSweepPlatform($users, $this->createMock(IEventDispatcher::class), new NullLogger())
 			)
 		);
 
@@ -237,11 +234,8 @@ class ViewAlertSweepJobTest extends TestCase {
 		$this->pass(
 			new ViewAlertSweepJob(
 				$this->createMock(ITimeFactory::class),
-				$views,
-				$objects,
-				$users,
-				$this->createMock(IEventDispatcher::class),
-				new NullLogger()
+				new ViewAlertSweepSources($views, $objects, new ViewObjectQuery()),
+				new ViewAlertSweepPlatform($users, $this->createMock(IEventDispatcher::class), new NullLogger())
 			)
 		);
 

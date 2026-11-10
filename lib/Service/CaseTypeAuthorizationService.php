@@ -6,7 +6,7 @@
  * Configuration- and mapping-layer for zaaktype-scoped authorization
  * (rbac-zaaktype). This service does NOT introduce a new authorization
  * engine — enforcement remains the responsibility of the existing RBAC
- * primitives (PermissionHandler, MagicRbacHandler, PropertyRbacHandler,
+ * primitives (PermissionHandlerInterface, MagicRbacHandler, PropertyRbacHandler,
  * ConditionMatcher). It provides:
  *
  *   - The canonical ZGW `vertrouwelijkheidaanduiding` (confidentiality) ordinal
@@ -42,7 +42,7 @@ namespace OCA\OpenRegister\Service;
 /**
  * Zaaktype-scoped authorization configuration and ZGW mapping helper.
  *
- * @SuppressWarnings(PHPMD.CyclomaticComplexity) ZGW scope and matrix mapping branch per scope verb and per principal kind.
+ * @spec openspec/specs/rbac-zaaktype/spec.md
  */
 class CaseTypeAuthorizationService {
 
@@ -207,40 +207,75 @@ class CaseTypeAuthorizationService {
 		?string $maxLevel = null,
 		string $property = 'vertrouwelijkheidaanduiding',
 	): array {
-		$authorization = [];
+		$grant = new ZgwAutorisatieGrant(scopes: $scopes, group: $group, maxLevel: $maxLevel, property: $property);
+		return $this->mapGrant(grant: $grant);
+	}//end mapZgwAutorisatie()
 
+	/**
+	 * Map one ZGW Applicatie grant to an OpenRegister `authorization` block.
+	 *
+	 * @param ZgwAutorisatieGrant $grant The scopes, group, clearance limit and confidentiality property.
+	 *
+	 * @return array<string, array<int, mixed>> An `authorization`-shaped block.
+	 *
+	 * @spec openspec/specs/rbac-zaaktype/spec.md
+	 */
+	public function mapGrant(ZgwAutorisatieGrant $grant): array {
+		// A clearance limit turns the grant into a conditional rule; an
+		// unrestricted grant (heeftAlleAutorisaties-style per-zaaktype) is a
+		// bare group string.
+		$entry = $grant->group;
+		if ($grant->maxLevel !== null) {
+			$entry = [
+				'group' => $grant->group,
+				'match' => $this->buildConfidentialityMatch(maxLevel: $grant->maxLevel, property: $grant->property),
+			];
+		}
+
+		return $this->grantPerAction(actions: $this->scopeActions(scopes: $grant->scopes), entry: $entry);
+	}//end mapGrant()
+
+	/**
+	 * The actions a list of ZGW scopes grants, in scope order.
+	 *
+	 * Empty, non-string and unknown scopes grant nothing (fail closed).
+	 *
+	 * @param array<int, mixed> $scopes ZGW scopes.
+	 *
+	 * @return array<int, string> One action per recognised scope.
+	 */
+	private function scopeActions(array $scopes): array {
+		$actions = [];
 		foreach ($scopes as $scope) {
 			if (is_string($scope) === false || $scope === '') {
 				continue;
 			}
 
 			$action = $this->scopeToAction(scope: $scope);
-			if ($action === null) {
-				// Unknown scope suffix grants nothing (fail closed).
-				continue;
+			if ($action !== null) {
+				$actions[] = $action;
 			}
+		}
 
-			// A clearance limit turns the grant into a conditional rule; an
-			// unrestricted grant (heeftAlleAutorisaties-style per-zaaktype) is a
-			// bare group string.
-			if ($maxLevel !== null) {
-				$entry = [
-					'group' => $group,
-					'match' => $this->buildConfidentialityMatch(maxLevel: $maxLevel, property: $property),
-				];
-			} else {
-				$entry = $group;
-			}
+		return $actions;
+	}//end scopeActions()
 
-			if (isset($authorization[$action]) === false) {
-				$authorization[$action] = [];
-			}
-
+	/**
+	 * An authorization block granting one entry per action.
+	 *
+	 * @param array<int, string> $actions The granted actions, repeats included.
+	 * @param string|array<string, mixed> $entry The group, or the conditional group rule.
+	 *
+	 * @return array<string, array<int, mixed>> An `authorization`-shaped block.
+	 */
+	private function grantPerAction(array $actions, string|array $entry): array {
+		$authorization = [];
+		foreach ($actions as $action) {
 			$authorization[$action][] = $entry;
-		}//end foreach
+		}
 
 		return $authorization;
-	}//end mapZgwAutorisatie()
+	}//end grantPerAction()
 
 	/**
 	 * Translate a single ZGW scope string to an OpenRegister action verb.
@@ -285,27 +320,38 @@ class CaseTypeAuthorizationService {
 		}
 
 		$rows = [];
-
 		foreach ($authorization as $action => $entries) {
-			// Skip non-action keys (e.g. inheritFromPublic, roles) and malformed lists.
-			if (in_array($action, ['read', 'create', 'update', 'delete', 'list'], true) === false) {
-				continue;
-			}
-
-			if (is_array($entries) === false) {
-				continue;
-			}
-
-			foreach ($entries as $entry) {
-				$row = $this->matrixRowForEntry(action: (string)$action, entry: $entry);
-				if ($row !== null) {
-					$rows[] = $row;
-				}
-			}
-		}//end foreach
+			$rows = array_merge($rows, $this->matrixRowsForAction(action: $action, entries: $entries));
+		}
 
 		return $rows;
 	}//end extractPermissionMatrix()
+
+	/**
+	 * The matrix rows of one key of an authorization block.
+	 *
+	 * Non-action keys (e.g. inheritFromPublic, roles) and malformed lists give none.
+	 *
+	 * @param int|string $action  The block key.
+	 * @param mixed      $entries The entries under it.
+	 *
+	 * @return array<int, array{action: string, principal: string, kind: string, conditional: bool}>
+	 */
+	private function matrixRowsForAction(int|string $action, mixed $entries): array {
+		if (in_array($action, ['read', 'create', 'update', 'delete', 'list'], true) === false || is_array($entries) === false) {
+			return [];
+		}
+
+		$rows = [];
+		foreach ($entries as $entry) {
+			$row = $this->matrixRowForEntry(action: (string)$action, entry: $entry);
+			if ($row !== null) {
+				$rows[] = $row;
+			}
+		}
+
+		return $rows;
+	}//end matrixRowsForAction()
 
 	/**
 	 * Build a single permission-matrix row for one authorization entry.
@@ -319,49 +365,76 @@ class CaseTypeAuthorizationService {
 	private function matrixRowForEntry(string $action, mixed $entry): ?array {
 		// Bare string entry: a group or a `user:<uid>` override.
 		if (is_string($entry) === true) {
-			if (str_starts_with($entry, 'user:') === true) {
-				return [
-					'action' => $action,
-					'principal' => $entry,
-					'kind' => 'user',
-					'conditional' => false,
-				];
-			}
-
-			return [
-				'action' => $action,
-				'principal' => $entry,
-				'kind' => 'group',
-				'conditional' => false,
-			];
+			return $this->bareMatrixRow(action: $action, entry: $entry);
 		}
 
 		if (is_array($entry) === false) {
 			return null;
 		}
 
-		$conditional = isset($entry['match']) === true && empty($entry['match']) === false;
+		return $this->ruleMatrixRow(action: $action, entry: $entry);
+	}//end matrixRowForEntry()
 
-		// Complex user override: { "user": "<uid>", "match"?: {...} }.
-		if (isset($entry['user']) === true && is_string($entry['user']) === true) {
-			return [
-				'action' => $action,
-				'principal' => 'user:' . $entry['user'],
-				'kind' => 'user',
-				'conditional' => $conditional,
-			];
+	/**
+	 * The matrix row of a bare string entry: a group, or a `user:<uid>` override.
+	 *
+	 * @param string $action The CRUD action the entry grants.
+	 * @param string $entry  The entry.
+	 *
+	 * @return array{action: string, principal: string, kind: string, conditional: bool}
+	 */
+	private function bareMatrixRow(string $action, string $entry): array {
+		$kind = 'group';
+		if (str_starts_with($entry, 'user:') === true) {
+			$kind = 'user';
 		}
 
-		// Complex group rule: { "group": "<g>", "match"?: {...} }.
-		if (isset($entry['group']) === true && is_string($entry['group']) === true) {
-			return [
-				'action' => $action,
-				'principal' => $entry['group'],
-				'kind' => 'group',
-				'conditional' => $conditional,
-			];
+		return ['action' => $action, 'principal' => $entry, 'kind' => $kind, 'conditional' => false];
+	}//end bareMatrixRow()
+
+	/**
+	 * The matrix row of a complex rule, conditional when it carries a non-empty match.
+	 *
+	 * @param string       $action The CRUD action the entry grants.
+	 * @param array<mixed> $entry  The rule.
+	 *
+	 * @return array{action: string, principal: string, kind: string, conditional: bool}|null
+	 *                                                                                        The row, or null when the rule names no principal.
+	 */
+	private function ruleMatrixRow(string $action, array $entry): ?array {
+		$principal = $this->rulePrincipal(entry: $entry);
+		if ($principal === null) {
+			return null;
+		}
+
+		return [
+			'action' => $action,
+			'principal' => $principal['principal'],
+			'kind' => $principal['kind'],
+			'conditional' => isset($entry['match']) === true && empty($entry['match']) === false,
+		];
+	}//end ruleMatrixRow()
+
+	/**
+	 * The principal of a complex authorization rule.
+	 *
+	 * A user override (`{ "user": "<uid>", "match"?: {...} }`) wins over a
+	 * group rule (`{ "group": "<g>", "match"?: {...} }`). A key that is
+	 * absent, null or not a string names nobody.
+	 *
+	 * @param array<mixed> $entry The rule.
+	 *
+	 * @return array{principal: string, kind: string}|null The principal, or null when it names neither.
+	 */
+	private function rulePrincipal(array $entry): ?array {
+		if (is_string($entry['user'] ?? null) === true) {
+			return ['principal' => 'user:' . $entry['user'], 'kind' => 'user'];
+		}
+
+		if (is_string($entry['group'] ?? null) === true) {
+			return ['principal' => $entry['group'], 'kind' => 'group'];
 		}
 
 		return null;
-	}//end matrixRowForEntry()
+	}//end rulePrincipal()
 }//end class

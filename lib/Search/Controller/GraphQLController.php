@@ -29,9 +29,8 @@
 
 namespace OCA\OpenRegister\Search\Controller;
 
-use OC\Security\CSP\ContentSecurityPolicyNonceManager;
-use OC\Security\CSRF\CsrfTokenManager;
-use OCA\OpenRegister\Search\Service\GraphQL\GraphQLService;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Search\Controller\Support\GraphQLControllerServices;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
@@ -39,7 +38,6 @@ use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
 use OCP\IRequest;
-use OCP\IURLGenerator;
 
 /**
  * Controller for the GraphQL API endpoint.
@@ -53,22 +51,14 @@ class GraphQLController extends Controller {
 	/**
 	 * GraphQLController constructor.
 	 *
-	 * @param string $appName Application name
-	 * @param IRequest $request Request object
-	 * @param GraphQLService $graphQLService GraphQL service
-	 * @param IURLGenerator $urlGenerator URL generator for route linking
-	 * @param ContentSecurityPolicyNonceManager $nonceManager CSP nonce provider
-	 * @param CsrfTokenManager $csrfManager CSRF token manager
+	 * @param IRequest                  $request  Request object
+	 * @param GraphQLControllerServices $services The GraphQL executor and the explorer page's services
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly GraphQLService $graphQLService,
-		private readonly IURLGenerator $urlGenerator,
-		private readonly ContentSecurityPolicyNonceManager $nonceManager,
-		private readonly CsrfTokenManager $csrfManager,
+		private readonly GraphQLControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
 	}//end __construct()
 
@@ -115,7 +105,7 @@ class GraphQLController extends Controller {
 		$variables = ($data['variables'] ?? null);
 		$operationName = ($data['operationName'] ?? null);
 
-		$result = $this->graphQLService->execute($query, $variables, $operationName);
+		$result = $this->services->graphQLService->execute($query, $variables, $operationName);
 
 		// Determine HTTP status: 200 for data (even with partial errors), 400 for query errors only.
 		$status = 200;
@@ -213,7 +203,7 @@ class GraphQLController extends Controller {
 	 * @return string The HTML content
 	 */
 	private function getGraphiQLHtml(): string {
-		$endpoint = $this->urlGenerator->linkToRoute('openregister.graphQL.execute');
+		$endpoint = $this->services->urlGenerator->linkToRoute('openregister.graphQL.execute');
 
 		// Ensure /index.php is included for environments without URL rewriting.
 		if (str_contains(haystack: $endpoint, needle: '/index.php') === false) {
@@ -221,8 +211,8 @@ class GraphQLController extends Controller {
 		}
 
 		// Get CSP nonce for inline scripts and CSRF request token for auth.
-		$nonce = $this->nonceManager->getNonce();
-		$requestToken = $this->csrfManager->getToken()->getEncryptedValue();
+		$nonce = $this->services->nonceManager->getNonce();
+		$requestToken = $this->services->csrfManager->getToken()->getEncryptedValue();
 
 		return <<<HTML
 <!DOCTYPE html>

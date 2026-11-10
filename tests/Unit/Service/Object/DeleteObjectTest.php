@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -104,9 +105,8 @@ class DeleteObjectTest extends TestCase {
 			$this->objectMapper,
 			$this->cacheHandler,
 			$this->userSession,
-			$this->auditTrailMapper,
+			new \OCA\OpenRegister\Service\Object\AuditRecording($this->auditTrailMapper, $this->logger),
 			$this->settingsService,
-			$this->logger,
 			$this->integrityService,
 			$this->createMock(\OCP\IDBConnection::class),
 			$this->organisationMapper
@@ -129,9 +129,8 @@ class DeleteObjectTest extends TestCase {
 			$this->objectMapper,
 			$this->cacheHandler,
 			$this->userSession,
-			$this->auditTrailMapper,
+			new \OCA\OpenRegister\Service\Object\AuditRecording($this->auditTrailMapper, $this->logger),
 			$this->settingsService,
-			$this->logger,
 			$this->integrityService,
 			$this->createMock(\OCP\IDBConnection::class),
 			$this->organisationMapper,
@@ -794,7 +793,7 @@ class DeleteObjectTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			nullifyTargets: [['objectUuid' => 'ref-1', 'property' => 'owner']]
+			effects: new DeletionEffects(nullifyTargets: [['objectUuid' => 'ref-1', 'property' => 'owner']])
 		);
 		$this->integrityService->method('canDelete')->willReturn($analysis);
 
@@ -1215,9 +1214,7 @@ class DeleteObjectTest extends TestCase {
 	public function testDeletionAnalysisToArray(): void {
 		$analysis = new DeletionAnalysis(
 			deletable: false,
-			cascadeTargets: [['objectUuid' => 'c1']],
-			nullifyTargets: [['objectUuid' => 'n1']],
-			defaultTargets: [['objectUuid' => 'd1']],
+			effects: new DeletionEffects(cascadeTargets: [['objectUuid' => 'c1']], nullifyTargets: [['objectUuid' => 'n1']], defaultTargets: [['objectUuid' => 'd1']]),
 			blockers: [['objectUuid' => 'b1']],
 			chainPaths: [['path' => 'A->B']]
 		);

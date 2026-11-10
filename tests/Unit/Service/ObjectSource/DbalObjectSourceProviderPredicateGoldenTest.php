@@ -52,7 +52,7 @@ class DbalObjectSourceProviderPredicateGoldenTest extends TestCase {
 		}
 
 		foreach ($this->sortScenarios() as $name => $query) {
-			$actual['sort: ' . $name] = $this->built($connection, fn (QueryBuilder $qb) => $this->call('applySort', $qb, $connection, [$query, self::COLUMNS]));
+			$actual['sort: ' . $name] = $this->built($connection, fn (QueryBuilder $qb) => $this->sort(qb: $qb, connection: $connection, query: $query));
 		}
 
 		foreach ($this->idScenarios() as $name => [$columns, $id]) {
@@ -141,15 +141,53 @@ class DbalObjectSourceProviderPredicateGoldenTest extends TestCase {
 	 * @return void
 	 */
 	private function filters(QueryBuilder $qb, Connection $connection, array $query, array $config): void {
+		$filterable = (new ReflectionMethod(DbalObjectSourceProvider::class, 'filterableColumns'))->invoke($this->provider(), self::COLUMNS, $config);
+		if (method_exists(DbalObjectSourceProvider::class, 'applyFilters') === false) {
+			$this->clauses(qb: $qb, connection: $connection, filterable: $filterable)->filter(query: $query);
+			return;
+		}
+
 		$method = new ReflectionMethod(DbalObjectSourceProvider::class, 'applyFilters');
 		if ($method->getNumberOfParameters() === 5) {
 			$method->invoke($this->provider(), $qb, $connection, $query, self::COLUMNS, $config);
 			return;
 		}
 
-		$filterable = (new ReflectionMethod(DbalObjectSourceProvider::class, 'filterableColumns'))->invoke($this->provider(), self::COLUMNS, $config);
 		$this->call('applyFilters', $qb, $connection, [$query, $filterable]);
 	}//end filters()
+
+	/**
+	 * Apply the sort through the provider's old method or the list clauses.
+	 *
+	 * @param QueryBuilder $qb         The query builder.
+	 * @param Connection   $connection The connection.
+	 * @param array        $query      The query.
+	 *
+	 * @return void
+	 */
+	private function sort(QueryBuilder $qb, Connection $connection, array $query): void {
+		if (method_exists(DbalObjectSourceProvider::class, 'applySort') === false) {
+			$this->clauses(qb: $qb, connection: $connection, filterable: [])->sort(query: $query, columns: self::COLUMNS);
+			return;
+		}
+
+		$this->call('applySort', $qb, $connection, [$query, self::COLUMNS]);
+	}//end sort()
+
+	/**
+	 * The list clauses the provider builds for one statement.
+	 *
+	 * @param QueryBuilder $qb         The query builder.
+	 * @param Connection   $connection The connection.
+	 * @param array        $filterable The filterable columns.
+	 *
+	 * @return object The clauses (DbalListClauses).
+	 */
+	private function clauses(QueryBuilder $qb, Connection $connection, array $filterable): object {
+		$statementClass = 'OCA\\OpenRegister\\Service\\ObjectSource\\DbalStatement';
+		$clausesClass = 'OCA\\OpenRegister\\Service\\ObjectSource\\DbalListClauses';
+		return new $clausesClass(statement: new $statementClass(qb: $qb, connection: $connection), filterable: $filterable);
+	}//end clauses()
 
 	/**
 	 * Apply an id predicate through the old method or the statement's equality pairs.

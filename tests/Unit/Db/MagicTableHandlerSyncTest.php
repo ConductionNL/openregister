@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCP\IConfig;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
@@ -130,9 +132,8 @@ class MagicTableHandlerSyncTest extends TestCase {
 		}
 
 		return new MagicTableHandler(
-			db: $this->createMock(IDBConnection::class),
+			sql: new MagicTableSql(db: $this->createMock(IDBConnection::class), config: $this->createMock(IConfig::class), logger: $logger),
 			appConfig: $this->createMock(IAppConfig::class),
-			logger: $logger,
 			magicMapper: $this->magicMapper
 		);
 	}//end handler()

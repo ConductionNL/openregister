@@ -62,6 +62,39 @@ trait PayloadTokenReading {
 	}//end resolveToken()
 
 	/**
+	 * Resolve every criterion of a filter map against the payload.
+	 *
+	 * @param array<string, mixed> $payload Object data with `@self` injected.
+	 * @param array<int|string, mixed> $criteria Target field to criterion token.
+	 *
+	 * @return array<string, mixed> Target field to resolved value.
+	 */
+	private function resolveTokens(array $payload, array $criteria): array {
+		$filters = [];
+		foreach ($criteria as $target => $criterion) {
+			$filters[(string)$target] = $this->resolveToken(payload: $payload, token: $criterion);
+		}
+
+		return $filters;
+	}//end resolveTokens()
+
+	/**
+	 * The declarations of a named declaration map that can be resolved: a
+	 * non-empty name and an array spec, in declaration order.
+	 *
+	 * @param array<int|string, mixed> $declarations Name to declaration.
+	 *
+	 * @return array<int|string, array<string, mixed>> The usable declarations, keys kept.
+	 */
+	private function usableDeclarations(array $declarations): array {
+		return array_filter(
+			$declarations,
+			static fn (mixed $spec, int|string $name): bool => (string)$name !== '' && is_array($spec) === true,
+			ARRAY_FILTER_USE_BOTH
+		);
+	}//end usableDeclarations()
+
+	/**
 	 * A string token: the payload value for a `@self.` or `@ref.` path, else the literal.
 	 *
 	 * @param array<string, mixed> $payload Object data with `@self` injected.

@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Dto;
 
-use OCA\OpenRegister\Service\Object\BatchOperationStatus;
+use OCA\OpenRegister\Service\Object\BatchOperationStatusInterface;
 
 /**
  * Per-object failure summary for one bulk save call.
@@ -38,7 +38,7 @@ use OCA\OpenRegister\Service\Object\BatchOperationStatus;
  * @category Dto
  * @package  OCA\OpenRegister\Dto
  */
-class BulkSaveOutcome {
+class BulkSaveOutcome implements BulkSaveOutcomeInterface {
 
 	/**
 	 * How many batch-level (non per-object) error messages the summary repeats.
@@ -83,6 +83,30 @@ class BulkSaveOutcome {
 	}//end __construct()
 
 	/**
+	 * Number of submitted objects that were not written.
+	 *
+	 * @return int The count.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function failedCount(): int {
+		return $this->failedCount;
+
+	}//end failedCount()
+
+	/**
+	 * Per-object explanations, each `{index, uuid, error, type}`.
+	 *
+	 * @return array<int, array<string, mixed>> The explanations.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function failures(): array {
+		return $this->failures;
+
+	}//end failures()
+
+	/**
 	 * Whether every submitted object was accounted for.
 	 *
 	 * @return bool True when nothing was lost.
@@ -111,51 +135,108 @@ class BulkSaveOutcome {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public static function fromBulkResult(array $bulkResult, int $requestedCount, int $accountedCount): self {
-		$failures = [];
-		$invalid = ($bulkResult['invalid'] ?? []);
-		if (is_array($invalid) === true) {
-			foreach ($invalid as $entry) {
-				if (is_array($entry) === false) {
-					continue;
-				}
+		return self::fromSaveResult(bulkResult: $bulkResult, rows: new BulkRowCount(requested: $requestedCount, accounted: $accountedCount));
 
-				$row = ($entry['object'] ?? []);
-				if (is_array($row) === false) {
-					$row = [];
-				}
+	}//end fromBulkResult()
 
-				$index = null;
-				if (isset($entry['index']) === true && is_numeric($entry['index']) === true) {
-					$index = (int)$entry['index'];
-				}
-
-				$failures[] = [
-					'index' => $index,
-					'uuid' => self::extractRowUuid(row: $row),
-					'error' => (string)($entry['error'] ?? 'Object was rejected without a recorded reason'),
-					'type' => (string)($entry['type'] ?? 'BulkSaveRejection'),
-				];
-			}//end foreach
-		}//end if
-
+	/**
+	 * Summarise a raw `ObjectService::saveObjects()` result against the row counts.
+	 *
+	 * Every rejected row in `invalid[]` is reported with the validator's own
+	 * message; rows neither accounted for nor rejected become one
+	 * `UnaccountedObject` entry carrying the batch-level errors.
+	 *
+	 * @param array        $bulkResult Raw result from ObjectService::saveObjects().
+	 * @param BulkRowCount $rows       Rows submitted and rows the result accounts for.
+	 *
+	 * @return self The summarised outcome.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public static function fromSaveResult(array $bulkResult, BulkRowCount $rows): self {
+		$failures = self::rejections(bulkResult: $bulkResult);
 		$rejected = count($failures);
-		$unaccounted = max(0, ($requestedCount - $accountedCount - $rejected));
+		$unaccounted = $rows->unaccounted(rejected: $rejected);
 		if ($unaccounted > 0) {
-			$failures[] = [
-				'index' => null,
-				'uuid' => null,
-				'error' => sprintf(
-					'%d object(s) were not written and the save path recorded no per-object reason.%s',
-					$unaccounted,
-					self::describeUnattributedErrors(bulkResult: $bulkResult)
-				),
-				'type' => 'UnaccountedObject',
-			];
+			$failures[] = self::unaccountedFailure(unaccounted: $unaccounted, bulkResult: $bulkResult);
 		}
 
 		return new self(failedCount: ($rejected + $unaccounted), failures: $failures);
 
-	}//end fromBulkResult()
+	}//end fromSaveResult()
+
+	/**
+	 * The one failure that stands for rows the save neither wrote nor rejected.
+	 *
+	 * @param int   $unaccounted How many rows vanished without a reason.
+	 * @param array $bulkResult  Raw result, for its batch-level errors.
+	 *
+	 * @return array<string, mixed> The failure.
+	 */
+	private static function unaccountedFailure(int $unaccounted, array $bulkResult): array {
+		return [
+			'index' => null,
+			'uuid' => null,
+			'error' => sprintf(
+				'%d object(s) were not written and the save path recorded no per-object reason.%s',
+				$unaccounted,
+				self::describeUnattributedErrors(bulkResult: $bulkResult)
+			),
+			'type' => 'UnaccountedObject',
+		];
+
+	}//end unaccountedFailure()
+
+	/**
+	 * One failure per rejected row in `invalid[]`; entries that are not arrays are skipped.
+	 *
+	 * @param array $bulkResult Raw result from ObjectService::saveObjects().
+	 *
+	 * @return array<int, array<string, mixed>> The failures.
+	 */
+	private static function rejections(array $bulkResult): array {
+		$invalid = ($bulkResult['invalid'] ?? []);
+		if (is_array($invalid) === false) {
+			return [];
+		}
+
+		$failures = [];
+		foreach ($invalid as $entry) {
+			if (is_array($entry) === true) {
+				$failures[] = self::rejection(entry: $entry);
+			}
+		}
+
+		return $failures;
+
+	}//end rejections()
+
+	/**
+	 * The failure for one rejected row, with defaults for a missing reason or type.
+	 *
+	 * @param array $entry One `invalid[]` entry.
+	 *
+	 * @return array<string, mixed> The failure.
+	 */
+	private static function rejection(array $entry): array {
+		$row = ($entry['object'] ?? []);
+		if (is_array($row) === false) {
+			$row = [];
+		}
+
+		$index = null;
+		if (isset($entry['index']) === true && is_numeric($entry['index']) === true) {
+			$index = (int)$entry['index'];
+		}
+
+		return [
+			'index' => $index,
+			'uuid' => self::extractRowUuid(row: $row),
+			'error' => (string)($entry['error'] ?? 'Object was rejected without a recorded reason'),
+			'type' => (string)($entry['type'] ?? 'BulkSaveRejection'),
+		];
+
+	}//end rejection()
 
 	/**
 	 * Summarise a streaming batch status into the same shape.
@@ -164,7 +245,7 @@ class BulkSaveOutcome {
 	 * but reported the detail under its own key layout, so a caller had to know
 	 * which path it had asked for before it could read the answer.
 	 *
-	 * @param BatchOperationStatus $status Per-row outcomes from the streaming save.
+	 * @param BatchOperationStatusInterface $status Per-row outcomes from the streaming save.
 	 * @param int $requestedCount Rows the caller submitted.
 	 * @param int $accountedCount Rows the status accounts for (created + updated + unchanged).
 	 *
@@ -173,10 +254,24 @@ class BulkSaveOutcome {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public static function fromBatchStatus(
-		BatchOperationStatus $status,
+		BatchOperationStatusInterface $status,
 		int $requestedCount,
 		int $accountedCount
 	): self {
+		return self::fromStreamedBatch(status: $status, rows: new StreamedRowCount(requested: $requestedCount, accounted: $accountedCount));
+	}//end fromBatchStatus()
+
+	/**
+	 * Summarise a streaming batch status, given the rows asked for and accounted for.
+	 *
+	 * @param BatchOperationStatusInterface $status Per-row outcomes from the streaming save.
+	 * @param StreamedRowCount              $rows   Rows submitted and rows the status accounts for.
+	 *
+	 * @return self The summarised outcome.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public static function fromStreamedBatch(BatchOperationStatusInterface $status, StreamedRowCount $rows): self {
 		$failures = [];
 		foreach ($status->getFailed() as $failure) {
 			$failures[] = [
@@ -192,7 +287,7 @@ class BulkSaveOutcome {
 			];
 		}
 
-		$unaccounted = max(0, ($requestedCount - $accountedCount - count($failures)));
+		$unaccounted = max(0, ($rows->requested - $rows->accounted - count($failures)));
 		if ($unaccounted > 0) {
 			$failures[] = [
 				'index' => null,
@@ -210,7 +305,7 @@ class BulkSaveOutcome {
 			failures: $failures
 		);
 
-	}//end fromBatchStatus()
+	}//end fromStreamedBatch()
 
 	/**
 	 * Collect batch-level errors that are not already attributed to a row.

@@ -40,7 +40,7 @@
     "stylelint:fix": "stylelint \"{src,css}/**/*.{vue,scss,css}\" --fix",
     "test": "jest --silent",
     "test:coverage-ratchet": "npm run test:coverage-summary && bash tests/coverage-ratchet.sh vitest coverage-frontend/coverage-summary.json",
-    "test:coverage-summary": "jest --silent --coverage --coverageReporters=json-summary --coverageReporters=text-summary --coverageDirectory=coverage-frontend",
+    "test:coverage-summary": "jest --config jest.coverage.config.js --silent --no-cache --coverage --coverageReporters=json-summary --coverageReporters=text-summary --coverageDirectory=coverage-frontend",
     "test:e2e": "playwright test",
     "test:e2e:docs": "playwright test --project docs-capture",
     "test:e2e:install": "playwright install chromium",
@@ -48,6 +48,7 @@
     "test:l10n": "node tests/l10n/check-l10n.js",
     "test:l10n:parity": "node tests/l10n/check-l10n-parity.js",
     "test:l10n:write": "node tests/l10n/check-l10n.js --write",
+    "test:newman-route-ratchet": "python3 -m unittest discover -s scripts/tests -p test_newman_route_coverage.py && python3 scripts/newman-route-coverage.py . --ci-only --ratchet tests/.newman-route-baseline.json",
     "test-coverage": "jest --silent --coverage",
     "validate-oas": "spectral lint oas-*.json --fail-severity error",
     "watch": "NODE_ENV=development webpack --config webpack.config.js --progress --watch"
@@ -68,15 +69,27 @@
     "@vue/test-utils": "$@vue/test-utils",
     "axios": ">=1.20.0",
     "babel-jest": "$babel-jest",
+    "cacache": {
+      "glob": "^14.0.2"
+    },
     "dompurify": "$dompurify",
     "follow-redirects": ">=1.16.1",
+    "js-beautify": {
+      "glob": "^14.0.2"
+    },
     "json5": "^2.2.3",
     "lodash": ">=4.18.1",
-    "minimatch": ">=3.1.5",
+    "minimatch": ">=11.0.1",
     "postcss": "^8.4.31",
     "rollup": ">=2.80.0",
     "stylelint": "$stylelint",
     "tar": ">=7.5.22",
+    "test-exclude@6": {
+      "minimatch": "^3.1.5"
+    },
+    "test-exclude@7": {
+      "glob": "^14.0.2"
+    },
     "vue": "$vue"
   },
   "dependencies": {
@@ -91,7 +104,7 @@
     "@nextcloud/router": "^3.1.0",
     "@nextcloud/vue": "^9.13.1",
     "@vueuse/core": "^14.3.0",
-    "apexcharts": "^7.1.0",
+    "apexcharts": "4.7.0",
     "dexie": "^4.4.6",
     "dompurify": "^3.4.17",
     "gridstack": "^13.2.0",

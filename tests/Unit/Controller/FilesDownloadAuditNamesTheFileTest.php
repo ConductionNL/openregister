@@ -58,7 +58,6 @@ class FilesDownloadAuditNamesTheFileTest extends TestCase {
 		);
 
 		$controller = FilesControllerFactory::create(
-			appName: 'openregister',
 			request: $this->createMock(IRequest::class),
 			fileService: $this->createMock(FileService::class),
 			objectService: $this->createMock(ObjectService::class),
@@ -69,7 +68,10 @@ class FilesDownloadAuditNamesTheFileTest extends TestCase {
 		);
 
 		$record = new ReflectionMethod(objectOrMethod: $controller, method: 'recordDownloadEvent');
-		$record->invoke($controller, 42, new ObjectEntity(), 'Medisch verslag.pdf');
+		$file = $this->createMock(\OCP\Files\File::class);
+		$file->method('getId')->willReturn(42);
+		$file->method('getName')->willReturn('Medisch verslag.pdf');
+		$record->invoke($controller, $file, new ObjectEntity());
 
 		$this->assertSame(
 			expected: ['action' => 'file.downloaded', 'fileId' => 42, 'data' => ['fileId' => 42, 'fileName' => 'Medisch verslag.pdf']],

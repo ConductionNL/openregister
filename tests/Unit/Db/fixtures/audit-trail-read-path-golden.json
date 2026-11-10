@@ -1,0 +1,720 @@
+{
+    "actor: user only": {
+        "result": {
+            "ids": [
+                1
+            ],
+            "total": 7
+        },
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 where(eq(user, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(25)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()",
+            "#2 func.count(*, total_count)",
+            "#2 select(count(*, total_count))",
+            "#2 from(openregister_audit_trails, NULL)",
+            "#2 param :p2 = alice, 2",
+            "#2 expr.eq(user, :p2, NULL)",
+            "#2 where(eq(user, :p2, NULL))",
+            "#2 executeQuery()"
+        ]
+    },
+    "actor: paged": {
+        "result": {
+            "ids": [
+                1
+            ],
+            "total": 7
+        },
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 where(eq(user, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(30)",
+            "#1 executeQuery()",
+            "#2 func.count(*, total_count)",
+            "#2 select(count(*, total_count))",
+            "#2 from(openregister_audit_trails, NULL)",
+            "#2 param :p2 = alice, 2",
+            "#2 expr.eq(user, :p2, NULL)",
+            "#2 where(eq(user, :p2, NULL))",
+            "#2 executeQuery()"
+        ]
+    },
+    "actor: action": {
+        "result": {
+            "ids": [
+                1
+            ],
+            "total": 7
+        },
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 where(eq(user, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(25)",
+            "#1 setFirstResult(0)",
+            "#1 param :p2 = update, 2",
+            "#1 expr.eq(action, :p2, NULL)",
+            "#1 andWhere(eq(action, :p2, NULL))",
+            "#1 executeQuery()",
+            "#2 func.count(*, total_count)",
+            "#2 select(count(*, total_count))",
+            "#2 from(openregister_audit_trails, NULL)",
+            "#2 param :p3 = alice, 2",
+            "#2 expr.eq(user, :p3, NULL)",
+            "#2 where(eq(user, :p3, NULL))",
+            "#2 param :p4 = update, 2",
+            "#2 expr.eq(action, :p4, NULL)",
+            "#2 andWhere(eq(action, :p4, NULL))",
+            "#2 executeQuery()"
+        ]
+    },
+    "actor: empty strings": {
+        "result": {
+            "ids": [
+                1
+            ],
+            "total": 7
+        },
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 where(eq(user, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(25)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()",
+            "#2 func.count(*, total_count)",
+            "#2 select(count(*, total_count))",
+            "#2 from(openregister_audit_trails, NULL)",
+            "#2 param :p2 = alice, 2",
+            "#2 expr.eq(user, :p2, NULL)",
+            "#2 where(eq(user, :p2, NULL))",
+            "#2 executeQuery()"
+        ]
+    },
+    "actor: from": {
+        "result": {
+            "ids": [
+                1
+            ],
+            "total": 7
+        },
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = bob, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 where(eq(user, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(25)",
+            "#1 setFirstResult(0)",
+            "#1 param :p2 = 2026-01-01, 2",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 executeQuery()",
+            "#2 func.count(*, total_count)",
+            "#2 select(count(*, total_count))",
+            "#2 from(openregister_audit_trails, NULL)",
+            "#2 param :p3 = bob, 2",
+            "#2 expr.eq(user, :p3, NULL)",
+            "#2 where(eq(user, :p3, NULL))",
+            "#2 param :p4 = 2026-01-01, 2",
+            "#2 expr.gte(created, :p4, NULL)",
+            "#2 andWhere(gte(created, :p4, NULL))",
+            "#2 executeQuery()"
+        ]
+    },
+    "actor: to": {
+        "result": {
+            "ids": [
+                1
+            ],
+            "total": 7
+        },
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = bob, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 where(eq(user, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(25)",
+            "#1 setFirstResult(0)",
+            "#1 param :p2 = 2026-02-01, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 executeQuery()",
+            "#2 func.count(*, total_count)",
+            "#2 select(count(*, total_count))",
+            "#2 from(openregister_audit_trails, NULL)",
+            "#2 param :p3 = bob, 2",
+            "#2 expr.eq(user, :p3, NULL)",
+            "#2 where(eq(user, :p3, NULL))",
+            "#2 param :p4 = 2026-02-01, 2",
+            "#2 expr.lte(created, :p4, NULL)",
+            "#2 andWhere(lte(created, :p4, NULL))",
+            "#2 executeQuery()"
+        ]
+    },
+    "actor: all": {
+        "result": {
+            "ids": [
+                1
+            ],
+            "total": 7
+        },
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = bob, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 where(eq(user, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(5)",
+            "#1 param :p2 = read, 2",
+            "#1 expr.eq(action, :p2, NULL)",
+            "#1 andWhere(eq(action, :p2, NULL))",
+            "#1 param :p3 = 2026-01-01, 2",
+            "#1 expr.gte(created, :p3, NULL)",
+            "#1 andWhere(gte(created, :p3, NULL))",
+            "#1 param :p4 = 2026-02-01, 2",
+            "#1 expr.lte(created, :p4, NULL)",
+            "#1 andWhere(lte(created, :p4, NULL))",
+            "#1 executeQuery()",
+            "#2 func.count(*, total_count)",
+            "#2 select(count(*, total_count))",
+            "#2 from(openregister_audit_trails, NULL)",
+            "#2 param :p5 = bob, 2",
+            "#2 expr.eq(user, :p5, NULL)",
+            "#2 where(eq(user, :p5, NULL))",
+            "#2 param :p6 = read, 2",
+            "#2 expr.eq(action, :p6, NULL)",
+            "#2 andWhere(eq(action, :p6, NULL))",
+            "#2 param :p7 = 2026-01-01, 2",
+            "#2 expr.gte(created, :p7, NULL)",
+            "#2 andWhere(gte(created, :p7, NULL))",
+            "#2 param :p8 = 2026-02-01, 2",
+            "#2 expr.lte(created, :p8, NULL)",
+            "#2 andWhere(lte(created, :p8, NULL))",
+            "#2 executeQuery()"
+        ]
+    },
+    "actor: no count row": {
+        "result": {
+            "ids": [],
+            "total": 0
+        },
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 where(eq(user, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(25)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()",
+            "#2 func.count(*, total_count)",
+            "#2 select(count(*, total_count))",
+            "#2 from(openregister_audit_trails, NULL)",
+            "#2 param :p2 = alice, 2",
+            "#2 expr.eq(user, :p2, NULL)",
+            "#2 where(eq(user, :p2, NULL))",
+            "#2 executeQuery()"
+        ]
+    },
+    "activities: none / NULL": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "activities: none / 'org-1'": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 andWhere(eq(organisation, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "activities: grouped / NULL": {
+        "result": [
+            {
+                "processingActivityId": "update",
+                "entryCount": 3,
+                "firstSeen": "2026-02-28 08:00:00",
+                "lastSeen": "2026-03-03 11:00:00"
+            },
+            {
+                "processingActivityId": "create",
+                "entryCount": 1,
+                "firstSeen": "2026-03-01 09:00:00",
+                "lastSeen": "2026-03-01 09:00:00"
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "activities: grouped / 'org-1'": {
+        "result": [
+            {
+                "processingActivityId": "update",
+                "entryCount": 3,
+                "firstSeen": "2026-02-28 08:00:00",
+                "lastSeen": "2026-03-03 11:00:00"
+            },
+            {
+                "processingActivityId": "create",
+                "entryCount": 1,
+                "firstSeen": "2026-03-01 09:00:00",
+                "lastSeen": "2026-03-01 09:00:00"
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 andWhere(eq(organisation, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "activities: missing action and created / NULL": {
+        "result": [
+            {
+                "processingActivityId": "unknown",
+                "entryCount": 1,
+                "firstSeen": null,
+                "lastSeen": null
+            },
+            {
+                "processingActivityId": "read",
+                "entryCount": 4,
+                "firstSeen": "2026-01-04 00:00:00",
+                "lastSeen": "2026-01-05 00:00:00"
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "activities: missing action and created / 'org-1'": {
+        "result": [
+            {
+                "processingActivityId": "unknown",
+                "entryCount": 1,
+                "firstSeen": null,
+                "lastSeen": null
+            },
+            {
+                "processingActivityId": "read",
+                "entryCount": 4,
+                "firstSeen": "2026-01-04 00:00:00",
+                "lastSeen": "2026-01-05 00:00:00"
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 andWhere(eq(organisation, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "purpose: none": {
+        "result": {
+            "zaakbehandeling": 9,
+            "null": 3,
+            "0": 1
+        },
+        "queries": [
+            "#1 select(purpose)",
+            "#1 selectAlias(COUNT(*), entry_count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(purpose)",
+            "#1 executeQuery()"
+        ]
+    },
+    "purpose: from": {
+        "result": {
+            "zaakbehandeling": 9,
+            "null": 3,
+            "0": 1
+        },
+        "queries": [
+            "#1 select(purpose)",
+            "#1 selectAlias(COUNT(*), entry_count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(purpose)",
+            "#1 param :p1 = DateTime, datetime",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "purpose: to": {
+        "result": {
+            "zaakbehandeling": 9,
+            "null": 3,
+            "0": 1
+        },
+        "queries": [
+            "#1 select(purpose)",
+            "#1 selectAlias(COUNT(*), entry_count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(purpose)",
+            "#1 param :p1 = DateTime, datetime",
+            "#1 expr.lte(created, :p1, NULL)",
+            "#1 andWhere(lte(created, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "purpose: both": {
+        "result": {
+            "zaakbehandeling": 9,
+            "null": 3,
+            "0": 1
+        },
+        "queries": [
+            "#1 select(purpose)",
+            "#1 selectAlias(COUNT(*), entry_count)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 groupBy(purpose)",
+            "#1 param :p1 = DateTime, datetime",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 param :p2 = DateTime, datetime",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "tag: mapper unavailable": {
+        "result": null,
+        "calls": [
+            "container.get(OCA\\OpenRegister\\Db\\VerwerkingsactiviteitMapper)"
+        ]
+    },
+    "tag: override resolves": {
+        "result": "uuid-code",
+        "calls": [
+            "container.get(OCA\\OpenRegister\\Db\\VerwerkingsactiviteitMapper)",
+            "resolveReference(pa-code)"
+        ]
+    },
+    "tag: override resolves without a uuid": {
+        "result": null,
+        "calls": [
+            "container.get(OCA\\OpenRegister\\Db\\VerwerkingsactiviteitMapper)",
+            "resolveReference(pa-nouuid)"
+        ]
+    },
+    "tag: override misses, schema resolves": {
+        "result": "uuid-schema",
+        "calls": [
+            "container.get(OCA\\OpenRegister\\Db\\VerwerkingsactiviteitMapper)",
+            "resolveReference(typo)",
+            "debug: [AVG] Per-action processing-activity override did not resolve {\"reference\":\"typo\"}",
+            "container.get(OCA\\OpenRegister\\Db\\SchemaMapperInterface)",
+            "schema.find('3', rbac=false, mt=false)",
+            "resolveReference(pa-schema)"
+        ]
+    },
+    "tag: empty override, schema resolves": {
+        "result": "uuid-schema",
+        "calls": [
+            "container.get(OCA\\OpenRegister\\Db\\VerwerkingsactiviteitMapper)",
+            "container.get(OCA\\OpenRegister\\Db\\SchemaMapperInterface)",
+            "schema.find('schema-uuid', rbac=false, mt=false)",
+            "resolveReference(pa-schema)"
+        ]
+    },
+    "tag: schema misses, register resolves": {
+        "result": "uuid-register",
+        "calls": [
+            "container.get(OCA\\OpenRegister\\Db\\VerwerkingsactiviteitMapper)",
+            "container.get(OCA\\OpenRegister\\Db\\SchemaMapperInterface)",
+            "schema.find('3', rbac=false, mt=false)",
+            "resolveReference(typo)",
+            "warning: [AVG] Schema annotation references unknown verwerkingsactiviteit {\"reference\":\"typo\",\"schemaId\":\"3\"}",
+            "container.get(OCA\\OpenRegister\\Db\\RegisterMapperInterface)",
+            "register.find('4', rbac=false, mt=false)",
+            "resolveReference(pa-register)"
+        ]
+    },
+    "tag: schema has no annotation": {
+        "result": "uuid-register",
+        "calls": [
+            "container.get(OCA\\OpenRegister\\Db\\VerwerkingsactiviteitMapper)",
+            "container.get(OCA\\OpenRegister\\Db\\SchemaMapperInterface)",
+            "schema.find('3', rbac=false, mt=false)",
+            "container.get(OCA\\OpenRegister\\Db\\RegisterMapperInterface)",
+            "register.find('4', rbac=false, mt=false)",
+            "resolveReference(pa-register)"
+        ]
+    },
+    "tag: schema annotation not a string": {
+        "result": "uuid-register",
+        "calls": [
+            "container.get(OCA\\OpenRegister\\Db\\VerwerkingsactiviteitMapper)",
+            "container.get(OCA\\OpenRegister\\Db\\SchemaMapperInterface)",
+            "schema.find('3', rbac=false, mt=false)",
+            "container.get(OCA\\OpenRegister\\Db\\RegisterMapperInterface)",
+            "register.find('4', rbac=false, mt=false)",
+            "resolveReference(pa-register)"
+        ]
+    },
+    "tag: schema annotation empty": {
+        "result": null,
+        "calls": [
+            "container.get(OCA\\OpenRegister\\Db\\VerwerkingsactiviteitMapper)",
+            "container.get(OCA\\OpenRegister\\Db\\SchemaMapperInterface)",
+            "schema.find('3', rbac=false, mt=false)",
+            "container.get(OCA\\OpenRegister\\Db\\RegisterMapperInterface)",
+            "register.find('4', rbac=false, mt=false)"
+        ]
+    },
+    "tag: schema lookup refused": {
+        "result": "uuid-register",
+        "calls": [
+            "container.get(OCA\\OpenRegister\\Db\\VerwerkingsactiviteitMapper)",
+            "container.get(OCA\\OpenRegister\\Db\\SchemaMapperInterface)",
+            "schema.find('3', rbac=false, mt=false)",
+            "container.get(OCA\\OpenRegister\\Db\\RegisterMapperInterface)",
+            "register.find('4', rbac=false, mt=false)",
+            "resolveReference(pa-register)"
+        ]
+    },
+    "tag: schema id zero string": {
+        "result": null,
+        "calls": [
+            "container.get(OCA\\OpenRegister\\Db\\VerwerkingsactiviteitMapper)",
+            "container.get(OCA\\OpenRegister\\Db\\SchemaMapperInterface)",
+            "schema.find('0', rbac=false, mt=false)",
+            "container.get(OCA\\OpenRegister\\Db\\RegisterMapperInterface)",
+            "register.find('0', rbac=false, mt=false)"
+        ]
+    },
+    "tag: schema empty, register misses": {
+        "result": null,
+        "calls": [
+            "container.get(OCA\\OpenRegister\\Db\\VerwerkingsactiviteitMapper)",
+            "container.get(OCA\\OpenRegister\\Db\\RegisterMapperInterface)",
+            "register.find('4', rbac=false, mt=false)",
+            "resolveReference(typo)",
+            "warning: [AVG] Register annotation references unknown verwerkingsactiviteit {\"reference\":\"typo\",\"registerId\":\"4\"}"
+        ]
+    },
+    "tag: register lookup refused": {
+        "result": null,
+        "calls": [
+            "container.get(OCA\\OpenRegister\\Db\\VerwerkingsactiviteitMapper)",
+            "container.get(OCA\\OpenRegister\\Db\\RegisterMapperInterface)",
+            "register.find('4', rbac=false, mt=false)"
+        ]
+    },
+    "tag: register resolves without a uuid": {
+        "result": null,
+        "calls": [
+            "container.get(OCA\\OpenRegister\\Db\\VerwerkingsactiviteitMapper)",
+            "container.get(OCA\\OpenRegister\\Db\\RegisterMapperInterface)",
+            "register.find('4', rbac=false, mt=false)",
+            "resolveReference(pa-nouuid)"
+        ]
+    },
+    "tag: nothing set": {
+        "result": null,
+        "calls": [
+            "container.get(OCA\\OpenRegister\\Db\\VerwerkingsactiviteitMapper)"
+        ]
+    },
+    "revert: no entries, no point": {
+        "same instance": false,
+        "version": "1.2.4",
+        "object": {
+            "id": "o-1",
+            "title": "B"
+        },
+        "original version": "1.2.3",
+        "calls": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "revert: no entries, null version": {
+        "same instance": false,
+        "version": "1.0.1",
+        "object": {
+            "id": "o-1",
+            "title": "B"
+        },
+        "original version": null,
+        "calls": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "revert: no entries, keep version": {
+        "same instance": false,
+        "version": "1.2.3",
+        "object": {
+            "id": "o-1",
+            "title": "B"
+        },
+        "original version": "1.2.3",
+        "calls": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "revert: entries reverted": {
+        "same instance": false,
+        "version": "2.0.10",
+        "object": {
+            "id": "o-1",
+            "title": "A"
+        },
+        "original version": "2.0.9",
+        "calls": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "revert: point not found is refused": {
+        "thrown": "Exception: No audit trail entries found for the specified reversion point.",
+        "calls": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#2 select(id)",
+            "#2 from(openregister_audit_trails, NULL)",
+            "#2 param :p2 = o-1, 2",
+            "#2 expr.eq(object_uuid, :p2, NULL)",
+            "#2 where(eq(object_uuid, :p2, NULL))",
+            "#2 orderBy(id, DESC)",
+            "#2 setMaxResults(1)",
+            "#2 param :p3 = 0, 1",
+            "#2 expr.eq(id, :p3, NULL)",
+            "#2 andWhere(eq(id, :p3, NULL))",
+            "#2 executeQuery()"
+        ]
+    },
+    "revert: point found but nothing after it is refused": {
+        "thrown": "Exception: No audit trail entries found for the specified reversion point.",
+        "calls": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#2 select(id)",
+            "#2 from(openregister_audit_trails, NULL)",
+            "#2 param :p2 = o-1, 2",
+            "#2 expr.eq(object_uuid, :p2, NULL)",
+            "#2 where(eq(object_uuid, :p2, NULL))",
+            "#2 orderBy(id, DESC)",
+            "#2 setMaxResults(1)",
+            "#2 param :p3 = 0, 1",
+            "#2 expr.eq(id, :p3, NULL)",
+            "#2 andWhere(eq(id, :p3, NULL))",
+            "#2 executeQuery()",
+            "#1 param :p4 = 5, 1",
+            "#1 expr.gt(id, :p4, NULL)",
+            "#1 andWhere(gt(id, :p4, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "revert: identifier looked up": {
+        "same instance": false,
+        "version": "1.0.1",
+        "object": {
+            "id": "o-1",
+            "title": "B"
+        },
+        "original version": "1.0.0",
+        "calls": [
+            "magic.find('o-1')"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 executeQuery()"
+        ]
+    }
+}

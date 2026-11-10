@@ -34,16 +34,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Timer;
 
 use DateTimeInterface;
-use OCA\OpenRegister\Db\FlowTimerMapper;
-use OCA\OpenRegister\Db\TaskMapper;
-use OCA\OpenRegister\Service\Task\TaskServiceInterface;
+use OCA\OpenRegister\Db\FlowTimer;
+use OCA\OpenRegister\Db\Task;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
  * The bounded, re-entrant sweep.
  */
-class FlowTimerSweep {
+class FlowTimerSweep implements FlowTimerSweepInterface {
 
 	/**
 	 * The actor a swept task timeout records itself as.
@@ -52,28 +51,25 @@ class FlowTimerSweep {
 	 */
 	public const TIMEOUT_SOURCE = 'task-expiry-sweep';
 
+
+
+
+
+
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowTimerMapper $timers The two timer range scans.
-	 * @param FlowTimerService $service Fires expiries and rungs.
-	 * @param WorkingCalendarService $calendars Reset once per pass so memoisation is per pass.
-	 * @param LoggerInterface $logger Per-timer failure reporting.
-	 * @param TaskMapper|null $tasks The task-timeout range scan
-	 *                               (task-expiry-and-outcomes D-3). Nullable so
-	 *                               pre-existing positional instantiations keep
-	 *                               working; the container wires both.
-	 * @param TaskServiceInterface|null $taskService Applies a due task's declared behaviour.
+	 * @param FlowTimerSweepTimers     $timers The timer range scans, the timer service and the calendars.
+	 * @param LoggerInterface          $logger Per-timer failure reporting.
+	 * @param FlowTimerSweepTasks|null $tasks  The task-timeout scan and task service. Nullable so
+	 *                                         a sweep without them skips the task pass; the
+	 *                                         container wires both.
 	 */
 	public function __construct(
-		private readonly FlowTimerMapper $timers,
-		private readonly FlowTimerService $service,
-		private readonly WorkingCalendarService $calendars,
+		private readonly FlowTimerSweepTimers $timers,
 		private readonly LoggerInterface $logger,
-		private readonly ?TaskMapper $tasks = null,
-		private readonly ?TaskServiceInterface $taskService = null,
+		private readonly ?FlowTimerSweepTasks $tasks = null,
 	) {
-
 	}//end __construct()
 
 	/**
@@ -87,87 +83,167 @@ class FlowTimerSweep {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
 	 */
 	public function run(DateTimeInterface $now, int $batch): array {
-		$batch = max(1, $batch);
-		$this->calendars->reset();
-		$result = ['expiriesFired' => 0, 'rungsFired' => 0, 'taskTimeouts' => 0, 'truncated' => false, 'errors' => 0];
+		$tally = new FlowTimerSweepTally(now: $now, batch: max(1, $batch));
+		$this->timers->calendars->reset();
 
-		$expiries = $this->timers->findDueExpiries(now: $now, limit: $batch);
-		$result['truncated'] = (count($expiries) >= $batch);
-		foreach ($expiries as $timer) {
-			try {
-				if ($this->service->fireExpiry(timer: $timer, now: $now) === true) {
-					$result['expiriesFired']++;
-				}
-			} catch (Throwable $failure) {
-				$result['errors']++;
-				$this->logger->error(
-					'[FlowTimerSweep] Expiry fire failed: ' . $failure->getMessage(),
-					['timer' => $timer->getUuid(), 'exception' => $failure]
-				);
-			}
-		}
+		$this->fireExpiries(tally: $tally);
+		$this->fireRungs(tally: $tally);
+		$this->sweepTaskTimeouts(tally: $tally);
 
-		$rungs = $this->timers->findDueRungs(now: $now, limit: $batch);
-		$result['truncated'] = ($result['truncated'] === true || count($rungs) >= $batch);
-		foreach ($rungs as $timer) {
-			try {
-				$result['rungsFired'] += $this->service->fireRungs(timer: $timer, now: $now);
-			} catch (Throwable $failure) {
-				$result['errors']++;
-				$this->logger->error(
-					'[FlowTimerSweep] Rung fire failed: ' . $failure->getMessage(),
-					['timer' => $timer->getUuid(), 'exception' => $failure]
-				);
-			}
-		}
-
-		$this->sweepTaskTimeouts(now: $now, batch: $batch, result: $result);
-
-		return $result;
+		return $tally->result();
 	}//end run()
 
 	/**
-	 * The third scan (task-expiry-and-outcomes D-3): non-terminal tasks past
-	 * their enforcing deadline that DECLARE a timeout behaviour, each closed
-	 * through the existing timer-outcome path. A failure on one task is
-	 * logged and counted and does not stop the pass; the row is retried next
-	 * pass because only a successful apply makes it terminal.
+	 * Fire every due expiry timer in one batch.
 	 *
-	 * @param DateTimeInterface $now The sweep instant.
-	 * @param int $batch The per-scan batch limit.
-	 * @param array{expiriesFired: int, rungsFired: int, taskTimeouts: int, truncated: bool, errors: int} $result Mutated in place.
+	 * @param FlowTimerSweepTally $tally The pass.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/specs/task-expiry-and-outcomes/spec.md#requirement-the-timer-sweep-enforces-a-declared-task-expiry
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
 	 */
-	private function sweepTaskTimeouts(DateTimeInterface $now, int $batch, array &$result): void {
-		if ($this->tasks === null || $this->taskService === null) {
+	private function fireExpiries(FlowTimerSweepTally $tally): void {
+		$expiries = $this->timers->timers->findDueExpiries(now: $tally->now, limit: $tally->batch);
+		$tally->scanned(found: count($expiries));
+		foreach ($expiries as $timer) {
+			$this->fireExpiry(timer: $timer, tally: $tally);
+		}
+
+	}//end fireExpiries()
+
+	/**
+	 * Fire one expiry; count it when it fired, and a failure when it threw.
+	 *
+	 * @param FlowTimer           $timer The due timer.
+	 * @param FlowTimerSweepTally $tally The pass.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
+	 */
+	private function fireExpiry(FlowTimer $timer, FlowTimerSweepTally $tally): void {
+		try {
+			if ($this->timers->service->fireExpiry(timer: $timer, now: $tally->now) === true) {
+				$tally->add(counter: 'expiriesFired', amount: 1);
+			}
+		} catch (Throwable $failure) {
+			$tally->add(counter: 'errors', amount: 1);
+			$this->logger->error(
+				'[FlowTimerSweep] Expiry fire failed: ' . $failure->getMessage(),
+				['timer' => $timer->getUuid(), 'exception' => $failure]
+			);
+		}
+
+	}//end fireExpiry()
+
+	/**
+	 * Fire every timer with a due escalation rung, in one batch.
+	 *
+	 * @param FlowTimerSweepTally $tally The pass.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
+	 */
+	private function fireRungs(FlowTimerSweepTally $tally): void {
+		$rungs = $this->timers->timers->findDueRungs(now: $tally->now, limit: $tally->batch);
+		$tally->scanned(found: count($rungs));
+		foreach ($rungs as $timer) {
+			$this->fireRungsOf(timer: $timer, tally: $tally);
+		}
+
+	}//end fireRungs()
+
+	/**
+	 * Fire one timer's due rungs; count each, and a failure when it threw.
+	 *
+	 * @param FlowTimer           $timer The timer.
+	 * @param FlowTimerSweepTally $tally The pass.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
+	 */
+	private function fireRungsOf(FlowTimer $timer, FlowTimerSweepTally $tally): void {
+		try {
+			$tally->add(counter: 'rungsFired', amount: $this->timers->service->fireRungs(timer: $timer, now: $tally->now));
+		} catch (Throwable $failure) {
+			$tally->add(counter: 'errors', amount: 1);
+			$this->logger->error(
+				'[FlowTimerSweep] Rung fire failed: ' . $failure->getMessage(),
+				['timer' => $timer->getUuid(), 'exception' => $failure]
+			);
+		}
+
+	}//end fireRungsOf()
+
+	/**
+	 * Apply the declared timeout behaviour of every due task, in one batch.
+	 *
+	 * Skipped when the task scan or service is not wired, so a pre-existing
+	 * positional instantiation keeps sweeping timers only.
+	 *
+	 * @param FlowTimerSweepTally $tally The pass.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
+	 */
+	private function sweepTaskTimeouts(FlowTimerSweepTally $tally): void {
+		$tasks = $this->tasks?->tasks;
+		if ($tasks === null || $this->tasks?->taskService === null) {
 			return;
 		}
 
-		$due = $this->tasks->findDueTimeouts(now: $now, limit: $batch);
-		$result['truncated'] = ($result['truncated'] === true || count($due) >= $batch);
+		$due = $tasks->findDueTimeouts(now: $tally->now, limit: $tally->batch);
+		$tally->scanned(found: count($due));
 		foreach ($due as $task) {
-			try {
-				$this->taskService->applyTimerOutcome(
-					uuid: (string)$task->getUuid(),
-					outcome: (string)$task->getOnTimeout(),
-					source: self::TIMEOUT_SOURCE,
-					reason: sprintf(
-						"Task expired at %s; declared onTimeout '%s' applied.",
-						(string)$task->getExpiresAt()?->format('c'),
-						(string)$task->getOnTimeout()
-					)
-				);
-				$result['taskTimeouts']++;
-			} catch (Throwable $failure) {
-				$result['errors']++;
-				$this->logger->error(
-					'[FlowTimerSweep] Task timeout failed: ' . $failure->getMessage(),
-					['task' => $task->getUuid(), 'exception' => $failure]
-				);
-			}
+			$this->applyTimeout(task: $task, tally: $tally);
 		}
+
 	}//end sweepTaskTimeouts()
+
+	/**
+	 * Apply one task's declared timeout; count it, or a failure when it threw.
+	 *
+	 * @param Task                $task  The due task.
+	 * @param FlowTimerSweepTally $tally The pass.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
+	 */
+	private function applyTimeout(Task $task, FlowTimerSweepTally $tally): void {
+		try {
+			$this->tasks?->taskService?->applyTimerOutcome(
+				uuid: (string)$task->getUuid(),
+				outcome: (string)$task->getOnTimeout(),
+				source: self::TIMEOUT_SOURCE,
+				reason: $this->timeoutReason(task: $task)
+			);
+			$tally->add(counter: 'taskTimeouts', amount: 1);
+		} catch (Throwable $failure) {
+			$tally->add(counter: 'errors', amount: 1);
+			$this->logger->error('[FlowTimerSweep] Task timeout failed: ' . $failure->getMessage(), ['task' => $task->getUuid(), 'exception' => $failure]);
+		}
+
+	}//end applyTimeout()
+
+	/**
+	 * The reason a swept timeout records against the task.
+	 *
+	 * @param Task $task The due task.
+	 *
+	 * @return string The reason.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
+	 */
+	private function timeoutReason(Task $task): string {
+		return sprintf(
+			"Task expired at %s; declared onTimeout '%s' applied.",
+			(string)$task->getExpiresAt()?->format('c'),
+			(string)$task->getOnTimeout()
+		);
+
+	}//end timeoutReason()
 }//end class

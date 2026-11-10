@@ -18,7 +18,7 @@ final class RegistrySubscriptionControllerFactory {
 	/**
 	 * The constructor arguments of RegistrySubscriptionController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Unused; kept so existing calls still fit.
 	 * @param IRequest $request Constructor argument.
 	 * @param ObjectService $objectService Constructor argument.
 	 * @param SchemaMapper $schemaMapper Constructor argument.
@@ -40,7 +40,6 @@ final class RegistrySubscriptionControllerFactory {
 		?\Psr\Log\LoggerInterface $logger = null,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\RegistrySubscriptionControllerServices(
 				domain: new \OCA\OpenRegister\Controller\Support\RegistrySubscriptionDomain(

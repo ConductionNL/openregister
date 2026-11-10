@@ -40,16 +40,22 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Exception\JobRunRefusedException;
-use OCA\OpenRegister\Service\OperationsConsoleService;
-use OCA\OpenRegister\Service\Operations\JobAlertService;
-use OCA\OpenRegister\Service\Operations\OperationsJobsService;
+use OCA\OpenRegister\Service\OperationsConsoleServiceInterface;
+use OCA\OpenRegister\Service\Operations\JobAlertServiceInterface;
+use OCA\OpenRegister\Service\Operations\JobRunFilter;
+use OCA\OpenRegister\Service\Operations\JobScheduleChange;
+use OCA\OpenRegister\Service\Operations\OperationsJobsServiceInterface;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Controller\Support\OperationsActingRequest;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCP\IUserSession;
+use OCA\OpenRegister\Controller\Support\OperationsConsoleControllerServices;
 
 /**
  * OperationsConsoleController.
@@ -59,28 +65,56 @@ use OCP\IUserSession;
 class OperationsConsoleController extends Controller {
 
 	/**
+	 * The acting administrator and the parameter readers.
+	 *
+	 * @var OperationsActingRequest
+	 */
+	private readonly OperationsActingRequest $acting;
+
+	/**
+	 * The session naming the acting administrator.
+	 *
+	 * @var ControllerSession
+	 */
+	private readonly ControllerSession $session;
+
+	/**
+	 * The read model.
+	 *
+	 * @var OperationsConsoleServiceInterface
+	 */
+	private readonly OperationsConsoleServiceInterface $console;
+
+	/**
+	 * The run history, run now and the schedule.
+	 *
+	 * @var OperationsJobsServiceInterface
+	 */
+	private readonly OperationsJobsServiceInterface $jobsService;
+
+	/**
+	 * The administered failure threshold.
+	 *
+	 * @var JobAlertServiceInterface
+	 */
+	private readonly JobAlertServiceInterface $alerts;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string                    $appName     Application name.
-	 * @param IRequest                  $request     HTTP request.
-	 * @param OperationsConsoleService  $console     The read model.
-	 * @param OperationsJobsService     $jobsService The run history, run now and the schedule.
-	 * @param JobAlertService           $alerts      The administered failure threshold.
-	 * @param IUserSession              $userSession Names the administrator acting.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One console, one
-	 * controller: splitting it would put the operations surface behind two
-	 * route prefixes for no reader's benefit.
+	 * @param IRequest                            $request  HTTP request.
+	 * @param OperationsConsoleControllerServices $services The services and the session naming the acting administrator.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly OperationsConsoleService $console,
-		private readonly OperationsJobsService $jobsService,
-		private readonly JobAlertService $alerts,
-		private readonly IUserSession $userSession,
+		OperationsConsoleControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->console = $services->console;
+		$this->jobsService = $services->jobsService;
+		$this->alerts = $services->alerts;
+		$this->session = $services->session;
+		$this->acting = new OperationsActingRequest(request: $request, userSession: $this->session->userSession);
 	}//end __construct()
 
 	/**
@@ -93,7 +127,7 @@ class OperationsConsoleController extends Controller {
 	#[NoCSRFRequired]
 	public function index(): JSONResponse {
 		return new JSONResponse(
-			data: $this->console->panes(windowHours: $this->intParam(name: 'hours', fallback: OperationsConsoleService::DEFAULT_WINDOW_HOURS))
+			data: $this->console->panes(windowHours: $this->acting->intParam(name: 'hours', fallback: OperationsConsoleServiceInterface::DEFAULT_WINDOW_HOURS))
 		);
 	}//end index()
 
@@ -120,7 +154,7 @@ class OperationsConsoleController extends Controller {
 		return new JSONResponse(
 			data: $this->console->jobs(
 				state: $wanted,
-				limit: $this->intParam(name: 'limit', fallback: 50)
+				limit: $this->acting->intParam(name: 'limit', fallback: 50)
 			)
 		);
 	}//end jobs()
@@ -136,8 +170,8 @@ class OperationsConsoleController extends Controller {
 	public function ruleRuns(): JSONResponse {
 		return new JSONResponse(
 			data: $this->console->ruleRuns(
-				windowHours: $this->intParam(name: 'hours', fallback: OperationsConsoleService::DEFAULT_WINDOW_HOURS),
-				limit: $this->intParam(name: 'limit', fallback: 50)
+				windowHours: $this->acting->intParam(name: 'hours', fallback: OperationsConsoleServiceInterface::DEFAULT_WINDOW_HOURS),
+				limit: $this->acting->intParam(name: 'limit', fallback: 50)
 			)
 		);
 	}//end ruleRuns()
@@ -151,20 +185,21 @@ class OperationsConsoleController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	public function runs(): JSONResponse {
-		$hours = $this->request->getParam('hours');
-
-		$windowHours = null;
-		if (is_numeric($hours) === true) {
-			$windowHours = (int)$hours;
-		}
+		// No window is "all of history", so a malformed one stays null rather
+		// than falling back to a default.
+		$windowHours = $this->acting->nullableIntParam(name: 'hours');
 
 		return new JSONResponse(
 			data: $this->jobsService->runs(
-				jobClass: $this->stringParam(name: 'job'),
-				outcome: $this->stringParam(name: 'outcome'),
-				windowHours: $windowHours,
-				limit: $this->intParam(name: 'limit', fallback: 50),
-				offset: $this->intParam(name: 'offset', fallback: 0)
+				filter: new JobRunFilter(
+					jobClass: $this->acting->stringParam(name: 'job'),
+					outcome: $this->acting->stringParam(name: 'outcome'),
+					windowHours: $windowHours
+				),
+				page: new ListQuery(
+					limit: $this->acting->intParam(name: 'limit', fallback: 50),
+					offset: $this->acting->intParam(name: 'offset', fallback: 0)
+				)
 			)
 		);
 	}//end runs()
@@ -181,32 +216,51 @@ class OperationsConsoleController extends Controller {
 	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 */
 	public function runNow(): JSONResponse {
-		$job = $this->stringParam(name: 'job');
+		$job = $this->acting->stringParam(name: 'job');
 
 		if ($job === null) {
-			return new JSONResponse(
-				['error' => 'no-job', 'message' => 'Name the job to start.'],
-				Http::STATUS_BAD_REQUEST
-			);
+			return $this->noJob(message: 'Name the job to start.');
 		}
 
 		try {
 			return new JSONResponse(
-				data: $this->jobsService->runNow(jobClass: $job, actor: $this->actor()),
+				data: $this->jobsService->runNow(jobClass: $job, actor: $this->acting->actor()),
 				statusCode: Http::STATUS_ACCEPTED
 			);
 		} catch (JobRunRefusedException $refusal) {
-			return new JSONResponse(
-				[
-					'error' => 'refused',
-					'reason' => $refusal->getReason(),
-					'message' => $refusal->getMessage(),
-					'details' => $refusal->getDetails(),
-				],
-				Http::STATUS_UNPROCESSABLE_ENTITY
-			);
+			return $this->refusedRun(refusal: $refusal);
 		}
 	}//end runNow()
+
+	/**
+	 * The 422 for a run the service refused to start.
+	 *
+	 * @param JobRunRefusedException $refusal Why it was refused.
+	 *
+	 * @return JSONResponse The refusal.
+	 */
+	private function refusedRun(JobRunRefusedException $refusal): JSONResponse {
+		return new JSONResponse(
+			[
+				'error' => 'refused',
+				'reason' => $refusal->getReason(),
+				'message' => $refusal->getMessage(),
+				'details' => $refusal->getDetails(),
+			],
+			Http::STATUS_UNPROCESSABLE_ENTITY
+		);
+	}//end refusedRun()
+
+	/**
+	 * The 400 for a request that names no job.
+	 *
+	 * @param string $message What the caller must name.
+	 *
+	 * @return JSONResponse The refusal.
+	 */
+	private function noJob(string $message): JSONResponse {
+		return new JSONResponse(['error' => 'no-job', 'message' => $message], Http::STATUS_BAD_REQUEST);
+	}//end noJob()
 
 	/**
 	 * One job's schedule, or the schedule after administering it.
@@ -220,19 +274,29 @@ class OperationsConsoleController extends Controller {
 	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
 	public function schedule(): JSONResponse {
-		$job = $this->stringParam(name: 'job');
+		$job = $this->acting->stringParam(name: 'job');
 
 		if ($job === null) {
-			return new JSONResponse(
-				['error' => 'no-job', 'message' => 'Name the job whose schedule this is.'],
-				Http::STATUS_BAD_REQUEST
-			);
+			return $this->noJob(message: 'Name the job whose schedule this is.');
 		}
 
 		if ($this->request->getMethod() === 'GET') {
 			return new JSONResponse(data: $this->jobsService->schedule(jobClass: $job));
 		}
 
+		return new JSONResponse(data: $this->administerSchedule(jobClass: $job));
+	}//end schedule()
+
+	/**
+	 * Administer one job's schedule from the request's settings.
+	 *
+	 * An absent or non-boolean `enabled` is no change, never "disabled".
+	 *
+	 * @param string $jobClass The job.
+	 *
+	 * @return array The schedule now in force.
+	 */
+	private function administerSchedule(string $jobClass): array {
 		$enabled = $this->request->getParam('enabled');
 
 		$wantedEnabled = null;
@@ -240,16 +304,16 @@ class OperationsConsoleController extends Controller {
 			$wantedEnabled = $enabled;
 		}
 
-		return new JSONResponse(
-			data: $this->jobsService->administerSchedule(
-				jobClass: $job,
+		return $this->jobsService->administerSchedule(
+			jobClass: $jobClass,
+			change: new JobScheduleChange(
 				enabled: $wantedEnabled,
-				intervalSeconds: $this->nullableIntParam(name: 'intervalSeconds'),
-				windowStartHour: $this->nullableIntParam(name: 'windowStartHour'),
-				windowEndHour: $this->nullableIntParam(name: 'windowEndHour')
+				intervalSeconds: $this->acting->nullableIntParam(name: 'intervalSeconds'),
+				windowStartHour: $this->acting->nullableIntParam(name: 'windowStartHour'),
+				windowEndHour: $this->acting->nullableIntParam(name: 'windowEndHour')
 			)
 		);
-	}//end schedule()
+	}//end administerSchedule()
 
 	/**
 	 * The failure alerts, and the threshold in force.
@@ -280,81 +344,13 @@ class OperationsConsoleController extends Controller {
 	public function administerAlerts(): JSONResponse {
 		return new JSONResponse(
 			data: $this->alerts->administer(
-				threshold: $this->nullableIntParam(name: 'threshold'),
-				periodMinutes: $this->nullableIntParam(name: 'periodMinutes')
+				threshold: $this->acting->nullableIntParam(name: 'threshold'),
+				periodMinutes: $this->acting->nullableIntParam(name: 'periodMinutes')
 			)
 		);
 	}//end administerAlerts()
 
-	/**
-	 * The uid acting.
-	 *
-	 * Every write here is an administrator's act and is recorded as theirs, so
-	 * an unresolvable session is an empty string the services refuse rather
-	 * than a system identity the record would blame.
-	 *
-	 * @return string The uid, or the empty string.
-	 */
-	private function actor(): string {
-		return (string)($this->userSession->getUser()?->getUID() ?? '');
-	}//end actor()
 
-	/**
-	 * Read a non-empty string request parameter.
-	 *
-	 * @param string $name The parameter name.
-	 *
-	 * @return string|null The value, or null when absent or empty.
-	 */
-	private function stringParam(string $name): ?string {
-		$value = $this->request->getParam($name);
 
-		if (is_string($value) === false || $value === '') {
-			return null;
-		}
 
-		return $value;
-	}//end stringParam()
-
-	/**
-	 * Read a whole-number request parameter, or nothing.
-	 *
-	 * Distinct from {@see intParam()}: an absent setting must stay absent so
-	 * administering one field does not silently reset the others.
-	 *
-	 * @param string $name The parameter name.
-	 *
-	 * @return int|null The value, or null when absent or malformed.
-	 */
-	private function nullableIntParam(string $name): ?int {
-		$value = $this->request->getParam($name);
-
-		if (is_numeric($value) === false) {
-			return null;
-		}
-
-		return (int)$value;
-	}//end nullableIntParam()
-
-	/**
-	 * Read a whole-number request parameter, or fall back.
-	 *
-	 * A parameter that is not a number falls back rather than reading as
-	 * zero, because zero is a window this service would then bound to one
-	 * hour and report as if it had been asked for.
-	 *
-	 * @param string $name     The parameter name.
-	 * @param int    $fallback The value to use when it is absent or malformed.
-	 *
-	 * @return int The value.
-	 */
-	private function intParam(string $name, int $fallback): int {
-		$value = $this->request->getParam($name);
-
-		if (is_numeric($value) === false) {
-			return $fallback;
-		}
-
-		return (int)$value;
-	}//end intParam()
 }//end class

@@ -25,11 +25,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Hinge;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -62,20 +61,18 @@ class LensResolver {
 	/**
 	 * Wire the lookups a lens resolves through.
 	 *
-	 * @param MagicMapperInterface       $magicMapper       Object storage, to read the referenced record.
-	 * @param SchemaMapperInterface      $schemaMapper      Schema lookup for the referenced record.
-	 * @param PermissionHandler $permissionHandler The read check over the referenced record.
-	 * @param IUserSession      $userSession       The caller, for that check.
-	 * @param LoggerInterface   $logger            PSR logger for unresolvable lenses.
+	 * @param LensLookups                $lookups           The object storage and the schema lookup.
+	 * @param PermissionHandlerInterface $permissionHandler The read check over the referenced record.
+	 * @param IUserSession               $userSession       The caller, for that check.
+	 * @param LoggerInterface            $logger            PSR logger for unresolvable lenses.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $magicMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly PermissionHandler $permissionHandler,
+		private readonly LensLookups $lookups,
+		private readonly PermissionHandlerInterface $permissionHandler,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
@@ -96,27 +93,35 @@ class LensResolver {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `_rbac` is the established
 	 *   access-flag convention across the object layer (MagicSearchHandler,
-	 *   PermissionHandler, ObjectService all take it); splitting this one method
+	 *   PermissionHandlerInterface, ObjectService all take it); splitting this one method
 	 *   in two would make it the exception rather than the rule.
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function apply(?Schema $schema, array $data, bool $_rbac = true): array {
-		if ($schema === null) {
-			return $data;
-		}
-
-		$lenses = $schema->getLenses();
-		if ($lenses === []) {
-			return $data;
-		}
-
-		foreach ($lenses as $name => $lens) {
-			$data[$name] = $this->resolveOne(lens: $lens, data: $data, _rbac: $_rbac);
+		foreach (($schema?->getLenses() ?? []) as $name => $lens) {
+			$data[$name] = $this->resolveOne(target: $this->targetOf(lens: $lens, data: $data), _rbac: $_rbac);
 		}
 
 		return $data;
 	}//end apply()
+
+	/**
+	 * What one lens reads, or null when the object holds no reference to follow.
+	 *
+	 * @param array $lens The declaration: `through` and `property`.
+	 * @param array $data The object's own data, holding the reference.
+	 *
+	 * @return LensTarget|null The referenced record and the property, or null.
+	 */
+	private function targetOf(array $lens, array $data): ?LensTarget {
+		$reference = $this->referenceIdentifier(value: ($data[$lens['through']] ?? null));
+		if ($reference === null) {
+			return null;
+		}
+
+		return new LensTarget(reference: $reference, property: $lens['property']);
+	}//end targetOf()
 
 	/**
 	 * The property names a schema declares as lenses.
@@ -166,17 +171,17 @@ class LensResolver {
 	/**
 	 * Resolve one lens to a value, to the withheld marker, or to null.
 	 *
-	 * @param array $lens  The declaration: `through` and `property`.
-	 * @param array $data  The object's own data, holding the reference.
-	 * @param bool  $_rbac Whether the caller's access is being enforced.
+	 * @param LensTarget|null $target What the lens reads; null when there is no reference.
+	 * @param bool            $_rbac  Whether the caller's access is being enforced.
 	 *
 	 * @return mixed The referenced value, the withheld marker, or null.
 	 */
-	private function resolveOne(array $lens, array $data, bool $_rbac): mixed {
-		$reference = $this->referenceIdentifier(value: ($data[$lens['through']] ?? null));
-		if ($reference === null) {
+	private function resolveOne(?LensTarget $target, bool $_rbac): mixed {
+		if ($target === null) {
 			return null;
 		}
+
+		$reference = $target->reference;
 
 		try {
 			// Read the referenced object WITHOUT the access filter, then decide.
@@ -184,7 +189,8 @@ class LensResolver {
 			// see it", and rendering those two the same way is the defect D-3
 			// exists to prevent. Nothing but the one declared property leaves this
 			// method, and only after mayRead() says so.
-			$referenced = $this->magicMapper->find(
+			$finder     = $this->objectFinder();
+			$referenced = $finder->find(
 				identifier: $reference,
 				_rbac: false,
 				_multitenancy: false
@@ -200,7 +206,7 @@ class LensResolver {
 			return self::WITHHELD;
 		}
 
-		return $this->readPath(data: ($referenced->getObject() ?? []), path: $lens['property']);
+		return $this->readPath(data: ($referenced->getObject() ?? []), path: $target->property);
 	}//end resolveOne()
 
 	/**
@@ -220,7 +226,7 @@ class LensResolver {
 		}
 
 		try {
-			$schema = $this->schemaMapper->find(
+			$schema = $this->lookups->schemaMapper->find(
 				id: $referenced->getSchema(),
 				_rbac: false,
 				_multitenancy: false
@@ -247,6 +253,15 @@ class LensResolver {
 			object: $referenced
 		);
 	}//end mayRead()
+
+	/**
+	 * The object storage the referenced record is read from.
+	 *
+	 * @return MagicObjectFinderInterface The finder role of the object storage.
+	 */
+	private function objectFinder(): MagicObjectFinderInterface {
+		return $this->lookups->magicMapper;
+	}//end objectFinder()
 
 	/**
 	 * The uuid or id a reference property holds.

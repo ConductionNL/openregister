@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Rbac\RecordMetadataConditions;
 use OCP\IUserSession;
@@ -69,7 +70,7 @@ class MatchEnvelopeExpiresTest extends TestCase {
 	 */
 	private function matcher(): ConditionMatcher {
 		return new ConditionMatcher(
-			$this->createMock(IUserSession::class),
+			new ConditionUserResolvers($this->createMock(IUserSession::class)),
 			$this->createMock(ContainerInterface::class),
 			new OperatorEvaluator(logger: new NullLogger()),
 			new NullLogger()

@@ -30,8 +30,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use Exception;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -107,15 +107,13 @@ class SearchReferenceResolver {
 	/**
 	 * SearchReferenceResolver constructor.
 	 *
-	 * @param RegisterMapperInterface  $registerMapper Resolves a register reference.
-	 * @param SchemaMapperInterface    $schemaMapper   Resolves a schema reference.
-	 * @param LoggerInterface $logger         Records each reference that had to be resolved.
+	 * @param SchemaCatalogInterface $catalog Resolves a register or schema reference.
+	 * @param LoggerInterface        $logger  Records each reference that had to be resolved.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -177,24 +175,12 @@ class SearchReferenceResolver {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function normaliseQuery(array $query): array {
-		foreach (self::REGISTER_KEYS as [$parent, $key, $plural]) {
-			$query = $this->normaliseKey(
-				query: $query,
-				parent: $parent,
-				key: $key,
-				kind: 'register',
-				plural: $plural
-			);
+		foreach (self::REGISTER_KEYS as $spelling) {
+			$query = $this->normaliseKey(query: $query, place: new SearchReferenceKey(spelling: $spelling, kind: 'register'));
 		}
 
-		foreach (self::SCHEMA_KEYS as [$parent, $key, $plural]) {
-			$query = $this->normaliseKey(
-				query: $query,
-				parent: $parent,
-				key: $key,
-				kind: 'schema',
-				plural: $plural
-			);
+		foreach (self::SCHEMA_KEYS as $spelling) {
+			$query = $this->normaliseKey(query: $query, place: new SearchReferenceKey(spelling: $spelling, kind: 'schema'));
 		}
 
 		return $query;
@@ -203,11 +189,8 @@ class SearchReferenceResolver {
 	/**
 	 * Resolve one key of a query array in place.
 	 *
-	 * @param array       $query  The search query.
-	 * @param string|null $parent The containing key (`@self`), or null for top level.
-	 * @param string      $key    The key holding the reference.
-	 * @param string      $kind   Either `register` or `schema`.
-	 * @param bool        $plural Whether the key holds a list.
+	 * @param array              $query The search query.
+	 * @param SearchReferenceKey $place Where the reference sits and what it names.
 	 *
 	 * @phpstan-param array<string, mixed> $query
 	 * @psalm-param   array<string, mixed> $query
@@ -219,99 +202,15 @@ class SearchReferenceResolver {
 	 *
 	 * @throws RegisterNotFoundException When a register reference names no register.
 	 * @throws SchemaNotFoundException   When a schema reference names no schema.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag names the key's shape, not a mode
 	 */
-	private function normaliseKey(array $query, ?string $parent, string $key, string $kind, bool $plural): array {
-		$value = $this->referenceAt(query: $query, parent: $parent, key: $key, plural: $plural);
+	private function normaliseKey(array $query, SearchReferenceKey $place): array {
+		$value = $place->readFrom(query: $query);
 		if ($value === null) {
 			return $query;
 		}
 
-		return $this->writeBack(
-			query: $query,
-			parent: $parent,
-			key: $key,
-			resolved: $this->resolve(reference: $value, kind: $kind)
-		);
+		return $place->writeTo(query: $query, resolved: $this->resolve(reference: $value, kind: $place->kind));
 	}//end normaliseKey()
-
-	/**
-	 * The reference a query carries at one key, when it carries one.
-	 *
-	 * Null means there is nothing to resolve: the key is absent, its value is
-	 * not a reference shape, or it is a list key spelled as a single value.
-	 *
-	 * @param array       $query  The search query.
-	 * @param string|null $parent The containing key (`@self`), or null for top level.
-	 * @param string      $key    The key holding the reference.
-	 * @param bool        $plural Whether the key holds a list.
-	 *
-	 * @phpstan-param array<string, mixed> $query
-	 * @psalm-param   array<string, mixed> $query
-	 *
-	 * @return int|string|array|null The reference, or null when there is none to read.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag names the key's shape, not a mode
-	 */
-	private function referenceAt(array $query, ?string $parent, string $key, bool $plural): int|string|array|null {
-		$holder = $query;
-		if ($parent !== null) {
-			if (is_array($query[$parent] ?? null) === false) {
-				return null;
-			}
-
-			$holder = $query[$parent];
-		}
-
-		$value = ($holder[$key] ?? null);
-		if (is_int($value) === false && is_string($value) === false && is_array($value) === false) {
-			return null;
-		}
-
-		if ($plural === true && is_array($value) === false) {
-			return null;
-		}
-
-		return $value;
-	}//end referenceAt()
-
-	/**
-	 * Put a resolved reference back, or drop the key when it said nothing.
-	 *
-	 * @param array           $query    The search query.
-	 * @param string|null     $parent   The containing key (`@self`), or null for top level.
-	 * @param string          $key      The key holding the reference.
-	 * @param int|array|null  $resolved The resolved id(s), or null.
-	 *
-	 * @phpstan-param array<string, mixed> $query
-	 * @psalm-param   array<string, mixed> $query
-	 *
-	 * @return array The query.
-	 *
-	 * @phpstan-return array<string, mixed>
-	 * @psalm-return   array<string, mixed>
-	 */
-	private function writeBack(array $query, ?string $parent, string $key, int|array|null $resolved): array {
-		if ($parent === null) {
-			if ($resolved === null) {
-				unset($query[$key]);
-				return $query;
-			}
-
-			$query[$key] = $resolved;
-			return $query;
-		}
-
-		if ($resolved === null) {
-			unset($query[$parent][$key]);
-			return $query;
-		}
-
-		$query[$parent][$key] = $resolved;
-
-		return $query;
-	}//end writeBack()
 
 	/**
 	 * Resolve a reference, or a list of them, to numeric id(s).
@@ -332,25 +231,36 @@ class SearchReferenceResolver {
 		}
 
 		if (is_array($reference) === true) {
-			$ids = [];
-			foreach ($reference as $item) {
-				if (is_int($item) === false && is_string($item) === false) {
-					// A nested array or an object is not a reference. Left as
-					// it is so the refusal names a reference, never a shape.
-					continue;
-				}
-
-				$id = $this->resolveOne(reference: $item, kind: $kind);
-				if ($id !== null) {
-					$ids[] = $id;
-				}
-			}
-
-			return $ids;
+			return $this->resolveList(references: $reference, kind: $kind);
 		}
 
 		return $this->resolveOne(reference: $reference, kind: $kind);
 	}//end resolve()
+
+	/**
+	 * Resolve a list of references, leaving out what says nothing.
+	 *
+	 * A nested array or an object is not a reference. It is skipped, so a
+	 * refusal always names a reference and never a shape.
+	 *
+	 * @param array  $references The references.
+	 * @param string $kind       Either `register` or `schema`.
+	 *
+	 * @return array<int, int> The numeric ids.
+	 *
+	 * @throws RegisterNotFoundException When a register reference names no register.
+	 * @throws SchemaNotFoundException   When a schema reference names no schema.
+	 */
+	private function resolveList(array $references, string $kind): array {
+		$ids = [];
+		foreach ($references as $item) {
+			if (is_int($item) === true || is_string($item) === true) {
+				$ids[] = $this->resolveOne(reference: $item, kind: $kind);
+			}
+		}
+
+		return array_values(array_filter($ids, static fn (?int $id): bool => $id !== null));
+	}//end resolveList()
 
 	/**
 	 * Resolve a single reference to its numeric id.
@@ -364,28 +274,30 @@ class SearchReferenceResolver {
 	 * @throws SchemaNotFoundException   When a schema reference names no schema.
 	 */
 	private function resolveOne(int|string $reference, string $kind): ?int {
+		// Says nothing, so it filters nothing. `null` was always what this
+		// meant; `0` only ever meant it by accident, and then suppressed the
+		// global fallbacks that a real null reaches.
+		$text = new SearchReferenceText(reference: $reference);
+		if ($text->isBlank() === true) {
+			return null;
+		}
+
 		// An id already. The common case, and it costs no query.
-		if (is_int($reference) === true && $reference > 0) {
-			return $reference;
-		}
+		return ($text->positiveId() ?? $this->lookUpAndWarn(reference: $reference, kind: $kind));
+	}//end resolveOne()
 
-		if (is_string($reference) === true) {
-			$trimmed = trim($reference);
-
-			// Says nothing, so it filters nothing. `null` was always what this
-			// meant; `0` only ever meant it by accident, and then suppressed the
-			// global fallbacks that a real null reaches.
-			if ($trimmed === '') {
-				return null;
-			}
-
-			if (ctype_digit($trimmed) === true && (int)$trimmed > 0) {
-				return (int)$trimmed;
-			}
-		}
-
-		// A slug, a uuid, a zero or a negative number: ask the mapper, the same
-		// question the write path asks.
+	/**
+	 * Resolve a slug, a uuid, a zero or a negative number the way the write path does, and say so.
+	 *
+	 * @param int|string $reference The id, uuid or slug.
+	 * @param string     $kind      Either `register` or `schema`.
+	 *
+	 * @return int The numeric id.
+	 *
+	 * @throws RegisterNotFoundException When a register reference names no register.
+	 * @throws SchemaNotFoundException   When a schema reference names no schema.
+	 */
+	private function lookUpAndWarn(int|string $reference, string $kind): int {
 		$id = $this->lookUp(reference: $reference, kind: $kind);
 
 		$this->logger->warning(
@@ -399,7 +311,7 @@ class SearchReferenceResolver {
 		);
 
 		return $id;
-	}//end resolveOne()
+	}//end lookUpAndWarn()
 
 	/**
 	 * Ask the mapper what a reference names.
@@ -418,22 +330,34 @@ class SearchReferenceResolver {
 		// instance that is merely unreachable is the same lie in a new place.
 		try {
 			if ($kind === 'register') {
-				return (int)$this->registerMapper->find((string)$reference, _rbac: false, _multitenancy: false)->getId();
+				return (int)$this->catalog->registers()->find((string)$reference, _rbac: false, _multitenancy: false)->getId();
 			}
 
-			return (int)$this->schemaMapper->find((string)$reference, _rbac: false, _multitenancy: false)->getId();
+			return (int)$this->catalog->schemas()->find((string)$reference, _rbac: false, _multitenancy: false)->getId();
 		} catch (DoesNotExistException | MultipleObjectsReturnedException $e) {
 			if ($kind === 'register') {
-				throw new RegisterNotFoundException(
-					registerSlugOrId: (string)$reference,
-					code: 404,
-					previous: $e,
-					remedies: 'A search was scoped to this register. Pass a register id, uuid or slug that exists;'
-					.' an unknown reference is refused rather than answered with an empty page.'
-				);
+				throw $this->noSuchRegister(reference: (string)$reference, cause: $e);
 			}
 
 			throw new SchemaNotFoundException(schemaSlugOrId: (string)$reference, code: 404, previous: $e);
 		}//end try
 	}//end lookUp()
+
+	/**
+	 * The refusal of a register reference that names no register.
+	 *
+	 * @param string    $reference The reference.
+	 * @param Exception $cause     What the mapper raised.
+	 *
+	 * @return RegisterNotFoundException The refusal.
+	 */
+	private function noSuchRegister(string $reference, Exception $cause): RegisterNotFoundException {
+		return new RegisterNotFoundException(
+			registerSlugOrId: $reference,
+			code: 404,
+			previous: $cause,
+			remedies: 'A search was scoped to this register. Pass a register id, uuid or slug that exists;'
+			.' an unknown reference is refused rather than answered with an empty page.'
+		);
+	}//end noSuchRegister()
 }//end class

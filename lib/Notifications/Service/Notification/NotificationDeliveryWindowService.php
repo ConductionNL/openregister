@@ -138,55 +138,122 @@ class NotificationDeliveryWindowService {
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-users-must-be-able-to-manage-their-notification-preferences
 	 */
 	public function validateAndNormalize(array $window): array {
-		$start = $window['start'] ?? null;
-		$end = $window['end'] ?? null;
-		if ($this->isValidTimeOfDay(value: $start) === false) {
-			throw new InvalidArgumentException('"start" must be an "HH:MM" time string.');
-		}
-
-		if ($this->isValidTimeOfDay(value: $end) === false) {
-			throw new InvalidArgumentException('"end" must be an "HH:MM" time string.');
-		}
-
-		$timezone = $window['timezone'] ?? null;
-		if ($timezone !== null) {
-			if (is_string($timezone) === false || $timezone === '' || $this->isValidTimezone(value: $timezone) === false) {
-				throw new InvalidArgumentException('"timezone" must be a valid IANA timezone name.');
-			}
-		}
-
-		$days = null;
-		if (isset($window['days']) === true) {
-			if (is_array($window['days']) === false) {
-				throw new InvalidArgumentException('"days" must be an array of integers 0-6.');
-			}
-
-			$days = [];
-			foreach ($window['days'] as $day) {
-				if (is_int($day) === false || $day < 0 || $day > 6) {
-					throw new InvalidArgumentException('"days" entries must be integers 0-6.');
-				}
-
-				$days[] = $day;
-			}
-
-			$days = array_values(array_unique($days));
-		}
-
-		$timezoneName = $this->resolveServerTimezoneName();
-		if ($timezone !== null) {
-			$timezoneName = (string)$timezone;
-		}
+		$this->assertWindowTimes(window: $window);
+		$timezone = ($window['timezone'] ?? null);
+		$days     = $this->normalizedDays(days: ($window['days'] ?? null));
+		// The server zone is resolved even when the window declares its own.
+		$serverZone = $this->resolveServerTimezoneName();
 
 		return [
 			'enabled' => true,
-			'start' => (string)$start,
-			'end' => (string)$end,
-			'timezone' => $timezoneName,
+			'start' => (string)$window['start'],
+			'end' => (string)$window['end'],
+			'timezone' => ($timezone ?? $serverZone),
 			'days' => $days,
 		];
 
 	}//end validateAndNormalize()
+
+	/**
+	 * Refuse a window whose `start`, `end` or `timezone` is malformed, in that order.
+	 *
+	 * @param array<string, mixed> $window Raw window body.
+	 *
+	 * @return void
+	 *
+	 * @throws \InvalidArgumentException When a value is malformed.
+	 */
+	private function assertWindowTimes(array $window): void {
+		$this->assertTimeOfDay(window: $window, key: 'start');
+		$this->assertTimeOfDay(window: $window, key: 'end');
+		$this->assertTimezone(timezone: ($window['timezone'] ?? null));
+	}//end assertWindowTimes()
+
+	/**
+	 * Refuse a window whose `start` or `end` is not an "HH:MM" time string.
+	 *
+	 * @param array<string, mixed> $window Raw window body.
+	 * @param string               $key    `start` or `end`.
+	 *
+	 * @return void
+	 *
+	 * @throws \InvalidArgumentException When the value is malformed.
+	 */
+	private function assertTimeOfDay(array $window, string $key): void {
+		if ($this->isValidTimeOfDay(value: ($window[$key] ?? null)) === false) {
+			throw new InvalidArgumentException(sprintf('"%s" must be an "HH:MM" time string.', $key));
+		}
+	}//end assertTimeOfDay()
+
+	/**
+	 * Refuse a declared `timezone` that is not a valid IANA name; absent is fine.
+	 *
+	 * @param mixed $timezone The declared timezone, null when absent.
+	 *
+	 * @return void
+	 *
+	 * @throws \InvalidArgumentException When the value is malformed.
+	 */
+	private function assertTimezone(mixed $timezone): void {
+		if ($timezone === null) {
+			return;
+		}
+
+		if (is_string($timezone) === false || $timezone === '' || $this->isValidTimezone(value: $timezone) === false) {
+			throw new InvalidArgumentException('"timezone" must be a valid IANA timezone name.');
+		}
+	}//end assertTimezone()
+
+	/**
+	 * The declared `days` as a de-duplicated list, null when absent.
+	 *
+	 * @param mixed $days The declared days.
+	 *
+	 * @return array<int, int>|null
+	 *
+	 * @throws \InvalidArgumentException When `days` is not a list of integers 0-6.
+	 */
+	private function normalizedDays(mixed $days): ?array {
+		if ($days === null) {
+			return null;
+		}
+
+		if (is_array($days) === false) {
+			throw new InvalidArgumentException('"days" must be an array of integers 0-6.');
+		}
+
+		$this->assertWeekdays(days: $days);
+
+		return array_values(array_unique($days));
+	}//end normalizedDays()
+
+	/**
+	 * Refuse a `days` list with an entry that is not an integer 0-6.
+	 *
+	 * @param array<int|string, mixed> $days The declared days.
+	 *
+	 * @return void
+	 *
+	 * @throws \InvalidArgumentException When an entry is not a weekday number.
+	 */
+	private function assertWeekdays(array $days): void {
+		foreach ($days as $day) {
+			if ($this->isWeekday(day: $day) === false) {
+				throw new InvalidArgumentException('"days" entries must be integers 0-6.');
+			}
+		}
+	}//end assertWeekdays()
+
+	/**
+	 * Whether a value is a weekday number, 0 to 6.
+	 *
+	 * @param mixed $day Candidate value.
+	 *
+	 * @return bool
+	 */
+	private function isWeekday(mixed $day): bool {
+		return is_int($day) === true && $day >= 0 && $day <= 6;
+	}//end isWeekday()
 
 	/**
 	 * Whether `$now` falls inside `$window` — the recipient is currently in
@@ -204,61 +271,44 @@ class NotificationDeliveryWindowService {
 	 * @return bool True when `$now` is inside the configured window.
 	 */
 	public function isInsideWindow(array $window, DateTimeImmutable $now): bool {
-		if (($window['enabled'] ?? false) !== true) {
+		if ($this->isEvaluable(window: $window) === false) {
 			return false;
 		}
 
-		$start = $window['start'] ?? null;
-		$end = $window['end'] ?? null;
-		if ($this->isValidTimeOfDay(value: $start) === false || $this->isValidTimeOfDay(value: $end) === false) {
-			return false;
-		}
+		$local = $now->setTimezone($this->resolveTimezone(tzName: $this->declaredTimezone(window: $window)));
+		$span  = new DeliveryWindowSpan(window: $window);
 
-		$tzName = $window['timezone'] ?? null;
-		if (is_string($tzName) === false) {
-			$tzName = null;
-		}
-
-		$tz = $this->resolveTimezone(tzName: $tzName);
-
-		$local = $now->setTimezone($tz);
-
-		$startMinutes = $this->minutesSinceMidnight(time: (string)$start);
-		$endMinutes = $this->minutesSinceMidnight(time: (string)$end);
-		$nowMinutes = ((int)$local->format('G') * 60) + (int)$local->format('i');
-		$weekday = (int)$local->format('w');
-
-		if ($startMinutes === $endMinutes) {
-			// Ambiguous zero-length / full-day range — treat as "never
-			// active" rather than guessing 24h-always-on.
-			return false;
-		}
-
-		$days = $window['days'] ?? null;
-		if (is_array($days) === true && count($days) > 0) {
-			$todayAllowed = in_array($weekday, $days, true) === true;
-			$yesterdayAllowed = in_array((($weekday + 6) % 7), $days, true) === true;
-
-			if ($startMinutes < $endMinutes) {
-				return $todayAllowed === true
-					&& $nowMinutes >= $startMinutes
-					&& $nowMinutes < $endMinutes;
-			}
-
-			// Wrapping window: the "today" leg only applies on days the
-			// window starts; the "past midnight" leg belongs to the day
-			// the window STARTED (yesterday, from now's perspective).
-			return ($todayAllowed === true && $nowMinutes >= $startMinutes)
-				|| ($yesterdayAllowed === true && $nowMinutes < $endMinutes);
-		}
-
-		if ($startMinutes < $endMinutes) {
-			return $nowMinutes >= $startMinutes && $nowMinutes < $endMinutes;
-		}
-
-		// Wrapping window, no day restriction: active either side of midnight.
-		return $nowMinutes >= $startMinutes || $nowMinutes < $endMinutes;
+		return $span->covers(local: $local);
 	}//end isInsideWindow()
+
+	/**
+	 * Whether a stored window is enabled and has a valid `start` and `end`.
+	 *
+	 * @param array<string, mixed> $window Decoded window.
+	 *
+	 * @return bool
+	 */
+	private function isEvaluable(array $window): bool {
+		return ($window['enabled'] ?? false) === true
+			&& $this->isValidTimeOfDay(value: ($window['start'] ?? null)) === true
+			&& $this->isValidTimeOfDay(value: ($window['end'] ?? null)) === true;
+	}//end isEvaluable()
+
+	/**
+	 * The window's declared timezone name, null when absent or not a string.
+	 *
+	 * @param array<string, mixed> $window Decoded window.
+	 *
+	 * @return string|null
+	 */
+	private function declaredTimezone(array $window): ?string {
+		$tzName = ($window['timezone'] ?? null);
+		if (is_string($tzName) === false) {
+			return null;
+		}
+
+		return $tzName;
+	}//end declaredTimezone()
 
 	/**
 	 * Resolve a `DateTimeZone` from a declared name, falling back to the
@@ -270,26 +320,45 @@ class NotificationDeliveryWindowService {
 	 * @return DateTimeZone
 	 */
 	public function resolveTimezone(?string $tzName): DateTimeZone {
-		if ($tzName !== null && $tzName !== '' && $this->isValidTimezone(value: $tzName) === true) {
-			try {
-				return new DateTimeZone($tzName);
-			} catch (\Throwable $e) {
-				// Fall through to server default below.
-			}
-		}
-
-		if ($this->serverTimezone !== null) {
-			try {
-				return $this->serverTimezone->getTimeZone();
-			} catch (\Throwable $e) {
-				$this->logger?->debug(
-					'[NotificationDeliveryWindowService] server timezone resolution failed: ' . $e->getMessage()
-				);
-			}
-		}
-
-		return new DateTimeZone('UTC');
+		return ($this->declaredZone(tzName: $tzName) ?? $this->serverZone() ?? new DateTimeZone('UTC'));
 	}//end resolveTimezone()
+
+	/**
+	 * The declared zone, null when absent or not a name `DateTimeZone` accepts.
+	 *
+	 * @param string|null $tzName Declared IANA timezone name, or null.
+	 *
+	 * @return DateTimeZone|null
+	 */
+	private function declaredZone(?string $tzName): ?DateTimeZone {
+		if ($tzName === null || $tzName === '') {
+			return null;
+		}
+
+		try {
+			return new DateTimeZone($tzName);
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end declaredZone()
+
+	/**
+	 * The Nextcloud server zone, null when there is no resolver or it fails.
+	 *
+	 * @return DateTimeZone|null
+	 */
+	private function serverZone(): ?DateTimeZone {
+		if ($this->serverTimezone === null) {
+			return null;
+		}
+
+		try {
+			return $this->serverTimezone->getTimeZone();
+		} catch (\Throwable $e) {
+			$this->logger?->debug('[NotificationDeliveryWindowService] server timezone resolution failed: '.$e->getMessage());
+			return null;
+		}
+	}//end serverZone()
 
 	/**
 	 * Name of the server-default timezone (used to persist a resolved
@@ -309,15 +378,7 @@ class NotificationDeliveryWindowService {
 	 * @return bool
 	 */
 	private function isValidTimeOfDay(mixed $value): bool {
-		if (is_string($value) === false) {
-			return false;
-		}
-
-		if (preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $value) !== 1) {
-			return false;
-		}
-
-		return true;
+		return is_string($value) === true && preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $value) === 1;
 	}//end isValidTimeOfDay()
 
 	/**
@@ -336,16 +397,4 @@ class NotificationDeliveryWindowService {
 		}
 
 	}//end isValidTimezone()
-
-	/**
-	 * Parse an "HH:MM" string into minutes since midnight.
-	 *
-	 * @param string $time "HH:MM" string (already validated).
-	 *
-	 * @return int
-	 */
-	private function minutesSinceMidnight(string $time): int {
-		[$hours, $minutes] = explode(':', $time);
-		return ((int)$hours * 60) + (int)$minutes;
-	}//end minutesSinceMidnight()
 }//end class

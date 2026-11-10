@@ -17,6 +17,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -82,10 +83,7 @@ class ValidationHandlerArrayChunkTest extends TestCase {
 
 		$handler = new ValidationHandler(
 			validateHandler: $this->createMock(originalClassName: ValidateObject::class),
-			objectEntityMapper: $this->createMock(originalClassName: MagicMapper::class),
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
-			magicMapper: $magicMapper,
+			catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magicMapper),
 			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
 

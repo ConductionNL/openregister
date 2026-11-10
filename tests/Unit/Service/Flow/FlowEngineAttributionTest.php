@@ -23,8 +23,10 @@ namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
+use OCA\OpenRegister\Service\Flow\FlowEngineServices;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
+use OCA\OpenRegister\Service\Flow\FlowRunStart;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
@@ -99,10 +101,7 @@ class FlowEngineAttributionTest extends TestCase {
 		$this->engine = new FlowEngine(
 			new FlowDefinitionBuilder(),
 			$this->createMock(LoggerInterface::class),
-			null,
-			null,
-			null,
-			$this->context
+			services: new FlowEngineServices(runContext: $this->context)
 		);
 	}//end setUp()
 
@@ -122,11 +121,7 @@ class FlowEngineAttributionTest extends TestCase {
 
 	private function runFlow(array $flow, FlowStepDispatcher $dispatcher, array $context = []): array {
 		return $this->engine->run(
-			$flow,
-			new MethodMarkingStore(false, 'marking'),
-			new AttributionSubject(),
-			$dispatcher,
-			$context
+			start: (new FlowRunStart(flow: $flow, store: new MethodMarkingStore(false, 'marking'), subject: new AttributionSubject(), dispatcher: $dispatcher))->withContext(context: $context)
 		);
 	}//end runFlow()
 

@@ -30,11 +30,13 @@ use OCA\OpenRegister\Service\Rules\ConditionDialect;
 use OCA\OpenRegister\Service\Rules\DependentValueTable;
 use OCA\OpenRegister\Service\Rules\DependentValueValidator;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
+use OCA\OpenRegister\Service\Rules\FlowRuleDescriptors;
 use OCA\OpenRegister\Service\Rules\RuleInventoryService;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Rules\DependentValueWrite;
 
 /**
  * Task 5.3, in one place rather than as a comment pointing at four others.
@@ -211,10 +213,10 @@ class NoCeilingRegressionTest extends TestCase {
 		$summaries->method('findBySchema')->willReturn([]);
 
 		$inventory = new RuleInventoryService(
-			triggers: $triggers,
 			summaries: $summaries,
 			propertyCalculations: new PropertyCalculations(),
-			vocabulary: new RuleVocabulary()
+			vocabulary: new RuleVocabulary(),
+			flows: new FlowRuleDescriptors(triggers: $triggers, published: null)
 		);
 
 		$rules = $inventory->describe(schema: $this->legacySchema());
@@ -238,7 +240,7 @@ class NoCeilingRegressionTest extends TestCase {
 
 		$tables = new DependentValueTable();
 		$this->assertFalse($tables->declaresAny(properties: $properties));
-		$this->assertSame([], $tables->violations(properties: $properties, data: $data));
+		$this->assertSame([], $tables->violations(properties: $properties, write: new DependentValueWrite(data: $data, stored: [])));
 		$this->assertSame([], (new DependentValueValidator())->validate(['properties' => $properties]));
 
 		$resolver = new ExpressionDefaultResolver(

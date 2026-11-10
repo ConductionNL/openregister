@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -167,8 +168,14 @@ class SaveObjectCascadeHelpersGoldenTest extends TestCase {
 		$schema->setId(1);
 		$schema->setProperties($properties);
 
-		$extra = $method === 'cascadeObjects' ? [$stored] : [];
-		$answer = (new ReflectionClass(SaveObject::class))->getMethod($method)->invoke($handler, $parent, $schema, $data, ...$extra);
+		$run = new CascadeRun();
+		$run->parent = $parent;
+		$run->data = $data;
+		$run->stored = $stored;
+		$answer = match ($method) {
+			'handleInverseRelationsWriteBack' => RelationCalls::handleInverseRelationsWriteBack($handler, [$parent, $schema, $data]),
+			default => (new ReflectionClass(SaveObject::class))->getMethod($method)->invoke($handler, $run, $schema),
+		};
 		$orphans = (new ReflectionClass(SaveObject::class))->getProperty('pendingOrphans')->getValue($handler);
 
 		return ['answer' => $answer, 'trace' => $this->trace, 'orphans' => $orphans];

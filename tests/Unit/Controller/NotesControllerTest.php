@@ -57,7 +57,6 @@ class NotesControllerTest extends TestCase {
 		$this->timeline = $this->createMock(TimelineWriteService::class);
 
 		$this->controller = NotesControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->noteService,
 			$this->objectService,

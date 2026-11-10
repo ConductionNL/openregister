@@ -46,6 +46,7 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnionArm
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\Register
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnionScore
  */
 class MagicMapperUnionSelectPartGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/union-select-part-golden.json';

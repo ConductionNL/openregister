@@ -43,6 +43,8 @@ use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
 use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
+use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
+use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use OCP\IUser;
@@ -76,6 +78,9 @@ class AccessLinkControllerTest extends TestCase {
 
 		$this->request = $this->createMock(IRequest::class);
 		$this->links = $this->createMock(AccessLinkService::class);
+		$this->links->method('terms')->willReturnCallback(
+			static fn (array $capabilities, ?string $expiresAt, ?string $password, ?string $label): AccessLinkTerms => new AccessLinkTerms($capabilities, $expiresAt, $password, $label)
+		);
 		$this->reader = $this->createMock(AccessLinkReader::class);
 		$this->mintGuard = $this->createMock(AccessLinkMintGuard::class);
 		$this->acts = $this->createMock(AccessLinkActs::class);
@@ -162,9 +167,11 @@ class AccessLinkControllerTest extends TestCase {
 			->method('recordUse')
 			->with(
 				$this->anything(),
-				AccessLinkService::ACT_READ,
-				$this->anything(),
-				'198.51.100.7'
+				$this->callback(
+					static fn (AccessLinkUse $use): bool => $use->act === AccessLinkService::ACT_READ
+						&& $use->ipAddress === '198.51.100.7'
+						&& $use->context === []
+				)
 			);
 
 		$response = $this->controller->open(anchor: 'AnchorValueThatIsOpaque');
@@ -201,7 +208,14 @@ class AccessLinkControllerTest extends TestCase {
 			->willReturn(['subject' => [], 'timeline' => []]);
 		$this->links->expects($this->once())
 			->method('recordUse')
-			->with($this->anything(), AccessLinkService::ACT_READ, $object, '198.51.100.7');
+			->with(
+				$this->anything(),
+				$this->callback(
+					static fn (AccessLinkUse $use): bool => $use->act === AccessLinkService::ACT_READ
+						&& $use->object === $object
+						&& $use->ipAddress === '198.51.100.7'
+				)
+			);
 
 		$this->assertSame(Http::STATUS_OK, $this->controller->open(anchor: 'a')->getStatus());
 	}
@@ -236,6 +250,17 @@ class AccessLinkControllerTest extends TestCase {
 			->method('comment')
 			->with($this->anything(), $this->anything(), 'Advies: akkoord.')
 			->willReturn(['id' => 4, 'message' => 'Advies: akkoord.']);
+		$this->links->expects($this->once())
+			->method('recordUse')
+			->with(
+				$this->anything(),
+				$this->callback(
+					static fn (AccessLinkUse $use): bool => $use->act === AccessLinkService::ACT_COMMENT
+						&& $use->object !== null
+						&& $use->ipAddress === '198.51.100.7'
+						&& $use->context === []
+				)
+			);
 
 		$response = $this->controller->comment(anchor: 'AnchorValueThatIsOpaque');
 
@@ -321,6 +346,17 @@ class AccessLinkControllerTest extends TestCase {
 			->method('upload')
 			->with($this->anything(), $this->anything(), 'advies.txt', 'akkoord')
 			->willReturn(['id' => 2]);
+		$this->links->expects($this->once())
+			->method('recordUse')
+			->with(
+				$this->anything(),
+				$this->callback(
+					static fn (AccessLinkUse $use): bool => $use->act === AccessLinkService::ACT_UPLOAD
+						&& $use->object !== null
+						&& $use->ipAddress === '198.51.100.7'
+						&& $use->context === ['fileName' => 'advies.txt']
+				)
+			);
 
 		$this->assertSame(Http::STATUS_CREATED, $this->controller->upload(anchor: 'a')->getStatus());
 	}
@@ -355,7 +391,7 @@ class AccessLinkControllerTest extends TestCase {
 		$this->params['expiresAt'] = '2026-12-31T00:00:00+00:00';
 		$this->links->expects($this->once())
 			->method('mint')
-			->with('owner', 'object', 'object-uuid', ['read', 'comment'], '2026-12-31T00:00:00+00:00', null, null)
+			->with('owner', 'object', 'object-uuid', $this->equalTo(new AccessLinkTerms(['read', 'comment'], '2026-12-31T00:00:00+00:00', null, null)))
 			->willReturn(['anchor' => 'AnchorValueThatIsOpaque', 'url' => 'https://nc.example.org/x']);
 
 		$response = $this->controller->mint();
@@ -370,7 +406,7 @@ class AccessLinkControllerTest extends TestCase {
 		$this->params['expiresAt'] = '2026-12-31T00:00:00+00:00';
 		$this->links->expects($this->once())
 			->method('mint')
-			->with('owner', '', '', ['read', ' upload'], '2026-12-31T00:00:00+00:00', null, null)
+			->with('owner', '', '', $this->equalTo(new AccessLinkTerms(['read', ' upload'], '2026-12-31T00:00:00+00:00', null, null)))
 			->willReturn([]);
 
 		$this->controller->mint();

@@ -14,6 +14,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Object\LanguageMetaSubject;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\TranslationProjectionService;
 use PHPUnit\Framework\TestCase;
@@ -28,10 +29,12 @@ use ReflectionMethod;
  *
  * @covers \OCA\OpenRegister\Service\TranslationProjectionService
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
+ * @uses \OCA\OpenRegister\Service\Object\RecordAnnotations
  * @uses \OCA\OpenRegister\Service\Object\RecurrenceOccurrences
  * @uses \OCA\OpenRegister\Service\Object\VirtualCalculations
  * @uses \OCA\OpenRegister\Service\Object\InverseBatch
  * @uses \OCA\OpenRegister\Service\Object\InverseLookup
+ * @uses \OCA\OpenRegister\Service\Object\ExtendTargetReads
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationCache
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationPreload
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationRender
@@ -92,7 +95,7 @@ class SourceLanguageResolutionTableTest extends TestCase {
 			[$expected, $expected],
 			[
 				$service->resolveSourceLanguage($schema, $object, 'title', $default),
-				$renderSide->invoke($render, $schema, $body, 'title', $default),
+				$renderSide->invoke($render, new LanguageMetaSubject(entity: $object, schema: $schema, registerDefault: $default, preResolveData: $body), 'title'),
 			]
 		);
 	}//end testBothSidesResolveTheSameLanguage()

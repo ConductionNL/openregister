@@ -26,8 +26,12 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 use DateTimeImmutable;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\TokenGrant;
+use OCA\OpenRegister\Service\Rbac\TokenGrantReach;
+use OCA\OpenRegister\Service\Rbac\TokenGrantTerms;
 use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
+use OCA\OpenRegister\Service\Rbac\TokenGrantTarget;
 use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
+use OCA\OpenRegister\Service\Rbac\TokenGrantIssue;
 use OCA\OpenRegister\Service\Rbac\TokenGrantValidator;
 use PHPUnit\Framework\TestCase;
 
@@ -84,11 +88,11 @@ class TokenGrantTest extends TestCase {
 	 */
 	public function testAGrantNarrowerThanItsIssuerIsAccepted(): void {
 		$this->assertNull(
-			$this->validator()->refusalFor(
+			$this->validator()->refusalFor(issue: new TokenGrantIssue(
 				grant: $this->acceptable(),
 				issuerVerbs: ['read', 'list', 'create', 'update'],
 				now: $this->now()
-			),
+			)),
 			'the control: a well-formed, narrower grant is issued'
 		);
 	}//end testAGrantNarrowerThanItsIssuerIsAccepted()
@@ -102,7 +106,7 @@ class TokenGrantTest extends TestCase {
 		$grant = $this->acceptable();
 		$grant['verbs'] = [];
 
-		$refusal = $this->validator()->refusalFor(grant: $grant, issuerVerbs: ['read'], now: $this->now());
+		$refusal = $this->validator()->refusalFor(issue: new TokenGrantIssue(grant: $grant, issuerVerbs: ['read'], now: $this->now()));
 
 		$this->assertNotNull($refusal, 'an empty list is a filter that filters nothing, and must not be issued');
 		$this->assertStringContainsString('at least one verb', (string)$refusal);
@@ -117,11 +121,11 @@ class TokenGrantTest extends TestCase {
 		$grant = $this->acceptable();
 		$grant['verbs'] = ['read', 'manage'];
 
-		$refusal = $this->validator()->refusalFor(
+		$refusal = $this->validator()->refusalFor(issue: new TokenGrantIssue(
 			grant: $grant,
 			issuerVerbs: ['read', 'list', 'create', 'update', 'delete', 'manage'],
 			now: $this->now()
-		);
+		));
 
 		$this->assertNotNull($refusal, 'a machine principal that can widen its own audience is the failure scoping prevents');
 		$this->assertStringContainsString('manage', (string)$refusal);
@@ -136,7 +140,7 @@ class TokenGrantTest extends TestCase {
 		$grant = $this->acceptable();
 		$grant['verbs'] = ['read', 'delete'];
 
-		$refusal = $this->validator()->refusalFor(grant: $grant, issuerVerbs: ['read', 'list'], now: $this->now());
+		$refusal = $this->validator()->refusalFor(issue: new TokenGrantIssue(grant: $grant, issuerVerbs: ['read', 'list'], now: $this->now()));
 
 		$this->assertNotNull($refusal, 'a grant is a filter over the issuer\'s rights, never an addition to them');
 		$this->assertStringContainsString('wider than the issuer', (string)$refusal);
@@ -152,7 +156,7 @@ class TokenGrantTest extends TestCase {
 		$grant['verbs'] = ['reed'];
 
 		$this->assertNotNull(
-			$this->validator()->refusalFor(grant: $grant, issuerVerbs: ['reed', 'read'], now: $this->now()),
+			$this->validator()->refusalFor(issue: new TokenGrantIssue(grant: $grant, issuerVerbs: ['reed', 'read'], now: $this->now())),
 			'a typo must not become a permission'
 		);
 	}//end testAnUnknownVerbIsRefused()
@@ -166,7 +170,7 @@ class TokenGrantTest extends TestCase {
 		$grant = $this->acceptable();
 		unset($grant['expiresAt']);
 
-		$refusal = $this->validator()->refusalFor(grant: $grant, issuerVerbs: ['read', 'list'], now: $this->now());
+		$refusal = $this->validator()->refusalFor(issue: new TokenGrantIssue(grant: $grant, issuerVerbs: ['read', 'list'], now: $this->now()));
 
 		$this->assertNotNull($refusal, 'an optional expiry is an expiry nobody sets');
 		$this->assertStringContainsString('end date', (string)$refusal);
@@ -182,7 +186,7 @@ class TokenGrantTest extends TestCase {
 		$grant['expiresAt'] = '2020-01-01T00:00:00+00:00';
 
 		$this->assertNotNull(
-			$this->validator()->refusalFor(grant: $grant, issuerVerbs: ['read', 'list'], now: $this->now()),
+			$this->validator()->refusalFor(issue: new TokenGrantIssue(grant: $grant, issuerVerbs: ['read', 'list'], now: $this->now())),
 			'issuing a token that is already lapsed is a confusing way to issue nothing'
 		);
 	}//end testAnEndDateInThePastIsRefused()
@@ -196,7 +200,7 @@ class TokenGrantTest extends TestCase {
 		$grant = $this->acceptable();
 		$grant['registers'] = [];
 
-		$refusal = $this->validator()->refusalFor(grant: $grant, issuerVerbs: ['read', 'list'], now: $this->now());
+		$refusal = $this->validator()->refusalFor(issue: new TokenGrantIssue(grant: $grant, issuerVerbs: ['read', 'list'], now: $this->now()));
 
 		$this->assertNotNull($refusal, 'an empty list reads as "none" and as "all", and a form produces it by accident');
 		$this->assertStringContainsString('registers', (string)$refusal);
@@ -208,8 +212,8 @@ class TokenGrantTest extends TestCase {
 	 * @return void
 	 */
 	public function testAHolderIsWarnedBeforeTheTokenLapses(): void {
-		$soon = new TokenGrant(verbs: ['read'], expiresAt: new DateTimeImmutable('2026-09-25T12:00:00+00:00'));
-		$later = new TokenGrant(verbs: ['read'], expiresAt: new DateTimeImmutable('2027-09-25T12:00:00+00:00'));
+		$soon = new TokenGrant(verbs: ['read'], terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('2026-09-25T12:00:00+00:00')));
+		$later = new TokenGrant(verbs: ['read'], terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('2027-09-25T12:00:00+00:00')));
 
 		$this->assertTrue($this->validator()->lapsesSoon(grant: $soon, now: $this->now()));
 		$this->assertFalse($this->validator()->lapsesSoon(grant: $later, now: $this->now()));
@@ -234,13 +238,13 @@ class TokenGrantTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAbsentAxisDoesNotNarrowAndAPresentOneIsClosed(): void {
-		$unscoped = new TokenGrant(verbs: ['read'], expiresAt: new DateTimeImmutable('2027-01-01T00:00:00+00:00'));
+		$unscoped = new TokenGrant(verbs: ['read'], terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('2027-01-01T00:00:00+00:00')));
 		$this->assertTrue($unscoped->covers(schemaSlug: 'anything', registerSlug: 'anywhere'));
 
 		$scoped = new TokenGrant(
 			verbs: ['read'],
-			schemas: ['zaak'],
-			expiresAt: new DateTimeImmutable('2027-01-01T00:00:00+00:00')
+			reach: new TokenGrantReach(schemas: ['zaak']),
+			terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('2027-01-01T00:00:00+00:00'))
 		);
 		$this->assertTrue($scoped->covers(schemaSlug: 'zaak', registerSlug: 'anywhere'));
 		$this->assertFalse($scoped->covers(schemaSlug: 'persoon', registerSlug: 'anywhere'));
@@ -269,15 +273,14 @@ class TokenGrantTest extends TestCase {
 		$narrower = new TokenGrantNarrower();
 		$expired = new TokenGrant(
 			verbs: ['read'],
-			expiresAt: new DateTimeImmutable('2020-01-01T00:00:00+00:00'),
+			terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('2020-01-01T00:00:00+00:00')),
 			tokenId: 'leverancier'
 		);
 
 		$block = $narrower->narrow(
 			authorization: null,
 			grant: $expired,
-			schemaSlug: 'zaak',
-			registerSlug: 'zaken',
+			target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken'),
 			now: $this->now()
 		);
 
@@ -298,16 +301,15 @@ class TokenGrantTest extends TestCase {
 		$narrower = new TokenGrantNarrower();
 		$grant = new TokenGrant(
 			verbs: ['read', 'list'],
-			schemas: ['zaak'],
-			expiresAt: new DateTimeImmutable('2026-11-01T00:00:00+00:00'),
+			reach: new TokenGrantReach(schemas: ['zaak']),
+			terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('2026-11-01T00:00:00+00:00')),
 			tokenId: 'leverancier'
 		);
 
 		$block = $narrower->narrow(
 			authorization: ['read' => ['medewerkers'], 'update' => ['medewerkers']],
 			grant: $grant,
-			schemaSlug: 'zaak',
-			registerSlug: 'zaken',
+			target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken'),
 			now: $this->now()
 		);
 
@@ -332,15 +334,14 @@ class TokenGrantTest extends TestCase {
 		$narrower = new TokenGrantNarrower();
 		$grant = new TokenGrant(
 			verbs: ['read'],
-			schemas: ['zaak'],
-			expiresAt: new DateTimeImmutable('2026-11-01T00:00:00+00:00')
+			reach: new TokenGrantReach(schemas: ['zaak']),
+			terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('2026-11-01T00:00:00+00:00'))
 		);
 
 		$block = $narrower->narrow(
 			authorization: ['read' => ['medewerkers']],
 			grant: $grant,
-			schemaSlug: 'persoon',
-			registerSlug: 'zaken',
+			target: new TokenGrantTarget(schemaSlug: 'persoon', registerSlug: 'zaken'),
 			now: $this->now()
 		);
 
@@ -365,8 +366,7 @@ class TokenGrantTest extends TestCase {
 		$result = $narrower->narrow(
 			authorization: $block,
 			grant: null,
-			schemaSlug: 'zaak',
-			registerSlug: 'zaken',
+			target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken'),
 			now: $this->now()
 		);
 
@@ -389,8 +389,7 @@ class TokenGrantTest extends TestCase {
 		$withoutToken = $narrower->narrow(
 			authorization: $forged,
 			grant: null,
-			schemaSlug: 'zaak',
-			registerSlug: 'zaken',
+			target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken'),
 			now: $this->now()
 		);
 		$this->assertArrayNotHasKey(
@@ -403,10 +402,9 @@ class TokenGrantTest extends TestCase {
 			authorization: $forged,
 			grant: new TokenGrant(
 				verbs: ['read'],
-				expiresAt: new DateTimeImmutable('2026-11-01T00:00:00+00:00')
+				terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('2026-11-01T00:00:00+00:00'))
 			),
-			schemaSlug: 'zaak',
-			registerSlug: 'zaken',
+			target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken'),
 			now: $this->now()
 		);
 		$this->assertFalse(

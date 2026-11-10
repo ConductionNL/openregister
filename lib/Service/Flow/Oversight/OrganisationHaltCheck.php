@@ -36,7 +36,7 @@ use Throwable;
  *
  * @spec openspec/changes/organisation-capability-halt/specs/flow-engine/spec.md
  */
-class OrganisationHaltCheck implements IFlowOversightCheck {
+class OrganisationHaltCheck implements IFlowOversightCheck, OrganisationHaltCheckInterface {
 
 	/**
 	 * Constructor.

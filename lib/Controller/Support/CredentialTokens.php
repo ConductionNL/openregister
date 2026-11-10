@@ -22,9 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
+use OCA\OpenRegister\Service\Credential\CredentialAppTokenServiceInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
-use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
+use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriverInterface;
 
 /**
  * The domain services of the credential API.
@@ -35,16 +35,16 @@ final class CredentialTokens {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param CredentialAppTokenService $tokenService        Per-app signing-secret registry + token verify.
+	 * @param CredentialAppTokenServiceInterface $tokenService        Per-app signing-secret registry + token verify.
 	 * @param OrganisationServiceInterface       $organisationService Organisation membership + admin authority resolution.
-	 * @param SharePrincipalDeriver     $shareDeriver        Validates share lists and derives the principal lists RBAC matches.
+	 * @param SharePrincipalDeriverInterface     $shareDeriver        Validates share lists and derives the principal lists RBAC matches.
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
 	public function __construct(
-		public readonly CredentialAppTokenService $tokenService,
+		public readonly CredentialAppTokenServiceInterface $tokenService,
 		public readonly OrganisationServiceInterface $organisationService,
-		public readonly SharePrincipalDeriver $shareDeriver,
+		public readonly SharePrincipalDeriverInterface $shareDeriver,
 	) {
 	}//end __construct()
 }//end class

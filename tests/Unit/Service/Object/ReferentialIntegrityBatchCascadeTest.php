@@ -41,6 +41,10 @@ use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
+use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
+use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
+use OCA\OpenRegister\Service\Object\IntegrityStorage;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -48,6 +52,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * Unit tests for the batched referential-integrity CASCADE delete path.
@@ -114,14 +120,10 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new ReferentialIntegrityService(
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->objectMapper,
-			$this->auditTrailMapper,
-			$this->logger,
-			$this->createMock(IDBConnection::class),
-			$this->createNullCacheFactory(),
-			$this->makeArchivalGuard()
+			index: new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $this->createNullCacheFactory()),
+			storage: new IntegrityStorage(objectEntityMapper: $this->objectMapper, db: $this->createMock(IDBConnection::class)),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $this->auditTrailMapper, archivalGuard: $this->makeArchivalGuard()),
+			logger: $this->logger
 		);
 	}//end setUp()
 
@@ -164,7 +166,7 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 	 * @return DeletionAnalysis
 	 */
 	private function analysisWithCascade(array $targets): DeletionAnalysis {
-		return new DeletionAnalysis(deletable: true, cascadeTargets: $targets);
+		return new DeletionAnalysis(deletable: true, effects: new DeletionEffects(cascadeTargets: $targets));
 	}//end analysisWithCascade()
 
 	/**
@@ -203,7 +205,7 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 
 		// Targets are reversed by applyDeletionActions (deepest first).
 		$this->objectMapper->expects($this->once())
-			->method('findMultipleAcrossAllMagicTables')
+			->method('findStoredAcrossAllMagicTables')
 			->with(
 				$this->equalTo(['uuid-3', 'uuid-2', 'uuid-1']),
 				$this->equalTo(false)
@@ -303,7 +305,7 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 		$entity = $this->createEntity('uuid-1');
 
 		$this->objectMapper->expects($this->once())
-			->method('findMultipleAcrossAllMagicTables')
+			->method('findStoredAcrossAllMagicTables')
 			->with($this->equalTo(['uuid-1']), $this->equalTo(false))
 			->willReturn([$entity]);
 
@@ -356,7 +358,7 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 		$resolved = $this->createEntity('uuid-1');
 
 		$this->objectMapper->expects($this->once())
-			->method('findMultipleAcrossAllMagicTables')
+			->method('findStoredAcrossAllMagicTables')
 			->willReturn([$resolved]);
 
 		$this->objectMapper->expects($this->once())
@@ -413,7 +415,7 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 	 * @return void
 	 */
 	public function testResolveFailureFallsBackEntirely(): void {
-		$this->objectMapper->method('findMultipleAcrossAllMagicTables')
+		$this->objectMapper->method('findStoredAcrossAllMagicTables')
 			->willThrowException(new \RuntimeException('union query failed'));
 
 		$this->objectMapper->expects($this->never())
@@ -444,7 +446,7 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 	 * @return void
 	 */
 	public function testARefusedTargetStopsTheBatchedCascade(): void {
-		$this->objectMapper->method('findMultipleAcrossAllMagicTables')
+		$this->objectMapper->method('findStoredAcrossAllMagicTables')
 			->willReturn([$this->createEntity('uuid-1'), $this->createEntity('uuid-2')]);
 		$this->objectMapper->method('assertDeletable')->willReturnCallback(
 			static function (ObjectEntity $entity): void {
@@ -474,7 +476,7 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 	 * @return void
 	 */
 	public function testARefusalInThePerObjectFallbackIsNotSwallowed(): void {
-		$this->objectMapper->method('findMultipleAcrossAllMagicTables')
+		$this->objectMapper->method('findStoredAcrossAllMagicTables')
 			->willThrowException(new \RuntimeException('union query failed'));
 		$this->objectMapper->method('deleteObjects')
 			->willThrowException(new HookStoppedException(message: 'kept'));
@@ -498,7 +500,7 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 	 * @return void
 	 */
 	public function testPerObjectFallbackGroupsByRegisterAndSchema(): void {
-		$this->objectMapper->method('findMultipleAcrossAllMagicTables')
+		$this->objectMapper->method('findStoredAcrossAllMagicTables')
 			->willThrowException(new \RuntimeException('union query failed'));
 		$deletes = [];
 		$this->objectMapper->method('deleteObjects')->willReturnCallback(
@@ -570,7 +572,7 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 	 * @return void
 	 */
 	public function testBatchWriteFailureFallsBackEntirely(): void {
-		$this->objectMapper->method('findMultipleAcrossAllMagicTables')
+		$this->objectMapper->method('findStoredAcrossAllMagicTables')
 			->willReturn([$this->createEntity('uuid-1'), $this->createEntity('uuid-2')]);
 
 		$this->objectMapper->method('softDeleteMultipleObjectEntities')
@@ -606,7 +608,7 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 		$kept = $this->createEntity('uuid-1');
 		$skipped = $this->createEntity('uuid-2');
 
-		$this->objectMapper->method('findMultipleAcrossAllMagicTables')
+		$this->objectMapper->method('findStoredAcrossAllMagicTables')
 			->willReturn([$kept, $skipped]);
 
 		// Mapper only reports uuid-1 as actually soft-deleted.
@@ -647,7 +649,7 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 	 * @return void
 	 */
 	public function testAuditInsertFailureIsFailSoft(): void {
-		$this->objectMapper->method('findMultipleAcrossAllMagicTables')
+		$this->objectMapper->method('findStoredAcrossAllMagicTables')
 			->willReturn([$this->createEntity('uuid-1')]);
 
 		$this->objectMapper->method('softDeleteMultipleObjectEntities')
@@ -675,7 +677,7 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 	 * @return void
 	 */
 	public function testRowBuildFailureSkipsOnlyThatRow(): void {
-		$this->objectMapper->method('findMultipleAcrossAllMagicTables')
+		$this->objectMapper->method('findStoredAcrossAllMagicTables')
 			->willReturn([$this->createEntity('uuid-1'), $this->createEntity('uuid-2')]);
 
 		$this->objectMapper->method('softDeleteMultipleObjectEntities')
@@ -737,22 +739,24 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 				]
 			);
 
-		$this->objectMapper->expects($this->never())->method('findMultipleAcrossAllMagicTables');
+		$this->objectMapper->expects($this->never())->method('findStoredAcrossAllMagicTables');
 		$this->objectMapper->expects($this->never())->method('softDeleteMultipleObjectEntities');
 		$this->auditTrailMapper->expects($this->never())->method('insertAuditTrails');
 		$this->objectMapper->expects($this->once())->method('update');
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			nullifyTargets: [
-				[
-					'objectUuid' => 'dep-uuid',
-					'schema' => '1',
-					'property' => 'parentRef',
-					'isArray' => false,
-					'sourceUuid' => 'root-uuid',
-				],
-			]
+			effects: new DeletionEffects(
+				nullifyTargets: [
+					[
+						'objectUuid' => 'dep-uuid',
+						'schema' => '1',
+						'property' => 'parentRef',
+						'isArray' => false,
+						'sourceUuid' => 'root-uuid',
+					],
+				]
+			)
 		);
 
 		$this->service->applyDeletionActions($analysis, 'admin', 'root-uuid');
@@ -786,6 +790,6 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 			}
 		);
 
-		return new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class));
+		return new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($schemaMapper, $this->createMock(LoggerInterface::class)));
 	}//end makeArchivalGuard()
 }//end class

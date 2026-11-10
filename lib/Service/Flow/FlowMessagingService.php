@@ -40,20 +40,12 @@ namespace OCA\OpenRegister\Service\Flow;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\FlowEmailSentEvent;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSenderInterface;
-use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSenderInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicyInterface;
-use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceServiceInterface;
-use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolverInterface;
-use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplatingInterface;
-use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityInterface;
-use OCA\OpenRegister\Notifications\Service\Notification\RateLimiterInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\TalkMessage;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSenderInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSendException;
-use OCP\EventDispatcher\IEventDispatcher;
-use OCP\IAppConfig;
-use OCP\IUserManager;
-use Psr\Log\LoggerInterface;
+use LogicException;
 use RuntimeException;
 
 /**
@@ -150,46 +142,27 @@ class FlowMessagingService {
 	 * Constructor. Every dependency is one of the subsystem's call-shared
 	 * units — the same objects the declarative dispatcher invokes.
 	 *
-	 * @param NotificationChannelPolicyInterface $channelPolicy The subsystem's per-channel kill switches.
-	 * @param NotificationRecipientResolverInterface $recipientResolver The subsystem's recipient resolver.
-	 * @param NotificationTemplatingInterface $templating The dialect's placeholder evaluator.
-	 * @param NcNotificationSenderInterface $ncSender The nc-notification channel sender (web-push rides along).
-	 * @param EmailSenderInterface $emailSender The email channel sender.
-	 * @param TalkSenderInterface $talkSender The Talk channel sender.
-	 * @param RateLimiterInterface $rateLimiter The subsystem's rate limiter (shared per-recipient budget).
-	 * @param NotificationPreferenceServiceInterface $preferences The recipient preference resolver.
-	 * @param IUserManager $userManager Resolves the acting user.
-	 * @param IAppConfig $appConfig App config for the recipient bound.
-	 * @param LoggerInterface $logger Logger for send diagnostics.
-	 * @param IEventDispatcher $eventDispatcher Announces each sent email (FlowEmailSentEvent).
-	 * @param FlowRunContext|null $runContext The ambient step frame, for the sending step's node id.
-	 *                                        Nullable so a caller without a run still constructs it.
-	 * @param OptOutAuthorityInterface|null $optOut The opt-out seam; null builds one on the same dispatcher.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected shared units.
+	 * @param FlowMessagingChannels $channels The per-channel kill switches and the in-app, email and Talk senders.
+	 * @param FlowMessagingRecipients $recipients The recipient resolver, preferences, rate limiter and user lookup.
+	 * @param FlowMessagingPlatform $platform The placeholder evaluator, app config, logger and event dispatcher.
+	 * @param FlowMessagingOverrides $overrides The ambient step frame and the opt-out seam; null fields build the defaults.
 	 *
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
 	 */
 	public function __construct(
-		private readonly NotificationChannelPolicyInterface $channelPolicy,
-		private readonly NotificationRecipientResolverInterface $recipientResolver,
-		private readonly NotificationTemplatingInterface $templating,
-		private readonly NcNotificationSenderInterface $ncSender,
-		private readonly EmailSenderInterface $emailSender,
-		private readonly TalkSenderInterface $talkSender,
-		private readonly RateLimiterInterface $rateLimiter,
-		private readonly NotificationPreferenceServiceInterface $preferences,
-		private readonly IUserManager $userManager,
-		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
-		IEventDispatcher $eventDispatcher,
-		?FlowRunContext $runContext = null,
-		?OptOutAuthorityInterface $optOut = null,
+		private readonly FlowMessagingChannels $channels,
+		private readonly FlowMessagingRecipients $recipients,
+		private readonly FlowMessagingPlatform $platform,
+		FlowMessagingOverrides $overrides,
 	) {
-		$this->addresses = new FlowRecipientAddresses(recipientResolver: $recipientResolver);
-		$this->announcer = new FlowEmailAnnouncer(eventDispatcher: $eventDispatcher, logger: $logger, runContext: $runContext);
-		$this->optOut    = ($optOut ?? new OptOutAuthority(eventDispatcher: $eventDispatcher, appConfig: $appConfig, logger: $logger));
+		$events          = $platform->eventDispatcher;
+		$logger          = $platform->logger;
+		$this->addresses = new FlowRecipientAddresses(recipientResolver: $recipients->recipientResolver);
+		$this->announcer = new FlowEmailAnnouncer(eventDispatcher: $events, logger: $logger, runContext: $overrides->runContext);
+		// The container always resolves the bound OptOutAuthorityInterface; a hand-built
+		// service without one could not ask integriq, so it is refused rather than guessed.
+		$this->optOut    = ($overrides->optOut ?? throw new LogicException('FlowMessagingService needs an opt-out authority.'));
 
 	}//end __construct()
 
@@ -209,10 +182,26 @@ class FlowMessagingService {
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	public function sendNotification(array $config, array $items, array $context, string $stepName): array {
-		$send = new FlowSend(channel: 'nc-notification', config: $config, items: $items, context: $context);
-		$send->stepName = $stepName;
-		return $this->sendPerRecipient(send: $send);
+		return $this->notify(request: new MessageSend(config: $config, items: $items, context: $context, stepName: $stepName));
 	}//end sendNotification()
+
+	/**
+	 * Send an in-app notification per recipient per item; see {@see self::sendNotification()}.
+	 *
+	 * @param MessageSend $request The step configuration, items, run context and step id.
+	 *
+	 * @return array The outcome report also written to the run log.
+	 *
+	 * @throws RuntimeException When there is no resolvable acting user, the
+	 *                          recipient bound is exceeded, or a send failed.
+	 *
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 */
+	public function notify(MessageSend $request): array {
+		$send = new FlowSend(channel: 'nc-notification', config: $request->config, items: $request->items, context: $request->context);
+		$send->stepName = $request->stepName;
+		return $this->sendPerRecipient(send: $send);
+	}//end notify()
 
 	/**
 	 * The messages a step would send, composed and not sent (flow dry-run).
@@ -232,10 +221,27 @@ class FlowMessagingService {
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
 	 */
 	public function previewMessages(string $channel, array $config, array $items, array $context): array {
-		$preview = new FlowMessagePreview(addresses: $this->addresses, templating: $this->templating);
-
-		return $preview->messages(channel: $channel, config: $config, items: $items, context: $this->scalarContext(context: $context));
+		return $this->preview(channel: $channel, step: new MessageSend(config: $config, items: $items, context: $context));
 	}//end previewMessages()
+
+	/**
+	 * The messages a step would send, composed and not sent; see {@see self::previewMessages()}.
+	 *
+	 * Only the scalar entries of the run context reach the templates.
+	 *
+	 * @param string      $channel `email`, `notification` or `talk`.
+	 * @param MessageSend $step    The step configuration, items and run context (no step name).
+	 *
+	 * @return array<int, array{channel: string, to: array<int, string>, subject: string, body: string}>
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
+	 */
+	public function preview(string $channel, MessageSend $step): array {
+		$preview = new FlowMessagePreview(addresses: $this->addresses, templating: $this->platform->templating);
+		$scalar  = new MessageSend(config: $step->config, items: $step->items, context: $this->scalarContext(context: $step->context));
+
+		return $preview->messages(channel: $channel, step: $scalar);
+	}//end preview()
 
 	/**
 	 * Send an email per recipient per item.
@@ -253,12 +259,28 @@ class FlowMessagingService {
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	public function sendEmail(array $config, array $items, array $context, string $stepName): array {
-		$send = new FlowSend(channel: 'email', config: $config, items: $items, context: $context);
-		$send->stepName = $stepName;
+		return $this->email(request: new MessageSend(config: $config, items: $items, context: $context, stepName: $stepName));
+	}//end sendEmail()
+
+	/**
+	 * Send an email per recipient per item; see {@see self::sendEmail()}.
+	 *
+	 * @param MessageSend $request The step configuration, items, run context and step id.
+	 *
+	 * @return array The outcome report also written to the run log.
+	 *
+	 * @throws RuntimeException When there is no resolvable acting user, the
+	 *                          recipient bound is exceeded, or a send failed.
+	 *
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 */
+	public function email(MessageSend $request): array {
+		$send = new FlowSend(channel: 'email', config: $request->config, items: $request->items, context: $request->context);
+		$send->stepName = $request->stepName;
 		$send->titleKey = 'subject';
 		$send->bodyKey = 'body';
 		return $this->sendPerRecipient(send: $send);
-	}//end sendEmail()
+	}//end email()
 
 	/**
 	 * Post a Talk chat message as the run's acting user, per item.
@@ -279,22 +301,37 @@ class FlowMessagingService {
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
 	 */
 	public function sendTalkMessage(array $config, array $items, array $context, string $stepName): array {
-		$send = new FlowSend(channel: 'talk', config: $config, items: $items, context: $context);
-		$send->stepName = $stepName;
-		$send->actor = $this->resolveActingUser(context: $context);
-		foreach ($items as $item) {
+		return $this->talk(request: new MessageSend(config: $config, items: $items, context: $context, stepName: $stepName));
+	}//end sendTalkMessage()
+
+	/**
+	 * Post a Talk chat message per item; see {@see self::sendTalkMessage()}.
+	 *
+	 * @param MessageSend $request The step configuration, items, run context and step id.
+	 *
+	 * @return array The outcome report also written to the run log.
+	 *
+	 * @throws RuntimeException When there is no resolvable acting user or a post failed.
+	 *
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
+	 */
+	public function talk(MessageSend $request): array {
+		$send = new FlowSend(channel: 'talk', config: $request->config, items: $request->items, context: $request->context);
+		$send->stepName = $request->stepName;
+		$send->actor = $this->resolveActingUser(context: $request->context);
+		foreach ($request->items as $item) {
 			$this->postTalkItem(send: $send, json: (array)($item[FlowItems::JSON] ?? []));
 		}
 
 		$report = $this->reportSend(send: $send);
 		if ($send->failures !== []) {
 			throw new RuntimeException(
-				sprintf('%d of %d Talk posts failed: %s', count($send->failures), count($items), implode(' | ', array_slice($send->failures, 0, 3)))
+				sprintf('%d of %d Talk posts failed: %s', count($send->failures), count($request->items), implode(' | ', array_slice($send->failures, 0, 3)))
 			);
 		}
 
 		return $report;
-	}//end sendTalkMessage()
+	}//end talk()
 
 	/**
 	 * Post one item's Talk message, recording its outcome.
@@ -310,8 +347,8 @@ class FlowMessagingService {
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
 	 */
 	private function postTalkItem(FlowSend $send, array $json): void {
-		$token = $this->resolveScalarConfig(value: (string)($send->config['conversation'] ?? ''), json: $json, context: $send->context);
-		$message = $this->templating->interpolate(
+		$token = $this->conversationToken(send: $send, json: $json);
+		$message = $this->platform->templating->interpolate(
 			template: (string)($send->config['message'] ?? ''),
 			data: $json,
 			context: $this->scalarContext(context: $send->context)
@@ -322,13 +359,16 @@ class FlowMessagingService {
 			return;
 		}
 
-		if ($this->rateLimiter->tryConsume(ruleId: $send->stepName, recipient: '__talk__:' . $token) === false) {
+		if ($this->recipients->rateLimiter->tryConsume(ruleId: $send->stepName, recipient: '__talk__:' . $token) === false) {
 			$send->add(bucket: 'rateLimited', recipient: $token);
 			return;
 		}
 
 		try {
-			$outcome = $this->talkSender->postAsUser(token: $token, message: $message, actorUid: $send->actor);
+			$outcome = $this->channels->talkSender->postAsUser(
+				talkMessage: new TalkMessage(token: $token, message: $message),
+				actorUid: $send->actor
+			);
 		} catch (TalkSendException $e) {
 			$send->failures[] = $e->getMessage();
 			$send->add(bucket: 'failed', recipient: $token);
@@ -366,7 +406,7 @@ class FlowMessagingService {
 
 		// KILL SWITCH, first and channel-wide: a silenced channel is a skip
 		// recorded per recipient, never a failure and never a silent no-op.
-		if ($this->channelPolicy->isChannelEnabled(channel: $send->channel) === false) {
+		if ($this->channels->channelPolicy->isChannelEnabled(channel: $send->channel) === false) {
 			$send->addAll(bucket: 'skippedByKillSwitch');
 			return $this->reportSend(send: $send);
 		}
@@ -440,7 +480,7 @@ class FlowMessagingService {
 			return;
 		}
 
-		$this->logger->info(
+		$this->platform->logger->info(
 			sprintf(
 				'[FlowMessagingService] %d recipient entries did not resolve to a user or group: %s',
 				count($send->unknown),
@@ -541,8 +581,9 @@ class FlowMessagingService {
 	 */
 	private function sendItem(FlowSend $send, FlowSendItem $item): void {
 		$scalars = $this->scalarContext(context: $send->context);
-		$item->title = $this->templating->interpolate(template: (string)($send->config[$send->titleKey] ?? ''), data: $item->json, context: $scalars);
-		$item->body = $this->templating->interpolate(template: (string)($send->config[$send->bodyKey] ?? ''), data: $item->json, context: $scalars);
+		$templating = $this->platform->templating;
+		$item->title = $templating->interpolate(template: (string)($send->config[$send->titleKey] ?? ''), data: $item->json, context: $scalars);
+		$item->body = $templating->interpolate(template: (string)($send->config[$send->bodyKey] ?? ''), data: $item->json, context: $scalars);
 		$item->kind = FlowEmailSentEvent::KIND_USER;
 		foreach ($item->uids as $uid) {
 			$item->recipient = $uid;
@@ -551,7 +592,7 @@ class FlowMessagingService {
 
 		$this->sendToAddresses(send: $send, item: $item);
 		if ($send->channel === 'nc-notification' && $item->delivered !== []) {
-			$this->ncSender->enqueueWebPush(
+			$this->channels->ncSender->enqueueWebPush(
 				recipients: $item->delivered,
 				ruleId: $send->stepName,
 				originApp: 'openregister',
@@ -581,7 +622,7 @@ class FlowMessagingService {
 			return;
 		}
 
-		if ($this->rateLimiter->tryConsume(ruleId: $send->stepName, recipient: $uid) === false) {
+		if ($this->recipients->rateLimiter->tryConsume(ruleId: $send->stepName, recipient: $uid) === false) {
 			$send->add(bucket: 'rateLimited', recipient: $uid);
 			return;
 		}
@@ -623,12 +664,12 @@ class FlowMessagingService {
 				continue;
 			}
 
-			if ($this->rateLimiter->tryConsume(ruleId: $send->stepName, recipient: $item->recipient) === false) {
+			if ($this->recipients->rateLimiter->tryConsume(ruleId: $send->stepName, recipient: $item->recipient) === false) {
 				$send->add(bucket: 'rateLimited', recipient: $item->recipient);
 				continue;
 			}
 
-			$this->mailAddress(send: $send, item: $item, unsubscribe: $decision['unsubscribe']);
+			$this->mailAddress(send: $send, item: $item);
 		}
 	}//end sendToAddresses()
 
@@ -637,16 +678,19 @@ class FlowMessagingService {
 	 *
 	 * The announced body leaves out the link line, a personal token.
 	 *
-	 * @param FlowSend     $send        The send.
-	 * @param FlowSendItem $item        The item, its recipient the address.
-	 * @param array|null   $unsubscribe The unsubscribe link the opt-out authority gave, if any.
+	 * The unsubscribe link is the one the opt-out authority gave for the
+	 * address in this send's decisions, if any.
+	 *
+	 * @param FlowSend     $send The send.
+	 * @param FlowSendItem $item The item, its recipient the address.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
 	 */
-	private function mailAddress(FlowSend $send, FlowSendItem $item, ?array $unsubscribe): void {
-		$outcome = $this->emailSender->sendToAddress(
+	private function mailAddress(FlowSend $send, FlowSendItem $item): void {
+		$unsubscribe = $this->optOut->decisionFor(decisions: $send->decisions, address: $item->recipient)['unsubscribe'];
+		$outcome = $this->channels->emailSender->sendToAddress(
 			address: $item->recipient,
 			displayName: $item->name,
 			subject: $item->title,
@@ -690,10 +734,10 @@ class FlowMessagingService {
 	 */
 	private function deliver(FlowSend $send, FlowSendItem $item): string {
 		if ($send->channel === 'email') {
-			return $this->emailSender->send(uid: $item->recipient, subject: $item->title, body: $item->body);
+			return $this->channels->emailSender->send(uid: $item->recipient, subject: $item->title, body: $item->body);
 		}
 
-		return $this->ncSender->send(
+		return $this->channels->ncSender->send(
 			uid: $item->recipient,
 			object: $item->objectReference(),
 			subjectKey: 'flow_message',
@@ -734,7 +778,7 @@ class FlowMessagingService {
 		}
 
 		$uid = trim($uid);
-		$user = $this->userManager->get($uid);
+		$user = $this->recipients->userManager->get($uid);
 		if ($user === null) {
 			throw new RuntimeException(
 				sprintf('This flow run\'s acting identity "%s" (runAs) is not a user account; nothing was sent.', $uid)
@@ -765,7 +809,7 @@ class FlowMessagingService {
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function preferenceAllows(string $uid, string $channel): bool {
-		$effective = $this->preferences->resolveEffective(
+		$effective = $this->recipients->preferences->resolveEffective(
 			schemaDefault: [
 				'enabled' => true,
 				'channels' => [$channel],
@@ -793,7 +837,7 @@ class FlowMessagingService {
 	 */
 	private function recipientBound(): int {
 		try {
-			$configured = (int)$this->appConfig->getValueInt(
+			$configured = (int)$this->platform->appConfig->getValueInt(
 				NotificationChannelPolicyInterface::APP_ID,
 				self::CONFIG_RECIPIENT_BOUND,
 				self::DEFAULT_RECIPIENT_BOUND
@@ -839,20 +883,20 @@ class FlowMessagingService {
 	}//end reportSend()
 
 	/**
-	 * Resolve a config value that is a literal or a single-field template.
+	 * The Talk conversation an item posts to: the step's `conversation`, a
+	 * literal token or a single-field template.
 	 *
-	 * @param string $value The config value.
-	 * @param array $json The item's json.
-	 * @param array $context The run context.
+	 * @param FlowSend $send The Talk send.
+	 * @param array    $json The item's json.
 	 *
-	 * @return string The resolved value.
+	 * @return string The resolved token.
 	 */
-	private function resolveScalarConfig(string $value, array $json, array $context): string {
-		$value = trim($value);
+	private function conversationToken(FlowSend $send, array $json): string {
+		$value = trim((string)($send->config['conversation'] ?? ''));
 		if (str_contains($value, '{{') === false) {
 			return $value;
 		}
 
-		return trim($this->templating->interpolate(template: $value, data: $json, context: $this->scalarContext(context: $context)));
-	}//end resolveScalarConfig()
+		return trim($this->platform->templating->interpolate(template: $value, data: $json, context: $this->scalarContext(context: $send->context)));
+	}//end conversationToken()
 }//end class

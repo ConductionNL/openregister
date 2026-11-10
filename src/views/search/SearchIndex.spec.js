@@ -10,6 +10,7 @@
 // Mock the store singletons the component imports so we can assert dispatches.
 import SearchIndex from './SearchIndex.vue'
 import {
+	navigationStore as mockNavigationStore,
 	objectStore as mockObjectStore,
 	viewsStore as mockViewsStore,
 } from '../../store/store.js'
@@ -56,6 +57,22 @@ jest.mock(
 )
 jest.mock(
 	'vue-material-design-icons/TrashCanOutline.vue',
+	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
+	{ virtual: true },
+)
+
+jest.mock(
+	'vue-material-design-icons/CheckCircle.vue',
+	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
+	{ virtual: true },
+)
+jest.mock(
+	'vue-material-design-icons/DatabaseExport.vue',
+	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
+	{ virtual: true },
+)
+jest.mock(
+	'vue-material-design-icons/Merge.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
 	{ virtual: true },
 )
@@ -453,5 +470,97 @@ describe('SearchIndex — presentation dispatch (REQ-VIEW-PRES-05)', () => {
 			expect(mockObjectStore.searchCollection[0].reference).toBe('Z-2')
 			expect(mockObjectStore.searchCollection[1].reference).toBe('Z-7')
 		})
+	})
+
+	describe('mass copy', () => {
+		/**
+		 * Run the handler over two rows.
+		 *
+		 * @param {Function} saveObject The store's save
+		 * @return {Promise<object>} The result the dialog was given
+		 */
+		async function copy(saveObject) {
+			const setMassCopyResult = jest.fn()
+			mockObjectStore.saveObject = saveObject
+			mockObjectStore.errors = {}
+			mockObjectStore.refetchSearchCollection = jest.fn()
+			await SearchIndex.methods.handleMassCopy.call(
+				{
+					computedObjectType: 'type',
+					normalizedObjects: [
+						{ id: 'a', title: 'One' },
+						{ id: 'b', title: 'Two' },
+					],
+					$refs: { indexPage: { setMassCopyResult } },
+				},
+				{ ids: ['a'], getName: (row) => `Copy of ${row.title}` },
+			)
+			return setMassCopyResult.mock.calls[0][0]
+		}
+
+		it('saves the copy, gives the dialog its result and reloads the list', async () => {
+			const saveObject = jest.fn(async () => ({ id: 'new' }))
+
+			const result = await copy(saveObject)
+
+			expect(saveObject).toHaveBeenCalledWith('type', { title: 'Copy of One' })
+			expect(result).toEqual({
+				success: true,
+				successfulIds: ['a'],
+				failedIds: [],
+			})
+			expect(mockObjectStore.refetchSearchCollection).toHaveBeenCalledTimes(1)
+		})
+
+		it('tells the dialog what failed', async () => {
+			const result = await copy(jest.fn(async () => null))
+
+			expect(result.failedIds).toEqual(['a'])
+			expect(result.error).toBe('Some objects could not be copied.')
+		})
+	})
+})
+
+describe('SearchIndex: bulk and merge entry points', () => {
+	const ctx = {
+		normalizedObjects: [
+			{ '@self': { id: 'a' }, id: 'a' },
+			{ '@self': { id: 'b' }, id: 'b' },
+		],
+		stageSelection: SearchIndex.methods.stageSelection,
+	}
+
+	beforeEach(() => {
+		jest.clearAllMocks()
+		Object.assign(mockObjectStore, {
+			setSelectedObjects: jest.fn(),
+			setObjectItem: jest.fn(),
+		})
+	})
+
+	it('opens the merge dialog with the row as the source', () => {
+		const row = ctx.normalizedObjects[0]
+		methodCall('handleMergeRow', ctx, row)
+		expect(mockObjectStore.setObjectItem).toHaveBeenCalledWith(row)
+		expect(mockNavigationStore.setModal).toHaveBeenCalledWith('mergeObject')
+	})
+
+	it('stages the ids and opens the validate dialog', () => {
+		methodCall('handleMassValidate', ctx, ['b'])
+		expect(mockObjectStore.setSelectedObjects).toHaveBeenCalledWith(['b'])
+		expect(mockNavigationStore.setDialog).toHaveBeenCalledWith(
+			'massValidateObjects',
+		)
+	})
+
+	it('stages the ids and opens the migration dialog', () => {
+		methodCall('handleMassMigrate', ctx, ['a', 'b'])
+		expect(mockObjectStore.setSelectedObjects).toHaveBeenCalledWith(['a', 'b'])
+		expect(mockNavigationStore.setModal).toHaveBeenCalledWith('migrationObject')
+	})
+
+	it('leaves out ids that are not in the list', () => {
+		methodCall('stageSelection', ctx, ['a', 'gone'])
+		expect(mockObjectStore.setSelectedObjects).toHaveBeenCalledWith(['a'])
 	})
 })

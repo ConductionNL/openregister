@@ -35,6 +35,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCP\IUserManager;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -80,7 +82,7 @@ class MagicOrganizationHandlerScopeTest extends TestCase {
 		$container->method('get')->willThrowException(new \RuntimeException('no service'));
 
 		$handler = $this->getMockBuilder(MagicOrganizationHandler::class)
-			->setConstructorArgs([$session, $groups, $appConfig, $container, $this->createMock(LoggerInterface::class)])
+			->setConstructorArgs([new MagicMapperIdentity($session, $groups, $this->createMock(IUserManager::class)), $appConfig, $container, $this->createMock(LoggerInterface::class)])
 			->onlyMethods(['getActiveOrganizationUuids'])
 			->getMock();
 		$handler->method('getActiveOrganizationUuids')->willReturn($orgUuids);

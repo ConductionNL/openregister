@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Mcp\Service;
 
-use OCA\OpenRegister\Mcp\Service\Chat\StreamYieldChannel;
+use OCA\OpenRegister\Kernel\Contracts\ChatStreamChannelInterface;
 
 /**
  * The input of ChatService::processMessage() as one value: the message, then the options
@@ -65,9 +65,9 @@ final class ChatMessageRequest {
 	/**
 	 * Streaming channel, null for blocking callers.
 	 *
-	 * @var StreamYieldChannel|null
+	 * @var ChatStreamChannelInterface|null
 	 */
-	public ?StreamYieldChannel $channel = null;
+	public ?ChatStreamChannelInterface $channel = null;
 
 	/**
 	 * Constructor.

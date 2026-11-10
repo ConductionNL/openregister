@@ -20,6 +20,7 @@ use OCA\OpenRegister\Service\Flow\RegistryStepDispatcher;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\WorkflowEngine\IManager;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use UnexpectedValueException;
@@ -405,6 +406,27 @@ class FlowNodeRegistryTest extends TestCase {
 
 		$this->expectException(FlowRunExpired::class);
 		$this->expectExceptionMessageMatches('/test\.slow/');
+
+		$dispatcher->dispatch(
+			['type' => 'test.slow', 'config' => ['maxRuntimeSeconds' => 1]],
+			[FlowItems::item(json: [])],
+			[]
+		);
+	}
+
+	/**
+	 * A step's run time is read from a clock that cannot jump.
+	 *
+	 * The wall clock is frozen for this process, so a step timed on it reads as
+	 * taking no time at all. Wall time steps backwards and forwards under clock
+	 * synchronisation, which would let an overrun pass and stop a healthy step.
+	 */
+	#[RunInSeparateProcess]
+	public function testAStepIsTimedOnAClockThatCannotJump(): void {
+		eval('namespace OCA\\OpenRegister\\Service\\Flow; function microtime(bool $asFloat = false) { return 1000.0; }');
+		$dispatcher = new RegistryStepDispatcher($this->registryWith([new SlowNode()]));
+
+		$this->expectException(FlowRunExpired::class);
 
 		$dispatcher->dispatch(
 			['type' => 'test.slow', 'config' => ['maxRuntimeSeconds' => 1]],

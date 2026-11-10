@@ -23,6 +23,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -45,6 +48,11 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Listener\Support\EventSchemaLookup;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * Live (5 Oct): cap 2, three creates, three 201s. The count went through
@@ -96,9 +104,9 @@ class ObjectQuotaThroughMagicMapperTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			fn (string $id) => match ($id) {
-				\OCA\OpenRegister\Service\DateTimeNormalizer::class => $this->createMock(\OCA\OpenRegister\Service\DateTimeNormalizer::class),
+				\OCA\OpenRegister\Service\DateTimeNormalizerInterface::class => $this->createMock(\OCA\OpenRegister\Service\DateTimeNormalizer::class),
 				\OCA\OpenRegister\Service\ConditionMatcher::class => $this->createMock(\OCA\OpenRegister\Service\ConditionMatcher::class),
-				\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class => $this->createMock(\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class),
+				\OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface::class => $this->createMock(\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class),
 				default => null,
 			}
 		);
@@ -113,17 +121,22 @@ class ObjectQuotaThroughMagicMapperTest extends TestCase {
 
 		$mapper = new MagicMapper(
 			$db,
-			$schemas,
-			$registers,
-			$this->createMock(IConfig::class),
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(\OCA\OpenRegister\Service\SettingsService::class),
-			$container
+			new MagicMapperLookups(
+				$schemas,
+				$registers,
+				$container
+			),
+			new MagicMapperIdentity(
+				$this->createMock(IUserSession::class),
+				$this->createMock(IGroupManager::class),
+				$this->createMock(IUserManager::class)
+			),
+			new MagicMapperRuntime(
+				$this->createMock(IConfig::class),
+				$this->createMock(IAppConfig::class),
+				$this->createMock(IEventDispatcher::class),
+				$this->createMock(LoggerInterface::class)
+			)
 		);
 		foreach (['tableHandler' => $tables, 'searchHandler' => $search] as $property => $value) {
 			$reflection = new \ReflectionProperty(MagicMapper::class, $property);
@@ -133,8 +146,7 @@ class ObjectQuotaThroughMagicMapperTest extends TestCase {
 
 		return new ObjectQuotaListener(
 			quotas: new ObjectQuotaService(objects: $mapper, registers: $registers),
-			schemas: $schemas,
-			logger: $this->createMock(LoggerInterface::class)
+			lookup: $this->eventSchemaLookup($schemas, $this->createMock(LoggerInterface::class))
 		);
 	}//end listener()
 
@@ -188,4 +200,14 @@ class ObjectQuotaThroughMagicMapperTest extends TestCase {
 		$this->assertTrue($event->isPropagationStopped(), 'A quota that cannot be checked must not let the create through.');
 		$this->assertSame(ObjectQuotaListener::ERROR_CODE_UNCHECKED, $event->getErrors()['code']);
 	}//end testACountThatCannotBeMadeRefusesTheCreate()
+
+	/**
+	 * The schema lookup a listener under test resolves through.
+	 */
+	private function eventSchemaLookup(SchemaMapperInterface $schemas, LoggerInterface $logger): EventSchemaLookup {
+		return new EventSchemaLookup(
+			new SchemaCatalog($this->createMock(RegisterMapperInterface::class), $schemas, $this->createMock(MagicMapperInterface::class)),
+			$logger
+		);
+	}
 }//end class

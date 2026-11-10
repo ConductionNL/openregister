@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Middleware;
 
-use OCA\OpenRegister\Service\Rbac\AnonymousEnvelope;
+use OCA\OpenRegister\Service\Rbac\AnonymousEnvelopeInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -45,13 +45,13 @@ class AnonymousEnvelopeMiddleware extends Middleware {
 	 * Constructor.
 	 *
 	 * @param IUserSession      $userSession The session that says who is asking.
-	 * @param AnonymousEnvelope $envelope    The filter for an anonymous caller's answer.
+	 * @param AnonymousEnvelopeInterface $envelope    The filter for an anonymous caller's answer.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
-		private readonly AnonymousEnvelope $envelope,
+		private readonly AnonymousEnvelopeInterface $envelope,
 	) {
 	}//end __construct()
 
@@ -69,6 +69,17 @@ class AnonymousEnvelopeMiddleware extends Middleware {
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function afterController(Controller $controller, string $methodName, Response $response): Response {
+		return $this->redactedForAnonymous(response: $response);
+	}//end afterController()
+
+	/**
+	 * The answer, its JSON data redacted when the caller has no session.
+	 *
+	 * @param Response $response The answer.
+	 *
+	 * @return Response The same answer.
+	 */
+	private function redactedForAnonymous(Response $response): Response {
 		if ($this->userSession->getUser() !== null) {
 			return $response;
 		}
@@ -78,5 +89,5 @@ class AnonymousEnvelopeMiddleware extends Middleware {
 		}
 
 		return $response;
-	}//end afterController()
+	}//end redactedForAnonymous()
 }//end class

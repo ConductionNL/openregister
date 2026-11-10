@@ -842,7 +842,7 @@ class ObjectServiceTest extends TestCase {
 
 		$this->objectEntityMapper
 			->expects($this->once())
-			->method('findMultipleAcrossAllMagicTables')
+			->method('findStoredAcrossAllMagicTables')
 			->with(['uuid-a', 'uuid-b'], true)
 			->willReturn([$entityA, $entityB]);
 
@@ -902,12 +902,46 @@ class ObjectServiceTest extends TestCase {
 	}
 
 	/**
+	 * The handler soft-deletes by writing the whole row back, so it gets the stored
+	 * row: the cross-table read that fills only name and data must not reach it.
+	 */
+	public function testDeleteObjectsHandsTheHandlerTheStoredRow(): void {
+		$slim = new ObjectEntity();
+		$slim->setUuid('uuid-a');
+		$slim->setRegister('1');
+		$slim->setSchema('2');
+
+		$stored = clone $slim;
+		$stored->setOwner('alice');
+		$stored->setOrganisation('org-1');
+		$stored->setVersion('0.0.3');
+
+		$this->objectEntityMapper->method('findMultipleAcrossAllMagicTables')->willReturn([$slim]);
+		$this->objectEntityMapper->method('findStoredAcrossAllMagicTables')->willReturn([$stored]);
+		$this->registerMapper->method('find')->willReturn($this->register);
+		$this->schemaMapper->method('find')->willReturn($this->schema);
+
+		$handed = [];
+		$this->deleteHandler->method('deleteObject')->willReturnCallback(
+			function ($register, $schema, $uuid, $originalObjectId = null, $_rbac = true, $_multitenancy = true, $scoped = false, $preResolved = null) use (&$handed) {
+				$handed[] = $preResolved;
+				return true;
+			}
+		);
+		$this->deleteHandler->method('getLastCascadeCount')->willReturn(0);
+
+		$this->service->deleteObjects(uuids: ['uuid-a'], _rbac: false, _multitenancy: false);
+
+		$this->assertSame([$stored], $handed);
+	}
+
+	/**
 	 * Uuids the batch lookup cannot resolve fall back to the legacy per-uuid
 	 * scope find and a handler call without pre-resolved entity.
 	 */
 	public function testDeleteObjectsFallsBackToPerUuidLookupWhenBatchMisses(): void {
 		$this->objectEntityMapper
-			->method('findMultipleAcrossAllMagicTables')
+			->method('findStoredAcrossAllMagicTables')
 			->willReturn([]);
 
 		$legacyEntity = new ObjectEntity();
@@ -969,7 +1003,7 @@ class ObjectServiceTest extends TestCase {
 		$entityB->setSchema('2');
 
 		$this->objectEntityMapper
-			->method('findMultipleAcrossAllMagicTables')
+			->method('findStoredAcrossAllMagicTables')
 			->willReturn([$entityA, $entityB]);
 
 		$this->registerMapper->method('find')->willReturn($this->register);
@@ -1671,6 +1705,38 @@ class ObjectServiceTest extends TestCase {
 	}
 
 	/**
+	 * Test findSilent forwards the id, extend, files and both guard flags unchanged.
+	 */
+	public function testFindSilentForwardsItsArgumentsToTheHandler(): void {
+		$entity = new ObjectEntity();
+		$entity->setId(1);
+
+		$this->getHandler
+			->expects($this->once())
+			->method('findSilent')
+			->with(
+				'test-uuid',
+				$this->anything(),
+				$this->anything(),
+				['owner'],
+				true,
+				false,
+				false
+			)
+			->willReturn($entity);
+
+		$result = $this->service->findSilent(
+			id: 'test-uuid',
+			_extend: ['owner'],
+			files: true,
+			_rbac: false,
+			_multitenancy: false
+		);
+
+		$this->assertSame($entity, $result);
+	}
+
+	/**
 	 * Test findSilent sets register and schema context when provided.
 	 *
 	 * Observed at the handler, for the same reason as
@@ -2007,7 +2073,7 @@ class ObjectServiceTest extends TestCase {
 		$this->stubMigrationSides(readable: ['uuid-1', 'uuid-2'], updatable: ['uuid-1']);
 		$this->getProperty('migrationHandler')->expects($this->once())
 			->method('migrateObjects')
-			->with('1', '2', '3', '4', ['uuid-1'], ['a' => 'b'])
+			->with(['1', '2'], ['3', '4'], ['uuid-1'], ['a' => 'b'])
 			->willReturn(
 				[
 					'success' => true,

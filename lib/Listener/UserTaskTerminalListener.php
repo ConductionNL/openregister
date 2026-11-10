@@ -4,7 +4,7 @@
  * A task the graph raised has ended: wake its run and spend the node's budget.
  *
  * Listens for {@see TaskTerminalEvent} and hands every task that carries a
- * `run_uuid` to {@see FlowTaskBridge::continueRun()}. A task with no run uuid
+ * `run_uuid` to {@see FlowTaskBridgeInterface::continueRun()}. A task with no run uuid
  * is a standalone task and nothing here concerns it.
  *
  * Everything the bridge does is best-effort by design: the completion has
@@ -32,8 +32,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
-use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
+use OCA\OpenRegister\Service\Flow\FlowTaskBridgeInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -43,17 +44,19 @@ use Throwable;
  * Continues the run a terminal task belongs to.
  *
  * @template-implements IEventListener<TaskTerminalEvent>
+ *
+ * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
  */
 class UserTaskTerminalListener implements IEventListener {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowTaskBridge $bridge Wakes and, per budget, advances the run.
+	 * @param FlowTaskBridgeInterface $bridge Wakes and, per budget, advances the run.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
-		private readonly FlowTaskBridge $bridge,
+		private readonly FlowTaskBridgeInterface $bridge,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -78,6 +81,22 @@ class UserTaskTerminalListener implements IEventListener {
 			return;
 		}
 
+		$this->continueRun(task: $task);
+	}//end handle()
+
+	/**
+	 * Wake and, per budget, advance the task's run; a failure is logged, never thrown.
+	 *
+	 * The task is already terminal, so the worker picks up a run this call
+	 * could not continue.
+	 *
+	 * @param Task $task The terminal task.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
+	 */
+	private function continueRun(Task $task): void {
 		try {
 			$this->bridge->continueRun(task: $task);
 		} catch (Throwable $failure) {
@@ -87,5 +106,5 @@ class UserTaskTerminalListener implements IEventListener {
 				['run' => $task->getRunUuid(), 'exception' => $failure]
 			);
 		}
-	}//end handle()
+	}//end continueRun()
 }//end class

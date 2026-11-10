@@ -5,6 +5,7 @@ namespace Unit\Service;
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCP\IConfig;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -55,9 +56,8 @@ class CalendarEventServiceTest extends TestCase {
 
 		$this->service = new CalendarEventService(
 			$this->calDavBackend,
-			$this->userSession,
+			new LinkSessionRuntime($this->userSession, $this->logger),
 			$this->config,
-			$this->logger,
 			$this->urlGenerator
 		);
 	}

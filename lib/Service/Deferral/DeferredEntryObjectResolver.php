@@ -46,7 +46,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/event-driven-architecture/spec.md
  */
-class DeferredEntryObjectResolver {
+class DeferredEntryObjectResolver implements DeferredEntryObjectResolverInterface {
 	/**
 	 * Wire the object lookup.
 	 *

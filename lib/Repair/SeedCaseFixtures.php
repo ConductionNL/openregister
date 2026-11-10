@@ -47,8 +47,8 @@ namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\CaseItemAudit;
-use OCA\OpenRegister\Db\CaseItemAuditMapper;
-use OCA\OpenRegister\Db\CaseItemMapper;
+use OCA\OpenRegister\Db\CaseItemAuditMapperInterface;
+use OCA\OpenRegister\Db\CaseItemMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
@@ -92,14 +92,14 @@ class SeedCaseFixtures implements IRepairStep {
 	 * Constructor.
 	 *
 	 * @param IAppConfig $appConfig Holds the opt-in flag.
-	 * @param CaseItemMapper $items The plan-item table.
-	 * @param CaseItemAuditMapper $audits The append-only audit.
+	 * @param CaseItemMapperInterface $items The plan-item table.
+	 * @param CaseItemAuditMapperInterface $audits The append-only audit.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
-		private readonly CaseItemMapper $items,
-		private readonly CaseItemAuditMapper $audits,
+		private readonly CaseItemMapperInterface $items,
+		private readonly CaseItemAuditMapperInterface $audits,
 		private readonly LoggerInterface $logger,
 	) {
 

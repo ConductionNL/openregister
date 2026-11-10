@@ -33,14 +33,14 @@ final class CredentialOauth2ControllerServices {
 	 *
 	 * @param CredentialOauth2Mappers  $mappers  The mappers bundle.
 	 * @param CredentialOauth2Domain   $domain   The domain bundle.
-	 * @param CredentialOauth2Platform $platform The platform bundle.
+	 * @param AccessLinkPlatform       $platform The platform bundle.
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */
 	public function __construct(
 		public readonly CredentialOauth2Mappers $mappers,
 		public readonly CredentialOauth2Domain $domain,
-		public readonly CredentialOauth2Platform $platform,
+		public readonly AccessLinkPlatform $platform,
 	) {
 	}//end __construct()
 }//end class

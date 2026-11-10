@@ -38,11 +38,7 @@
 				type="submit">
 				{{ t('openregister', 'Change password') }}
 			</NcButton>
-			<p
-				v-if="message"
-				:class="{ section__error: isError, section__success: !isError }">
-				{{ message }}
-			</p>
+			<SectionStatus :message="message" :isError="isError" />
 		</form>
 	</div>
 </template>
@@ -52,17 +48,20 @@ import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcTextField } from '@nextcloud/vue'
+import SectionStatus from '../../../components/shared/SectionStatus.vue'
+import { sectionStatus } from '../../../composables/sectionStatus.js'
 
 export default {
 	name: 'PasswordSection',
-	components: { NcButton, NcTextField },
+	components: { NcButton, NcTextField, SectionStatus },
+
+	mixins: [sectionStatus],
+
 	data() {
 		return {
 			currentPassword: '',
 			newPassword: '',
 			loading: false,
-			message: '',
-			isError: false,
 			canChangePassword: true,
 		}
 	},
@@ -104,17 +103,17 @@ export default {
 						newPassword: this.newPassword,
 					},
 				)
-				this.message =
+				this.setStatus(
 					data.message
-					|| t('openregister', 'Password updated successfully')
-				this.isError = false
+						|| t('openregister', 'Password updated successfully'),
+				)
 				this.currentPassword = ''
 				this.newPassword = ''
 			} catch (e) {
-				this.message =
-					e.response?.data?.error
-					|| t('openregister', 'Failed to change password')
-				this.isError = true
+				this.setStatusError(
+					e,
+					t('openregister', 'Failed to change password'),
+				)
 			} finally {
 				this.loading = false
 			}

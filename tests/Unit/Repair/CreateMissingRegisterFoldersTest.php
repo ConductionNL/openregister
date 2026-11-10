@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Repair\CreateMissingRegisterFolders;
 use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisioner;
+use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisionerInterface;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -63,7 +64,7 @@ class CreateMissingRegisterFoldersTest extends TestCase {
 		$container->method('get')->willReturnMap(
 			[
 				[RegisterMapperInterface::class, $mapper],
-				[RegisterFolderProvisioner::class, $provisioner],
+				[RegisterFolderProvisionerInterface::class, $provisioner],
 			]
 		);
 

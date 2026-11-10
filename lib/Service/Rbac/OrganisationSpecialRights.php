@@ -72,14 +72,7 @@ use Throwable;
  *
  * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
  */
-class OrganisationSpecialRights {
-
-	/**
-	 * The special right to manage the grants and the owning group of a record.
-	 *
-	 * @var string
-	 */
-	public const GRANT_MANAGE = 'grant_manage';
+class OrganisationSpecialRights implements OrganisationSpecialRightsInterface {
 
 	/**
 	 * Organisations read per page when giving a right in all of them.
@@ -157,11 +150,8 @@ class OrganisationSpecialRights {
 	 * One entry per group. Giving a group the right again replaces its entry, so
 	 * an app that changes its list of schemas does not leave the old one behind.
 	 *
-	 * @param string $organisationUuid The organisation.
-	 * @param string $right The special right's key.
-	 * @param string $group The group that holds it.
-	 * @param string|null $register The register it is narrowed to, or null for all.
-	 * @param string[]|null $schemas The schemas it is narrowed to, or null for all.
+	 * @param string            $organisationUuid The organisation.
+	 * @param SpecialRightGrant $grant            The right, the group that holds it and what it is narrowed to.
 	 *
 	 * @return bool True when the stored block changed.
 	 *
@@ -169,52 +159,46 @@ class OrganisationSpecialRights {
 	 *
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
-	public function give(
-		string $organisationUuid,
-		string $right,
-		string $group,
-		?string $register = null,
-		?array $schemas = null,
-	): bool {
+	public function give(string $organisationUuid, SpecialRightGrant $grant): bool {
 		$organisation = $this->organisations->findByUuid($organisationUuid);
 		$authorization = $organisation->getAuthorization();
 
-		$entry = $group;
-		if ($register !== null || $schemas !== null) {
-			$entry = ['group' => $group];
-			if ($register !== null) {
-				$entry['register'] = $register;
-			}
-
-			if ($schemas !== null) {
-				$entry['schemas'] = array_values($schemas);
-			}
-		}
-
 		$before = [];
-		if (is_array($authorization[$right] ?? null) === true) {
-			$before = array_values($authorization[$right]);
+		if (is_array($authorization[$grant->right] ?? null) === true) {
+			$before = array_values($authorization[$grant->right]);
 		}
 
-		$after = [];
-		foreach ($before as $existing) {
-			if ($this->groupOf(entry: $existing) !== $group) {
-				$after[] = $existing;
-			}
-		}
-
-		$after[] = $entry;
-
+		$after = $this->withEntry(entries: $before, grant: $grant);
 		if ($after === $before) {
 			return false;
 		}
 
-		$authorization[$right] = $after;
+		$authorization[$grant->right] = $after;
 		$organisation->setAuthorization($authorization);
 		$this->organisations->update($organisation);
 
 		return true;
 	}//end give()
+
+	/**
+	 * The entries with the grant's group's entry replaced by the grant's, last.
+	 *
+	 * @param array<int, mixed> $entries The entries as stored.
+	 * @param SpecialRightGrant $grant   The grant.
+	 *
+	 * @return array<int, mixed> The entries.
+	 */
+	private function withEntry(array $entries, SpecialRightGrant $grant): array {
+		$after = [];
+		foreach ($entries as $existing) {
+			if ($this->groupOf(entry: $existing) !== $grant->group) {
+				$after[] = $existing;
+			}
+		}
+
+		$after[] = $grant->entry();
+		return $after;
+	}//end withEntry()
 
 	/**
 	 * Give a group a special right in every organisation of the instance.
@@ -224,21 +208,13 @@ class OrganisationSpecialRights {
 	 * each. Run again on every upgrade: an organisation made since is covered
 	 * then, and one that already has the entry is not written.
 	 *
-	 * @param string $right The special right's key.
-	 * @param string $group The group that holds it.
-	 * @param string|null $register The register it is narrowed to, or null for all.
-	 * @param string[]|null $schemas The schemas it is narrowed to, or null for all.
+	 * @param SpecialRightGrant $grant The right, the group that holds it and what it is narrowed to.
 	 *
 	 * @return array{organisations: int, changed: int} How many organisations were seen and written.
 	 *
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
-	public function giveInEveryOrganisation(
-		string $right,
-		string $group,
-		?string $register = null,
-		?array $schemas = null,
-	): array {
+	public function giveInEveryOrganisation(SpecialRightGrant $grant): array {
 		$answer = ['organisations' => 0, 'changed' => 0];
 		$offset = 0;
 		do {
@@ -247,18 +223,10 @@ class OrganisationSpecialRights {
 			$read = count($page);
 			foreach ($page as $organisation) {
 				$answer['organisations']++;
-				if ($this->give(
-					organisationUuid: (string)$organisation->getUuid(),
-					right: $right,
-					group: $group,
-					register: $register,
-					schemas: $schemas
-				) === true
-				) {
+				if ($this->give(organisationUuid: (string)$organisation->getUuid(), grant: $grant) === true) {
 					$answer['changed']++;
 				}
 			}
-
 		} while ($read === self::PAGE);
 
 		return $answer;

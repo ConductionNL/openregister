@@ -30,9 +30,11 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Audit\AuditTrailPageService;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryServices;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
 use OCA\OpenRegister\Service\Audit\ReadEventVisibility;
 use OCA\OpenRegister\Service\Audit\HistoryEntryRedactor;
@@ -126,9 +128,7 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 
 		return new LogService(
 			$trails,
-			$this->createMock(originalClassName: MagicMapper::class),
-			$this->createMock(originalClassName: RegisterMapper::class),
-			$schemas
+			new SchemaCatalog($this->createMock(originalClassName: RegisterMapper::class), $schemas, $this->createMock(originalClassName: MagicMapper::class))
 		);
 	}//end logService()
 
@@ -277,22 +277,18 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 		$reads->method('maySeeReadEvents')->willReturn(true);
 		$session = $this->createMock(originalClassName: IUserSession::class);
 		$groups = $this->createMock(originalClassName: IGroupManager::class);
-		$properties = new PropertyRbacHandler(
-			$session,
-			$groups,
-			$this->createMock(originalClassName: ConditionMatcher::class),
-			$this->createMock(originalClassName: LoggerInterface::class),
-			self::stateFieldRuleResolver($session, $groups)
-		);
+		$properties = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($session, $groups), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(originalClassName: ConditionMatcher::class), self::stateFieldRuleResolver($session, $groups)), logger: $this->createMock(originalClassName: LoggerInterface::class));
 
 		$lister = new ReadableAuditTrailLister(
 			auditTrailMapper: $trails,
 			objectMapper: $objects,
 			history: new ObjectHistoryForReaders(
 				$access,
-				$trails,
-				new HistoryEntryRedactor($properties),
-				$registers,
+				new ObjectHistoryServices(
+					$trails,
+					new HistoryEntryRedactor($properties),
+					$registers
+				),
 				$this->createMock(originalClassName: PurposeGuard::class),
 				$reads
 			),

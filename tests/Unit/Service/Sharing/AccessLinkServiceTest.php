@@ -40,7 +40,11 @@ use OCA\OpenRegister\Db\AccessLinkMapper;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Sharing\AccessLinkSecrets;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
+use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
+use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
+use OCA\OpenRegister\Service\Sharing\AccessLinkUseLog;
 use OCP\IURLGenerator;
 use OCP\Security\IHasher;
 use OCP\Security\ISecureRandom;
@@ -89,11 +93,9 @@ class AccessLinkServiceTest extends TestCase {
 
 		$this->service = new AccessLinkService(
 			mapper: $this->mapper,
-			auditTrail: $this->auditTrail,
-			secureRandom: $this->secureRandom,
-			hasher: $this->hasher,
-			urlGenerator: $this->urlGenerator,
-			logger: $this->logger
+			useLog: new AccessLinkUseLog(auditTrail: $this->auditTrail, logger: $this->logger),
+			secrets: new AccessLinkSecrets(secureRandom: $this->secureRandom, hasher: $this->hasher),
+			urlGenerator: $this->urlGenerator
 		);
 	}
 
@@ -122,7 +124,8 @@ class AccessLinkServiceTest extends TestCase {
 		$this->service->mint(
 			userId: 'owner',
 			subjectType: AccessLink::SUBJECT_OBJECT,
-			subjectId: 'object-uuid'
+			subjectId: 'object-uuid',
+			terms: new AccessLinkTerms()
 		);
 	}
 
@@ -134,7 +137,9 @@ class AccessLinkServiceTest extends TestCase {
 			userId: 'owner',
 			subjectType: AccessLink::SUBJECT_OBJECT,
 			subjectId: 'object-uuid',
-			expiresAt: '2001-01-01T00:00:00+00:00'
+			terms: new AccessLinkTerms(
+				expiresAt: '2001-01-01T00:00:00+00:00'
+			)
 		);
 	}
 
@@ -145,7 +150,9 @@ class AccessLinkServiceTest extends TestCase {
 			userId: 'owner',
 			subjectType: AccessLink::SUBJECT_OBJECT,
 			subjectId: 'object-uuid',
-			expiresAt: 'whenever'
+			terms: new AccessLinkTerms(
+				expiresAt: 'whenever'
+			)
 		);
 	}
 
@@ -194,7 +201,9 @@ class AccessLinkServiceTest extends TestCase {
 			userId: 'owner',
 			subjectType: 'register',
 			subjectId: 'x',
-			expiresAt: '+1 day'
+			terms: new AccessLinkTerms(
+				expiresAt: '+1 day'
+			)
 		);
 	}
 
@@ -205,7 +214,9 @@ class AccessLinkServiceTest extends TestCase {
 			userId: '  ',
 			subjectType: AccessLink::SUBJECT_OBJECT,
 			subjectId: 'object-uuid',
-			expiresAt: '+1 day'
+			terms: new AccessLinkTerms(
+				expiresAt: '+1 day'
+			)
 		);
 	}
 
@@ -365,9 +376,7 @@ class AccessLinkServiceTest extends TestCase {
 		] as $act) {
 			$this->service->recordUse(
 				link: $link,
-				act: $act,
-				object: $object,
-				ipAddress: '198.51.100.7'
+				use: new AccessLinkUse(act: $act, object: $object, ipAddress: '198.51.100.7')
 			);
 		}
 
@@ -394,7 +403,7 @@ class AccessLinkServiceTest extends TestCase {
 		$link = $this->liveLink();
 		$this->auditTrail->expects($this->never())->method('createAuditTrailEntry');
 
-		$this->service->recordUse(link: $link, act: AccessLinkService::ACT_READ, object: null);
+		$this->service->recordUse(link: $link, use: new AccessLinkUse(act: AccessLinkService::ACT_READ, object: null));
 
 		$this->assertSame(1, $link->getUseCount());
 	}
@@ -442,10 +451,12 @@ class AccessLinkServiceTest extends TestCase {
 			userId: 'owner',
 			subjectType: AccessLink::SUBJECT_OBJECT,
 			subjectId: 'object-uuid',
-			capabilities: $capabilities,
-			expiresAt: '+7 days',
-			password: $password,
-			label: 'Advice request'
+			terms: new AccessLinkTerms(
+				capabilities: $capabilities,
+				expiresAt: '+7 days',
+				password: $password,
+				label: 'Advice request'
+			)
 		);
 	}
 }

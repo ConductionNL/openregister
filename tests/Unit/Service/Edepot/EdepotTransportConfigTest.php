@@ -20,14 +20,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Edepot;
 
-use OCA\OpenRegister\Service\Edepot\EdepotTransferService;
+use OCA\OpenRegister\Service\Edepot\TransferSettings;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
-use ReflectionClass;
 
 /**
- * @covers \OCA\OpenRegister\Service\Edepot\EdepotTransferService
+ * @covers \OCA\OpenRegister\Service\Edepot\TransferSettings
  */
 class EdepotTransportConfigTest extends TestCase {
 
@@ -42,12 +41,9 @@ class EdepotTransportConfigTest extends TestCase {
 			static fn (string $app, string $key, string $default = ''): string => ($key === 'edepot_sftp_host_key_fingerprint') ? 'SHA256:pin' : $default
 		);
 
-		$class = new ReflectionClass(EdepotTransferService::class);
-		$service = $class->newInstanceWithoutConstructor();
-		$class->getProperty('appConfig')->setValue($service, $appConfig);
-		$class->getProperty('logger')->setValue($service, new NullLogger());
+		$settings = new TransferSettings(appConfig: $appConfig, logger: new NullLogger());
 
-		$config = $class->getMethod('getTransportConfig')->invoke($service);
+		$config = $settings->getTransportConfig();
 
 		$this->assertSame('SHA256:pin', $config['hostKeyFingerprint']);
 	}//end testTheFingerprintReachesTheTransportConfig()

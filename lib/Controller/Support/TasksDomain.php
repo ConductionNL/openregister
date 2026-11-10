@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Task\TaskInboxService;
+use OCA\OpenRegister\Service\Task\TaskInboxServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
 
 /**
@@ -38,7 +38,7 @@ final class TasksDomain {
 	 *
 	 * @param ObjectCalendarTasksInterface $taskService   Task service for VTODO operations
 	 * @param ObjectOperationsInterface                $objectService Object service for object validation
-	 * @param ?TaskInboxService            $inbox         The engine inbox the aggregate answers from;
+	 * @param ?TaskInboxServiceInterface            $inbox         The engine inbox the aggregate answers from;
 	 * @param ?TaskTemporalProjection      $temporal      The one overdue derivation's clock
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
@@ -46,7 +46,7 @@ final class TasksDomain {
 	public function __construct(
 		public readonly ObjectCalendarTasksInterface $taskService,
 		public readonly ObjectOperationsInterface $objectService,
-		public readonly ?TaskInboxService $inbox = null,
+		public readonly ?TaskInboxServiceInterface $inbox = null,
 		public readonly ?TaskTemporalProjection $temporal = null,
 	) {
 	}//end __construct()

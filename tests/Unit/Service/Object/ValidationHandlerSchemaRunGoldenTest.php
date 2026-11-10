@@ -18,6 +18,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -273,10 +274,7 @@ class ValidationHandlerSchemaRunGoldenTest extends TestCase {
 
 		return new ValidationHandler(
 			validateHandler: $this->createMock(ValidateObject::class),
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
-			magicMapper: $magic,
+			catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magic),
 			logger: $logger
 		);
 	}//end handler()

@@ -39,6 +39,7 @@ use Psr\Log\LoggerInterface;
  * Every query-builder call a terms facet over one magic table makes, and the facet built from the rows.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicFacetFieldLabel
  * @uses \OCA\OpenRegister\Formats\UuidFormat
  * @uses   \OCA\OpenRegister\Db\MagicMapper\FacetLabelLookup
  * @uses   \OCA\OpenRegister\Db\MagicMapper\DeletedLens

@@ -22,11 +22,9 @@ namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use Exception;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
-use OCA\OpenRegister\Service\Rbac\HierarchyAnnotationValidator;
-use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
-use OCA\OpenRegister\Service\Rbac\RevealCollector;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -136,12 +134,12 @@ final class AccessDeclarationChecks {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function checkHierarchy(Schema $schema): void {
-		$annotation = new SchemaAnnotation(schema: $schema, key: HierarchyGrantExpander::ANNOTATION);
+		$annotation = new SchemaAnnotation(schema: $schema, key: AccessDeclarationValidators::HIERARCHY_ANNOTATION);
 		if ($annotation->hasValue() === false) {
 			return;
 		}
 
-		$validator = new HierarchyAnnotationValidator();
+		$validator = AccessDeclarationValidators::hierarchy();
 		$split = $validator->partition(findings: $validator->validate($this->hierarchyShape(annotation: $annotation, schema: $schema)));
 		if (count($split['warnings']) > 0) {
 			$this->logger->warning($annotation->faults()->unknownKeysNotice(warnings: $split['warnings']));
@@ -185,7 +183,7 @@ final class AccessDeclarationChecks {
 			$authorization = ($config['authorization'] ?? null);
 		}
 
-		if (is_array($authorization) === false || ($authorization[RevealCollector::AUDIT_KEY] ?? null) !== true) {
+		if (is_array($authorization) === false || ($authorization[AccessDeclarationValidators::REVEAL_AUDIT_KEY] ?? null) !== true) {
 			return false;
 		}
 

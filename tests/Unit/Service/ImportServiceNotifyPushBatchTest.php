@@ -39,17 +39,18 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Listener\NotifyPushListener;
+use OCA\OpenRegister\Listener\Support\PushSlugResolver;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Translation\TranslationCsvCodec;
-use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Listener\Support\NotifyPushPlatform;
 
 /**
  * Tests that bulk imports flush deduplicated notify_push collection events
@@ -145,13 +146,9 @@ class ImportServiceNotifyPushBatchTest extends TestCase {
 		$permissionHandler->method('getReadableByUsers')->willReturn(['user1', 'user2']);
 
 		$this->listener = new NotifyPushListener(
-			appManager: $this->createMock(IAppManager::class),
-			logger: $this->createMock(LoggerInterface::class),
-			container: $container,
+			platform: new NotifyPushPlatform(logger: $this->createMock(LoggerInterface::class), container: $container, appConfig: $this->createMock(IAppConfig::class)),
 			permissionHandler: $permissionHandler,
-			appConfig: $this->createMock(IAppConfig::class),
-			registerMapper: $registerMapper,
-			schemaMapper: $listenerSchemaMapper,
+			slugs: new PushSlugResolver($registerMapper, $listenerSchemaMapper)
 		);
 
 		$this->objectService = $this->createMock(ObjectService::class);
@@ -161,15 +158,10 @@ class ImportServiceNotifyPushBatchTest extends TestCase {
 			->willReturnCallback(static fn (array $row) => $row);
 
 		$this->service = new ImportService(
-			$this->createMock(SchemaMapper::class),
-			$this->objectService,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IGroupManager::class),
-			$translationCsvCodec,
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\MigrationPack\MappingEngine::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\ValidateObject::class),
-			$container
+			new \OCA\OpenRegister\Service\Import\ImportServiceStores($this->createMock(SchemaMapper::class), $this->objectService, $this->createMock(AuditTrailMapper::class), $this->createMock(\OCA\OpenRegister\Service\Object\ValidateObject::class)),
+			new \OCA\OpenRegister\Service\Import\ImportServiceCodecs($translationCsvCodec, $this->createMock(\OCA\OpenRegister\Service\MigrationPack\MappingEngine::class)),
+			new \OCA\OpenRegister\Service\Import\ImportServiceRuntime($container, new \OCA\OpenRegister\Listener\NotifyPushBatch(), $this->createMock(LoggerInterface::class)),
+			$this->createMock(IGroupManager::class)
 		);
 
 	}//end setUp()

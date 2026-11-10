@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Flow\FlowMessagingService;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowStepReport;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityFactory;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicy;
@@ -64,6 +65,10 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Flow\FlowMessagingChannels;
+use OCA\OpenRegister\Service\Flow\FlowMessagingOverrides;
+use OCA\OpenRegister\Service\Flow\FlowMessagingPlatform;
+use OCA\OpenRegister\Service\Flow\FlowMessagingRecipients;
 
 /**
  * External recipients, FlowEmailSentEvent and role fields.
@@ -295,38 +300,47 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 		$config->method('getUserValue')->willReturnArgument(3);
 
 		return new FlowMessagingService(
-			channelPolicy: $policy,
-			recipientResolver: new NotificationRecipientResolver(
-				userManager: $this->userManager,
-				groupManager: $this->createMock(IGroupManager::class),
-				logger: $logger
+			channels: new FlowMessagingChannels(
+				channelPolicy: $policy,
+				ncSender: new NcNotificationSender(
+					notificationManager: $this->notificationManager,
+					logger: $logger,
+					userManager: $this->userManager,
+					jobList: $this->createMock(IJobList::class),
+					channelPolicy: $policy
+				),
+				emailSender: new EmailSender(
+					userManager: $this->userManager,
+					mailer: $this->mailer,
+					logger: $logger,
+					channelPolicy: $policy
+				),
+				talkSender: new TalkSender(httpClient: $this->createMock(IClientService::class), logger: $logger)
 			),
-			templating: new NotificationTemplating(logger: $logger),
-			ncSender: new NcNotificationSender(
-				notificationManager: $this->notificationManager,
+			recipients: new FlowMessagingRecipients(
+				recipientResolver: new NotificationRecipientResolver(
+					userManager: $this->userManager,
+					groupManager: $this->createMock(IGroupManager::class),
+					logger: $logger
+				),
+				preferences: new NotificationPreferenceService(
+					config: $config,
+					schemaMapper: $this->createMock(SchemaMapper::class),
+					logger: $logger
+				),
+				rateLimiter: new RateLimiter(cacheFactory: $cacheFactory, appConfig: $this->appConfig, logger: $logger),
+				userManager: $this->userManager
+			),
+			platform: new FlowMessagingPlatform(
+				templating: new NotificationTemplating(logger: $logger),
+				appConfig: $this->appConfig,
 				logger: $logger,
-				userManager: $this->userManager,
-				jobList: $this->createMock(IJobList::class),
-				channelPolicy: $policy
+				eventDispatcher: $this->dispatcher
 			),
-			emailSender: new EmailSender(
-				userManager: $this->userManager,
-				mailer: $this->mailer,
-				logger: $logger,
-				channelPolicy: $policy
-			),
-			talkSender: new TalkSender(httpClient: $this->createMock(IClientService::class), logger: $logger),
-			rateLimiter: new RateLimiter(cacheFactory: $cacheFactory, appConfig: $this->appConfig, logger: $logger),
-			preferences: new NotificationPreferenceService(
-				config: $config,
-				schemaMapper: $this->createMock(SchemaMapper::class),
-				logger: $logger
-			),
-			userManager: $this->userManager,
-			appConfig: $this->appConfig,
-			logger: $logger,
-			eventDispatcher: $this->dispatcher,
-			runContext: $this->runContext
+			overrides: new FlowMessagingOverrides(
+				runContext: $this->runContext,
+				optOut: OptOutAuthorityFactory::create(eventDispatcher: $this->dispatcher, appConfig: $this->appConfig, logger: $logger)
+			)
 		);
 	}//end makeService()
 

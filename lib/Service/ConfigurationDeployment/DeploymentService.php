@@ -41,11 +41,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ConfigurationDeployment;
 
-use DateTime;
 use OCA\OpenRegister\Db\ConfigurationDeployment;
-use OCA\OpenRegister\Db\ConfigurationDeploymentMapper;
+use OCA\OpenRegister\Db\ConfigurationDeploymentMapperInterface;
 use OCA\OpenRegister\Db\ConfigurationDraftSet;
-use OCA\OpenRegister\Db\ConfigurationDraftSetMapper;
+use OCA\OpenRegister\Db\ConfigurationDraftSetMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\IDBConnection;
@@ -61,7 +60,7 @@ use Throwable;
  * set, the preview, the value store, the history and the transaction. Splitting
  * it would put the all-or-nothing rule in two places.
  */
-class DeploymentService {
+class DeploymentService implements DeploymentServiceInterface {
 
 	/**
 	 * Constructor.
@@ -69,8 +68,8 @@ class DeploymentService {
 	 * @param ConfigurationDraftService     $drafts      The pending values.
 	 * @param DeploymentPreviewService      $previews    The diff and its refusals.
 	 * @param ConfigurationValueStore       $store       The live values.
-	 * @param ConfigurationDeploymentMapper $deployments The append-only history.
-	 * @param ConfigurationDraftSetMapper   $sets        The draft sets.
+	 * @param ConfigurationDeploymentMapperInterface $deployments The append-only history.
+	 * @param ConfigurationDraftSetMapperInterface   $sets        The draft sets.
 	 * @param IDBConnection                 $db          The database, for the transaction.
 	 * @param IUserSession                  $session     The current session.
 	 * @param LoggerInterface               $logger      The log.
@@ -79,8 +78,8 @@ class DeploymentService {
 		private readonly ConfigurationDraftService $drafts,
 		private readonly DeploymentPreviewService $previews,
 		private readonly ConfigurationValueStore $store,
-		private readonly ConfigurationDeploymentMapper $deployments,
-		private readonly ConfigurationDraftSetMapper $sets,
+		private readonly ConfigurationDeploymentMapperInterface $deployments,
+		private readonly ConfigurationDraftSetMapperInterface $sets,
 		private readonly IDBConnection $db,
 		private readonly IUserSession $session,
 		private readonly LoggerInterface $logger
@@ -107,30 +106,35 @@ class DeploymentService {
 		$preview = $this->previews->preview(set: $set);
 		$this->requireNoRefusals(set: $set, preview: $preview);
 
-		$changes = [];
-		foreach ($preview['changes'] as $verdict) {
-			$changes[] = [
-				'layer' => $verdict['layer'],
-				'layerRef' => $verdict['layerRef'],
-				'key' => $verdict['key'],
-				'previous' => $verdict['from'],
-				'previousPresent' => ($verdict['fromPresent'] ?? false),
-				'value' => $verdict['to'],
-				'removes' => ($verdict['status'] === 'remove'),
-			];
-		}
-
-		return $this->apply(
-			changes: $changes,
+		$plan = new DeploymentPlan(
+			changes: array_values(array_map(self::changeFromVerdict(...), $preview['changes'])),
 			name: ($name ?? $set->getName() ?? 'configuration deployment'),
-			setUuid: (string)$set->getUuid(),
-			author: $set->getCreatedBy(),
-			approver: $set->getApprovedBy(),
-			restoresUuid: null,
-			closeSet: $set
+			origin: DeploymentOrigin::ofSet(set: $set)
 		);
 
+		return $this->apply(plan: $plan, closeSet: $set);
+
 	}//end deploy()
+
+	/**
+	 * The change a deployment records for one preview verdict: both sides of the value.
+	 *
+	 * @param array<string, mixed> $verdict The preview verdict.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function changeFromVerdict(array $verdict): array {
+		return [
+			'layer' => $verdict['layer'],
+			'layerRef' => $verdict['layerRef'],
+			'key' => $verdict['key'],
+			'previous' => $verdict['from'],
+			'previousPresent' => ($verdict['fromPresent'] ?? false),
+			'value' => $verdict['to'],
+			'removes' => ($verdict['status'] === 'remove'),
+		];
+
+	}//end changeFromVerdict()
 
 	/**
 	 * Roll a deployment back, as a new deployment.
@@ -146,54 +150,86 @@ class DeploymentService {
 	 */
 	public function rollback(string $deploymentUuid, ?string $name = null): ConfigurationDeployment {
 		$original = $this->loadDeployment(uuid: $deploymentUuid);
+		$label = $original->getName() ?? $deploymentUuid;
+		self::requireRestorable(original: $original, label: $label);
 
+		$plan = new DeploymentPlan(
+			changes: $this->restoringChanges(original: $original),
+			name: ($name ?? sprintf('rollback of %s', $label)),
+			origin: DeploymentOrigin::rollbackOf(restoresUuid: (string)$original->getUuid(), actor: $this->actor())
+		);
+
+		return $this->apply(plan: $plan, closeSet: null);
+
+	}//end rollback()
+
+	/**
+	 * Refuse to roll back a deployment that changed no value.
+	 *
+	 * @param ConfigurationDeployment $original The deployment.
+	 * @param string                  $label    Its name, or its UUID.
+	 *
+	 * @return void
+	 *
+	 * @throws DeploymentRefusedException When there is nothing to restore.
+	 */
+	private static function requireRestorable(ConfigurationDeployment $original, string $label): void {
 		if ($original->readChanges() === []) {
 			throw new DeploymentRefusedException(
 				reason: DeploymentRefusedException::REASON_EMPTY,
-				message: sprintf(
-					'deployment "%s" changed no value, so there is nothing to restore',
-					$original->getName() ?? $deploymentUuid
-				)
+				message: sprintf('deployment "%s" changed no value, so there is nothing to restore', $label)
 			);
 		}
 
+	}//end requireRestorable()
+
+	/**
+	 * The changes that put every value a deployment moved back to what it was.
+	 *
+	 * @param ConfigurationDeployment $original The deployment being rolled back.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function restoringChanges(ConfigurationDeployment $original): array {
 		$changes = [];
 		foreach ($original->readChanges() as $change) {
-			$layer = (string)($change['layer'] ?? ConfigurationLayer::INSTANCE);
-			$layerRef = ($change['layerRef'] ?? null);
-			$configKey = (string)($change['key'] ?? '');
-			if ($configKey === '') {
-				continue;
+			$restore = $this->restoringChange(change: $change);
+			if ($restore !== null) {
+				$changes[] = $restore;
 			}
+		}
 
-			$live = $this->store->read(layer: $layer, layerRef: $layerRef, configKey: $configKey);
-			$restoresToNothing = (($change['previousPresent'] ?? false) === false);
+		return $changes;
 
-			$changes[] = [
-				'layer' => $layer,
-				'layerRef' => $layerRef,
-				'key' => $configKey,
-				'previous' => $live->value,
-				'previousPresent' => $live->present,
-				'value' => match ($restoresToNothing) {
-					true => null,
-					false => ($change['previous'] ?? null),
-				},
-				'removes' => $restoresToNothing,
-			];
-		}//end foreach
+	}//end restoringChanges()
 
-		return $this->apply(
-			changes: $changes,
-			name: ($name ?? sprintf('rollback of %s', $original->getName() ?? $deploymentUuid)),
-			setUuid: null,
-			author: $this->actor(),
-			approver: null,
-			restoresUuid: (string)$original->getUuid(),
-			closeSet: null
-		);
+	/**
+	 * The change that restores one recorded change, against the value live now; null for a change without a key.
+	 *
+	 * A value that did not exist before the deployment is removed again.
+	 *
+	 * @param array<string, mixed> $change The recorded change.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function restoringChange(array $change): ?array {
+		$layer = (string)($change['layer'] ?? ConfigurationLayer::INSTANCE);
+		$layerRef = ($change['layerRef'] ?? null);
+		$configKey = (string)($change['key'] ?? '');
+		if ($configKey === '') {
+			return null;
+		}
 
-	}//end rollback()
+		$live = $this->store->read(layer: $layer, layerRef: $layerRef, configKey: $configKey);
+		$restoresToNothing = (($change['previousPresent'] ?? false) === false);
+		$value = match ($restoresToNothing) { true => null, false => ($change['previous'] ?? null) };
+
+		return [
+			'layer' => $layer, 'layerRef' => $layerRef, 'key' => $configKey,
+			'previous' => $live->value, 'previousPresent' => $live->present, 'value' => $value, 'removes' => $restoresToNothing,
+		];
+
+	}//end restoringChange()
 
 	/**
 	 * Read a deployment back, or refuse by name.
@@ -235,108 +271,90 @@ class DeploymentService {
 	}//end history()
 
 	/**
-	 * Apply a list of changes as one deployment, or none of them.
+	 * Apply a plan's changes as one deployment, or none of them.
 	 *
-	 * @param array<int, array<string, mixed>> $changes      The addresses to move.
-	 * @param string                           $name         The deployment name.
-	 * @param string|null                      $setUuid      The set being published, when there is one.
-	 * @param string|null                      $author       The author of the set.
-	 * @param string|null                      $approver     The approver, when one was required.
-	 * @param string|null                      $restoresUuid The deployment being restored, on a rollback.
-	 * @param ConfigurationDraftSet|null       $closeSet     The set to close once the values are live.
+	 * @param DeploymentPlan             $plan     The changes, the name and the origin.
+	 * @param ConfigurationDraftSet|null $closeSet The set to mark deployed, if any.
 	 *
 	 * @return ConfigurationDeployment The recorded deployment.
 	 *
-	 * @throws DeploymentRefusedException When a write throws; nothing stays applied.
-	 *
-	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 * @throws DeploymentRefusedException When a write fails; every earlier write is undone first.
 	 */
-	private function apply(
-		array $changes,
-		string $name,
-		?string $setUuid,
-		?string $author,
-		?string $approver,
-		?string $restoresUuid,
-		?ConfigurationDraftSet $closeSet
-	): ConfigurationDeployment {
-		$deploymentUuid = Uuid::v4()->toRfc4122();
-		$actor = $this->actor();
-		$undo = [];
+	private function apply(DeploymentPlan $plan, ?ConfigurationDraftSet $closeSet): ConfigurationDeployment {
+		$run = new DeploymentRun(uuid: Uuid::v4()->toRfc4122(), actor: $this->actor());
 
 		$this->db->beginTransaction();
 
 		try {
-			foreach ($changes as $change) {
-				$undo[] = $this->writeOne(change: $change, deploymentUuid: $deploymentUuid, actor: $actor);
+			foreach ($plan->changes as $change) {
+				$run->undo[] = $this->writeOne(run: $run, change: $change);
 			}
 
-			$deployment = $this->deployments->createFromArray(
-				[
-					'uuid' => $deploymentUuid,
-					'name' => $name,
-					'setUuid' => $setUuid,
-					'author' => $author,
-					'approver' => $approver,
-					'deployedBy' => $actor,
-					'deployedAt' => new DateTime(),
-					'restoresUuid' => $restoresUuid,
-					'changes' => $changes,
-					'state' => match ($restoresUuid) {
-						null => ConfigurationDeployment::STATE_APPLIED,
-						default => ConfigurationDeployment::STATE_ROLLED_BACK,
-					},
-				]
-			);
-
-			if ($closeSet !== null) {
-				$closeSet->setState(ConfigurationDraftSet::STATE_DEPLOYED);
-				$closeSet->setDeploymentUuid($deploymentUuid);
-				$this->sets->save($closeSet);
-			}
-
-			$this->db->commit();
+			return $this->record(row: $plan->row(uuid: $run->uuid, deployedBy: $run->actor), closeSet: $closeSet);
 		} catch (Throwable $throwable) {
-			$this->db->rollBack();
-			$restored = $this->store->restore(undoEntries: $undo);
-
-			$this->logger->error(
-				'Configuration deployment refused mid-apply and was undone',
-				[
-					'app' => 'openregister',
-					'deployment' => $deploymentUuid,
-					'restored' => $restored,
-					'exception' => $throwable,
-				]
-			);
-
-			throw new DeploymentRefusedException(
-				reason: DeploymentRefusedException::REASON_VALUE_REFUSED,
-				message: sprintf(
-					'the deployment was undone in full after a write refused: %s',
-					$throwable->getMessage()
-				),
-				refusals: [],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
-		}//end try
-
-		return $deployment;
+			throw $this->undo(run: $run, throwable: $throwable);
+		}
 
 	}//end apply()
 
 	/**
+	 * Record the deployment row, mark the deployed set as deployed by it, and commit.
+	 *
+	 * @param array<string, mixed>       $row      The deployment row.
+	 * @param ConfigurationDraftSet|null $closeSet The set, or null for a rollback.
+	 *
+	 * @return ConfigurationDeployment
+	 */
+	private function record(array $row, ?ConfigurationDraftSet $closeSet): ConfigurationDeployment {
+		$deployment = $this->deployments->createFromArray($row);
+		if ($closeSet !== null) {
+			$closeSet->setState(ConfigurationDraftSet::STATE_DEPLOYED);
+			$closeSet->setDeploymentUuid($row['uuid']);
+			$this->sets->save($closeSet);
+		}
+
+		$this->db->commit();
+		return $deployment;
+
+	}//end record()
+
+	/**
+	 * Undo a deployment that failed mid-apply: roll the rows back, restore the written values, log.
+	 *
+	 * @param DeploymentRun $run       The deployment, with the undo entries of the writes so far.
+	 * @param Throwable     $throwable The failure.
+	 *
+	 * @return DeploymentRefusedException The refusal to throw.
+	 */
+	private function undo(DeploymentRun $run, Throwable $throwable): DeploymentRefusedException {
+		$this->db->rollBack();
+		$restored = $this->store->restore(undoEntries: $run->undo);
+
+		$this->logger->error(
+			'Configuration deployment refused mid-apply and was undone',
+			['app' => 'openregister', 'deployment' => $run->uuid, 'restored' => $restored, 'exception' => $throwable]
+		);
+
+		return new DeploymentRefusedException(
+			reason: DeploymentRefusedException::REASON_VALUE_REFUSED,
+			message: sprintf('the deployment was undone in full after a write refused: %s', $throwable->getMessage()),
+			refusals: [],
+			statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+		);
+
+	}//end undo()
+
+	/**
 	 * Write one address, returning its undo entry.
 	 *
-	 * @param array<string, mixed> $change         The address and its new value.
-	 * @param string               $deploymentUuid The deployment doing the writing.
-	 * @param string|null          $actor          Who is doing the writing.
+	 * @param DeploymentRun        $run    The deployment doing the writing, and who does it.
+	 * @param array<string, mixed> $change The address and its new value.
 	 *
 	 * @return array<string, mixed> The undo entry.
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	private function writeOne(array $change, string $deploymentUuid, ?string $actor): array {
+	private function writeOne(DeploymentRun $run, array $change): array {
 		$layer = (string)($change['layer'] ?? ConfigurationLayer::INSTANCE);
 		$layerRef = ($change['layerRef'] ?? null);
 		$configKey = (string)($change['key'] ?? '');
@@ -345,13 +363,10 @@ class DeploymentService {
 			return $this->store->remove(layer: $layer, layerRef: $layerRef, configKey: $configKey);
 		}
 
+		$value = ($change['value'] ?? null);
 		return $this->store->write(
-			layer: $layer,
-			layerRef: $layerRef,
-			configKey: $configKey,
-			value: ($change['value'] ?? null),
-			deploymentUuid: $deploymentUuid,
-			actor: $actor
+			address: new ConfigurationAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey),
+			write: new ConfigurationWrite(value: $value, deploymentUuid: $run->uuid, actor: $run->actor)
 		);
 
 	}//end writeOne()
@@ -368,48 +383,57 @@ class DeploymentService {
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	private function requireDeployable(ConfigurationDraftSet $set): void {
-		if (in_array(
-			$set->getState(),
-			[ConfigurationDraftSet::STATE_OPEN, ConfigurationDraftSet::STATE_APPROVED],
-			true
-		) === false
-		) {
-			throw new DeploymentRefusedException(
-				reason: DeploymentRefusedException::REASON_STATE,
-				message: sprintf(
-					'draft set "%s" is %s and cannot be deployed',
-					$set->getName() ?? (string)$set->getUuid(),
-					(string)$set->getState()
-				)
-			);
+		$deployable = [ConfigurationDraftSet::STATE_OPEN, ConfigurationDraftSet::STATE_APPROVED];
+		if (in_array($set->getState(), $deployable, true) === false) {
+			$label = $set->getName() ?? (string)$set->getUuid();
+			$message = sprintf('draft set "%s" is %s and cannot be deployed', $label, (string)$set->getState());
+			throw new DeploymentRefusedException(reason: DeploymentRefusedException::REASON_STATE, message: $message);
 		}
 
-		if ($this->drafts->requiresFourEyes() === false) {
-			return;
-		}
-
-		if ($set->isApproved() === false) {
-			throw new DeploymentRefusedException(
-				reason: DeploymentRefusedException::REASON_FOUR_EYES,
-				message: 'this instance requires an approval before a set can be deployed',
-				refusals: [],
-				statusCode: Http::STATUS_FORBIDDEN
-			);
-		}
-
-		if ($set->getApprovedBy() === $set->getCreatedBy()) {
-			throw new DeploymentRefusedException(
-				reason: DeploymentRefusedException::REASON_FOUR_EYES,
-				message: sprintf(
-					'this instance requires an approver other than the author, and "%s" is both',
-					(string)$set->getCreatedBy()
-				),
-				refusals: [],
-				statusCode: Http::STATUS_FORBIDDEN
-			);
+		if ($this->drafts->requiresFourEyes() === true) {
+			$this->requireFourEyes(set: $set);
 		}
 
 	}//end requireDeployable()
+
+	/**
+	 * Under four-eyes, refuse a set that is not approved, or that its own author approved.
+	 *
+	 * @param ConfigurationDraftSet $set The set.
+	 *
+	 * @return void
+	 *
+	 * @throws DeploymentRefusedException When the set lacks a second pair of eyes.
+	 */
+	private function requireFourEyes(ConfigurationDraftSet $set): void {
+		if ($set->isApproved() === false) {
+			throw self::fourEyesRefusal(message: 'this instance requires an approval before a set can be deployed');
+		}
+
+		if ($set->getApprovedBy() === $set->getCreatedBy()) {
+			throw self::fourEyesRefusal(
+				message: sprintf('this instance requires an approver other than the author, and "%s" is both', (string)$set->getCreatedBy())
+			);
+		}
+
+	}//end requireFourEyes()
+
+	/**
+	 * A four-eyes refusal, answered with 403.
+	 *
+	 * @param string $message The message.
+	 *
+	 * @return DeploymentRefusedException
+	 */
+	private static function fourEyesRefusal(string $message): DeploymentRefusedException {
+		return new DeploymentRefusedException(
+			reason: DeploymentRefusedException::REASON_FOUR_EYES,
+			message: $message,
+			refusals: [],
+			statusCode: Http::STATUS_FORBIDDEN
+		);
+
+	}//end fourEyesRefusal()
 
 	/**
 	 * Refuse a set holding a value that would not apply.
@@ -425,32 +449,39 @@ class DeploymentService {
 	 */
 	private function requireNoRefusals(ConfigurationDraftSet $set, array $preview): void {
 		$refusals = $preview['refusals'];
-
 		if ($refusals !== []) {
-			$first = $refusals[0];
-
-			throw new DeploymentRefusedException(
-				reason: DeploymentRefusedException::REASON_VALUE_REFUSED,
-				message: sprintf(
-					'nothing was applied: "%s" refused (%s)',
-					(string)($first['key'] ?? 'a value'),
-					(string)($first['reason'] ?? 'no reason given')
-				),
-				refusals: $refusals
-			);
+			throw self::valueRefusal(refusals: $refusals);
 		}
 
 		if ($preview['changes'] === []) {
 			throw new DeploymentRefusedException(
 				reason: DeploymentRefusedException::REASON_EMPTY,
-				message: sprintf(
-					'draft set "%s" would change nothing',
-					$set->getName() ?? (string)$set->getUuid()
-				)
+				message: sprintf('draft set "%s" would change nothing', $set->getName() ?? (string)$set->getUuid())
 			);
 		}
 
 	}//end requireNoRefusals()
+
+	/**
+	 * The refusal of a set holding values that would not apply, naming the first.
+	 *
+	 * @param array<int, array<string, mixed>> $refusals The refusals, at least one.
+	 *
+	 * @return DeploymentRefusedException
+	 */
+	private static function valueRefusal(array $refusals): DeploymentRefusedException {
+		$first = $refusals[0];
+		return new DeploymentRefusedException(
+			reason: DeploymentRefusedException::REASON_VALUE_REFUSED,
+			message: sprintf(
+				'nothing was applied: "%s" refused (%s)',
+				(string)($first['key'] ?? 'a value'),
+				(string)($first['reason'] ?? 'no reason given')
+			),
+			refusals: $refusals
+		);
+
+	}//end valueRefusal()
 
 	/**
 	 * The current user id, or null when there is no session.

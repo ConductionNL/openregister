@@ -35,31 +35,50 @@ namespace OCA\OpenRegister\Service\Lifecycle;
  * Hooked into the schema-save path in SchemaService (or its caller). Errors
  * map to HTTP 422 responses as schema-save failures.
  */
-final class LifecycleAnnotationValidator {
+final class LifecycleAnnotationValidator implements LifecycleAnnotationValidatorInterface {
 
 	use LifecycleFieldCheck;
 	use LifecycleErrorBuilding;
 
 	/**
-	 * Constructor.
+	 * Validates the `states` block.
 	 *
-	 * The state validator is defaulted rather than required so every existing
-	 * `new LifecycleAnnotationValidator()` keeps working; the parameter exists
-	 * so a test can substitute one.
+	 * @var LifecycleStateValidator
+	 */
+	private readonly LifecycleStateValidator $states;
+
+	/**
+	 * Owns the shape rules for `initial` and `final`.
 	 *
-	 * @param LifecycleStateValidator   $states Validates the `states` block.
-	 * @param LifecycleDeclarationForms $forms  Owns the shape rules for `initial` and `final`.
-	 * @param LifecycleGraphValidator   $graph  Owns the graph-mode rules.
-	 * @param LifecycleTransitionOptionsValidator $options Owns the rules of a transition's optional keys.
+	 * @var LifecycleDeclarationForms
+	 */
+	private readonly LifecycleDeclarationForms $forms;
+
+	/**
+	 * Owns the graph-mode rules.
+	 *
+	 * @var LifecycleGraphValidator
+	 */
+	private readonly LifecycleGraphValidator $graph;
+
+	/**
+	 * Owns the rules of a transition's optional keys.
+	 *
+	 * @var LifecycleTransitionOptionsValidator
+	 */
+	private readonly LifecycleTransitionOptionsValidator $options;
+
+	/**
+	 * Constructor: the part validators are pure shape checks without
+	 * collaborators, so the validator builds them itself.
 	 *
 	 * @return void
 	 */
-	public function __construct(
-		private readonly LifecycleStateValidator $states = new LifecycleStateValidator(),
-		private readonly LifecycleDeclarationForms $forms = new LifecycleDeclarationForms(),
-		private readonly LifecycleGraphValidator $graph = new LifecycleGraphValidator(),
-		private readonly LifecycleTransitionOptionsValidator $options = new LifecycleTransitionOptionsValidator(),
-	) {
+	public function __construct() {
+		$this->states = new LifecycleStateValidator();
+		$this->forms = new LifecycleDeclarationForms();
+		$this->graph = new LifecycleGraphValidator();
+		$this->options = new LifecycleTransitionOptionsValidator();
 	}//end __construct()
 
 	/**
@@ -84,14 +103,16 @@ final class LifecycleAnnotationValidator {
 		// naming the real mistake.
 		if (isset($annotation['provider']) === true) {
 			$errors = $this->validateProviderMode(annotation: $annotation, schema: $schema);
-			return array_merge($errors, $this->states->validateStates(annotation: $annotation, schema: $schema, enumSet: null));
+			$scope  = LifecycleStateValidator::scopeOf(schema: $schema, enumSet: null);
+			return array_merge($errors, $this->states->validateStates(annotation: $annotation, scope: $scope));
 		}
 
 		// Graph mode: the lifecycle field is a `$ref` with no enum, so the graph
 		// block is shape-checked instead of the static `transitions`/enum contract.
 		if ($this->declaresGraph(annotation: $annotation) === true) {
 			$errors = $this->graph->validate(annotation: $annotation, schema: $schema);
-			return array_merge($errors, $this->states->validateStates(annotation: $annotation, schema: $schema, enumSet: null));
+			$scope  = LifecycleStateValidator::scopeOf(schema: $schema, enumSet: null);
+			return array_merge($errors, $this->states->validateStates(annotation: $annotation, scope: $scope));
 		}
 
 		return $this->validateStaticMode(annotation: $annotation, schema: $schema);
@@ -183,7 +204,10 @@ final class LifecycleAnnotationValidator {
 
 		return array_merge(
 			$this->validateTransitions(transitions: $transitions, enumSet: $scope['enumSet']),
-			$this->states->validateStates(annotation: $annotation, schema: $scope['schema'], enumSet: $scope['enumSet']),
+			$this->states->validateStates(
+				annotation: $annotation,
+				scope: LifecycleStateValidator::scopeOf(schema: $scope['schema'], enumSet: $scope['enumSet'])
+			),
 			$this->states->validateInputsAgainstHiddenFields(annotation: $annotation, transitions: $transitions)
 		);
 	}//end validateTransitionsAndStates()

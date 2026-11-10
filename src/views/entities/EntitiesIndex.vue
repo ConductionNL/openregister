@@ -4,16 +4,20 @@
 			<!-- Header -->
 			<FilterToggleHeader
 				:title="t('openregister', 'Entities')"
-				:description="t('openregister', 'Manage and view detected entities from files and objects')"
+				:description="
+					t(
+						'openregister',
+						'Manage and view detected entities from files and objects',
+					)
+				"
 				:sidebarOpen="sidebarOpen"
 				@toggle="toggleSidebar" />
 
 			<!-- Actions Bar -->
-			<div class="viewActionsBar">
-				<div class="viewInfo">
-					<span v-if="entitiesList.length" class="viewTotalCount">
-						{{
-							t(
+			<ListActionsBar
+				:summary="
+					entitiesList.length
+						? t(
 								'openregister',
 								'Showing {showing} of {total} entities',
 								{
@@ -21,50 +25,15 @@
 									total: totalEntities,
 								},
 							)
-						}}
-					</span>
-					<span v-if="selectedEntities.length > 0" class="viewIndicator">
-						({{
-							t('openregister', '{count} selected', {
-								count: selectedEntities.length,
-							})
-						}})
-					</span>
-				</div>
-				<div class="viewActions">
-					<div class="viewModeSwitchContainer">
-						<NcCheckboxRadioSwitch
-							v-model="viewMode"
-							title="See entities as cards"
-							:buttonVariant="true"
-							value="cards"
-							name="view_mode_radio"
-							type="radio"
-							buttonVariantGrouped="horizontal">
-							Cards
-						</NcCheckboxRadioSwitch>
-						<NcCheckboxRadioSwitch
-							v-model="viewMode"
-							title="See entities as a table"
-							:buttonVariant="true"
-							value="table"
-							name="view_mode_radio"
-							type="radio"
-							buttonVariantGrouped="horizontal">
-							Table
-						</NcCheckboxRadioSwitch>
-					</div>
-
-					<NcActions :forceName="true" :inline="1" menuName="Actions">
-						<NcActionButton closeAfterClick @click="refreshEntities">
-							<template #icon>
-								<Refresh :size="20" />
-							</template>
-							{{ t('openregister', 'Refresh') }}
-						</NcActionButton>
-					</NcActions>
-				</div>
-			</div>
+						: ''
+				"
+				:selectedCount="selectedEntities.length"
+				:actions="[refreshAction(refreshEntities)]">
+				<ViewModeSwitch
+					v-model="viewMode"
+					cardsTitle="See entities as cards"
+					tableTitle="See entities as a table" />
+			</ListActionsBar>
 
 			<!-- Loading State -->
 			<NcLoadingIcon v-if="loading" :size="64" />
@@ -107,57 +76,17 @@
 										entity.type
 									}}</span>
 								</h2>
-								<NcActions
+								<ActionMenu
 									class="cardActions"
-									:primary="true"
-									menuName="Actions">
-									<template #icon>
-										<DotsHorizontal :size="20" />
-									</template>
-									<NcActionButton
-										closeAfterClick
-										@click.stop="viewEntity(entity)">
-										<template #icon>
-											<EyeOutline :size="20" />
-										</template>
-										View Details
-									</NcActionButton>
-								</NcActions>
+									primary
+									:actions="entityActions(entity)" />
 							</div>
 
 							<!-- Entity Info -->
-							<table class="statisticsTable entityStats">
-								<tbody>
-									<tr>
-										<th scope="row">
-											<strong>{{
-												t('openregister', 'Category')
-											}}</strong>
-										</th>
-										<td>
-											<span class="badge badge-category">{{
-												entity.category
-											}}</span>
-										</td>
-									</tr>
-									<tr>
-										<th scope="row">
-											<strong>{{
-												t('openregister', 'Detected At')
-											}}</strong>
-										</th>
-										<td>{{ formatDate(entity.detectedAt) }}</td>
-									</tr>
-									<tr>
-										<th scope="row">
-											<strong>{{
-												t('openregister', 'Relations')
-											}}</strong>
-										</th>
-										<td>{{ entity.relationCount || 0 }}</td>
-									</tr>
-								</tbody>
-							</table>
+							<EntityStatsTable
+								class="statisticsTable entityStats"
+								:entity="entity"
+								:fields="['category', 'detectedAt', 'relations']" />
 						</div>
 					</div>
 				</template>
@@ -250,19 +179,8 @@
 									<td>{{ formatDate(entity.detectedAt) }}</td>
 									<td>{{ entity.relationCount || 0 }}</td>
 									<td class="tableColumnActions">
-										<NcActions :primary="false">
-											<template #icon>
-												<DotsHorizontal :size="20" />
-											</template>
-											<NcActionButton
-												closeAfterClick
-												@click="viewEntity(entity)">
-												<template #icon>
-													<EyeOutline :size="20" />
-												</template>
-												View Details
-											</NcActionButton>
-										</NcActions>
+										<ActionMenu
+											:actions="entityActions(entity)" />
 									</td>
 								</tr>
 							</tbody>
@@ -291,20 +209,22 @@ import { showError } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import {
-	NcActionButton,
-	NcActions,
 	NcAppContent,
 	NcCheckboxRadioSwitch,
 	NcEmptyContent,
 	NcLoadingIcon,
 } from '@nextcloud/vue'
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import FilterToggleHeader from '../../components/shared/FilterToggleHeader.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
+import FilterToggleHeader from '../../components/shared/FilterToggleHeader.vue'
+import ListActionsBar from '../../components/shared/ListActionsBar.vue'
+import ViewModeSwitch from '../../components/shared/ViewModeSwitch.vue'
+import EntityStatsTable from './EntityStatsTable.vue'
 import eventBus from '../../eventBus.js'
+import { displayDateTime } from '../../services/displayDateTime.js'
+import { refreshAction } from '../../services/menuActions.js'
 import { navigationStore } from '../../store/store.js'
 
 /**
@@ -321,17 +241,16 @@ import { navigationStore } from '../../store/store.js'
 export default {
 	name: 'EntitiesIndex',
 	components: {
+		EntityStatsTable,
+		ViewModeSwitch,
+		ActionMenu,
+		ListActionsBar,
 		FilterToggleHeader,
 		NcAppContent,
-		NcActions,
-		NcActionButton,
 		NcLoadingIcon,
 		NcEmptyContent,
 		NcCheckboxRadioSwitch,
 		AccountOutline,
-		Refresh,
-		EyeOutline,
-		DotsHorizontal,
 		PaginationComponent,
 	},
 
@@ -430,6 +349,25 @@ export default {
 	},
 
 	methods: {
+		refreshAction,
+
+		/**
+		 * The menu of an entity's card and table row.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} entity The entity
+		 * @return {Array<object>} The ActionMenu entries
+		 */
+		entityActions(entity) {
+			return [
+				{
+					label: 'View Details',
+					icon: EyeOutline,
+					run: () => this.viewEntity(entity),
+				},
+			]
+		},
+
 		t,
 
 		/**
@@ -607,39 +545,16 @@ export default {
 			this.$router.push({ name: 'entityDetails', params: { id: entity.id } })
 		},
 
-		/**
-		 * Format date for display
-		 *
-		 * @spec exclude list-view date-formatting display helper
-		 * @param {string} date - Date string
-		 * @return {string} Formatted date
-		 */
-		formatDate(date) {
-			if (!date) return '-'
-			return new Date(date).toLocaleString()
-		},
+		formatDate: displayDateTime,
 	},
 }
 </script>
 
 <style scoped lang="scss">
 @use '../../styles/views.scss' as *;
+@use './cardRules.scss' as *;
 
 @include view-container-2;
-
-
-@include view-actions-bar;
-@include view-info;
-
-.viewTotalCount {
-	font-weight: 600;
-}
-
-.viewIndicator {
-	color: var(--color-text-maxcontrast);
-}
-
-@include view-actions;
 
 /* Cards Grid */
 .cardGrid {
@@ -666,15 +581,7 @@ export default {
 /* Real button that carries the card's action. The ::after overlay restores
    whole-card mouse clickability while keyboard users get a genuine button. */
 .cardActivator {
-	appearance: none;
-	background: none;
-	border: none;
-	padding: 0;
-	margin: 0;
-	font: inherit;
-	color: inherit;
-	text-align: left;
-	cursor: pointer;
+	@include card-activator-reset;
 }
 
 .cardActivator::after {
@@ -696,11 +603,7 @@ export default {
 }
 
 .cardHeader {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: 16px;
-	border-bottom: 1px solid var(--color-border);
+	@include card-header-row;
 }
 
 .cardHeader h2 {
@@ -711,33 +614,6 @@ export default {
 	font-size: 16px;
 	font-weight: 600;
 	flex-wrap: wrap;
-}
-
-/* Entity Stats Table */
-.entityStats {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.entityStats tbody tr {
-	border-bottom: 1px solid var(--color-border);
-}
-
-.entityStats tbody tr:last-child {
-	border-bottom: none;
-}
-
-.entityStats td,
-.entityStats th {
-	padding: 12px 16px;
-	text-align: left;
-	font-weight: normal;
-}
-
-.entityStats td:first-child,
-.entityStats th:first-child {
-	width: 40%;
-	color: var(--color-text-maxcontrast);
 }
 
 /* Table View */

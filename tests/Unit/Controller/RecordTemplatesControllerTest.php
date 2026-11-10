@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\RecordTemplatesController;
+use OCA\OpenRegister\Controller\Support\RecordTemplatesControllerServices;
 use OCA\OpenRegister\Db\RecordTemplate;
 use OCA\OpenRegister\Exception\RecordTemplateRefused;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
@@ -154,11 +155,12 @@ class RecordTemplatesControllerTest extends TestCase {
 		$viewers->method('reachOf')->willReturnCallback(static fn (string $userId): ViewerReach => new ViewerReach(userId: $userId, groups: [], isAdmin: false));
 
 		return new RecordTemplatesController(
-			appName: 'openregister',
 			request: $request,
-			templates: $this->templates,
-			viewers: $viewers,
-			logger: new NullLogger()
+			services: new RecordTemplatesControllerServices(
+				templates: $this->templates,
+				viewers: $viewers,
+				logger: new NullLogger()
+			)
 		);
 	}//end controller()
 }//end class

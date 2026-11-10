@@ -42,22 +42,41 @@ use Throwable;
  *
  * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
  */
-class FlowRunAdvancer {
+class FlowRunAdvancer implements FlowRunAdvancerInterface {
+	/**
+	 * Executes the run.
+	 *
+	 * @var FlowRunServiceInterface
+	 */
+	private readonly FlowRunServiceInterface $runner;
+
+	/**
+	 * Resolves the flow and its subject.
+	 *
+	 * @var FlowLocator
+	 */
+	private readonly FlowLocator $resolvers;
+
+	/**
+	 * Records failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapperInterface $mapper Persists a run that cannot proceed.
-	 * @param FlowRunServiceInterface $runner Executes the run.
-	 * @param FlowLocator $resolvers Resolves the flow and its subject.
-	 * @param LoggerInterface $logger Records failures.
+	 * @param FlowRunMapperInterface $mapper    Persists a run that cannot proceed.
+	 * @param FlowExecution          $execution Resolves the flow and its subject, executes the run and logs.
 	 */
 	public function __construct(
 		private readonly FlowRunMapperInterface $mapper,
-		private readonly FlowRunServiceInterface $runner,
-		private readonly FlowLocator $resolvers,
-		private readonly LoggerInterface $logger,
+		FlowExecution $execution,
 	) {
-
+		$this->runner    = $execution->runner;
+		$this->resolvers = $execution->resolvers;
+		$this->logger    = $execution->logger;
 	}//end __construct()
 
 	/**

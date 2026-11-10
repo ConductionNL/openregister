@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Task;
 
+use OCA\OpenRegister\Service\Task\TaskAct;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskAudit;
 use OCA\OpenRegister\Db\TaskAuditMapper;
@@ -32,12 +33,17 @@ use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
+use OCA\OpenRegister\Service\Task\TaskCommit;
+use OCA\OpenRegister\Service\Task\TaskIntake;
+use OCA\OpenRegister\Service\Task\TaskLifecycleServices;
 use OCA\OpenRegister\Service\Task\TaskPerformerResolver;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskTables;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Service\Flow\TaskAuditEntry;
 
 /**
  * Tests for {@see TaskService::openFor()}, {@see TaskService::record()} and
@@ -92,15 +98,23 @@ class TaskServicePortalWindowsTest extends TestCase {
 		$this->audits->method('insert')->willReturnArgument(0);
 
 		$this->service = new TaskService(
-			tasks: $this->tasks,
-			candidates: $this->createMock(TaskCandidateMapper::class),
-			relations: $this->createMock(TaskRelationMapper::class),
-			audits: $this->audits,
 			authorization: $this->authorization,
-			resolver: $this->createMock(TaskPerformerResolver::class),
-			db: $this->createMock(IDBConnection::class),
-			logger: new NullLogger(),
-			builder: new TaskBuilder()
+			services: new TaskLifecycleServices(
+				tables: new TaskTables(
+					tasks: $this->tasks,
+					candidates: $this->createMock(TaskCandidateMapper::class),
+					relations: $this->createMock(TaskRelationMapper::class),
+					audits: $this->audits
+				),
+				commit: new TaskCommit(
+					db: $this->createMock(IDBConnection::class),
+					logger: new NullLogger()
+				),
+				intake: new TaskIntake(
+					builder: new TaskBuilder()
+				),
+				resolver: $this->createMock(TaskPerformerResolver::class)
+			)
 		);
 	}//end setUp()
 
@@ -129,7 +143,7 @@ class TaskServicePortalWindowsTest extends TestCase {
 	public function testOpenForReturnsTheOpenAuthorizedTask(): void {
 		$task = $this->task();
 		$this->tasks->method('findByUuid')->willReturn($task);
-		$this->authorization->expects($this->once())->method('assertMay')->with('complete', $task, 'party:bsn-1');
+		$this->authorization->expects($this->once())->method('assertMay')->with(new TaskAct(verb: 'complete', actor: 'party:bsn-1'), $task);
 
 		$this->assertSame($task, $this->service->openFor(verb: 'complete', uuid: 't-1', actor: 'party:bsn-1'));
 		$this->assertSame(Task::STATE_ACTIVE, $task->getState());
@@ -265,6 +279,6 @@ class TaskServicePortalWindowsTest extends TestCase {
 			container: $this->createMock(\Psr\Container\ContainerInterface::class),
 			logger: new NullLogger()
 		);
-		$bridge->record(uuid: 't-1', action: 'match', actor: 'caseworker', reason: 'the reason');
+		$bridge->record(entry: new TaskAuditEntry(uuid: 't-1', action: 'match', actor: 'caseworker', reason: 'the reason'));
 	}//end testTheBridgeRecordWindowDelegates()
 }//end class

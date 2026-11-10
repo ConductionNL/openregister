@@ -71,11 +71,10 @@ class SemanticTypeResolverTest extends TestCase {
 		$this->appManager->method('isInstalled')->willReturn(true);
 
 		$this->resolver = new SemanticTypeResolver(
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->registerMapper,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)),
 			jsonLdContextService: $this->jsonLd,
 			logger: $this->logger,
-			appManager: $this->appManager,
+			appManager: $this->appManager
 		);
 
 	}//end setUp()
@@ -289,11 +288,10 @@ class SemanticTypeResolverTest extends TestCase {
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('isEnabledForUser')->with('shillinq')->willReturn(false);
 		$resolver = new SemanticTypeResolver(
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->registerMapper,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)),
 			jsonLdContextService: $this->jsonLd,
 			logger: $this->logger,
-			appManager: $appManager,
+			appManager: $appManager
 		);
 
 		$this->assertNull($resolver->resolveSchemaByImplements(uri: self::ORG_URI));
@@ -325,11 +323,10 @@ class SemanticTypeResolverTest extends TestCase {
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('isEnabledForUser')->with('shillinq')->willReturn(false);
 		$resolver = new SemanticTypeResolver(
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->registerMapper,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)),
 			jsonLdContextService: $this->jsonLd,
 			logger: $this->logger,
-			appManager: $appManager,
+			appManager: $appManager
 		);
 
 		$this->assertNull($resolver->resolveSchemaByImplements(uri: self::ORG_URI));
@@ -343,11 +340,10 @@ class SemanticTypeResolverTest extends TestCase {
 		$this->schemaMapper->method('findAll')->willReturn([$payee]);
 
 		$resolver = new SemanticTypeResolver(
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->registerMapper,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)),
 			jsonLdContextService: $this->jsonLd,
 			logger: $this->logger,
-			appManager: null,
+			appManager: null
 		);
 
 		$result = $resolver->resolveSchemaByImplements(uri: self::ORG_URI);
@@ -369,11 +365,10 @@ class SemanticTypeResolverTest extends TestCase {
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('isEnabledForUser')->willReturn(false);
 		$resolver = new SemanticTypeResolver(
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->registerMapper,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)),
 			jsonLdContextService: $this->jsonLd,
 			logger: $this->logger,
-			appManager: $appManager,
+			appManager: $appManager
 		);
 
 		$this->assertNotNull($resolver->resolveSchemaByImplements(uri: self::ORG_URI));

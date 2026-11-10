@@ -41,6 +41,7 @@ use RuntimeException;
  * userId, requestedBy, owner or organisation request value cannot widen the
  * scope. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
+ * @uses \OCA\OpenRegister\Event\AbstractDecisionRequestEvent
  * @covers \OCA\OpenRegister\Controller\GdprEntitiesController
  * @uses \OCA\OpenRegister\Controller\Support\GdprEntitiesMappers
  * @uses \OCA\OpenRegister\Controller\Support\GdprEntitiesDomain

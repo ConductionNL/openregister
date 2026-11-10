@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectNodeSources;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IL10N;
@@ -34,6 +35,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use UnexpectedValueException;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode
@@ -133,12 +135,9 @@ final class ObjectReadNodeTest extends TestCase {
 		);
 
 		$this->node = new ObjectReadNode(
-			$this->objects,
-			$registers,
-			$schemas,
+			new ObjectNodeSources($this->objects, $registers, $schemas),
 			$users,
-			$l10n,
-			$this->createMock(originalClassName: IURLGenerator::class)
+			new FlowNodePresentation($l10n, $this->createMock(originalClassName: IURLGenerator::class))
 		);
 
 	}//end setUp()

@@ -113,15 +113,18 @@
 				<div class="cache-services">
 					<h4>🔧 Cache Services</h4>
 					<div class="cache-services-grid">
-						<!-- Object Cache -->
-						<div class="cache-service-card">
-							<h5>Object Cache</h5>
+						<div
+							v-for="service in cacheServices"
+							:key="service.key"
+							class="cache-service-card">
+							<h5>{{ service.name }}</h5>
 							<div class="service-stats">
 								<div class="service-stat">
 									<span class="stat-label">Entries:</span>
 									<span class="stat-value">{{
 										(
-											cacheStats.services.object.entries || 0
+											cacheStats.services[service.key].entries
+											|| 0
 										).toLocaleString()
 									}}</span>
 								</div>
@@ -132,13 +135,13 @@
 										:class="
 											getHitRateClass(
 												getServiceHitRate(
-													cacheStats.services.object,
+													cacheStats.services[service.key],
 												),
 											)
 										">
 										{{
 											getServiceHitRate(
-												cacheStats.services.object,
+												cacheStats.services[service.key],
 											).toFixed(1)
 										}}%
 									</span>
@@ -147,92 +150,8 @@
 									<span class="stat-label">Memory:</span>
 									<span class="stat-value">{{
 										formatBytes(
-											cacheStats.services.object.memoryUsage
-												|| 0,
-										)
-									}}</span>
-								</div>
-							</div>
-						</div>
-
-						<!-- Schema Cache -->
-						<div class="cache-service-card">
-							<h5>Schema Cache</h5>
-							<div class="service-stats">
-								<div class="service-stat">
-									<span class="stat-label">Entries:</span>
-									<span class="stat-value">{{
-										(
-											cacheStats.services.schema.entries || 0
-										).toLocaleString()
-									}}</span>
-								</div>
-								<div class="service-stat">
-									<span class="stat-label">Hit Rate:</span>
-									<span
-										class="stat-value"
-										:class="
-											getHitRateClass(
-												getServiceHitRate(
-													cacheStats.services.schema,
-												),
-											)
-										">
-										{{
-											getServiceHitRate(
-												cacheStats.services.schema,
-											).toFixed(1)
-										}}%
-									</span>
-								</div>
-								<div class="service-stat">
-									<span class="stat-label">Memory:</span>
-									<span class="stat-value">{{
-										formatBytes(
-											cacheStats.services.schema.memoryUsage
-												|| 0,
-										)
-									}}</span>
-								</div>
-							</div>
-						</div>
-
-						<!-- Facet Cache -->
-						<div class="cache-service-card">
-							<h5>Facet Cache</h5>
-							<div class="service-stats">
-								<div class="service-stat">
-									<span class="stat-label">Entries:</span>
-									<span class="stat-value">{{
-										(
-											cacheStats.services.facet.entries || 0
-										).toLocaleString()
-									}}</span>
-								</div>
-								<div class="service-stat">
-									<span class="stat-label">Hit Rate:</span>
-									<span
-										class="stat-value"
-										:class="
-											getHitRateClass(
-												getServiceHitRate(
-													cacheStats.services.facet,
-												),
-											)
-										">
-										{{
-											getServiceHitRate(
-												cacheStats.services.facet,
-											).toFixed(1)
-										}}%
-									</span>
-								</div>
-								<div class="service-stat">
-									<span class="stat-label">Memory:</span>
-									<span class="stat-value">{{
-										formatBytes(
-											cacheStats.services.facet.memoryUsage
-												|| 0,
+											cacheStats.services[service.key]
+												.memoryUsage || 0,
 										)
 									}}</span>
 								</div>
@@ -442,12 +361,21 @@
 
 <script>
 import { NcButton, NcLoadingIcon, NcSelect } from '@nextcloud/vue'
-import { mapStores } from 'pinia'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import ClearCacheDialog from '../../../dialogs/settings/ClearCacheDialog.vue'
-import { useSettingsStore } from '../../../store/settings.js'
+import { settingsSectionState } from './settingsSectionState.js'
+
+/**
+ * The cache services with a card of their own: the key of their statistics
+ * and the card title.
+ */
+const CACHE_SERVICES = [
+	{ key: 'object', name: 'Object Cache' },
+	{ key: 'schema', name: 'Schema Cache' },
+	{ key: 'facet', name: 'Facet Cache' },
+]
 
 export default {
 	name: 'CacheManagement',
@@ -462,8 +390,18 @@ export default {
 		Delete,
 	},
 
+	mixins: [settingsSectionState],
+
 	computed: {
-		...mapStores(useSettingsStore),
+		/**
+		 * The cache services shown as a card, for display.
+		 *
+		 * @spec exclude UI plumbing — static card layout
+		 * @return {Array<object>}
+		 */
+		cacheServices() {
+			return CACHE_SERVICES
+		},
 
 		/**
 		 * Cache statistics from the settings store, for display.
@@ -493,16 +431,6 @@ export default {
 		 */
 		clearingCache() {
 			return this.settingsStore.clearingCache
-		},
-
-		/**
-		 * Whether the settings store is loading, for display.
-		 *
-		 * @spec exclude UI plumbing — derived view state from the store
-		 * @return {boolean}
-		 */
-		loading() {
-			return this.settingsStore.loading
 		},
 
 		/**
@@ -778,6 +706,7 @@ export default {
 </script>
 
 <style scoped lang="scss">
+@use './sectionStyles.scss' as *;
 @use '../../../styles/views.scss' as *;
 
 /* SettingsSection handles all action button positioning and spacing */
@@ -918,46 +847,7 @@ export default {
 	color: var(--color-text-light);
 }
 
-.performance-table-container {
-	overflow-x: auto;
-}
-
-.performance-table {
-	width: 100%;
-	border-collapse: collapse;
-	font-size: 14px;
-}
-
-.performance-table-header {
-	text-align: left;
-	padding: 12px 8px;
-	border-bottom: 2px solid var(--color-border);
-	background: var(--color-background-hover);
-	font-weight: 600;
-	color: var(--color-text-light);
-}
-
-.performance-table-row {
-	border-bottom: 1px solid var(--color-border-dark);
-}
-
-.performance-table-row:hover {
-	background: var(--color-background-hover);
-}
-
-.performance-table-label {
-	padding: 12px 8px;
-	color: var(--color-text-light);
-	font-weight: 500;
-}
-
-.performance-table-value {
-	padding: 12px 8px;
-	color: var(--color-text-maxcontrast);
-	text-align: right;
-	font-family: monospace;
-	font-size: 13px;
-}
+@include figures-table('.performance-table');
 
 .cache-warmup h4 {
 	margin: 0 0 8px 0;
@@ -1032,18 +922,6 @@ export default {
 
 	.cache-services-grid {
 		grid-template-columns: 1fr;
-	}
-
-	.section-header-inline {
-		position: static;
-		flex-direction: column;
-		gap: 12px;
-		align-items: stretch;
-		margin-bottom: 20px;
-	}
-
-	.button-group {
-		justify-content: center;
 	}
 }
 </style>

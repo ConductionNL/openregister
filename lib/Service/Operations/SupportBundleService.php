@@ -26,7 +26,8 @@ namespace OCA\OpenRegister\Service\Operations;
 
 use DateTime;
 use OCA\OpenRegister\Db\JobRun;
-use OCA\OpenRegister\Db\JobRunMapper;
+use OCA\OpenRegister\Db\JobRunFilter;
+use OCA\OpenRegister\Db\JobRunMapperInterface;
 use OCP\App\IAppManager;
 use OCP\IConfig;
 use Throwable;
@@ -46,7 +47,7 @@ use Throwable;
  *
  * @spec openspec/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
  */
-class SupportBundleService {
+class SupportBundleService implements SupportBundleServiceInterface {
 
 	/**
 	 * The app the bundle is about.
@@ -102,13 +103,13 @@ class SupportBundleService {
 	 *
 	 * @param IConfig                 $config The live configuration.
 	 * @param IAppManager             $apps   The installed apps and their versions.
-	 * @param JobRunMapper            $runs   The run log the failures come from.
+	 * @param JobRunMapperInterface            $runs   The run log the failures come from.
 	 * @param ConsistencyCheckService $check  The read-only consistency check.
 	 */
 	public function __construct(
 		private readonly IConfig $config,
 		private readonly IAppManager $apps,
-		private readonly JobRunMapper $runs,
+		private readonly JobRunMapperInterface $runs,
 		private readonly ConsistencyCheckService $check,
 	) {
 	}//end __construct()
@@ -225,7 +226,7 @@ class SupportBundleService {
 	private function recentFailures(): array {
 		try {
 			$rows = $this->runs->findRecent(
-				outcome: JobRun::OUTCOME_FAILED,
+				filter: new JobRunFilter(outcome: JobRun::OUTCOME_FAILED),
 				limit: self::RECENT_FAILURES
 			);
 		} catch (Throwable $exception) {

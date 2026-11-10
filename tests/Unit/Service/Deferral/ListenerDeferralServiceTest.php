@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Unit\Service\Deferral;
 
 use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Service\Deferral\DeferralOptions;
+use OCA\OpenRegister\Service\Deferral\DeferralQueueServices;
+use OCA\OpenRegister\Service\Deferral\DeferredEntry;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Tests\Support\ShutdownFunctionSpy;
@@ -46,9 +49,11 @@ class ListenerDeferralServiceTest extends TestCase {
 		return new ListenerDeferralService(
 			userSession: $this->userSession,
 			organisation: $this->organisation,
-			jobList: $this->jobList,
-			appConfig: $this->appConfig,
-			logger: $this->logger,
+			queue: new DeferralQueueServices(
+				jobList: $this->jobList,
+				appConfig: $this->appConfig,
+				logger: $this->logger
+			),
 		);
 	}
 
@@ -136,6 +141,28 @@ class ListenerDeferralServiceTest extends TestCase {
 
 		$this->assertCount(1, $entries);
 		$this->assertSame('obj-0', $entries[0]['uuid']);
+	}
+
+	public function testANamedEntryChunksAndCoalescesLikeDefer(): void {
+		$this->actAs('alice', null);
+		$service = $this->makeService();
+
+		$chunks = [];
+		$this->jobList->expects($this->exactly(2))->method('add')
+			->willReturnCallback(function (string $jobClass, $argument) use (&$chunks): void {
+				$chunks[] = array_column($argument['entries'], 'uuid');
+			});
+
+		foreach (['a', 'b', 'c', 'd'] as $uuid) {
+			$service->deferEntry(
+				new DeferredEntry('Some\\Job', ['uuid' => $uuid]),
+				new DeferralOptions(2, ($uuid === 'b') ? 'a' : $uuid)
+			);
+		}
+
+		$service->flushAll();
+
+		$this->assertSame([['a', 'c'], ['d']], $chunks);
 	}
 
 	public function testBuffersAreIsolatedPerJobClass(): void {

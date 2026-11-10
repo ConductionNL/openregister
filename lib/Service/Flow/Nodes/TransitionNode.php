@@ -36,7 +36,6 @@ use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
@@ -49,7 +48,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-two-built-in-nodes-cover-transitions-and-linked-objects
  */
-class TransitionNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class TransitionNode extends ObjectNodeBase implements IFlowNode, TransitionNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 
 	/**
 	 * The step type.
@@ -59,17 +58,31 @@ class TransitionNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 	public const TYPE = 'openregister.transition';
 
 	/**
+	 * Translations.
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
+
+	/**
+	 * For the palette icon.
+	 *
+	 * @var IURLGenerator
+	 */
+	private readonly IURLGenerator $urls;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param TransitionEngine $engine The lifecycle engine.
-	 * @param IL10N            $l10n   Translations.
-	 * @param IURLGenerator    $urls   For the palette icon.
+	 * @param TransitionEngine     $engine       The lifecycle engine.
+	 * @param FlowNodePresentation $presentation Translations and the URL generator for the palette icon.
 	 */
 	public function __construct(
 		private readonly TransitionEngine $engine,
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
+		FlowNodePresentation $presentation,
 	) {
+		$this->l10n = $presentation->l10n;
+		$this->urls = $presentation->urls;
 	}//end __construct()
 
 	/**
@@ -115,19 +128,6 @@ class TransitionNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 	public function getIcon(): string {
 		return $this->urls->imagePath('core', 'actions/confirm.svg');
 	}//end getIcon()
-
-	/**
-	 * Available in both scopes: the transition's own authorization still applies.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return bool Whether it is available.
-	 *
-	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-two-built-in-nodes-cover-transitions-and-linked-objects
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * The config vocabulary.
@@ -179,24 +179,52 @@ class TransitionNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 	public function execute(array $items, array $config, array $context): array {
 		$this->validateConfig(config: $config);
 
+		return $this->transitionAll(items: $items, config: $config);
+	}//end execute()
+
+	/**
+	 * Fire the configured transition on the object each item names.
+	 *
+	 * @param array $items  The input items.
+	 * @param array $config The validated step configuration.
+	 *
+	 * @return array One item per input, carrying the transitioned object.
+	 *
+	 * @throws RuntimeException When a transition is refused or fails.
+	 */
+	private function transitionAll(array $items, array $config): array {
 		$out = [];
 		foreach ($items as $index => $item) {
 			$json = (array)($item[FlowItems::JSON] ?? []);
-			$objectId = $this->objectIdOf(json: $json, config: $config);
-			$action = (string)FlowValueTemplate::render(value: $config['action'], json: $json);
-			$data = (array)FlowValueTemplate::render(value: ($config['data'] ?? []), json: $json);
-
-			try {
-				$saved = $this->engine->transition(objectId: $objectId, action: $action, data: $data);
-			} catch (Throwable $e) {
-				throw new RuntimeException($e->getMessage(), 0, $e);
-			}
-
-			$out[] = FlowItems::item(json: $saved->jsonSerialize(), fromItemIndex: $index);
+			$out[] = FlowItems::item(json: $this->transitioned(json: $json, config: $config), fromItemIndex: $index);
 		}
 
 		return $out;
-	}//end execute()
+	}//end transitionAll()
+
+	/**
+	 * Fire the configured transition for one item's record.
+	 *
+	 * @param array $json   The item's record.
+	 * @param array $config The validated step configuration.
+	 *
+	 * @return array The transitioned object, serialised.
+	 *
+	 * @throws RuntimeException When the transition is refused or fails.
+	 */
+	private function transitioned(array $json, array $config): array {
+		$objectId = $this->objectIdOf(json: $json, config: $config);
+		$action = (string)FlowValueTemplate::render(value: $config['action'], json: $json);
+		$data = (array)FlowValueTemplate::render(value: ($config['data'] ?? []), json: $json);
+
+		try {
+			$saved = $this->engine->transition(objectId: $objectId, action: $action, data: $data);
+		} catch (Throwable $e) {
+			throw new RuntimeException($e->getMessage(), 0, $e);
+		}
+
+		return $saved->jsonSerialize();
+	}//end transitioned()
 
 	/**
 	 * The object an item asks to move: the configured one, or the item's own.
@@ -223,26 +251,4 @@ class TransitionNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 
 		return $objectId;
 	}//end objectIdOf()
-
-	/**
-	 * The BPMN kind.
-	 *
-	 * @return string The kind.
-	 *
-	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-two-built-in-nodes-cover-transitions-and-linked-objects
-	 */
-	public function getKind(): string {
-		return IFlowNodeTaxonomy::KIND_SERVICE_TASK;
-	}//end getKind()
-
-	/**
-	 * The palette category.
-	 *
-	 * @return string The category.
-	 *
-	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-two-built-in-nodes-cover-transitions-and-linked-objects
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_OBJECTS;
-	}//end getCategory()
 }//end class

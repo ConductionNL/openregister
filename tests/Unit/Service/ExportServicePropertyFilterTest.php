@@ -73,6 +73,15 @@ class ExportServicePropertyFilterTest extends TestCase {
 	}//end queryFor()
 
 	/**
+	 * An export asks for every row: a number would be cut at the page bound.
+	 *
+	 * @return void
+	 */
+	public function testAnExportAsksForEveryRow(): void {
+		$this->assertFalse($this->queryFor(['format' => 'csv'])['_limit']);
+	}//end testAnExportAsksForEveryRow()
+
+	/**
 	 * A property filter reaches the query; request plumbing does not.
 	 *
 	 * @return void

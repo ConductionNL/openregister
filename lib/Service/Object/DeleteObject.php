@@ -46,7 +46,7 @@ use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileFolderServiceInterface;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
@@ -145,13 +145,12 @@ class DeleteObject {
 	 * @param MagicMapperInterface $objectEntityMapper Object entity data mapper.
 	 * @param CacheHandlerInterface $cacheHandler Object entity and query cache
 	 * @param IUserSession $userSession User session service
-	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for logs
+	 * @param AuditRecording $audit Audit trail mapper for logs, and the logger for error handling
 	 * @param SettingsServiceInterface $settingsService Settings service for trail settings
-	 * @param LoggerInterface $logger Logger for error handling
 	 * @param ReferentialIntegrityService $integrityService Referential integrity service
 	 * @param IDBConnection $db Database connection for transactions
 	 * @param OrganisationMapperInterface $organisationMapper Resolves the deleting user's active organisation for the audit trail
-	 * @param FileService|null $fileService File service for object folder cleanup
+	 * @param FileFolderServiceInterface|null $fileService File service for object folder cleanup
 	 * @param \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry|null $objectSourceRegistry Writable object-source provider registry
 	 * @param \OCA\OpenRegister\Db\RegisterMapperInterface|null $registerMapper Register mapper for register lookups
 	 * @param DeletionWindowService|null $windowService Resolves and states the recovery window
@@ -164,20 +163,19 @@ class DeleteObject {
 		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly CacheHandlerInterface $cacheHandler,
 		private readonly IUserSession $userSession,
-		AuditTrailMapperInterface $auditTrailMapper,
+		AuditRecording $audit,
 		SettingsServiceInterface $settingsService,
-		LoggerInterface $logger,
 		ReferentialIntegrityService $integrityService,
 		IDBConnection $db,
 		private readonly OrganisationMapperInterface $organisationMapper,
-		private readonly ?FileService $fileService = null,
+		private readonly ?FileFolderServiceInterface $fileService = null,
 		private readonly ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry $objectSourceRegistry = null,
 		private readonly ?\OCA\OpenRegister\Db\RegisterMapperInterface $registerMapper = null,
 		private readonly ?DeletionWindowService $windowService = null,
 	) {
-		$this->auditTrailMapper = $auditTrailMapper;
+		$this->auditTrailMapper = $audit->trail;
 		$this->settingsService = $settingsService;
-		$this->logger = $logger;
+		$this->logger = $audit->logger;
 		$this->integrityService = $integrityService;
 		$this->db = $db;
 	}//end __construct()
@@ -1012,9 +1010,7 @@ class DeleteObject {
 
 		if ($contextRegister instanceof Register && $contextSchema instanceof Schema) {
 			$this->cascadeDeleteObjects(
-				register: $contextRegister,
-				schema: $contextSchema,
-				object: $object,
+				root: new DeletionTarget(object: $object, register: $contextRegister, schema: $contextSchema),
 				originalObjectId: $uuid
 			);
 		}
@@ -1088,22 +1084,21 @@ class DeleteObject {
 	 * Cascade depth is unchanged: children are sub-deletions (originalObjectId
 	 * set) and never cascade further, exactly like the per-id pipeline.
 	 *
-	 * @param Register $register The register containing the object.
-	 * @param Schema $schema The schema of the object.
-	 * @param ObjectEntity $object The object being deleted.
-	 * @param string $originalObjectId The ID of original object for cascading.
+	 * @param DeletionTarget $root             The object being deleted with its register and schema.
+	 * @param string         $originalObjectId The ID of original object for cascading.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function cascadeDeleteObjects(
-		Register $register,
-		Schema $schema,
-		ObjectEntity $object,
-		string $originalObjectId,
-	): void {
-		$cascadeIds = $this->collectCascadeTargetIds(schema: $schema, object: $object);
+	private function cascadeDeleteObjects(DeletionTarget $root, string $originalObjectId): void {
+		$register = $root->register;
+		$schema = $root->schema;
+		if ($register === null || $schema === null) {
+			return;
+		}
+
+		$cascadeIds = $this->collectCascadeTargetIds(schema: $schema, object: $root->object);
 		if (empty($cascadeIds) === true) {
 			return;
 		}
@@ -1111,7 +1106,7 @@ class DeleteObject {
 		// Resolve every level-one cascade target in one batched lookup.
 		$targets = [];
 		try {
-			$targets = $this->objectEntityMapper->findMultipleAcrossAllMagicTables(
+			$targets = $this->objectEntityMapper->findStoredAcrossAllMagicTables(
 				uuids: $cascadeIds,
 				includeDeleted: true
 			);
@@ -1134,7 +1129,11 @@ class DeleteObject {
 			}
 		}
 
-		$handledIds = $this->batchCascadeSoftDelete(targets: $targets);
+		$alreadyDeleted = array_filter($targets, static fn (ObjectEntity $target): bool => $target->isSoftDeleted());
+		$handledIds = $this->batchCascadeSoftDelete(targets: array_diff_key($targets, $alreadyDeleted));
+		foreach ($alreadyDeleted as $target) {
+			$handledIds[(string)$target->getUuid()] = true;
+		}
 
 		// Legacy per-id pipeline for ids the batch lookup did not resolve.
 		foreach ($cascadeIds as $cascadeId) {

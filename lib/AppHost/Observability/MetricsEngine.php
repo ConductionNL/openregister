@@ -32,6 +32,7 @@ use OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource;
+use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IConfig;
 use Psr\Log\LoggerInterface;
@@ -103,21 +104,48 @@ class MetricsEngine {
 			return $this->dispatch(appId: $appId, descriptor: $descriptor);
 		}
 
+		return $this->collectCached(appId: $appId, descriptor: $descriptor);
+	}//end collectDescriptor()
+
+	/**
+	 * Collect one descriptor through the distributed cache: serve a usable
+	 * cached payload, otherwise dispatch and store the result for cacheTtl.
+	 *
+	 * @param string           $appId      Calling app id.
+	 * @param MetricDescriptor $descriptor Metric descriptor with a positive cacheTtl.
+	 *
+	 * @return MetricSample[]
+	 */
+	private function collectCached(string $appId, MetricDescriptor $descriptor): array {
 		$cache = $this->cacheFactory->createDistributed('openregister_apphost_metrics');
 		$cacheKey = $appId . ':' . $descriptor->name;
 
-		$cached = $cache->get($cacheKey);
-		if (is_string($cached) === true) {
-			$restored = $this->decodeSamples(payload: $cached);
-			if ($restored !== null) {
-				return $restored;
-			}
+		$restored = $this->cachedSamples(cache: $cache, cacheKey: $cacheKey);
+		if ($restored !== null) {
+			return $restored;
 		}
 
 		$samples = $this->dispatch(appId: $appId, descriptor: $descriptor);
 		$cache->set($cacheKey, $this->encodeSamples(samples: $samples), $descriptor->cacheTtl);
 		return $samples;
-	}//end collectDescriptor()
+	}//end collectCached()
+
+	/**
+	 * Read and decode a cached payload.
+	 *
+	 * @param ICache $cache    The distributed cache.
+	 * @param string $cacheKey The entry key.
+	 *
+	 * @return MetricSample[]|null Null when there is no usable cached payload.
+	 */
+	private function cachedSamples(ICache $cache, string $cacheKey): ?array {
+		$cached = $cache->get($cacheKey);
+		if (is_string($cached) === false) {
+			return null;
+		}
+
+		return $this->decodeSamples(payload: $cached);
+	}//end cachedSamples()
 
 	/**
 	 * Route a descriptor to its source.
@@ -129,34 +157,51 @@ class MetricsEngine {
 	 */
 	private function dispatch(string $appId, MetricDescriptor $descriptor): array {
 		try {
-			switch ($descriptor->kind) {
-				case 'objectCount':
-				case 'objectSum':
-					return $this->objectSource->collect(appId: $appId, descriptor: $descriptor);
-				case 'tableCount':
-					return $this->tableSource->collect(appId: $appId, descriptor: $descriptor);
-				case 'appConfig':
-					return $this->appConfigSource->collect(appId: $appId, descriptor: $descriptor);
-				case 'provider':
-					return $this->providerSource->collect(appId: $appId, descriptor: $descriptor);
-				default:
-					return [];
-			}
+			return $this->sourceFor(kind: $descriptor->kind)?->collect(appId: $appId, descriptor: $descriptor) ?? [];
 		} catch (Throwable $e) {
-			$logMessage = sprintf(
-				'[AppHost\\Metrics] metric "%s" (kind %s, app %s) failed: %s',
-				$descriptor->name,
-				$descriptor->kind,
-				$appId,
-				$e->getMessage()
-			);
 			$this->logger->warning(
-				message: $logMessage,
+				message: $this->failurePrefix(appId: $appId, descriptor: $descriptor) . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 			return [];
-		}//end try
+		}
 	}//end dispatch()
+
+	/**
+	 * The source that collects a kind.
+	 *
+	 * @param string $kind Source kind.
+	 *
+	 * @return MetricSourceInterface|null Null for a kind no source collects, which yields no samples.
+	 */
+	private function sourceFor(string $kind): ?MetricSourceInterface {
+		$sources = [
+			'objectCount' => $this->objectSource,
+			'objectSum' => $this->objectSource,
+			'tableCount' => $this->tableSource,
+			'appConfig' => $this->appConfigSource,
+			'provider' => $this->providerSource,
+		];
+
+		return $sources[$kind] ?? null;
+	}//end sourceFor()
+
+	/**
+	 * The log-message prefix for a failed metric; the error message follows it.
+	 *
+	 * @param string           $appId      Calling app id.
+	 * @param MetricDescriptor $descriptor Metric descriptor.
+	 *
+	 * @return string The prefix.
+	 */
+	private function failurePrefix(string $appId, MetricDescriptor $descriptor): string {
+		return sprintf(
+			'[AppHost\\Metrics] metric "%s" (kind %s, app %s) failed: ',
+			$descriptor->name,
+			$descriptor->kind,
+			$appId
+		);
+	}//end failurePrefix()
 
 	/**
 	 * Build the implicit `{app}_info` and `{app}_up` metrics.
@@ -166,29 +211,33 @@ class MetricsEngine {
 	 * @return MetricSample[]
 	 */
 	private function implicitMetrics(string $appId): array {
-		$version = $this->manifestLoader->appVersion(appId: $appId);
-		$ncVersion = $this->config->getSystemValueString('version', 'unknown');
+		return [
+			$this->infoMetric(appId: $appId),
+			MetricSample::single(name: 'up', type: 'gauge', help: 'Whether the application is up', value: 1),
+		];
+	}//end implicitMetrics()
 
-		$info = new MetricSample(
+	/**
+	 * Build the implicit `{app}_info` metric: app, PHP and Nextcloud versions.
+	 *
+	 * @param string $appId Calling app id.
+	 *
+	 * @return MetricSample The info metric.
+	 */
+	private function infoMetric(string $appId): MetricSample {
+		$labels = [
+			'version' => $this->manifestLoader->appVersion(appId: $appId),
+			'php_version' => PHP_VERSION,
+			'nextcloud_version' => $this->config->getSystemValueString('version', 'unknown'),
+		];
+
+		return new MetricSample(
 			name: 'info',
 			type: 'gauge',
 			help: 'Application information',
-			samples: [
-				[
-					'labels' => [
-						'version' => $version,
-						'php_version' => PHP_VERSION,
-						'nextcloud_version' => $ncVersion,
-					],
-					'value' => 1,
-				],
-			]
+			samples: [['labels' => $labels, 'value' => 1]]
 		);
-
-		$up = MetricSample::single(name: 'up', type: 'gauge', help: 'Whether the application is up', value: 1);
-
-		return [$info, $up];
-	}//end implicitMetrics()
+	}//end infoMetric()
 
 	/**
 	 * Encode samples for the cache.
@@ -224,25 +273,46 @@ class MetricsEngine {
 			return null;
 		}
 
-		$samples = [];
-		foreach ($decoded as $row) {
-			if (is_array($row) === false || isset($row['name'], $row['type'], $row['samples']) === false) {
-				return null;
-			}
-
-			$rowSamples = [];
-			if (is_array($row['samples']) === true) {
-				$rowSamples = $row['samples'];
-			}
-
-			$samples[] = new MetricSample(
-				name: (string)$row['name'],
-				type: (string)$row['type'],
-				help: (string)($row['help'] ?? ''),
-				samples: $rowSamples
-			);
+		$samples = array_map(fn (mixed $row): ?MetricSample => $this->decodeRow(row: $row), $decoded);
+		if (in_array(null, $samples, true) === true) {
+			return null;
 		}
 
-		return $samples;
+		return array_values($samples);
 	}//end decodeSamples()
+
+	/**
+	 * Decode one cached sample row.
+	 *
+	 * @param mixed $row One decoded row.
+	 *
+	 * @return MetricSample|null Null when the row lacks name, type or samples.
+	 */
+	private function decodeRow(mixed $row): ?MetricSample {
+		if (is_array($row) === false || isset($row['name'], $row['type'], $row['samples']) === false) {
+			return null;
+		}
+
+		return new MetricSample(
+			name: (string)$row['name'],
+			type: (string)$row['type'],
+			help: (string)($row['help'] ?? ''),
+			samples: $this->arrayOrEmpty(value: $row['samples'])
+		);
+	}//end decodeRow()
+
+	/**
+	 * The value when it is an array, otherwise an empty array.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return array<mixed, mixed> The array.
+	 */
+	private function arrayOrEmpty(mixed $value): array {
+		if (is_array($value) === true) {
+			return $value;
+		}
+
+		return [];
+	}//end arrayOrEmpty()
 }//end class

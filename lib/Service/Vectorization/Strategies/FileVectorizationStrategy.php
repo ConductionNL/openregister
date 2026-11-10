@@ -28,7 +28,6 @@ use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Search\Service\Vectorization\Strategies\VectorizationStrategyInterface;
 
 /**
  * FileVectorizationStrategy
@@ -42,28 +41,7 @@ use OCA\OpenRegister\Search\Service\Vectorization\Strategies\VectorizationStrate
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization
  */
-class FileVectorizationStrategy implements VectorizationStrategyInterface {
-
-	/**
-	 * Chunk mapper
-	 *
-	 * @var ChunkMapperInterface
-	 */
-	private ChunkMapperInterface $chunkMapper;
-
-	/**
-	 * Database connection
-	 *
-	 * @var IDBConnection
-	 */
-	private IDBConnection $db;
-
-	/**
-	 * Logger
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
+class FileVectorizationStrategy implements FileVectorizationStrategyInterface {
 
 	/**
 	 * Constructor
@@ -73,13 +51,11 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface {
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
-		ChunkMapperInterface $chunkMapper,
-		IDBConnection $db,
-		LoggerInterface $logger,
+		private readonly ChunkMapperInterface $chunkMapper,
+		private readonly IDBConnection $db,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->chunkMapper = $chunkMapper;
-		$this->db = $db;
-		$this->logger = $logger;
+
 	}//end __construct()
 
 	/**

@@ -42,7 +42,7 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowNodeRegistry $registry The node catalogue.
+	 * @param FlowNodeRegistryInterface $registry The node catalogue.
 	 * @param FlowRunGuard|null $guard Keeps the run visibly alive between steps
 	 *                                 and enforces its deadline. Null for
 	 *                                 callers with no run to guard — the flow
@@ -58,7 +58,7 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 	 *                                   construction sites supply one.
 	 */
 	public function __construct(
-		private readonly FlowNodeRegistry $registry,
+		private readonly FlowNodeRegistryInterface $registry,
 		private readonly ?FlowRunGuard $guard = null,
 		private readonly ?FlowRunAsScope $scope = null,
 	) {
@@ -82,42 +82,35 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function dispatch(array $step, array $items, array $context): array {
-		$type = trim((string)($step['type'] ?? ''));
+		return $this->dispatchStep(call: new StepDispatch(step: $step, items: $items, context: $context));
+	}//end dispatch()
 
-		// The guard is per-RUN state, so a container-built dispatcher never has
-		// one — the loop node resolves its dispatcher through DI, and the guard's
-		// constructor takes a run uuid the container cannot invent. Falling back
-		// to the run context keeps steps INSIDE a loop checkpointing, which is
-		// where a long run spends its time in the first place.
-		$guard = $this->guard;
-		if ($guard === null) {
-			$fromContext = ($context[FlowRunGuard::CONTEXT_KEY] ?? null);
-			if ($fromContext instanceof FlowRunGuard === true) {
-				$guard = $fromContext;
-			}
-		}
-
+	/**
+	 * Resolve the step's type and run its node; see {@see self::dispatch()}.
+	 *
+	 * @param StepDispatch $call The step, its input items and the run metadata.
+	 *
+	 * @return array The output items.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function dispatchStep(StepDispatch $call): array {
 		// Checkpoint on the way IN, so a run whose very first step is the long one
 		// is marked alive before that step begins, and so a run that is already
 		// over budget stops here rather than starting more work.
-		$where = $type;
-		if ($where === '') {
-			$where = 'a routing edge';
+		$this->guardFor(context: $call->context)?->checkpoint(where: $call->where());
+
+		if ($call->type() === '') {
+			return $call->items;
 		}
 
-		$guard?->checkpoint(where: $where);
-
-		if ($type === '') {
-			return $items;
-		}
-
-		$node = $this->registry->get(type: $type);
-		$config = (array)($step['config'] ?? []);
+		$node    = $this->registry->get(type: $call->type());
+		$context = $call->context;
 
 		// Scope the run's resume state to THIS node before calling it, so a node
 		// reads and writes its own progress without having to know its own id —
 		// and cannot reach another node's slot even by accident.
-		$scoped = $this->scopeResumeState(step: $step, context: $context);
+		$scoped = $this->scopeResumeState(step: $call->step, context: $context);
 
 		// Scope the resume SIGNAL the same way. Without this, the payload that
 		// answered ONE node's question is readable by every wait node the
@@ -125,9 +118,9 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 		// else's answer instead of suspending with a question of its own.
 		$this->scopeSignal(context: $context, scoped: $scoped);
 
-		$startedAt = microtime(true);
-		$out = $this->executeScoped(node: $node, items: $items, config: $config, context: $context);
-		$tookMs = (int)round((microtime(true) - $startedAt) * 1000);
+		$startedAt = hrtime(true);
+		$out       = $this->executeScoped(node: $node, call: $call->withContext(context: $context));
+		$tookMs    = (int)round((hrtime(true) - $startedAt) / 1_000_000);
 
 		// Reached only when the node RETURNED. A node that suspends throws, so
 		// this line is skipped and its progress survives — which is the whole
@@ -137,10 +130,36 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 		// scheduled tick) from being handed a finished node's stale cursor.
 		$scoped?->clear();
 
-		$this->assertWithinNodeBudget(type: $type, config: $config, tookMs: $tookMs);
+		$this->assertWithinNodeBudget(call: $call, tookMs: $tookMs);
 
 		return $out;
-	}//end dispatch()
+	}//end dispatchStep()
+
+	/**
+	 * The run guard that checkpoints this step.
+	 *
+	 * The guard is per-RUN state, so a container-built dispatcher never has
+	 * one — the loop node resolves its dispatcher through DI, and the guard's
+	 * constructor takes a run uuid the container cannot invent. Falling back
+	 * to the run context keeps steps INSIDE a loop checkpointing, which is
+	 * where a long run spends its time in the first place.
+	 *
+	 * @param array $context Run-level metadata, which may carry the run's guard.
+	 *
+	 * @return FlowRunGuard|null The injected guard, the context's, or null.
+	 */
+	private function guardFor(array $context): ?FlowRunGuard {
+		if ($this->guard !== null) {
+			return $this->guard;
+		}
+
+		$fromContext = ($context[FlowRunGuard::CONTEXT_KEY] ?? null);
+		if ($fromContext instanceof FlowRunGuard === true) {
+			return $fromContext;
+		}
+
+		return null;
+	}//end guardFor()
 
 	/**
 	 * Execute the node — a CONTRIBUTED one inside the run's acting identity.
@@ -168,26 +187,24 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 	 * interactive path — so a dispatcher walking a tester context changes
 	 * nothing.
 	 *
-	 * @param IFlowNode $node The resolved node.
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context The node context.
+	 * @param IFlowNode    $node The resolved node.
+	 * @param StepDispatch $call The step, its input items and the node context.
 	 *
 	 * @return array The output items.
 	 *
 	 * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-contributed-node-executes-under-the-runs-acting-identity
 	 */
-	private function executeScoped(IFlowNode $node, array $items, array $config, array $context): array {
+	private function executeScoped(IFlowNode $node, StepDispatch $call): array {
 		$engineOwned = str_starts_with(get_class($node), 'OCA\\OpenRegister\\');
 
 		if ($this->scope === null || $engineOwned === true || $node instanceof IFlowSelfScopedNode === true) {
-			return $node->execute(items: $items, config: $config, context: $context);
+			return $node->execute(items: $call->items, config: $call->config(), context: $call->context);
 		}
 
 		return (array)$this->scope->call(
-			context: $context,
-			operation: static function () use ($node, $items, $config, $context): array {
-				return $node->execute(items: $items, config: $config, context: $context);
+			context: $call->context,
+			operation: static function () use ($node, $call): array {
+				return $node->execute(items: $call->items, config: $call->config(), context: $call->context);
 			}
 		);
 	}//end executeScoped()
@@ -289,9 +306,8 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 	 * A node that works in a loop can do better by calling `checkpoint()` on the
 	 * guard in its context, which is why the guard is exposed to nodes at all.
 	 *
-	 * @param string $type The node type, for the message.
-	 * @param array $config The step configuration.
-	 * @param int $tookMs How long the node actually ran.
+	 * @param StepDispatch $call   The step: its node type, for the message, and its configuration.
+	 * @param int          $tookMs How long the node actually ran.
 	 *
 	 * @return void
 	 *
@@ -299,7 +315,8 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 	 *
 	 * @spec openspec/changes/or-flow-stale-runs/specs/flow-stale-runs/spec.md
 	 */
-	private function assertWithinNodeBudget(string $type, array $config, int $tookMs): void {
+	private function assertWithinNodeBudget(StepDispatch $call, int $tookMs): void {
+		$config = $call->config();
 		if (array_key_exists('maxRuntimeSeconds', $config) === false) {
 			return;
 		}
@@ -312,7 +329,7 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 		throw new FlowRunExpired(
 			message: sprintf(
 				'Step "%s" ran for %.1fs, over its maxRuntimeSeconds of %d.',
-				$type,
+				$call->type(),
 				($tookMs / 1000),
 				$ceiling
 			)

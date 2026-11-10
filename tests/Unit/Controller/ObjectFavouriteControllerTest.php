@@ -87,11 +87,12 @@ class ObjectFavouriteControllerTest extends TestCase {
 		}
 
 		return new ObjectFavouriteController(
-			'openregister',
 			$this->createMock(IRequest::class),
-			$this->objects,
-			$this->favourites,
-			$this->logger
+			new \OCA\OpenRegister\Controller\Support\ObjectFavouriteControllerServices(
+				$this->objects,
+				$this->favourites,
+				$this->logger,
+			)
 		);
 	}//end controller()
 
@@ -148,7 +149,14 @@ class ObjectFavouriteControllerTest extends TestCase {
 
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('getObject')->willReturn(null);
-		$plain = new ObjectFavouriteController('openregister', $this->createMock(IRequest::class), $objects, $this->favourites, $this->logger);
+		$plain = new ObjectFavouriteController(
+			$this->createMock(IRequest::class),
+			new \OCA\OpenRegister\Controller\Support\ObjectFavouriteControllerServices(
+				$objects,
+				$this->favourites,
+				$this->logger,
+			)
+		);
 		$this->assertSame(Http::STATUS_NOT_FOUND, $plain->star('r', 's', 'x')->getStatus());
 	}//end testAnUnknownObjectIsNotFound()
 

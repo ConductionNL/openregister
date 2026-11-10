@@ -41,7 +41,7 @@ class FileSettingsHandlerTest extends TestCase {
 		parent::setUp();
 
 		$this->appConfig = $this->createMock(IAppConfig::class);
-		$this->handler = new FileSettingsHandler($this->appConfig, 'openregister');
+		$this->handler = new FileSettingsHandler($this->appConfig);
 	}
 
 	/**

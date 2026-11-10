@@ -43,8 +43,10 @@ namespace OCA\OpenRegister\Service\Lifecycle;
  * A declared action that does NOT match the edit is ignored rather than
  * trusted. The declaration only says which of several equally valid
  * transitions the caller meant; it must never make an undeclared move legal.
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
-class LifecycleTransitionResolver {
+class LifecycleTransitionResolver implements LifecycleTransitionResolverInterface {
 
 	/**
 	 * Constructor.
@@ -62,26 +64,17 @@ class LifecycleTransitionResolver {
 	 * The (action, spec) pair this change is, or null when none allows it.
 	 *
 	 * @param array<string, mixed> $transitions The annotation's transition map.
-	 * @param string $uuid The object's uuid, for the declared-action lookup.
-	 * @param string $oldValue The lifecycle value being moved away from.
-	 * @param string $newValue The lifecycle value being moved to.
+	 * @param StateMove $move The object, the state it leaves and the state it enters.
 	 *
 	 * @return array{0: string, 1: array<string, mixed>}|null
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function resolve(array $transitions, string $uuid, string $oldValue, string $newValue): ?array {
-		$declared = $this->context->declaredFor(uuid: $uuid);
-		if ($declared !== null) {
-			$spec = ($transitions[$declared] ?? null);
-			if (is_array($spec) === true && $this->moves(spec: $spec, oldValue: $oldValue, newValue: $newValue) === true) {
-				return [$declared, $spec];
-			}
-		}
-
-		foreach ($transitions as $action => $spec) {
-			if (is_array($spec) === true && $this->moves(spec: $spec, oldValue: $oldValue, newValue: $newValue) === true) {
-				return [(string)$action, $spec];
+	public function resolve(array $transitions, StateMove $move): ?array {
+		foreach ($this->candidates(transitions: $transitions, uuid: $move->uuid) as $candidate) {
+			$spec = $candidate[1];
+			if (is_array($spec) === true && ($spec['to'] ?? null) === $move->to && self::leaves(spec: $spec, state: $move->from) === true) {
+				return [(string)$candidate[0], $spec];
 			}
 		}
 
@@ -89,29 +82,46 @@ class LifecycleTransitionResolver {
 	}//end resolve()
 
 	/**
-	 * Whether a transition moves the lifecycle value from `old` to `new`.
+	 * The (action, spec) pairs to try, in order: the declared action first, then every transition.
+	 *
+	 * @param array<string, mixed> $transitions The annotation's transition map.
+	 * @param string $uuid The object's uuid, for the declared-action lookup.
+	 *
+	 * @return list<array{0: int|string, 1: mixed}> The candidates.
+	 */
+	private function candidates(array $transitions, string $uuid): array {
+		$candidates = [];
+		$declared = $this->context->declaredFor(uuid: $uuid);
+		if ($declared !== null) {
+			$candidates[] = [$declared, ($transitions[$declared] ?? null)];
+		}
+
+		foreach ($transitions as $action => $spec) {
+			$candidates[] = [$action, $spec];
+		}
+
+		return $candidates;
+	}//end candidates()
+
+	/**
+	 * Whether a transition may leave the given state.
 	 *
 	 * `from` may be a single state or a list; a string is read as a one-element
 	 * list so both authoring shapes work.
 	 *
-	 * @param array<string, mixed> $spec The transition's spec.
-	 * @param string $oldValue The lifecycle value being moved away from.
-	 * @param string $newValue The lifecycle value being moved to.
+	 * @param array<string, mixed> $spec  The transition's spec.
+	 * @param string               $state The lifecycle value being moved away from.
 	 *
 	 * @return bool
 	 */
-	private function moves(array $spec, string $oldValue, string $newValue): bool {
-		if (($spec['to'] ?? null) !== $newValue) {
-			return false;
-		}
-
+	private static function leaves(array $spec, string $state): bool {
 		$from = ($spec['from'] ?? []);
 		if (is_string($from) === true) {
 			$from = [$from];
 		}
 
-		return is_array($from) === true && in_array($oldValue, $from, true) === true;
-	}//end moves()
+		return is_array($from) === true && in_array($state, $from, true) === true;
+	}//end leaves()
 
 	/**
 	 * Whether the write of this object in flight sets declared state (a seed or example-set refresh).

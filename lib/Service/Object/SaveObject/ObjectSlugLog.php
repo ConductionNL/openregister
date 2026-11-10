@@ -56,27 +56,45 @@ class ObjectSlugLog {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
-	public function collision(ObjectSlugWant $want, string $holderUuid, ?string $suffixed): void {
-		$alsoTaken = '';
-		if ($suffixed !== null) {
-			$alsoTaken = sprintf(' (suffixed "%s" also taken)', $suffixed);
-		}
+	public function collision(ObjectSlugWant $want, string $holderUuid, string|null $suffixed): void {
+		$this->logger->warning(
+			message: $this->heldMessage(want: $want, holderUuid: $holderUuid)
+				. sprintf('object %s %s%s', $want->objectUuid, $this->collisionOutcome(path: $want->path), $this->alsoTaken(suffixed: $suffixed)),
+			context: $this->heldContext(want: $want, holderUuid: $holderUuid)
+		);
+	}//end collision()
 
-		$outcome = match ($want->path) {
+	/**
+	 * What a collision did to the object, as the log line says it per path.
+	 *
+	 * @param string $path single | bulk | backfill | restore | move | seed.
+	 *
+	 * @return string The outcome.
+	 */
+	private function collisionOutcome(string $path): string {
+		return match ($path) {
 			'backfill' => 'gets no slug from the backfill',
 			'restore' => 'was restored without a slug',
 			'seed' => 'was seeded without a slug',
 			'move' => 'was moved without a slug',
 			default => 'was saved without a slug',
 		};
+	}//end collisionOutcome()
 
-		$this->held(
-			want: $want,
-			holderUuid: $holderUuid,
-			tail: sprintf('object %s %s%s', $want->objectUuid, $outcome, $alsoTaken),
-			extra: []
-		);
-	}//end collision()
+	/**
+	 * The note that the suffixed slug was taken too, empty when none was tried.
+	 *
+	 * @param string|null $suffixed The suffixed slug that was also taken, if tried.
+	 *
+	 * @return string The note.
+	 */
+	private function alsoTaken(string|null $suffixed): string {
+		if ($suffixed === null) {
+			return '';
+		}
+
+		return sprintf(' (suffixed "%s" also taken)', $suffixed);
+	}//end alsoTaken()
 
 	/**
 	 * Log a restore, move or seed import that took the suffixed slug because the wanted one is held.
@@ -93,11 +111,10 @@ class ObjectSlugLog {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
 	public function suffixedInstead(ObjectSlugWant $want, string $holderUuid, string $suffixed): void {
-		$this->held(
-			want: $want,
-			holderUuid: $holderUuid,
-			tail: sprintf('object %s got the suffixed slug "%s" instead (%s)', $want->objectUuid, $suffixed, $want->path),
-			extra: ['suffixedSlug' => $suffixed]
+		$this->logger->warning(
+			message: $this->heldMessage(want: $want, holderUuid: $holderUuid)
+				. sprintf('object %s got the suffixed slug "%s" instead (%s)', $want->objectUuid, $suffixed, $want->path),
+			context: $this->heldContext(want: $want, holderUuid: $holderUuid) + ['suffixedSlug' => $suffixed]
 		);
 	}//end suffixedInstead()
 
@@ -112,20 +129,15 @@ class ObjectSlugLog {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-an-object-slug-once-set-must-not-be-changed-by-a-later-save
 	 */
 	public function ignoredClientSlug(ObjectSlugWant $want, string $sent): void {
-		$this->logger->warning(
-			message: sprintf(
-				'[ObjectSlug] Ignored client slug "%s" for object %s in %s: slug "%s" is frozen',
-				$sent,
-				$want->objectUuid,
-				$want->scope->describe(),
-				$want->slug
-			),
-			context: $want->scope->context(path: $want->path) + [
-				'slug' => $sent,
-				'objectUuid' => $want->objectUuid,
-				'frozenSlug' => $want->slug,
-			]
+		$message = sprintf(
+			'[ObjectSlug] Ignored client slug "%s" for object %s in %s: slug "%s" is frozen',
+			$sent,
+			$want->objectUuid,
+			$want->scope->describe(),
+			$want->slug
 		);
+		$context = $want->scope->context(path: $want->path) + ['slug' => $sent, 'objectUuid' => $want->objectUuid, 'frozenSlug' => $want->slug];
+		$this->logger->warning(message: $message, context: $context);
 	}//end ignoredClientSlug()
 
 	/**
@@ -172,29 +184,35 @@ class ObjectSlugLog {
 	}//end registerLookupFailed()
 
 	/**
-	 * Write a "slug is already held" line.
+	 * The start of a "slug is already held" line; what happened to the object follows it.
 	 *
-	 * @param ObjectSlugWant       $want       Who wanted which slug, where, on which path.
-	 * @param string               $holderUuid Who holds it.
-	 * @param string               $tail       What happened to the object instead.
-	 * @param array<string, mixed> $extra      Context keys on top of the common ones.
+	 * @param ObjectSlugWant $want       Who wanted which slug, where, on which path.
+	 * @param string         $holderUuid Who holds it.
 	 *
-	 * @return void
+	 * @return string The message up to and including `; `.
 	 */
-	private function held(ObjectSlugWant $want, string $holderUuid, string $tail, array $extra): void {
-		$this->logger->warning(
-			message: sprintf(
-				'[ObjectSlug] Slug "%s" is already held by object %s in %s; %s',
-				$want->slug,
-				$holderUuid,
-				$want->scope->describe(),
-				$tail
-			),
-			context: $want->scope->context(path: $want->path) + [
-				'slug' => $want->slug,
-				'objectUuid' => $want->objectUuid,
-				'holderUuid' => $holderUuid,
-			] + $extra
+	private function heldMessage(ObjectSlugWant $want, string $holderUuid): string {
+		return sprintf(
+			'[ObjectSlug] Slug "%s" is already held by object %s in %s; ',
+			$want->slug,
+			$holderUuid,
+			$want->scope->describe()
 		);
-	}//end held()
+	}//end heldMessage()
+
+	/**
+	 * The context keys of a "slug is already held" line.
+	 *
+	 * @param ObjectSlugWant $want       Who wanted which slug, where, on which path.
+	 * @param string         $holderUuid Who holds it.
+	 *
+	 * @return array<string, mixed> The context.
+	 */
+	private function heldContext(ObjectSlugWant $want, string $holderUuid): array {
+		return $want->scope->context(path: $want->path) + [
+			'slug' => $want->slug,
+			'objectUuid' => $want->objectUuid,
+			'holderUuid' => $holderUuid,
+		];
+	}//end heldContext()
 }//end class

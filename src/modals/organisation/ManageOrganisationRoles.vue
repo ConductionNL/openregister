@@ -85,16 +85,7 @@ import { translate as t } from '@nextcloud/l10n'
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{
-					success
-						? t('openregister', 'Close')
-						: t('openregister', 'Cancel')
-				}}
-			</NcButton>
+			<CloseCancelButton :success="success" @click="closeModal" />
 			<NcButton
 				v-if="!success"
 				:disabled="loading || !hasChanges"
@@ -121,9 +112,9 @@ import {
 	NcSelect,
 } from '@nextcloud/vue'
 import AccountGroup from 'vue-material-design-icons/AccountGroup.vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Close from 'vue-material-design-icons/Close.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import { navigationStore, organisationStore } from '../../store/store.js'
 
 /**
@@ -148,7 +139,7 @@ export default {
 		NcSelect,
 		// Icons
 		ContentSaveOutline,
-		Cancel,
+		CloseCancelButton,
 		Close,
 		AccountGroup,
 	},

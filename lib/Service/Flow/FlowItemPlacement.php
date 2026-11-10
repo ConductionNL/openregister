@@ -29,8 +29,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use Symfony\Component\Workflow\Definition;
-use Symfony\Component\Workflow\Workflow;
 
 /**
  * Holds the per-place item buffers and moves items as transitions fire.
@@ -78,41 +76,36 @@ class FlowItemPlacement {
 	 * suspended, and either way the stored items land on the place that holds
 	 * the token.
 	 *
-	 * @param Workflow $workflow The workflow.
-	 * @param object $subject The subject holding the marking.
-	 * @param Definition $definition The definition (for the initial-place fallback).
-	 * @param array $items The seed items.
-	 * @param array<string, array>|null $stored The per-place items persisted by the last commit, or null when none.
+	 * @param ItemSeed $seed The workflow, subject, seed items and stored per-place items.
 	 *
 	 * @return array<string, array> Items keyed by place.
 	 *
 	 * @spec openspec/changes/or-flow-merge/specs/flow-merge/spec.md
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
 	 */
-	public function seedPlaceItems(Workflow $workflow, object $subject, Definition $definition, array $items, ?array $stored = null): array {
+	public function seed(ItemSeed $seed): array {
 		$placeItems = [];
-		foreach (array_keys($workflow->getMarking(subject: $subject)->getPlaces()) as $place) {
+		foreach (array_keys($seed->workflow->getMarking(subject: $seed->subject)->getPlaces()) as $place) {
 			// PER-PLACE items persisted by the last commit win: a stream that
 			// suspended holding two tokens resumes with each branch carrying
 			// the items ITS branch produced. The same-list-to-every-place seed
 			// below is kept for a run that predates the column (null), so an
 			// in-flight run's behaviour across the upgrade is identical.
-			if ($stored !== null && array_key_exists((string)$place, $stored) === true) {
-				$placeItems[(string)$place] = (array)$stored[(string)$place];
-				continue;
+			$placeItems[(string)$place] = $seed->items;
+			if ($seed->stored !== null && array_key_exists((string)$place, $seed->stored) === true) {
+				$placeItems[(string)$place] = (array)$seed->stored[(string)$place];
 			}
-
-			$placeItems[(string)$place] = $items;
 		}
 
 		if ($placeItems === []) {
-			foreach ($definition->getInitialPlaces() as $place) {
-				$placeItems[(string)$place] = $items;
+			// The definition's initial places, when no token is marked yet.
+			foreach ($seed->workflow->getDefinition()->getInitialPlaces() as $place) {
+				$placeItems[(string)$place] = $seed->items;
 			}
 		}
 
 		return $placeItems;
-	}//end seedPlaceItems()
+	}//end seed()
 
 	/**
 	 * Move a fired transition's items: onto its output places, off its inputs.
@@ -137,17 +130,15 @@ class FlowItemPlacement {
 	 * several steps converging on one node without a join (an OR-merge) each
 	 * deliver their items instead of the last one overwriting the rest.
 	 *
-	 * @param object $transition The fired transition.
+	 * @param ItemFiring           $firing     The transition, the items it produced and the exits it took.
 	 * @param array<string, array> $placeItems The current per-place buffers.
-	 * @param array $items What the step produced.
-	 * @param array<string> $taken The output places the exit claimed.
 	 *
 	 * @return array<string, array> The updated buffers.
 	 *
 	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
 	 * @spec openspec/changes/flow-or-merge-keeps-every-firing/specs/flow-merge/spec.md#requirement-an-or-merge-place-keeps-every-firings-items
 	 */
-	public function advanceItems(object $transition, array $placeItems, array $items, array $taken): array {
+	public function advance(ItemFiring $firing, array $placeItems): array {
 		// A FIRING THAT PRODUCED NOTHING PLACES NOTHING AND DESTROYS NOTHING.
 		//
 		// Every node in a flow fires on every pass, and most of them fire with
@@ -173,22 +164,37 @@ class FlowItemPlacement {
 		//
 		// The comment below justifies the unconditional write as keeping stale
 		// items off a branch the token never reached. That reasoning is about
-		// PLACING items, and there are none to place here — so returning early
+		// PLACING items, and there are none to place here — so skipping placement
 		// cannot seed anything. The input places are still cleared, because
 		// consuming them is what the firing did do.
-		if ($items === []) {
-			foreach ($transition->getFroms() as $from) {
-				unset($placeItems[(string)$from]);
-			}
-
-			return $placeItems;
+		if ($firing->items !== []) {
+			$placeItems = $this->land(firing: $firing, placeItems: $placeItems);
 		}
 
-		foreach ($transition->getTos() as $to) {
+		foreach ($firing->transition->getFroms() as $from) {
+			unset($placeItems[(string)$from]);
+		}
+
+		return $placeItems;
+	}//end advance()
+
+	/**
+	 * Land a firing's items on its output places: the taken exits receive
+	 * them, every other output is cleared.
+	 *
+	 * @param ItemFiring           $firing     The firing; its items are not empty.
+	 * @param array<string, array> $placeItems The current per-place buffers.
+	 *
+	 * @return array<string, array> The buffers with the outputs written.
+	 *
+	 * @spec openspec/changes/flow-or-merge-keeps-every-firing/specs/flow-merge/spec.md#requirement-an-or-merge-place-keeps-every-firings-items
+	 */
+	private function land(ItemFiring $firing, array $placeItems): array {
+		foreach ($firing->transition->getTos() as $to) {
 			// Only the taken exit receives items. Seeding a branch the token
 			// never reaches would leave stale items for a later firing to pick
 			// up as if they were fresh.
-			if (in_array((string)$to, $taken, true) === false) {
+			if (in_array((string)$to, $firing->taken, true) === false) {
 				unset($placeItems[(string)$to]);
 				continue;
 			}
@@ -205,16 +211,12 @@ class FlowItemPlacement {
 			// stale copy.
 			$placeItems[(string)$to] = array_merge(
 				($placeItems[(string)$to] ?? []),
-				$this->itemsForOutput(items: $items, output: (string)$to)
+				$this->itemsForOutput(items: $firing->items, output: (string)$to)
 			);
 		}
 
-		foreach ($transition->getFroms() as $from) {
-			unset($placeItems[(string)$from]);
-		}
-
 		return $placeItems;
-	}//end advanceItems()
+	}//end land()
 
 	/**
 	 * The items that belong on one output place: those routed to it, plus the
@@ -255,4 +257,29 @@ class FlowItemPlacement {
 
 		return $out;
 	}//end itemsForOutput()
+
+	/**
+	 * The pinned output for a step, or null when it is not pinned.
+	 *
+	 * Pins are a map of step name to an item list. A run carries them in its
+	 * `context` under `pins` (a test/authoring run supplies them without
+	 * touching the stored flow); a flow may also carry a `pins` map of its own,
+	 * used only as the fallback so a run's pins always win. A step whose name is
+	 * absent from both is not pinned and runs normally.
+	 *
+	 * @param FlowWalkPass|FlowStreamPass $pass           The pass.
+	 * @param string                      $transitionName The step's transition name.
+	 *
+	 * @return array<int, mixed>|null The pinned items, or null when not pinned.
+	 *
+	 * @spec openspec/changes/or-flow-pins/specs/flow-pins/spec.md
+	 */
+	public function pinnedItems(FlowWalkPass|FlowStreamPass $pass, string $transitionName): ?array {
+		$pins = (array)($pass->context['pins'] ?? ($pass->flow['pins'] ?? []));
+		if (array_key_exists($transitionName, $pins) === false) {
+			return null;
+		}
+
+		return FlowItems::normalise(value: $pins[$transitionName]);
+	}//end pinnedItems()
 }//end class

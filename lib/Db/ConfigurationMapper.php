@@ -23,19 +23,16 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
-use OCA\OpenRegister\Event\ConfigurationCreatedEvent;
-use OCA\OpenRegister\Event\ConfigurationDeletedEvent;
-use OCA\OpenRegister\Event\ConfigurationUpdatedEvent;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
+use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
-use OCP\ISession;
 use OCP\IUserSession;
 
 /**
@@ -58,7 +55,7 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class ConfigurationMapper extends QBMapper {
+class ConfigurationMapper extends QBMapper implements ConfigurationMapperInterface {
 
 	use ColumnFiltersTrait;
 	use MultiTenancyTrait;
@@ -92,45 +89,31 @@ class ConfigurationMapper extends QBMapper {
 	private IGroupManager $groupManager;
 
 	/**
-	 * Session for caching configurations
+	 * Announces configuration events
 	 *
-	 * @var ISession
+	 * @var EntityEventsInterface
 	 */
-	private ISession $session;
-
-	/**
-	 * Event dispatcher for dispatching configuration events
-	 *
-	 * @var IEventDispatcher
-	 */
-	private IEventDispatcher $eventDispatcher;
+	private EntityEventsInterface $entityEvents;
 
 	/**
 	 * Constructor
 	 *
-	 * @param IDBConnection $db Database connection
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
-	 * @param IUserSession $userSession User session
-	 * @param IGroupManager $groupManager Group manager
-	 * @param ISession $session Session
-	 * @param IEventDispatcher $eventDispatcher Event dispatcher
+	 * @param IDBConnection    $db              Database connection
+	 * @param TenancyServices  $tenancy         Organisation mapper, user session and groups for multi-tenancy and RBAC
+	 * @param EntityEventsInterface $entityEvents Announces configuration events
 	 */
 	public function __construct(
 		IDBConnection $db,
 		// REMOVED: Services should not be in mappers.
-		OrganisationMapperInterface $organisationMapper,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
-		ISession $session,
-		IEventDispatcher $eventDispatcher,
+		TenancyServices $tenancy,
+		EntityEventsInterface $entityEvents,
 	) {
 		parent::__construct(db: $db, tableName: 'openregister_configurations', entityClass: Configuration::class);
 		// REMOVED: Services should not be in mappers.
-		$this->organisationMapper = $organisationMapper;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
-		$this->session = $session;
-		$this->eventDispatcher = $eventDispatcher;
+		$this->organisationMapper = $tenancy->organisationMapper;
+		$this->userSession = $tenancy->userSession;
+		$this->groupManager = $tenancy->groupManager;
+		$this->entityEvents = $entityEvents;
 	}//end __construct()
 
 	/**
@@ -358,7 +341,7 @@ class ConfigurationMapper extends QBMapper {
 		$this->invalidateConfigurationCache();
 
 		// Dispatch creation event.
-		$this->eventDispatcher->dispatchTyped(new ConfigurationCreatedEvent(configuration: $result));
+		$this->entityEvents->configurationCreated(configuration: $result);
 
 		return $result;
 	}//end insert()
@@ -390,12 +373,7 @@ class ConfigurationMapper extends QBMapper {
 		$this->invalidateConfigurationCache();
 
 		// Dispatch update event.
-		$this->eventDispatcher->dispatchTyped(
-			new ConfigurationUpdatedEvent(
-				newConfiguration: $result,
-				oldConfiguration: $oldEntity
-			)
-		);
+		$this->entityEvents->configurationUpdated(newConfiguration: $result, oldConfiguration: $oldEntity);
 
 		return $result;
 	}//end update()
@@ -423,7 +401,7 @@ class ConfigurationMapper extends QBMapper {
 		$this->invalidateConfigurationCache();
 
 		// Dispatch deletion event.
-		$this->eventDispatcher->dispatchTyped(new ConfigurationDeletedEvent(configuration: $result));
+		$this->entityEvents->configurationDeleted(configuration: $result);
 
 		return $result;
 	}//end delete()

@@ -49,9 +49,6 @@ namespace OCA\OpenRegister\Repair;
 use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskAudit;
-use OCA\OpenRegister\Db\TaskAuditMapper;
-use OCA\OpenRegister\Db\TaskCandidateMapper;
-use OCA\OpenRegister\Db\TaskMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
@@ -77,16 +74,12 @@ class SeedTaskFixtures implements IRepairStep {
 	 * Constructor.
 	 *
 	 * @param IAppConfig $appConfig Holds the opt-in flag.
-	 * @param TaskMapper $tasks The task table.
-	 * @param TaskCandidateMapper $candidates The candidate index rows.
-	 * @param TaskAuditMapper $audits The append-only audit.
+	 * @param TaskFixtureMappers $mappers The task table, the candidate index rows and the append-only audit.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
-		private readonly TaskMapper $tasks,
-		private readonly TaskCandidateMapper $candidates,
-		private readonly TaskAuditMapper $audits,
+		private readonly TaskFixtureMappers $mappers,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -151,7 +144,7 @@ class SeedTaskFixtures implements IRepairStep {
 	 */
 	private function seedOne(array $fixture): bool {
 		try {
-			$this->tasks->findByUuid(uuid: (string)$fixture['uuid']);
+			$this->mappers->tasks->findByUuid(uuid: (string)$fixture['uuid']);
 
 			return false;
 		} catch (DoesNotExistException) {
@@ -161,7 +154,7 @@ class SeedTaskFixtures implements IRepairStep {
 		$task = new Task();
 		$task->hydrate($fixture['task']);
 		$task->setUuid((string)$fixture['uuid']);
-		$persisted = $this->tasks->insert($task);
+		$persisted = $this->mappers->tasks->insert($task);
 
 		// The one-write-path invariant, preserved by hand: JSON and index
 		// rows land together.
@@ -187,7 +180,7 @@ class SeedTaskFixtures implements IRepairStep {
 			];
 		}
 
-		$this->candidates->replaceForTask(taskId: (int)$persisted->getId(), candidates: $rows);
+		$this->mappers->candidates->replaceForTask(taskId: (int)$persisted->getId(), candidates: $rows);
 
 		foreach (($fixture['audit'] ?? []) as $auditFixture) {
 			$entry = new TaskAudit();
@@ -200,7 +193,7 @@ class SeedTaskFixtures implements IRepairStep {
 			$entry->setMandate($auditFixture['mandate'] ?? null);
 			$entry->setReason($auditFixture['reason'] ?? null);
 			$entry->setAuthorized((bool)($auditFixture['authorized'] ?? true));
-			$this->audits->insert($entry);
+			$this->mappers->audits->insert($entry);
 		}
 
 		return true;

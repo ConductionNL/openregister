@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Tests\Support\MigratedSqliteDatabase;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -69,10 +70,7 @@ class AuditTrailNotInFilterTest extends TestCase {
 
 		$this->mapper = new AuditTrailMapper(
 			db: $this->database->idbConnection(),
-			container: $this->createMock(originalClassName: ContainerInterface::class),
-			userSession: $this->createMock(originalClassName: IUserSession::class),
-			request: $this->createMock(originalClassName: IRequest::class),
-			logger: new NullLogger()
+			services: new AuditTrailMapperServices(container: $this->createMock(originalClassName: ContainerInterface::class), logger: new NullLogger(), userSession: $this->createMock(originalClassName: IUserSession::class), request: $this->createMock(originalClassName: IRequest::class))
 		);
 
 		$rows = [

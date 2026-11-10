@@ -18,7 +18,7 @@ final class ApiTokenSettingsControllerFactory {
 	/**
 	 * The constructor arguments of ApiTokenSettingsController.
 	 *
-	 * @param mixed $appName Constructor argument.
+	 * @param mixed $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param IAppConfig $config Constructor argument.
 	 * @param AppSettingsInterface $settingsService Constructor argument.
@@ -38,15 +38,16 @@ final class ApiTokenSettingsControllerFactory {
 		\OCA\OpenRegister\Service\Connection\ConnectionReporter $connectionReporter,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ApiTokenSettingsControllerServices(
-				config: $config,
+				reporting: new \OCA\OpenRegister\Controller\Support\ConnectionReporting(
+					connectionReporter: $connectionReporter,
+					appConfig: $config,
+				),
 				settingsService: $settingsService,
 				clientService: $clientService,
-				connectionReporter: $connectionReporter,
+				logger: $logger,
 			),
-			$logger,
 		];
 	}
 

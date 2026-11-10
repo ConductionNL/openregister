@@ -62,26 +62,37 @@ class ObjectActionInputs {
 	/**
 	 * The inputs with every declared default the caller left out filled in.
 	 *
-	 * @param array<string, mixed>|null $schema The declared input schema.
-	 * @param array<string, mixed>      $given  The inputs the caller sent.
-	 * @param ObjectEntity|null         $object The object, for `@object.*` defaults.
-	 * @param string|null               $userId The acting user, for `@user`.
+	 * @param ObjectActionInvocation $invocation The action (its declared input schema) and the inputs the caller sent.
+	 * @param DefaultScope           $scope      The object and acting user the defaults resolve against.
 	 *
 	 * @return array<string, mixed> The inputs.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
 	 */
-	public function withDefaults(?array $schema, array $given, ?ObjectEntity $object, ?string $userId): array {
-		foreach ((array)($schema['properties'] ?? []) as $name => $property) {
-			if (array_key_exists($name, $given) === true || is_array($property) === false || array_key_exists('default', $property) === false) {
-				continue;
+	public function withDefaults(ObjectActionInvocation $invocation, DefaultScope $scope): array {
+		$given = $invocation->inputs;
+		foreach ($this->propertiesWithDefault(schema: $invocation->definition->inputs) as $name => $property) {
+			if (array_key_exists($name, $given) === false) {
+				$given[$name] = $this->resolveDefault(property: $property, scope: $scope);
 			}
-
-			$given[$name] = $this->resolveDefault(property: $property, object: $object, userId: $userId);
 		}
 
 		return $given;
 	}//end withDefaults()
+
+	/**
+	 * The input properties that declare a default.
+	 *
+	 * @param array<string, mixed>|null $schema The declared input schema.
+	 *
+	 * @return array<array-key, array<string, mixed>> Name => property.
+	 */
+	private function propertiesWithDefault(?array $schema): array {
+		return array_filter(
+			(array)($schema['properties'] ?? []),
+			static fn (mixed $property): bool => is_array($property) === true && array_key_exists('default', $property) === true
+		);
+	}//end propertiesWithDefault()
 
 	/**
 	 * Why these inputs do not satisfy the declared schema, per field.
@@ -101,13 +112,7 @@ class ObjectActionInputs {
 			);
 		}
 
-		$errors = [];
-		foreach ($this->validator->validate(body: (object)$inputs, schema: $schema) as $error) {
-			$errors[] = [
-				'field' => explode('/', ltrim((string)$error['path'], '/'))[0],
-				'message' => (string)$error['message'],
-			];
-		}
+		$errors = $this->fieldErrors(schema: $schema, inputs: $inputs);
 
 		// The validator reports the object itself above the field that failed
 		// inside it; name the field when one is known.
@@ -118,6 +123,26 @@ class ObjectActionInputs {
 
 		return $errors;
 	}//end errors()
+
+	/**
+	 * The validator's errors, each named by the first segment of its path.
+	 *
+	 * @param array<string, mixed> $schema The declared input schema.
+	 * @param array<string, mixed> $inputs The inputs.
+	 *
+	 * @return list<array{field: string, message: string}> The errors.
+	 */
+	private function fieldErrors(array $schema, array $inputs): array {
+		return array_values(
+			array_map(
+				static fn (array $error): array => [
+					'field' => explode('/', ltrim((string)$error['path'], '/'))[0],
+					'message' => (string)$error['message'],
+				],
+				$this->validator->validate(body: (object)$inputs, schema: $schema)
+			)
+		);
+	}//end fieldErrors()
 
 	/**
 	 * Split inputs into what may be stored and what must not.
@@ -161,29 +186,15 @@ class ObjectActionInputs {
 	 */
 	public function fromTransitionInputs(array $inputs): array {
 		$properties = [];
-		$required = [];
 		foreach ($inputs as $input) {
 			$field = (string)($input['field'] ?? '');
-			if ($field === '') {
-				continue;
-			}
-
-			$property = [];
-			if (isset($input['label']) === true) {
-				$property['title'] = (string)$input['label'];
-			}
-
-			if (is_array($input['options'] ?? null) === true) {
-				$property['enum'] = array_values(array_column($input['options'], 'value'));
-			}
-
-			$properties[$field] = (object)$property;
-			if (($input['required'] ?? false) === true) {
-				$required[] = $field;
+			if ($field !== '') {
+				$properties[$field] = $this->transitionProperty(input: $input);
 			}
 		}
 
-		$schema = ['type' => 'object', 'properties' => (object)$properties];
+		$schema   = ['type' => 'object', 'properties' => (object)$properties];
+		$required = $this->requiredFields(inputs: $inputs);
 		if ($required !== []) {
 			$schema['required'] = $required;
 		}
@@ -192,36 +203,90 @@ class ObjectActionInputs {
 	}//end fromTransitionInputs()
 
 	/**
+	 * The named transition inputs marked `required: true`, in order.
+	 *
+	 * @param list<array<string, mixed>> $inputs The transition's published inputs.
+	 *
+	 * @return list<string> The field names.
+	 */
+	private function requiredFields(array $inputs): array {
+		$required = array_filter(
+			$inputs,
+			static fn (array $input): bool => (string)($input['field'] ?? '') !== '' && ($input['required'] ?? false) === true
+		);
+
+		return array_values(array_map(static fn (array $input): string => (string)$input['field'], $required));
+	}//end requiredFields()
+
+	/**
+	 * One transition input as a JSON Schema property: its label as title, its options as enum.
+	 *
+	 * @param array<string, mixed> $input The transition input.
+	 *
+	 * @return object The property.
+	 */
+	private function transitionProperty(array $input): object {
+		$property = [];
+		if (isset($input['label']) === true) {
+			$property['title'] = (string)$input['label'];
+		}
+
+		if (is_array($input['options'] ?? null) === true) {
+			$property['enum'] = array_values(array_column($input['options'], 'value'));
+		}
+
+		return (object)$property;
+	}//end transitionProperty()
+
+	/**
 	 * Resolve one declared default.
 	 *
 	 * @param array<string, mixed> $property The input property.
-	 * @param ObjectEntity|null    $object   The object.
-	 * @param string|null          $userId   The acting user.
+	 * @param DefaultScope         $scope    The object and the acting user.
 	 *
 	 * @return mixed The value.
 	 */
-	private function resolveDefault(array $property, ?ObjectEntity $object, ?string $userId): mixed {
+	private function resolveDefault(array $property, DefaultScope $scope): mixed {
 		$default = $property['default'];
 		if ($default === '@now') {
-			$format = 'c';
-			if (($property['format'] ?? null) === 'date') {
-				$format = 'Y-m-d';
-			}
-
-			return (new DateTimeImmutable())->format($format);
+			return $this->now(format: ($property['format'] ?? null));
 		}
 
 		if ($default === '@user') {
-			return $userId;
+			return $scope->userId;
 		}
 
 		if (is_string($default) === true && str_starts_with($default, '@object.') === true) {
-			return FlowExpression::evaluate(
-				logic: ['var' => substr($default, strlen('@object.'))],
-				data: ($object?->getObject() ?? [])
-			);
+			return $this->objectValue(path: substr($default, strlen('@object.')), object: $scope->object);
 		}
 
 		return $default;
 	}//end resolveDefault()
+
+	/**
+	 * A value read from the object's data by dotted path, null without an object.
+	 *
+	 * @param string            $path   The dotted path.
+	 * @param ObjectEntity|null $object The object.
+	 *
+	 * @return mixed The value.
+	 */
+	private function objectValue(string $path, ?ObjectEntity $object): mixed {
+		return FlowExpression::evaluate(logic: ['var' => $path], data: ($object?->getObject() ?? []));
+	}//end objectValue()
+
+	/**
+	 * The current time, as a date when the input's format is `date`.
+	 *
+	 * @param mixed $format The declared format.
+	 *
+	 * @return string The formatted time.
+	 */
+	private function now(mixed $format): string {
+		if ($format === 'date') {
+			return (new DateTimeImmutable())->format('Y-m-d');
+		}
+
+		return (new DateTimeImmutable())->format('c');
+	}//end now()
 }//end class

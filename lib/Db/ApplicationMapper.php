@@ -23,15 +23,13 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
-use OCA\OpenRegister\Event\ApplicationCreatedEvent;
-use OCA\OpenRegister\Event\ApplicationDeletedEvent;
-use OCA\OpenRegister\Event\ApplicationUpdatedEvent;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
+use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -68,7 +66,7 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class ApplicationMapper extends QBMapper {
+class ApplicationMapper extends QBMapper implements ApplicationMapperInterface {
 	use MultiTenancyTrait;
 
 	/**
@@ -99,13 +97,13 @@ class ApplicationMapper extends QBMapper {
 	private readonly IGroupManager $groupManager;
 
 	/**
-	 * Event dispatcher for dispatching application events
+	 * Announces application events
 	 *
-	 * Dispatches events when applications are created, updated, or deleted.
+	 * Announces when applications are created, updated, or deleted.
 	 *
-	 * @var IEventDispatcher Event dispatcher instance
+	 * @var EntityEventsInterface Entity events publisher
 	 */
-	private readonly IEventDispatcher $eventDispatcher;
+	private readonly EntityEventsInterface $entityEvents;
 
 	/**
 	 * Constructor
@@ -114,30 +112,26 @@ class ApplicationMapper extends QBMapper {
 	 * for multi-tenancy, RBAC, and event dispatching.
 	 *
 	 * @param IDBConnection $db Database connection for queries
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper for multi-tenancy
-	 * @param IUserSession $userSession User session for current user context
-	 * @param IGroupManager $groupManager Group manager for RBAC checks
-	 * @param IEventDispatcher $eventDispatcher Event dispatcher for application events
+	 * @param TenancyServices $tenancy Organisation mapper, session and groups for multi-tenancy and RBAC
+	 * @param EntityEventsInterface $entityEvents Announces application events
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		IDBConnection $db,
 		// REMOVED: Services should not be in mappers.
-		OrganisationMapperInterface $organisationMapper,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
-		IEventDispatcher $eventDispatcher,
+		TenancyServices $tenancy,
+		EntityEventsInterface $entityEvents,
 	) {
 		// Initialize parent mapper with table name and entity class.
 		parent::__construct(db: $db, tableName: 'openregister_applications', entityClass: Application::class);
 
 		// Store dependencies for use in mapper methods.
 		// REMOVED: Services should not be in mappers.
-		$this->organisationMapper = $organisationMapper;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
-		$this->eventDispatcher = $eventDispatcher;
+		$this->organisationMapper = $tenancy->organisationMapper;
+		$this->userSession = $tenancy->userSession;
+		$this->groupManager = $tenancy->groupManager;
+		$this->entityEvents = $entityEvents;
 	}//end __construct()
 
 	/**
@@ -224,9 +218,8 @@ class ApplicationMapper extends QBMapper {
 	 * Retrieves all applications belonging to a specific organisation.
 	 * Results are ordered by creation date (newest first) with pagination support.
 	 *
-	 * @param string $organisationUuid Organisation UUID to filter by
-	 * @param int $limit Maximum number of results to return (default: 50)
-	 * @param int $offset Number of results to skip for pagination (default: 0)
+	 * @param string    $organisationUuid Organisation UUID to filter by
+	 * @param ListQuery $query            The page: limit and offset (its filters, sort and search are not applied)
 	 *
 	 * @return Application[]
 	 *
@@ -234,7 +227,7 @@ class ApplicationMapper extends QBMapper {
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\Application>
 	 */
-	public function findByOrganisation(string $organisationUuid, int $limit = 50, int $offset = 0): array {
+	public function findByOrganisation(string $organisationUuid, ListQuery $query): array {
 		// Verify RBAC permission to read applications.
 		$this->verifyRbacPermission(action: 'read', entityType: 'application');
 
@@ -249,8 +242,8 @@ class ApplicationMapper extends QBMapper {
 					$qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR)
 				)
 			)
-			->setMaxResults($limit)
-			->setFirstResult($offset)
+			->setMaxResults($query->limit)
+			->setFirstResult($query->offset ?? 0)
 			->orderBy('created', 'DESC');
 
 		// Execute query and return entities.
@@ -260,15 +253,13 @@ class ApplicationMapper extends QBMapper {
 	/**
 	 * Find all applications
 	 *
-	 * Retrieves all applications with optional pagination, filtering, and search.
+	 * Retrieves all applications with optional pagination and filtering.
 	 * Results are ordered by creation date (newest first).
 	 * Automatically applies organisation filtering for multi-tenancy.
 	 *
 	 * @param int|null $limit Maximum number of results to return (null for all)
 	 * @param int|null $offset Number of results to skip for pagination (null for no offset)
 	 * @param array<string, mixed> $filters Filter conditions as key-value pairs (default: empty array)
-	 * @param array $searchConditions Search conditions for WHERE clause (default: empty array)
-	 * @param array<string, mixed> $searchParams Parameters for search conditions (default: empty array)
 	 *
 	 * @return Application[]
 	 *
@@ -277,25 +268,57 @@ class ApplicationMapper extends QBMapper {
 	 * @psalm-return list<\OCA\OpenRegister\Db\Application>
 	 */
 	public function findAll(
-		?int $limit = null,
-		?int $offset = null,
+		int|null $limit = null,
+		int|null $offset = null,
 		array $filters = [],
-		array $searchConditions = [],
-		array $searchParams = [],
 	): array {
+		return $this->findAllBy(query: new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset, filters: $filters));
+		}//end findAll()
+
+	/**
+	 * Find the applications of a listing
+	 *
+	 * Results are ordered by creation date (newest first). The listing's
+	 * limit (unbounded for all rows), offset and equality filters apply; its
+	 * sort and search do not. Automatically applies organisation filtering
+	 * for multi-tenancy.
+	 *
+	 * @param ListQuery $query The listing.
+	 *
+	 * @return Application[]
+	 *
+	 * @throws \Exception If user doesn't have read permission
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Application>
+	 */
+	public function findAllBy(ListQuery $query): array {
 		// Verify RBAC permission to read applications.
 		$this->verifyRbacPermission(action: 'read', entityType: 'application');
 
-		// Build base query.
 		$qb = $this->db->getQueryBuilder();
-
 		$qb->select('*')
 			->from($this->tableName)
-			->setMaxResults($limit)
-			->setFirstResult($offset ?? 0)
+			->setMaxResults($query->limitOrNull())
+			->setFirstResult($query->offset ?? 0)
 			->orderBy('created', 'DESC');
 
-		// Apply simple equality filters.
+		$this->applyEqualityFilters(qb: $qb, filters: $query->filters);
+
+		// Apply organisation filter (all users including admins must have active org).
+		$this->applyOrganisationFilter(qb: $qb);
+
+		return $this->findEntities(query: $qb);
+	}//end findAllBy()
+
+	/**
+	 * One equality condition per filter.
+	 *
+	 * @param IQueryBuilder        $qb      The query to add the conditions to.
+	 * @param array<string, mixed> $filters Column name to value.
+	 *
+	 * @return void
+	 */
+	private function applyEqualityFilters(IQueryBuilder $qb, array $filters): void {
 		foreach ($filters as $key => $value) {
 			$qb->andWhere(
 				$qb->expr()->eq(
@@ -304,23 +327,7 @@ class ApplicationMapper extends QBMapper {
 				)
 			);
 		}
-
-		// Apply complex search conditions (OR logic).
-		if (empty($searchConditions) === false) {
-			$qb->andWhere($qb->expr()->orX(...$searchConditions));
-
-			// Set parameters for search conditions.
-			foreach ($searchParams as $key => $value) {
-				$qb->setParameter($key, $value);
-			}
-		}
-
-		// Apply organisation filter (all users including admins must have active org).
-		$this->applyOrganisationFilter(qb: $qb);
-
-		// Execute query and return entities.
-		return $this->findEntities(query: $qb);
-	}//end findAll()
+	}//end applyEqualityFilters()
 
 	/**
 	 * Insert a new application
@@ -360,7 +367,7 @@ class ApplicationMapper extends QBMapper {
 		$entity = parent::insert(entity: $entity);
 
 		// Dispatch creation event for other components to react to.
-		$this->eventDispatcher->dispatchTyped(new ApplicationCreatedEvent(application: $entity));
+		$this->entityEvents->applicationCreated(application: $entity);
 
 		return $entity;
 	}//end insert()
@@ -399,9 +406,7 @@ class ApplicationMapper extends QBMapper {
 		$entity = parent::update(entity: $entity);
 
 		// Dispatch update event with old and new state for other components.
-		$this->eventDispatcher->dispatchTyped(
-			new ApplicationUpdatedEvent(newApplication: $entity, oldApplication: $oldEntity)
-		);
+		$this->entityEvents->applicationUpdated(newApplication: $entity, oldApplication: $oldEntity);
 
 		return $entity;
 	}//end update()
@@ -433,7 +438,7 @@ class ApplicationMapper extends QBMapper {
 		$entity = parent::delete(entity: $entity);
 
 		// Dispatch deletion event for other components to react to.
-		$this->eventDispatcher->dispatchTyped(new ApplicationDeletedEvent(application: $entity));
+		$this->entityEvents->applicationDeleted(application: $entity);
 
 		return $entity;
 	}//end delete()

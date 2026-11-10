@@ -11,6 +11,8 @@ namespace Unit\BackgroundJob;
 
 use DateTime;
 use OCA\OpenRegister\BackgroundJob\FlowRunRetentionJob;
+use OCA\OpenRegister\BackgroundJob\Support\FlowRunRetentionServices;
+use OCA\OpenRegister\BackgroundJob\Support\FlowRunRetentionStores;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRunMapper;
@@ -69,11 +71,11 @@ class FlowRunRetentionJobTest extends TestCase {
 
 		return new FlowRunRetentionJob(
 			$this->createMock(ITimeFactory::class),
-			$runs,
-			$this->createMock(FlowRunStepMapper::class),
-			$flows,
-			$config,
-			new \Psr\Log\NullLogger()
+			new FlowRunRetentionServices(
+				new FlowRunRetentionStores($runs, $this->createMock(FlowRunStepMapper::class), $flows),
+				$config,
+				new \Psr\Log\NullLogger()
+			)
 		);
 	}//end job()
 

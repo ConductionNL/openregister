@@ -175,7 +175,6 @@ class RenderObjectIntegrationTest extends TestCase {
 			$this->testSchema,
 			$data,
 			null,
-			null,
 			false,
 			false
 		);
@@ -191,7 +190,6 @@ class RenderObjectIntegrationTest extends TestCase {
 			$this->testRegister,
 			$schema,
 			$data,
-			null,
 			null,
 			false,
 			false
@@ -1751,7 +1749,6 @@ class RenderObjectIntegrationTest extends TestCase {
 			$parentSchema,
 			['title' => 'phpunit-inv-parent-obj-' . uniqid()],
 			null,
-			null,
 			false,
 			false
 		);
@@ -1762,7 +1759,6 @@ class RenderObjectIntegrationTest extends TestCase {
 			$this->testRegister,
 			$childSchema,
 			['name' => 'Child Object', 'parent' => $parent->getUuid()],
-			null,
 			null,
 			false,
 			false

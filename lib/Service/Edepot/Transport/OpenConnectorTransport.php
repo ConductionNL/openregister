@@ -35,7 +35,7 @@ use RuntimeException;
  *
  * @psalm-suppress UnusedClass
  */
-class OpenConnectorTransport extends HttpSipTransport {
+class OpenConnectorTransport extends HttpSipTransport implements OpenConnectorTransportInterface {
 
 	use SipTransportSteps;
 	/**

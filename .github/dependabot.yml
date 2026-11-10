@@ -4,7 +4,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    target-branch: "development"
     open-pull-requests-limit: 10
     # HELD BACK DELIBERATELY, not out of caution. Each of these is blocked by a
     # package we do not control, and dependabot cannot see that, so it proposes
@@ -42,6 +41,11 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "@babel/preset-env"
         update-types: ["version-update:semver-major"]
+      # apexcharts 5 and later ship under the proprietary "ApexCharts License"
+      # (paid above a revenue threshold our users exceed); 4.x is the last MIT
+      # line, and the one @conduction/nextcloud-vue bundles.
+      - dependency-name: "apexcharts"
+        versions: [">=5.0.0"]
     cooldown:
       default-days: 1
       include:
@@ -66,7 +70,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    target-branch: "development"
     open-pull-requests-limit: 10
     cooldown:
       default-days: 2

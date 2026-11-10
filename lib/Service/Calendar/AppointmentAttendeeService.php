@@ -33,7 +33,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Calendar;
 
 use DateTime;
-use DateTimeInterface;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -44,7 +43,7 @@ use OCA\OpenRegister\Service\WriteCause;
  *
  * @spec openspec/specs/calendar-provider/spec.md#requirement-schema-calendar-configuration
  */
-class AppointmentAttendeeService {
+class AppointmentAttendeeService implements AppointmentAttendeeServiceInterface {
 
 	/**
 	 * The object property the answers are stored under.
@@ -147,28 +146,93 @@ class AppointmentAttendeeService {
 	 * @param string $attendee The invitee identifier, as the object stores it.
 	 * @param string $status One of STATUSES.
 	 * @param string|null $respondedBy The principal that submitted the answer.
-	 * @param DateTimeInterface|null $respondedAt When the answer arrived; defaults to now.
 	 *
 	 * @return array<int, array<string, mixed>> The full response list after the write.
 	 *
 	 * @throws InvalidArgumentException When the status is not an answer, or the object is unknown.
 	 *
 	 * @spec openspec/specs/calendar-provider/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
-	public function recordResponse(
-		string $objectUuid,
-		string $attendee,
-		string $status,
-		?string $respondedBy = null,
-		?DateTimeInterface $respondedAt = null,
-	): array {
-		$attendee = trim($attendee);
+	public function recordResponse(string $objectUuid, string $attendee, string $status, ?string $respondedBy = null): array {
+		$response = new AttendeeResponse(objectUuid: $objectUuid, attendee: $attendee, status: $status, respondedBy: $respondedBy);
+		return $this->recordAttendeeResponse(response: $response);
+	}//end recordResponse()
+
+	/**
+	 * Record one invitee's answer on the object.
+	 *
+	 * The write goes through the ordinary object save path with RBAC on, so a
+	 * caller who may not write the object cannot record an answer on it.
+	 * A second answer from the same invitee replaces the first.
+	 *
+	 * @param AttendeeResponse $response The answer as submitted.
+	 *
+	 * @return array<int, array<string, mixed>> The full response list after the write.
+	 *
+	 * @throws InvalidArgumentException When the status is not an answer, or the object is unknown.
+	 *
+	 * @spec openspec/specs/calendar-provider/spec.md
+	 */
+	public function recordAttendeeResponse(AttendeeResponse $response): array {
+		$attendee = trim($response->attendee);
 		if ($attendee === '') {
 			throw new InvalidArgumentException('An attendee response must name the attendee.');
 		}
 
+		$status = $this->answerStatus(status: $response->status);
+		$object = $this->answeredObject(objectUuid: $response->objectUuid);
+		$data = $object->getObject();
+		$data[self::RESPONSES_PROPERTY] = $this->replaceResponse(
+			responses: $this->normalise(value: ($data[self::RESPONSES_PROPERTY] ?? null)),
+			response: [
+				'attendee' => $attendee,
+				'status' => $status,
+				'respondedBy' => $response->respondedBy,
+				'respondedAt' => (new DateTime())->format('c'),
+			]
+		);
+		$this->objects->saveObject(
+			object: $data,
+			uuid: (string)$object->getUuid(),
+			register: $object->getRegister(),
+			schema: $object->getSchema()
+		);
+
+		return $data[self::RESPONSES_PROPERTY];
+	}//end recordAttendeeResponse()
+
+	/**
+	 * The object an answer is recorded on.
+	 *
+	 * @param string $objectUuid The object the appointment was created from.
+	 *
+	 * @return ObjectEntity The object.
+	 *
+	 * @throws InvalidArgumentException When the object is unknown.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
+	 */
+	private function answeredObject(string $objectUuid): ObjectEntity {
+		$object = WriteCause::asLookup(fn () => $this->objects->find(id: $objectUuid));
+		if ($object === null) {
+			throw new InvalidArgumentException(
+				sprintf("No object '%s' to record an attendee response on.", $objectUuid)
+			);
+		}
+
+		return $object;
+	}//end answeredObject()
+
+	/**
+	 * The normalised answer, refusing anything that is not one of STATUSES.
+	 *
+	 * @param string $status The submitted answer.
+	 *
+	 * @return string The upper-cased, trimmed answer.
+	 *
+	 * @throws InvalidArgumentException When the status is not an answer.
+	 */
+	private function answerStatus(string $status): string {
 		$status = strtoupper(trim($status));
 		if (in_array($status, self::STATUSES, true) === false) {
 			throw new InvalidArgumentException(
@@ -180,48 +244,33 @@ class AppointmentAttendeeService {
 			);
 		}
 
-		$object = WriteCause::asLookup(fn () => $this->objects->find(id: $objectUuid));
-		if ($object === null) {
-			throw new InvalidArgumentException(
-				sprintf("No object '%s' to record an attendee response on.", $objectUuid)
-			);
-		}
+		return $status;
+	}//end answerStatus()
 
-		$moment = $respondedAt;
-		if ($moment === null) {
-			$moment = new DateTime();
-		}
+	/**
+	 * Drop the invitee's earlier answer, when any, and append the new one.
+	 *
+	 * @param array<int, array<string, mixed>> $responses The stored responses.
+	 * @param array<string, mixed>             $response  The new answer.
+	 *
+	 * @return array<int, array<string, mixed>> The responses after the answer.
+	 */
+	private function replaceResponse(array $responses, array $response): array {
+		$attendee = $response['attendee'];
 
-		$data = $object->getObject();
-		$responses = $this->normalise(value: ($data[self::RESPONSES_PROPERTY] ?? null));
-
-		$responses = array_values(
+		$kept = array_values(
 			array_filter(
 				$responses,
-				static function (array $response) use ($attendee): bool {
-					return ($response['attendee'] ?? null) !== $attendee;
+				static function (array $stored) use ($attendee): bool {
+					return ($stored['attendee'] ?? null) !== $attendee;
 				}
 			)
 		);
 
-		$responses[] = [
-			'attendee' => $attendee,
-			'status' => $status,
-			'respondedBy' => $respondedBy,
-			'respondedAt' => $moment->format('c'),
-		];
+		$kept[] = $response;
 
-		$data[self::RESPONSES_PROPERTY] = $responses;
-
-		$this->objects->saveObject(
-			object: $data,
-			uuid: (string)$object->getUuid(),
-			register: $object->getRegister(),
-			schema: $object->getSchema()
-		);
-
-		return $responses;
-	}//end recordResponse()
+		return $kept;
+	}//end replaceResponse()
 
 	/**
 	 * The answers recorded on an object, as stored.
@@ -301,18 +350,28 @@ class AppointmentAttendeeService {
 
 		$responses = [];
 		foreach ($value as $entry) {
-			if (is_array($entry) === false) {
-				continue;
+			if ($this->isReadableResponse(entry: $entry) === true) {
+				$responses[] = $entry;
 			}
-
-			$attendee = ($entry['attendee'] ?? null);
-			if (is_string($attendee) === false || trim($attendee) === '') {
-				continue;
-			}
-
-			$responses[] = $entry;
 		}
 
 		return $responses;
 	}//end normalise()
+
+	/**
+	 * Whether a stored entry is a response naming an attendee.
+	 *
+	 * @param mixed $entry The stored entry.
+	 *
+	 * @return bool True when the entry is readable.
+	 */
+	private function isReadableResponse(mixed $entry): bool {
+		if (is_array($entry) === false) {
+			return false;
+		}
+
+		$attendee = ($entry['attendee'] ?? null);
+
+		return (is_string($attendee) === true && trim($attendee) !== '');
+	}//end isReadableResponse()
 }//end class

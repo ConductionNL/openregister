@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\RuleRunSummaryMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
+use OCA\OpenRegister\Service\Rules\FlowRuleDescriptors;
 use OCA\OpenRegister\Service\Rules\RuleInventoryService;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use PHPUnit\Framework\TestCase;
@@ -62,11 +63,10 @@ class RuleInventoryServiceTest extends TestCase {
 		);
 
 		return new RuleInventoryService(
-			triggers: $triggers,
 			summaries: $summaryMapper,
 			propertyCalculations: new PropertyCalculations(),
 			vocabulary: new RuleVocabulary(),
-			published: $published
+			flows: new FlowRuleDescriptors(triggers: $triggers, published: $published)
 		);
 
 	}//end service()

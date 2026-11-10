@@ -125,32 +125,64 @@ class SaveObjectDeepTest extends TestCase {
 		$permissionHandler = $this->createMock(PermissionHandler::class);
 
 		$this->handler = new SaveObject(
-			$this->objectEntityMapper,
-			$this->unifiedObjectMapper,
-			$this->metaHydrationHandler,
-			$this->filePropertyHandler,
-			$this->createMock(LinkedEntityPropertyHandler::class),
-			$this->userSession,
-			$this->auditTrailMapper,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->urlGenerator,
-			$this->organisationService,
-			$this->cacheHandler,
-			$this->settingsService,
-			$this->propertyRbacHandler,
-			$this->createMock(ComputedFieldHandler::class),
-			$this->createMock(TranslationHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->logger,
-			$this->createMock(TmloService::class),
-			$this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			$permissionHandler
+			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
+				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
+					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
+						objectEntityMapper: $this->objectEntityMapper,
+						unifiedObjectMapper: $this->unifiedObjectMapper,
+						schemaMapper: $this->schemaMapper,
+						registerMapper: $this->registerMapper
+					),
+					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
+						auditTrailMapper: $this->auditTrailMapper,
+						settingsService: $this->settingsService,
+						tmloService: $this->createMock(TmloService::class)
+					),
+					runtime: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime(
+						cacheHandler: $this->cacheHandler
+					)
+				),
+				handlers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers(
+					properties: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers(
+						metaHydrationHandler: $this->metaHydrationHandler,
+						filePropertyHandler: $this->filePropertyHandler,
+						linkedEntityHandler: $this->createMock(LinkedEntityPropertyHandler::class),
+						computedFieldHandler: $this->createMock(ComputedFieldHandler::class)
+					),
+					values: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers(
+						translationHandler: $this->createMock(TranslationHandler::class),
+						translationProjectionService: $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+						translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class)
+					)
+				),
+				platform: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform(
+					userSession: $this->userSession,
+					urlGenerator: $this->urlGenerator,
+					logger: $this->logger
+				),
+				tenancy: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy(
+					organisationService: $this->organisationService
+				)
+			),
+			propertyRbacHandler: $this->propertyRbacHandler,
+			permissionHandler: $permissionHandler,
+			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class)
 		);
 	}
 
 	private function invokePrivateMethod(string $methodName, array $args = []) {
+		if (in_array($methodName, EmptyValueCalls::METHODS, true) === true) {
+			return EmptyValueCalls::{$methodName}($this->handler, $args);
+		}
+
+		if (in_array($methodName, RelationCalls::METHODS, true) === true) {
+			return RelationCalls::{$methodName}($this->handler, $args);
+		}
+
+		if (in_array($methodName, PropertyDefaultsCalls::METHODS, true) === true) {
+			return PropertyDefaultsCalls::{$methodName}($this->handler, $args);
+		}
+
 		$reflection = new ReflectionMethod(SaveObject::class, $methodName);
 		$reflection->setAccessible(true);
 		return $reflection->invoke($this->handler, ...$args);

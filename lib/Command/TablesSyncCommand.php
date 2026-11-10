@@ -31,8 +31,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
-use OCA\OpenRegister\Service\ObjectSource\TablesSchemaSyncService;
-use OCA\OpenRegister\Service\ObjectSource\TablesTableReader;
+use OCA\OpenRegister\Service\ObjectSource\TablesCatalogueInterface;
+use OCA\OpenRegister\Service\ObjectSource\TablesSchemaReconcilerInterface;
 use OCP\IGroupManager;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -46,15 +46,15 @@ class TablesSyncCommand extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param TablesTableReader $reader Guarded gateway to Tables services.
-	 * @param TablesSchemaSyncService $syncService Schema reconcile logic.
+	 * @param TablesCatalogueInterface $reader Guarded gateway to Tables services.
+	 * @param TablesSchemaReconcilerInterface $syncService Schema reconcile logic.
 	 * @param IGroupManager $groupManager Admin-user enumeration.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly TablesTableReader $reader,
-		private readonly TablesSchemaSyncService $syncService,
+		private readonly TablesCatalogueInterface $reader,
+		private readonly TablesSchemaReconcilerInterface $syncService,
 		private readonly IGroupManager $groupManager,
 	) {
 		parent::__construct();

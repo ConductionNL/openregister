@@ -25,8 +25,6 @@ namespace OCA\OpenRegister\Files\Service\File;
 use OCA\OpenRegister\Event\FileRestrictionAdmitEvent;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Files\Node;
-use OCP\IGroupManager;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -41,7 +39,7 @@ use Throwable;
  *
  * @spec openspec/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
  */
-class FileRestrictionGuard {
+class FileRestrictionGuard implements FileRestrictionGuardInterface {
 
 	/**
 	 * Verdicts already given in this request, keyed by "uid:fileId".
@@ -53,16 +51,14 @@ class FileRestrictionGuard {
 	/**
 	 * Constructor.
 	 *
-	 * @param FileRestrictionStore $store        The rows.
-	 * @param IUserSession         $userSession  The caller.
-	 * @param IGroupManager        $groupManager The caller's groups.
-	 * @param IEventDispatcher     $dispatcher   Asks apps to admit a caller who is not listed.
-	 * @param LoggerInterface      $logger       Where a failed lookup is noted.
+	 * @param FileRestrictionStore  $store      The rows.
+	 * @param FileRestrictionCaller $caller     The session and group manager of the caller.
+	 * @param IEventDispatcher      $dispatcher Asks apps to admit a caller who is not listed.
+	 * @param LoggerInterface       $logger     Where a failed lookup is noted.
 	 */
 	public function __construct(
 		private readonly FileRestrictionStore $store,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		private readonly FileRestrictionCaller $caller,
 		private readonly IEventDispatcher $dispatcher,
 		private readonly LoggerInterface $logger,
 	) {
@@ -96,7 +92,7 @@ class FileRestrictionGuard {
 			return [];
 		}
 
-		$userId = $this->userSession->getUser()?->getUID();
+		$userId = $this->caller->userSession->getUser()?->getUID();
 		$memoKey = static fn (int $fileId): string => ($userId ?? '') . ':' . $fileId;
 
 		$verdicts = [];
@@ -134,7 +130,9 @@ class FileRestrictionGuard {
 			$verdict = true;
 			if ($restriction !== null) {
 				$groups ??= $this->callerGroups();
-				$verdict = $this->admits(fileId: $fileId, restriction: $restriction, userId: $userId, groups: $groups);
+				// An anonymous caller is never admitted to a restricted file.
+				$verdict = ($userId !== null && $userId !== '')
+					&& $this->admits(question: new FileRestrictionAdmitEvent(fileId: $fileId, userId: $userId, restriction: $restriction), groups: $groups);
 			}
 
 			$verdicts[$fileId] = $verdict;
@@ -205,20 +203,19 @@ class FileRestrictionGuard {
 	}//end forget()
 
 	/**
-	 * Whether the caller is admitted to one restricted file.
+	 * Whether a named caller is admitted to one restricted file.
 	 *
-	 * @param int                  $fileId      The file.
-	 * @param array<string, mixed> $restriction The stored restriction.
-	 * @param string|null          $userId      The caller, null when anonymous.
-	 * @param list<string>         $groups      The caller's groups.
+	 * Listed users and groups and administrators are admitted here; anyone
+	 * else only when an app's listener admits them on the same question.
+	 *
+	 * @param FileRestrictionAdmitEvent $question The file, the caller and the stored restriction.
+	 * @param list<string>              $groups   The caller's groups.
 	 *
 	 * @return bool True when admitted.
 	 */
-	private function admits(int $fileId, array $restriction, ?string $userId, array $groups): bool {
-		if ($userId === null || $userId === '') {
-			return false;
-		}
-
+	private function admits(FileRestrictionAdmitEvent $question, array $groups): bool {
+		$userId = $question->getUserId();
+		$restriction = $question->getRestriction();
 		if (in_array('admin', $groups, true) === true
 			|| in_array($userId, (array)($restriction['users'] ?? []), true) === true
 			|| array_intersect($groups, (array)($restriction['groups'] ?? [])) !== []
@@ -227,14 +224,13 @@ class FileRestrictionGuard {
 		}
 
 		try {
-			$event = new FileRestrictionAdmitEvent(fileId: $fileId, userId: $userId, restriction: $restriction);
-			$this->dispatcher->dispatchTyped($event);
+			$this->dispatcher->dispatchTyped($question);
 
-			return $event->isAdmitted();
+			return $question->isAdmitted();
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[FileRestrictionGuard] An admit listener failed, refusing the file',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId, 'error' => $e->getMessage()]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $question->getFileId(), 'error' => $e->getMessage()]
 			);
 
 			return false;
@@ -247,11 +243,11 @@ class FileRestrictionGuard {
 	 * @return list<string> The groups.
 	 */
 	private function callerGroups(): array {
-		$user = $this->userSession->getUser();
+		$user = $this->caller->userSession->getUser();
 		if ($user === null) {
 			return [];
 		}
 
-		return array_values(array_map('strval', $this->groupManager->getUserGroupIds($user)));
+		return array_values(array_map('strval', $this->caller->groupManager->getUserGroupIds($user)));
 	}//end callerGroups()
 }//end class

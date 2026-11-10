@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\Deletion;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -59,7 +59,7 @@ class DestroyRightService {
 	/**
 	 * Wire the RBAC collaborators.
 	 *
-	 * @param PermissionHandler $permissionHandler Canonical RBAC verdict.
+	 * @param PermissionHandlerInterface $permissionHandler Canonical RBAC verdict.
 	 * @param IUserSession      $userSession       The calling principal.
 	 * @param IGroupManager     $groupManager      Administrator bypass.
 	 * @param LoggerInterface   $logger            PSR logger.
@@ -67,7 +67,7 @@ class DestroyRightService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly PermissionHandler $permissionHandler,
+		private readonly PermissionHandlerInterface $permissionHandler,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
@@ -119,7 +119,7 @@ class DestroyRightService {
 			);
 		}
 
-		if ($this->holdsRight(schema: $schema, object: $object, userId: $user->getUID()) === false) {
+		if ($this->holdsRight(schema: $schema, object: $object) === false) {
 			return new DestructionRefusedException(
 				rule: 'destroy-right-missing',
 				reason: 'User ' . $user->getUID() . ' does not hold the destroy right on schema '
@@ -170,15 +170,21 @@ class DestroyRightService {
 	}//end declaredGroups()
 
 	/**
-	 * Whether the caller holds the declared right.
+	 * Whether the session's caller holds the declared right.
+	 *
+	 * The caller is read from the session; no caller holds no right.
 	 *
 	 * @param Schema       $schema The schema.
 	 * @param ObjectEntity $object The object.
-	 * @param string       $userId The caller.
 	 *
 	 * @return bool True when the caller may destroy.
 	 */
-	private function holdsRight(Schema $schema, ObjectEntity $object, string $userId): bool {
+	private function holdsRight(Schema $schema, ObjectEntity $object): bool {
+		$userId = $this->userSession->getUser()?->getUID();
+		if ($userId === null) {
+			return false;
+		}
+
 		try {
 			return $this->permissionHandler->hasPermission(
 				schema: $schema,

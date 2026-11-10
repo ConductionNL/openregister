@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\RuleRunSummary\RuleEvaluation;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -43,7 +44,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/specs/flow-engine/spec.md
  */
-class RuleRunSummaryMapper extends QBMapper {
+class RuleRunSummaryMapper extends QBMapper implements RuleRunSummaryMapperInterface {
 
 	/**
 	 * How long a repeat of the same verdict may go unwritten.
@@ -183,8 +184,48 @@ class RuleRunSummaryMapper extends QBMapper {
 		string $schemaSlug,
 		string $verdict,
 		DateTime $moment,
-		?string $error = null,
+		string|null $error = null,
 	): RuleRunSummary {
+		$summary = $this->findOrStart(ruleId: $ruleId, schemaSlug: $schemaSlug);
+		$evaluation = new RuleEvaluation(verdict: $verdict, moment: $moment, error: $error);
+		if ($this->worthWriting(summary: $summary, evaluation: $evaluation) === false) {
+			return $summary;
+		}
+
+		$summary->setSchemaSlug($schemaSlug);
+		return $this->persist(summary: $this->applyEvaluation(summary: $summary, evaluation: $evaluation));
+
+	}//end record()
+
+	/**
+	 * Write an evaluation onto a summary; an error also sets the error pair.
+	 *
+	 * @param RuleRunSummary $summary    The summary.
+	 * @param RuleEvaluation $evaluation The evaluation.
+	 *
+	 * @return RuleRunSummary The same summary.
+	 */
+	private function applyEvaluation(RuleRunSummary $summary, RuleEvaluation $evaluation): RuleRunSummary {
+		$summary->setLastRun($evaluation->moment);
+		$summary->setLastVerdict($evaluation->verdict);
+
+		if ($evaluation->isError() === true) {
+			$summary->setLastError($evaluation->error);
+			$summary->setLastErrorAt($evaluation->moment);
+		}
+
+		return $summary;
+	}//end applyEvaluation()
+
+	/**
+	 * The stored summary of a rule, or a new unsaved one for its first run.
+	 *
+	 * @param string $ruleId     The rule id.
+	 * @param string $schemaSlug The schema slug a new summary starts with.
+	 *
+	 * @return RuleRunSummary
+	 */
+	private function findOrStart(string $ruleId, string $schemaSlug): RuleRunSummary {
 		$summary = $this->findByRule(ruleId: $ruleId);
 		if ($summary === null) {
 			$summary = new RuleRunSummary();
@@ -192,35 +233,29 @@ class RuleRunSummaryMapper extends QBMapper {
 			$summary->setSchemaSlug($schemaSlug);
 		}
 
-		$isError = ($error !== null && $error !== '');
-		if ($this->worthWriting(summary: $summary, verdict: $verdict, moment: $moment, isError: $isError) === false) {
-			return $summary;
-		}
+		return $summary;
+	}//end findOrStart()
 
-		$summary->setSchemaSlug($schemaSlug);
-		$summary->setLastRun($moment);
-		$summary->setLastVerdict($verdict);
-
-		if ($isError === true) {
-			$summary->setLastError($error);
-			$summary->setLastErrorAt($moment);
-		}
-
+	/**
+	 * Insert a summary that has no id yet, update one that has.
+	 *
+	 * @param RuleRunSummary $summary The summary.
+	 *
+	 * @return RuleRunSummary The stored summary.
+	 */
+	private function persist(RuleRunSummary $summary): RuleRunSummary {
 		if ($summary->getId() === null) {
 			return $this->insert(entity: $summary);
 		}
 
 		return $this->update(entity: $summary);
-
-	}//end record()
+	}//end persist()
 
 	/**
 	 * Whether this evaluation changes anything an administrator reads.
 	 *
-	 * @param RuleRunSummary $summary The summary as it stands.
-	 * @param string $verdict The verdict reached.
-	 * @param DateTime $moment When the evaluation happened.
-	 * @param bool $isError Whether the verdict carries an error message.
+	 * @param RuleRunSummary $summary    The summary as it stands.
+	 * @param RuleEvaluation $evaluation The evaluation.
 	 *
 	 * @return bool True when the row should be written.
 	 *
@@ -228,18 +263,14 @@ class RuleRunSummaryMapper extends QBMapper {
 	 * writes may be dropped, and a rule about dropping writes that can only be
 	 * exercised through a live database is a rule nobody checks.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag distinguishes the one case
-	 *   that always writes from the one that may be throttled; splitting it would be two
-	 *   methods with the same body and one line different.
-	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function worthWriting(RuleRunSummary $summary, string $verdict, DateTime $moment, bool $isError): bool {
-		if ($summary->getId() === null || $isError === true) {
+	public function worthWriting(RuleRunSummary $summary, RuleEvaluation $evaluation): bool {
+		if ($summary->getId() === null || $evaluation->isError() === true) {
 			return true;
 		}
 
-		if ((string)$summary->getLastVerdict() !== $verdict) {
+		if ((string)$summary->getLastVerdict() !== $evaluation->verdict) {
 			return true;
 		}
 
@@ -248,7 +279,7 @@ class RuleRunSummaryMapper extends QBMapper {
 			return true;
 		}
 
-		return (($moment->getTimestamp() - $lastRun->getTimestamp()) >= self::THROTTLE_SECONDS);
+		return (($evaluation->moment->getTimestamp() - $lastRun->getTimestamp()) >= self::THROTTLE_SECONDS);
 
 	}//end worthWriting()
 }//end class

@@ -103,46 +103,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 			</template>
 
 			<template #row-actions="{ row }">
-				<NcActions>
-					<template #icon>
-						<DotsHorizontal :size="20" />
-					</template>
-					<NcActionButton closeAfterClick @click="viewDetails(row)">
-						<template #icon>
-							<Eye :size="20" />
-						</template>
-						{{ t('openregister', 'View Details') }}
-					</NcActionButton>
-					<NcActionButton
-						v-if="hasChanges(row)"
-						closeAfterClick
-						@click="viewChanges(row)">
-						<template #icon>
-							<CompareHorizontal :size="20" />
-						</template>
-						{{ t('openregister', 'View Changes') }}
-					</NcActionButton>
-					<NcActionButton closeAfterClick @click="copyData(row)">
-						<template #icon>
-							<Check
-								v-if="copyStates[row.id]"
-								:size="20"
-								class="copySuccessIcon" />
-							<ContentCopy v-else :size="20" />
-						</template>
-						{{
-							copyStates[row.id]
-								? t('openregister', 'Copied!')
-								: t('openregister', 'Copy Data')
-						}}
-					</NcActionButton>
-					<NcActionButton closeAfterClick @click="deleteAuditTrail(row)">
-						<template #icon>
-							<Delete :size="20" />
-						</template>
-						{{ t('openregister', 'Delete') }}
-					</NcActionButton>
-				</NcActions>
+				<ActionMenu :actions="auditTrailActions(row)" />
 			</template>
 
 			<template #empty>
@@ -171,7 +132,6 @@ import { showError, showSuccess } from '@nextcloud/dialogs'
  */
 import {
 	NcActionButton,
-	NcActions,
 	NcAppContent,
 	NcDateTime,
 	NcEmptyContent,
@@ -180,21 +140,23 @@ import Check from 'vue-material-design-icons/Check.vue'
 import CompareHorizontal from 'vue-material-design-icons/CompareHorizontal.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
 import eventBus from '../../eventBus.js'
 import { AUDIT_SORT_FIELDS, headerSortOf } from '../../services/listSort.js'
+import { storePaging } from '../storePaging.js'
+import { recountOnChange } from './recountOnChange.js'
 
 export default {
 	name: 'AuditTrailIndex',
 	components: {
+		ActionMenu,
 		NcAppContent,
 		NcEmptyContent,
-		NcActions,
 		NcActionButton,
 		NcDateTime,
 		CnIndexPage,
@@ -205,11 +167,15 @@ export default {
 		Eye,
 		Plus,
 		Pencil,
-		CompareHorizontal,
-		ContentCopy,
-		Check,
-		DotsHorizontal,
 	},
+
+	mixins: [
+		storePaging({
+			fetch: (options) => auditTrailStore.fetchAuditTrails(options),
+			limit: () => auditTrailStore.auditTrailPagination.limit,
+			selection: 'selectedAuditTrails',
+		}),
+	],
 
 	data() {
 		return {
@@ -312,18 +278,10 @@ export default {
 	},
 
 	watch: {
-		paginatedAuditTrails: {
-			/**
-			 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-			 */
-			handler() {
-				this.$nextTick(() => {
-					this.updateCounts()
-				})
-			},
-
-			deep: false,
-		},
+		/**
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+		 */
+		paginatedAuditTrails: recountOnChange,
 	},
 
 	/**
@@ -364,6 +322,44 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * The row menu of an audit trail.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} row The audit trail
+		 * @return {Array<object>} The ActionMenu entries
+		 */
+		auditTrailActions(row) {
+			const copied = this.copyStates[row.id]
+			return [
+				{
+					label: t('openregister', 'View Details'),
+					icon: Eye,
+					run: () => this.viewDetails(row),
+				},
+				{
+					label: t('openregister', 'View Changes'),
+					icon: CompareHorizontal,
+					run: () => this.viewChanges(row),
+					hidden: !this.hasChanges(row),
+				},
+				{
+					label: copied
+						? t('openregister', 'Copied!')
+						: t('openregister', 'Copy Data'),
+
+					icon: copied ? Check : ContentCopy,
+					iconClass: copied ? 'copySuccessIcon' : undefined,
+					run: () => this.copyData(row),
+				},
+				{
+					label: t('openregister', 'Delete'),
+					icon: Delete,
+					run: () => this.deleteAuditTrail(row),
+				},
+			]
+		},
+
 		/**
 		 * Load audit trails from API
 		 *
@@ -502,18 +498,7 @@ export default {
 				const data = JSON.stringify(auditTrail, null, 2)
 				await navigator.clipboard.writeText(data)
 
-				// Set successful copy state
-				this.copyStates[auditTrail.id] = true
-
-				// Show success notification with enhanced styling
-				showSuccess(
-					t('openregister', 'Audit trail data copied to clipboard'),
-				)
-
-				// Reset copy state after 2 seconds
-				setTimeout(() => {
-					this.copyStates[auditTrail.id] = false
-				}, 2000)
+				this.markCopied(auditTrail)
 			} catch (error) {
 				console.error('Error copying to clipboard:', error)
 				// Fallback for older browsers or when clipboard API is not available
@@ -525,22 +510,32 @@ export default {
 					document.execCommand('copy')
 					document.body.removeChild(textArea)
 
-					// Set successful copy state for fallback method too
-					this.copyStates[auditTrail.id] = true
-
-					showSuccess(
-						t('openregister', 'Audit trail data copied to clipboard'),
-					)
-
-					// Reset copy state after 2 seconds
-					setTimeout(() => {
-						this.copyStates[auditTrail.id] = false
-					}, 2000)
+					// Same success state for the fallback method
+					this.markCopied(auditTrail)
 				} catch (fallbackError) {
 					console.error('Fallback copy failed:', fallbackError)
 					showError(t('openregister', 'Failed to copy data to clipboard'))
 				}
 			}
+		},
+
+		/**
+		 * Show a successful copy: flag the row's copy icon, tell the user, and
+		 * clear the flag again after 2 seconds.
+		 *
+		 * @param {object} auditTrail The audit trail that was copied
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+		 */
+		markCopied(auditTrail) {
+			this.copyStates[auditTrail.id] = true
+
+			showSuccess(t('openregister', 'Audit trail data copied to clipboard'))
+
+			setTimeout(() => {
+				this.copyStates[auditTrail.id] = false
+			}, 2000)
 		},
 
 		/**
@@ -692,48 +687,6 @@ export default {
 				})
 			} catch {
 				showError(t('openregister', 'Error loading audit trails'))
-			}
-		},
-
-		/**
-		 * Handle page change from pagination component
-		 *
-		 * @param {number} page - The page number to change to
-		 * @return {Promise<void>}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		async onPageChanged(page) {
-			try {
-				await auditTrailStore.fetchAuditTrails({
-					page,
-					limit: auditTrailStore.auditTrailPagination.limit,
-				})
-				// Clear selection when page changes
-				this.selectedAuditTrails = []
-			} catch (error) {
-				console.error('Error loading page:', error)
-			}
-		},
-
-		/**
-		 * Handle page size change from pagination component
-		 *
-		 * @param {number} pageSize - The new page size
-		 * @return {Promise<void>}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		async onPageSizeChanged(pageSize) {
-			try {
-				await auditTrailStore.fetchAuditTrails({
-					page: 1,
-					limit: pageSize,
-				})
-				// Clear selection when page size changes
-				this.selectedAuditTrails = []
-			} catch (error) {
-				console.error('Error changing page size:', error)
 			}
 		},
 

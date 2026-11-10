@@ -4,33 +4,26 @@
 			<!-- Header -->
 			<FilterToggleHeader
 				:title="t('openregister', 'Files')"
-				:description="t('openregister', 'Manage and monitor file text extraction status')"
+				:description="
+					t(
+						'openregister',
+						'Manage and monitor file text extraction status',
+					)
+				"
 				:sidebarOpen="sidebarOpen"
 				@toggle="toggleSidebar" />
 
 			<!-- Actions Bar -->
-			<div class="viewActionsBar">
-				<div class="viewInfo">
-					<span v-if="filesList.length" class="viewTotalCount">
-						{{
-							t('openregister', 'Showing {showing} of {total} files', {
+			<ListActionsBar
+				:summary="
+					filesList.length
+						? t('openregister', 'Showing {showing} of {total} files', {
 								showing: filesList.length,
 								total: totalFiles,
 							})
-						}}
-					</span>
-				</div>
-				<div class="viewActions">
-					<NcActions :forceName="true" :inline="1" menuName="Actions">
-						<NcActionButton closeAfterClick @click="refreshFiles">
-							<template #icon>
-								<Refresh :size="20" />
-							</template>
-							{{ t('openregister', 'Refresh') }}
-						</NcActionButton>
-					</NcActions>
-				</div>
-			</div>
+						: ''
+				"
+				:actions="[refreshAction(refreshFiles)]" />
 
 			<!-- Files Table -->
 			<div class="tableContainer">
@@ -50,78 +43,23 @@
 				<table v-else class="filesTable">
 					<thead>
 						<tr>
-							<th
-								scope="col"
-								class="column-filename sortable"
-								@click="toggleSort('fileName')">
-								{{ t('openregister', 'File Name') }}
-								<span
-									v-if="sortField === 'fileName'"
-									class="sort-indicator"
-									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
-								>
-							</th>
-							<th scope="col" class="column-mimetype">
-								{{ t('openregister', 'Type') }}
-							</th>
-							<th
-								scope="col"
-								class="column-size sortable"
-								@click="toggleSort('fileSize')">
-								{{ t('openregister', 'Size') }}
-								<span
-									v-if="sortField === 'fileSize'"
-									class="sort-indicator"
-									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
-								>
-							</th>
-							<th
-								scope="col"
-								class="column-chunks sortable"
-								@click="toggleSort('chunkCount')">
-								{{ t('openregister', 'Chunks') }}
-								<span
-									v-if="sortField === 'chunkCount'"
-									class="sort-indicator"
-									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
-								>
-							</th>
-							<th
-								scope="col"
-								class="column-entities sortable"
-								@click="toggleSort('entityCount')">
-								{{ t('openregister', 'Entities') }}
-								<span
-									v-if="sortField === 'entityCount'"
-									class="sort-indicator"
-									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
-								>
-							</th>
-							<th
-								scope="col"
-								class="column-risk sortable"
-								@click="toggleSort('riskLevel')">
-								{{ t('openregister', 'Risk Level') }}
-								<span
-									v-if="sortField === 'riskLevel'"
-									class="sort-indicator"
-									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
-								>
-							</th>
-							<th
-								scope="col"
-								class="column-extracted sortable"
-								@click="toggleSort('extractedAt')">
-								{{ t('openregister', 'Extracted At') }}
-								<span
-									v-if="sortField === 'extractedAt'"
-									class="sort-indicator"
-									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
-								>
-							</th>
-							<th scope="col" class="column-actions">
-								{{ t('openregister', 'Actions') }}
-							</th>
+							<template v-for="column in headerColumns" :key="column.key">
+								<th
+									v-if="column.sort"
+									scope="col"
+									:class="'column-' + column.key + ' sortable'"
+									@click="toggleSort(column.sort)">
+									{{ column.label }}
+									<span
+										v-if="sortField === column.sort"
+										class="sort-indicator"
+										>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
+									>
+								</th>
+								<th v-else scope="col" :class="'column-' + column.key">
+									{{ column.label }}
+								</th>
+							</template>
 						</tr>
 					</thead>
 					<tbody>
@@ -161,26 +99,7 @@
 								{{ formatDate(file.extractedAt) }}
 							</td>
 							<td class="column-actions">
-								<NcActions>
-									<NcActionButton
-										v-if="file.extractionStatus === 'failed'"
-										closeAfterClick
-										@click="retryExtraction(file.id)">
-										<template #icon>
-											<Refresh :size="20" />
-										</template>
-										{{ t('openregister', 'Retry') }}
-									</NcActionButton>
-									<NcActionButton
-										v-if="file.extractionError"
-										closeAfterClick
-										@click="showError(file)">
-										<template #icon>
-											<AlertCircleOutline :size="20" />
-										</template>
-										{{ t('openregister', 'View Error') }}
-									</NcActionButton>
-								</NcActions>
+								<ActionMenu :actions="fileActions(file)" />
 							</td>
 						</tr>
 					</tbody>
@@ -214,19 +133,18 @@ import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import {
-	NcActionButton,
-	NcActions,
-	NcAppContent,
-	NcEmptyContent,
-	NcLoadingIcon,
-} from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
-import FilterToggleHeader from '../../components/shared/FilterToggleHeader.vue'
-import OffsetPager from '../../components/shared/OffsetPager.vue'
 import FilesSidebar from '../../components/FilesSidebar.vue'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
+import FilterToggleHeader from '../../components/shared/FilterToggleHeader.vue'
+import ListActionsBar from '../../components/shared/ListActionsBar.vue'
+import OffsetPager from '../../components/shared/OffsetPager.vue'
+import { sidebarToggle } from '../../composables/sidebarToggle.js'
+import { displayDateTime } from '../../services/displayDateTime.js'
+import { refreshAction } from '../../services/menuActions.js'
 import { offsetPaging } from '../offsetPaging.js'
 
 /**
@@ -235,16 +153,14 @@ import { offsetPaging } from '../offsetPaging.js'
 export default {
 	name: 'FilesIndex',
 	components: {
+		ActionMenu,
+		ListActionsBar,
 		OffsetPager,
 		FilterToggleHeader,
 		NcAppContent,
-		NcActions,
-		NcActionButton,
 		NcLoadingIcon,
 		NcEmptyContent,
 		FileDocumentOutline,
-		Refresh,
-		AlertCircleOutline,
 		FilesSidebar,
 	},
 
@@ -267,6 +183,25 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The table's header cells, in column order; `sort` is the API field a
+		 * click sorts on, absent for a column that does not sort.
+		 *
+		 * @spec exclude UI plumbing — static table header list for display.
+		 * @return {Array<{key: string, label: string, sort?: string}>}
+		 */
+		headerColumns() {
+			return [
+				{ key: 'filename', label: t('openregister', 'File Name'), sort: 'fileName' },
+				{ key: 'mimetype', label: t('openregister', 'Type') },
+				{ key: 'size', label: t('openregister', 'Size'), sort: 'fileSize' },
+				{ key: 'chunks', label: t('openregister', 'Chunks'), sort: 'chunkCount' },
+				{ key: 'entities', label: t('openregister', 'Entities'), sort: 'entityCount' },
+				{ key: 'risk', label: t('openregister', 'Risk Level'), sort: 'riskLevel' },
+				{ key: 'extracted', label: t('openregister', 'Extracted At'), sort: 'extractedAt' },
+				{ key: 'actions', label: t('openregister', 'Actions') },
+			]
+		},
 	},
 
 	mounted() {
@@ -274,17 +209,35 @@ export default {
 	},
 
 	methods: {
-		t,
+		refreshAction,
 
 		/**
-		 * Toggle sidebar visibility
+		 * The row menu of a file.
 		 *
-		 * @spec exclude list-view detail-sidebar toggle plumbing
-		 * @return {void}
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} file The file
+		 * @return {Array<object>} The ActionMenu entries
 		 */
-		toggleSidebar() {
-			this.sidebarOpen = !this.sidebarOpen
+		fileActions(file) {
+			return [
+				{
+					label: t('openregister', 'Retry'),
+					icon: Refresh,
+					run: () => this.retryExtraction(file.id),
+					hidden: file.extractionStatus !== 'failed',
+				},
+				{
+					label: t('openregister', 'View Error'),
+					icon: AlertCircleOutline,
+					run: () => this.showError(file),
+					hidden: !file.extractionError,
+				},
+			]
 		},
+
+		t,
+
+		...sidebarToggle,
 
 		/**
 		 * Toggle sort field and direction
@@ -499,17 +452,7 @@ export default {
 			return labels[level] || level || t('openregister', 'None')
 		},
 
-		/**
-		 * Format date for display
-		 *
-		 * @spec exclude list-view date-formatting display helper
-		 * @param {string} date - Date string
-		 * @return {string} Formatted date
-		 */
-		formatDate(date) {
-			if (!date) return '-'
-			return new Date(date).toLocaleString()
-		},
+		formatDate: displayDateTime,
 	},
 }
 </script>
@@ -519,15 +462,7 @@ export default {
 
 @include view-container-2;
 
-
-@include view-actions-bar;
-@include view-info;
-
-.viewTotalCount {
-	font-weight: 600;
-}
-
-@include view-actions-rules;
+@include table-container;
 
 .filesTable {
 	width: 100%;
@@ -676,5 +611,4 @@ export default {
 .column-actions {
 	width: 50px;
 }
-
 </style>

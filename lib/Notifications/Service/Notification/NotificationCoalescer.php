@@ -101,10 +101,8 @@ class NotificationCoalescer {
 		try {
 			$this->cache = $cacheFactory->createDistributed('openregister_notification_coalesce');
 		} catch (\Throwable $e) {
-			$this->logger->warning(
-				sprintf('[NotificationCoalescer] cache backend unavailable: %s', $e->getMessage())
-			);
-			$this->cache = null;
+			// The cache stays null, so the coalescer fails open.
+			$this->logger->warning(sprintf('[NotificationCoalescer] cache backend unavailable: %s', $e->getMessage()));
 		}//end try
 
 		$this->timeProvider = ($timeProvider ?? static fn (): int => time());
@@ -130,85 +128,63 @@ class NotificationCoalescer {
 	 *
 	 * @return bool True when the dispatch may proceed.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-9
 	 */
 	public function shouldDispatch(string $ruleId, string $recipient, ?array $perRuleOverride): bool {
-		// No rule-level config = no coalescing for this rule.
-		if (is_array($perRuleOverride) === false) {
+		// No rule-level config = no coalescing for this rule; empty keys
+		// would lump unrelated rules together.
+		if ($this->isCoalescing(perRuleOverride: $perRuleOverride) === false || $ruleId === '' || $recipient === '') {
 			return true;
 		}
 
-		if ($this->isEnabled() === false) {
+		$rule = new CoalesceRule(override: $perRuleOverride);
+		if ($rule->windowSeconds <= 0) {
 			return true;
 		}
 
-		if ($this->cache === null) {
-			return true;
-		}
-
-		if ($ruleId === '' || $recipient === '') {
-			// Defensive: empty keys would lump unrelated rules together.
-			return true;
-		}
-
-		$windowSeconds = $this->resolveWindowSeconds(perRuleOverride: $perRuleOverride);
-		if ($windowSeconds <= 0) {
-			return true;
-		}
-
-		$maxEvents = $this->resolveMaxEvents(perRuleOverride: $perRuleOverride);
-
-		$key = $this->key(ruleId: $ruleId, recipient: $recipient);
-		$now = ($this->timeProvider)();
-
-		try {
-			$state = $this->cache->get($key);
-		} catch (\Throwable $e) {
-			return true;
-		}//end try
-
-		$count = 0;
-		$opened = 0;
-		$decoded = null;
-		if (is_string($state) === true) {
-			$decoded = json_decode($state, true);
-		}
-
-		if (is_array($decoded) === true && isset($decoded['count'], $decoded['opened']) === true) {
-			$count = (int)$decoded['count'];
-			$opened = (int)$decoded['opened'];
-		}
-
-		// Window closed (or never opened) — fire + open a new window.
-		if ($count === 0 || ($now - $opened) >= $windowSeconds) {
-			$this->persist(key: $key, count: 1, opened: $now);
-			return true;
-		}
-
-		// Bursting past maxEvents inside an open window: force a flush
-		// dispatch + reset the window. Schema authors set this when
-		// they want a "you've had N updates already" digest fire.
-		if ($maxEvents !== null && ($count + 1) >= $maxEvents) {
-			$this->persist(key: $key, count: 1, opened: $now);
-			return true;
-		}
-
-		// Inside the window — silence the dispatch + bump the counter.
-		$this->persist(key: $key, count: ($count + 1), opened: $opened);
-		$this->logger->info(
-			sprintf(
-				'[NotificationCoalescer] silenced rule="%s" recipient="%s" count=%d windowSeconds=%d',
-				$ruleId,
-				$recipient,
-				($count + 1),
-				$windowSeconds
-			)
-		);
-		return false;
+		return $this->advance(bucket: new CoalesceBucket(ruleId: $ruleId, recipient: $recipient), rule: $rule);
 	}//end shouldDispatch()
+
+	/**
+	 * Whether coalescing applies at all: a rule-level block, the kill switch on, a cache present.
+	 *
+	 * @param array<string, mixed>|null $perRuleOverride Optional `coalesce` block from the rule spec.
+	 *
+	 * @return bool
+	 */
+	private function isCoalescing(?array $perRuleOverride): bool {
+		return is_array($perRuleOverride) === true && $this->isEnabled() === true && $this->cache !== null;
+	}//end isCoalescing()
+
+	/**
+	 * Count one event in its bucket's window and say whether it dispatches.
+	 *
+	 * A closed (or never opened) window, or a burst reaching `maxEvents`,
+	 * fires and opens a fresh window; inside the window the event is
+	 * silenced and only bumps the counter.
+	 *
+	 * @param CoalesceBucket $bucket The (rule, recipient) bucket.
+	 * @param CoalesceRule   $rule   The rule's coalesce settings.
+	 *
+	 * @return bool True when the dispatch may proceed.
+	 */
+	private function advance(CoalesceBucket $bucket, CoalesceRule $rule): bool {
+		$now   = ($this->timeProvider)();
+		$state = $this->readState(key: $bucket->key());
+		if ($state === null) {
+			return true;
+		}
+
+		if ($rule->startsNewWindow(state: $state, now: $now) === true) {
+			$this->persist(key: $bucket->key(), state: ['count' => 1, 'opened' => $now]);
+			return true;
+		}
+
+		$next = ['count' => ($state['count'] + 1), 'opened' => $state['opened']];
+		$this->persist(key: $bucket->key(), state: $next);
+		$this->logger->info($bucket->silencedMessage(count: $next['count'], windowSeconds: $rule->windowSeconds));
+		return false;
+	}//end advance()
 
 	/**
 	 * Inspect the current coalesce state for a (rule, recipient).
@@ -224,20 +200,44 @@ class NotificationCoalescer {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-9
 	 */
 	public function inspect(string $ruleId, string $recipient): ?array {
-		if ($this->cache === null) {
-			return null;
-		}
-
-		if ($ruleId === '' || $recipient === '') {
+		if ($this->cache === null || $ruleId === '' || $recipient === '') {
 			return null;
 		}
 
 		try {
-			$state = $this->cache->get($this->key(ruleId: $ruleId, recipient: $recipient));
+			$state = $this->cache->get((new CoalesceBucket(ruleId: $ruleId, recipient: $recipient))->key());
 		} catch (\Throwable $e) {
 			return null;
 		}//end try
 
+		return $this->decodeState(state: $state);
+	}//end inspect()
+
+	/**
+	 * The stored state of a bucket; a fresh state when absent or malformed, null when the read fails.
+	 *
+	 * @param string $key Cache key.
+	 *
+	 * @return array{count:int,opened:int}|null
+	 */
+	private function readState(string $key): ?array {
+		try {
+			$state = $this->cache?->get($key);
+		} catch (\Throwable $e) {
+			return null;
+		}//end try
+
+		return ($this->decodeState(state: $state) ?? ['count' => 0, 'opened' => 0]);
+	}//end readState()
+
+	/**
+	 * Decode a stored state, null when it is not a JSON object with `count` and `opened`.
+	 *
+	 * @param mixed $state The raw cache value.
+	 *
+	 * @return array{count:int,opened:int}|null
+	 */
+	private function decodeState(mixed $state): ?array {
 		if (is_string($state) === false) {
 			return null;
 		}
@@ -247,12 +247,8 @@ class NotificationCoalescer {
 			return null;
 		}
 
-		return [
-			'count' => (int)$decoded['count'],
-			'opened' => (int)$decoded['opened'],
-		];
-
-	}//end inspect()
+		return ['count' => (int)$decoded['count'], 'opened' => (int)$decoded['opened']];
+	}//end decodeState()
 
 	/**
 	 * Whether the coalescer is enabled. Defaults to ON.
@@ -270,82 +266,20 @@ class NotificationCoalescer {
 	}//end isEnabled()
 
 	/**
-	 * Extract `windowSeconds` from the rule's coalesce block.
-	 *
-	 * @param array<string, mixed> $perRuleOverride The rule's `coalesce` config block.
-	 *
-	 * @return int Window length in seconds (0 = disabled).
-	 */
-	private function resolveWindowSeconds(array $perRuleOverride): int {
-		$value = ($perRuleOverride['windowSeconds'] ?? null);
-		if (is_int($value) === true && $value > 0) {
-			return $value;
-		}
-
-		if (is_string($value) === true && ctype_digit($value) === true && (int)$value > 0) {
-			return (int)$value;
-		}
-
-		return 0;
-	}//end resolveWindowSeconds()
-
-	/**
-	 * Extract `maxEvents` from the rule's coalesce block.
-	 *
-	 * @param array<string, mixed> $perRuleOverride The rule's `coalesce` config block.
-	 *
-	 * @return int|null Max events (null = no cap).
-	 */
-	private function resolveMaxEvents(array $perRuleOverride): ?int {
-		$value = ($perRuleOverride['maxEvents'] ?? null);
-		if (is_int($value) === true && $value > 0) {
-			return $value;
-		}
-
-		if (is_string($value) === true && ctype_digit($value) === true && (int)$value > 0) {
-			return (int)$value;
-		}
-
-		return null;
-	}//end resolveMaxEvents()
-
-	/**
-	 * Build the cache key for a (rule, recipient) bucket.
-	 *
-	 * @param string $ruleId Rule identifier.
-	 * @param string $recipient Recipient identifier.
-	 *
-	 * @return string The cache key.
-	 */
-	private function key(string $ruleId, string $recipient): string {
-		return 'coalesce:' . sha1($ruleId . '|' . $recipient);
-	}//end key()
-
-	/**
 	 * Persist the window state.
 	 *
-	 * @param string $key Cache key.
-	 * @param int $count Event count in the current window.
-	 * @param int $opened Unix timestamp the window opened.
+	 * @param string                      $key   Cache key.
+	 * @param array{count:int,opened:int} $state Event count in the current window and the unix timestamp it opened.
 	 *
 	 * @return void
 	 */
-	private function persist(string $key, int $count, int $opened): void {
+	private function persist(string $key, array $state): void {
 		if ($this->cache === null) {
 			return;
 		}
 
 		try {
-			$this->cache->set(
-				$key,
-				json_encode(
-					[
-						'count' => $count,
-						'opened' => $opened,
-					]
-				),
-				self::STATE_TTL
-			);
+			$this->cache->set($key, json_encode(['count' => $state['count'], 'opened' => $state['opened']]), self::STATE_TTL);
 		} catch (\Throwable $e) {
 			// Persistence failure is best-effort — log + move on.
 			$this->logger->warning(

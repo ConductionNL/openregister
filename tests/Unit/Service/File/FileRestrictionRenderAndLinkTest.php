@@ -39,6 +39,9 @@ use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
+use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReaderSources;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Sharing\AccessLinkSubjectInterface;
 use OCA\OpenRegister\Service\TranslationStatusService;
 use OCA\OpenRegister\Service\UrnService;
 use OCP\SystemTag\ISystemTagManager;
@@ -104,25 +107,40 @@ class FileRestrictionRenderAndLinkTest extends TestCase {
 		$container->method('get')->willReturnCallback(static fn (string $id): object => $guard);
 
 		return new RenderObject(
-			fileMapper: $fileMapper,
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			registerMapper: $this->createMock(RegisterMapper::class),
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			systemTagManager: $this->createMock(ISystemTagManager::class),
-			systemTagMapper: $this->createMock(ISystemTagObjectMapper::class),
-			objectCacheService: $this->createMock(CacheHandler::class),
-			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class),
-			logger: new NullLogger(),
-			fileService: $fileService ?? $this->createMock(FileService::class),
-			computedFieldHandler: $this->createMock(ComputedFieldHandler::class),
-			translationHandler: $this->createMock(TranslationHandler::class),
-			linkedEntityEnricher: $this->createMock(LinkedEntityEnricher::class),
-			calculationEvaluator: $this->createMock(CalculationEvaluator::class),
-			urnService: $this->createMock(UrnService::class),
-			translationStatusService: $this->createMock(TranslationStatusService::class),
-			translationMapper: $this->createMock(TranslationMapper::class),
-			languageService: $this->createMock(LanguageService::class),
-			container: $container,
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					objectEntityMapper: $this->createMock(MagicMapper::class),
+					registerMapper: $this->createMock(RegisterMapper::class),
+					schemaMapper: $this->createMock(SchemaMapper::class),
+					objectCacheService: $this->createMock(CacheHandler::class)
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $fileMapper,
+					fileService: $fileService ?? $this->createMock(FileService::class),
+					systemTagManager: $this->createMock(ISystemTagManager::class),
+					systemTagMapper: $this->createMock(ISystemTagObjectMapper::class)
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $this->createMock(TranslationHandler::class),
+					translationStatusService: $this->createMock(TranslationStatusService::class),
+					translationMapper: $this->createMock(TranslationMapper::class),
+					languageService: $this->createMock(LanguageService::class)
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $this->createMock(ComputedFieldHandler::class),
+					calculationEvaluator: $this->createMock(CalculationEvaluator::class),
+					linkedEntityEnricher: $this->createMock(LinkedEntityEnricher::class),
+					urnService: $this->createMock(UrnService::class)
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: new NullLogger(),
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(),
+				container: $container
+			),
+			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class)
 		);
 	}//end renderer()
 
@@ -214,9 +232,14 @@ class FileRestrictionRenderAndLinkTest extends TestCase {
 		$store = $this->createMock(FileRestrictionStore::class);
 		$store->method('find')->willReturnCallback(static fn (int $id): ?array => $id === self::RESTRICTED ? ['fileId' => $id] : null);
 		$reader = (new \ReflectionClass(AccessLinkReader::class))->newInstanceWithoutConstructor();
-		$property = new \ReflectionProperty(AccessLinkReader::class, 'restrictions');
+		$sources = new AccessLinkReaderSources(
+			objects: $this->createMock(ObjectOperationsInterface::class),
+			subjects: $this->createMock(AccessLinkSubjectInterface::class),
+			restrictions: $store
+		);
+		$property = new \ReflectionProperty(AccessLinkReader::class, 'sources');
 		$property->setAccessible(true);
-		$property->setValue($reader, $store);
+		$property->setValue($reader, $sources);
 
 		$object = new ObjectEntity();
 		$object->setFiles([['id' => (string)self::RESTRICTED], ['id' => (string)self::OPEN]]);

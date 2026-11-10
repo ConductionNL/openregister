@@ -82,42 +82,67 @@ class StoreActionAuthorizer {
 	 * @return bool True only when the leaf app's own matrix says yes.
 	 */
 	public function can(string $appId, string $action, IUser $user): bool {
-		$class = 'OCA\\' . $this->studly(appId: $appId) . '\\Service\\ActionAuthService';
+		return $this->permits(check: new StoreActionCheck(appId: $appId, action: $action, user: $user));
+	}//end can()
 
+	/**
+	 * Whether the user may perform the action the store declared.
+	 *
+	 * @param StoreActionCheck $check The declaring leaf app id, the action and the signed-in user.
+	 *
+	 * @return bool True only when the leaf app's own matrix says yes.
+	 *
+	 * @spec openspec/changes/store-plane-action-auth/specs/apphost-store-plane/spec.md#requirement-an-action-posture-must-resolve-against-the-declaring-app
+	 */
+	public function permits(StoreActionCheck $check): bool {
+		$service = $this->leafService(check: $check);
+
+		return $service !== null && $this->leafPermits(service: $service, check: $check);
+	}//end permits()
+
+	/**
+	 * The leaf app's action service, or null (logged) when it cannot answer.
+	 *
+	 * @param StoreActionCheck $check The action to authorise.
+	 *
+	 * @return mixed The service with a can() method, or null.
+	 */
+	private function leafService(StoreActionCheck $check): mixed {
+		$class = $check->leafClass();
 		try {
 			$service = $this->container->get($class);
 		} catch (Throwable $e) {
-			$this->refuse(
-				appId: $appId,
-				action: $action,
-				reason: sprintf('%s is not resolvable (%s)', $class, $e->getMessage())
-			);
-			return false;
+			$this->refuseInstall(check: $check, reason: sprintf('%s is not resolvable (%s)', $class, $e->getMessage()));
+			return null;
 		}
 
 		if (method_exists($service, 'can') === false) {
-			$this->refuse(
-				appId: $appId,
-				action: $action,
-				reason: sprintf('%s has no can() method', $class)
-			);
-			return false;
+			$this->refuseInstall(check: $check, reason: sprintf('%s has no can() method', $class));
+			return null;
 		}
 
+		return $service;
+	}//end leafService()
+
+	/**
+	 * Whether the leaf app's own matrix says yes.
+	 *
+	 * @param mixed            $service The leaf action service.
+	 * @param StoreActionCheck $check   The action to authorise.
+	 *
+	 * @return bool True only when can() returns exactly true.
+	 */
+	private function leafPermits(mixed $service, StoreActionCheck $check): bool {
 		try {
-			return ($service->can($user, $action) === true);
+			return ($service->can($check->user, $check->action) === true);
 		} catch (Throwable $e) {
 			// A throwing matrix is a refusal, not a pass. ADR-023's own
 			// requireAction() throws to deny, and a `can()` that propagates
 			// anything must not be read as consent.
-			$this->refuse(
-				appId: $appId,
-				action: $action,
-				reason: sprintf('can() threw: %s', $e->getMessage())
-			);
+			$this->refuseInstall(check: $check, reason: sprintf('can() threw: %s', $e->getMessage()));
 			return false;
 		}
-	}//end can()
+	}//end leafPermits()
 
 	/**
 	 * Whether the user may publish through this descriptor.
@@ -143,11 +168,9 @@ class StoreActionAuthorizer {
 	public function canPublish(StoreDescriptor $descriptor, IUser $user): bool {
 		$groups = $descriptor->namedPublishGroups();
 		if ($groups === []) {
-			$this->refuse(
+			$this->refusePublish(
 				appId: $descriptor->appId,
-				action: 'publish',
-				reason: 'the descriptor names no publish group, so the app has not decided who may publish',
-				operation: 'publish'
+				reason: 'the descriptor names no publish group, so the app has not decided who may publish'
 			);
 			return false;
 		}
@@ -163,11 +186,9 @@ class StoreActionAuthorizer {
 			if ($this->groupManager->groupExists($group) === false) {
 				// A group nothing answers to admits nobody. Logged, so "nobody
 				// may publish" has a trace of why.
-				$this->refuse(
+				$this->refusePublish(
 					appId: $descriptor->appId,
-					action: 'publish',
-					reason: sprintf('publish group "%s" does not exist on this server', $group),
-					operation: 'publish'
+					reason: sprintf('publish group "%s" does not exist on this server', $group)
 				);
 				continue;
 			}
@@ -181,50 +202,45 @@ class StoreActionAuthorizer {
 	}//end canPublish()
 
 	/**
+	 * Log a refused install action with the reason it could not be decided.
+	 *
+	 * @param StoreActionCheck $check  The action that was refused.
+	 * @param string           $reason Why it could not be decided.
+	 *
+	 * @return void
+	 */
+	private function refuseInstall(StoreActionCheck $check, string $reason): void {
+		$this->refuse(what: sprintf('install for %s: action "%s"', $check->appId, $check->action), reason: $reason);
+	}//end refuseInstall()
+
+	/**
+	 * Log a refused publish with the reason it could not be decided.
+	 *
+	 * @param string $appId  The declaring app.
+	 * @param string $reason Why it could not be decided.
+	 *
+	 * @return void
+	 */
+	private function refusePublish(string $appId, string $reason): void {
+		$this->refuse(what: sprintf('publish for %s: action "publish"', $appId), reason: $reason);
+	}//end refusePublish()
+
+	/**
 	 * Log a refusal with the reason it could not be decided.
 	 *
 	 * Logged at ERROR, not WARNING: an app declared a posture this server then
 	 * could not honour, which is a misconfiguration somebody has to fix rather
 	 * than a user being told no.
 	 *
-	 * @param string $appId     The declaring app.
-	 * @param string $action    The action name.
-	 * @param string $reason    Why it could not be decided.
-	 * @param string $operation The store operation refused (install or publish).
+	 * @param string $what   The refused operation, app and action.
+	 * @param string $reason Why it could not be decided.
 	 *
 	 * @return void
 	 */
-	private function refuse(string $appId, string $action, string $reason, string $operation='install'): void {
+	private function refuse(string $what, string $reason): void {
 		$this->logger->error(
-			message: sprintf(
-				'[AppHost\\Store] refusing %s for %s: action "%s" could not be authorised — %s',
-				$operation,
-				$appId,
-				$action,
-				$reason
-			),
+			message: sprintf('[AppHost\\Store] refusing %s could not be authorised — %s', $what, $reason),
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 	}//end refuse()
-
-	/**
-	 * StudlyCase an app id, matching Bootstrap's own convention.
-	 *
-	 * @param string $appId The app id.
-	 *
-	 * @return string
-	 */
-	private function studly(string $appId): string {
-		$parts = preg_split(pattern: '/[_\-]+/', subject: $appId);
-		if ($parts === false || count($parts) === 0) {
-			$parts = [$appId];
-		}
-
-		$studly = '';
-		foreach ($parts as $part) {
-			$studly .= ucfirst($part);
-		}
-
-		return $studly;
-	}//end studly()
 }

@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\BackgroundJob\JobRuntime;
 use OCA\OpenRegister\BackgroundJob\ExampleSetDailyRefreshJob;
 use OCA\OpenRegister\Command\ExampleSetInstallCommand;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyRefresh;
@@ -68,6 +69,12 @@ use Symfony\Component\Console\Tester\CommandTester;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetActingAs
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetBackgroundRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
  */
 class ExampleSetDailyRefreshTest extends ExampleSetTestCase {
 	/** @var array<string, string> OpenRegister's own app config for the marks. */
@@ -177,7 +184,7 @@ class ExampleSetDailyRefreshTest extends ExampleSetTestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->once())->method('info');
 		$logger->expects($this->once())->method('warning');
-		$job = new ExampleSetDailyRefreshJob(time: $this->createMock(ITimeFactory::class), daily: $daily, logger: $logger);
+		$job = new ExampleSetDailyRefreshJob(runtime: new JobRuntime(time: $this->createMock(ITimeFactory::class), logger: $logger), daily: $daily);
 
 		$method = new \ReflectionMethod($job, 'run');
 		$method->invoke($job, null);

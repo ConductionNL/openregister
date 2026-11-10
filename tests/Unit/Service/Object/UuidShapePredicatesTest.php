@@ -13,7 +13,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler;
-use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationScanner;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -25,14 +25,14 @@ use ReflectionMethod;
  *
  * @covers \OCA\OpenRegister\Service\Object\UtilityHandler
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler
- * @covers \OCA\OpenRegister\Service\Object\SaveObjects
+ * @covers \OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationScanner
  */
 class UuidShapePredicatesTest extends TestCase {
 	private const UUID = '0f8fad5b-d9cb-469f-a165-70867728950e';
 
 	/**
 	 * The value, then the expected answer of: UtilityHandler::isUuid, RelationCascadeHandler::looksLikeObjectReference,
-	 * RelationCascadeHandler::isReference, SaveObjects::matchesReferencePattern.
+	 * RelationCascadeHandler::isReference, BulkRelationScanner::matchesReferencePattern.
 	 *
 	 * @return array<string, array{string, bool, bool, bool, bool}>
 	 */
@@ -72,7 +72,7 @@ class UuidShapePredicatesTest extends TestCase {
 				$this->call(UtilityHandler::class, 'isUuid', $value),
 				$this->call(RelationCascadeHandler::class, 'looksLikeObjectReference', $value),
 				$this->call(RelationCascadeHandler::class, 'isReference', $value),
-				$this->call(SaveObjects::class, 'matchesReferencePattern', $value),
+				$this->call(BulkRelationScanner::class, 'matchesReferencePattern', $value),
 			]
 		);
 	}//end testPredicates()

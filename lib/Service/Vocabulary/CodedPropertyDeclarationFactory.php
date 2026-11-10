@@ -64,13 +64,17 @@ class CodedPropertyDeclarationFactory {
 
 		return new CodedPropertyDeclaration(
 			scheme: $scheme,
-			store: $store,
-			allowDeprecated: (($raw['allowDeprecated'] ?? false) === true),
-			branch: $this->nonEmpty(value: ($raw['branch'] ?? null)),
-			leafOnly: (($raw['leafOnly'] ?? false) === true),
-			maxDepth: $this->parseMaxDepth(raw: $raw),
-			contextProperty: $this->nonEmpty(value: ($raw['contextProperty'] ?? null)),
-			contextKey: $this->nonEmpty(value: ($raw['contextKey'] ?? null)),
+			rules: new CodedValueRules(
+				store: $store,
+				allowDeprecated: (($raw['allowDeprecated'] ?? false) === true),
+				leafOnly: (($raw['leafOnly'] ?? false) === true)
+			),
+			narrowing: new CodedNarrowing(
+				branch: $this->nonEmpty(value: ($raw['branch'] ?? null)),
+				maxDepth: $this->parseMaxDepth(raw: $raw),
+				contextProperty: $this->nonEmpty(value: ($raw['contextProperty'] ?? null)),
+				contextKey: $this->nonEmpty(value: ($raw['contextKey'] ?? null))
+			),
 			scoreProperty: $this->parseScoreProperty(raw: $raw)
 		);
 	}//end fromProperty()

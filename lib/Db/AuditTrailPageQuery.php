@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailCriteria;
 use Exception;
 use InvalidArgumentException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -43,14 +44,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-an-instance-wide-audit-list-with-filters
  */
-class AuditTrailPageQuery {
-
-	/**
-	 * The largest page one call answers.
-	 *
-	 * @var int
-	 */
-	public const MAX_LIMIT = 500;
+class AuditTrailPageQuery implements AuditTrailPageQueryInterface {
 
 	/**
 	 * The filter keys this query understands, and the column each reads.
@@ -95,16 +89,39 @@ class AuditTrailPageQuery {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')->from('openregister_audit_trails');
 
-		$this->applyFilters(qb: $qb, filters: $filters, search: $search);
-
-		if ($beforeId !== null && $beforeId > 0) {
-			$qb->andWhere($qb->expr()->lt('id', $qb->createNamedParameter($beforeId, IQueryBuilder::PARAM_INT)));
-		}
+		$this->applyFilters(qb: $qb, filters: $filters);
+		$this->applySearch(qb: $qb, search: $search);
+		$this->applyCursor(qb: $qb, beforeId: $beforeId);
 
 		// One row more than the page, to know whether a next page exists
 		// without counting anything.
 		$qb->orderBy('id', 'DESC')->setMaxResults($limit + 1);
 
+		return $this->pageOf(rows: $this->fetchEntries(qb: $qb), limit: $limit);
+	}//end page()
+
+	/**
+	 * Only rows older than the cursor; no cursor, zero or a negative one is no filter.
+	 *
+	 * @param IQueryBuilder $qb       The query.
+	 * @param int|null      $beforeId The cursor.
+	 *
+	 * @return void
+	 */
+	private function applyCursor(IQueryBuilder $qb, int|null $beforeId): void {
+		if ($beforeId !== null && $beforeId > 0) {
+			$qb->andWhere($qb->expr()->lt('id', $qb->createNamedParameter($beforeId, IQueryBuilder::PARAM_INT)));
+		}
+	}//end applyCursor()
+
+	/**
+	 * Run the query and hydrate every row.
+	 *
+	 * @param IQueryBuilder $qb The query.
+	 *
+	 * @return AuditTrail[] The entries, in query order.
+	 */
+	private function fetchEntries(IQueryBuilder $qb): array {
 		$rows = [];
 		$result = $qb->executeQuery();
 		while (($row = $result->fetch()) !== false) {
@@ -113,6 +130,18 @@ class AuditTrailPageQuery {
 
 		$result->closeCursor();
 
+		return $rows;
+	}//end fetchEntries()
+
+	/**
+	 * Cut the one-row-over read back to a page, with the next page's cursor.
+	 *
+	 * @param AuditTrail[] $rows  Up to limit + 1 entries, newest first.
+	 * @param int          $limit The page size.
+	 *
+	 * @return array{results: AuditTrail[], nextCursor: int|null} The page.
+	 */
+	private function pageOf(array $rows, int $limit): array {
 		$nextCursor = null;
 		if (count($rows) > $limit) {
 			$rows = array_slice($rows, 0, $limit);
@@ -120,7 +149,7 @@ class AuditTrailPageQuery {
 		}
 
 		return ['results' => $rows, 'nextCursor' => $nextCursor];
-	}//end page()
+	}//end pageOf()
 
 	/**
 	 * Every row matching the filters, in pages, up to a ceiling.
@@ -134,13 +163,25 @@ class AuditTrailPageQuery {
 	 * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-the-filtered-audit-list-exports-with-its-hash-chain
 	 */
 	public function collect(array $filters, ?string $search, int $ceiling): array {
+		return $this->collectUpTo(criteria: new AuditTrailCriteria(filters: $filters, search: $search), ceiling: $ceiling);
+	}//end collect()
+
+	/**
+	 * Walk the pages of the criteria until the ceiling is passed or the rows run out.
+	 *
+	 * @param AuditTrailCriteria $criteria The filters and the search term.
+	 * @param int                $ceiling  The most rows to return.
+	 *
+	 * @return array{results: AuditTrail[], truncated: bool} The rows, and whether more matched than the ceiling.
+	 */
+	private function collectUpTo(AuditTrailCriteria $criteria, int $ceiling): array {
 		$rows = [];
 		$cursor = null;
 		$held = 0;
 		do {
 			$page = $this->page(
-				filters: $filters,
-				search: $search,
+				filters: $criteria->filters,
+				search: $criteria->search,
 				limit: min(self::MAX_LIMIT, ($ceiling - $held + 1)),
 				beforeId: $cursor
 			);
@@ -149,27 +190,38 @@ class AuditTrailPageQuery {
 			$cursor = $page['nextCursor'];
 		} while ($cursor !== null && $held <= $ceiling);
 
-		$truncated = count($rows) > $ceiling;
-
-		return ['results' => array_slice($rows, 0, $ceiling), 'truncated' => $truncated];
-	}//end collect()
+		return ['results' => array_slice($rows, 0, $ceiling), 'truncated' => (count($rows) > $ceiling)];
+	}//end collectUpTo()
 
 	/**
-	 * Apply the filters and the full-text term.
+	 * Apply the column filters and the period.
 	 *
 	 * @param IQueryBuilder        $qb      The query.
 	 * @param array<string, mixed> $filters The filters.
-	 * @param string|null          $search  The full-text term.
 	 *
 	 * @return void
 	 *
 	 * @throws \InvalidArgumentException When `from` or `to` is not a date.
 	 */
-	private function applyFilters(IQueryBuilder $qb, array $filters, ?string $search): void {
+	private function applyFilters(IQueryBuilder $qb, array $filters): void {
 		foreach (self::FILTER_COLUMNS as $key => $column) {
-			$this->applyListFilter(qb: $qb, column: $column, value: ($filters[$key] ?? null));
+			$this->applyListFilter(qb: $qb, term: new AuditTrailFilterTerm(field: $column, value: ($filters[$key] ?? null)));
 		}
 
+		$this->applyPeriod(qb: $qb, filters: $filters);
+	}//end applyFilters()
+
+	/**
+	 * The `from` and `to` bounds on the creation moment; a blank bound is no filter.
+	 *
+	 * @param IQueryBuilder        $qb      The query.
+	 * @param array<string, mixed> $filters The filters.
+	 *
+	 * @return void
+	 *
+	 * @throws \InvalidArgumentException When `from` or `to` is not a date.
+	 */
+	private function applyPeriod(IQueryBuilder $qb, array $filters): void {
 		foreach (['from' => 'gte', 'to' => 'lte'] as $key => $operator) {
 			$value = trim((string)($filters[$key] ?? ''));
 			if ($value === '') {
@@ -179,35 +231,36 @@ class AuditTrailPageQuery {
 			$date = $this->date(value: $value, endOfDay: ($key === 'to'));
 			$qb->andWhere($qb->expr()->$operator('created', $qb->createNamedParameter($date, IQueryBuilder::PARAM_STR)));
 		}
+	}//end applyPeriod()
 
+	/**
+	 * The full-text term on the change summary; a blank term is no filter.
+	 *
+	 * @param IQueryBuilder $qb     The query.
+	 * @param string|null   $search The full-text term.
+	 *
+	 * @return void
+	 */
+	private function applySearch(IQueryBuilder $qb, string|null $search): void {
 		$search = trim((string)$search);
 		if ($search !== '') {
 			$qb->andWhere(
 				$qb->expr()->like('changed', $qb->createNamedParameter('%' . $this->db->escapeLikeParameter($search) . '%'))
 			);
 		}
-	}//end applyFilters()
+	}//end applySearch()
 
 	/**
 	 * One equality or list filter; an empty value is no filter.
 	 *
-	 * @param IQueryBuilder $qb     The query.
-	 * @param string        $column The column.
-	 * @param mixed         $value  A value, a comma-separated list, or an array.
+	 * @param IQueryBuilder        $qb   The query.
+	 * @param AuditTrailFilterTerm $term The column, and a value, a comma-separated list, or an array.
 	 *
 	 * @return void
 	 */
-	private function applyListFilter(IQueryBuilder $qb, string $column, mixed $value): void {
-		if ($value === null || $value === '' || $value === []) {
-			return;
-		}
-
-		$values = $value;
-		if (is_array($value) === false) {
-			$values = explode(',', (string)$value);
-		}
-
-		$values = array_values(array_filter(array_map(static fn ($v): string => trim((string)$v), $values), static fn (string $v): bool => $v !== ''));
+	private function applyListFilter(IQueryBuilder $qb, AuditTrailFilterTerm $term): void {
+		$column = $term->field;
+		$values = $this->listValues(value: $term->value);
 		if ($values === []) {
 			return;
 		}
@@ -219,6 +272,26 @@ class AuditTrailPageQuery {
 
 		$qb->andWhere($qb->expr()->in($column, $qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY)));
 	}//end applyListFilter()
+
+	/**
+	 * The trimmed, non-empty values of a filter: an array, or a comma-separated list.
+	 *
+	 * @param mixed $value A value, a comma-separated list, or an array.
+	 *
+	 * @return array<int, string> The values; empty when the filter is empty.
+	 */
+	private function listValues(mixed $value): array {
+		if ($value === null || $value === '' || $value === []) {
+			return [];
+		}
+
+		$values = $value;
+		if (is_array($value) === false) {
+			$values = explode(',', (string)$value);
+		}
+
+		return array_values(array_filter(array_map(static fn ($v): string => trim((string)$v), $values), static fn (string $v): bool => $v !== ''));
+	}//end listValues()
 
 	/**
 	 * An entity from a database row.

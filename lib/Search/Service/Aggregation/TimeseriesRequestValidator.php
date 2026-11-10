@@ -42,7 +42,7 @@ use OCA\OpenRegister\Db\Schema;
 /**
  * Validates the input shape of an ad-hoc timeseries aggregation request.
  */
-class TimeseriesRequestValidator {
+class TimeseriesRequestValidator implements TimeseriesRequestValidatorInterface {
 
 	/**
 	 * Magic-table metadata columns that are allowed as bucketing /
@@ -85,38 +85,48 @@ class TimeseriesRequestValidator {
 	 * @spec openspec/specs/aggregations-backend-native/spec.md
 	 */
 	public function validate(array $input, Schema $schema): AggregationQuery {
+		$request = $this->validatedRequest(input: $input, schema: $schema);
+
+		// MULTI-METRIC is validated by the SAME class the annotation path uses
+		// (see validatedMetrics()).
+		return AggregationQuery::create(
+			metric: $this->requestedMetric(input: $input),
+			field: $request->metricField,
+			filter: (array) ($input['filter'] ?? []),
+			groupBy: $request->groupBy,
+			dateBucket: $request->dateBucket,
+			metrics: $this->validatedMetrics(raw: ($input['metrics'] ?? null), allowed: $request->allowed),
+			cumulative: $this->validatedCumulative(input: $input, dateBucket: $request->dateBucket)
+		);
+	}//end validate()
+
+	/**
+	 * Run the field, metricField, interval and grouping checks, in that order.
+	 *
+	 * Categorical groupBy applies only without an interval: for
+	 * interval-bucket requests dateBucket carries the field, and
+	 * AggregationQuery::create() rejects the two together.
+	 *
+	 * @param array<string, mixed> $input  The raw request shape.
+	 * @param Schema               $schema The schema being aggregated.
+	 *
+	 * @return ValidatedTimeseriesRequest
+	 *
+	 * @throws InvalidArgumentException When any of those rules is violated.
+	 */
+	private function validatedRequest(array $input, Schema $schema): ValidatedTimeseriesRequest {
 		$allowed = $this->allowedFields(schema: $schema);
 		$this->assertFieldAllowed(input: $input, allowed: $allowed);
 		$metricField = $this->validatedMetricField(input: $input, allowed: $allowed);
 		$dateBucket = (new TimeseriesDateBucketValidator())->validate(input: $input, schema: $schema);
 
-		// Categorical groupBy applies only without an interval: for
-		// interval-bucket requests dateBucket carries the field, and
-		// AggregationQuery::create() rejects the two together.
 		$groupBy = null;
 		if ($dateBucket === null) {
 			$groupBy = $this->validatedGroupBy(input: $input, allowed: $allowed);
 		}
 
-		// MULTI-METRIC. Validated by the SAME class the annotation path uses,
-		// so an ad-hoc request and a declared aggregation cannot drift in what
-		// they accept — a validator and an executor each owning a copy of the
-		// grammar is how this engine acquired specs it could not run.
-		$metrics = $this->validatedMetrics(
-			raw: ($input['metrics'] ?? null),
-			allowed: $allowed
-		);
-
-		return AggregationQuery::create(
-			metric: $this->requestedMetric(input: $input),
-			field: $metricField,
-			filter: (array) ($input['filter'] ?? []),
-			groupBy: $groupBy,
-			dateBucket: $dateBucket,
-			metrics: $metrics,
-			cumulative: $this->validatedCumulative(input: $input, dateBucket: $dateBucket)
-		);
-	}//end validate()
+		return new ValidatedTimeseriesRequest(allowed: $allowed, metricField: $metricField, dateBucket: $dateBucket, groupBy: $groupBy);
+	}//end validatedRequest()
 
 	/**
 	 * The requested `field`, as a string.
@@ -180,17 +190,13 @@ class TimeseriesRequestValidator {
 			return null;
 		}
 
-		$metricField = ($input['metricField'] ?? null);
-		if ($metricField === null || $metricField === '') {
-			throw new InvalidArgumentException(
-				sprintf('`metricField` is required when metric is "%s"', $metric)
-			);
+		$metricField = ($input['metricField'] ?? '');
+		if ($metricField === '') {
+			throw new InvalidArgumentException(sprintf('`metricField` is required when metric is "%s"', $metric));
 		}
 
 		if (in_array((string) $metricField, $allowed, true) === false) {
-			throw new InvalidArgumentException(
-				sprintf('`metricField` "%s" is not a declared property of the schema', $metricField)
-			);
+			throw new InvalidArgumentException(sprintf('`metricField` "%s" is not a declared property of the schema', $metricField));
 		}
 
 		return $metricField;
@@ -260,27 +266,34 @@ class TimeseriesRequestValidator {
 	private function validatedFields(array $fields, array $allowed): array {
 		$out = [];
 		foreach ($fields as $candidate) {
-			if (is_string($candidate) === false || $candidate === '') {
-				throw new InvalidArgumentException('`fields` members MUST be non-empty strings');
-			}
-
-			if (in_array($candidate, $allowed, true) === false) {
-				throw new InvalidArgumentException(
-					sprintf('`fields` member "%s" is not a declared property of the schema', $candidate)
-				);
-			}
-
+			$this->assertGroupField(candidate: $candidate, allowed: $allowed);
 			if (in_array($candidate, $out, true) === false) {
 				$out[] = $candidate;
 			}
 		}
 
-		if ($out === []) {
-			throw new InvalidArgumentException('`fields` MUST name at least one property');
-		}
-
 		return $out;
 	}//end validatedFields()
+
+	/**
+	 * One `fields` member must be a non-empty string naming a declared property.
+	 *
+	 * @param mixed              $candidate The requested group field.
+	 * @param array<int, string> $allowed   Property names the schema declares.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the member is not a declared property.
+	 */
+	private function assertGroupField(mixed $candidate, array $allowed): void {
+		if (is_string($candidate) === false || $candidate === '') {
+			throw new InvalidArgumentException('`fields` members MUST be non-empty strings');
+		}
+
+		if (in_array($candidate, $allowed, true) === false) {
+			throw new InvalidArgumentException(sprintf('`fields` member "%s" is not a declared property of the schema', $candidate));
+		}
+	}//end assertGroupField()
 
 	/**
 	 * Validate an ad-hoc `metrics` list, or null when none was requested.
@@ -304,29 +317,38 @@ class TimeseriesRequestValidator {
 			return null;
 		}
 
-		$normalised = [];
-		foreach ($raw as $entry) {
-			if (is_array($entry) === false) {
-				throw new InvalidArgumentException('`metrics` entries MUST be objects');
-			}
-
-			// GraphQL's enum arrives upper-case (SUM); the engine's vocabulary
-			// is lower-case. Normalise before validating so the error message
-			// names the metric the caller wrote.
-			$entry['metric'] = strtolower((string)($entry['metric'] ?? ''));
-			$normalised[] = $entry;
-		}
-
+		$normalised = array_values(array_map(fn (mixed $entry): array => $this->normalisedMetricEntry(entry: $entry), $raw));
 		$errors = (new AggregationMetricsAnnotationValidator())->validate(
 			declaration: new MetricsDeclaration(name: 'ad-hoc', metrics: $normalised, propKeys: $allowed)
 		);
-
 		if ($errors !== []) {
 			throw new InvalidArgumentException((string)$errors[0]['message']);
 		}
 
 		return $normalised;
 	}//end validatedMetrics()
+
+	/**
+	 * One `metrics` entry with its metric lower-cased.
+	 *
+	 * GraphQL's enum arrives upper-case (SUM); the engine's vocabulary is
+	 * lower-case. Normalise before validating so the error message names the
+	 * metric the caller wrote.
+	 *
+	 * @param mixed $entry The requested metrics entry.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @throws InvalidArgumentException When the entry is not an object.
+	 */
+	private function normalisedMetricEntry(mixed $entry): array {
+		if (is_array($entry) === false) {
+			throw new InvalidArgumentException('`metrics` entries MUST be objects');
+		}
+
+		$entry['metric'] = strtolower((string)($entry['metric'] ?? ''));
+		return $entry;
+	}//end normalisedMetricEntry()
 
 	/**
 	 * Normalise a raw `cumulative` query-param value to a strict bool.

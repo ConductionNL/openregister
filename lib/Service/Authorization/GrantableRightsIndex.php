@@ -41,21 +41,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Authorization;
 
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
+use OCA\OpenRegister\Service\Rbac\McpScope;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
 
 /**
  * Builds and caches the index of rights that may be offered to agents.
  *
- * @SuppressWarnings(PHPMD.StaticAccess) PermissionHandler::mcpOfferedActions() is deliberately static and pure so every
+ * @SuppressWarnings(PHPMD.StaticAccess) McpScope::offeredActions() is deliberately static and pure so every
  *      reader of an authorization block agrees on what the mcp scope means. An injected copy could diverge from the
  *      evaluator, and an index that disagrees with the enforcer about which rights exist is worse than no index.
  */
-class GrantableRightsIndex {
+class GrantableRightsIndex implements GrantableRightsIndexInterface {
 
 	/**
 	 * Distributed cache namespace.
@@ -102,14 +101,12 @@ class GrantableRightsIndex {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapperInterface    $schemaMapper   Source of the schemas to walk.
-	 * @param RegisterMapperInterface  $registerMapper Source of register → schema membership.
-	 * @param ICacheFactory   $cacheFactory   Distributed cache for the built index.
-	 * @param LoggerInterface $logger         Diagnostics.
+	 * @param SchemaCatalogInterface $catalog      Schemas to walk and register → schema membership.
+	 * @param ICacheFactory          $cacheFactory Distributed cache for the built index.
+	 * @param LoggerInterface        $logger       Diagnostics.
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly ICacheFactory $cacheFactory,
 		private readonly LoggerInterface $logger,
 	) {
@@ -185,7 +182,7 @@ class GrantableRightsIndex {
 		$registersBySchemaId = $this->registersBySchemaId();
 
 		$entries = [];
-		foreach ($this->schemaMapper->findAll(_rbac: false) as $schema) {
+		foreach ($this->catalog->schemas()->findAll(_rbac: false) as $schema) {
 			$offered = $this->offeredActions(schema: $schema);
 			if ($offered === []) {
 				continue;
@@ -234,7 +231,7 @@ class GrantableRightsIndex {
 	private function offeredActions(Schema $schema): array {
 		$offered = [];
 
-		foreach (PermissionHandler::mcpOfferedActions(authorization: $schema->getAuthorization()) as $action) {
+		foreach (McpScope::offeredActions(authorization: $schema->getAuthorization()) as $action) {
 			$offered[$action] = self::SOURCE_AUTHORIZATION;
 		}
 
@@ -311,7 +308,7 @@ class GrantableRightsIndex {
 	private function registersBySchemaId(): array {
 		$map = [];
 
-		foreach ($this->registerMapper->findAll() as $register) {
+		foreach ($this->catalog->registers()->findAll() as $register) {
 			$entry = [
 				'id' => $register->getId(),
 				'application' => $register->getApplication(),

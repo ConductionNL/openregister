@@ -8,6 +8,7 @@
 import { translate as t } from '@nextcloud/l10n'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
 /**
@@ -46,4 +47,14 @@ export function deleteAction(run, state = {}) {
 		run,
 		...state,
 	}
+}
+
+/**
+ * The Refresh entry.
+ *
+ * @param {() => void} run What the entry does
+ * @return {object} The entry
+ */
+export function refreshAction(run) {
+	return { label: t('openregister', 'Refresh'), icon: Refresh, run }
 }

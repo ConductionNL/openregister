@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
+use OCP\DB\IResult;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -45,6 +46,9 @@ trait MarkerLookupTrait {
 	/**
 	 * Find rows in an upstream NC app's table whose marker column
 	 * contains the given marker substring.
+	 *
+	 * Kept with its old shape for callers outside the leaf providers; it
+	 * delegates to scanMarker().
 	 *
 	 * @param IDBConnection $db NC DB connection.
 	 * @param string $table Table name without the `oc_` prefix.
@@ -66,39 +70,60 @@ trait MarkerLookupTrait {
 		array $extraColumns = [],
 		string $idColumn = 'id',
 	): array {
+		$columns = array_merge([$idColumn], $extraColumns);
+		return $this->scanMarker(db: $db, scan: new MarkerScan(table: $table, markerColumn: $markerColumn, marker: $marker, columns: $columns));
+	}//end findByMarker()
+
+	/**
+	 * The rows of one marker scan.
+	 *
+	 * @param IDBConnection $db   NC DB connection.
+	 * @param MarkerScan    $scan The table, marker column, marker and columns to return.
+	 *
+	 * @return array<int,array<string,mixed>> Matching rows.
+	 *
+	 * @spec exclude Shared defensive LIKE-scan helper for leaf list() impls — no standalone contract;
+	 *              the behavioural contract is each leaf provider's list() (annotated to its integration-* change).
+	 */
+	protected function scanMarker(IDBConnection $db, MarkerScan $scan): array {
 		try {
 			$qb = $db->getQueryBuilder();
-			$select = array_unique(array_merge([$idColumn, $markerColumn], $extraColumns));
-			$qb->select(...$select)
-				->from($table)
-				->where(
-					$qb->expr()->iLike(
-						$markerColumn,
-						$qb->createNamedParameter('%' . $marker . '%')
-					)
-				);
-			// NC's IResult uses fetch() not fetchAllAssociative() in
-			// older versions — iterate manually.
-			$result = $qb->executeQuery();
-			$rows = [];
-			$row = $result->fetch();
-			while ($row !== false) {
-				$rows[] = $row;
-				$row = $result->fetch();
-			}
+			$qb->select(...$scan->selectList())->from($scan->table);
+			$qb->where($qb->expr()->iLike($scan->markerColumn, $qb->createNamedParameter('%' . $scan->marker . '%')));
 
-			return $rows;
+			return $this->markerRows(result: $qb->executeQuery());
 		} catch (Throwable $e) {
 			// This catch exists to DEGRADE gracefully (AD-23); the logger is
 			// constructor-injected by every using provider, so logging cannot
 			// fail louder than the thing it reports.
 			$this->logger->debug(
-				'[MarkerLookupTrait] ' . $table . '.' . $markerColumn . ' query failed: ' . $e->getMessage(),
+				'[MarkerLookupTrait] ' . $scan->table . '.' . $scan->markerColumn . ' query failed: ' . $e->getMessage(),
 				['exception' => $e]
 			);
 
 			// Schema mismatch / app uninstalled / column missing — empty list (AD-23).
 			return [];
 		}//end try
-	}//end findByMarker()
+	}//end scanMarker()
+
+	/**
+	 * Every row of an executed marker query.
+	 *
+	 * NC's IResult uses fetch() not fetchAllAssociative() in older
+	 * versions — iterate manually.
+	 *
+	 * @param IResult $result The executed query.
+	 *
+	 * @return array<int,array<string,mixed>> The rows, in order.
+	 */
+	private function markerRows(IResult $result): array {
+		$rows = [];
+		$row = $result->fetch();
+		while ($row !== false) {
+			$rows[] = $row;
+			$row = $result->fetch();
+		}
+
+		return $rows;
+	}//end markerRows()
 }//end trait

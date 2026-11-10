@@ -39,6 +39,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Search\Service\MapMarkerSource;
 use OCA\OpenRegister\Search\Service\MapsOverviewService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -53,18 +55,16 @@ class MapsOverviewController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name (injected by NC).
 	 * @param IRequest $request Current request.
 	 * @param MapsOverviewService $overviewService Map overview register/query service.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		private MapsOverviewService $overviewService,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -111,11 +111,13 @@ class MapsOverviewController extends Controller {
 
 			$stored = $this->overviewService->registerOverview(
 				overviewKey: (string)($params['overviewKey'] ?? ''),
-				register: (string)($params['register'] ?? ''),
-				schema: (string)($params['schema'] ?? ''),
+				source: new MapMarkerSource(
+					register: (string)($params['register'] ?? ''),
+					schema: (string)($params['schema'] ?? ''),
+					geoProperty: $geoProperty,
+					filters: (array)($params['filters'] ?? [])
+				),
 				title: $title,
-				geoProperty: $geoProperty,
-				filters: (array)($params['filters'] ?? []),
 				baseLayer: $baseLayer
 			);
 		} catch (\InvalidArgumentException $e) {
@@ -162,10 +164,7 @@ class MapsOverviewController extends Controller {
 			$limit = $this->intOrNull(value: ($params['limit'] ?? null));
 
 			$points = $this->overviewService->ensureReadablePoints(
-				register: $register,
-				schema: $schema,
-				filters: $filters,
-				geoProperty: $geoProperty,
+				source: new MapMarkerSource(register: $register, schema: $schema, geoProperty: $geoProperty, filters: $filters),
 				limit: $limit
 			);
 		} catch (\InvalidArgumentException $e) {

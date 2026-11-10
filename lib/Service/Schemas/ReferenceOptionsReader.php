@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Schemas;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Schema;
 
 /**
@@ -42,7 +43,7 @@ use OCA\OpenRegister\Db\Schema;
  *
  * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
  */
-class ReferenceOptionsReader {
+class ReferenceOptionsReader implements ReferenceOptionsReaderInterface {
 
 	/**
 	 * The default page size.
@@ -60,9 +61,8 @@ class ReferenceOptionsReader {
 	/**
 	 * What the reader answers for one property.
 	 *
-	 * @param Schema               $schema   The schema of the record being edited.
-	 * @param string               $property The reference property.
-	 * @param array<string, mixed> $record   The record being edited, saved or draft.
+	 * @param Schema        $schema The schema of the record being edited.
+	 * @param ReferencePick $pick   The reference property and the record being edited.
 	 *
 	 * @return array{filtered: bool, needs: array<int, string>, filter: array<string, mixed>,
 	 *         target: array{schema: ?string, register: ?string}} The plan.
@@ -71,42 +71,26 @@ class ReferenceOptionsReader {
 	 *
 	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
-	public function plan(Schema $schema, string $property, array $record): array {
+	public function plan(Schema $schema, ReferencePick $pick): array {
+		$property   = $pick->property;
 		$properties = ($schema->getProperties() ?? []);
 		$config     = ($properties[$property] ?? null);
 
 		if (is_array($config) === false) {
-			throw new ReferenceFilterException(
-				sprintf('There is no property \'%s\' on this schema to read options for.', $property)
-			);
+			throw new ReferenceFilterException(sprintf('There is no property \'%s\' on this schema to read options for.', $property));
 		}
 
-		$target = [
-			'schema'   => $this->targetSchema(config: $config),
-			'register' => ($config['register'] ?? null),
-		];
-
+		$target      = ['schema' => ReferenceFilterDeclaration::targetSchemaOf(config: $config), 'register' => ($config['register'] ?? null)];
 		$declaration = ReferenceFilterDeclaration::fromProperty(property: $config, path: $property);
 
-		if ($declaration === null) {
-			// No filter declared: every option the caller may read is on offer,
-			// which is what an unfiltered reference has always meant.
-			return [
-				'filtered' => false,
-				'needs'    => [],
-				'filter'   => [],
-				'target'   => $target,
-			];
+		// No filter declared: every option the caller may read is on offer,
+		// which is what an unfiltered reference has always meant.
+		$answer = ['needs' => [], 'filter' => []];
+		if ($declaration !== null) {
+			$answer = $declaration->resolve(record: $pick->record);
 		}
 
-		$answer = $declaration->resolve(record: $record);
-
-		return [
-			'filtered' => true,
-			'needs'    => $answer['needs'],
-			'filter'   => $answer['filter'],
-			'target'   => $target,
-		];
+		return ['filtered' => ($declaration !== null), 'needs' => $answer['needs'], 'filter' => $answer['filter'], 'target' => $target];
 	}//end plan()
 
 	/**
@@ -155,44 +139,19 @@ class ReferenceOptionsReader {
 	 * applies the caller's own row access to it. Nothing here bypasses RBAC,
 	 * and nothing here re-implements it.
 	 *
-	 * @param array<string, mixed> $plan   The plan.
-	 * @param int                  $limit  The page size.
-	 * @param int                  $offset Where the page starts.
+	 * @param array<string, mixed> $plan The plan.
+	 * @param ListQuery            $page The page size and where the page starts.
 	 *
 	 * @return array<string, mixed> The query.
 	 *
 	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
-	public function queryFor(array $plan, int $limit, int $offset): array {
+	public function queryFor(array $plan, ListQuery $page): array {
 		$query = ($plan['filter'] ?? []);
 
-		$query['_limit']  = $limit;
-		$query['_offset'] = max(0, $offset);
+		$query['_limit']  = $page->limit;
+		$query['_offset'] = max(0, ($page->offset ?? 0));
 
 		return $query;
 	}//end queryFor()
-
-	/**
-	 * The schema a reference property points at.
-	 *
-	 * @param array<string, mixed> $config The property configuration.
-	 *
-	 * @return string|null The reference, or null when the property names none.
-	 */
-	private function targetSchema(array $config): ?string {
-		foreach (['$ref', 'schema'] as $key) {
-			$value = ($config[$key] ?? null);
-			if (is_string($value) === true && $value !== '') {
-				return $value;
-			}
-		}
-
-		// An array of references points at its item shape.
-		$items = ($config['items'] ?? null);
-		if (is_array($items) === true) {
-			return $this->targetSchema(config: $items);
-		}
-
-		return null;
-	}//end targetSchema()
 }//end class

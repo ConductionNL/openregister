@@ -19,10 +19,14 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\TranslationEdit;
+use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
+use OCA\OpenRegister\Service\RegisterSchemaMappers;
 use OCA\OpenRegister\Service\TranslationProjectionService;
+use OCA\OpenRegister\Service\TranslationStores;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -61,6 +65,10 @@ class TranslationProjectionGoldenTest extends TestCase {
 			'no translatable properties, delete failure swallowed' => ['translatable' => [], 'existing' => [['title', 'nl'], ['body', 'en']], 'deleteThrows' => true],
 			'signed-in translator' => ['user' => 'alice', 'data' => ['title' => ['en' => 'Hi']]],
 			'upsert failure is logged' => ['data' => ['title' => ['en' => 'Hi']], 'upsertThrows' => true],
+			'register lookup fails falls back to nl' => ['registerThrows' => true, 'data' => ['body' => 'Tekst', 'title' => 'Titre']],
+			'register without languages' => ['registerLanguages' => [], 'data' => ['body' => 'Tekst']],
+			'scalar language values' => ['data' => ['title' => ['nl' => true, 'en' => false, 'de' => 1.5, '7' => 'numeric key', 'fr' => 0], 'body' => 42]],
+			'both properties legacy and keyed' => ['user' => 'bob', 'data' => ['title' => 'Titre', 'body' => ['en' => 'B', 'nl' => 'C']], 'existing' => [['body', 'de']]],
 		];
 
 		$out = [];
@@ -81,15 +89,16 @@ class TranslationProjectionGoldenTest extends TestCase {
 			'other' => ['type' => 'string'],
 		]);
 		$register = new Register();
-		$register->setLanguages(['de', 'en']);
+		$register->setLanguages($case['registerLanguages'] ?? ['de', 'en']);
 
 		$translationMapper = $this->createMock(TranslationMapper::class);
 		$translationMapper->method('upsert')->willReturnCallback(
-			function (...$args) use (&$log, $case) {
+			function (TranslationSlot $slot, TranslationEdit $edit) use (&$log, $case) {
 				if (($case['upsertThrows'] ?? false) === true) {
 					throw new \RuntimeException('db down');
 				}
 
+				$args = [$slot->objectUuid, $slot->property, $slot->language, $edit->value, $edit->status, $edit->translator, $edit->sourceLanguage];
 				$log[] = ['upsert' => $args];
 				return new Translation();
 			}
@@ -128,7 +137,11 @@ class TranslationProjectionGoldenTest extends TestCase {
 		}
 
 		$registerMapper = $this->createMock(RegisterMapper::class);
-		$registerMapper->method('find')->willReturn($register);
+		if (($case['registerThrows'] ?? false) === true) {
+			$registerMapper->method('find')->willThrowException(new \RuntimeException('no register'));
+		} else {
+			$registerMapper->method('find')->willReturn($register);
+		}
 		$session = $this->createMock(IUserSession::class);
 		if (isset($case['user']) === true) {
 			$user = $this->createMock(IUser::class);
@@ -147,7 +160,13 @@ class TranslationProjectionGoldenTest extends TestCase {
 		$object->setRegister($case['register'] ?? '1');
 		$object->setObject($case['data'] ?? []);
 
-		(new TranslationProjectionService($translationMapper, $handler, $schemaMapper, $registerMapper, $session, $logger))->project($object);
+		$service = new TranslationProjectionService(
+			new TranslationStores($translationMapper, $handler),
+			new RegisterSchemaMappers($registerMapper, $schemaMapper),
+			$session,
+			$logger
+		);
+		$service->project($object);
 
 		$name = $this->dataName();
 		$golden = [];

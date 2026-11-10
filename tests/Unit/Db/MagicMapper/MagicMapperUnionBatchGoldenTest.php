@@ -26,6 +26,9 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -88,6 +91,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchLeaf
  * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchLeafScope
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnionScore
  */
 class MagicMapperUnionBatchGoldenTest extends TestCase {
 
@@ -101,6 +105,20 @@ class MagicMapperUnionBatchGoldenTest extends TestCase {
 	 * @var array<int, array<string, mixed>>|null
 	 */
 	private ?array $unionRows = null;
+
+	/**
+	 * The row numbers each batch holds, when statements answer from them.
+	 *
+	 * @var array<string, array<int, int>>|null
+	 */
+	private ?array $batchTables = null;
+
+	/**
+	 * The limit and offset of every statement per batch.
+	 *
+	 * @var array<string, array<int, array{0: int|null, 1: int}>>
+	 */
+	private array $batchReads = [];
 
 	/**
 	 * The uuids of the rows converted to objects, in order.
@@ -263,17 +281,22 @@ class MagicMapperUnionBatchGoldenTest extends TestCase {
 			->setConstructorArgs(
 				[
 					$db,
-					$this->createMock(SchemaMapper::class),
-					$this->createMock(RegisterMapper::class),
-					$config,
-					$this->createMock(IEventDispatcher::class),
-					$this->createMock(IUserSession::class),
-					$this->createMock(IGroupManager::class),
-					$this->createMock(IUserManager::class),
-					$this->createMock(IAppConfig::class),
-					$logger,
-					$this->createMock(\OCA\OpenRegister\Service\SettingsService::class),
-					$this->container(),
+					new MagicMapperLookups(
+						$this->createMock(SchemaMapper::class),
+						$this->createMock(RegisterMapper::class),
+						$this->container()
+					),
+					new MagicMapperIdentity(
+						$this->createMock(IUserSession::class),
+						$this->createMock(IGroupManager::class),
+						$this->createMock(IUserManager::class)
+					),
+					new MagicMapperRuntime(
+						$config,
+						$this->createMock(IAppConfig::class),
+						$this->createMock(IEventDispatcher::class),
+						$logger
+					),
 				]
 			)
 			->onlyMethods(['existsTableForRegisterSchema', 'ensureTableForRegisterSchema', 'getTableNameForRegisterSchema', 'convertRowToObjectEntity'])
@@ -312,6 +335,10 @@ class MagicMapperUnionBatchGoldenTest extends TestCase {
 		}
 
 		$rows = $this->unionRows ?? [['_uuid' => 'u-1', '_schema' => 2], ['_uuid' => 'u-2', '_schema' => 3]];
+		if ($this->batchTables !== null) {
+			$rows = $this->batchAnswer(sql: $sql);
+		}
+
 		if ($isColumns === true) {
 			$rows = [];
 			foreach (['_id', '_uuid', '_name', '_description', '_summary', '_register', '_schema', '_created', '_updated', '_deleted', '_owner', '_organisation', 'title', 'count', 'status', 'p7'] as $column) {
@@ -339,12 +366,126 @@ class MagicMapperUnionBatchGoldenTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			fn (string $id): ?object => match ($id) {
-				\OCA\OpenRegister\Service\DateTimeNormalizer::class => $this->createMock(\OCA\OpenRegister\Service\DateTimeNormalizer::class),
+				\OCA\OpenRegister\Service\DateTimeNormalizerInterface::class => $this->createMock(\OCA\OpenRegister\Service\DateTimeNormalizer::class),
 				\OCA\OpenRegister\Service\ConditionMatcher::class => $this->createMock(\OCA\OpenRegister\Service\ConditionMatcher::class),
-				\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class => $this->createMock(\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class),
+				\OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface::class => $this->createMock(\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class),
 				default => null,
 			}
 		);
 		return $container;
 	}//end container()
+
+	/**
+	 * A page past the bound holds the rows of the merged order, whichever batch owns them.
+	 *
+	 * @return void
+	 */
+	public function testAPagePastTheBoundIsTheMergedOrdersPage(): void {
+		$this->batchTables = ['large' => range(0, 1799), 'small' => range(1800, 2400)];
+
+		$this->searchManyBatches(query: ['_limit' => 3, '_offset' => 1500]);
+
+		$this->assertSame(['u-01500', 'u-01501', 'u-01502'], $this->converted);
+	}//end testAPagePastTheBoundIsTheMergedOrdersPage()
+
+	/**
+	 * A page past the bound is not cut short when one batch owns every row.
+	 *
+	 * @return void
+	 */
+	public function testAPagePastTheBoundIsWholeWhenOneBatchOwnsIt(): void {
+		$this->batchTables = ['large' => range(0, 2400), 'small' => []];
+
+		$this->searchManyBatches(query: ['_limit' => 2, '_offset' => 2100]);
+
+		$this->assertSame(['u-02100', 'u-02101'], $this->converted);
+	}//end testAPagePastTheBoundIsWholeWhenOneBatchOwnsIt()
+
+	/**
+	 * No statement reads more than the bound, and a batch that ran out is not read again.
+	 *
+	 * @return void
+	 */
+	public function testABatchIsReadInBoundedStatementsUntilItRunsOut(): void {
+		$this->batchTables = ['large' => range(0, 2400), 'small' => range(2401, 2410)];
+
+		$this->searchManyBatches(query: ['_limit' => 10, '_offset' => 2100]);
+
+		$this->assertSame(
+			[
+				'large' => [[1000, 0], [1000, 1000], [110, 2000]],
+				'small' => [[1000, 0]],
+			],
+			$this->batchReads
+		);
+	}//end testABatchIsReadInBoundedStatementsUntilItRunsOut()
+
+	/**
+	 * A first page stays one statement per batch, and a limit above the bound reads no further than the bound.
+	 *
+	 * @return void
+	 */
+	public function testAPageWithinTheBoundIsOneStatementPerBatch(): void {
+		$this->batchTables = ['large' => range(0, 2400), 'small' => range(2401, 2410)];
+
+		$this->searchManyBatches(query: ['_limit' => 5000]);
+
+		$this->assertSame(['large' => [[1000, 0]], 'small' => [[1000, 0]]], $this->batchReads);
+		$this->assertCount(1000, $this->converted);
+	}//end testAPageWithinTheBoundIsOneStatementPerBatch()
+
+	/**
+	 * `_limit=false` stays one statement per batch, without a limit.
+	 *
+	 * @return void
+	 */
+	public function testAnUnlimitedSearchIsOneStatementPerBatch(): void {
+		$this->batchTables = ['large' => range(0, 1200), 'small' => range(1201, 1210)];
+
+		$this->searchManyBatches(query: ['_limit' => false, '_offset' => 5]);
+
+		$this->assertCount(1206, $this->converted);
+		$this->assertSame(['large' => [[null, 0]], 'small' => [[null, 0]]], $this->batchReads);
+	}//end testAnUnlimitedSearchIsOneStatementPerBatch()
+
+	/**
+	 * Run a search over two batches: fifty arms in the first, one in the second.
+	 *
+	 * @param array<string, mixed> $query The search query.
+	 *
+	 * @return void
+	 */
+	private function searchManyBatches(array $query): void {
+		$pairs = array_map(fn (int $index): array => $this->pair(name: 'a'), range(1, 51));
+
+		$this->makeMapper(platform: 'mysql')->searchAcrossMultipleTables(query: $query, registerSchemaPairs: $pairs);
+	}//end searchManyBatches()
+
+	/**
+	 * What one statement over a batch answers, read from its own LIMIT and OFFSET.
+	 *
+	 * @param string $sql The statement.
+	 *
+	 * @return array<int, array<string, mixed>> The rows.
+	 */
+	private function batchAnswer(string $sql): array {
+		$table = 'small';
+		if (str_contains($sql, ' UNION ALL ') === true) {
+			$table = 'large';
+		}
+
+		preg_match('/ LIMIT (\d+) OFFSET (\d+)$/', $sql, $window);
+		$limit = isset($window[1]) ? (int) $window[1] : null;
+		$offset = (int) ($window[2] ?? 0);
+		$this->batchReads[$table][] = [$limit, $offset];
+
+		return array_map(
+			static fn (int $number): array => [
+				'_uuid' => sprintf('u-%05d', $number),
+				'_union_register_id' => 1,
+				'_union_schema_id' => 2,
+			],
+			array_slice($this->batchTables[$table], $offset, $limit)
+		);
+	}//end batchAnswer()
 }//end class

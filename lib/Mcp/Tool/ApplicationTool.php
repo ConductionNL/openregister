@@ -27,10 +27,9 @@ namespace OCA\OpenRegister\Mcp\Tool;
 
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Db\Application;
-use OCA\OpenRegister\Db\ApplicationMapper;
+use OCA\OpenRegister\Db\ApplicationMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * ApplicationTool
@@ -45,26 +44,16 @@ use Psr\Log\LoggerInterface;
 class ApplicationTool extends AbstractTool implements ToolInterface {
 
 	/**
-	 * Application mapper for database operations
+	 * Constructor
 	 *
-	 * @var ApplicationMapper
-	 */
-	private ApplicationMapper $applicationMapper;
-
-	/**
-	 * ApplicationTool constructor
-	 *
-	 * @param ApplicationMapper $applicationMapper Application mapper instance
-	 * @param IUserSession $userSession User session
-	 * @param LoggerInterface $logger Logger instance
+	 * @param ToolCallTrail $trail The session that names the caller and the log of each call.
+	 * @param ApplicationMapperInterface $applicationMapper Application mapper instance
 	 */
 	public function __construct(
-		ApplicationMapper $applicationMapper,
-		IUserSession $userSession,
-		LoggerInterface $logger,
+		ToolCallTrail $trail,
+		private readonly ApplicationMapperInterface $applicationMapper,
 	) {
-		parent::__construct(userSession: $userSession, logger: $logger);
-		$this->applicationMapper = $applicationMapper;
+		parent::__construct(trail: $trail);
 	}//end __construct()
 
 	/**
@@ -94,163 +83,35 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 	}//end getDescription()
 
 	/**
-	 * Get function definitions for LLM function calling
+	 * The function definitions, one row each: [name, subject, action,
+	 * description, [parameter => [type, description]], required], expanded
+	 * by {@see ToolFunctionTable::expand()}.
 	 *
-	 * Returns function definitions in OpenAI function calling format.
-	 * These are used by LLMs to understand what capabilities this tool provides.
-	 *
-	 * @return array<int, array<string, mixed>> Array of function definitions
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @var array<int, array<int, mixed>>
 	 */
-	public function getFunctions(): array {
-		return array_merge(self::readFunctions(), self::writeFunctions());
-
-	}//end getFunctions()
-
-	/**
-	 * The function definitions that change nothing.
-	 *
-	 * @var array<int, array<string, mixed>>
-	 */
-	private const READ_FUNCTIONS = [
-		[
-			'name' => 'list_applications',
-			'subject' => 'application',
-			'action' => 'list',
-			'description' => 'List all accessible applications with basic information.',
-			'parameters' => [
-				'type' => 'object',
-				'properties' => [
-					'limit' => [
-						'type' => 'integer',
-						'description' => 'Maximum number of results to return (default: 50)',
-					],
-					'offset' => [
-						'type' => 'integer',
-						'description' => 'Number of results to skip for pagination (default: 0)',
-					],
-				],
-				'required' => [],
-			],
-		],
-		[
-			'name' => 'get_application',
-			'subject' => 'application',
-			'action' => 'get',
-			'description' => 'Get detailed application information by UUID.',
-			'parameters' => [
-				'type' => 'object',
-				'properties' => [
-					'uuid' => [
-						'type' => 'string',
-						'description' => 'UUID of the application to retrieve',
-					],
-				],
-				'required' => ['uuid'],
-			],
-		],
+	protected const FUNCTIONS = [
+		['list_applications', 'application', 'list', 'List all accessible applications with basic information.', [
+			'limit' => ['integer', 'Maximum number of results to return (default: 50)'],
+			'offset' => ['integer', 'Number of results to skip for pagination (default: 0)'],
+		], []],
+		['get_application', 'application', 'get', 'Get detailed application information by UUID.', [
+			'uuid' => ['string', 'UUID of the application to retrieve'],
+		], ['uuid']],
+		['create_application', 'application', 'create', 'Create a new application with unique name.', [
+			'name' => ['string', 'Name of the application (required)'],
+			'description' => ['string', 'Description of what the application does'],
+			'domain' => ['string', 'Domain or URL where the application is hosted'],
+		], ['name']],
+		['update_application', 'application', 'update', 'Update application (owner/update permission required). Provide UUID and fields to update.', [
+			'uuid' => ['string', 'UUID of the application to update'],
+			'name' => ['string', 'New name for the application'],
+			'description' => ['string', 'New description'],
+			'domain' => ['string', 'New domain or URL'],
+		], ['uuid']],
+		['delete_application', 'application', 'delete', 'Permanently delete application (owner/delete permission required). Cannot be undone.', [
+			'uuid' => ['string', 'UUID of the application to delete'],
+		], ['uuid']],
 	];
-
-	/**
-	 * The application descriptors that change nothing.
-	 *
-	 * @return array<int, array<string, mixed>> The read descriptors.
-	 */
-	private static function readFunctions(): array {
-		return self::READ_FUNCTIONS;
-	}//end readFunctions()
-
-	/**
-	 * The function definitions that change data.
-	 *
-	 * @var array<int, array<string, mixed>>
-	 */
-	private const WRITE_FUNCTIONS = [
-		[
-			'name' => 'create_application',
-			'subject' => 'application',
-			'action' => 'create',
-			'description' => 'Create a new application with unique name.',
-			'parameters' => [
-				'type' => 'object',
-				'properties' => [
-					'name' => [
-						'type' => 'string',
-						'description' => 'Name of the application (required)',
-					],
-					'description' => [
-						'type' => 'string',
-						'description' => 'Description of what the application does',
-					],
-					'domain' => [
-						'type' => 'string',
-						'description' => 'Domain or URL where the application is hosted',
-					],
-				],
-				'required' => ['name'],
-			],
-		],
-		[
-			'name' => 'update_application',
-			'subject' => 'application',
-			'action' => 'update',
-			'description' => 'Update application (owner/update permission required). Provide UUID and fields to update.',
-			'parameters' => [
-				'type' => 'object',
-				'properties' => [
-					'uuid' => [
-						'type' => 'string',
-						'description' => 'UUID of the application to update',
-					],
-					'name' => [
-						'type' => 'string',
-						'description' => 'New name for the application',
-					],
-					'description' => [
-						'type' => 'string',
-						'description' => 'New description',
-					],
-					'domain' => [
-						'type' => 'string',
-						'description' => 'New domain or URL',
-					],
-				],
-				'required' => ['uuid'],
-			],
-		],
-		[
-			'name' => 'delete_application',
-			'subject' => 'application',
-			'action' => 'delete',
-			'description' => 'Permanently delete application (owner/delete permission required). Cannot be undone.',
-			'parameters' => [
-				'type' => 'object',
-				'properties' => [
-					'uuid' => [
-						'type' => 'string',
-						'description' => 'UUID of the application to delete',
-					],
-				],
-				'required' => ['uuid'],
-			],
-		],
-	];
-
-	/**
-	 * The application descriptors that change state.
-	 *
-	 * Split from the reading half only to keep each method inside the
-	 * ExcessiveMethodLength budget — declaring `subject`/`action` on every
-	 * descriptor pushed the single combined table past it. The read/write line
-	 * is the honest place to cut, since it is the same boundary the grant
-	 * matrix groups on.
-	 *
-	 * @return array<int, array<string, mixed>> The write descriptors.
-	 */
-	private static function writeFunctions(): array {
-		return self::WRITE_FUNCTIONS;
-	}//end writeFunctions()
 
 	/**
 	 * List applications
@@ -277,7 +138,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 			);
 
 			// Get applications via mapper (RBAC is enforced in mapper).
-			$applications = $this->applicationMapper->findAll(limit: $limit, offset: $offset);
+			$applications = $this->applicationMapper->findAllBy(query: new ListQuery(limit: $limit, offset: $offset));
 			$total = $this->applicationMapper->countAll();
 
 			// Convert to array.
@@ -349,9 +210,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 	/**
 	 * Create application
 	 *
-	 * @param string $name Application name
-	 * @param string|null $description Application description
-	 * @param string|null $_domain Application domain/URL (unused, kept for API compatibility)
+	 * @param CreateApplicationCommand $command The application's name and optional description; the domain is not stored
 	 *
 	 * @return (bool|mixed|string)[] Response with created application
 	 *
@@ -359,11 +218,21 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function createApplication(
-		string $name,
-		?string $description = null,
-		?string $_domain = null,
-	): array {
+	public function createApplication(CreateApplicationCommand $command): array {
+		return $this->insertApplication(name: $command->name, description: $command->description);
+	}//end createApplication()
+
+	/**
+	 * Insert a new application and report the outcome.
+	 *
+	 * @param string      $name        Application name
+	 * @param string|null $description Application description; null or empty is skipped.
+	 *
+	 * @return (bool|mixed|string)[] Response with created application
+	 *
+	 * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
+	 */
+	private function insertApplication(string $name, ?string $description): array {
 		try {
 			$this->logger->info(
 				message: '[ApplicationTool] Creating application',
@@ -396,15 +265,12 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 			);
 			return $this->formatError(message: 'Failed to create application: ' . $e->getMessage());
 		}//end try
-	}//end createApplication()
+	}//end insertApplication()
 
 	/**
 	 * Update application
 	 *
-	 * @param string $uuid Application UUID
-	 * @param string|null $name New name
-	 * @param string|null $description New description
-	 * @param string|null $_domain New domain (unused, kept for API compatibility)
+	 * @param UpdateApplicationCommand $command The application's UUID and the fields to change; null keeps one, the domain is not stored
 	 *
 	 * @return (bool|mixed|string)[] Response with updated application
 	 *
@@ -412,12 +278,21 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function updateApplication(
-		string $uuid,
-		?string $name = null,
-		?string $description = null,
-		?string $_domain = null,
-	): array {
+	public function updateApplication(UpdateApplicationCommand $command): array {
+		return $this->patchApplication(uuid: $command->uuid, fields: ['setName' => $command->name, 'setDescription' => $command->description]);
+	}//end updateApplication()
+
+	/**
+	 * Change the non-null fields of an application and report the outcome.
+	 *
+	 * @param string                     $uuid   Application UUID
+	 * @param array<string, string|null> $fields The fields, keyed by setter; null keeps one.
+	 *
+	 * @return (bool|mixed|string)[] Response with updated application
+	 *
+	 * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
+	 */
+	private function patchApplication(string $uuid, array $fields): array {
 		try {
 			$this->logger->info(
 				message: '[ApplicationTool] Updating application',
@@ -428,12 +303,10 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 			$application = $this->applicationMapper->findByUuid(uuid: $uuid);
 
 			// Update fields.
-			if ($name !== null) {
-				$application->setName($name);
-			}
-
-			if ($description !== null) {
-				$application->setDescription($description);
+			foreach ($fields as $setter => $value) {
+				if ($value !== null) {
+					$application->$setter($value);
+				}
 			}
 
 			// Save changes (RBAC enforced in mapper).
@@ -457,7 +330,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 			);
 			return $this->formatError(message: 'Failed to update application: ' . $e->getMessage());
 		}//end try
-	}//end updateApplication()
+	}//end patchApplication()
 
 	/**
 	 * Delete application
@@ -516,10 +389,6 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array {
-		// Convert snake_case to camelCase for PSR compliance.
-		$methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
-
-		// Call the method directly (LLPhant-compatible).
-		return $this->$methodName(...array_values($parameters));
+		return $this->invokeFunction(functionName: $functionName, parameters: $parameters);
 	}//end executeFunction()
 }//end class

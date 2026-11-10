@@ -28,11 +28,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportService;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\GdprRequestParams;
+use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportRequest;
+use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportServiceInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http;
 use OCP\IRequest;
 
 /**
@@ -40,19 +43,25 @@ use OCP\IRequest;
  */
 class SubjectExportController extends Controller {
 	/**
+	 * The optional request fields.
+	 *
+	 * @var GdprRequestParams
+	 */
+	private readonly GdprRequestParams $params;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string               $appName The app name.
 	 * @param IRequest             $request The request.
-	 * @param SubjectExportService $exports The export service.
+	 * @param SubjectExportServiceInterface $exports The export service.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly SubjectExportService $exports,
+		private readonly SubjectExportServiceInterface $exports,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
+		$this->params = new GdprRequestParams(request: $request);
 	}//end __construct()
 
 	/**
@@ -73,18 +82,20 @@ class SubjectExportController extends Controller {
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function create(): JSONResponse {
-		$subject = trim((string)($this->request->getParam(key: 'subject') ?? ''));
-		if ($subject === '') {
+		$subject = $this->params->castTrimmed(key: 'subject');
+		if ($subject === null) {
 			return new JSONResponse(
 				data: ['error' => 'subject is required'],
 				statusCode: Http::STATUS_BAD_REQUEST
 			);
 		}
 
-		$export = $this->exports->request(
-			subject: $subject,
-			type: $this->optional(key: 'type'),
-			requestId: $this->optional(key: 'request')
+		$export = $this->exports->requestFor(
+			request: new SubjectExportRequest(
+				subject: $subject,
+				type: $this->params->castTrimmed(key: 'type'),
+				requestId: $this->params->castTrimmed(key: 'request')
+			)
 		);
 
 		return new JSONResponse(data: $export->jsonSerialize());
@@ -99,7 +110,7 @@ class SubjectExportController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
-	 * @no-admin-idor-exempt Guarded in-body: SubjectExportService::load refuses an export the caller did not
+	 * @no-admin-idor-exempt Guarded in-body: SubjectExportServiceInterface::load refuses an export the caller did not
 	 *   request unless they are an administrator, and answers absent rather than forbidden so the existence of
 	 *   a request about a data subject is not disclosed.
 	 *
@@ -137,13 +148,7 @@ class SubjectExportController extends Controller {
 	public function download(string $id): DataDownloadResponse|JSONResponse {
 		$bytes = $this->exports->download(uuid: $id);
 		if ($bytes === null) {
-			return new JSONResponse(
-				data: [
-					'error' => 'SUBJECT_EXPORT_UNAVAILABLE',
-					'message' => 'This export is not ready, has expired, or does not exist.',
-				],
-				statusCode: Http::STATUS_NOT_FOUND
-			);
+			return $this->unavailable();
 		}
 
 		return new DataDownloadResponse(
@@ -154,18 +159,20 @@ class SubjectExportController extends Controller {
 	}//end download()
 
 	/**
-	 * An optional trimmed parameter, normalised to null when absent.
+	 * The refusal for an export that cannot be downloaded.
 	 *
-	 * @param string $key The parameter name.
+	 * Not ready, expired and absent answer alike, so the existence of a
+	 * request about a data subject is not disclosed.
 	 *
-	 * @return string|null The value.
+	 * @return JSONResponse HTTP 404.
 	 */
-	private function optional(string $key): ?string {
-		$value = trim((string)($this->request->getParam(key: $key) ?? ''));
-		if ($value === '') {
-			return null;
-		}
-
-		return $value;
-	}//end optional()
+	private function unavailable(): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => 'SUBJECT_EXPORT_UNAVAILABLE',
+				'message' => 'This export is not ready, has expired, or does not exist.',
+			],
+			statusCode: Http::STATUS_NOT_FOUND
+		);
+	}//end unavailable()
 }//end class

@@ -174,7 +174,7 @@ class ConfigurationControllerCoverageTest extends TestCase {
 			'_search' => 'openregister',
 			'page' => 1,
 		]);
-		$this->gitlabHandler->method('searchConfigurations')
+		$this->gitlabHandler->method('searchPage')
 			->willReturn(['results' => [['name' => 'config1']]]);
 
 		$result = $this->controller->discover();

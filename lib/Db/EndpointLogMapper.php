@@ -60,7 +60,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<EndpointLog>
  */
-class EndpointLogMapper extends QBMapper {
+class EndpointLogMapper extends QBMapper implements EndpointLogMapperInterface {
 	use FindAllNewestFirstTrait;
 
 	/**
@@ -95,15 +95,14 @@ class EndpointLogMapper extends QBMapper {
 	 * @spec openspec/specs/production-observability/spec.md#requirement-per-entity-statistics-and-endpoint-delivery-log-api
 	 */
 	public function findByEndpoint(int $endpointId, ?int $limit = null, ?int $offset = null): array {
-		return $this->findByEndpoints(endpointIds: [$endpointId], limit: $limit, offset: $offset);
+		return $this->findByEndpoints(endpointIds: [$endpointId], query: self::page(limit: $limit, offset: $offset));
 	}//end findByEndpoint()
 
 	/**
 	 * Find logs of any of the given endpoints, newest first
 	 *
-	 * @param int[]    $endpointIds Endpoint IDs to filter logs by; an empty list matches nothing
-	 * @param int|null $limit       Maximum number of results to return (null = no limit)
-	 * @param int|null $offset      Starting offset for pagination (null = no offset)
+	 * @param int[]     $endpointIds Endpoint IDs to filter logs by; an empty list matches nothing
+	 * @param ListQuery $query       The page; unbounded for no limit, a null offset for none
 	 *
 	 * @return EndpointLog[]
 	 *
@@ -111,7 +110,7 @@ class EndpointLogMapper extends QBMapper {
 	 *
 	 * @spec openspec/specs/production-observability/spec.md#requirement-per-entity-statistics-and-endpoint-delivery-log-api
 	 */
-	public function findByEndpoints(array $endpointIds, ?int $limit = null, ?int $offset = null): array {
+	public function findByEndpoints(array $endpointIds, ListQuery $query): array {
 		if ($endpointIds === []) {
 			return [];
 		}
@@ -130,19 +129,43 @@ class EndpointLogMapper extends QBMapper {
 			)
 			->orderBy('created', 'DESC');
 
-		// Step 3: Apply pagination if limit specified.
+		// Step 3: Apply pagination: a limit and an offset, each only when given.
+		$this->applyPaging(qb: $qb, query: $query);
+
+		// Step 4: Execute query and return entities.
+		return $this->findEntities(query: $qb);
+	}//end findByEndpoints()
+
+	/**
+	 * Apply a limit and an offset, each only when given.
+	 *
+	 * @param IQueryBuilder $qb    The query.
+	 * @param ListQuery     $query The page: unbounded for no limit, a null offset for none.
+	 *
+	 * @return void
+	 */
+	private function applyPaging(IQueryBuilder $qb, ListQuery $query): void {
+		$limit = $query->limitOrNull();
 		if ($limit !== null) {
 			$qb->setMaxResults($limit);
 		}
 
-		// Step 4: Apply offset if specified.
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
+		if ($query->offset !== null) {
+			$qb->setFirstResult($query->offset);
 		}
+	}//end applyPaging()
 
-		// Step 5: Execute query and return entities.
-		return $this->findEntities(query: $qb);
-	}//end findByEndpoints()
+	/**
+	 * The listing of a limit and an offset, each optional.
+	 *
+	 * @param int|null $limit  Maximum rows, or null for no limit.
+	 * @param int|null $offset Rows to skip, or null for none.
+	 *
+	 * @return ListQuery The page.
+	 */
+	private static function page(?int $limit, ?int $offset): ListQuery {
+		return new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset);
+	}//end page()
 
 	/**
 	 * One page of logs, and their total, of the given visible endpoints or of one of them
@@ -157,16 +180,44 @@ class EndpointLogMapper extends QBMapper {
 	 * @spec openspec/specs/production-observability/spec.md#requirement-per-entity-statistics-and-endpoint-delivery-log-api
 	 */
 	public function findPageWithin(array $visibleIds, ?int $endpointId, ?int $limit = null, ?int $offset = null): array {
-		$endpointIds = $visibleIds;
-		if ($endpointId !== null) {
-			$endpointIds = array_values(array_intersect([$endpointId], $visibleIds));
+		return $this->findPage(
+			endpointIds: self::narrowed(visibleIds: $visibleIds, endpointId: $endpointId),
+			query: self::page(limit: $limit, offset: $offset)
+		);
+	}//end findPageWithin()
+
+	/**
+	 * One page of logs, and their total, of the given endpoints
+	 *
+	 * @param int[]     $endpointIds The endpoints; an empty list matches nothing
+	 * @param ListQuery $query       The page; unbounded for no limit, a null offset for none
+	 *
+	 * @return array{0: list<EndpointLog>, 1: int<0, max>} The page and the total
+	 *
+	 * @spec openspec/specs/production-observability/spec.md#requirement-per-entity-statistics-and-endpoint-delivery-log-api
+	 */
+	public function findPage(array $endpointIds, ListQuery $query): array {
+		return [
+			$this->findByEndpoints(endpointIds: $endpointIds, query: $query),
+			count($this->findByEndpoints(endpointIds: $endpointIds, query: ListQuery::unbounded())),
+		];
+	}//end findPage()
+
+	/**
+	 * The visible endpoints, or only the one asked for when it is visible.
+	 *
+	 * @param int[]    $visibleIds The endpoints the caller can see
+	 * @param int|null $endpointId One endpoint to narrow to, or null for all visible ones
+	 *
+	 * @return int[] The endpoints to read; empty when the one asked for is not visible
+	 */
+	private static function narrowed(array $visibleIds, ?int $endpointId): array {
+		if ($endpointId === null) {
+			return $visibleIds;
 		}
 
-		return [
-			$this->findByEndpoints(endpointIds: $endpointIds, limit: $limit, offset: $offset),
-			count($this->findByEndpoints(endpointIds: $endpointIds)),
-		];
-	}//end findPageWithin()
+		return array_values(array_intersect([$endpointId], $visibleIds));
+	}//end narrowed()
 
 	/**
 	 * Find a single log by ID

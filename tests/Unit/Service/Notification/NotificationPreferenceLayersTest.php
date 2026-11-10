@@ -6,6 +6,7 @@ namespace Unit\Service\Notification;
 
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Notifications\Service\Notification\UserGroupServices;
 use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -13,6 +14,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceAddress;
 
 /**
  * Covers the three-layer merge and the scoped preference.
@@ -87,8 +89,7 @@ class NotificationPreferenceLayersTest extends TestCase {
 			$this->config,
 			$this->schemaMapper,
 			$this->logger,
-			$this->groupManager,
-			$this->userManager
+			new UserGroupServices($this->groupManager, $this->userManager)
 		);
 	}
 
@@ -395,9 +396,9 @@ class NotificationPreferenceLayersTest extends TestCase {
 	public function testAScopedKeyIsDistinctFromTheGlobalKey(): void {
 		$this->assertNotSame(
 			$this->service->configKey('zaak', 'termijn'),
-			$this->service->scopedConfigKey('schema:zaak', 'zaak', 'termijn')
+			$this->service->scopedKeyFor(new PreferenceAddress('zaak', 'termijn', 'schema:zaak'))
 		);
-		$this->assertLessThanOrEqual(64, strlen($this->service->scopedConfigKey('schema:zaak', 'zaak', 'termijn')));
+		$this->assertLessThanOrEqual(64, strlen($this->service->scopedKeyFor(new PreferenceAddress('zaak', 'termijn', 'schema:zaak'))));
 	}
 
 	/**
@@ -405,15 +406,11 @@ class NotificationPreferenceLayersTest extends TestCase {
 	 * and two different long triples do not collide on one row.
 	 */
 	public function testALongScopedKeyCompressesWithoutColliding(): void {
-		$one = $this->service->scopedConfigKey(
-			'domain:vergunningen-en-handhaving-afdeling-west',
-			'openregister_configuration',
-			'configuration-changed'
+		$one = $this->service->scopedKeyFor(
+			new PreferenceAddress('openregister_configuration', 'configuration-changed', 'domain:vergunningen-en-handhaving-afdeling-west')
 		);
-		$two = $this->service->scopedConfigKey(
-			'domain:vergunningen-en-handhaving-afdeling-oost',
-			'openregister_configuration',
-			'configuration-changed'
+		$two = $this->service->scopedKeyFor(
+			new PreferenceAddress('openregister_configuration', 'configuration-changed', 'domain:vergunningen-en-handhaving-afdeling-oost')
 		);
 
 		$this->assertLessThanOrEqual(64, strlen($one));

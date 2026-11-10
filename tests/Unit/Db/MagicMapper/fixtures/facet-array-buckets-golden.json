@@ -1,0 +1,208 @@
+{
+    "empty": [],
+    "skipped keys": [
+        {
+            "key": "kept",
+            "count": 1
+        }
+    ],
+    "arrays and singles merge": [
+        {
+            "key": "c",
+            "count": 6
+        },
+        {
+            "key": "a",
+            "count": 5
+        },
+        {
+            "key": "b",
+            "count": 4
+        }
+    ],
+    "array elements": [
+        {
+            "key": "x",
+            "count": 2
+        },
+        {
+            "key": 5,
+            "count": 2
+        },
+        {
+            "key": 1,
+            "count": 2
+        },
+        {
+            "key": "",
+            "count": 2
+        },
+        {
+            "key": "1.5",
+            "count": 2
+        },
+        {
+            "key": "null",
+            "count": 2
+        },
+        {
+            "key": 0,
+            "count": 2
+        }
+    ],
+    "invalid and non-array json": [
+        {
+            "key": "[1, 2]x",
+            "count": 3
+        },
+        {
+            "key": "[\"unterminated\"",
+            "count": 2
+        },
+        {
+            "key": "[invalid",
+            "count": 1
+        }
+    ],
+    "json scalars": [
+        {
+            "key": 0,
+            "count": 6
+        },
+        {
+            "key": "",
+            "count": 5
+        },
+        {
+            "key": 1,
+            "count": 4
+        },
+        {
+            "key": "1.5",
+            "count": 3
+        },
+        {
+            "key": 5,
+            "count": 2
+        },
+        {
+            "key": "quoted",
+            "count": 1
+        }
+    ],
+    "json objects": [
+        {
+            "key": "",
+            "count": 4
+        },
+        {
+            "key": "{}",
+            "count": 3
+        },
+        {
+            "key": "{\"a\":1,\"b\":2}",
+            "count": 2
+        },
+        {
+            "key": "v",
+            "count": 1
+        }
+    ],
+    "non-string keys": [
+        {
+            "key": 0,
+            "count": 5
+        },
+        {
+            "key": "",
+            "count": 4
+        },
+        {
+            "key": 1,
+            "count": 3
+        },
+        {
+            "key": "2.5",
+            "count": 2
+        },
+        {
+            "key": 7,
+            "count": 1
+        }
+    ],
+    "plain strings and ties": [
+        {
+            "key": "plain",
+            "count": 2
+        },
+        {
+            "key": "other",
+            "count": 2
+        },
+        {
+            "key": "Plain",
+            "count": 2
+        },
+        {
+            "key": "07",
+            "count": 1
+        },
+        {
+            "key": 7,
+            "count": 1
+        }
+    ],
+    "string counts": [
+        {
+            "key": "a",
+            "count": 5
+        }
+    ],
+    "capped": {
+        "count": 10000,
+        "head": [
+            {
+                "key": "v6",
+                "count": 7
+            },
+            {
+                "key": "v13",
+                "count": 7
+            },
+            {
+                "key": "v20",
+                "count": 7
+            },
+            {
+                "key": "v27",
+                "count": 7
+            },
+            {
+                "key": "v34",
+                "count": 7
+            }
+        ],
+        "tail": [
+            {
+                "key": "v9940",
+                "count": 1
+            },
+            {
+                "key": "v9947",
+                "count": 1
+            },
+            {
+                "key": "v9954",
+                "count": 1
+            },
+            {
+                "key": "v9961",
+                "count": 1
+            },
+            {
+                "key": "v9968",
+                "count": 1
+            }
+        ]
+    }
+}

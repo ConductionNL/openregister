@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\OAuth2ClientNotConfiguredException;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepository;
+use OCA\OpenRegister\Service\Credential\OAuth2AuthorizationRequest;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectService;
 use OCA\OpenRegister\Service\Credential\OAuth2RegistrationFailedException;
 use OCA\OpenRegister\Service\Credential\OAuth2Endpoints;
@@ -57,7 +58,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Controller\CredentialOauth2Controller
  * @uses \OCA\OpenRegister\Controller\Support\CredentialOauth2Mappers
  * @uses \OCA\OpenRegister\Controller\Support\CredentialOauth2Domain
- * @uses \OCA\OpenRegister\Controller\Support\CredentialOauth2Platform
+ * @uses \OCA\OpenRegister\Controller\Support\AccessLinkPlatform
  * @uses \OCA\OpenRegister\Controller\Support\CredentialOauth2ControllerServices
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Credential\OAuth2Endpoints
@@ -608,12 +609,12 @@ class CredentialOauth2ControllerTest extends TestCase {
 		}
 
 		$connections->method('disable')->willReturnCallback(
-			function (string $credentialId, array $data, string $lastError) use ($disableFails): void {
+			function (\OCA\OpenRegister\Service\Credential\OAuth2ConnectionRecord $connection, string $lastError) use ($disableFails): void {
 				if ($disableFails === true) {
 					throw new RuntimeException('the object store is down');
 				}
 
-				$this->disables[] = ['credentialId' => $credentialId, 'lastError' => $lastError];
+				$this->disables[] = ['credentialId' => $connection->credentialId, 'lastError' => $lastError];
 			}
 		);
 
@@ -647,6 +648,9 @@ class CredentialOauth2ControllerTest extends TestCase {
 			}
 		);
 
+		$connect->method('authorizationRequest')->willReturnCallback(
+			static fn (string $redirectUri, array $issued): OAuth2AuthorizationRequest => new OAuth2AuthorizationRequest($redirectUri, $issued['state'], $issued['challenge'])
+		);
 		if (isset($startThrows['authorizationUrl']) === true) {
 			$connect->method('authorizationUrl')->willThrowException($startThrows['authorizationUrl']);
 		} else {

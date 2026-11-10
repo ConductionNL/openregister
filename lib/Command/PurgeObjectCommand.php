@@ -43,12 +43,14 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use OCA\OpenRegister\Command\Support\PurgeSwitches;
 
 /**
  * Permanently destroy object rows by UUID.
@@ -58,19 +60,33 @@ use Symfony\Component\Console\Output\OutputInterface;
 class PurgeObjectCommand extends Command {
 
 	/**
+	 * Magic-table object lookup and delete.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $objectMapper;
+
+	/**
+	 * Schema lookup, to read the archival annotation.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * Wire the mappers.
 	 *
-	 * @param MagicMapperInterface      $objectMapper     Magic-table object lookup and delete.
-	 * @param SchemaMapperInterface     $schemaMapper     Schema lookup, to read the archival annotation.
+	 * @param SchemaCatalogInterface    $catalog          Magic-table object lookup and delete, and the schema lookup that reads the archival annotation.
 	 * @param AuditTrailMapperInterface $auditTrailMapper Resolves the objects an import job created.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $objectMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		SchemaCatalogInterface $catalog,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 	) {
+		$this->objectMapper = $catalog->tables();
+		$this->schemaMapper = $catalog->schemas();
 		parent::__construct();
 	}//end __construct()
 
@@ -126,8 +142,7 @@ class PurgeObjectCommand extends Command {
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$uuids = array_map('strval', (array)$input->getArgument('uuid'));
-		$force = (bool)$input->getOption('force');
-		$apply = (bool)$input->getOption('apply');
+		$switches = new PurgeSwitches(force: (bool)$input->getOption('force'), apply: (bool)$input->getOption('apply'));
 		$fromJob = $this->importJobUuids(importJobId: (string)($input->getOption('import-job') ?? ''), output: $output);
 
 		if ($uuids === [] && $fromJob === null) {
@@ -135,18 +150,19 @@ class PurgeObjectCommand extends Command {
 			return 1;
 		}
 
+		$run = new PurgeRun(switches: $switches, output: $output);
 		$failures = 0;
 		foreach ($uuids as $uuid) {
-			$failures += $this->purgeOne(uuid: $uuid, force: $force, apply: $apply, output: $output);
+			$failures += $this->purgeNamed(run: $run, uuid: $uuid);
 		}
 
 		// In job mode a missing object was removed already, so a re-run after
 		// a partial purge reports it rather than failing on it.
 		foreach (array_diff(($fromJob ?? []), $uuids) as $uuid) {
-			$failures += $this->purgeOne(uuid: $uuid, force: $force, apply: $apply, output: $output, fromJob: true);
+			$failures += $this->purgeFromJob(run: $run, uuid: $uuid);
 		}
 
-		if ($apply === false) {
+		if ($switches->apply === false) {
 			$output->writeln('');
 			$output->writeln('<comment>Dry run. Re-run with --apply to destroy these rows.</comment>');
 		}
@@ -181,69 +197,110 @@ class PurgeObjectCommand extends Command {
 	}//end importJobUuids()
 
 	/**
-	 * Handle a single UUID.
+	 * Handle a UUID the operator named; a missing object is a failure.
 	 *
-	 * @param string          $uuid   The object UUID.
-	 * @param bool            $force  Whether archival and live rows may be purged.
-	 * @param bool            $apply  Whether to actually write.
-	 * @param OutputInterface $output Console output.
-	 * @param bool            $fromJob Whether the UUID came from --import-job, where a missing
-	 *                                 object was removed already rather than mistyped.
+	 * @param PurgeRun $run  The operator's switches and the output.
+	 * @param string   $uuid The object UUID.
 	 *
 	 * @return int 1 when the object was refused or could not be handled, 0 otherwise.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors the command's own --force and --apply switches.
 	 */
-	private function purgeOne(string $uuid, bool $force, bool $apply, OutputInterface $output, bool $fromJob=false): int {
+	private function purgeNamed(PurgeRun $run, string $uuid): int {
 		try {
-			$object = $this->objectMapper->find(
-				identifier: $uuid,
-				register: null,
-				schema: null,
-				includeDeleted: true,
-				_rbac: false,
-				_multitenancy: false
-			);
+			$object = $this->findIncludingDeleted(uuid: $uuid);
 		} catch (\Throwable $e) {
-			if ($fromJob === true) {
-				$output->writeln(sprintf('%s: already gone', $uuid));
-				return 0;
-			}
-
-			$output->writeln(sprintf('<error>%s: not found (%s)</error>', $uuid, $e->getMessage()));
+			$run->output->writeln(sprintf('<error>%s: not found (%s)</error>', $uuid, $e->getMessage()));
 			return 1;
 		}
 
-		$schema = $this->resolveSchema(object: $object);
-		$isArchival = ($schema !== null && $schema->hasArchivalAnnotation() === true);
-		$label = ($schema?->getSlug() ?? (string)$object->getSchema());
+		return $this->purgeCandidate(run: $run, candidate: $this->candidateFor(uuid: $uuid, object: $object));
+	}//end purgeNamed()
 
-		$refusal = $this->refusalReason(object: $object, isArchival: $isArchival, force: $force, label: $label);
+	/**
+	 * Handle a UUID an import job created; a missing object was removed already.
+	 *
+	 * @param PurgeRun $run  The operator's switches and the output.
+	 * @param string   $uuid The object UUID.
+	 *
+	 * @return int 1 when the object was refused or could not be handled, 0 otherwise.
+	 */
+	private function purgeFromJob(PurgeRun $run, string $uuid): int {
+		try {
+			$object = $this->findIncludingDeleted(uuid: $uuid);
+		} catch (\Throwable $e) {
+			$run->output->writeln(sprintf('%s: already gone', $uuid));
+			return 0;
+		}
+
+		return $this->purgeCandidate(run: $run, candidate: $this->candidateFor(uuid: $uuid, object: $object));
+	}//end purgeFromJob()
+
+	/**
+	 * Find an object by UUID, trashed ones included, outside RBAC and tenancy.
+	 *
+	 * @param string $uuid The object UUID.
+	 *
+	 * @return ObjectEntity The object.
+	 *
+	 * @throws \Throwable When no object matches.
+	 */
+	private function findIncludingDeleted(string $uuid): ObjectEntity {
+		return $this->objectMapper->find(
+			identifier: $uuid,
+			register: null,
+			schema: null,
+			includeDeleted: true,
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end findIncludingDeleted()
+
+	/**
+	 * The candidate a found object makes, with its schema resolved.
+	 *
+	 * @param string       $uuid   The UUID as named.
+	 * @param ObjectEntity $object The object it resolved to.
+	 *
+	 * @return PurgeCandidate The candidate.
+	 */
+	private function candidateFor(string $uuid, ObjectEntity $object): PurgeCandidate {
+		return new PurgeCandidate(uuid: $uuid, object: $object, schema: $this->resolveSchema(object: $object));
+	}//end candidateFor()
+
+	/**
+	 * Refuse, report or destroy one found object.
+	 *
+	 * @param PurgeRun       $run       The operator's switches and the output.
+	 * @param PurgeCandidate $candidate The object and its schema.
+	 *
+	 * @return int 1 when the object was refused or could not be destroyed, 0 otherwise.
+	 */
+	private function purgeCandidate(PurgeRun $run, PurgeCandidate $candidate): int {
+		$refusal = self::refusalReason(candidate: $candidate, switches: $run->switches);
 		if ($refusal !== null) {
-			$output->writeln(sprintf('<error>%s: refused — %s</error>', $uuid, $refusal));
+			$run->output->writeln(sprintf('<error>%s: refused — %s</error>', $candidate->uuid, $refusal));
 			return 1;
 		}
 
 		$note = '';
-		if ($isArchival === true) {
+		if ($candidate->isArchival() === true) {
 			$note = ' <comment>(ARCHIVAL RECORD)</comment>';
 		}
 
-		if ($apply === false) {
-			$output->writeln(sprintf('would purge %s from "%s"%s', $uuid, $label, $note));
+		if ($run->switches->apply === false) {
+			$run->output->writeln(sprintf('would purge %s from "%s"%s', $candidate->uuid, $candidate->label(), $note));
 			return 0;
 		}
 
 		try {
-			$this->objectMapper->delete($object);
+			$this->objectMapper->delete($candidate->object);
 		} catch (\Throwable $e) {
-			$output->writeln(sprintf('<error>%s: purge failed (%s)</error>', $uuid, $e->getMessage()));
+			$run->output->writeln(sprintf('<error>%s: purge failed (%s)</error>', $candidate->uuid, $e->getMessage()));
 			return 1;
 		}
 
-		$output->writeln(sprintf('<info>purged</info> %s from "%s"%s', $uuid, $label, $note));
+		$run->output->writeln(sprintf('<info>purged</info> %s from "%s"%s', $candidate->uuid, $candidate->label(), $note));
 		return 0;
-	}//end purgeOne()
+	}//end purgeCandidate()
 
 	/**
 	 * Why this object may not be purged, or null when it may.
@@ -252,27 +309,25 @@ class PurgeObjectCommand extends Command {
 	 * the routine paths that create and remove rows have already declined, so
 	 * the operator has to say out loud that they are overriding them.
 	 *
-	 * @param ObjectEntity $object     The object being purged.
-	 * @param bool         $isArchival Whether its schema declares the archival annotation.
-	 * @param bool         $force      Whether the operator passed --force.
-	 * @param string       $label      The schema slug or id, for the message.
+	 * @param PurgeCandidate $candidate The object being purged and its schema.
+	 * @param PurgeSwitches  $switches  The operator's --force and --apply switches.
 	 *
 	 * @return string|null The refusal reason, or null when the purge may proceed.
 	 */
-	private function refusalReason(ObjectEntity $object, bool $isArchival, bool $force, string $label): ?string {
-		if ($force === true) {
+	private static function refusalReason(PurgeCandidate $candidate, PurgeSwitches $switches): ?string {
+		if ($switches->force === true) {
 			return null;
 		}
 
-		if ($isArchival === true) {
+		if ($candidate->isArchival() === true) {
 			return sprintf(
 				'schema "%s" declares x-openregister-archival. '
 				. 'Pass --force to purge a legally retained record.',
-				$label
+				$candidate->label()
 			);
 		}
 
-		if ($object->isSoftDeleted() === false) {
+		if ($candidate->object->isSoftDeleted() === false) {
 			return 'the object is live, not in the trash. Delete it first, or pass --force.';
 		}
 

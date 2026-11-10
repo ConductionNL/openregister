@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
-use OCA\OpenRegister\Service\CalendarLinkService;
+use OCA\OpenRegister\Service\CalendarLinkServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 
 /**
@@ -38,7 +38,7 @@ final class TaskEventsControllerServices {
 	 *
 	 * @param TaskManagerInterface          $tasks         Resolves a task by uuid.
 	 * @param TaskAuthorizationService      $authorization Read-visibility decisions.
-	 * @param CalendarLinkService           $links         The link-table layer, uuid-anchored.
+	 * @param CalendarLinkServiceInterface  $links         The link-table layer, uuid-anchored.
 	 * @param ObjectCalendarEventsInterface $events        The VEVENT layer, for the legacy
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
@@ -46,7 +46,7 @@ final class TaskEventsControllerServices {
 	public function __construct(
 		public readonly TaskManagerInterface $tasks,
 		public readonly TaskAuthorizationService $authorization,
-		public readonly CalendarLinkService $links,
+		public readonly CalendarLinkServiceInterface $links,
 		public readonly ObjectCalendarEventsInterface $events,
 	) {
 	}//end __construct()

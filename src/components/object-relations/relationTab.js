@@ -7,6 +7,7 @@
  * @copyright 2026 Conduction B.V.
  */
 import { translate as t } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
 
 /**
  * A mixin for a tab of one object. The tab supplies `load()`.
@@ -74,6 +75,24 @@ export const relationTab = {
 			} catch {
 				return value
 			}
+		},
+
+		/**
+		 * @param {string} path The endpoint under the object, e.g. `/emails`
+		 * @param {object} extra Further parameters the path names
+		 * @return {string} The URL of the endpoint for this tab's object
+		 * @spec exclude URL builder of the tab's object, UI plumbing
+		 */
+		objectApiUrl(path, extra = {}) {
+			return generateUrl(
+				'/apps/openregister/api/objects/{register}/{schema}/{id}' + path,
+				{
+					register: this.register,
+					schema: this.schema,
+					id: this.objectId,
+					...extra,
+				},
+			)
 		},
 
 		/**

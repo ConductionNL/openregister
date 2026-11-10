@@ -58,11 +58,11 @@ class GrantManageGuard {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectScopeResolver $scopeResolver The one definition of who is admitted unconditionally.
+	 * @param ObjectScopeResolverInterface $scopeResolver The one definition of who is admitted unconditionally.
 	 * @param OrganisationSpecialRights $specialRights Reads the special right from the record's organisation.
 	 */
 	public function __construct(
-		private readonly ObjectScopeResolver $scopeResolver,
+		private readonly ObjectScopeResolverInterface $scopeResolver,
 		private readonly OrganisationSpecialRights $specialRights,
 	) {
 	}//end __construct()
@@ -79,9 +79,21 @@ class GrantManageGuard {
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
 	public function admittedAs(?string $userId, array $userGroups, ObjectEntity $object): ?string {
+		return $this->admittedCaller(caller: new GrantCaller(userId: $userId, userGroups: $userGroups), object: $object);
+	}//end admittedAs()
+
+	/**
+	 * As what one caller may manage a record's grants, or null when it may not.
+	 *
+	 * @param GrantCaller  $caller The caller and its group ids.
+	 * @param ObjectEntity $object The record.
+	 *
+	 * @return string|null AS_OWNER, AS_HOLDER, or null for a caller who is refused.
+	 */
+	private function admittedCaller(GrantCaller $caller, ObjectEntity $object): ?string {
 		if ($this->scopeResolver->admitsUnconditionally(
-			userId: $userId,
-			userGroups: $userGroups,
+			userId: $caller->userId,
+			userGroups: $caller->userGroups,
 			objectOwner: $object->getOwner(),
 			authorization: $object->getAuthorization()
 		) === true
@@ -89,10 +101,10 @@ class GrantManageGuard {
 			return self::AS_OWNER;
 		}
 
-		if ($userId !== null
+		if ($caller->userId !== null
 			&& $this->specialRights->holdsOn(
 				right: OrganisationSpecialRights::GRANT_MANAGE,
-				userGroups: $userGroups,
+				userGroups: $caller->userGroups,
 				object: $object
 			) === true
 		) {
@@ -100,7 +112,7 @@ class GrantManageGuard {
 		}
 
 		return null;
-	}//end admittedAs()
+	}//end admittedCaller()
 
 	/**
 	 * Whether a holder of the special right is trying to let itself in.
@@ -113,27 +125,34 @@ class GrantManageGuard {
 	 * @param string|null $admittedAs What {@see admittedAs()} answered.
 	 * @param string|null $userId The caller.
 	 * @param string[] $userGroups The caller's group ids.
-	 * @param string|null $user The user being let in, or null.
-	 * @param string|null $group The group being let in, or null.
-	 * @param string|null $remote The remote user or remote group being let in, or null.
+	 * @param GrantedPrincipal $principal The user, group or remote principal being let in.
 	 *
 	 * @return bool True when the request must be refused.
 	 *
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
-	public function letsItselfIn(?string $admittedAs, ?string $userId, array $userGroups, ?string $user, ?string $group, ?string $remote = null): bool {
-		if ($admittedAs !== self::AS_HOLDER) {
-			return false;
-		}
-
-		if ($remote !== null) {
-			return true;
-		}
-
-		if ($user !== null && $user === $userId) {
-			return true;
-		}
-
-		return ($group !== null && in_array(needle: $group, haystack: $userGroups, strict: true) === true);
+	public function letsItselfIn(?string $admittedAs, ?string $userId, array $userGroups, GrantedPrincipal $principal): bool {
+		return $admittedAs === self::AS_HOLDER
+			&& $this->namesCaller(caller: new GrantCaller(userId: $userId, userGroups: $userGroups), principal: $principal) === true;
 	}//end letsItselfIn()
+
+	/**
+	 * Whether a principal is the caller itself: a remote principal, its own account or a group it is in.
+	 *
+	 * @param GrantCaller      $caller    The caller and its group ids.
+	 * @param GrantedPrincipal $principal The user, group or remote principal being let in.
+	 *
+	 * @return bool True when the principal lets the caller in.
+	 */
+	private function namesCaller(GrantCaller $caller, GrantedPrincipal $principal): bool {
+		if ($principal->remote !== null) {
+			return true;
+		}
+
+		if ($principal->user !== null && $principal->user === $caller->userId) {
+			return true;
+		}
+
+		return ($principal->group !== null && in_array(needle: $principal->group, haystack: $caller->userGroups, strict: true) === true);
+	}//end namesCaller()
 }//end class

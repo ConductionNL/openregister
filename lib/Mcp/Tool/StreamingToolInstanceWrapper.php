@@ -36,7 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Mcp\Tool;
 
-use OCA\OpenRegister\Mcp\Service\Chat\StreamYieldChannel;
+use OCA\OpenRegister\Kernel\Contracts\ChatStreamChannelInterface;
 use Throwable;
 
 /**
@@ -59,19 +59,19 @@ class StreamingToolInstanceWrapper {
 	/**
 	 * Channel to forward tool events through.
 	 *
-	 * @var StreamYieldChannel
+	 * @var ChatStreamChannelInterface
 	 */
-	private StreamYieldChannel $channel;
+	private ChatStreamChannelInterface $channel;
 
 	/**
 	 * Constructor.
 	 *
 	 * @param object $wrapped The tool instance LLPhant will call
-	 * @param StreamYieldChannel $channel Channel that fans frames to the SSE controller
+	 * @param ChatStreamChannelInterface $channel Channel that fans frames to the SSE controller
 	 *
 	 * @return void
 	 */
-	public function __construct(object $wrapped, StreamYieldChannel $channel) {
+	public function __construct(object $wrapped, ChatStreamChannelInterface $channel) {
 		$this->wrapped = $wrapped;
 		$this->channel = $channel;
 

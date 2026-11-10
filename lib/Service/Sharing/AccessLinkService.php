@@ -48,13 +48,9 @@ use DateTime;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AccessLink;
-use OCA\OpenRegister\Db\AccessLinkMapper;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\AccessLinkMapperInterface;
 use OCP\IURLGenerator;
-use OCP\Security\IHasher;
 use OCP\Security\ISecureRandom;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
 
@@ -69,7 +65,7 @@ use Throwable;
  *
  * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
  */
-class AccessLinkService {
+class AccessLinkService implements AccessLinkServiceInterface {
 
 	/**
 	 * The length of the random anchor, in characters.
@@ -82,46 +78,37 @@ class AccessLinkService {
 	private const ANCHOR_LENGTH = 43;
 
 	/**
-	 * The audit action written when a link serves its subject.
-	 *
-	 * @var string
-	 */
-	public const ACT_READ = 'accesslink.read';
-
-	/**
-	 * The audit action written when a link leaves a comment.
-	 *
-	 * @var string
-	 */
-	public const ACT_COMMENT = 'accesslink.comment';
-
-	/**
-	 * The audit action written when a link adds a file.
-	 *
-	 * @var string
-	 */
-	public const ACT_UPLOAD = 'accesslink.upload';
-
-	/**
 	 * Constructor.
 	 *
-	 * @param AccessLinkMapper $mapper The link store.
-	 * @param AuditTrailMapperInterface $auditTrail The audit trail, where every use is written.
-	 * @param ISecureRandom $secureRandom Nextcloud's secure RNG, for the anchor.
-	 * @param IHasher $hasher Nextcloud's password hasher.
+	 * @param AccessLinkMapperInterface $mapper The link store.
+	 * @param AccessLinkUseLog $useLog The audit trail every use is written to, and the log.
+	 * @param AccessLinkSecrets $secrets The RNG for the anchor and the password hasher.
 	 * @param IURLGenerator $urlGenerator The URL generator, for the link a holder is given.
-	 * @param LoggerInterface $logger PSR logger.
 	 */
 	public function __construct(
-		private readonly AccessLinkMapper $mapper,
-		private readonly AuditTrailMapperInterface $auditTrail,
-		private readonly ISecureRandom $secureRandom,
-		private readonly IHasher $hasher,
+		private readonly AccessLinkMapperInterface $mapper,
+		private readonly AccessLinkUseLog $useLog,
+		private readonly AccessLinkSecrets $secrets,
 		private readonly IURLGenerator $urlGenerator,
-		private readonly LoggerInterface $logger,
 	) {
 
 	}//end __construct()
+
+	/**
+	 * The terms a link is minted on, as asked; mint() refuses unusable ones.
+	 *
+	 * @param array<int, string> $capabilities The declared capabilities; empty means read only.
+	 * @param string|null        $expiresAt    The end date, in any format DateTime parses.
+	 * @param string|null        $password     Optional password, checked at use.
+	 * @param string|null        $label        Optional human label.
+	 *
+	 * @return AccessLinkTerms The terms.
+	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
+	 */
+	public function terms(array $capabilities, ?string $expiresAt, ?string $password, ?string $label): AccessLinkTerms {
+		return new AccessLinkTerms(capabilities: $capabilities, expiresAt: $expiresAt, password: $password, label: $label);
+	}//end terms()
 
 	/**
 	 * Mint a link over one subject.
@@ -130,13 +117,10 @@ class AccessLinkService {
 	 * reaches for, so the identity behind a published link is decided at the
 	 * HTTP boundary and is visible there.
 	 *
-	 * @param string $userId The principal minting the link.
-	 * @param string $subjectType `object`, `view` or `file`.
-	 * @param string $subjectId The object uuid, view uuid, or file id.
-	 * @param array<int, string> $capabilities The declared capabilities; empty means read only.
-	 * @param string|null $expiresAt The end date, in any format DateTime parses. Required.
-	 * @param string|null $password Optional password, checked at use.
-	 * @param string|null $label Optional human label.
+	 * @param string          $userId      The principal minting the link.
+	 * @param string          $subjectType `object`, `view` or `file`.
+	 * @param string          $subjectId   The object uuid, view uuid, or file id.
+	 * @param AccessLinkTerms $terms       The capabilities, the expiry (required), the password and the label.
 	 *
 	 * @return array<string, mixed> The link row plus the URL a holder opens.
 	 *
@@ -144,54 +128,21 @@ class AccessLinkService {
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
 	 */
-	public function mint(
-		string $userId,
-		string $subjectType,
-		string $subjectId,
-		array $capabilities = [],
-		?string $expiresAt = null,
-		?string $password = null,
-		?string $label = null,
-	): array {
-		$userId = trim($userId);
-		if ($userId === '') {
-			throw new InvalidArgumentException('A logged-in user is required to mint an access link.');
-		}
+	public function mint(string $userId, string $subjectType, string $subjectId, AccessLinkTerms $terms): array {
+		// Every refusal is answered before anything is drawn, hashed or written.
+		$minter = $this->requireMinter(userId: $userId);
+		$kind = $this->requireSubjectType(subjectType: $subjectType);
+		$subject = $this->requireSubjectId(subjectId: $subjectId);
+		$declared = $this->normaliseCapabilities(capabilities: $terms->capabilities);
+		$expiry = $this->requireExpiry(expiresAt: $terms->expiresAt);
 
-		$subjectType = strtolower(trim($subjectType));
-		if (in_array($subjectType, AccessLink::SUBJECT_TYPES, true) === false) {
-			throw new InvalidArgumentException(
-				sprintf(
-					"'%s' is not a link subject: use %s.",
-					$subjectType,
-					implode(', ', AccessLink::SUBJECT_TYPES)
-				)
-			);
-		}
-
-		$subjectId = trim($subjectId);
-		if ($subjectId === '') {
-			throw new InvalidArgumentException('An access link must name the subject it opens.');
-		}
-
-		$declared = $this->normaliseCapabilities(capabilities: $capabilities);
-		$expiry = $this->requireExpiry(expiresAt: $expiresAt);
-
-		$link = new AccessLink();
-		$link->setUuid(Uuid::v4()->toRfc4122());
-		$link->setAnchor($this->secureRandom->generate(self::ANCHOR_LENGTH, ISecureRandom::CHAR_ALPHANUMERIC));
-		$link->setSubjectType($subjectType);
-		$link->setSubjectId($subjectId);
+		$link = $this->newLink(subjectType: $kind, subjectId: $subject);
 		$link->setCapabilities(implode(',', $declared));
-		$link->setLabel($this->trimmedOrNull(value: $label));
-		$link->setPasswordHash($this->hashedPassword(password: $password));
-		$link->setCreatedBy($userId);
+		$link->setLabel($this->trimmedOrNull(value: $terms->label));
+		$link->setPasswordHash($this->hashedPassword(password: $terms->password));
+		$link->setCreatedBy($minter);
 		$link->setCreated(new DateTime());
 		$link->setExpiresAt($expiry);
-		$link->setRevokedAt(null);
-		$link->setDisabled(false);
-		$link->setLastUsedAt(null);
-		$link->setUseCount(0);
 
 		$saved = $this->mapper->insert($link);
 
@@ -247,7 +198,7 @@ class AccessLinkService {
 			return false;
 		}
 
-		return $this->hasher->verify($password, (string)$link->getPasswordHash());
+		return $this->secrets->hasher->verify($password, (string)$link->getPasswordHash());
 	}//end passwordAccepted()
 
 	/**
@@ -342,47 +293,38 @@ class AccessLinkService {
 	 * entry: a failure to bump a counter must never lose the entry.
 	 *
 	 * @param AccessLink $link The link that acted.
-	 * @param string $act The audit action, one of this class's ACT_ constants.
-	 * @param ObjectEntity|null $object The object touched, when the subject resolved to one.
-	 * @param string|null $ipAddress The calling address.
-	 * @param array<string, mixed> $context Anything else worth recording.
+	 * @param AccessLinkUse $use What it did, to which object, from which address, with what context.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-revoked-or-expired-link-answers-404-and-every-use-is-recorded-req-abl-003
 	 */
-	public function recordUse(
-		AccessLink $link,
-		string $act,
-		?ObjectEntity $object = null,
-		?string $ipAddress = null,
-		array $context = [],
-	): void {
-		if ($object !== null) {
+	public function recordUse(AccessLink $link, AccessLinkUse $use): void {
+		if ($use->object !== null) {
 			try {
-				$this->auditTrail->createAuditTrailEntry(
-					object: $object,
-					action: $act,
+				$this->useLog->auditTrail->createAuditTrailEntry(
+					object: $use->object,
+					action: $use->act,
 					context: array_merge(
-						$context,
+						$use->context,
 						[
 							'accessLink' => $link->getUuid(),
 							'capabilities' => $link->declaredCapabilities(),
 							'subjectType' => $link->getSubjectType(),
 							'subjectId' => $link->getSubjectId(),
-							'ipAddress' => $ipAddress,
+							'ipAddress' => $use->ipAddress,
 						]
 					),
 					actorId: $link->principalId(),
 					actorName: $link->principalName(),
-					ipAddress: $ipAddress
+					ipAddress: $use->ipAddress
 				);
 			} catch (Throwable $failure) {
 				// An audit write that fails must be visible, and it must not
 				// silently turn a recorded act into an unrecorded one.
-				$this->logger->error(
+				$this->useLog->logger->error(
 					'[AccessLinkService] Could not record a link use: ' . $failure->getMessage(),
-					['accessLink' => $link->getUuid(), 'act' => $act]
+					['accessLink' => $link->getUuid(), 'act' => $use->act]
 				);
 			}
 		}
@@ -464,6 +406,88 @@ class AccessLinkService {
 
 		return $link;
 	}//end ownedLink()
+
+	/**
+	 * The minting principal, trimmed.
+	 *
+	 * @param string $userId The principal minting the link.
+	 *
+	 * @return string The trimmed principal.
+	 *
+	 * @throws InvalidArgumentException When nobody is minting.
+	 */
+	private function requireMinter(string $userId): string {
+		$userId = trim($userId);
+		if ($userId === '') {
+			throw new InvalidArgumentException('A logged-in user is required to mint an access link.');
+		}
+
+		return $userId;
+	}//end requireMinter()
+
+	/**
+	 * The subject kind, normalised.
+	 *
+	 * @param string $subjectType The requested kind.
+	 *
+	 * @return string `object`, `view` or `file`.
+	 *
+	 * @throws InvalidArgumentException When the kind is not one a link can open.
+	 */
+	private function requireSubjectType(string $subjectType): string {
+		$subjectType = strtolower(trim($subjectType));
+		if (in_array($subjectType, AccessLink::SUBJECT_TYPES, true) === false) {
+			throw new InvalidArgumentException(
+				sprintf(
+					"'%s' is not a link subject: use %s.",
+					$subjectType,
+					implode(', ', AccessLink::SUBJECT_TYPES)
+				)
+			);
+		}
+
+		return $subjectType;
+	}//end requireSubjectType()
+
+	/**
+	 * The subject identifier, trimmed.
+	 *
+	 * @param string $subjectId The requested subject.
+	 *
+	 * @return string The trimmed subject.
+	 *
+	 * @throws InvalidArgumentException When no subject is named.
+	 */
+	private function requireSubjectId(string $subjectId): string {
+		$subjectId = trim($subjectId);
+		if ($subjectId === '') {
+			throw new InvalidArgumentException('An access link must name the subject it opens.');
+		}
+
+		return $subjectId;
+	}//end requireSubjectId()
+
+	/**
+	 * A fresh, unsaved, unused link over one subject, with its uuid and random anchor.
+	 *
+	 * @param string $subjectType The validated subject kind.
+	 * @param string $subjectId The validated subject.
+	 *
+	 * @return AccessLink The new row.
+	 */
+	private function newLink(string $subjectType, string $subjectId): AccessLink {
+		$link = new AccessLink();
+		$link->setUuid(Uuid::v4()->toRfc4122());
+		$link->setAnchor($this->secrets->secureRandom->generate(self::ANCHOR_LENGTH, ISecureRandom::CHAR_ALPHANUMERIC));
+		$link->setSubjectType($subjectType);
+		$link->setSubjectId($subjectId);
+		$link->setRevokedAt(null);
+		$link->setDisabled(false);
+		$link->setLastUsedAt(null);
+		$link->setUseCount(0);
+
+		return $link;
+	}//end newLink()
 
 	/**
 	 * Bump the row's use counters, never failing the act.
@@ -578,7 +602,7 @@ class AccessLinkService {
 			return null;
 		}
 
-		return $this->hasher->hash($raw);
+		return $this->secrets->hasher->hash($raw);
 	}//end hashedPassword()
 
 	/**

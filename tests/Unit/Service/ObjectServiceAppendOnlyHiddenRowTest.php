@@ -38,6 +38,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -86,6 +87,7 @@ use ReflectionMethod;
  * @covers \OCA\OpenRegister\Service\ObjectService
  * @uses   \OCA\OpenRegister\Service\Object\SaveAccessRequest
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Service\Object\ObjectSaveRun
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
@@ -149,9 +151,9 @@ class ObjectServiceAppendOnlyHiddenRowTest extends TestCase {
 		);
 
 		$logger = new NullLogger();
-		$conditionMatcher = new ConditionMatcher($userSession, $container, new OperatorEvaluator($logger), $logger);
+		$conditionMatcher = new ConditionMatcher(new ConditionUserResolvers($userSession), $container, new OperatorEvaluator($logger), $logger);
 
-		$permissionHandler = new PermissionHandler(
+		$permissionHandler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$userSession,
 			$userManager,
 			$groupManager,

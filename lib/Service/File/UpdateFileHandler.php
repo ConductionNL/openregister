@@ -22,18 +22,14 @@ namespace OCA\OpenRegister\Service\File;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\InvalidPathException;
-use OCP\Files\IRootFolder;
 use OCP\Files\Node;
 use OCP\Files\NotFoundException;
 use OCP\Files\NotPermittedException;
-use OCP\SystemTag\ISystemTagManager;
-use OCP\SystemTag\ISystemTagObjectMapper;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 
 /**
  * Handles file update operations with Single Responsibility.
@@ -70,33 +66,23 @@ class UpdateFileHandler {
 	/**
 	 * Reference to FileService for cross-handler coordination (circular dependency break).
 	 *
-	 * @var FileService|null
+	 * @var FileHandlerSupportInterface|null
 	 */
-	private ?FileService $fileService = null;
+	private ?FileHandlerSupportInterface $fileService = null;
 
 	/**
 	 * Constructor for UpdateFileHandler.
 	 *
-	 * @param IRootFolder $rootFolder Root folder for file operations.
-	 * @param FolderManagementHandler $folderMgmtHandler Folder management handler.
-	 * @param FileValidationHandler $fileValidHandler File validation handler.
-	 * @param FileOwnershipHandler $fileOwnershipHandler File ownership handler.
-	 * @param ReadFileHandler $readFileHandler Read file handler.
-	 * @param ISystemTagManager $systemTagManager System tag manager.
-	 * @param ISystemTagObjectMapper $systemTagMapper System tag object mapper.
+	 * @param UpdateFileLocator $locator Finds the file by id, in the object folder or in the user folder.
+	 * @param UpdateFileGuards $guards Screens executable content, checks and transfers ownership.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 * @param \OCA\OpenRegister\Files\Db\FileMapperInterface|null $fileMapper Optional OR-side metadata mapper for
 	 *                                                         description / category / labels writes.
 	 *                                                         Null-safe so legacy fixtures keep working.
 	 */
 	public function __construct(
-		private readonly IRootFolder $rootFolder,
-		private readonly FolderManagementHandler $folderMgmtHandler,
-		private readonly FileValidationHandler $fileValidHandler,
-		private readonly FileOwnershipHandler $fileOwnershipHandler,
-		private readonly ReadFileHandler $readFileHandler,
-		private readonly ISystemTagManager $systemTagManager,
-		private readonly ISystemTagObjectMapper $systemTagMapper,
+		private readonly UpdateFileLocator $locator,
+		private readonly UpdateFileGuards $guards,
 		private readonly LoggerInterface $logger,
 		private readonly ?\OCA\OpenRegister\Files\Db\FileMapperInterface $fileMapper = null,
 	) {
@@ -114,10 +100,7 @@ class UpdateFileHandler {
 	 * / `setCategoryForFile` / `setLabelsForFile`, each of which is
 	 * lazy-create-on-miss so no pre-existing OR-side row is required.
 	 *
-	 * @param int $fileId The Nextcloud filecache fileid.
-	 * @param string|null $description The new description, empty string to clear, null to skip.
-	 * @param string|null $category The new category, empty string to clear, null to skip.
-	 * @param array<string>|null $labels The new labels, empty array to clear, null to skip.
+	 * @param FileMetadataChange $change The file id and the description, category and labels to write.
 	 *
 	 * @return \OCA\OpenRegister\Files\Db\File The persisted entity reflecting the updated state.
 	 *
@@ -125,53 +108,85 @@ class UpdateFileHandler {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function updateFileMetadata(
-		int $fileId,
-		?string $description = null,
-		?string $category = null,
-		?array $labels = null,
-	): \OCA\OpenRegister\Files\Db\File {
+	public function updateFileMetadata(FileMetadataChange $change): \OCA\OpenRegister\Files\Db\File {
+		$entity = $this->writeMetadata(fileId: $change->fileId, values: $change->values());
+		$this->logMetadataUpdate(fileId: $change->fileId, values: $change->values());
+		return $entity;
+	}//end updateFileMetadata()
+
+	/**
+	 * Write the given OR-side metadata fields, in the order description, category, labels.
+	 *
+	 * @param int                  $fileId The Nextcloud filecache fileid.
+	 * @param array<string, mixed> $values The description, category and labels; null skips a field.
+	 *
+	 * @return \OCA\OpenRegister\Files\Db\File The entity after the last write.
+	 *
+	 * @throws Exception When the FileMapper is not wired (legacy fixtures).
+	 */
+	private function writeMetadata(int $fileId, array $values): \OCA\OpenRegister\Files\Db\File {
+		$mapper = $this->metadataMapper();
+		$entity = $mapper->findOrCreateByFileId(fileId: $fileId);
+		if ($values['description'] !== null) {
+			$entity = $mapper->setDescriptionForFile(fileId: $fileId, description: $values['description']);
+		}
+
+		if ($values['category'] !== null) {
+			$entity = $mapper->setCategoryForFile(fileId: $fileId, category: $values['category']);
+		}
+
+		if ($values['labels'] !== null) {
+			$entity = $mapper->setLabelsForFile(fileId: $fileId, labels: $values['labels']);
+		}
+
+		return $entity;
+	}//end writeMetadata()
+
+	/**
+	 * The OR-side metadata mapper.
+	 *
+	 * @return \OCA\OpenRegister\Files\Db\FileMapperInterface The mapper.
+	 *
+	 * @throws Exception When the FileMapper is not wired (legacy fixtures).
+	 */
+	private function metadataMapper(): \OCA\OpenRegister\Files\Db\FileMapperInterface {
 		if ($this->fileMapper === null) {
 			throw new Exception('FileMapper is not wired; cannot update OR-side metadata');
 		}
 
-		$entity = $this->fileMapper->findOrCreateByFileId(fileId: $fileId);
+		return $this->fileMapper;
+	}//end metadataMapper()
 
-		if ($description !== null) {
-			$entity = $this->fileMapper->setDescriptionForFile(fileId: $fileId, description: $description);
-		}
-
-		if ($category !== null) {
-			$entity = $this->fileMapper->setCategoryForFile(fileId: $fileId, category: $category);
-		}
-
-		if ($labels !== null) {
-			$entity = $this->fileMapper->setLabelsForFile(fileId: $fileId, labels: $labels);
-		}
-
+	/**
+	 * Log which OR-side metadata fields a write touched.
+	 *
+	 * @param int                  $fileId The Nextcloud filecache fileid.
+	 * @param array<string, mixed> $values The description, category and labels; null was skipped.
+	 *
+	 * @return void
+	 */
+	private function logMetadataUpdate(int $fileId, array $values): void {
 		$this->logger->debug(
 			message: "[UpdateFileHandler] OR-side metadata updated for file $fileId",
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'fileId' => $fileId,
-				'descriptionTouched' => ($description !== null),
-				'categoryTouched' => ($category !== null),
-				'labelsTouched' => ($labels !== null),
+				'descriptionTouched' => ($values['description'] !== null),
+				'categoryTouched' => ($values['category'] !== null),
+				'labelsTouched' => ($values['labels'] !== null),
 			]
 		);
-
-		return $entity;
-	}//end updateFileMetadata()
+	}//end logMetadataUpdate()
 
 	/**
 	 * Set the FileService instance for cross-handler coordination.
 	 *
-	 * @param FileService $fileService The file service instance.
+	 * @param FileHandlerSupportInterface $fileService The file service instance.
 	 *
 	 * @return void
 	 */
-	public function setFileService(FileService $fileService): void {
+	public function setFileService(FileHandlerSupportInterface $fileService): void {
 		$this->fileService = $fileService;
 	}//end setFileService()
 
@@ -203,22 +218,31 @@ class UpdateFileHandler {
 		array $tags = [],
 		?ObjectEntity $object = null,
 	): File {
-		$this->logger->debug(
-			message: "[UpdateFileHandler] updateFile: Original file path received: '$filePath'",
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
-
+		$this->note(level: 'debug', message: "Original file path received: '$filePath'");
 		$file = $this->findFile(filePath: $filePath, object: $object);
-		if ($content !== null && $file instanceof File) {
-			$this->writeContentIfChanged(file: $file, content: $content);
-		}
-
-		if (empty($tags) === false) {
-			$this->replaceUserTags(file: $file, tags: $tags);
-		}
-
-		return $file;
+		return $this->applyChange(file: $file, change: new FileContentChange(content: $content, tags: $tags));
 	}//end updateFile()
+
+	/**
+	 * Write the new content when it differs, then replace the user tags.
+	 *
+	 * @param Node              $file   The file found for the update.
+	 * @param FileContentChange $change The new content and tags.
+	 *
+	 * @return Node The updated file.
+	 *
+	 * @throws Exception If file operations fail.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function applyChange(Node $file, FileContentChange $change): Node {
+		if ($change->content !== null && $file instanceof File) {
+			$this->writeContentIfChanged(file: $file, content: $change->content);
+		}
+
+		$this->replaceUserTags(file: $file, tags: $change->tags);
+		return $file;
+	}//end applyChange()
 
 	/**
 	 * Find the file to update by ID or by path.
@@ -249,50 +273,55 @@ class UpdateFileHandler {
 	 * @throws Exception When no file has this ID
 	 */
 	private function findFileById(int $fileId, ?ObjectEntity $object): Node {
-		$this->logger->debug(
-			message: "[UpdateFileHandler] updateFile: File ID provided: $fileId",
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
+		$this->note(level: 'debug', message: "File ID provided: $fileId");
+		return ($this->findInObjectById(fileId: $fileId, object: $object) ?? $this->findInUserFolderById(fileId: $fileId));
+	}//end findFileById()
 
-		if ($object !== null) {
-			$file = $this->readFileHandler->getFile(object: $object, file: $fileId);
-			if ($file !== null) {
-				$fileName = $file->getName();
-				$foundId = $file->getId();
-				$this->logger->debug(
-					message: "[UpdateFileHandler] updateFile: Found file by ID in object folder: $fileName (ID: $foundId)",
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				return $file;
-			}
+	/**
+	 * Find a file by its ID through the read handler, in the object's folder.
+	 *
+	 * @param int               $fileId The file ID
+	 * @param ObjectEntity|null $object The object, or null to skip this lookup
+	 *
+	 * @return Node|null The file, or null when there is no object or it has no such file
+	 */
+	private function findInObjectById(int $fileId, ?ObjectEntity $object): ?Node {
+		if ($object === null) {
+			return null;
 		}
 
+		$file = $this->locator->readFileHandler->getFile(object: $object, file: $fileId);
+		if ($file !== null) {
+			$this->noteFound(where: 'Found file by ID in object folder', file: $file);
+		}
+
+		return $file;
+	}//end findInObjectById()
+
+	/**
+	 * Find a file by its ID in the OpenRegister user folder.
+	 *
+	 * @param int $fileId The file ID
+	 *
+	 * @return Node The file
+	 *
+	 * @throws Exception When no file has this ID or the lookup fails
+	 */
+	private function findInUserFolderById(int $fileId): Node {
 		try {
-			$nodes = $this->folderMgmtHandler->getOpenRegisterUserFolder()->getById($fileId);
+			$nodes = $this->locator->folderMgmtHandler->getOpenRegisterUserFolder()->getById($fileId);
 			if (empty($nodes) === true) {
-				$this->logger->error(
-					message: "[UpdateFileHandler] updateFile: No file found with ID: $fileId",
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
+				$this->note(level: 'error', message: "No file found with ID: $fileId");
 				throw new Exception("File with ID $fileId does not exist");
 			}
 
-			$file = $nodes[0];
-			$fileName = $file->getName();
-			$foundId = $file->getId();
-			$this->logger->debug(
-				message: "[UpdateFileHandler] updateFile: Found file by ID in user folder: $fileName (ID: $foundId)",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return $file;
+			$this->noteFound(where: 'Found file by ID in user folder', file: $nodes[0]);
+			return $nodes[0];
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: "[UpdateFileHandler] updateFile: Error finding file by ID $fileId: " . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->note(level: 'error', message: "Error finding file by ID $fileId: " . $e->getMessage());
 			throw new Exception("File with ID $fileId does not exist: " . $e->getMessage());
-		}//end try
-	}//end findFileById()
+		}
+	}//end findInUserFolderById()
 
 	/**
 	 * Find a file by its path, first in the object's folder, then in the user folder.
@@ -306,38 +335,44 @@ class UpdateFileHandler {
 	 */
 	private function findFileByPath(string $filePath, ?ObjectEntity $object): Node {
 		$pathInfo = $this->fileService->extractFileNameFromPath($filePath);
+		$this->noteCleaning(pathInfo: $pathInfo);
+
+		$file = $this->findByPathInObject(object: $object, pathInfo: $pathInfo);
+		return ($file ?? $this->findInUserFolder(filePath: $pathInfo['cleanPath']));
+	}//end findFileByPath()
+
+	/**
+	 * Log the cleaned path and, when it differs, the file name taken from it.
+	 *
+	 * @param array $pathInfo The cleanPath and fileName of the file
+	 *
+	 * @return void
+	 */
+	private function noteCleaning(array $pathInfo): void {
 		$cleanPath = $pathInfo['cleanPath'];
 		$fileName = $pathInfo['fileName'];
-
-		$this->logger->debug(
-			message: "[UpdateFileHandler] updateFile: After cleaning: '$cleanPath'",
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
+		$this->note(level: 'debug', message: "After cleaning: '$cleanPath'");
 		if ($fileName !== $cleanPath) {
-			$this->logger->debug(
-				message: "[UpdateFileHandler] updateFile: Extracted filename from path: '$fileName' (from '$cleanPath')",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->note(level: 'debug', message: "Extracted filename from path: '$fileName' (from '$cleanPath')");
 		}
+	}//end noteCleaning()
 
-		$file = null;
-		if ($object !== null) {
-			$file = $this->findInObjectFolder(object: $object, pathInfo: $pathInfo);
-		}
-
+	/**
+	 * Look a path up in the object's folder, when there is an object.
+	 *
+	 * @param ObjectEntity|null $object   The object, or null to skip this lookup
+	 * @param array             $pathInfo The cleanPath and fileName of the file
+	 *
+	 * @return Node|null The file, or null when there is no object or its folder does not have it
+	 */
+	private function findByPathInObject(?ObjectEntity $object, array $pathInfo): ?Node {
 		if ($object === null) {
-			$this->logger->debug(
-				message: '[UpdateFileHandler] updateFile: No object provided, will search in user folder',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->note(level: 'debug', message: 'No object provided, will search in user folder');
+			return null;
 		}
 
-		if ($file === null) {
-			$file = $this->findInUserFolder(filePath: $cleanPath);
-		}
-
-		return $file;
-	}//end findFileByPath()
+		return $this->findInObjectFolder(object: $object, pathInfo: $pathInfo);
+	}//end findByPathInObject()
 
 	/**
 	 * Look a file up in the object's folder, by file name and then by full path.
@@ -351,24 +386,18 @@ class UpdateFileHandler {
 	 */
 	private function findInObjectFolder(ObjectEntity $object, array $pathInfo): ?Node {
 		try {
-			$objectFolder = $this->folderMgmtHandler->getObjectFolder($object);
+			$objectFolder = $this->locator->folderMgmtHandler->getObjectFolder($object);
 			if ($objectFolder === null) {
-				$this->logger->warning(
-					message: '[UpdateFileHandler] updateFile: Could not get object folder for object ID: ' . $object->getId(),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
+				$this->note(level: 'warning', message: 'Could not get object folder for object ID: ' . $object->getId());
 				return null;
 			}
 
 			$this->logObjectFolder(objectFolder: $objectFolder);
 			return $this->getFromObjectFolder(objectFolder: $objectFolder, pathInfo: $pathInfo);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[UpdateFileHandler] updateFile: Error accessing object folder: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->note(level: 'error', message: 'Error accessing object folder: ' . $e->getMessage());
 			return null;
-		}//end try
+		}
 	}//end findInObjectFolder()
 
 	/**
@@ -379,27 +408,14 @@ class UpdateFileHandler {
 	 * @return void
 	 */
 	private function logObjectFolder(Folder $objectFolder): void {
-		$this->logger->debug(
-			message: '[UpdateFileHandler] updateFile: Object folder path: ' . $objectFolder->getPath(),
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
-		$this->logger->debug(
-			message: '[UpdateFileHandler] updateFile: Object folder ID: ' . $objectFolder->getId(),
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
+		$this->note(level: 'debug', message: 'Object folder path: ' . $objectFolder->getPath());
+		$this->note(level: 'debug', message: 'Object folder ID: ' . $objectFolder->getId());
 
 		try {
-			$fileNames = array_map(fn ($f) => $f->getName(), $objectFolder->getDirectoryListing());
-			$fileList = implode(', ', $fileNames);
-			$this->logger->debug(
-				message: "[UpdateFileHandler] updateFile: Files in object folder: $fileList",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$fileList = implode(', ', array_map(fn ($f) => $f->getName(), $objectFolder->getDirectoryListing()));
+			$this->note(level: 'debug', message: "Files in object folder: $fileList");
 		} catch (Exception $e) {
-			$this->logger->warning(
-				message: '[UpdateFileHandler] updateFile: Could not list folder contents: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->note(level: 'warning', message: 'Could not list folder contents: ' . $e->getMessage());
 		}
 	}//end logObjectFolder()
 
@@ -412,37 +428,63 @@ class UpdateFileHandler {
 	 * @return Node|null The file, or null when neither name matches
 	 */
 	private function getFromObjectFolder(Folder $objectFolder, array $pathInfo): ?Node {
-		$fileName = $pathInfo['fileName'];
-		$filePath = $pathInfo['cleanPath'];
-		try {
-			$file = $objectFolder->get($fileName);
-			$this->logger->debug(
-				message: '[UpdateFileHandler] updateFile: Found file in object folder: ' . $file->getName() . ' (ID: ' . $file->getId() . ')',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return $file;
-		} catch (NotFoundException) {
-			$this->logger->warning(
-				message: "[UpdateFileHandler] updateFile: File '$fileName' not found in object folder.",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-		}
+		return ($this->getByName(objectFolder: $objectFolder, fileName: $pathInfo['fileName'])
+			?? $this->getByFullPath(objectFolder: $objectFolder, filePath: $pathInfo['cleanPath']));
+	}//end getFromObjectFolder()
 
-		try {
-			$file = $objectFolder->get($filePath);
-			$this->logger->debug(
-				message: '[UpdateFileHandler] updateFile: Found file using full path in object folder: ' . $file->getName(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return $file;
-		} catch (NotFoundException) {
-			$this->logger->warning(
-				message: "[UpdateFileHandler] updateFile: File '$filePath' also not found with full path in object folder.",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+	/**
+	 * Get a file from the object folder by its file name.
+	 *
+	 * @param Folder $objectFolder The object folder
+	 * @param string $fileName     The file name
+	 *
+	 * @return Node|null The file, or null when the name does not match
+	 */
+	private function getByName(Folder $objectFolder, string $fileName): ?Node {
+		$file = $this->nodeAt(folder: $objectFolder, path: $fileName);
+		if ($file === null) {
+			$this->note(level: 'warning', message: "File '$fileName' not found in object folder.");
 			return null;
 		}
-	}//end getFromObjectFolder()
+
+		$this->noteFound(where: 'Found file in object folder', file: $file);
+		return $file;
+	}//end getByName()
+
+	/**
+	 * Get a file from the object folder by its full path.
+	 *
+	 * @param Folder $objectFolder The object folder
+	 * @param string $filePath     The cleaned full path
+	 *
+	 * @return Node|null The file, or null when the path does not match
+	 */
+	private function getByFullPath(Folder $objectFolder, string $filePath): ?Node {
+		$file = $this->nodeAt(folder: $objectFolder, path: $filePath);
+		if ($file === null) {
+			$this->note(level: 'warning', message: "File '$filePath' also not found with full path in object folder.");
+			return null;
+		}
+
+		$this->note(level: 'debug', message: 'Found file using full path in object folder: ' . $file->getName());
+		return $file;
+	}//end getByFullPath()
+
+	/**
+	 * The node at a path inside a folder, or null when there is none.
+	 *
+	 * @param Folder $folder The folder
+	 * @param string $path   The path
+	 *
+	 * @return Node|null The node
+	 */
+	private function nodeAt(Folder $folder, string $path): ?Node {
+		try {
+			return $folder->get($path);
+		} catch (NotFoundException) {
+			return null;
+		}
+	}//end nodeAt()
 
 	/**
 	 * Find a file in the OpenRegister user folder by path.
@@ -457,41 +499,56 @@ class UpdateFileHandler {
 	 * @throws Exception When the file does not exist or cannot be accessed
 	 */
 	private function findInUserFolder(string $filePath): Node {
-		$this->logger->debug(
-			message: "[UpdateFileHandler] updateFile: Trying user folder approach with path: '$filePath'",
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
+		$this->note(level: 'debug', message: "Trying user folder approach with path: '$filePath'");
+		try {
+			return $this->getFromUserFolder(filePath: $filePath);
+		} catch (NotPermittedException|InvalidPathException $e) {
+			$this->note(level: 'error', message: "Can't access file $filePath: " . $e->getMessage());
+			throw new Exception("Can't access file $filePath: " . $e->getMessage());
+		}
+	}//end findInUserFolder()
 
+	/**
+	 * Get a file from the OpenRegister user folder by path, else by the ID it starts with.
+	 *
+	 * @param string $filePath The cleaned file path
+	 *
+	 * @return Node The file
+	 *
+	 * @throws NotPermittedException|InvalidPathException When the path cannot be accessed
+	 * @throws Exception When the file does not exist
+	 */
+	private function getFromUserFolder(string $filePath): Node {
 		$userFolder = null;
 		try {
-			$userFolder = $this->folderMgmtHandler->getOpenRegisterUserFolder();
+			$userFolder = $this->locator->folderMgmtHandler->getOpenRegisterUserFolder();
 			$file = $userFolder->get(path: $filePath);
-			$fileId = $file->getId();
-			$this->logger->debug(
-				message: "[UpdateFileHandler] updateFile: Found file in user folder at path: $filePath (ID: $fileId)",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->note(level: 'debug', message: "Found file in user folder at path: $filePath (ID: {$file->getId()})");
 			return $file;
-		} catch (NotFoundException $e) {
-			$this->logger->error(
-				message: "[UpdateFileHandler] updateFile: File $filePath not found in user folder either.",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+		} catch (NotFoundException) {
+			$this->note(level: 'error', message: "File $filePath not found in user folder either.");
+			return $this->requireByLeadingFolderId(userFolder: $userFolder, filePath: $filePath);
+		}
+	}//end getFromUserFolder()
 
-			$file = $this->findByLeadingFolderId(userFolder: $userFolder, filePath: $filePath);
-			if ($file === null) {
-				throw new Exception("File $filePath does not exist");
-			}
+	/**
+	 * The file the leading numeric ID of a path names; its absence is an error.
+	 *
+	 * @param Folder|null $userFolder The user folder
+	 * @param string      $filePath   The cleaned file path
+	 *
+	 * @return Node The file
+	 *
+	 * @throws Exception When the path has no ID or nothing matches
+	 */
+	private function requireByLeadingFolderId(?Folder $userFolder, string $filePath): Node {
+		$file = $this->findByLeadingFolderId(userFolder: $userFolder, filePath: $filePath);
+		if ($file === null) {
+			throw new Exception("File $filePath does not exist");
+		}
 
-			return $file;
-		} catch (NotPermittedException|InvalidPathException $e) {
-			$this->logger->error(
-				message: "[UpdateFileHandler] updateFile: Can't access file $filePath: " . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			throw new Exception("Can't access file $filePath: " . $e->getMessage());
-		}//end try
-	}//end findInUserFolder()
+		return $file;
+	}//end requireByLeadingFolderId()
 
 	/**
 	 * Look a file up by the numeric ID a path starts with (`12/file.txt`).
@@ -507,37 +564,34 @@ class UpdateFileHandler {
 		}
 
 		$fileId = (int)$matches[1];
-		$this->logger->debug(
-			message: "[UpdateFileHandler] updateFile: Attempting to find file by ID: $fileId",
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
-
+		$this->note(level: 'debug', message: "Attempting to find file by ID: $fileId");
 		try {
-			$nodes = $userFolder->getById($fileId);
-			if (empty($nodes) === true) {
-				$this->logger->warning(
-					message: "[UpdateFileHandler] updateFile: No file found with ID: $fileId",
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				return null;
-			}
-
-			$file = $nodes[0];
-			$fileName = $file->getName();
-			$path = $file->getPath();
-			$this->logger->debug(
-				message: "[UpdateFileHandler] updateFile: Found file by ID $fileId: $fileName at path: $path",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return $file;
+			return $this->firstById(userFolder: $userFolder, fileId: $fileId);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: "[UpdateFileHandler] updateFile: Error finding file by ID {$fileId}: {$e->getMessage()}",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->note(level: 'error', message: "Error finding file by ID {$fileId}: {$e->getMessage()}");
 			return null;
-		}//end try
+		}
 	}//end findByLeadingFolderId()
+
+	/**
+	 * The first node with an ID in the user folder.
+	 *
+	 * @param Folder|null $userFolder The user folder
+	 * @param int         $fileId     The ID
+	 *
+	 * @return Node|null The node, or null when none has the ID
+	 */
+	private function firstById(?Folder $userFolder, int $fileId): ?Node {
+		$nodes = $userFolder->getById($fileId);
+		if (empty($nodes) === true) {
+			$this->note(level: 'warning', message: "No file found with ID: $fileId");
+			return null;
+		}
+
+		$file = $nodes[0];
+		$this->note(level: 'debug', message: "Found file by ID $fileId: {$file->getName()} at path: {$file->getPath()}");
+		return $file;
+	}//end firstById()
 
 	/**
 	 * Write new content to a file unless it is byte-identical to the stored content.
@@ -561,10 +615,7 @@ class UpdateFileHandler {
 		try {
 			$this->writeContent(file: $file, content: $content);
 		} catch (NotPermittedException $e) {
-			$this->logger->error(
-				message: "[UpdateFileHandler] updateFile: Can't write content to file: " . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->note(level: 'error', message: "Can't write content to file: " . $e->getMessage());
 			throw new Exception("Can't write content to file: " . $e->getMessage());
 		}
 	}//end writeContentIfChanged()
@@ -593,8 +644,7 @@ class UpdateFileHandler {
 	 * Validate and write content to a file, then hand ownership to OpenRegister.
 	 *
 	 * Base64 string content is decoded first. Executable content is blocked by its
-	 * magic bytes; for a stream only a bounded prefix is read and the stream is
-	 * rewound before writing.
+	 * magic bytes before the session's rights are checked and the content written.
 	 *
 	 * @param File  $file    The file to write
 	 * @param mixed $content A byte string or a readable stream resource
@@ -604,36 +654,72 @@ class UpdateFileHandler {
 	 * @throws NotPermittedException When the session may not write the file
 	 */
 	private function writeContent(File $file, mixed $content): void {
+		$content = $this->decodedBase64(content: $content);
+		$this->guards->fileValidHandler->blockExecutableFile(fileName: $file->getName(), fileContent: $this->executableCheckBytes(content: $content));
+		$this->assertWritable(file: $file);
+
+		$file->putContent(data: $content);
+		$this->note(level: 'debug', message: 'Successfully updated file content: ' . $file->getName());
+
+		$this->guards->fileOwnershipHandler->transferFileOwnershipIfNeeded($file);
+	}//end writeContent()
+
+	/**
+	 * String content decoded when it is base64; a stream resource as given.
+	 *
+	 * @param mixed $content A byte string or a readable stream resource
+	 *
+	 * @return mixed The content to write
+	 */
+	private function decodedBase64(mixed $content): mixed {
 		if (is_resource($content) === false && base64_encode(base64_decode($content, true)) === $content) {
-			$content = base64_decode($content);
+			return base64_decode($content);
 		}
 
+		return $content;
+	}//end decodedBase64()
+
+	/**
+	 * The bytes the executable check reads: a string as given, a stream's bounded prefix.
+	 *
+	 * Executable signatures live at offset 0, so for a stream only a bounded prefix
+	 * is read, and the stream is rewound before writing.
+	 *
+	 * @param mixed $content A byte string or a readable stream resource
+	 *
+	 * @return mixed The bytes to check
+	 */
+	private function executableCheckBytes(mixed $content): mixed {
 		$execCheckBytes = $content;
 		if (is_resource($content) === true) {
 			$execCheckBytes = (string)fread($content, self::EXECUTABLE_MAGIC_BYTE_PREFIX_LENGTH);
 			rewind($content);
 		}
 
-		$this->fileValidHandler->blockExecutableFile(fileName: $file->getName(), fileContent: $execCheckBytes);
+		return $execCheckBytes;
+	}//end executableCheckBytes()
 
-		// Reaching the file (owned or shared) is not enough: writing also needs write
-		// permission. NC enforces it on putContent(); this fails fast with a clear message.
-		$this->fileValidHandler->checkOwnership($file);
+	/**
+	 * Refuse a write the session may not make.
+	 *
+	 * Reaching the file (owned or shared) is not enough: writing also needs write
+	 * permission. NC enforces it on putContent(); this fails fast with a clear message.
+	 *
+	 * @param File $file The file to write
+	 *
+	 * @return void
+	 *
+	 * @throws NotPermittedException When the session may not reach or write the file
+	 */
+	private function assertWritable(File $file): void {
+		$this->guards->fileValidHandler->checkOwnership($file);
 		if ($file->isUpdateable() === false) {
 			throw new NotPermittedException("File {$file->getName()} is not writable by the current session");
 		}
-
-		$file->putContent(data: $content);
-		$this->logger->debug(
-			message: '[UpdateFileHandler] updateFile: Successfully updated file content: ' . $file->getName(),
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
-
-		$this->fileOwnershipHandler->transferFileOwnershipIfNeeded($file);
-	}//end writeContent()
+	}//end assertWritable()
 
 	/**
-	 * Replace a file's tags, keeping the `object:` tags it already has.
+	 * Replace a file's tags, keeping the `object:` tags it already has; no tags leaves them as they are.
 	 *
 	 * @param Node  $file The file
 	 * @param array $tags The new tags
@@ -641,20 +727,45 @@ class UpdateFileHandler {
 	 * @return void
 	 */
 	private function replaceUserTags(Node $file, array $tags): void {
-		$existingTags = $this->fileService->getFileTags(fileId: (string)$file->getId());
-		$objectTags = array_filter(
-			$existingTags,
-			static function (string $tag): bool {
-				return str_starts_with($tag, 'object:');
-			}
-		);
+		if (empty($tags) === true) {
+			return;
+		}
 
+		$existingTags = $this->fileService->getFileTags(fileId: (string)$file->getId());
+		$objectTags = array_filter($existingTags, static fn (string $tag): bool => str_starts_with($tag, 'object:'));
 		$allTags = array_unique(array_merge($objectTags, $tags));
 
 		$this->fileService->attachTagsToFile(fileId: (string)$file->getId(), tags: $allTags);
-		$this->logger->debug(
-			message: '[UpdateFileHandler] updateFile: Successfully updated file tags: ' . $file->getName(),
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
+		$this->note(level: 'debug', message: 'Successfully updated file tags: ' . $file->getName());
 	}//end replaceUserTags()
+
+	/**
+	 * Log that a lookup found a file, with its name and ID.
+	 *
+	 * @param string $where What found it
+	 * @param Node   $file  The file
+	 *
+	 * @return void
+	 */
+	private function noteFound(string $where, Node $file): void {
+		$this->note(level: 'debug', message: "$where: " . $file->getName() . ' (ID: ' . $file->getId() . ')');
+	}//end noteFound()
+
+	/**
+	 * Log one updateFile line at a level.
+	 *
+	 * @param string $level   `debug`, `warning` or `error`
+	 * @param string $message The message, without the handler prefix
+	 *
+	 * @return void
+	 */
+	private function note(string $level, string $message): void {
+		$message = '[UpdateFileHandler] updateFile: ' . $message;
+		$context = ['file' => __FILE__, 'line' => __LINE__];
+		match ($level) {
+			'debug' => $this->logger->debug(message: $message, context: $context),
+			'warning' => $this->logger->warning(message: $message, context: $context),
+			default => $this->logger->error(message: $message, context: $context),
+		};
+	}//end note()
 }//end class

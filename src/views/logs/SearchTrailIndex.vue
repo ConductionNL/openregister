@@ -23,69 +23,25 @@ import { navigationStore, searchTrailStore } from '../../store/store.js'
 			</div>
 
 			<!-- Actions Bar -->
-			<div class="viewActionsBar">
-				<div class="viewInfo">
-					<!-- Display pagination info: showing current page items out of total items -->
-					<span class="viewTotalCount">
-						{{
-							t(
-								'openregister',
-								'Showing {showing} of {total} search trail entries',
-								{
-									showing: paginatedSearchTrails.length,
-									total:
-										searchTrailStore.searchTrailPagination.total
-										|| 0,
-								},
-							)
-						}}
-					</span>
+			<ListActionsBar
+				:summary="
+					t(
+						'openregister',
+						'Showing {showing} of {total} search trail entries',
+						{
+							showing: paginatedSearchTrails.length,
+							total: searchTrailStore.searchTrailPagination.total || 0,
+						},
+					)
+				"
+				:selectedCount="selectedSearchTrails.length"
+				:actions="headerActions">
+				<template #info>
 					<span v-if="hasActiveFilters" class="viewIndicator">
 						({{ t('openregister', 'Filtered') }})
 					</span>
-					<span
-						v-if="selectedSearchTrails.length > 0"
-						class="viewIndicator">
-						({{
-							t('openregister', '{count} selected', {
-								count: selectedSearchTrails.length,
-							})
-						}})
-					</span>
-				</div>
-				<div class="viewActions">
-					<NcActions
-						:forceName="true"
-						:inline="selectedSearchTrails.length > 0 ? 3 : 2"
-						menuName="Actions">
-						<NcActionButton
-							v-if="selectedSearchTrails.length > 0"
-							closeAfterClick
-							@click="bulkDeleteSearchTrails">
-							<template #icon>
-								<Delete :size="20" />
-							</template>
-							{{
-								t('openregister', 'Delete ({count})', {
-									count: selectedSearchTrails.length,
-								})
-							}}
-						</NcActionButton>
-						<NcActionButton closeAfterClick @click="cleanupSearchTrails">
-							<template #icon>
-								<Broom :size="20" />
-							</template>
-							{{ t('openregister', 'Cleanup Old Trails') }}
-						</NcActionButton>
-						<NcActionButton closeAfterClick @click="refreshSearchTrails">
-							<template #icon>
-								<Refresh :size="20" />
-							</template>
-							{{ t('openregister', 'Refresh') }}
-						</NcActionButton>
-					</NcActions>
-				</div>
-			</div>
+				</template>
+			</ListActionsBar>
 
 			<!-- Search Trails Table -->
 			<div v-if="searchTrailStore.searchTrailLoading" class="viewLoading">
@@ -217,43 +173,8 @@ import { navigationStore, searchTrailStore } from '../../store/store.js'
 								}}</span>
 							</td>
 							<td class="tableColumnActions">
-								<NcActions>
-									<NcActionButton
-										closeAfterClick
-										@click="viewDetails(searchTrail)">
-										<template #icon>
-											<Eye :size="20" />
-										</template>
-										{{ t('openregister', 'View Details') }}
-									</NcActionButton>
-									<NcActionButton
-										v-if="hasParameters(searchTrail)"
-										closeAfterClick
-										@click="viewParameters(searchTrail)">
-										<template #icon>
-											<Cog :size="20" />
-										</template>
-										{{ t('openregister', 'View Parameters') }}
-									</NcActionButton>
-									<NcActionButton
-										v-if="searchTrail.searchTerm"
-										closeAfterClick
-										@click="rerunSearch(searchTrail)">
-										<template #icon>
-											<Refresh :size="20" />
-										</template>
-										{{ t('openregister', 'Rerun Search') }}
-									</NcActionButton>
-									<NcActionButton
-										closeAfterClick
-										class="deleteAction"
-										@click="deleteSearchTrail(searchTrail)">
-										<template #icon>
-											<Delete :size="20" />
-										</template>
-										{{ t('openregister', 'Delete') }}
-									</NcActionButton>
-								</NcActions>
+								<ActionMenu
+									:actions="searchTrailActions(searchTrail)" />
 							</td>
 						</tr>
 					</tbody>
@@ -279,8 +200,6 @@ import { navigationStore, searchTrailStore } from '../../store/store.js'
  * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
  */
 import {
-	NcActionButton,
-	NcActions,
 	NcAppContent,
 	NcCheckboxRadioSwitch,
 	NcDateTime,
@@ -294,26 +213,34 @@ import Eye from 'vue-material-design-icons/Eye.vue'
 import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
+import ListActionsBar from '../../components/shared/ListActionsBar.vue'
 import eventBus from '../../eventBus.js'
+import { refreshAction } from '../../services/menuActions.js'
+import { storePaging } from '../storePaging.js'
+import { recountOnChange } from './recountOnChange.js'
 
 export default {
 	name: 'SearchTrailIndex',
 	components: {
+		ActionMenu,
+		ListActionsBar,
 		NcAppContent,
 		NcEmptyContent,
 		NcLoadingIcon,
-		NcActions,
-		NcActionButton,
 		NcDateTime,
 		NcCheckboxRadioSwitch,
 		MagnifyPlus,
-		Delete,
-		Broom,
-		Refresh,
-		Eye,
-		Cog,
 		PaginationComponent,
 	},
+
+	mixins: [
+		storePaging({
+			fetch: (options) => searchTrailStore.fetchSearchTrails(options),
+			limit: () => searchTrailStore.searchTrailPagination.limit,
+			selection: 'selectedSearchTrails',
+		}),
+	],
 
 	data() {
 		return {
@@ -323,6 +250,33 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The entries of the bar above the list.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @return {Array<object>} The ActionMenu entries
+		 */
+		headerActions() {
+			const selected = this.selectedSearchTrails.length
+			return [
+				{
+					label: t('openregister', 'Delete ({count})', {
+						count: selected,
+					}),
+
+					icon: Delete,
+					run: () => this.bulkDeleteSearchTrails(),
+					hidden: selected === 0,
+				},
+				{
+					label: t('openregister', 'Cleanup Old Trails'),
+					icon: Broom,
+					run: () => this.cleanupSearchTrails(),
+				},
+				refreshAction(() => this.refreshSearchTrails()),
+			]
+		},
+
 		/**
 		 * @spec exclude list-view active-filter detection helper (computed)
 		 */
@@ -371,18 +325,7 @@ export default {
 	},
 
 	watch: {
-		paginatedSearchTrails: {
-			/**
-			 * @spec exclude list-view watcher; re-emits counts when the trail list changes
-			 */
-			handler() {
-				this.$nextTick(() => {
-					this.updateCounts()
-				})
-			},
-
-			deep: false,
-		},
+		paginatedSearchTrails: recountOnChange,
 	},
 
 	/**
@@ -415,6 +358,41 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * The row menu of a search trail.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} searchTrail The search trail
+		 * @return {Array<object>} The ActionMenu entries
+		 */
+		searchTrailActions(searchTrail) {
+			return [
+				{
+					label: t('openregister', 'View Details'),
+					icon: Eye,
+					run: () => this.viewDetails(searchTrail),
+				},
+				{
+					label: t('openregister', 'View Parameters'),
+					icon: Cog,
+					run: () => this.viewParameters(searchTrail),
+					hidden: !this.hasParameters(searchTrail),
+				},
+				{
+					label: t('openregister', 'Rerun Search'),
+					icon: Refresh,
+					run: () => this.rerunSearch(searchTrail),
+					hidden: !searchTrail.searchTerm,
+				},
+				{
+					label: t('openregister', 'Delete'),
+					icon: Delete,
+					run: () => this.deleteSearchTrail(searchTrail),
+					class: 'deleteAction',
+				},
+			]
+		},
+
 		/**
 		 * Load search trails from API
 		 *
@@ -664,46 +642,6 @@ export default {
 		},
 
 		/**
-		 * Handle page change from pagination component
-		 *
-		 * @spec exclude list-view pagination page-change handler
-		 * @param {number} page - The page number to change to
-		 * @return {Promise<void>}
-		 */
-		async onPageChanged(page) {
-			try {
-				await searchTrailStore.fetchSearchTrails({
-					page,
-					limit: searchTrailStore.searchTrailPagination.limit,
-				})
-				// Clear selection when page changes
-				this.selectedSearchTrails = []
-			} catch (error) {
-				console.error('Error loading page:', error)
-			}
-		},
-
-		/**
-		 * Handle page size change from pagination component
-		 *
-		 * @spec exclude list-view pagination page-size-change handler
-		 * @param {number} pageSize - The new page size
-		 * @return {Promise<void>}
-		 */
-		async onPageSizeChanged(pageSize) {
-			try {
-				await searchTrailStore.fetchSearchTrails({
-					page: 1,
-					limit: pageSize,
-				})
-				// Clear selection when page size changes
-				this.selectedSearchTrails = []
-			} catch (error) {
-				console.error('Error changing page size:', error)
-			}
-		},
-
-		/**
 		 * Check if search trail has parameters
 		 *
 		 * @spec exclude list-view parameter-presence display helper
@@ -931,20 +869,4 @@ export default {
 	background-color: var(--color-error) !important;
 	color: var(--color-main-background) !important;
 }
-
-.copySuccessIcon {
-	color: var(--color-success) !important;
-}
-
-:deep(.copySuccessIcon) {
-	animation: copySuccess 0.3s ease-in-out;
-}
-
-@media (prefers-reduced-motion: reduce) {
-	:deep(.copySuccessIcon) {
-		animation: none;
-	}
-}
-
-@include keyframes-copy-success-rules;
 </style>

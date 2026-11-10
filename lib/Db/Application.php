@@ -27,6 +27,8 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\Application\ApplicationFieldTypes;
+use OCA\OpenRegister\Db\Application\ApplicationQuota;
 use OCP\AppFramework\Db\Entity;
 use Symfony\Component\Uid\Uuid;
 
@@ -87,6 +89,8 @@ class Application extends Entity implements JsonSerializable {
 	use IsoTimestampsTrait;
 	use AuthorizationRulesTrait;
 	use JsonFieldsTrait;
+	use OrganisationFieldTrait;
+	use ManagedByConfigurationTrait;
 	use HydrateEmptyJsonAsNullTrait;
 
 	/**
@@ -242,50 +246,10 @@ class Application extends Entity implements JsonSerializable {
 	 * Sets up the entity type mappings for proper database handling.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'name', type: 'string');
-		$this->addType(fieldName: 'description', type: 'string');
-		$this->addType(fieldName: 'version', type: 'string');
-		$this->addType(fieldName: 'organisation', type: 'string');
-		$this->addType(fieldName: 'configurations', type: 'json');
-		$this->addType(fieldName: 'registers', type: 'json');
-		$this->addType(fieldName: 'schemas', type: 'json');
-		$this->addType(fieldName: 'owner', type: 'string');
-		$this->addType(fieldName: 'active', type: 'boolean');
-		// Field types are keyed by PROPERTY name, not column name: Entity::setter()
-		// looks up $_fieldTypes[$property], so a snake_case key silently skips the
-		// cast and lets a BIGINT column come back from the driver as a string.
-		$this->addType(fieldName: 'storageQuota', type: 'integer');
-		$this->addType(fieldName: 'bandwidthQuota', type: 'integer');
-		$this->addType(fieldName: 'requestQuota', type: 'integer');
-		$this->addType(fieldName: 'userQuota', type: 'integer');
-		$this->addType(fieldName: 'groupQuota', type: 'integer');
-		$this->addType(fieldName: 'groups', type: 'json');
-		$this->addType(fieldName: 'authorization', type: 'json');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
+		foreach (ApplicationFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
-
-	/**
-	 * Get the organisation UUID
-	 *
-	 * @return string|null The organisation UUID
-	 */
-	public function getOrganisation(): ?string {
-		return $this->organisation;
-	}//end getOrganisation()
-
-	/**
-	 * Set the organisation UUID
-	 *
-	 * @param string|null $organisation The organisation UUID
-	 *
-	 * @return void
-	 */
-	public function setOrganisation(?string $organisation): void {
-		$this->organisation = $organisation;
-		$this->markFieldUpdated(attribute: 'organisation');
-	}//end setOrganisation()
 
 	/**
 	 * Get configurations associated with this application
@@ -450,46 +414,7 @@ class Application extends Entity implements JsonSerializable {
 	 *     the tenant-quotas capability's contract, not this setter's.
 	 */
 	public function setQuota(array|string|null $quota): static {
-		// Handle JSON string from the database or request body (type safety).
-		// An undecodable string is a no-op: only an explicit null clears the
-		// allocations, so a malformed payload cannot wipe what is stored.
-		if (is_string($quota) === true) {
-			$decoded = json_decode($quota, true);
-			if (json_last_error() !== JSON_ERROR_NONE || is_array($decoded) === false) {
-				return $this;
-			}
-
-			$quota = $decoded;
-		}
-
-		$setters = [
-			'storage' => 'setStorageQuota',
-			'bandwidth' => 'setBandwidthQuota',
-			'requests' => 'setRequestQuota',
-			'users' => 'setUserQuota',
-			'groups' => 'setGroupQuota',
-		];
-
-		// An explicit null clears every allocation (NULL = unlimited).
-		if ($quota === null) {
-			$quota = array_fill_keys(array_keys($setters), null);
-		}
-
-		foreach ($setters as $key => $setter) {
-			// Only touch the allocations the caller actually sent, so a partial
-			// quota object cannot wipe the ones it left out.
-			if (array_key_exists($key, $quota) === false) {
-				continue;
-			}
-
-			// A non-numeric allocation means unlimited, same as an absent one.
-			// A negative allocation is meaningless, so it floors at zero
-			// (nothing allowed) rather than storing a value no check can honour.
-			$value = null;
-			if (is_numeric($quota[$key]) === true) {
-				$value = max(0, (int)$quota[$key]);
-			}
-
+		foreach ((new ApplicationQuota())->allocations(quota: $quota) as $setter => $value) {
 			$this->$setter($value);
 		}
 
@@ -515,8 +440,15 @@ class Application extends Entity implements JsonSerializable {
 	 *     title: null|string}|null}
 	 */
 	public function jsonSerialize(): array {
-		$groups = $this->getGroups();
+		return array_merge($this->identityJson(), $this->accessJson());
+	}//end jsonSerialize()
 
+	/**
+	 * The serialised identity, membership and owner.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function identityJson(): array {
 		return [
 			'id' => $this->id,
 			'uuid' => $this->uuid,
@@ -528,6 +460,18 @@ class Application extends Entity implements JsonSerializable {
 			'registers' => $this->getRegisters(),
 			'schemas' => $this->getSchemas(),
 			'owner' => $this->owner,
+		];
+	}//end identityJson()
+
+	/**
+	 * The serialised activity, groups, quota, usage, authorization and timestamps.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function accessJson(): array {
+		$groups = $this->getGroups();
+
+		return [
 			'active' => $this->isActive(),
 			'groups' => $groups,
 			'quota' => $this->getQuotaData(),
@@ -537,7 +481,7 @@ class Application extends Entity implements JsonSerializable {
 			'updated' => $this->getUpdatedFormatted(),
 			'managedByConfiguration' => null,
 		];
-	}//end jsonSerialize()
+	}//end accessJson()
 
 	/**
 	 * String representation of the application
@@ -557,59 +501,15 @@ class Application extends Entity implements JsonSerializable {
 	}//end __toString()
 
 	/**
-	 * Check if this application is managed by a configuration
+	 * The ids a configuration lists as its applications, see ManagedByConfigurationTrait.
 	 *
-	 * Returns true if this application's ID appears in any of the provided configurations' applications arrays.
+	 * @param Configuration $configuration The configuration.
 	 *
-	 * @param array<Configuration> $configurations Array of Configuration entities to check against
-	 *
-	 * @return bool True if managed by a configuration, false otherwise
-	 *
-	 * @phpstan-param array<Configuration> $configurations
-	 * @psalm-param   array<Configuration> $configurations
+	 * @return array|null
 	 */
-	public function isManagedByConfiguration(array $configurations): bool {
-		if (empty($configurations) === true || $this->id === null) {
-			return false;
-		}
-
-		foreach ($configurations as $configuration) {
-			$applications = $configuration->getApplications();
-			if (in_array($this->id, $applications ?? [], true) === true) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end isManagedByConfiguration()
-
-	/**
-	 * Get the configuration that manages this application
-	 *
-	 * Returns the first configuration that has this application's ID in its applications array.
-	 * Returns null if the application is not managed by any configuration.
-	 *
-	 * @param array<Configuration> $configurations Array of Configuration entities to check against
-	 *
-	 * @return Configuration|null The configuration managing this application, or null
-	 *
-	 * @phpstan-param array<Configuration> $configurations
-	 * @psalm-param   array<Configuration> $configurations
-	 */
-	public function getManagedByConfiguration(array $configurations): ?Configuration {
-		if (empty($configurations) === true || $this->id === null) {
-			return null;
-		}
-
-		foreach ($configurations as $configuration) {
-			$applications = $configuration->getApplications();
-			if (in_array($this->id, $applications ?? [], true) === true) {
-				return $configuration;
-			}
-		}
-
-		return null;
-	}//end getManagedByConfiguration()
+	protected function configurationMembers(Configuration $configuration): ?array {
+		return $configuration->getApplications();
+	}//end configurationMembers()
 
 	/**
 	 * Get quota data for JSON serialization.

@@ -29,7 +29,6 @@ use Exception;
 use JsonSerializable;
 use OC\Files\Node\File;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
-use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCP\AppFramework\Db\Entity;
 use OCP\IUserSession;
 
@@ -1821,65 +1820,88 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		?int $duration = 3600,
 		?string $runUuid = null,
 	): bool {
+		return $this->acquireLock(userSession: $userSession, terms: new LockTerms(process: $process, duration: $duration, runUuid: $runUuid));
+	}//end lock()
+
+	/**
+	 * Take or extend a lock on the object under the given terms.
+	 *
+	 * A run uuid in the terms takes a RUN-scoped lock that refuses every
+	 * caller but that run, the run's own `runAs` user included; without one
+	 * this takes the user lock. The current holder extends its own lock.
+	 *
+	 * @param IUserSession $userSession Current user session
+	 * @param LockTerms    $terms       Process, duration and holding run
+	 *
+	 * @throws Exception If no user is logged in or the object is locked by another holder
+	 *
+	 * @return true True if lock was successful
+	 *
+	 * @psalm-suppress PossiblyUnusedReturnValue
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-ownership-is-decided-by-one-predicate
+	 */
+	public function acquireLock(IUserSession $userSession, LockTerms $terms=new LockTerms()): bool {
+		$now = new DateTime();
+		$payload = $terms->payloadFor(userId: self::loggedInUid(userSession: $userSession), now: $now);
+
+		// If already locked, only the holder may extend it.
+		if ($this->isLocked() === true) {
+			$payload = $this->extensionOf(payload: $payload);
+		}
+
+		$this->setLocked($this->withExpiration(payload: $payload, now: $now));
+
+		return true;
+	}//end acquireLock()
+
+	/**
+	 * The payload that extends the current lock for the caller it was built for.
+	 *
+	 * Two runs under ONE user are told apart here: ownership is not keyed on
+	 * the user alone, so the second run is refused instead of silently
+	 * extending the first's lock and being handed the object.
+	 *
+	 * @param array{kind: string, runUuid: ?string, user: string, process: ?string, created: string, duration: ?int} $payload The
+	 *        caller's new lock payload.
+	 *
+	 * @throws Exception If the lock data is missing or another holder has the lock
+	 *
+	 * @return array The payload keeping the current lock's creation time and, when none is given, its process.
+	 */
+	private function extensionOf(array $payload): array {
+		$lock = $this->getLocked();
+		if ($lock === null) {
+			throw new Exception('Lock data is missing');
+		}
+
+		if ($this->isLockedBySomeoneElse(userId: $payload['user'], runUuid: $payload['runUuid']) === true) {
+			throw new Exception(sprintf('Object is locked by %s', (string)$this->describeLockHolder()));
+		}
+
+		$payload['process'] = ($payload['process'] ?? $lock['process']);
+		$payload['created'] = $lock['created'];
+
+		return $payload;
+	}//end extensionOf()
+
+	/**
+	 * The logged-in user's id.
+	 *
+	 * @param IUserSession $userSession Current user session
+	 *
+	 * @throws Exception If no user is logged in
+	 *
+	 * @return string The user id.
+	 */
+	private static function loggedInUid(IUserSession $userSession): string {
 		$currentUser = $userSession->getUser();
 		if ($currentUser === null) {
 			throw new Exception('No user logged in');
 		}
 
-		$userId = $currentUser->getUID();
-		$now = new DateTime();
-
-		$kind = self::LOCK_KIND_USER;
-		if ($runUuid !== null && trim($runUuid) !== '') {
-			$kind = self::LOCK_KIND_RUN;
-			$runUuid = trim($runUuid);
-		}
-
-		// If already locked, check whether this caller is the holder.
-		if ($this->isLocked() === true) {
-			$lock = $this->getLocked();
-			if ($lock === null) {
-				throw new Exception('Lock data is missing');
-			}
-
-			// Held against this caller. Note that two runs under ONE user land
-			// here now: ownership is no longer keyed on the user alone, so the
-			// second run is refused instead of silently extending the first's
-			// lock and being handed the object.
-			if ($this->isLockedBySomeoneElse(userId: $userId, runUuid: $runUuid) === true) {
-				throw new Exception(sprintf('Object is locked by %s', (string)$this->describeLockHolder()));
-			}
-
-			// Same holder: extend the lock.
-			$this->setLocked(
-				$this->lockPayload(
-					kind: $kind,
-					runUuid: $runUuid,
-					userId: $userId,
-					process: ($process ?? $lock['process']),
-					created: $lock['created'],
-					duration: $duration,
-					now: $now
-				)
-			);
-			return true;
-		}//end if
-
-		// Create new lock.
-		$this->setLocked(
-			$this->lockPayload(
-				kind: $kind,
-				runUuid: $runUuid,
-				userId: $userId,
-				process: $process,
-				created: $now->format('c'),
-				duration: $duration,
-				now: $now
-			)
-		);
-
-		return true;
-	}//end lock()
+		return $currentUser->getUID();
+	}//end loggedInUid()
 
 	/**
 	 * The stored shape of a lock.
@@ -1901,36 +1923,16 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * means. The `?? 0` was writing an expiration precisely so that branch
 	 * could never be reached.
 	 *
-	 * @param string      $kind     User lock or run lock.
-	 * @param string|null $runUuid  The holding run, for a run lock.
-	 * @param string      $userId   The holder.
-	 * @param string|null $process  What the lock was taken for.
-	 * @param mixed       $created  When the lock was first taken.
-	 * @param int|null    $duration How long it lasts, or null for "until released".
-	 * @param DateTime    $now      The clock, so a take and an extend agree.
+	 * @param array{kind: string, runUuid: ?string, user: string, process: ?string, created: mixed, duration: ?int} $payload The
+	 *        lock as stored: kind, holding run, holder, process, first taken, and how long it lasts (null for "until released").
+	 * @param DateTime $now The clock, so a take and an extend agree.
 	 *
 	 * @return array<string, mixed> The payload to store.
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	private function lockPayload(
-		string $kind,
-		?string $runUuid,
-		string $userId,
-		?string $process,
-		mixed $created,
-		?int $duration,
-		DateTime $now,
-	): array {
-		$payload = [
-			'kind' => $kind,
-			'runUuid' => ($runUuid ?? null),
-			'user' => $userId,
-			'process' => $process,
-			'created' => $created,
-			'duration' => $duration,
-		];
-
+	private function withExpiration(array $payload, DateTime $now): array {
+		$duration = $payload['duration'];
 		if ($duration === null) {
 			// No expiration key at all. See the note above: a zero-second one
 			// is not "no expiry", it is "expired".
@@ -1942,7 +1944,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		$payload['expiration'] = $expiration->format('c');
 
 		return $payload;
-	}//end lockPayload()
+	}//end withExpiration()
 
 	/**
 	 * Unlock the object
@@ -2075,37 +2077,27 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function delete(IUserSession $userSession, ?string $deletedReason = null, ?int $retentionPeriod = 30): static {
-		$currentUser = $userSession->getUser();
-		if ($currentUser === null) {
-			throw new Exception('No user logged in');
-		}
+		return $this->softDelete(userSession: $userSession, deletion: new SoftDeletion(reason: $deletedReason, retentionDays: $retentionPeriod));
+	}//end delete()
 
-		$userId = $currentUser->getUID();
-		$now = new DateTime();
-
-		// The retention handed in is the window. It used to be ignored: every
-		// object got a hard-coded 31 days whatever the schema or the instance
-		// said, so a schema declaring a year of recovery quietly had a month.
-		// A non-positive retention is not a window, so the default applies.
-		$days = $retentionPeriod;
-		if ($days === null || $days < 1) {
-			$days = DeletionWindowService::DEFAULT_RETENTION_DAYS;
-		}
-
-		$purgeDate = clone $now;
-		$purgeDate->add(new DateInterval('P' . (string)$days . 'D'));
-
-		$this->setDeleted(
-			[
-				'deleted' => $now->format('c'),
-				'deletedAt' => $now->format('c'),
-				'deletedBy' => $userId,
-				'deletedReason' => $deletedReason,
-				'retentionPeriod' => $days,
-				'purgeDate' => $purgeDate->format('c'),
-				'destroyableFrom' => $purgeDate->format('c'),
-			]
-		);
+	/**
+	 * Soft-delete the object: record who deleted it, why, and until when it stays recoverable.
+	 *
+	 * The retention handed in is the window (a non-positive one takes the
+	 * default), so a schema declaring a year of recovery gets a year.
+	 *
+	 * @param IUserSession $userSession Current user session
+	 * @param SoftDeletion $deletion    The reason and the retention window
+	 *
+	 * @throws Exception If no user is logged in
+	 *
+	 * @return static Returns the entity
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 */
+	public function softDelete(IUserSession $userSession, SoftDeletion $deletion=new SoftDeletion()): static {
+		$userId = self::loggedInUid(userSession: $userSession);
+		$this->setDeleted($deletion->metadataFor(userId: $userId, now: new DateTime()));
 
 		return $this;
 	}//end delete()

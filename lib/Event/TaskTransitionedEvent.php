@@ -32,14 +32,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Event;
 
 use OCA\OpenRegister\Db\Task;
-use OCP\EventDispatcher\Event;
 
 /**
  * Carries the committed task, its previous holder and the acting identity.
  *
  * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-delivery-failure-never-fails-the-task
  */
-class TaskTransitionedEvent extends Event {
+class TaskTransitionedEvent extends AbstractTaskEvent {
 
 	/**
 	 * Constructor.
@@ -50,25 +49,14 @@ class TaskTransitionedEvent extends Event {
 	 * @param string|null $actor The acting identity, when any.
 	 */
 	public function __construct(
-		private readonly Task $task,
+		Task $task,
 		private readonly ?string $previousAssignee = null,
 		private readonly ?string $previousState = null,
 		private readonly ?string $actor = null,
 	) {
-		parent::__construct();
+		parent::__construct(task: $task);
 
 	}//end __construct()
-
-	/**
-	 * The committed task.
-	 *
-	 * @return Task The task.
-	 *
-	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-delivery-failure-never-fails-the-task
-	 */
-	public function getTask(): Task {
-		return $this->task;
-	}//end getTask()
 
 	/**
 	 * The NAMED transition action, as the row recorded it.
@@ -81,7 +69,7 @@ class TaskTransitionedEvent extends Event {
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-task-lifecycle-delivery-is-automatic-and-declarative
 	 */
 	public function getAction(): string {
-		return (string)$this->task->getLastAction();
+		return (string)$this->getTask()->getLastAction();
 	}//end getAction()
 
 	/**
@@ -125,6 +113,6 @@ class TaskTransitionedEvent extends Event {
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-notification-for-an-answered-task-is-withdrawn
 	 */
 	public function assigneeChanged(): bool {
-		return (string)$this->previousAssignee !== (string)$this->task->getAssignee();
+		return (string)$this->previousAssignee !== (string)$this->getTask()->getAssignee();
 	}//end assigneeChanged()
 }//end class

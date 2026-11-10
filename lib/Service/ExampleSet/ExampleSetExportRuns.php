@@ -32,6 +32,9 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 use DateTime;
 use OCA\OpenRegister\Db\ExportRunMapper;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
+use OCA\OpenRegister\Service\Export\ExportRunContent;
+use OCA\OpenRegister\Service\Export\ExportRunFile;
+use OCA\OpenRegister\Service\Export\ExportRunOrigin;
 use OCP\Files\IRootFolder;
 use Psr\Container\ContainerInterface;
 use Throwable;
@@ -118,6 +121,23 @@ class ExampleSetExportRuns extends ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-an-account-an-export-it-made
 	 */
 	public function refusal(array $data, array $users): string {
+		$why = $this->whoAndWhereRefusal(data: $data, users: $users);
+		if ($why !== '') {
+			return $why;
+		}
+
+		return $this->contentRefusal(data: $data);
+	}//end refusal()
+
+	/**
+	 * Why the fields, the account or the file name of an export cannot be used, or ''.
+	 *
+	 * @param array<string, mixed> $data  The filled fields.
+	 * @param array<int, string>   $users The account ids the set creates or adopts.
+	 *
+	 * @return string
+	 */
+	private function whoAndWhereRefusal(array $data, array $users): string {
 		$unknown = array_diff(array_keys($data), self::FIELDS);
 		if ($unknown !== []) {
 			return 'field "'.implode('", "', $unknown).'" is not an export field a set may write';
@@ -131,8 +151,18 @@ class ExampleSetExportRuns extends ExampleSetEngineRows {
 			return 'fileName is a plain file name in the Exports folder';
 		}
 
-		$bytes = $this->bytes(data: $data);
-		if ($bytes === null || $bytes === '' || strlen($bytes) > self::MAX_BYTES) {
+		return '';
+	}//end whoAndWhereRefusal()
+
+	/**
+	 * Why the content or the production moment of an export cannot be used, or ''.
+	 *
+	 * @param array<string, mixed> $data The filled fields.
+	 *
+	 * @return string
+	 */
+	private function contentRefusal(array $data): string {
+		if ($this->usableBytes(bytes: $this->bytes(data: $data)) === false) {
 			return 'an export needs its content (text, or contentBase64 for a binary file), at most '.self::MAX_BYTES.' bytes';
 		}
 
@@ -141,22 +171,30 @@ class ExampleSetExportRuns extends ExampleSetEngineRows {
 		}
 
 		return '';
-	}//end refusal()
+	}//end contentRefusal()
+
+	/**
+	 * Whether the file's bytes are there and no more than a set may write.
+	 *
+	 * @param string|null $bytes The bytes, or null when none are usable.
+	 *
+	 * @return bool
+	 */
+	private function usableBytes(?string $bytes): bool {
+		return $bytes !== null && $bytes !== '' && strlen($bytes) <= self::MAX_BYTES;
+	}//end usableBytes()
 
 	/**
 	 * Write the file and the run that names it.
 	 *
-	 * @param string               $app  The app that ships the fragment.
-	 * @param string               $key  The row's key in the fragment.
-	 * @param array<string, mixed> $data The filled fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{uuid: string, user: string, path: string}|null}
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is the engine rows' contract.
-	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-an-account-an-export-it-made
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$data = $row->data;
 		$user = (string) $data['user'];
 		$path = self::FOLDER.'/'.(string) $data['fileName'];
 		try {
@@ -171,16 +209,22 @@ class ExampleSetExportRuns extends ExampleSetEngineRows {
 
 			$file = $folder->newFile($path, (string) $this->bytes(data: $data));
 			$run  = $this->container->get(ExportRunRecorder::class)->record(
-				source: self::SOURCE,
-				actor: $user,
-				format: (string) ($data['format'] ?? pathinfo($path, PATHINFO_EXTENSION)),
-				rowCount: (int) ($data['rowCount'] ?? 0),
-				filename: (string) $data['fileName'],
-				registerName: $this->text(value: ($data['registerName'] ?? null)),
-				schemaName: $this->text(value: ($data['schemaName'] ?? null)),
-				fileId: (int) $file->getId(),
-				filePath: (string) $file->getPath(),
-				downloadCount: (int) ($data['downloadCount'] ?? 0)
+				origin: new ExportRunOrigin(
+					source: self::SOURCE,
+					actor: $user
+				),
+				content: new ExportRunContent(
+					format: (string) ($data['format'] ?? pathinfo($path, PATHINFO_EXTENSION)),
+					rowCount: (int) ($data['rowCount'] ?? 0),
+					registerName: $this->text(value: ($data['registerName'] ?? null)),
+					schemaName: $this->text(value: ($data['schemaName'] ?? null))
+				),
+				file: new ExportRunFile(
+					filename: (string) $data['fileName'],
+					fileId: (int) $file->getId(),
+					filePath: (string) $file->getPath(),
+					downloadCount: (int) ($data['downloadCount'] ?? 0)
+				)
 			);
 
 			$producedAt = $this->moment(value: ($data['producedAt'] ?? null));

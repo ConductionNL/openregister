@@ -29,7 +29,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -42,16 +43,14 @@ class DataSubjectRequestController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
-	 * @param DataSubjectRequestService $service The consumable DSR service.
+	 * @param DataSubjectRequestServiceInterface $service The consumable DSR service.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly DataSubjectRequestService $service,
+		private readonly DataSubjectRequestServiceInterface $service,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
 	}//end __construct()
 
@@ -176,7 +175,7 @@ class DataSubjectRequestController extends Controller {
 		$summary = $this->service->erase(
 			subjectId: $subject,
 			type: $this->optionalType(),
-			eraseMode: (string)($this->request->getParam(key: 'eraseMode') ?? DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE),
+			eraseMode: (string)($this->request->getParam(key: 'eraseMode') ?? DataSubjectRequestServiceInterface::ERASE_MODE_PSEUDONYMISE),
 			dryRun: filter_var($this->request->getParam(key: 'dryRun'), FILTER_VALIDATE_BOOLEAN)
 		);
 

@@ -15,6 +15,217 @@ exports[`list page entities renders its header 1`] = `
 </div>"
 `;
 
+exports[`list page entities renders loading, empty and filled, and its menus reach the page 1`] = `
+{
+  "empty": "<div class="viewContainer">
+<div class="viewHeader">
+<div class="viewHeaderTitle">
+<h1 class="viewHeaderTitleIndented">t:Entities</h1>
+<x-ncbutton variant="tertiary" aria-label="t:Toggle search sidebar">
+<slot-default> t:Hide Filters</slot-default>
+<slot-icon>
+<x-filtervariant size="20">
+</x-filtervariant>
+</slot-icon>
+</x-ncbutton>
+</div>
+<p>t:Manage and view detected entities from files and objects</p>
+</div>
+<div class="viewActionsBar">
+<div class="viewInfo">
+</div>
+<div class="viewActions">
+<div class="viewModeSwitchContainer">
+<x-nccheckboxradioswitch modelvalue="table" title="See entities as cards" buttonvariant="true" name="view_mode_radio" type="radio" buttonvariantgrouped="horizontal" value="cards">
+<slot-default> Cards</slot-default>
+</x-nccheckboxradioswitch>
+<x-nccheckboxradioswitch modelvalue="table" title="See entities as a table" buttonvariant="true" name="view_mode_radio" type="radio" buttonvariantgrouped="horizontal" value="table">
+<slot-default> Table</slot-default>
+</x-nccheckboxradioswitch>
+</div>
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Refresh</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</div>
+</div>
+<x-ncemptycontent name="t:No entities found" description="t:No entities have been detected yet">
+<slot-icon>
+<x-accountoutline size="64">
+</x-accountoutline>
+</slot-icon>
+</x-ncemptycontent>
+</div>",
+  "filled": "<div class="viewContainer">
+<div class="viewHeader">
+<div class="viewHeaderTitle">
+<h1 class="viewHeaderTitleIndented">t:Entities</h1>
+<x-ncbutton variant="tertiary" aria-label="t:Toggle search sidebar">
+<slot-default> t:Hide Filters</slot-default>
+<slot-icon>
+<x-filtervariant size="20">
+</x-filtervariant>
+</slot-icon>
+</x-ncbutton>
+</div>
+<p>t:Manage and view detected entities from files and objects</p>
+</div>
+<div class="viewActionsBar">
+<div class="viewInfo">
+<span class="viewTotalCount">t:Showing {showing} of {total} entities {"showing":1,"total":1}</span>
+<span class="viewIndicator"> (t:{count} selected {"count":1}) </span>
+</div>
+<div class="viewActions">
+<div class="viewModeSwitchContainer">
+<x-nccheckboxradioswitch modelvalue="table" title="See entities as cards" buttonvariant="true" name="view_mode_radio" type="radio" buttonvariantgrouped="horizontal" value="cards">
+<slot-default> Cards</slot-default>
+</x-nccheckboxradioswitch>
+<x-nccheckboxradioswitch modelvalue="table" title="See entities as a table" buttonvariant="true" name="view_mode_radio" type="radio" buttonvariantgrouped="horizontal" value="table">
+<slot-default> Table</slot-default>
+</x-nccheckboxradioswitch>
+</div>
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Refresh</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</div>
+</div>
+<div>
+<div class="viewTableContainer">
+<table class="viewTable">
+<thead>
+<tr>
+<th class="tableColumnCheckbox">
+<x-nccheckboxradioswitch modelvalue="true" indeterminate="false" aria-label="t:Select all entities">
+</x-nccheckboxradioswitch>
+</th>
+<th scope="col">t:Value</th>
+<th scope="col">t:Type</th>
+<th scope="col">t:Category</th>
+<th scope="col">t:Detected At</th>
+<th scope="col">t:Relations</th>
+<th scope="col" class="tableColumnActions">t:Actions</th>
+</tr>
+</thead>
+<tbody>
+<tr class="viewTableRow viewTableRowSelected">
+<td class="tableColumnCheckbox">
+<x-nccheckboxradioswitch modelvalue="true" aria-label="t:Select entity {value} {&quot;value&quot;:&quot;Jan&quot;}">
+</x-nccheckboxradioswitch>
+</td>
+<td class="tableColumnTitle">
+<div class="entity-value-cell">
+<x-accountoutline size="20" class="entity-icon">
+</x-accountoutline>
+<strong>Jan</strong>
+</div>
+</td>
+<td>
+<span class="badge badge-type">person</span>
+</td>
+<td>
+<span class="badge badge-category">pii</span>
+</td>
+<td>-</td>
+<td>0</td>
+<td class="tableColumnActions">
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> View Details</slot-default>
+<slot-icon>
+<x-eyeoutline size="20">
+</x-eyeoutline>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<x-paginationcomponent currentpage="1" totalpages="1" totalitems="1" currentpagesize="20" minitemstoshow="10">
+</x-paginationcomponent>
+</div>",
+  "loading": "<div class="viewContainer">
+<div class="viewHeader">
+<div class="viewHeaderTitle">
+<h1 class="viewHeaderTitleIndented">t:Entities</h1>
+<x-ncbutton variant="tertiary" aria-label="t:Toggle search sidebar">
+<slot-default> t:Hide Filters</slot-default>
+<slot-icon>
+<x-filtervariant size="20">
+</x-filtervariant>
+</slot-icon>
+</x-ncbutton>
+</div>
+<p>t:Manage and view detected entities from files and objects</p>
+</div>
+<div class="viewActionsBar">
+<div class="viewInfo">
+</div>
+<div class="viewActions">
+<div class="viewModeSwitchContainer">
+<x-nccheckboxradioswitch modelvalue="table" title="See entities as cards" buttonvariant="true" name="view_mode_radio" type="radio" buttonvariantgrouped="horizontal" value="cards">
+<slot-default> Cards</slot-default>
+</x-nccheckboxradioswitch>
+<x-nccheckboxradioswitch modelvalue="table" title="See entities as a table" buttonvariant="true" name="view_mode_radio" type="radio" buttonvariantgrouped="horizontal" value="table">
+<slot-default> Table</slot-default>
+</x-nccheckboxradioswitch>
+</div>
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Refresh</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</div>
+</div>
+<x-ncloadingicon size="64">
+</x-ncloadingicon>
+</div>",
+}
+`;
+
+exports[`list page entities renders loading, empty and filled, and its menus reach the page 2`] = `
+[
+  [
+    "t:Refresh",
+    [
+      "refreshEntities",
+    ],
+  ],
+  [
+    "View Details",
+    [
+      "viewEntity",
+      1,
+    ],
+  ],
+]
+`;
+
 exports[`list page entities toggles the filters 1`] = `
 {
   "after": true,
@@ -145,6 +356,230 @@ exports[`list page files renders its header 1`] = `
 </div>"
 `;
 
+exports[`list page files renders loading, empty and filled, and its menus reach the page 1`] = `
+{
+  "empty": "<div class="viewContainer">
+<div class="viewHeader">
+<div class="viewHeaderTitle">
+<h1 class="viewHeaderTitleIndented">t:Files</h1>
+<x-ncbutton variant="tertiary" aria-label="t:Toggle search sidebar">
+<slot-default> t:Show Filters</slot-default>
+<slot-icon>
+<x-filtervariant size="20">
+</x-filtervariant>
+</slot-icon>
+</x-ncbutton>
+</div>
+<p>t:Manage and monitor file text extraction status</p>
+</div>
+<div class="viewActionsBar">
+<div class="viewInfo">
+</div>
+<div class="viewActions">
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Refresh</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</div>
+</div>
+<div class="tableContainer">
+<x-ncemptycontent name="t:No files found" description="t:No files have been extracted yet">
+<slot-icon>
+<x-filedocumentoutline size="64">
+</x-filedocumentoutline>
+</slot-icon>
+</x-ncemptycontent>
+</div>
+</div>",
+  "filled": "<div class="viewContainer">
+<div class="viewHeader">
+<div class="viewHeaderTitle">
+<h1 class="viewHeaderTitleIndented">t:Files</h1>
+<x-ncbutton variant="tertiary" aria-label="t:Toggle search sidebar">
+<slot-default> t:Show Filters</slot-default>
+<slot-icon>
+<x-filtervariant size="20">
+</x-filtervariant>
+</slot-icon>
+</x-ncbutton>
+</div>
+<p>t:Manage and monitor file text extraction status</p>
+</div>
+<div class="viewActionsBar">
+<div class="viewInfo">
+<span class="viewTotalCount">t:Showing {showing} of {total} files {"showing":2,"total":2}</span>
+</div>
+<div class="viewActions">
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Refresh</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</div>
+</div>
+<div class="tableContainer">
+<table class="filesTable">
+<thead>
+<tr>
+<th scope="col" class="column-filename sortable">t:File Name </th>
+<th scope="col" class="column-mimetype">t:Type</th>
+<th scope="col" class="column-size sortable">t:Size </th>
+<th scope="col" class="column-chunks sortable">t:Chunks </th>
+<th scope="col" class="column-entities sortable">t:Entities </th>
+<th scope="col" class="column-risk sortable">t:Risk Level </th>
+<th scope="col" class="column-extracted sortable">t:Extracted At <span class="sort-indicator">▼</span>
+</th>
+<th scope="col" class="column-actions">t:Actions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="column-filename">
+<div class="file-name-cell">
+<x-filedocumentoutline size="20" class="file-icon">
+</x-filedocumentoutline>
+<span class="file-name">a.pdf</span>
+</div>
+</td>
+<td class="column-mimetype">
+<span class="badge badge-mimetype">
+</span>
+</td>
+<td class="column-size">0 B</td>
+<td class="column-chunks">0</td>
+<td class="column-entities">0</td>
+<td class="column-risk">
+<span class="badge badge-risk-undefined">t:None</span>
+</td>
+<td class="column-extracted">-</td>
+<td class="column-actions">
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Retry</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:View Error</slot-default>
+<slot-icon>
+<x-alertcircleoutline size="20">
+</x-alertcircleoutline>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</td>
+</tr>
+<tr>
+<td class="column-filename">
+<div class="file-name-cell">
+<x-filedocumentoutline size="20" class="file-icon">
+</x-filedocumentoutline>
+<span class="file-name">b.pdf</span>
+</div>
+</td>
+<td class="column-mimetype">
+<span class="badge badge-mimetype">
+</span>
+</td>
+<td class="column-size">0 B</td>
+<td class="column-chunks">0</td>
+<td class="column-entities">0</td>
+<td class="column-risk">
+<span class="badge badge-risk-undefined">t:None</span>
+</td>
+<td class="column-extracted">-</td>
+<td class="column-actions">
+<x-ncactions>
+<slot-default>
+</slot-default>
+</x-ncactions>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>",
+  "loading": "<div class="viewContainer">
+<div class="viewHeader">
+<div class="viewHeaderTitle">
+<h1 class="viewHeaderTitleIndented">t:Files</h1>
+<x-ncbutton variant="tertiary" aria-label="t:Toggle search sidebar">
+<slot-default> t:Show Filters</slot-default>
+<slot-icon>
+<x-filtervariant size="20">
+</x-filtervariant>
+</slot-icon>
+</x-ncbutton>
+</div>
+<p>t:Manage and monitor file text extraction status</p>
+</div>
+<div class="viewActionsBar">
+<div class="viewInfo">
+</div>
+<div class="viewActions">
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Refresh</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</div>
+</div>
+<div class="tableContainer">
+<x-ncloadingicon size="64">
+</x-ncloadingicon>
+</div>
+</div>",
+}
+`;
+
+exports[`list page files renders loading, empty and filled, and its menus reach the page 2`] = `
+[
+  [
+    "t:Refresh",
+    [
+      "refreshFiles",
+    ],
+  ],
+  [
+    "t:Retry",
+    [
+      "retryExtraction",
+      1,
+    ],
+  ],
+  [
+    "t:View Error",
+    [
+      "showError",
+      1,
+    ],
+  ],
+]
+`;
+
 exports[`list page files toggles the filters 1`] = `
 {
   "after": true,
@@ -270,6 +705,174 @@ exports[`list page templates renders its header 1`] = `
 </div>"
 `;
 
+exports[`list page templates renders loading, empty and filled, and its menus reach the page 1`] = `
+{
+  "empty": "<div class="viewContainer">
+<div class="viewHeader">
+<div class="viewHeaderTitle">
+<h1 class="viewHeaderTitleIndented">t:Templates</h1>
+<x-ncbutton variant="tertiary" aria-label="t:Toggle search sidebar">
+<slot-default> t:Show Filters</slot-default>
+<slot-icon>
+<x-filtervariant size="20">
+</x-filtervariant>
+</slot-icon>
+</x-ncbutton>
+</div>
+<p>t:Manage document templates and themes</p>
+</div>
+<div class="viewActionsBar">
+<div class="viewInfo">
+</div>
+<div class="viewActions">
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Refresh</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</div>
+</div>
+<div class="tableContainer">
+<x-ncemptycontent name="t:Templates are coming soon" description="t:The templates feature is not available yet. This page is a placeholder and will list templates once the feature ships.">
+<slot-icon>
+<x-fileoutline size="64">
+</x-fileoutline>
+</slot-icon>
+</x-ncemptycontent>
+</div>
+</div>",
+  "filled": "<div class="viewContainer">
+<div class="viewHeader">
+<div class="viewHeaderTitle">
+<h1 class="viewHeaderTitleIndented">t:Templates</h1>
+<x-ncbutton variant="tertiary" aria-label="t:Toggle search sidebar">
+<slot-default> t:Show Filters</slot-default>
+<slot-icon>
+<x-filtervariant size="20">
+</x-filtervariant>
+</slot-icon>
+</x-ncbutton>
+</div>
+<p>t:Manage document templates and themes</p>
+</div>
+<div class="viewActionsBar">
+<div class="viewInfo">
+<span class="viewTotalCount">t:Showing {showing} of {total} templates {"showing":1,"total":1}</span>
+</div>
+<div class="viewActions">
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Refresh</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</div>
+</div>
+<div class="tableContainer">
+<x-cndatatable class="templatesTable">
+<x-thead>
+<x-th>t:Name</x-th>
+<x-th>t:Type</x-th>
+<x-th>t:Description</x-th>
+<x-th>t:Updated At</x-th>
+<x-th>t:Actions</x-th>
+</x-thead>
+<x-tbody>
+<x-tr>
+<x-td>
+<span class="template-name">Letter</span>
+</x-td>
+<x-td>
+<span class="badge badge-type">docx</span>
+</x-td>
+<x-td>-</x-td>
+<x-td>-</x-td>
+<x-td>
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:View Details</slot-default>
+<slot-icon>
+<x-eyeoutline size="20">
+</x-eyeoutline>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</x-td>
+</x-tr>
+</x-tbody>
+</x-cndatatable>
+</div>
+</div>",
+  "loading": "<div class="viewContainer">
+<div class="viewHeader">
+<div class="viewHeaderTitle">
+<h1 class="viewHeaderTitleIndented">t:Templates</h1>
+<x-ncbutton variant="tertiary" aria-label="t:Toggle search sidebar">
+<slot-default> t:Show Filters</slot-default>
+<slot-icon>
+<x-filtervariant size="20">
+</x-filtervariant>
+</slot-icon>
+</x-ncbutton>
+</div>
+<p>t:Manage document templates and themes</p>
+</div>
+<div class="viewActionsBar">
+<div class="viewInfo">
+</div>
+<div class="viewActions">
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Refresh</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</div>
+</div>
+<div class="tableContainer">
+<x-ncloadingicon size="64">
+</x-ncloadingicon>
+</div>
+</div>",
+}
+`;
+
+exports[`list page templates renders loading, empty and filled, and its menus reach the page 2`] = `
+[
+  [
+    "t:Refresh",
+    [
+      "refreshTemplates",
+    ],
+  ],
+  [
+    "t:View Details",
+    [
+      "viewTemplate",
+      1,
+    ],
+  ],
+]
+`;
+
 exports[`list page templates toggles the filters 1`] = `
 {
   "after": true,
@@ -380,6 +983,181 @@ exports[`list page webhookLogs pages forward and back within the total 1`] = `
 }
 `;
 
+exports[`list page webhookLogs renders loading, empty and filled, and its menus reach the page 1`] = `
+{
+  "empty": "<div class="viewContainer">
+<div class="viewHeader">
+<div class="viewHeaderTitle">
+<h1 class="viewHeaderTitleIndented">t:Webhook Logs</h1>
+<x-ncbutton variant="tertiary">
+<slot-default> t:Back to Webhooks</slot-default>
+<slot-icon>
+<x-arrowleft size="20">
+</x-arrowleft>
+</slot-icon>
+</x-ncbutton>
+</div>
+<p>t:View webhook delivery logs and filter by webhook</p>
+</div>
+<div class="viewActionsBar">
+<div class="viewInfo">
+<span class="viewTotalCount">t:Showing {showing} of {total} log entries {"showing":0,"total":0}</span>
+</div>
+<div class="viewActions">
+<x-ncselect options="[object Object]" placeholder="t:Filter by webhook" clearable="true" labeloutside="true" inputlabel="t:Filter by webhook">
+<slot-option>
+</slot-option>
+</x-ncselect>
+<x-ncbutton variant="secondary">
+<slot-default> t:Refresh</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+<div class="tableContainer">
+<x-ncemptycontent name="t:No log entries found" description="t:There are no webhook log entries matching your filters.">
+<slot-icon>
+<x-filedocumentoutline size="64">
+</x-filedocumentoutline>
+</slot-icon>
+</x-ncemptycontent>
+</div>
+</div>",
+  "filled": "<div class="viewContainer">
+<div class="viewHeader">
+<div class="viewHeaderTitle">
+<h1 class="viewHeaderTitleIndented">t:Webhook Logs</h1>
+<x-ncbutton variant="tertiary">
+<slot-default> t:Back to Webhooks</slot-default>
+<slot-icon>
+<x-arrowleft size="20">
+</x-arrowleft>
+</slot-icon>
+</x-ncbutton>
+</div>
+<p>t:View webhook delivery logs and filter by webhook</p>
+</div>
+<div class="viewActionsBar">
+<div class="viewInfo">
+<span class="viewTotalCount">t:Showing {showing} of {total} log entries {"showing":1,"total":1}</span>
+</div>
+<div class="viewActions">
+<x-ncselect options="[object Object]" placeholder="t:Filter by webhook" clearable="true" labeloutside="true" inputlabel="t:Filter by webhook">
+<slot-option>
+</slot-option>
+</x-ncselect>
+<x-ncbutton variant="secondary">
+<slot-default> t:Refresh</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+<div class="tableContainer">
+<x-cndatatable>
+<x-thead>
+<x-th>t:Webhook</x-th>
+<x-th>t:Event</x-th>
+<x-th>t:Status</x-th>
+<x-th>t:Status Code</x-th>
+<x-th>t:Attempt</x-th>
+<x-th>t:Created</x-th>
+<x-th>t:Error</x-th>
+<x-th>t:Actions</x-th>
+</x-thead>
+<x-tbody>
+<x-tr>
+<x-td>#1</x-td>
+<x-td>
+<span class="event-class">-</span>
+</x-td>
+<x-td>
+<span class="status-success">t:Success</span>
+</x-td>
+<x-td>-</x-td>
+<x-td>
+</x-td>
+<x-td>-</x-td>
+<x-td>
+<span>-</span>
+</x-td>
+<x-td>
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:View Details</slot-default>
+<slot-icon>
+<x-eye size="20">
+</x-eye>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</x-td>
+</x-tr>
+</x-tbody>
+</x-cndatatable>
+</div>
+</div>",
+  "loading": "<div class="viewContainer">
+<div class="viewHeader">
+<div class="viewHeaderTitle">
+<h1 class="viewHeaderTitleIndented">t:Webhook Logs</h1>
+<x-ncbutton variant="tertiary">
+<slot-default> t:Back to Webhooks</slot-default>
+<slot-icon>
+<x-arrowleft size="20">
+</x-arrowleft>
+</slot-icon>
+</x-ncbutton>
+</div>
+<p>t:View webhook delivery logs and filter by webhook</p>
+</div>
+<div class="viewActionsBar">
+<div class="viewInfo">
+<span class="viewTotalCount">t:Showing {showing} of {total} log entries {"showing":0,"total":0}</span>
+</div>
+<div class="viewActions">
+<x-ncselect options="[object Object]" placeholder="t:Filter by webhook" clearable="true" labeloutside="true" inputlabel="t:Filter by webhook">
+<slot-option>
+</slot-option>
+</x-ncselect>
+<x-ncbutton variant="secondary">
+<slot-default> t:Refresh</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+<div class="tableContainer is-loading">
+<div class="loadingWrapper">
+<x-ncloadingicon size="64">
+</x-ncloadingicon>
+</div>
+</div>
+</div>",
+}
+`;
+
+exports[`list page webhookLogs renders loading, empty and filled, and its menus reach the page 2`] = `
+[
+  [
+    "t:View Details",
+    [
+      "viewLogDetails",
+      1,
+    ],
+  ],
+]
+`;
+
 exports[`list page webhooks pages forward and back within the total 1`] = `
 {
   "log": [],
@@ -478,6 +1256,363 @@ exports[`list page webhooks renders its header 1`] = `
   </div>
   <p>t:Manage webhooks for event-driven integrations</p>
 </div>"
+`;
+
+exports[`list page webhooks renders loading, empty and filled, and its menus reach the page 1`] = `
+{
+  "empty": "<div class="viewContainer">
+<div class="viewHeader">
+<div class="viewHeaderTitle">
+<h1 class="viewHeaderTitleIndented">t:Webhooks</h1>
+<x-ncbutton variant="tertiary" aria-label="t:Toggle search sidebar">
+<slot-default> t:Show Filters</slot-default>
+<slot-icon>
+<x-filtervariant size="20">
+</x-filtervariant>
+</slot-icon>
+</x-ncbutton>
+</div>
+<p>t:Manage webhooks for event-driven integrations</p>
+</div>
+<div class="viewActionsBar">
+<div class="viewInfo">
+</div>
+<div class="viewActions">
+<x-ncbutton variant="primary">
+<slot-default> t:Create Webhook</slot-default>
+<slot-icon>
+<x-plus size="20">
+</x-plus>
+</slot-icon>
+</x-ncbutton>
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Refresh</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</div>
+</div>
+<div class="tableContainer">
+<x-ncemptycontent name="t:No webhooks found" description="t:No webhooks have been configured yet">
+<slot-icon>
+<x-webhook size="64">
+</x-webhook>
+</slot-icon>
+</x-ncemptycontent>
+</div>
+</div>",
+  "filled": "<div class="viewContainer">
+<div class="viewHeader">
+<div class="viewHeaderTitle">
+<h1 class="viewHeaderTitleIndented">t:Webhooks</h1>
+<x-ncbutton variant="tertiary" aria-label="t:Toggle search sidebar">
+<slot-default> t:Show Filters</slot-default>
+<slot-icon>
+<x-filtervariant size="20">
+</x-filtervariant>
+</slot-icon>
+</x-ncbutton>
+</div>
+<p>t:Manage webhooks for event-driven integrations</p>
+</div>
+<div class="viewActionsBar">
+<div class="viewInfo">
+<span class="viewTotalCount">t:Showing {showing} of {total} webhooks {"showing":2,"total":2}</span>
+</div>
+<div class="viewActions">
+<x-ncbutton variant="primary">
+<slot-default> t:Create Webhook</slot-default>
+<slot-icon>
+<x-plus size="20">
+</x-plus>
+</slot-icon>
+</x-ncbutton>
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Refresh</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</div>
+</div>
+<div class="tableContainer">
+<x-cndatatable>
+<x-thead>
+<x-th>t:Name</x-th>
+<x-th>t:URL</x-th>
+<x-th>t:Method</x-th>
+<x-th>t:Status</x-th>
+<x-th>t:Last Triggered</x-th>
+<x-th>t:Success Rate</x-th>
+<x-th>t:Actions</x-th>
+</x-thead>
+<x-tbody>
+<x-tr>
+<x-td>
+<div class="webhook-name-cell">
+<x-webhook size="20" class="webhook-icon">
+</x-webhook>
+<span class="webhook-name">On</span>
+</div>
+</x-td>
+<x-td>
+<span class="webhook-url">https://a.example</span>
+</x-td>
+<x-td>
+<span class="badge badge-method">POST</span>
+</x-td>
+<x-td>
+<span class="badge badge-status-enabled">t:Enabled</span>
+</x-td>
+<x-td>-</x-td>
+<x-td>-</x-td>
+<x-td>
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Edit</slot-default>
+<slot-icon>
+<x-pencil size="20">
+</x-pencil>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Test</slot-default>
+<slot-icon>
+<x-playoutline size="20">
+</x-playoutline>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:View Logs</slot-default>
+<slot-icon>
+<x-filedocumentoutline size="20">
+</x-filedocumentoutline>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Disable</slot-default>
+<slot-icon>
+<x-pausecircleoutline size="20">
+</x-pausecircleoutline>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Delete</slot-default>
+<slot-icon>
+<x-deleteoutline size="20">
+</x-deleteoutline>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</x-td>
+</x-tr>
+<x-tr>
+<x-td>
+<div class="webhook-name-cell">
+<x-webhook size="20" class="webhook-icon">
+</x-webhook>
+<span class="webhook-name">Off</span>
+</div>
+</x-td>
+<x-td>
+<span class="webhook-url">https://b.example</span>
+</x-td>
+<x-td>
+<span class="badge badge-method">POST</span>
+</x-td>
+<x-td>
+<span class="badge badge-status-disabled">t:Disabled</span>
+</x-td>
+<x-td>-</x-td>
+<x-td>-</x-td>
+<x-td>
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Edit</slot-default>
+<slot-icon>
+<x-pencil size="20">
+</x-pencil>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Test</slot-default>
+<slot-icon>
+<x-playoutline size="20">
+</x-playoutline>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:View Logs</slot-default>
+<slot-icon>
+<x-filedocumentoutline size="20">
+</x-filedocumentoutline>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Enable</slot-default>
+<slot-icon>
+<x-playoutline size="20">
+</x-playoutline>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Delete</slot-default>
+<slot-icon>
+<x-deleteoutline size="20">
+</x-deleteoutline>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</x-td>
+</x-tr>
+</x-tbody>
+</x-cndatatable>
+</div>
+</div>",
+  "loading": "<div class="viewContainer">
+<div class="viewHeader">
+<div class="viewHeaderTitle">
+<h1 class="viewHeaderTitleIndented">t:Webhooks</h1>
+<x-ncbutton variant="tertiary" aria-label="t:Toggle search sidebar">
+<slot-default> t:Show Filters</slot-default>
+<slot-icon>
+<x-filtervariant size="20">
+</x-filtervariant>
+</slot-icon>
+</x-ncbutton>
+</div>
+<p>t:Manage webhooks for event-driven integrations</p>
+</div>
+<div class="viewActionsBar">
+<div class="viewInfo">
+</div>
+<div class="viewActions">
+<x-ncbutton variant="primary">
+<slot-default> t:Create Webhook</slot-default>
+<slot-icon>
+<x-plus size="20">
+</x-plus>
+</slot-icon>
+</x-ncbutton>
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Refresh</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</div>
+</div>
+<div class="tableContainer">
+<x-ncemptycontent name="t:No webhooks found" description="t:No webhooks have been configured yet">
+<slot-icon>
+<x-webhook size="64">
+</x-webhook>
+</slot-icon>
+</x-ncemptycontent>
+</div>
+</div>",
+}
+`;
+
+exports[`list page webhooks renders loading, empty and filled, and its menus reach the page 2`] = `
+[
+  [
+    "t:Refresh",
+    [
+      "refreshWebhooks",
+    ],
+  ],
+  [
+    "t:Edit",
+    [
+      "editWebhook",
+      1,
+    ],
+  ],
+  [
+    "t:Test",
+    [
+      "testWebhook",
+      1,
+    ],
+  ],
+  [
+    "t:View Logs",
+    [
+      "viewLogs",
+      1,
+    ],
+  ],
+  [
+    "t:Disable",
+    [
+      "toggleWebhook",
+      1,
+    ],
+  ],
+  [
+    "t:Delete",
+    [
+      "deleteWebhook",
+      1,
+    ],
+  ],
+  [
+    "t:Edit",
+    [
+      "editWebhook",
+      2,
+    ],
+  ],
+  [
+    "t:Test",
+    [
+      "testWebhook",
+      2,
+    ],
+  ],
+  [
+    "t:View Logs",
+    [
+      "viewLogs",
+      2,
+    ],
+  ],
+  [
+    "t:Enable",
+    [
+      "toggleWebhook",
+      2,
+    ],
+  ],
+  [
+    "t:Delete",
+    [
+      "deleteWebhook",
+      2,
+    ],
+  ],
+]
 `;
 
 exports[`list page webhooks toggles the filters 1`] = `
