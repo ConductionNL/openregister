@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\RevertHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Tests\Support\AuditChangeCalls;
 use OCP\EventDispatcher\IEventDispatcher;
 use Opis\JsonSchema\ValidationResult;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -172,8 +173,8 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$this->magic->method('update')->willReturnArgument(0);
 
 		$this->audit->expects($this->once())
-			->method('createAuditTrail')
-			->with($this->current, $this->reverted, 'revert')
+			->method('recordChange')
+			->with(AuditChangeCalls::matching([$this->current, $this->reverted, 'revert']))
 			->willReturn(new AuditTrail());
 
 		$saved = $this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
@@ -205,7 +206,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$this->validator->method('validateObject')->willReturn($this->valid());
 		$this->magic->method('update')->willReturnArgument(0);
 
-		$this->audit->expects($this->never())->method('createAuditTrail');
+		$this->audit->expects($this->never())->method('recordChange');
 
 		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
 	}//end testRevertHonoursAuditTrailsDisabled()
@@ -219,8 +220,13 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$this->current->setFrozen(['by' => 'bob', 'at' => '2026-09-01T00:00:00+00:00']);
 
 		$this->magic->expects($this->never())->method('update');
+<<<<<<< HEAD
 		$this->audit->expects($this->never())->method('revertObjectWith');
 		$this->audit->expects($this->never())->method('createAuditTrail');
+=======
+		$this->audit->expects($this->never())->method('revertObject');
+		$this->audit->expects($this->never())->method('recordChange');
+>>>>>>> origin/cloud/v01-audit-change-1
 
 		$this->expectException(ObjectStateWriteException::class);
 
@@ -238,8 +244,13 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$this->current->setArchived(['by' => 'anna', 'at' => '2026-09-12T00:00:00+00:00', 'reason' => 'closed']);
 
 		$this->magic->expects($this->never())->method('update');
+<<<<<<< HEAD
 		$this->audit->expects($this->never())->method('revertObjectWith');
 		$this->audit->expects($this->never())->method('createAuditTrail');
+=======
+		$this->audit->expects($this->never())->method('revertObject');
+		$this->audit->expects($this->never())->method('recordChange');
+>>>>>>> origin/cloud/v01-audit-change-1
 
 		try {
 			$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
@@ -314,7 +325,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$this->validator->method('generateErrorMessage')->willReturn('title is no longer allowed');
 
 		$this->magic->expects($this->never())->method('update');
-		$this->audit->expects($this->never())->method('createAuditTrail');
+		$this->audit->expects($this->never())->method('recordChange');
 
 		$this->expectException(ValidationException::class);
 
@@ -330,7 +341,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$this->schema->setHardValidation(false);
 		$this->validator->expects($this->never())->method('validateObject');
 		$this->magic->expects($this->once())->method('update')->willReturnArgument(0);
-		$this->audit->method('createAuditTrail')->willReturn(new AuditTrail());
+		$this->audit->method('recordChange')->willReturn(new AuditTrail());
 
 		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
 	}//end testSoftValidationSchemaSkipsValidation()
@@ -343,7 +354,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 	public function testRevertAcceptsRegisterAndSchemaSlugs(): void {
 		$this->validator->method('validateObject')->willReturn($this->valid());
 		$this->magic->expects($this->once())->method('update')->willReturn($this->reverted);
-		$this->audit->method('createAuditTrail')->willReturn(new AuditTrail());
+		$this->audit->method('recordChange')->willReturn(new AuditTrail());
 
 		$saved = $this->handler()->revert(register: 'lp-register', schema: 'lp-item', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
 

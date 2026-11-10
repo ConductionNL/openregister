@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Service\TranslationProjectionService;
 use OCA\OpenRegister\Service\TranslationStatusService;
+use OCA\OpenRegister\Tests\Support\AuditChangeCalls;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -217,12 +218,12 @@ final class SaveObjectCreateObjectTest extends TestCase {
 		$settings = $this->createMock(SettingsService::class);
 		$settings->method('getRetentionSettingsOnly')->willReturn(['auditTrailsEnabled' => ($case['audit'] ?? true)]);
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('createAuditTrail')->willReturnCallback(function (?ObjectEntity $old = null, ?ObjectEntity $new = null, ?string $action = null): AuditTrail {
+		$audit->method('recordChange')->willReturnCallback(AuditChangeCalls::positional(function (?ObjectEntity $old = null, ?ObjectEntity $new = null, ?string $action = null): AuditTrail {
 			$this->trace[] = ['audit', $old?->getUuid(), $new?->getUuid(), $action];
 			$log = $this->createMock(AuditTrail::class);
 			$log->method('jsonSerialize')->willReturn(['log' => 1]);
 			return $log;
-		});
+		}));
 		$retention = $this->createMock(RetentionServiceInterface::class);
 		$retention->method('guardClassificationOverride')->willReturnCallback(function (Schema $schema, array $data): void {
 			$this->trace[] = ['retentionGuard', $schema->getId(), array_key_exists('title', $data)];

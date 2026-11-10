@@ -22,6 +22,7 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\AuditTrail\RevertOptions;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -192,7 +193,7 @@ class RevertHandler implements RevertHandlerInterface {
 		$savedObject = $this->stores->objectEntityMapper->update(entity: $reverted, register: $context['register'], schema: $context['schema']);
 
 		if ($this->isAuditTrailsEnabled() === true) {
-			$this->stores->auditTrailMapper->createAuditTrail(old: $context['object'], new: $savedObject, action: 'revert');
+			$this->stores->auditTrailMapper->recordChange(change: new AuditedChange(old: $context['object'], new: $savedObject, action: 'revert'));
 		}
 
 		return $savedObject;

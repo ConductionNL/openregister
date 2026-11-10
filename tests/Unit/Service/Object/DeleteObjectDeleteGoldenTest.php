@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Object\RemovalOptions;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Tests\Support\AuditChangeCalls;
 use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\Files\Folder;
 use OCP\IDBConnection;
@@ -248,13 +249,18 @@ class DeleteObjectDeleteGoldenTest extends TestCase {
 		$session->method('getUser')->willReturn($sessionUser);
 
 		$auditMapper = $this->createMock(AuditTrailMapper::class);
-		$auditMapper->method('createAuditTrail')->willReturnCallback(
+		$auditMapper->method('recordChange')->willReturnCallback(AuditChangeCalls::positional(
 			function (?ObjectEntity $old = null, ?ObjectEntity $new = null, ?string $action = null, ?array $cascadeContext = null) use (&$calls, $lookedUp, $stored): AuditTrail {
 				$calls[] = ['audit' => $action, 'old' => $old === null ? null : $this->entityFacts($old, $lookedUp, $stored), 'new' => $new?->getUuid(), 'cascadeContext' => $cascadeContext];
 				return new AuditTrail();
 			}
+<<<<<<< HEAD
 		);
 		$auditMapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
+=======
+		));
+		$auditMapper->method('createAuditTrailEntry')->willReturnCallback(
+>>>>>>> origin/cloud/v01-audit-change-1
 			function (ObjectEntity $object, string $action, array $context = [], ?string $actorId = null, ?string $actorName = null) use (&$calls): AuditTrail {
 				$calls[] = ['auditEntry' => $action, 'object' => $object->getUuid(), 'context' => $context, 'actorId' => $actorId];
 				return new AuditTrail();

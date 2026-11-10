@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Object\LockAuthorization;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\LockStores;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
+use OCA\OpenRegister\Tests\Support\AuditChangeCalls;
 use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IGroupManager;
@@ -80,13 +81,18 @@ final class LockHandlerReleaseOrderGoldenTest extends TestCase {
 				$this->events[] = 'entry:' . $action . ':' . json_encode($context);
 				return new AuditTrail();
 			}
+<<<<<<< HEAD
 		));
 		$audit->method('createAuditTrail')->willReturnCallback(
+=======
+		);
+		$audit->method('recordChange')->willReturnCallback(AuditChangeCalls::positional(
+>>>>>>> origin/cloud/v01-audit-change-1
 			function (?ObjectEntity $old=null, ?ObjectEntity $new=null, ?string $action='update'): AuditTrail {
 				$this->events[] = 'trail:' . $action . ':' . ($old?->getUuid()) . '>' . ($new?->getUuid());
 				return new AuditTrail();
 			}
-		);
+		));
 		$advisory = $this->createMock(AdvisoryLockStore::class);
 		$advisory->method('release')->willReturnCallback(
 			function (string $identifier): bool {

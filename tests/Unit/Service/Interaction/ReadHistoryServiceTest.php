@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\ProcessingLogService;
 use OCA\OpenRegister\Service\ProcessingRead;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Tests\Support\AuditChangeCalls;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -100,8 +101,8 @@ class ReadHistoryServiceTest extends TestCase {
 		$object = new ObjectEntity();
 		$row = new AuditTrail();
 		$this->auditTrails->expects($this->once())
-			->method('createAuditTrail')
-			->with(null, $object, 'read')
+			->method('recordChange')
+			->with(AuditChangeCalls::matching([null, $object, 'read']))
 			->willReturn($row);
 
 		$this->assertSame($row, $this->service()->registerAuditRead(object: $object));
@@ -113,7 +114,7 @@ class ReadHistoryServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnauditedLoadWritesNothing(): void {
-		$this->auditTrails->expects($this->never())->method('createAuditTrail');
+		$this->auditTrails->expects($this->never())->method('recordChange');
 
 		$this->assertNull($this->service()->registerAuditRead(object: new ObjectEntity(), audit: false));
 	}//end testAnUnauditedLoadWritesNothing()
@@ -124,7 +125,7 @@ class ReadHistoryServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testAuditOffWritesNothing(): void {
-		$this->auditTrails->expects($this->never())->method('createAuditTrail');
+		$this->auditTrails->expects($this->never())->method('recordChange');
 
 		$this->assertNull($this->service(auditOn: false)->registerAuditRead(object: new ObjectEntity()));
 	}//end testAuditOffWritesNothing()
@@ -135,7 +136,7 @@ class ReadHistoryServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnreadableSettingKeepsAuditOn(): void {
-		$this->auditTrails->expects($this->once())->method('createAuditTrail')->willReturn(new AuditTrail());
+		$this->auditTrails->expects($this->once())->method('recordChange')->willReturn(new AuditTrail());
 
 		$this->service(auditOn: null)->registerAuditRead(object: new ObjectEntity());
 	}//end testAnUnreadableSettingKeepsAuditOn()
@@ -153,7 +154,7 @@ class ReadHistoryServiceTest extends TestCase {
 		$object = new ObjectEntity();
 		$this->processingLog->expects($this->once())->method('recordRead')->with($object, new ProcessingRead(action: 'read'));
 		$this->processingLog->expects($this->once())->method('flush');
-		$this->auditTrails->expects($this->never())->method('createAuditTrail');
+		$this->auditTrails->expects($this->never())->method('recordChange');
 
 		$this->service(auditOn: false)->registerProcessingRead(object: $object);
 	}//end testAProcessingReadIsLoggedEvenWithAuditOff()

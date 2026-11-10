@@ -48,6 +48,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Interaction;
 
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ProcessingLogService;
@@ -160,7 +161,7 @@ class ReadHistoryService {
 			return null;
 		}
 
-		return $this->auditTrails->createAuditTrail(old: null, new: $object, action: self::READ_ACTION);
+		return $this->auditTrails->recordChange(change: new AuditedChange(old: null, new: $object, action: self::READ_ACTION));
 
 	}//end registerAuditRead()
 
