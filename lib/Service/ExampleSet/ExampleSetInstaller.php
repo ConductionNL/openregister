@@ -177,7 +177,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			$this->checkChanges(run: $run, context: $context),
 			$this->checkAppConfig(fragment: $fragment, context: $context),
 			$this->checkUserPreferences(run: $run, context: ($context + ['views' => $this->objects->values->viewsOf(fragment: $fragment, record: null)])),
-			$engineRows->check(fragment: $fragment, context: $context, users: $run->users, values: $this->objects->values)
+			$engineRows->check(write: new ExampleSetFragmentWrite(fragment: $fragment, context: $context, values: $this->objects->values), users: $run->users)
 		);
 	}//end checkFragment()
 
@@ -587,7 +587,8 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$fragment = $run->fragment;
 		// Before the changes, so a change can quote a flow or an access link (`{{flow:key.uuid}}`, `{{accessLink:key.url}}`).
 		$write = new ExampleSetFragmentWrite(fragment: $fragment, context: $run->context, values: $this->objects->values);
-		if ($this->writers->engineRows?->installBeforeChanges(write: $write, report: $run->report, record: $run->record) === true) {
+		$ledger = new RecordLedger(report: $run->report, record: $run->record);
+		if ($this->writers->engineRows?->installBeforeChanges(write: $write, ledger: $ledger) === true) {
 			$this->written(run: $run);
 		}
 
@@ -597,7 +598,8 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$this->installAppConfig(run: $run);
 
 		$write = new ExampleSetFragmentWrite(fragment: $fragment, context: $run->context, values: $this->objects->values);
-		if ($this->writers->engineRows?->install(write: $write, report: $run->report, record: $run->record) === true) {
+		$ledger = new RecordLedger(report: $run->report, record: $run->record);
+		if ($this->writers->engineRows?->install(write: $write, ledger: $ledger) === true) {
 			$this->written(run: $run);
 		}
 
