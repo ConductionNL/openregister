@@ -92,27 +92,48 @@ interface GitLabHandlerInterface {
 	public function getProjectByPath(string $namespace, string $project): array;
 
 	/**
-	 * List OpenRegister configuration files in a project
+	 * List OpenRegister configuration files in a project directory, read from the repository tree.
 	 *
-	 * Searches for files matching naming conventions within the project
+	 * @param GitLabProjectRef $project The project and ref.
+	 * @param string           $path    The directory path; empty for the root.
 	 *
-	 * @param int $projectId GitLab project ID
-	 * @param string $ref Branch or tag name (default: main)
-	 * @param string $path Directory path to search (default: root)
+	 * @return list<array<string, mixed>> The configuration files with their metadata.
 	 *
-	 * @return ((mixed|null|string)[]|mixed|null)[][] List of configuration files with metadata
-	 *
-	 * @throws \Exception If API request fails
+	 * @throws \Exception If the API request fails.
 	 *
 	 * @since 0.2.10
 	 *
-	 * @psalm-return list<array{config: array{app: mixed|null,
-	 *     description: ''|mixed, title: mixed|string, type: 'manual'|mixed,
-	 *     version: '1.0.0'|mixed}, id: mixed|null, path: mixed}>
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	public function listConfigurationFiles(GitLabProjectRef $project, string $path = ''): array;
+
+	/**
+	 * The decoded JSON content of a file in a project.
+	 *
+	 * @param GitLabProjectRef $project The project and ref.
+	 * @param string           $path    The file path.
+	 *
+	 * @return array The decoded document.
+	 *
+	 * @throws \Exception If the file cannot be fetched or parsed.
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
-	public function listConfigurationFiles(int $projectId, string $ref = 'main', string $path = ''): array;
+	public function fileContent(GitLabProjectRef $project, string $path): array;
+
+	/**
+	 * One page of configuration files found by the blob search.
+	 *
+	 * @param string               $search The user's search terms, possibly empty.
+	 * @param RepositorySearchPage $page   The page asked for.
+	 *
+	 * @return array{total_count: int, results: list<array<string, mixed>>, page: int, per_page: int}
+	 *
+	 * @throws \Exception If the API request fails.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	public function searchPage(string $search, RepositorySearchPage $page): array;
 
 	/**
 	 * Search for OpenRegister configurations on GitLab

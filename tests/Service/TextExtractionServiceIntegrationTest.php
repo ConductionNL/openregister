@@ -22,6 +22,9 @@ use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Files\Service\SourceStamp;
+use OCA\OpenRegister\Files\Service\TextExtraction\ChunkOwnership;
+use OCA\OpenRegister\Files\Service\TextExtraction\ChunkSource;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
@@ -955,7 +958,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testIsSourceUpToDateForced(): void {
-		$result = $this->invokePrivate($this->service, 'isSourceUpToDate', [99999, 'file', time(), true]);
+		$result = $this->invokePrivate($this->service, 'isSourceUpToDate', [new SourceStamp(sourceType: 'file', sourceId: 99999, timestamp: time()), true]);
 		$this->assertFalse($result);
 	}
 
@@ -965,7 +968,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testIsSourceUpToDateNonexistent(): void {
-		$result = $this->invokePrivate($this->service, 'isSourceUpToDate', [99999, 'file', time(), false]);
+		$result = $this->invokePrivate($this->service, 'isSourceUpToDate', [new SourceStamp(sourceType: 'file', sourceId: 99999, timestamp: time()), false]);
 		$this->assertFalse($result);
 	}
 
@@ -1664,9 +1667,13 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 			'checksum' => 'abc123',
 		];
 
-		$chunk = $this->invokePrivate($this->service, 'hydrateChunkEntity', [
-			'file', 42, $chunkData, 'admin', 'TestOrg', time(),
-		]);
+		$source = new ChunkSource(
+			sourceType: 'file',
+			sourceId: 42,
+			ownership: new ChunkOwnership(owner: 'admin', organisation: 'TestOrg'),
+			sourceTimestamp: time()
+		);
+		$chunk = $this->invokePrivate($this->service, 'hydrateChunkEntity', [$source, $chunkData]);
 
 		$this->assertInstanceOf(Chunk::class, $chunk);
 		$this->assertSame('file', $chunk->getSourceType());

@@ -3,7 +3,7 @@
 /**
  * Golden test for FlowRunMigrationService: the answers of migrate(),
  * preview(), migrateRunsOfVersion(), runsOnVersion() and
- * migrateRunForSubject(), the run writes, and which timers are superseded.
+ * migrateSubjectRuns(), the run writes, and which timers are superseded.
  * The log's `at` stamp and the supersede anchor are the only clock reads and
  * are left out. Re-record with UPDATE_GOLDEN=1.
  *
@@ -39,6 +39,8 @@ use OCA\OpenRegister\Db\FlowTimerMapper;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationService;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationTimers;
+use OCA\OpenRegister\Service\Flow\SubjectRunsMigration;
+use OCA\OpenRegister\Service\Flow\VersionRunsMigration;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationValidator;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
@@ -207,33 +209,33 @@ final class FlowRunMigrationGoldenTest extends TestCase {
 				$none,
 				[self::aRun('a', 2, []), self::aRun('d', 2, [], 'waiting'), self::aRun('e', 2, [])],
 				[]
-			)->migrateRunsOfVersion(flowId: 'flow-1', sourceVersion: 2, target: new FlowRunMigrationTarget(targetVersion: 4, reason: 'bulk', actor: 'bo', mapping: ['decide' => 'review'])),
+			)->migrateRunsOfVersion(request: new VersionRunsMigration(flowId: 'flow-1', sourceVersion: 2, target: new FlowRunMigrationTarget(targetVersion: 4, reason: 'bulk', actor: 'bo', mapping: ['decide' => 'review']))),
 			'subject store unreadable' => fn () => $this->service([], static fn () => throw new RuntimeException('db'), [], [])
-				->migrateRunForSubject(subjectUuid: 's1', targetDefinitionRef: '3', actorUid: 'carl'),
-			'subject no runs' => fn () => $this->service([], $none, [], [])->migrateRunForSubject(subjectUuid: 's1', targetDefinitionRef: '3', actorUid: 'carl'),
-			'subject only junk rows' => fn () => $this->service([], static fn () => ['x', null], [], [])->migrateRunForSubject(subjectUuid: 's1', targetDefinitionRef: 'flow-uuid', actorUid: 'carl'),
+				->migrateSubjectRuns(request: new SubjectRunsMigration(subjectUuid: 's1', targetDefinitionRef: '3', actorUid: 'carl')),
+			'subject no runs' => fn () => $this->service([], $none, [], [])->migrateSubjectRuns(request: new SubjectRunsMigration(subjectUuid: 's1', targetDefinitionRef: '3', actorUid: 'carl')),
+			'subject only junk rows' => fn () => $this->service([], static fn () => ['x', null], [], [])->migrateSubjectRuns(request: new SubjectRunsMigration(subjectUuid: 's1', targetDefinitionRef: 'flow-uuid', actorUid: 'carl')),
 			'subject other flow, one run' => fn () => $this->service([], static fn () => [self::aRun('a', 2, [])], [], [])
-				->migrateRunForSubject(subjectUuid: 's1', targetDefinitionRef: 'abc-uuid', actorUid: 'carl'),
+				->migrateSubjectRuns(request: new SubjectRunsMigration(subjectUuid: 's1', targetDefinitionRef: 'abc-uuid', actorUid: 'carl')),
 			'subject other flow, two runs' => fn () => $this->service([], static fn () => [self::aRun('a', 2, []), self::aRun('b', 2, [])], [], [])
-				->migrateRunForSubject(subjectUuid: 's1', targetDefinitionRef: '-3', actorUid: 'carl'),
+				->migrateSubjectRuns(request: new SubjectRunsMigration(subjectUuid: 's1', targetDefinitionRef: '-3', actorUid: 'carl')),
 			'subject all move' => fn () => $this->service(
 				['a' => self::aRun('a', 2, ['intake' => 1]), 'b' => self::aRun('b', 2, ['decide' => 1])],
 				static fn () => [self::aRun('a', 2, []), self::aRun('b', 2, [])],
 				[],
 				$timers
-			)->migrateRunForSubject(subjectUuid: 's1', targetDefinitionRef: '3', actorUid: 'carl'),
+			)->migrateSubjectRuns(request: new SubjectRunsMigration(subjectUuid: 's1', targetDefinitionRef: '3', actorUid: 'carl')),
 			'subject one cannot move' => fn () => $this->service(
 				['a' => self::aRun('a', 2, ['intake' => 1]), 'b' => self::aRun('b', 2, ['review' => 1])],
 				static fn () => [self::aRun('a', 2, []), self::aRun('b', 2, [])],
 				[],
 				[]
-			)->migrateRunForSubject(subjectUuid: 's1', targetDefinitionRef: '3', actorUid: 'carl'),
+			)->migrateSubjectRuns(request: new SubjectRunsMigration(subjectUuid: 's1', targetDefinitionRef: '3', actorUid: 'carl')),
 			'subject first missing' => fn () => $this->service(
 				['b' => self::aRun('b', 2, ['intake' => 1])],
 				static fn () => [self::aRun('a', 2, []), self::aRun('b', 2, [])],
 				[],
 				[]
-			)->migrateRunForSubject(subjectUuid: 's1', targetDefinitionRef: '03', actorUid: 'carl'),
+			)->migrateSubjectRuns(request: new SubjectRunsMigration(subjectUuid: 's1', targetDefinitionRef: '03', actorUid: 'carl')),
 		];
 
 		foreach ($cases as $name => $case) {

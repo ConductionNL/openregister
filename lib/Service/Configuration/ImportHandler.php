@@ -31,6 +31,7 @@
 
 namespace OCA\OpenRegister\Service\Configuration;
 
+use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
@@ -742,28 +743,16 @@ class ImportHandler {
 	/**
 	 * Import a register from configuration data.
 	 *
-	 * @param array $data The register data.
-	 * @param string|null $owner The owner of the register.
-	 * @param string|null $appId The application ID.
-	 * @param string|null $version The version.
-	 * @param bool $force Force import even if version is not newer.
+	 * @param array               $data    The register data.
+	 * @param SchemaImportOptions $options The owner, app id, version and force flag of the import.
 	 *
 	 * @return Register The imported register.
 	 *
 	 * @throws Exception If import fails.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Force flag to override version checks
-	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function importRegister(
-		array $data,
-		?string $owner = null,
-		?string $appId = null,
-		?string $version = null,
-		bool $force = false,
-	): Register {
-		$options = new SchemaImportOptions(owner: $owner, appId: $appId, version: $version, force: $force);
+	public function importRegister(array $data, SchemaImportOptions $options = new SchemaImportOptions()): Register {
 		return $this->importRegisterDefinition(data: $data, options: $options);
 	}//end importRegister()
 
@@ -1248,6 +1237,13 @@ class ImportHandler {
 			}
 		} catch (\Throwable $ignore) {
 			// No pre-existing schema anywhere (or ambiguous) — nothing to note.
+			$this->logger->debug(
+				message: '[ImportHandler] No unambiguous pre-existing schema outside the register scope',
+				context: [
+					'slug' => $data['slug'],
+					'exception' => $ignore->getMessage(),
+				]
+			);
 		}
 
 		return null;
@@ -1331,6 +1327,13 @@ class ImportHandler {
 			}
 		} catch (\Throwable $ignore) {
 			// No pre-existing schema (or ambiguous) — nothing to warn about.
+			$this->logger->debug(
+				message: '[ImportHandler] No unambiguous pre-existing schema to check the owning app of',
+				context: [
+					'slug' => $data['slug'],
+					'exception' => $ignore->getMessage(),
+				]
+			);
 		}
 
 		return null;
@@ -2685,13 +2688,8 @@ class ImportHandler {
 	 */
 	private function importRegisterComponent(ImportRun $run, ImportComponent $component): ?Register {
 		try {
-			$register = $this->importRegister(
-				data: $component->data,
-				owner: $run->owner,
-				appId: $run->appId,
-				version: $run->version,
-				force: $run->force
-			);
+			$options = new SchemaImportOptions(owner: $run->owner, appId: $run->appId, version: $run->version, force: $run->force);
+			$register = $this->importRegister(data: $component->data, options: $options);
 			$run->result['registers'][] = $register;
 			return $register;
 		} catch (\Throwable $e) {
@@ -3374,7 +3372,8 @@ class ImportHandler {
 			$remembered = $this->seedHashes()->shipped(appId: (string)$seed->appId, seed: $seedKey);
 		}
 
-		$follow = $this->shippedContent->update(stored: $listed['existing'], shipped: $listed['data'], remembered: $remembered);
+		$shipped = new ShippedSeed(content: $listed['data'], remembered: $remembered);
+		$follow  = $this->shippedContent->updateFrom(stored: $listed['existing'], shipped: $shipped);
 		if ($follow !== null) {
 			$object = $this->saveListedObject(seed: $seed, save: ['data' => $follow, 'uuid' => $listed['uuid']]);
 			$this->rememberShippedContent(seed: $seed, shipped: $listed['data']);
@@ -3444,7 +3443,7 @@ class ImportHandler {
 			return;
 		}
 
-		$this->seedHashes()->record(appId: (string)$seed->appId, seed: $seedKey, version: $this->shippedContent->hash(shipped: $shipped));
+		$this->seedHashes()->recordVersions(appId: (string)$seed->appId, versions: [$seedKey => $this->shippedContent->hash(shipped: $shipped)]);
 	}//end rememberShippedContent()
 
 	/**
@@ -3461,7 +3460,7 @@ class ImportHandler {
 			return;
 		}
 
-		$this->seedVersions()->record(appId: (string)$seed->appId, seed: $seedKey, version: $version);
+		$this->seedVersions()->recordVersions(appId: (string)$seed->appId, versions: [$seedKey => $version]);
 	}//end rememberShippedVersion()
 
 	/**
@@ -3861,6 +3860,13 @@ class ImportHandler {
 				}
 			} catch (Exception $e) {
 				// No configuration found by sourceUrl.
+				$this->logger->debug(
+					message: '[ImportHandler] No configuration found by source URL',
+					context: [
+						'sourceUrl' => $sourceUrl,
+						'exception' => $e->getMessage(),
+					]
+				);
 			}
 		}//end if
 
@@ -3982,11 +3988,13 @@ class ImportHandler {
 			$this->importJobRecorder->end();
 		}
 
-		$recorded = $this->importJobRecorder->record(
-			appId: $import->appId,
-			importJobId: $importJobId,
-			version: $import->version,
-			objectsWritten: count((array)($result['objects'] ?? []))
+		$recorded = $this->importJobRecorder->recordFinished(
+			job: new FinishedImportJob(
+				appId: $import->appId,
+				importJobId: $importJobId,
+				version: $import->version,
+				objectsWritten: count((array)($result['objects'] ?? []))
+			)
 		);
 		$result['importJobId'] = null;
 		if ($recorded === true) {
@@ -4435,15 +4443,32 @@ class ImportHandler {
 	}//end ensureApplicationMagicTables()
 
 	/**
-	 * Import configuration from a file path.
-	 *
-	 * This method reads a JSON configuration file from the filesystem,
-	 * resolves the path relative to Nextcloud root, and imports it.
+	 * Import configuration from a file path; see {@see importFile()}.
 	 *
 	 * @param string $appId The application ID.
 	 * @param string $filePath The path to the configuration file (relative to Nextcloud root).
 	 * @param string $version The configuration version.
 	 * @param bool $force Force import regardless of version.
+	 *
+	 * @return array The import results.
+	 *
+	 * @throws Exception If file reading or import fails.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Force flag to override version checks
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	public function importFromFilePath(string $appId, string $filePath, string $version, bool $force = false): array {
+		return $this->importFile(import: new ConfigurationFileImport(appId: $appId, filePath: $filePath, version: $version, force: $force));
+	}//end importFromFilePath()
+
+	/**
+	 * Import configuration from a file path.
+	 *
+	 * This method reads a JSON configuration file from the filesystem,
+	 * resolves the path relative to Nextcloud root, and imports it.
+	 *
+	 * @param ConfigurationFileImport $import The app, the file path, the version and the force flag.
 	 *
 	 * @return array The import results.
 	 *
@@ -4461,22 +4486,21 @@ class ImportHandler {
 	 *     rules: array
 	 * }
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Force flag to override version checks
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) File path resolution has multiple fallback conditions
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      Path resolution and JSON parsing have multiple outcomes
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
-	public function importFromFilePath(string $appId, string $filePath, string $version, bool $force = false): array {
+	public function importFile(ConfigurationFileImport $import): array {
 		try {
-			$data = (new LocalConfigurationFile(appDataPath: $this->appDataPath))->read(filePath: $filePath);
+			$data = (new LocalConfigurationFile(appDataPath: $this->appDataPath))->read(filePath: $import->filePath);
 
 			// Call importFromApp with the parsed data.
 			return $this->importFromApp(
-				appId: $appId,
+				appId: $import->appId,
 				data: $data,
-				version: $version,
-				force: $force
+				version: $import->version,
+				force: $import->force
 			);
 		} catch (Exception $e) {
 			$this->logger->error(
@@ -4484,13 +4508,13 @@ class ImportHandler {
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'appId' => $appId,
-					'filePath' => $filePath,
+					'appId' => $import->appId,
+					'filePath' => $import->filePath,
 				]
 			);
 			throw new Exception('Failed to import configuration from file: ' . $e->getMessage());
 		}//end try
-	}//end importFromFilePath()
+	}//end importFile()
 
 	/**
 	 * Import seed data objects from configuration.
@@ -4530,6 +4554,7 @@ class ImportHandler {
 		//
 		// Scoped to seeding alone. Schemas, registers and mappings are imported
 		// outside this call and are unaffected, as is every ordinary save.
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		SystemOperationContext::run(
 			function () use ($seed, $configuration): void {
 				$this->importSeedDataObjects(seed: $seed, configuration: $configuration);
@@ -4571,7 +4596,8 @@ class ImportHandler {
 			return;
 		}
 
-		$this->slugHandler->applyOnSeed(entity: $entity, schema: $object->schema, clientSlug: $this->seedClientSlug(objectData: $object->data));
+		$clientSlug = $this->seedClientSlug(objectData: $object->data);
+		$this->slugHandler->applyOnSeed(request: new SlugRequest(entity: $entity, schema: $object->schema, clientSlug: $clientSlug));
 	}//end applySeedSlug()
 
 	/**

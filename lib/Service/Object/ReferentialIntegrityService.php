@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -696,7 +697,7 @@ class ReferentialIntegrityService {
 		);
 		sort($parts);
 
-		return count($parts) . '|' . md5(implode("\n", $parts));
+		return count($parts) . '|' . hash(algo: 'xxh128', data: implode("\n", $parts));
 	}//end catalogueHash()
 
 	/**
@@ -2161,7 +2162,7 @@ class ReferentialIntegrityService {
 	 *
 	 * One row per analysis target (a target referenced through two properties
 	 * gets two rows, matching the per-object path), each pre-built through
-	 * AuditTrailMapper::buildAuditTrail() with action
+	 * AuditTrailMapper::buildEntry() with action
 	 * `referential_integrity.cascade_delete` and the canonical cascade-context
 	 * fold (triggerObject/triggerSchema/action_type/property). Audit failures
 	 * are logged but never abort the cascade — parity with the per-object
@@ -2198,7 +2199,9 @@ class ReferentialIntegrityService {
 	 */
 	private function cascadeAuditRow(ObjectEntity $entity, array $cascadeContext): mixed {
 		try {
-			return $this->controls->auditTrailMapper->buildAuditTrail(old: $entity, new: null, action: self::CASCADE_DELETE, cascadeContext: $cascadeContext);
+			return $this->controls->auditTrailMapper->buildEntry(
+				change: new AuditedChange(old: $entity, new: null, action: self::CASCADE_DELETE, cascadeContext: $cascadeContext)
+			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[ReferentialIntegrity] Could not build cascade audit row',

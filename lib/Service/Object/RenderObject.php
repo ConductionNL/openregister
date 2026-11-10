@@ -28,12 +28,14 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Service\Object\SaveObject\ComputedPass;
 use Adbar\Dot;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Translation;
+use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Calculation\CalculationPayload;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
@@ -641,7 +643,7 @@ class RenderObject implements RenderObjectInterface {
 
 		$translations = $this->enrichers->translations->translationHandler;
 		$row->setObject(
-			$translations->resolveTranslationsForRender(objectData: $row->getObject(), schema: $schema, register: $register)
+			$translations->resolveTranslationsForRender(objectData: $row->getObject(), scope: new TranslationScope(schema: $schema, register: $register))
 		);
 	}//end translateEntityRow()
 
@@ -662,8 +664,7 @@ class RenderObject implements RenderObjectInterface {
 
 		return $this->enrichers->translations->translationHandler->resolveTranslationsForRender(
 			objectData: $row,
-			schema: $schema,
-			register: $this->arrayRowRegister(row: $row)
+			scope: new TranslationScope(schema: $schema, register: $this->arrayRowRegister(row: $row))
 		);
 	}//end translateArrayRow()
 
@@ -806,6 +807,7 @@ class RenderObject implements RenderObjectInterface {
 		// The trusted-internal-read bypass applies to property `authorization.read` and to
 		// decryption ONLY. The writeOnly strip deliberately does not consult it.
 		$pass = new RowRedaction();
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		$pass->applyGatedStrips = ($_rbac !== false) && (SystemOperationContext::isActive() === false);
 
 		foreach ($rows as &$row) {
@@ -856,7 +858,7 @@ class RenderObject implements RenderObjectInterface {
 	 * Decrypt a row's fields when the gated strips apply and the schema encrypts properties.
 	 *
 	 * Runs AFTER redaction: a field the strip removed is no longer a key, so
-	 * decryptProperties() (which only acts on keys still present) skips it,
+	 * decryptInScope() (which only acts on keys still present) skips it,
 	 * and an unauthorized caller never reaches decryption for that field.
 	 *
 	 * @param RowRedaction $pass The redaction pass, on one row.
@@ -871,7 +873,10 @@ class RenderObject implements RenderObjectInterface {
 			&& $this->runtime->extensions->fieldEncryptionHandler !== null
 			&& $pass->schema->hasEncryptedProperties() === true
 		) {
-			return $this->runtime->extensions->fieldEncryptionHandler->decryptProperties(data: $data, schema: $pass->schema);
+			return $this->runtime->extensions->fieldEncryptionHandler->decryptInScope(
+				data: $data,
+				scope: new \OCA\OpenRegister\Service\FieldDecryptionScope(schema: $pass->schema, throwOnFailure: false)
+			);
 		}
 
 		return $data;
@@ -1539,7 +1544,14 @@ class RenderObject implements RenderObjectInterface {
 		try {
 			$this->hydrateFilesOf(entity: $entity);
 		} catch (Exception $e) {
-			// Log error but don't break rendering - just return original entity.
+			// Rendering goes on with the entity as it is.
+			$this->runtime->logger->warning(
+				message: '[RenderObject] Could not render the file properties',
+				context: [
+					'uuid' => $entity->getUuid(),
+					'exception' => $e->getMessage(),
+				]
+			);
 		}//end try
 
 		return $entity;
@@ -1850,7 +1862,14 @@ class RenderObject implements RenderObjectInterface {
 				$entity->setImage(self::fileUrlOf(value: $value));
 			}
 		} catch (\Exception $e) {
-			// Log error but don't break rendering - just return original entity.
+			// Rendering goes on with the entity as it is.
+			$this->runtime->logger->warning(
+				message: '[RenderObject] Could not hydrate the image metadata from file properties',
+				context: [
+					'uuid' => $entity->getUuid(),
+					'exception' => $e->getMessage(),
+				]
+			);
 		}//end try
 
 		return $entity;
@@ -2886,8 +2905,7 @@ class RenderObject implements RenderObjectInterface {
 		if ($this->enrichers->derivations->computedFieldHandler->hasComputedProperties($run->schema) === true) {
 			$run->data = $this->enrichers->derivations->computedFieldHandler->evaluateComputedFields(
 				data: $run->data,
-				schema: $run->schema,
-				evaluateOn: 'read'
+				pass: new ComputedPass(schema: $run->schema, evaluateOn: 'read')
 			);
 			$run->entity->setObject($run->data);
 		}
@@ -2955,6 +2973,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private static function stripsAuthorizedProperties(?Schema $schema, bool $rbac): bool {
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return $rbac !== false
 			&& SystemOperationContext::isActive() === false
 			&& $schema !== null
@@ -3017,7 +3036,7 @@ class RenderObject implements RenderObjectInterface {
 	 * Decrypt properties flagged `x-openregister-encrypted: true`.
 	 *
 	 * Runs after the read strip and nowhere earlier: a stripped property is no
-	 * longer a key, so decryptProperties() skips it and an unauthorized reader
+	 * longer a key, so decryptInScope() skips it and an unauthorized reader
 	 * never reaches decryption. A value that is not an envelope passes through;
 	 * one that fails to decrypt becomes an error marker (see FieldEncryptionHandler).
 	 *
@@ -3033,7 +3052,10 @@ class RenderObject implements RenderObjectInterface {
 			return $objectData;
 		}
 
-		return $this->runtime->extensions->fieldEncryptionHandler->decryptProperties(data: $objectData, schema: $schema);
+		return $this->runtime->extensions->fieldEncryptionHandler->decryptInScope(
+			data: $objectData,
+			scope: new \OCA\OpenRegister\Service\FieldDecryptionScope(schema: $schema, throwOnFailure: false)
+		);
 	}//end decryptRenderedProperties()
 
 	/**
@@ -3058,8 +3080,7 @@ class RenderObject implements RenderObjectInterface {
 
 		$run->data = $this->enrichers->translations->translationHandler->resolveTranslationsForRender(
 			objectData: $run->data,
-			schema: $run->schema,
-			register: $register
+			scope: new TranslationScope(schema: $run->schema, register: $register)
 		);
 		if ($this->shouldAttachLanguageMeta() === false) {
 			return $run->data;
@@ -3706,7 +3727,7 @@ class RenderObject implements RenderObjectInterface {
 			}
 
 			try {
-				$row = $this->enrichers->translations->translationMapper->findOne($uuid, $property, $entry['served']);
+				$row = $this->enrichers->translations->translationMapper->findOne(new TranslationSlot(objectUuid: $uuid, property: $property, language: $entry['served']));
 			} catch (\Throwable $e) {
 				$row = null;
 			}

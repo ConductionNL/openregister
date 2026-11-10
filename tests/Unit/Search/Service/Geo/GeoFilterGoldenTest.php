@@ -62,7 +62,7 @@ class GeoFilterGoldenTest extends TestCase {
 			'near bad lon' => ['east', '52', '10'],
 			'near bad radius' => ['4', '52', 'far'],
 		] as $name => [$lon, $lat, $radius]) {
-			$cases[$name] = static fn (): GeoFilter => GeoFilter::fromNearAndRadius($lon, $lat, $radius, 'punt');
+			$cases[$name] = static fn (): GeoFilter => GeoFilter::fromNearAndRadius(['lon' => $lon, 'lat' => $lat, 'radius' => $radius], 'punt');
 		}
 
 		$geometries = [

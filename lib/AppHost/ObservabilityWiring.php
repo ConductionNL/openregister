@@ -22,7 +22,9 @@ namespace OCA\OpenRegister\AppHost;
 
 use OCA\OpenRegister\AppHost\Controller\GenericHealthController;
 use OCA\OpenRegister\AppHost\Controller\GenericMetricsController;
+use OCA\OpenRegister\AppHost\Observability\AppProviderResolver;
 use OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor;
+use OCA\OpenRegister\AppHost\Observability\LocalHealthChecks;
 use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
 use OCA\OpenRegister\AppHost\Observability\MetricsEngine;
 use OCA\OpenRegister\AppHost\Observability\PrometheusRenderer;
@@ -30,8 +32,6 @@ use OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Task\TaskMetricsProviderInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
@@ -82,12 +82,8 @@ final class ObservabilityWiring {
 			\OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor::class,
 			function (ContainerInterface $container) {
 				return new HealthCheckExecutor(
-					db: $container->get('OCP\IDBConnection'),
-					tempManager: $container->get('OCP\ITempManager'),
-					appManager: $container->get('OCP\App\IAppManager'),
-					appConfig: $container->get('OCP\IAppConfig'),
-					container: $container,
-					locator: $container->get(AppContainerLocator::class),
+					localChecks: $container->get(LocalHealthChecks::class),
+					providers: $container->get(AppProviderResolver::class),
 					logger: $container->get('Psr\Log\LoggerInterface')
 				);
 			}
@@ -98,9 +94,7 @@ final class ObservabilityWiring {
 			function (ContainerInterface $container) {
 				return new ObjectMetricSource(
 					objectService: $container->get(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class),
-					registerMapper: $container->get(RegisterMapperInterface::class),
-					schemaMapper: $container->get(SchemaMapperInterface::class),
-					logger: $container->get('Psr\Log\LoggerInterface')
+					lookups: $container->get(SchemaScopeLookups::class)
 				);
 			}
 		);
@@ -128,8 +122,7 @@ final class ObservabilityWiring {
 			\OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource::class,
 			function (ContainerInterface $container) {
 				return new ProviderMetricSource(
-					container: $container,
-					locator: $container->get(AppContainerLocator::class),
+					providers: $container->get(AppProviderResolver::class),
 					logger: $container->get('Psr\Log\LoggerInterface')
 				);
 			}

@@ -28,6 +28,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
+use OCA\OpenRegister\Service\DeclaredRow;
+use OCA\OpenRegister\Service\DeclaredPair;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -209,7 +211,7 @@ class SharedMasterDataServiceTest extends TestCase {
 		);
 
 		$this->assertSame([], $service->sharedIds(table: SharedMasterDataService::REGISTERS, consumerOrgUuids: [self::ORG_B]));
-		$this->assertSame([], $service->holdersForResource(registerId: 7, schemaId: 3, consumerOrgUuids: [self::ORG_B]));
+		$this->assertSame([], $service->holdersForResource(pair: new DeclaredPair(registerId: 7, schemaId: 3), consumerOrgUuids: [self::ORG_B]));
 
 	}//end testAnInstanceThatDeclaresNothingResolvesToNothing()
 
@@ -218,12 +220,12 @@ class SharedMasterDataServiceTest extends TestCase {
 
 		$this->assertSame(
 			[self::ORG_A],
-			$service->holdersForResource(registerId: 7, schemaId: null, consumerOrgUuids: [self::ORG_B])
+			$service->holdersForResource(pair: new DeclaredPair(registerId: 7, schemaId: null), consumerOrgUuids: [self::ORG_B])
 		);
 
 		$this->assertSame(
 			[],
-			$service->holdersForResource(registerId: 8, schemaId: null, consumerOrgUuids: [self::ORG_B]),
+			$service->holdersForResource(pair: new DeclaredPair(registerId: 8, schemaId: null), consumerOrgUuids: [self::ORG_B]),
 			'The undeclared register held by the same organisation must widen by nothing.'
 		);
 
@@ -234,7 +236,7 @@ class SharedMasterDataServiceTest extends TestCase {
 
 		$this->assertSame(
 			[],
-			$service->holdersForResource(registerId: null, schemaId: null, consumerOrgUuids: [self::ORG_B])
+			$service->holdersForResource(pair: new DeclaredPair(registerId: null, schemaId: null), consumerOrgUuids: [self::ORG_B])
 		);
 
 	}//end testAPairNobodyNamedWidensByNothing()
@@ -244,8 +246,7 @@ class SharedMasterDataServiceTest extends TestCase {
 
 		try {
 			$service->assertWritable(
-				table: SharedMasterDataService::REGISTERS,
-				id: 7,
+				row: new DeclaredRow(table: SharedMasterDataService::REGISTERS, id: 7),
 				activeOrgUuids: [self::ORG_B]
 			);
 			$this->fail('A consumer write to shared master data must be refused.');
@@ -266,8 +267,7 @@ class SharedMasterDataServiceTest extends TestCase {
 		$service = $this->service(rowsByTable: $this->codeListSharedWithB());
 
 		$service->assertWritable(
-			table: SharedMasterDataService::REGISTERS,
-			id: 7,
+			row: new DeclaredRow(table: SharedMasterDataService::REGISTERS, id: 7),
 			activeOrgUuids: [self::ORG_A]
 		);
 
@@ -283,8 +283,7 @@ class SharedMasterDataServiceTest extends TestCase {
 		$service = $this->service(rowsByTable: $this->codeListSharedWithB());
 
 		$service->assertWritable(
-			table: SharedMasterDataService::REGISTERS,
-			id: 7,
+			row: new DeclaredRow(table: SharedMasterDataService::REGISTERS, id: 7),
 			activeOrgUuids: [self::ORG_C]
 		);
 
@@ -312,8 +311,7 @@ class SharedMasterDataServiceTest extends TestCase {
 		);
 
 		$service->assertWritable(
-			table: SharedMasterDataService::REGISTERS,
-			id: 7,
+			row: new DeclaredRow(table: SharedMasterDataService::REGISTERS, id: 7),
 			activeOrgUuids: [self::ORG_A]
 		);
 
@@ -398,7 +396,7 @@ class SharedMasterDataServiceTest extends TestCase {
 		);
 		$this->assertSame(
 			[self::ORG_A],
-			$service->holdersForResource(registerId: null, schemaId: 3, consumerOrgUuids: [self::ORG_C])
+			$service->holdersForResource(pair: new DeclaredPair(registerId: null, schemaId: 3), consumerOrgUuids: [self::ORG_C])
 		);
 
 	}//end testASchemaLevelShareIsResolvedOnItsOwn()
@@ -407,7 +405,7 @@ class SharedMasterDataServiceTest extends TestCase {
 		$service = $this->service(rowsByTable: $this->codeListSharedWithB());
 
 		$this->assertSame([], $service->sharedIds(table: SharedMasterDataService::REGISTERS, consumerOrgUuids: []));
-		$this->assertSame([], $service->holdersForResource(registerId: 7, schemaId: null, consumerOrgUuids: []));
+		$this->assertSame([], $service->holdersForResource(pair: new DeclaredPair(registerId: 7, schemaId: null), consumerOrgUuids: []));
 
 	}//end testAnOrganisationWithNoActiveContextResolvesToNothing()
 

@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Query\RelatedRowFilterTarget;
 use OCA\OpenRegister\Service\Query\RelatedRowAccess;
 use OCA\OpenRegister\Service\Query\RelatedRowClauseBatch;
 use OCA\OpenRegister\Service\Query\RelatedRowExistsClause;
@@ -269,15 +270,10 @@ class RelatedRowAccessGoldenTest extends TestCase {
 		$register = new Register();
 		$register->setId(1);
 
-		$applied = $applier->apply(
-			qb: $qb,
-			query: $query,
-			register: $register,
-			organisationScopeFor: function (...$args) use ($scope): array {
+		$applied = $applier->apply(target: new RelatedRowFilterTarget(qb: $qb, register: $register, organisationScopeFor: function (...$args) use ($scope): array {
 				$this->scopeCalls[] = $args;
 				return $scope;
-			}
-		);
+			}), query: $query);
 
 		return ['applied' => $applied, 'where' => $where, 'parameters' => $parameters];
 	}//end applyQuery()

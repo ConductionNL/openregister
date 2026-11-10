@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use OCA\OpenRegister\Service\Object\CascadeDeleteOrigin;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\HookStoppedException;
@@ -228,14 +229,14 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 			);
 
 		$builtRows = [];
-		$this->auditTrailMapper->method('buildAuditTrail')
+		$this->auditTrailMapper->method('buildEntry')
 			->willReturnCallback(
-				function (?ObjectEntity $old, ?ObjectEntity $new, ?string $action, ?array $cascadeContext) use (&$builtRows) {
+				function (AuditedChange $change) use (&$builtRows) {
 					$builtRows[] = [
-						'uuid' => $old?->getUuid(),
-						'new' => $new,
-						'action' => $action,
-						'cascadeContext' => $cascadeContext,
+						'uuid' => $change->old?->getUuid(),
+						'new' => $change->new,
+						'action' => $change->action,
+						'cascadeContext' => $change->cascadeContext,
 					];
 					$trail = new AuditTrail();
 					$trail->setUuid('audit-' . count($builtRows));
@@ -318,10 +319,10 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 			->willReturnArgument(0);
 
 		$properties = [];
-		$this->auditTrailMapper->method('buildAuditTrail')
+		$this->auditTrailMapper->method('buildEntry')
 			->willReturnCallback(
-				function (?ObjectEntity $old, ?ObjectEntity $new, ?string $action, ?array $cascadeContext) use (&$properties) {
-					$properties[] = $cascadeContext['property'];
+				function (AuditedChange $change) use (&$properties) {
+					$properties[] = $change->cascadeContext['property'];
 					$trail = new AuditTrail();
 					$trail->setUuid('audit-' . count($properties));
 					return $trail;
@@ -374,7 +375,7 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 
 		$trail = new AuditTrail();
 		$trail->setUuid('audit-1');
-		$this->auditTrailMapper->method('buildAuditTrail')->willReturn($trail);
+		$this->auditTrailMapper->method('buildEntry')->willReturn($trail);
 
 		$this->auditTrailMapper->expects($this->once())
 			->method('insertAuditTrails')
@@ -634,7 +635,7 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 
 		$trail = new AuditTrail();
 		$trail->setUuid('audit-1');
-		$this->auditTrailMapper->method('buildAuditTrail')->willReturn($trail);
+		$this->auditTrailMapper->method('buildEntry')->willReturn($trail);
 
 		$this->auditTrailMapper->expects($this->once())
 			->method('insertAuditTrails')
@@ -677,7 +678,7 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 
 		$trail = new AuditTrail();
 		$trail->setUuid('audit-1');
-		$this->auditTrailMapper->method('buildAuditTrail')->willReturn($trail);
+		$this->auditTrailMapper->method('buildEntry')->willReturn($trail);
 
 		$this->auditTrailMapper->method('insertAuditTrails')
 			->willThrowException(new \RuntimeException('bulk insert failed'));
@@ -707,7 +708,7 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 			->willReturnArgument(0);
 
 		$calls = 0;
-		$this->auditTrailMapper->method('buildAuditTrail')
+		$this->auditTrailMapper->method('buildEntry')
 			->willReturnCallback(
 				function () use (&$calls) {
 					$calls++;

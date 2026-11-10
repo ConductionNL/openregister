@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowMessagingService;
+use OCA\OpenRegister\Service\Flow\MessageSend;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -89,15 +90,22 @@ abstract class MessagingNodeBase {
 	/**
 	 * Hand the items to FlowMessagingService on this node's channel.
 	 *
-	 * @param array $items   The items to send for.
-	 * @param array $config  The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param MessageSend $step The step configuration, the items to send for, run-level metadata and the step name.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md
 	 */
-	abstract protected function send(array $items, array $config, array $context): void;
+	abstract protected function send(MessageSend $step): void;
+
+	/**
+	 * The node type, which names the step in what it sends.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md
+	 */
+	abstract public function getId(): string;
 
 	/**
 	 * Available in both workflow scopes.
@@ -155,7 +163,7 @@ abstract class MessagingNodeBase {
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md
 	 */
 	public function execute(array $items, array $config, array $context): array {
-		$this->send(items: $items, config: $config, context: $context);
+		$this->send(step: new MessageSend(config: $config, items: $items, context: $context, stepName: $this->getId()));
 
 		return $items;
 	}//end execute()

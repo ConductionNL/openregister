@@ -85,12 +85,7 @@ class MessageDispatchProviderTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 		$logger = $this->createMock(LoggerInterface::class);
 
-		$this->provider = new MessageDispatchProvider(
-			router: $this->router,
-			appManager: $this->appManager,
-			l10n: $l10n,
-			logger: $logger,
-		);
+		$this->provider = new MessageDispatchProvider(routing: new \OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting($this->router, $this->appManager, $l10n), logger: $logger);
 	}//end setUp()
 
 	public function testMetadataMatchesLeafSpec(): void {

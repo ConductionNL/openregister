@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Characterisation test for TaskVtodoDocument::compose().
+ * Characterisation test for TaskVtodoDocument::composeFor().
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\LinkedTaskDraft;
 use OCA\OpenRegister\Service\TaskVtodoDocument;
 use PHPUnit\Framework\TestCase;
 
@@ -35,12 +37,12 @@ use PHPUnit\Framework\TestCase;
 class TaskVtodoDocumentComposeTest extends TestCase {
 
 	public function testComposeLinksTheTaskToItsObject(): void {
-		$document = (new TaskVtodoDocument())->compose(
-			7,
-			9,
-			'abc-1',
-			'Case "A"',
-			['summary' => 'Do it', 'description' => 'desc', 'priority' => 3, 'status' => 'needs-action', 'fields' => ['k' => 'v']]
+		$document = (new TaskVtodoDocument())->composeFor(
+			new ObjectRef(register: 7, schema: 9, id: 'abc-1'),
+			new LinkedTaskDraft(
+				objectTitle: 'Case "A"',
+				data: ['summary' => 'Do it', 'description' => 'desc', 'priority' => 3, 'status' => 'needs-action', 'fields' => ['k' => 'v']]
+			)
 		);
 
 		$lines = explode("\r\n", $document['calendarData']);
@@ -76,7 +78,7 @@ class TaskVtodoDocumentComposeTest extends TestCase {
 	}//end testComposeLinksTheTaskToItsObject()
 
 	public function testComposeWithoutSummaryOrFieldsUsesTheDefaults(): void {
-		$document = (new TaskVtodoDocument())->compose(1, 2, 'u', 'T', []);
+		$document = (new TaskVtodoDocument())->composeFor(new ObjectRef(register: 1, schema: 2, id: 'u'), new LinkedTaskDraft(objectTitle: 'T', data: []));
 
 		$this->assertStringContainsString("\r\nSUMMARY:Untitled task\r\n", $document['calendarData']);
 		$this->assertStringContainsString("\r\nX-OPENREGISTER-OBJECT:u\r\n", $document['calendarData']);
