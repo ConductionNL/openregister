@@ -552,7 +552,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * composes correctly.
      *
      * This does not grant anything. If the named user cannot see a row, neither
-     * can the callable.
+     * can the callable, also when the caller runs inside a system-operation scope:
+     * that scope is lifted for the callable.
      *
      * 🔴 `setVolatileActiveUser()`, NOT `setUser()`. The two differ in one way
      * that matters here: `setUser()` also writes `user_id` into the PHP session,
@@ -575,6 +576,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @return mixed Whatever the callable returns.
      *
+     * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::suspend is the static scope helper.
+     *
      * @spec openspec/specs/delegated-identity/spec.md
      * @spec openspec/specs/rbac-scopes/spec.md
      */
@@ -584,7 +587,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->userSession->setVolatileActiveUser($user);
 
         try {
-            return $operation();
+            // A system scope would otherwise answer every check for the named user.
+            return SystemOperationContext::suspend($operation);
         } finally {
             // ALWAYS restore, including on a throw, so a long-lived process
             // (cron worker, queue runner) never leaks this identity forward.
