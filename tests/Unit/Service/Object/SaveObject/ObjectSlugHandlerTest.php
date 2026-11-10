@@ -595,16 +595,12 @@ class ObjectSlugHandlerTest extends TestCase {
 	}
 
 	public function testDecideDoesNotLogWhenAskedNotTo(): void {
-		$slug = $this->handler->decide(
-			want: new ObjectSlugWant(
+		$slug = $this->handler->decide(decision: new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugDecision(want: new ObjectSlugWant(
 				slug: 'hello-world',
 				scope: new ObjectSlugScope(register: $this->register, schema: $this->schema(['objectSlugField' => 'title'])),
 				objectUuid: self::UUID_B,
 				path: 'backfill'
-			),
-			holderOf: static fn (string $s): ?string => self::UUID_A,
-			log: false
-		);
+			), holderOf: static fn (string $s): ?string => self::UUID_A, log: false));
 
 		$this->assertNull($slug);
 		$this->assertSame([], $this->warnings);
