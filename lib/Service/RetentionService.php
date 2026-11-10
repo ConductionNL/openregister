@@ -170,9 +170,7 @@ class RetentionService implements RetentionServiceInterface {
 		// Calculate archiefactiedatum if bewaartermijn is set.
 		if ($retentionPeriod !== null) {
 			$retention['archiefactiedatum'] = $this->calculateArchiveActionDate(
-				object: $object,
-				schema: $schema,
-				retentionPeriod: $retentionPeriod
+				clock: new RetentionClock(object: $object, schema: $schema, retentionPeriod: $retentionPeriod)
 			);
 		}
 
@@ -393,24 +391,18 @@ class RetentionService implements RetentionServiceInterface {
 	 * when it cannot be answered. Kept here because callers and the spec both
 	 * name this method.
 	 *
-	 * @param ObjectEntity $object The object to calculate for
-	 * @param Schema $schema The schema with afleidingswijze config
-	 * @param string $retentionPeriod ISO 8601 duration (e.g., P5Y, P20Y)
+	 * @param RetentionClock $clock The object, its schema (with the afleidingswijze config) and the ISO 8601 retention period
 	 *
 	 * @return string|null ISO 8601 date string or null if calculation not possible
 	 *
 	 * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-calculate-archiefactiedatum-using-configurable-afleidingswijzen
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
-	public function calculateArchiveActionDate(
-		ObjectEntity $object,
-		Schema $schema,
-		string $retentionPeriod,
-	): ?string {
+	public function calculateArchiveActionDate(RetentionClock $clock): ?string {
 		return $this->rules->actionDateCalculator->calculate(
-			object: $object,
-			schema: $schema,
-			retentionPeriod: $retentionPeriod
+			object: $clock->object,
+			schema: $clock->schema,
+			retentionPeriod: $clock->retentionPeriod
 		);
 	}//end calculateArchiveActionDate()
 

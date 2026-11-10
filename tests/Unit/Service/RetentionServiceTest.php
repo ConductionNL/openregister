@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\RetentionClock;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -260,7 +261,7 @@ class RetentionServiceTest extends TestCase {
 			'sourceRelationProperty' => 'ingangsdatum',
 		]);
 
-		$date = $this->service->calculateArchiveActionDate($object, $schema, 'P5Y');
+		$date = $this->service->calculateArchiveActionDate(new RetentionClock($object, $schema, 'P5Y'));
 
 		$this->assertSame('2025-03-01', $date);
 	}//end testDatesFromARelatedRecord()
@@ -290,7 +291,7 @@ class RetentionServiceTest extends TestCase {
 			'sourceRelationProperty' => 'startdatum',
 		]);
 
-		$this->assertSame('2026-06-15', $this->service->calculateArchiveActionDate($object, $schema, 'P5Y'));
+		$this->assertSame('2026-06-15', $this->service->calculateArchiveActionDate(new RetentionClock($object, $schema, 'P5Y')));
 	}//end testDatesFromTheFirstOfSeveralRelations()
 
 	/**
@@ -317,7 +318,7 @@ class RetentionServiceTest extends TestCase {
 			'sourceRelationProperty' => 'ingangsdatum',
 		]);
 
-		$this->assertNull($this->service->calculateArchiveActionDate($object, $schema, 'P5Y'));
+		$this->assertNull($this->service->calculateArchiveActionDate(new RetentionClock($object, $schema, 'P5Y')));
 	}//end testRefusesADateWhenTheRelationCannotBeResolved()
 
 	/**
@@ -338,7 +339,7 @@ class RetentionServiceTest extends TestCase {
 			'afleidingswijze' => 'hoofdzaak',
 		]);
 
-		$this->assertNull($this->service->calculateArchiveActionDate($object, $schema, 'P5Y'));
+		$this->assertNull($this->service->calculateArchiveActionDate(new RetentionClock($object, $schema, 'P5Y')));
 	}//end testRefusesADateWhenTheRelationIsNotConfigured()
 
 	/**
@@ -358,7 +359,7 @@ class RetentionServiceTest extends TestCase {
 			'sourceDateProperty' => 'vervaldatum',
 		]);
 
-		$this->assertSame('2027-12-31', $this->service->calculateArchiveActionDate($object, $schema, 'P5Y'));
+		$this->assertSame('2027-12-31', $this->service->calculateArchiveActionDate(new RetentionClock($object, $schema, 'P5Y')));
 	}//end testDatesFromANamedDatePropertyOnTheRecord()
 
 	/**
@@ -380,7 +381,7 @@ class RetentionServiceTest extends TestCase {
 			'afleidingswijze' => 'afgehandeld',
 		]);
 
-		$this->assertSame('2024-01-01', $this->service->calculateArchiveActionDate($object, $schema, 'P5Y'));
+		$this->assertSame('2024-01-01', $this->service->calculateArchiveActionDate(new RetentionClock($object, $schema, 'P5Y')));
 	}//end testAfgehandeldStillFallsBackToCreation()
 
 	/**
@@ -400,7 +401,7 @@ class RetentionServiceTest extends TestCase {
 			'afleidingswijze' => 'zomaar_iets',
 		]);
 
-		$this->assertNull($this->service->calculateArchiveActionDate($object, $schema, 'P5Y'));
+		$this->assertNull($this->service->calculateArchiveActionDate(new RetentionClock($object, $schema, 'P5Y')));
 	}//end testStillRefusesAMethodZgwDoesNotDefine()
 
 	/**
