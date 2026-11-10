@@ -29,6 +29,9 @@ use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\SavePolicy;
 
 /**
  * An app names the records it wants destroyed; OpenRegister decides which may be.
@@ -103,7 +106,9 @@ class DestructionListCreator implements DestructionListCreatorInterface {
 	private function store(array $location, array $listData): ObjectEntity {
 		// The sweep's own save call (DestructionCheckJob::run()): no RBAC or
 		// multitenancy on the list, persisted, silent.
-		return $this->writer->saveObject->saveObject($location['register'], $location['schema'], $listData, null, false, false, true, true);
+		$options = new ObjectSaveOptions(target: new ObjectFindTarget(register: $location['register'], schema: $location['schema']), policy: new SavePolicy(silent: true));
+
+		return $this->writer->saveObject->saveObject(data: $listData, options: $options, _rbac: false, _multitenancy: false);
 	}//end store()
 
 	/**

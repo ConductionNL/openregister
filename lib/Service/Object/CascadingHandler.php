@@ -280,9 +280,8 @@ class CascadingHandler {
 
 		// A new uuid is generated; default RBAC and multitenancy apply to the cascade.
 		$createdObject = $this->saveHandler->saveObject(
-			register: $target->register,
-			schema: $schema,
 			data: self::withoutIdentity(objectData: $this->withInverse(objectData: $objectData, target: $target)),
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $target->register, schema: $schema)),
 			_rbac: true,
 			_multitenancy: true
 		);

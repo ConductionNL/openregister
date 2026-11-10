@@ -27,6 +27,8 @@ use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 use OCP\IURLGenerator;
 
 /**
@@ -317,10 +319,8 @@ final class InverseWriteBack {
 	 */
 	private function saveTarget(ObjectEntity $target, array $link): void {
 		$this->saver->saveObject(
-			register: $link['register'],
-			schema: $link['schema'],
 			data: array_replace($target->getObject(), [$link['inverseProperty'] => self::withSource(target: $target, link: $link)]),
-			uuid: $target->getUuid()
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $link['register'], schema: $link['schema']), uuid: $target->getUuid())
 		);
 	}//end saveTarget()
 

@@ -134,6 +134,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IURLGenerator;
+use InvalidArgumentException;
 use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
@@ -1597,14 +1598,10 @@ class SaveObject implements SaveObjectInterface {
 		// This skips audit trail creation for each sub-object, reducing database writes.
 		// The parent object's audit trail still captures the overall operation.
 		$savedObject = $this->saveObject(
-			register: $register,
-			schema: $schemaId,
 			data: $object,
-			uuid: null,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schemaId), policy: new SavePolicy(silent: true)),
 			_rbac: true,
-			_multitenancy: true,
-			persist: true,
-			silent: true
+			_multitenancy: true
 		);
 		$savedUuid = $savedObject->getUuid();
 
@@ -1812,54 +1809,43 @@ class SaveObject implements SaveObjectInterface {
 	/**
 	 * Saves an object.
 	 *
-	 * @param Register|int|string|null $register The register containing the object.
-	 * @param Schema|int|string $schema The schema to validate against.
-	 * @param array $data The object data to save.
-	 * @param string|null $uuid The UUID of the object to update (if updating).
-	 * @param bool $_rbac Whether to apply RBAC checks (default: true).
-	 * @param bool $_multitenancy Whether to apply multitenancy filtering (default: true).
-	 * @param bool $persist Whether to persist the object to database (default: true).
-	 * @param bool $silent Whether to skip audit trail creation and events (default: false).
-	 * @param bool $_validation Whether to validate the object (default: true).
-	 * @param array|null $uploadedFiles Uploaded files array (optional).
-	 * @param IUser|null $currentUser Explicit acting user for `@self.folder` access checks; falls back to the session user when null.
-	 * @param bool $failIfExists Insert-only: throw ObjectExistsException rather than update when taken (default: false).
-	 * @param bool $_unowned Stamp the system identity even when a session exists.
-	 * @param bool $_dedupOverride Save through a blocking duplicate match, when the caller is entitled to.
-	 * @param string|null $_owner An explicit owner for a new object, such as a draft's scope value (decision 195).
+	 * @param array             $data          The object data to save.
+	 * @param ObjectSaveOptions $options       The register and schema, the UUID of the object to update, the
+	 *                                         uploaded files, the save policy (silent, validation, insert-only,
+	 *                                         duplicate override) and the actor (acting user, owner, unowned).
+	 *                                         Its `extend` list and the policy's `validation` choice are not
+	 *                                         read here: this handler neither renders nor skips validation.
+	 * @param bool              $_rbac         Whether to apply RBAC checks (default: true).
+	 * @param bool              $_multitenancy Whether to apply multitenancy filtering (default: true).
+	 * @param bool              $persist       Whether to persist the object to database (default: true).
 	 *
 	 * @return ObjectEntity The saved object entity.
 	 *
 	 * @throws Exception If there is an error during save.
-	 * @throws ObjectExistsException When $failIfExists is true and the identifier is already taken.
+	 * @throws InvalidArgumentException When the options name no schema.
+	 * @throws ObjectExistsException When the policy is insert-only and the identifier is already taken.
 	 * @throws DuplicateBlockedException When the schema declares `onCreate: "block"`, the candidate
 	 *         strongly matches a stored object, and the caller may not override.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible save options
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Boolean flags needed for flexible save behavior
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The named guard flags and the persist switch default to a normal write.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function saveObject(
-		Register|int|string|null $register,
-		Schema|int|string $schema,
 		array $data,
-		?string $uuid = null,
+		ObjectSaveOptions $options,
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 		bool $persist = true,
-		bool $silent = false,
-		bool $_validation = true,
-		?array $uploadedFiles = null,
-		?IUser $currentUser = null,
-		bool $failIfExists = false,
-		bool $_unowned = false,
-		bool $_dedupOverride = false,
-		?string $_owner = null,
 	): ObjectEntity {
+		$schema = $options->target->schema;
+		if ($schema === null) {
+			throw new InvalidArgumentException('An object save names the schema it validates against');
+		}
+
 		// Extract UUID and @self metadata from data, then put the uploaded files in.
-		[$uuid, $selfData, $data] = self::splitSelfData(data: $data, uuid: $uuid);
-		$data = $this->injectUploadedFiles(data: $data, uploadedFiles: $uploadedFiles);
+		[$uuid, $selfData, $data] = self::splitSelfData(data: $data, uuid: $options->uuid);
+		$data = $this->injectUploadedFiles(data: $data, uploadedFiles: $options->uploadedFiles);
 
 		$call = new ObjectSaveCall();
 		$call->flags = new ObjectSaveFlags();
@@ -1869,19 +1855,19 @@ class SaveObject implements SaveObjectInterface {
 		$call->flags->rbac = $_rbac;
 		$call->flags->multitenancy = $_multitenancy;
 		$call->flags->persist = $persist;
-		$call->flags->silent = $silent;
-		$call->flags->currentUser = $currentUser;
-		$call->flags->failIfExists = $failIfExists;
-		$call->flags->unowned = $_unowned;
-		$call->flags->dedupOverride = $_dedupOverride;
-		$call->flags->owner = $_owner;
+		$call->flags->silent = $options->policy->silent;
+		$call->flags->currentUser = $options->actor->currentUser;
+		$call->flags->failIfExists = $options->policy->failIfExists;
+		$call->flags->unowned = $options->actor->unowned;
+		$call->flags->dedupOverride = $options->policy->dedupOverride;
+		$call->flags->owner = $options->actor->owner;
 		$this->takeDedupOverrideFromBody(call: $call);
 		$this->readClientCauseAttempt(call: $call);
 
 		// Resolve schema and register to entity objects.
 		[$call->schema, $call->schemaId, $call->register, $call->registerId] = $this->resolveSchemaAndRegister(
 			schema: $schema,
-			register: $register
+			register: $options->target->register
 		);
 
 		return $this->saveResolvedObject(call: $call);
@@ -3849,7 +3835,7 @@ class SaveObject implements SaveObjectInterface {
 			// Clear the slot first: a row that reaches neither terminal path must
 			// not be classified with the PREVIOUS row's verdict.
 			$this->lastSaveOutcome = null;
-			$entity = $this->saveObject(register: $run->register, schema: $run->schema, data: $rowData);
+			$entity = $this->saveObject(data: $rowData, options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $run->register, schema: $run->schema)));
 			$this->recordStreamOutcome(run: $run, uuid: (string)$entity->getUuid());
 		} catch (Exception $e) {
 			$rowUuid = self::streamRowUuid(row: $run->row);

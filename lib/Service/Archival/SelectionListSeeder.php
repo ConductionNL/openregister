@@ -27,6 +27,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterSchema;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * An app's `components.selectionLists`, written as selectielijst register rows.
@@ -217,7 +219,8 @@ class SelectionListSeeder {
 	 */
 	private function saveRow(RegisterSchema $table, RowWrite $write): string {
 		try {
-			$this->storage->writer->saveObject($table->register, $table->schema, $write->data, $write->uuid);
+			$target = new ObjectFindTarget(register: $table->register, schema: $table->schema);
+			$this->storage->writer->saveObject(data: $write->data, options: new ObjectSaveOptions(target: $target, uuid: $write->uuid));
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'[SelectionListSeeder] Could not store category ' . $write->data['categorie'] . ': ' . $e->getMessage()

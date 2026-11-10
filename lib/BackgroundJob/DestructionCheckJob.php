@@ -35,6 +35,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\AppraisalInterface;
 use OCA\OpenRegister\Service\Archival\RecordStateInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\SavePolicy;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -146,14 +149,13 @@ class DestructionCheckJob extends TimedJob {
 
 			$saveObject = $this->container->get(SaveObjectWriterInterface::class);
 			$savedList = $saveObject->saveObject(
-				$settings['destructionListRegister'],
-				$settings['destructionListSchema'],
-				$listData,
-				null,
-				false,
-				false,
-				true,
-				true
+				data: $listData,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $settings['destructionListRegister'], schema: $settings['destructionListSchema']),
+					policy: new SavePolicy(silent: true)
+				),
+				_rbac: false,
+				_multitenancy: false
 			);
 
 			$logger->info(

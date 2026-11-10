@@ -36,6 +36,9 @@ use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\SavePolicy;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\IGroupManager;
@@ -382,7 +385,8 @@ final class DestructionListRun {
 		try {
 			$register  = $this->settings['archivalRegister'];
 			$schema    = $this->settings['destructionListSchema'];
-			$savedCert = $this->saveObject->saveObject($register, $schema, $certificate, null, false, false, true, true);
+			$options   = new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), policy: new SavePolicy(silent: true));
+			$savedCert = $this->saveObject->saveObject(data: $certificate, options: $options, _rbac: false, _multitenancy: false);
 			$this->listData['certificateUuid'] = $savedCert->getUuid();
 		} catch (Exception $e) {
 			$this->logger->warning('[DestructionExecutionJob] Certificate save error: '.$e->getMessage());
