@@ -346,7 +346,7 @@ class MoveObject implements MoveObjectInterface {
 		$object = $move->object;
 		$before = $move->before();
 		try {
-			$sourceSlug = $this->assignTargetSlug(object: $object, targetRegister: $move->target->register, targetSchema: $move->target->schema);
+			$sourceSlug = $this->assignTargetSlug(move: $move);
 			$object->setRegister((string)$move->target->register->getId());
 			$object->setSchema((string)$move->target->schema->getId());
 			// The old entity is given: the target table has no row to read it from.
@@ -360,7 +360,7 @@ class MoveObject implements MoveObjectInterface {
 			// Put the entity back the way it was in memory, so a caller that
 			// keeps using it is not holding an object that claims to live
 			// somewhere it does not.
-			$this->putBack(object: $object, register: $move->source->register, schema: $move->source->schema, slug: ($sourceSlug ?? $object->getSlug()));
+			$this->putBack(move: $move, slug: ($sourceSlug ?? $object->getSlug()));
 
 			return $e->getMessage();
 		}//end try
@@ -412,15 +412,14 @@ class MoveObject implements MoveObjectInterface {
 	 * The slug was decided in the source; the target may already have a live
 	 * holder of it, so it is checked there as a save would.
 	 *
-	 * @param ObjectEntity $object         The object being moved.
-	 * @param Register     $targetRegister Where it is going.
-	 * @param Schema       $targetSchema   Where it is going.
+	 * @param ObjectMove $move The move: the object and where it is going.
 	 *
 	 * @return string|null The slug it had in the source.
 	 */
-	private function assignTargetSlug(ObjectEntity $object, Register $targetRegister, Schema $targetSchema): ?string {
+	private function assignTargetSlug(ObjectMove $move): ?string {
+		$object = $move->object;
 		$sourceSlug = $object->getSlug();
-		$object->setSlug($this->objects->slugForMove(entity: $object, register: $targetRegister, schema: $targetSchema));
+		$object->setSlug($this->objects->slugForMove(entity: $object, register: $move->target->register, schema: $move->target->schema));
 
 		return $sourceSlug;
 	}//end assignTargetSlug()
@@ -428,17 +427,15 @@ class MoveObject implements MoveObjectInterface {
 	/**
 	 * Put an object whose move failed back at its source address, in memory.
 	 *
-	 * @param ObjectEntity $object   The object.
-	 * @param Register     $register Its source register.
-	 * @param Schema       $schema   Its source schema.
-	 * @param string|null  $slug     Its source slug.
+	 * @param ObjectMove  $move The move: the object and its source address.
+	 * @param string|null $slug Its source slug.
 	 *
 	 * @return void
 	 */
-	private function putBack(ObjectEntity $object, Register $register, Schema $schema, ?string $slug): void {
-		$object->setRegister((string)$register->getId());
-		$object->setSchema((string)$schema->getId());
-		$object->setSlug($slug);
+	private function putBack(ObjectMove $move, ?string $slug): void {
+		$move->object->setRegister((string)$move->source->register->getId());
+		$move->object->setSchema((string)$move->source->schema->getId());
+		$move->object->setSlug($slug);
 	}//end putBack()
 
 	/**

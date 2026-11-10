@@ -30,9 +30,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Command;
 
 use OCA\OpenRegister\Command\PruneRetiredSchemasCommand;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\SchemaDeletionService;
 use OCA\OpenRegister\Service\SchemaTeardownOverride;
@@ -171,7 +173,7 @@ class PruneRetiredSchemasCommandGoldenTest extends TestCase {
 			}
 		);
 
-		$tester = new CommandTester(new PruneRetiredSchemasCommand($schemaMapper, $registerMapper, $deletion));
+		$tester = new CommandTester(new PruneRetiredSchemasCommand(new SchemaCatalog($registerMapper, $schemaMapper, $this->createMock(MagicMapperInterface::class)), $deletion));
 		$code   = $tester->execute($input);
 
 		return [$code, $tester->getDisplay(), $this->calls];

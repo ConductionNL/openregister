@@ -23,7 +23,8 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Mcp\Db\Conversation;
+use OCA\OpenRegister\Kernel\Contracts\ConversationInterface;
+use OCP\AppFramework\Db\Entity;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -34,26 +35,26 @@ class ConversationUpdatedEvent extends Event {
 	/**
 	 * The updated conversation state.
 	 *
-	 * @var Conversation The conversation after update.
+	 * @var ConversationInterface&Entity The conversation after update.
 	 */
-	private Conversation $newConversation;
+	private ConversationInterface $newConversation;
 
 	/**
 	 * The previous conversation state.
 	 *
-	 * @var Conversation The conversation before update.
+	 * @var ConversationInterface&Entity The conversation before update.
 	 */
-	private Conversation $oldConversation;
+	private ConversationInterface $oldConversation;
 
 	/**
 	 * Constructor for ConversationUpdatedEvent.
 	 *
-	 * @param Conversation $newConversation The conversation after update.
-	 * @param Conversation $oldConversation The conversation before update.
+	 * @param ConversationInterface&Entity $newConversation The conversation after update.
+	 * @param ConversationInterface&Entity $oldConversation The conversation before update.
 	 *
 	 * @return void
 	 */
-	public function __construct(Conversation $newConversation, Conversation $oldConversation) {
+	public function __construct(ConversationInterface $newConversation, ConversationInterface $oldConversation) {
 		parent::__construct();
 		$this->newConversation = $newConversation;
 		$this->oldConversation = $oldConversation;
@@ -62,33 +63,33 @@ class ConversationUpdatedEvent extends Event {
 	/**
 	 * Get the conversation (returns new conversation for compatibility)
 	 *
-	 * @return Conversation The updated conversation entity
+	 * @return ConversationInterface&Entity The updated conversation entity
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
-	public function getConversation(): Conversation {
+	public function getConversation(): ConversationInterface {
 		return $this->newConversation;
 	}//end getConversation()
 
 	/**
 	 * Get the new conversation
 	 *
-	 * @return Conversation The conversation after update
+	 * @return ConversationInterface&Entity The conversation after update
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
-	public function getNewConversation(): Conversation {
+	public function getNewConversation(): ConversationInterface {
 		return $this->newConversation;
 	}//end getNewConversation()
 
 	/**
 	 * Get the old conversation
 	 *
-	 * @return Conversation The conversation before update
+	 * @return ConversationInterface&Entity The conversation before update
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
-	public function getOldConversation(): Conversation {
+	public function getOldConversation(): ConversationInterface {
 		return $this->oldConversation;
 	}//end getOldConversation()
 }//end class
