@@ -39,12 +39,27 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserSession;
 
 /**
  * Lists the produced exports.
  */
 class ExportRunsController extends Controller {
+	/**
+	 * The query parameters that narrow the listing, in the order they are passed on.
+	 *
+	 * @var array<int, string>
+	 */
+	private const FILTER_KEYS = ['register', 'schema', 'profile', 'source', 'status', 'actor', 'from', 'until'];
+
+	/**
+	 * The filters that bound the period the export was produced in; they must parse as dates.
+	 *
+	 * @var array<int, string>
+	 */
+	private const PERIOD_KEYS = ['from', 'until'];
+
 
 	/**
 	 * Constructor.
@@ -90,51 +105,115 @@ class ExportRunsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: Http::STATUS_UNAUTHORIZED);
 		}
 
-		$limit = (int)($this->request->getParam(key: 'limit') ?? 50);
-		$offset = (int)($this->request->getParam(key: 'offset') ?? 0);
+		$filters = $this->requestedFilters();
+		$refusal = $this->periodRefusal(filters: $filters);
+		if ($refusal !== null) {
+			return $refusal;
+		}
 
+		return $this->runPage(user: $user, filters: $filters);
+	}//end index()
+
+	/**
+	 * The non-blank filter parameters of the request, as text.
+	 *
+	 * @return array<string, string> The filters, in the order of FILTER_KEYS
+	 */
+	private function requestedFilters(): array {
 		$filters = [];
-		foreach (['register', 'schema', 'profile', 'source', 'status', 'actor'] as $key) {
+		foreach (self::FILTER_KEYS as $key) {
 			$value = $this->request->getParam(key: $key);
 			if ($value !== null && $value !== '') {
 				$filters[$key] = (string)$value;
 			}
 		}
 
-		$period = [];
-		foreach (['from', 'until'] as $key) {
-			$value = $this->request->getParam(key: $key);
-			if ($value === null || $value === '') {
+		return $filters;
+	}//end requestedFilters()
+
+	/**
+	 * Refuse a period bound that is not a date: dropping it would widen the list.
+	 *
+	 * @param array<string, string> $filters The requested filters
+	 *
+	 * @return JSONResponse|null A 400 naming the first bound that does not parse, or null
+	 */
+	private function periodRefusal(array $filters): ?JSONResponse {
+		foreach (self::PERIOD_KEYS as $key) {
+			if (isset($filters[$key]) === false) {
 				continue;
 			}
 
 			try {
-				$period[$key] = new DateTime((string)$value);
+				new DateTime($filters[$key]);
 			} catch (Exception) {
 				return new JSONResponse(
-					data: ['error' => sprintf('The %s date "%s" is not a date.', $key, (string)$value)],
+					data: ['error' => sprintf('The %s date "%s" is not a date.', $key, $filters[$key])],
 					statusCode: Http::STATUS_BAD_REQUEST
 				);
 			}
-
-			$filters[$key] = (string)$value;
 		}
+
+		return null;
+	}//end periodRefusal()
+
+	/**
+	 * List one page of the export runs the caller may see.
+	 *
+	 * @param IUser                 $user    The caller
+	 * @param array<string, string> $filters The requested filters, period bounds already checked
+	 *
+	 * @return JSONResponse The runs, with the requested page and filters echoed
+	 */
+	private function runPage(IUser $user, array $filters): JSONResponse {
+		$limit = (int)($this->request->getParam(key: 'limit') ?? 50);
+		$offset = (int)($this->request->getParam(key: 'offset') ?? 0);
 
 		$results = $this->runs->listFor(
 			actor: $user->getUID(),
 			isAdmin: $this->rights->seesEveryExportRun(userId: $user->getUID()),
-			filters: array_merge($filters, $period),
+			filters: array_merge($filters, $this->period(filters: $filters)),
 			limit: max(1, min($limit, 200)),
 			offset: max(0, $offset)
 		);
 
+		return $this->pageResponse(results: $results, filters: $filters);
+	}//end runPage()
+
+	/**
+	 * The period bounds of the filters as dates.
+	 *
+	 * @param array<string, string> $filters The requested filters, period bounds already checked
+	 *
+	 * @return array<string, DateTime> The bounds present
+	 */
+	private function period(array $filters): array {
+		$period = [];
+		foreach (self::PERIOD_KEYS as $key) {
+			if (isset($filters[$key]) === true) {
+				$period[$key] = new DateTime($filters[$key]);
+			}
+		}
+
+		return $period;
+	}//end period()
+
+	/**
+	 * The listing answer: the runs, the requested page and the filters as given.
+	 *
+	 * @param array<int, mixed>     $results The runs
+	 * @param array<string, string> $filters The requested filters
+	 *
+	 * @return JSONResponse The answer
+	 */
+	private function pageResponse(array $results, array $filters): JSONResponse {
 		return new JSONResponse(
 			data: [
 				'results' => $results,
-				'limit' => $limit,
-				'offset' => $offset,
+				'limit' => (int)($this->request->getParam(key: 'limit') ?? 50),
+				'offset' => (int)($this->request->getParam(key: 'offset') ?? 0),
 				'filters' => $filters,
 			]
 		);
-	}//end index()
+	}//end pageResponse()
 }//end class
