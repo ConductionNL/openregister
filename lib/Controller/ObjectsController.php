@@ -3654,6 +3654,12 @@ class ObjectsController extends Controller {
 			}
 		} catch (\Throwable $e) {
 			// Not registered in this context; the session below is the answer.
+			$this->logger->debug(
+				message: '[ObjectsController] userId not registered in the container, using the session',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return $this->userSession->getUser()?->getUID();
@@ -6321,7 +6327,14 @@ class ObjectsController extends Controller {
 				)
 			);
 		} catch (\Throwable $auditError) {
-			// Silently swallow — audit-trail must never break the response.
+			// The audit trail must never break the download response.
+			$this->logger->warning(
+				message: '[ObjectsController] Bulk download audit entry not written',
+				context: [
+					'zipName' => $zipInfo['filename'],
+					'exception' => $auditError->getMessage(),
+				]
+			);
 		}
 	}//end auditBulkDownload()
 
