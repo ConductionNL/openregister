@@ -312,11 +312,10 @@ class DocumentBodyParser {
 			return;
 		}
 
-		$images = [];
-		$rows = $this->contentReader->tableRows(table: $table, relationships: $this->relationships, depth: ($depth + 1), images: $images);
+		$read = $this->contentReader->table(table: $table, relationships: $this->relationships, depth: ($depth + 1));
 
-		$this->appendBlock(block: ['type' => 'table', 'rows' => $rows]);
-		foreach ($images as $image) {
+		$this->appendBlock(block: ['type' => 'table', 'rows' => $read->rows]);
+		foreach ($read->images as $image) {
 			$this->appendBlock(block: $image);
 		}
 	}//end table()
