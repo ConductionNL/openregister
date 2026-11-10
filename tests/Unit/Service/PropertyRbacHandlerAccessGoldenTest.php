@@ -148,7 +148,7 @@ class PropertyRbacHandlerAccessGoldenTest extends TestCase {
 		$actual = [];
 		foreach (array_keys(self::authorizations()) as $property) {
 			$log = [];
-			$read = $handler->canReadProperty($schema, $property, $object);
+			$read = $handler->canReadProperty(new SchemaProperty($schema, $property), new PropertyAccessRequest($object));
 			$readLog = $log;
 			$log = [];
 			$update = $handler->canUpdateProperty(new SchemaProperty($schema, $property), new PropertyAccessRequest($object));

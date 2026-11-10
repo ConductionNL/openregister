@@ -50,6 +50,56 @@ class CredentialMintOptionsRedactionTest extends TestCase {
 		}
 	}//end testPrintRAndVarDumpMaskTheSecret()
 
+	/**
+	 * var_export, json_encode, an array cast and the raw object vars leave the secret out.
+	 *
+	 * @return void
+	 */
+	public function testNoExportCastOrEncodingCarriesTheSecret(): void {
+		$options = new CredentialMintOptions(allowedApps: ['openconnector'], secret: self::SECRET, scope: 'organisation', organisation: 'org-1');
+
+		$outputs = [
+			'var_export'  => var_export($options, true),
+			'json_encode' => (string) json_encode($options),
+			'array cast'  => var_export((array) $options, true),
+			'object vars' => var_export(get_mangled_object_vars($options), true),
+		];
+		foreach ($outputs as $how => $output) {
+			self::assertStringNotContainsString(needle: self::SECRET, haystack: $output, message: $how . ' shows the secret');
+			self::assertStringContainsString(needle: 'org-1', haystack: $output, message: $how . ' lost the other fields');
+		}
+	}//end testNoExportCastOrEncodingCarriesTheSecret()
+
+	/**
+	 * serialize() is refused, and the refusal does not carry the secret.
+	 *
+	 * @return void
+	 */
+	public function testSerialisationIsRefusedWithoutTheSecret(): void {
+		$options = new CredentialMintOptions(secret: self::SECRET);
+
+		try {
+			$serialised = serialize($options);
+			self::fail(message: 'serialize() returned ' . $serialised);
+		} catch (\LogicException $e) {
+			self::assertStringNotContainsString(needle: self::SECRET, haystack: $e->getMessage());
+		}
+	}//end testSerialisationIsRefusedWithoutTheSecret()
+
+	/**
+	 * Each instance hands back its own secret.
+	 *
+	 * @return void
+	 */
+	public function testTheAccessorReturnsTheSecretOfEachInstance(): void {
+		$first  = new CredentialMintOptions(secret: self::SECRET);
+		$second = new CredentialMintOptions(secret: 'other');
+
+		self::assertSame(expected: self::SECRET, actual: $first->secret());
+		self::assertSame(expected: 'other', actual: $second->secret());
+		self::assertNull(actual: (new CredentialMintOptions())->secret());
+	}//end testTheAccessorReturnsTheSecretOfEachInstance()
+
 	public function testAMissingSecretStaysNull(): void {
 		self::assertNull((new CredentialMintOptions())->__debugInfo()['secret']);
 	}//end testAMissingSecretStaysNull()

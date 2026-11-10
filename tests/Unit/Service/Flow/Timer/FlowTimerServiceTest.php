@@ -51,6 +51,8 @@ use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarService;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
+use OCA\OpenRegister\Service\Task\TimerOutcome;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -754,7 +756,10 @@ class FlowTimerServiceTest extends TestCase {
 		$start = $this->at('2026-09-01 09:00');
 		$applied = [];
 		$this->taskService->method('applyTimerOutcome')->willReturnCallback(
-			function (string $uuid, string $outcome, string $source, string $reason) use (&$applied): Task {
+			function (string $uuid, TimerOutcome $timer) use (&$applied): Task {
+				$outcome = $timer->outcome;
+				$source  = $timer->trigger->source;
+				$reason  = $timer->trigger->reason;
 				$applied[$uuid] = [$outcome, $source];
 
 				return $this->store->tasks[$uuid];
@@ -1022,7 +1027,10 @@ class FlowTimerServiceTest extends TestCase {
 
 		$applied = [];
 		$this->taskService->method('applyTimerOutcome')->willReturnCallback(
-			function (string $uuid, string $outcome, string $source, string $reason) use (&$applied): Task {
+			function (string $uuid, TimerOutcome $timer) use (&$applied): Task {
+				$outcome = $timer->outcome;
+				$source  = $timer->trigger->source;
+				$reason  = $timer->trigger->reason;
 				$applied[] = [$uuid, $outcome, $reason];
 
 				return $this->store->tasks[$uuid];

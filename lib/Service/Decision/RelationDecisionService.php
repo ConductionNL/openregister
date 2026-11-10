@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Decision;
 
 use OCA\OpenRegister\Db\Decision;
+use OCA\OpenRegister\Db\DecisionMetadataEdit;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DecisionConflictException;
@@ -136,7 +137,9 @@ class RelationDecisionService implements RelationDecisionServiceInterface {
 
 		$this->stores->db->beginTransaction();
 		try {
-			$run->relation = $this->stores->relationMapper->updateDecisionMetadata(relation: $run->relation, fields: $given->fields, actingUser: $run->actor);
+			$run->relation = $this->stores->relationMapper->updateDecisionMetadata(
+				edit: new DecisionMetadataEdit(relation: $run->relation, fields: $given->fields, actingUser: $run->actor)
+			);
 			// On a decided relation a change of verdict or grounds is always a new decision.
 			$changed = ($run->current !== null && $before !== [$run->relation->getBases(), $run->relation->getSkipAnonymization()]);
 			if ($changed === false && $this->isNewDecision(current: $run->current, given: $given) === false) {

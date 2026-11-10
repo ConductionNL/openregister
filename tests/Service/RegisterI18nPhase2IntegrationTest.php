@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -43,6 +44,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\ObjectTranslationRequest;
 
 /**
  * @group DB
@@ -216,18 +218,14 @@ class RegisterI18nPhase2IntegrationTest extends TestCase {
 		]);
 		$this->objectMapper->update($this->testObject);
 
-		$result = $this->bulkService->translateObject(
-			object: $this->testObject,
-			fromLong: 'nl',
-			toLong: 'en'
-		);
+		$result = $this->bulkService->translate(request: new ObjectTranslationRequest(object: $this->testObject, fromLong: 'nl', toLong: 'en'));
 
 		$this->assertArrayHasKey('title', $result['translated']);
 		$this->assertArrayHasKey('body', $result['translated']);
 		$this->assertSame('Hoi wereld', $result['translated']['title'], 'identity provider returns source verbatim');
 
 		// Sidecar should now have EN slots with machine_translated status.
-		$titleEn = $this->translationMapper->findOne((string)$this->testObject->getUuid(), 'title', 'en');
+		$titleEn = $this->translationMapper->findOne(new TranslationSlot((string)$this->testObject->getUuid(), 'title', 'en'));
 		$this->assertNotNull($titleEn);
 		$this->assertSame(Translation::STATUS_MACHINE_TRANSLATED, $titleEn->getStatus());
 		$this->assertSame('provider:identity', $titleEn->getTranslator());
@@ -241,11 +239,7 @@ class RegisterI18nPhase2IntegrationTest extends TestCase {
 		]);
 		$this->objectMapper->update($this->testObject);
 
-		$result = $this->bulkService->translateObject(
-			object: $this->testObject,
-			fromLong: 'nl',
-			toLong: 'en'
-		);
+		$result = $this->bulkService->translate(request: new ObjectTranslationRequest(object: $this->testObject, fromLong: 'nl', toLong: 'en'));
 
 		$this->assertArrayNotHasKey('title', $result['translated']);
 		$this->assertSame('target-slot-already-filled', $result['skipped']['title'] ?? null);
@@ -260,22 +254,14 @@ class RegisterI18nPhase2IntegrationTest extends TestCase {
 		]);
 		$this->objectMapper->update($this->testObject);
 
-		$result = $this->bulkService->translateObject(
-			object: $this->testObject,
-			fromLong: 'nl',
-			toLong: 'fr'
-		);
+		$result = $this->bulkService->translate(request: new ObjectTranslationRequest(object: $this->testObject, fromLong: 'nl', toLong: 'fr'));
 
 		$this->assertSame('no-source-value', $result['skipped']['title'] ?? null);
 		$this->assertArrayNotHasKey('title', $result['translated']);
 	}
 
 	public function testBulkTranslateRejectsSameLanguagePair(): void {
-		$result = $this->bulkService->translateObject(
-			object: $this->testObject,
-			fromLong: 'nl',
-			toLong: 'nl'
-		);
+		$result = $this->bulkService->translate(request: new ObjectTranslationRequest(object: $this->testObject, fromLong: 'nl', toLong: 'nl'));
 		$this->assertSame([], $result['translated']);
 		$this->assertArrayHasKey('_global', $result['skipped']);
 	}

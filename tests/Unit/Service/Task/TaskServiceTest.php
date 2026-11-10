@@ -50,6 +50,7 @@ use OCA\OpenRegister\Service\Task\TaskLifecycleServices;
 use OCA\OpenRegister\Service\Task\TaskPerformerResolver;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskTables;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -1088,13 +1089,13 @@ class TaskServiceTest extends TestCase {
 			}
 		);
 
-		$terminated = $this->service()->terminateAsMoot(uuid: 't-7', reason: 'Branch closed', source: 'flow-node:gateway');
+		$terminated = $this->service()->terminateAsMoot(uuid: 't-7', trigger: new TaskTrigger(source: 'flow-node:gateway', reason: 'Branch closed'));
 		$this->assertSame(Task::STATE_TERMINATED, $terminated->getState());
 		$this->assertSame('flow-node:gateway', $actor);
 
 		// Second observation: already terminal, nothing written.
 		$this->db->expects($this->never())->method('beginTransaction');
-		$again = $this->service()->terminateAsMoot(uuid: 't-7', reason: 'Branch closed', source: 'flow-node:gateway');
+		$again = $this->service()->terminateAsMoot(uuid: 't-7', trigger: new TaskTrigger(source: 'flow-node:gateway', reason: 'Branch closed'));
 		$this->assertSame(Task::STATE_TERMINATED, $again->getState());
 	}//end testTerminateAsMootIsIdempotent()
 

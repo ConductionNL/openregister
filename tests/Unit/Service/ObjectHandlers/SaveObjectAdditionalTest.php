@@ -28,6 +28,7 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers;
 
+use OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission;
 use Exception;
 use OCA\OpenRegister\Service\PropertyWriteCheck;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -1533,8 +1534,7 @@ class SaveObjectAdditionalTest extends TestCase {
 
 		$this->invokePrivate('setSelfMetadata', [
 			$entity,
-			['slug' => 'my-slug'],
-			[],
+			new SelfSubmission(selfData: ['slug' => 'my-slug']),
 		]);
 
 		// The slug is decided after hydration by ObjectSlugHandler (#4037).

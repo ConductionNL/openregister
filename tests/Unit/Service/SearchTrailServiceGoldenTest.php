@@ -288,7 +288,7 @@ class SearchTrailServiceGoldenTest extends TestCase {
 		$queries = [];
 		$this->trailMapper->expects($this->once())->method('findAll')
 			->willReturnCallback(function (...$args) use (&$queries) {
-				$queries['findAll'] = [$args[1], $args[2], $args[0]->filters, $args[3], $args[0]->search, $args[0]->from, $args[0]->to];
+				$queries['findAll'] = [$args[0]->limitOrNull(), $args[0]->offset, $args[1]->filters, $args[0]->sort, $args[1]->search, $args[1]->from, $args[1]->to];
 				return [];
 			});
 		$this->trailMapper->expects($this->once())->method('count')
@@ -311,7 +311,7 @@ class SearchTrailServiceGoldenTest extends TestCase {
 	public function testDateFiltersParsedOrIgnored(): void {
 		$captured = [];
 		$this->trailMapper->method('findAll')->willReturnCallback(function (...$args) use (&$captured) {
-			$captured[] = [$args[0]->from, $args[0]->to];
+			$captured[] = [$args[1]->from, $args[1]->to];
 			return [];
 		});
 		$this->trailMapper->method('count')->willReturn(0);

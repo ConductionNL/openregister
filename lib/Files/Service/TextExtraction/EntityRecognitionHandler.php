@@ -845,8 +845,7 @@ class EntityRecognitionHandler {
 		$responseData = null;
 		if ($transport->useExternal === false) {
 			$responseData = $this->backends->anonymisationBackendService->requestOpenAnonymiser(
-				route: '/api/v1/analyze',
-				params: $requestBody
+				call: new \OCA\OpenRegister\Service\Anonymisation\AnonymiserCall(route: '/api/v1/analyze', params: $requestBody, method: 'POST')
 			);
 		}
 
