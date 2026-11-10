@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -312,7 +313,7 @@ class RegisterI18nIntegrationTest extends TestCase {
 		// doesn't second-guess workflow state).
 		$this->projection->project($this->testObject);
 
-		$reread = $this->translationMapper->findOne((string)$this->testObject->getUuid(), 'title', 'en');
+		$reread = $this->translationMapper->findOne(new TranslationSlot((string)$this->testObject->getUuid(), 'title', 'en'));
 		$this->assertSame(Translation::STATUS_APPROVED, $reread->getStatus(), 'projection MUST preserve workflow status across re-projections');
 	}
 

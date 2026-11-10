@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Translation;
+use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Calculation\CalculationPayload;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
@@ -3706,7 +3707,7 @@ class RenderObject implements RenderObjectInterface {
 			}
 
 			try {
-				$row = $this->enrichers->translations->translationMapper->findOne($uuid, $property, $entry['served']);
+				$row = $this->enrichers->translations->translationMapper->findOne(new TranslationSlot(objectUuid: $uuid, property: $property, language: $entry['served']));
 			} catch (\Throwable $e) {
 				$row = null;
 			}

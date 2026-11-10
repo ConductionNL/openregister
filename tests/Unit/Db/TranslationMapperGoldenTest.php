@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\Translation\LanguageCoverageCheck;
 use OCA\OpenRegister\Db\TranslationEdit;
 use OCA\OpenRegister\Db\TranslationFilter;
 use OCA\OpenRegister\Db\TranslationSlot;
@@ -75,8 +76,8 @@ class TranslationMapperGoldenTest extends TestCase {
 			'upsert existing slot keeps status' => ['upsert', [new TranslationSlot('obj-1', 'title', 'en'), new TranslationEdit('New')], [], [[self::row('approved')]]],
 			'upsert existing slot without status gets draft' => ['upsert', [new TranslationSlot('obj-1', 'title', 'en'), new TranslationEdit('New')], [], [[self::row(null)]]],
 			'upsert existing slot overrides status' => ['upsert', [new TranslationSlot('obj-1', 'title', 'en'), new TranslationEdit('New', 'outdated', 'carol', 'de')], [], [[self::row('approved')]]],
-			'findOne found' => ['findOne', ['obj-1', 'title', 'en'], [], [[self::row('draft')]]],
-			'findOne missing' => ['findOne', ['obj-1', 'title', 'en'], [], [[]]],
+			'findOne found' => ['findOne', [new TranslationSlot('obj-1', 'title', 'en')], [], [[self::row('draft')]]],
+			'findOne missing' => ['findOne', [new TranslationSlot('obj-1', 'title', 'en')], [], [[]]],
 			'findByObject' => ['findByObject', ['obj-1'], [], [[self::row('draft'), self::row('approved')]]],
 			'deleteByObject' => ['deleteByObject', ['obj-1'], [4], []],
 			'completeness' => ['getCompletenessByObject', ['obj-1'], [], [[['language' => 'en', 'count' => '3'], ['language' => 'de', 'count' => 1]]]],
@@ -86,7 +87,7 @@ class TranslationMapperGoldenTest extends TestCase {
 			'search empty strings are ignored' => ['search', [new TranslationFilter('', '', '', ''), '', 0, false], [], [[]]],
 			'search limit is capped' => ['search', [new TranslationFilter('en'), null, 5000], [], [[]]],
 			'search negative limit and outdated only' => ['search', [new TranslationFilter(), null, -3, true], [], [[]]],
-			'markDerivedOutdated' => ['markDerivedOutdated', ['obj-1', 'title', 'nl'], [2], []],
+			'markDerivedOutdated' => ['markDerivedOutdated', [new TranslationSlot('obj-1', 'title', 'nl')], [2], []],
 			'backfill without registers' => ['backfillSourceLanguage', [[]], [7], []],
 			'backfill per register' => ['backfillSourceLanguage', [[5 => 'de', '12' => '', 'r-x' => null], 25], [3, 4, 5, 6], []],
 			'backfill falls back when bounded update fails' => ['backfillSourceLanguage', [[5 => 'en'], 0], [new \RuntimeException('no limit on update'), 8, 1], []],
@@ -96,11 +97,11 @@ class TranslationMapperGoldenTest extends TestCase {
 			'dominant source language without rows' => ['getDominantSourceLanguage', ['obj-1'], [], [[]]],
 			'dominant source language null column' => ['getDominantSourceLanguage', ['obj-1'], [], [[['source_language' => null, 'cnt' => 4]]]],
 			'dominant source language empty column' => ['getDominantSourceLanguage', ['obj-1'], [], [[['source_language' => '', 'cnt' => 4]]]],
-			'missing language without properties' => ['findObjectsMissingLanguage', ['en', [], ['a']], [], []],
-			'missing language without candidates' => ['findObjectsMissingLanguage', ['en', ['title'], []], [], []],
+			'missing language without properties' => ['findObjectsMissingLanguage', [new LanguageCoverageCheck('en', [], ['a'])], [], []],
+			'missing language without candidates' => ['findObjectsMissingLanguage', [new LanguageCoverageCheck('en', ['title'], [])], [], []],
 			'missing language' => [
 				'findObjectsMissingLanguage',
-				['en', ['title', 'body'], ['a', 'b', 'c', 'a']],
+				[new LanguageCoverageCheck('en', ['title', 'body'], ['a', 'b', 'c', 'a'])],
 				[],
 				[[['object_uuid' => 'a', 'property' => 'title'], ['object_uuid' => 'a', 'property' => 'body'], ['object_uuid' => 'b', 'property' => 'title'], ['object_uuid' => 'x', 'property' => 'body']]],
 			],

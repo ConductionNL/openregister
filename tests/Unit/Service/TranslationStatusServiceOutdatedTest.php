@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\TranslationMapper;
+use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\TranslationStatusService;
 use OCP\IUserSession;
@@ -35,7 +36,7 @@ class TranslationStatusServiceOutdatedTest extends TestCase {
 		$mapper = $this->createMock(TranslationMapper::class);
 		$mapper->expects($this->once())
 			->method('markDerivedOutdated')
-			->with('obj-uuid', 'title', 'nl')
+			->with($this->equalTo(new TranslationSlot('obj-uuid', 'title', 'nl')))
 			->willReturn(3);
 
 		$service = new TranslationStatusService(
