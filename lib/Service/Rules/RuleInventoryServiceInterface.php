@@ -44,19 +44,12 @@ interface RuleInventoryServiceInterface {
 	/**
 	 * The rules a schema declares, with how recently each was evaluated.
 	 *
-	 * @param Schema               $schema   The schema to read.
-	 * @param integer              $idleDays How long a rule may go unevaluated before it is flagged.
-	 * @param DateTime|null        $now      The moment to measure the idle window from.
-	 * @param array<string, mixed> $scope    Property => value: only the rules with that scope, plus those without one.
+	 * @param Schema               $schema  The schema to read.
+	 * @param RuleInventoryOptions $options The idle window, the moment it is measured from and the scope filter.
 	 *
 	 * @return array<int, array<string, mixed>> The inventory rows.
 	 */
-	public function inventory(
-		Schema $schema,
-		int $idleDays = self::DEFAULT_IDLE_DAYS,
-		?DateTime $now = null,
-		array $scope = []
-	): array;
+	public function inventory(Schema $schema, RuleInventoryOptions $options = new RuleInventoryOptions()): array;
 
 	/**
 	 * One rule of a schema by its derived id.

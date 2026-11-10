@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Rules\RuleCeilingException;
 use OCA\OpenRegister\Service\Rules\RuleEnablementServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleInventoryServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleReplayServiceInterface;
+use OCA\OpenRegister\Service\Rules\RuleInventoryOptions;
 use OCA\OpenRegister\Service\Rules\RuleTrialServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
@@ -167,7 +168,7 @@ class RulesControllerA24GoldenTest extends TestCase {
 	public function testIndexPassesWindowAndScope(): void {
 		$schema = $this->schema();
 		$this->params = ['idleDays' => '7', 'scope' => 'nope'];
-		$this->inventory->expects($this->once())->method('inventory')->with($schema, 7, null, [])->willReturn([['key' => 'a']]);
+		$this->inventory->expects($this->once())->method('inventory')->with($schema, new RuleInventoryOptions(7, null, []))->willReturn([['key' => 'a']]);
 
 		$this->assertSame([200, ['schema' => 'zaak', 'rules' => [['key' => 'a']]]], $this->pair($this->controller->index('zaak')));
 	}
