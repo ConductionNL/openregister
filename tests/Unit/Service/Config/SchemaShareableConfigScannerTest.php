@@ -128,4 +128,55 @@ class SchemaShareableConfigScannerTest extends TestCase {
 		$this->assertCount(1, $types);
 		$this->assertSame('procest.casetype', $types[0]->getId());
 	}//end testOnlyRegistersHoldingTheSchemaProduceTypes()
+
+	public function testACatalogueFailureLogsAndYieldsNoTypes(): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('warning')->with(
+			$this->equalTo('[SchemaShareableConfigScanner] Could not scan for shareable schemas: catalogue down'),
+			$this->callback(static fn (array $context): bool => $context['file'] === (new \ReflectionClass(SchemaShareableConfigScanner::class))->getFileName() && is_int($context['line']))
+		);
+		$this->schemaMapper->method('findAll')->willReturn([$this->schema(1, 'casetype', 'Case type', ['x-openregister-shareable' => true])]);
+		$this->registerMapper->method('findAll')->willThrowException(new \RuntimeException('catalogue down'));
+		$scanner = new SchemaShareableConfigScanner(
+			new \OCA\OpenRegister\Db\SchemaCatalog(
+				$this->registerMapper,
+				$this->schemaMapper,
+				$this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)
+			),
+			$this->createMock(ObjectService::class),
+			$logger
+		);
+
+		$this->assertSame([], $scanner->scan());
+	}//end testACatalogueFailureLogsAndYieldsNoTypes()
+
+	public function testTypesFollowSchemaThenRegisterOrder(): void {
+		$this->schemaMapper->method('findAll')->willReturn(
+			[
+				$this->schema(1, 'casetype', 'Case type', ['x-openregister-shareable' => true]),
+				$this->schema(2, 'plain', 'Plain', null),
+				$this->schema(3, 'pack', 'Pack', ['x-openregister-shareable' => ['topic' => 'packs']]),
+			]
+		);
+		$this->registerMapper->method('findAll')->willReturn(
+			[
+				$this->register('procest', 'Procest', [1, 2, 3]),
+				$this->register('shillinq', 'Shillinq', [3, 1]),
+			]
+		);
+
+		$types = $this->scanner->scan();
+		$this->assertSame(
+			['procest.casetype', 'shillinq.casetype', 'procest.pack', 'shillinq.pack'],
+			array_map(static fn ($type): string => $type->getId(), $types)
+		);
+		$this->assertSame(
+			['procest-casetype', 'shillinq-casetype', 'packs', 'packs'],
+			array_map(static fn ($type): string => $type->getTopic(), $types)
+		);
+		$this->assertSame(
+			['Case type (Procest)', 'Case type (Shillinq)', 'Pack (Procest)', 'Pack (Shillinq)'],
+			array_map(static fn ($type): string => $type->getDisplayName(), $types)
+		);
+	}//end testTypesFollowSchemaThenRegisterOrder()
 }//end class
