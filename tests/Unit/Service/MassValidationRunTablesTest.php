@@ -75,7 +75,7 @@ class MassValidationRunTablesTest extends TestCase {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
 			static function (...$args) use (&$saved): ObjectEntity {
-				$saved[] = $args['uuid'] ?? $args[4];
+				$saved[] = ($args['options'] ?? $args[1])->uuid;
 				return new ObjectEntity();
 			}
 		);
