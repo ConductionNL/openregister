@@ -36,6 +36,7 @@ use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskFormRefusedException;
 use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Service\Task\FormCompletionRequest;
 use OCA\OpenRegister\Service\Task\TaskAnswer;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskFormCompletion;
@@ -321,7 +322,7 @@ class TaskControllerTest extends TestCase {
 	 */
 	public function testCompletePassesTheFieldValuesThrough(): void {
 		$this->completion->expects($this->once())->method('complete')
-			->with('t-1', new TaskAnswer(outcome: 'rejected', comment: 'late'), ['reason' => 'late'], 'alice')
+			->with(new FormCompletionRequest(uuid: 't-1', answer: new TaskAnswer(outcome: 'rejected', comment: 'late'), data: ['reason' => 'late']), 'alice')
 			->willReturn($this->task());
 
 		$response = $this->controller->complete(uuid: 't-1', outcome: 'rejected', comment: 'late', data: ['reason' => 'late']);

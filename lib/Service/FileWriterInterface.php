@@ -26,6 +26,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\FileOverwrite;
 use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
 use OCP\Files\File;
 use OCP\Files\Node;
 

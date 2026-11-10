@@ -28,6 +28,7 @@ use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Controller\Support\SchemaRemoval;
 use OCA\OpenRegister\Controller\Support\SchemasControllerServices;
+use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
@@ -47,6 +48,7 @@ use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\Rbac\RbacRuleChecks;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Service\AuthorizationChange;
 use OCA\OpenRegister\Service\Rbac\RbacChecks;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
@@ -60,6 +62,7 @@ use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
 use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
+use OCA\OpenRegister\Service\Schema\IncomingDefinition;
 use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaTeardownInterface;
@@ -1402,11 +1405,13 @@ class SchemasController extends Controller {
 
 		$changeSet = $this->schemaVersioningService->classify(
 			existing: $existing,
-			newDefinition: [
-				'properties' => ($data['properties'] ?? $existing->getProperties() ?? []),
-				'required' => ($data['required'] ?? $existing->getRequired() ?? []),
-			],
-			renames: $renames
+			incoming: new IncomingDefinition(
+				definition: [
+					'properties' => ($data['properties'] ?? $existing->getProperties() ?? []),
+					'required' => ($data['required'] ?? $existing->getRequired() ?? []),
+				],
+				renames: $renames
+			)
 		);
 
 		try {
@@ -1542,11 +1547,13 @@ class SchemasController extends Controller {
 	private function auditSchemaAuthorizationChange(Schema $schema, mixed $oldAuthorization): void {
 		try {
 			$auditService = $this->container->get(AuthorizationAuditService::class);
-			$auditService->logSchemaAuthorizationChange(
-				$schema->getId(),
-				$schema->getTitle() ?? '',
-				$oldAuthorization,
-				$schema->getAuthorization()
+			$auditService->recordSchemaChange(
+				change: new AuthorizationChange(
+					entityId: $schema->getId(),
+					entityTitle: $schema->getTitle() ?? '',
+					before: $oldAuthorization,
+					after: $schema->getAuthorization()
+				)
 			);
 		} catch (\Throwable $e) {
 			// Audit logging should not break the update operation.
@@ -2784,7 +2791,7 @@ class SchemasController extends Controller {
 			return self::NO_LOG_STATS;
 		}
 
-		return $this->auditTrailMapper->getStatistics(registerId: null, schemaId: $schemaId);
+		return $this->auditTrailMapper->statisticsTotals(scope: new AuditStatisticsScope(schemaId: $schemaId));
 	}//end auditLogStats()
 
 	/**

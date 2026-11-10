@@ -24,6 +24,7 @@
 namespace OCA\OpenRegister\Notifications\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Notifications\Service\GraphQL\EventStreamFilter;
 use OCA\OpenRegister\Notifications\Service\GraphQL\SubscriptionService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Response;
@@ -106,10 +107,8 @@ class GraphQLSubscriptionController extends Controller {
 		}
 
 		// Send initial events (replay from buffer since lastEventId).
-		$events = $this->subscriptionService->getEventsSince(
-			$lastEventId,
-			$schemaId,
-			$registerId
+		$events = $this->subscriptionService->eventsMatching(
+			filter: new EventStreamFilter(lastEventId: $lastEventId, schemaId: $schemaId, registerId: $registerId)
 		);
 
 		foreach ($events as $event) {
@@ -132,10 +131,8 @@ class GraphQLSubscriptionController extends Controller {
 		while ((time() - $startTime) < $maxDuration) {
 			sleep($pollInterval);
 
-			$newEvents = $this->subscriptionService->getEventsSince(
-				$currentLastId,
-				$schemaId,
-				$registerId
+			$newEvents = $this->subscriptionService->eventsMatching(
+				filter: new EventStreamFilter(lastEventId: $currentLastId, schemaId: $schemaId, registerId: $registerId)
 			);
 
 			foreach ($newEvents as $event) {

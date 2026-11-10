@@ -131,7 +131,7 @@ final class ProcessingAndSearchTrailReadsGoldenTest extends TestCase {
 		$actual['counts: no rows'] = $this->recorded(fn () => $this->processingLog()->countByActivity(), [[]]);
 
 		foreach (self::sortCases() as $name => $args) {
-			$actual['search trail: ' . $name] = $this->recorded(fn () => count($this->searchTrails()->findAll(new SearchTrailCriteria(($args[2] ?? []), ($args[4] ?? null)), ($args[0] ?? null), ($args[1] ?? null), ($args[3] ?? []))), []);
+			$actual['search trail: ' . $name] = $this->recorded(fn () => count($this->searchTrails()->findAll(new ListQuery(limit: ($args[0] ?? ListQuery::UNBOUNDED), offset: ($args[1] ?? null), sort: ($args[3] ?? [])), new SearchTrailCriteria(($args[2] ?? []), ($args[4] ?? null)))), []);
 		}
 
 		if (getenv('UPDATE_GOLDEN') === '1') {

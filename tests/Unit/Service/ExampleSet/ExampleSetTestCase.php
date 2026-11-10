@@ -89,6 +89,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetWorkRowKinds;
 use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCA\OpenRegister\Db\DeckLinkMapperInterface;
 use OCP\IUserManager;
+use OCA\OpenRegister\Service\Party\PartyHolding;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Db\ContactLink;
@@ -131,6 +132,7 @@ use OCA\OpenRegister\Search\Service\ViewEdit;
 use OCA\OpenRegister\Search\Service\ViewService;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
+use OCA\OpenRegister\Service\Task\TaskImport;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskState;
@@ -552,7 +554,8 @@ abstract class ExampleSetTestCase extends TestCase {
 	 */
 	private function taskService(): TaskService {
 		$service = $this->createMock(TaskService::class);
-		$service->method('import')->willReturnCallback(function (array $data, ?string $actor, ?callable $blocker = null, ?\DateTime $at = null): Task {
+		$service->method('importTask')->willReturnCallback(function (TaskImport $import): Task {
+			[$data, $actor, $at] = [$import->data, $import->actor, $import->createdAt];
 			foreach ($this->engineTasks as $held) {
 				if ($held->getTaskKey() === (string) $data['key']) {
 					// The task key is unique in the engine (or_tasks_key_uniq).
@@ -613,15 +616,15 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function viewService(): ViewService {
 		$service = $this->createMock(ViewService::class);
 		$service->method('create')->willReturnCallback(
-			function (ViewDefinition $definition, ViewAudience $audience, ?array $alert = null): View {
+			function (ViewEdit $edit): View {
 				$view = new View();
 				$view->setUuid('view-'.(++$this->viewsCreated));
-				$view->setName($definition->name);
-				$view->setOwner($audience->owner);
-				$view->setIsPublic($audience->isPublic);
-				$view->setQuery($definition->query);
-				$view->setAlert($alert);
-				$view->setSharedWith($audience->sharedWith ?? []);
+				$view->setName($edit->definition->name);
+				$view->setOwner($edit->audience->owner);
+				$view->setIsPublic($edit->audience->isPublic);
+				$view->setQuery($edit->definition->query);
+				$view->setAlert($edit->alert);
+				$view->setSharedWith($edit->audience->sharedWith ?? []);
 				$this->savedViews[(string) $view->getUuid()] = $view;
 				return $view;
 			}
@@ -1306,8 +1309,8 @@ abstract class ExampleSetTestCase extends TestCase {
 				return new ContactLink();
 			}
 		);
-		$roles->method('removeParty')->willReturnCallback(function (string $objectUuid, string $partyUuid, ?string $role = null): int {
-			unset($this->partyLinks[$objectUuid.' '.$partyUuid.' '.$role]);
+		$roles->method('removeParty')->willReturnCallback(function (string $objectUuid, PartyHolding $holding): int {
+			unset($this->partyLinks[$objectUuid.' '.$holding->partyUuid.' '.$holding->role]);
 			return 1;
 		});
 

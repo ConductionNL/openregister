@@ -45,8 +45,11 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Exception\TaskCompleteViaAppException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\FileWriterInterface;
+use OCA\OpenRegister\Service\Task\TaskAct;
 use OCA\OpenRegister\Service\Task\InboxListing;
 use OCA\OpenRegister\Service\Task\TaskBlockerGuard;
+use OCA\OpenRegister\Service\Task\TaskAnswer;
+use OCA\OpenRegister\Service\Task\TaskAnswerPayload;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 
@@ -121,7 +124,7 @@ class PortalTaskService implements PortalTaskServiceInterface {
 		$party = $subject->partyReference();
 		$offset = (int)$query->offset;
 
-		$page = $this->sources->mapper->findOpenExternalForParty(partyReference: $party, limit: $query->limit, offset: $offset);
+		$page = $this->sources->mapper->findOpenExternalForParty(partyReference: $party, page: $query);
 		$total = $this->sources->mapper->countOpenExternalForParty(partyReference: $party);
 
 		return [
@@ -251,7 +254,7 @@ class PortalTaskService implements PortalTaskServiceInterface {
 		// 1. Authorize, and audit a denial, BEFORE any other step. A stranger
 		//    who knows the uuid must not get a validation message, let alone a
 		//    file on somebody else's case.
-		$task = $this->sources->tasks->openFor(verb: 'complete', uuid: $command->uuid, actor: $command->subject->actor());
+		$task = $this->sources->tasks->openFor(act: new TaskAct(verb: 'complete', actor: $command->subject->actor()), uuid: $command->uuid);
 
 		$this->assertCompletableBy(task: $task, viaApp: $command->viaApp);
 
@@ -265,14 +268,14 @@ class PortalTaskService implements PortalTaskServiceInterface {
 		$evidence = $this->storeFiles(task: $task, files: $command->completion->files);
 
 		// 4. Record the completion, referencing the stored files.
-		return $this->sources->tasks->complete(
+		return $this->sources->tasks->completeWithAnswer(
 			uuid: $command->uuid,
-			outcome: $command->completion->outcome(),
-			resultText: null,
-			comment: $command->completion->comment,
-			actor: $command->subject->actor(),
-			responses: $command->completion->answers,
-			evidence: $evidence
+			answer: new TaskAnswer(
+				outcome: $command->completion->outcome(),
+				comment: $command->completion->comment,
+				payload: new TaskAnswerPayload(responses: $command->completion->answers, evidence: $evidence)
+			),
+			actor: $command->subject->actor()
 		);
 	}//end completeTask()
 

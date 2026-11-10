@@ -46,7 +46,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
-use Closure;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -66,29 +65,6 @@ class AnonymisationSweep {
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
-
-	/**
-	 * Anonymise every candidate that may be anonymised.
-	 *
-	 * A candidate is `['uuid' => string, 'payload' => array, 'annotation' =>
-	 * array, 'marker' => array, 'hasLegalHold' => bool, 'holdReason' => string,
-	 * 'profileName' => string]`, and the caller supplies the targets each record
-	 * must reach.
-	 *
-	 * Kept in this shape because another Conduction app names this class
-	 * (ADR-011 Rule 5); {@see sweep()} takes the batch as one object.
-	 *
-	 * @param array<int, array<string, mixed>> $candidates The records to consider.
-	 * @param callable                         $targetsFor Returns the targets for one candidate.
-	 * @param string                           $salt       The instance salt.
-	 *
-	 * @return array<string, mixed> The report: what was done, and what was refused and why.
-	 *
-	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
-	 */
-	public function run(array $candidates, callable $targetsFor, string $salt): array {
-		return $this->sweep(batch: new AnonymisationBatch(candidates: $candidates, targetsFor: Closure::fromCallable($targetsFor), salt: $salt));
-	}//end run()
 
 	/**
 	 * Anonymise every candidate of one batch that may be anonymised.

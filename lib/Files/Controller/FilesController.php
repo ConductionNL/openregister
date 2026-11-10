@@ -53,6 +53,7 @@ use OCA\OpenRegister\Files\Service\File\FileMetadataFormHandler;
 use OCA\OpenRegister\Files\Service\File\PreviewSize;
 use OCA\OpenRegister\Service\FileServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Object\FileWriteGuardInterface;
 use OCA\OpenRegister\Files\Service\File\AttachNodeHandler;
 use OCA\OpenRegister\Files\Service\Integration\AttachTargetFilter;
@@ -418,13 +419,11 @@ class FilesController extends Controller {
 	private function objectUnderRule(FileAccessCheck $check): ObjectEntity {
 		$route = $check->route;
 		if ($check->change === false) {
-			return $this->objectFileAccess->readable(register: $route->register, schema: $route->schema, id: $route->id);
+			return $this->objectFileAccess->readable(ref: new ObjectRef(register: $route->register, schema: $route->schema, id: $route->id));
 		}
 
 		$object = $this->objectFileAccess->changeable(
-			register: $route->register,
-			schema: $route->schema,
-			id: $route->id,
+			ref: new ObjectRef(register: $route->register, schema: $route->schema, id: $route->id),
 			verb: $check->verb
 		);
 		// REQ-OAS-007: a frozen or archived object's files do not change
@@ -3010,7 +3009,7 @@ class FilesController extends Controller {
 			throw new ObjectFileAccessDeniedException(httpStatus: ObjectFileAccessDeniedException::NOT_READABLE);
 		}
 
-		$object = $this->objectFileAccess->readable(register: $route->register, schema: $route->schema, id: $route->id);
+		$object = $this->objectFileAccess->readable(ref: new ObjectRef(register: $route->register, schema: $route->schema, id: $route->id));
 		$file = $this->officeFile(object: $object, fileId: $fileId);
 
 		return $this->officeSessions()->openSession(request: new OfficeOpenRequest(
