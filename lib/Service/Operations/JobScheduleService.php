@@ -66,6 +66,18 @@ class JobScheduleService implements JobScheduleServiceInterface {
 	public const DEFAULT_INTERVAL_SECONDS = 3600;
 
 	/**
+	 * The schedule of a job nobody administered.
+	 *
+	 * @var array{enabled: bool, intervalSeconds: int, windowStartHour: int|null, windowEndHour: int|null}
+	 */
+	private const DEFAULT_SCHEDULE = [
+		'enabled' => true,
+		'intervalSeconds' => self::DEFAULT_INTERVAL_SECONDS,
+		'windowStartHour' => null,
+		'windowEndHour' => null,
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IConfig $config Where the administered schedules live.
@@ -87,22 +99,32 @@ class JobScheduleService implements JobScheduleServiceInterface {
 		$schedule = $this->read(jobClass: $jobClass);
 		$nextDue = $this->nextDue(schedule: $schedule, lastRun: $lastRun);
 
-		$lastRunAt = null;
-		if ($lastRun > 0) {
-			$lastRunAt = (new DateTime())->setTimestamp($lastRun)->format(DateTime::ATOM);
-		}
-
 		return [
 			'job' => $jobClass,
 			'enabled' => $schedule['enabled'],
 			'intervalSeconds' => $schedule['intervalSeconds'],
 			'windowStartHour' => $schedule['windowStartHour'],
 			'windowEndHour' => $schedule['windowEndHour'],
-			'lastRun' => $lastRunAt,
+			'lastRun' => $this->lastRunAt(lastRun: $lastRun),
 			'nextDue' => $nextDue?->format(DateTime::ATOM),
 		];
 
 	}//end describe()
+
+	/**
+	 * The last run as an ATOM timestamp, or null when the job never ran.
+	 *
+	 * @param int $lastRun The unix time of its last run, 0 when it never ran.
+	 *
+	 * @return string|null The timestamp.
+	 */
+	private function lastRunAt(int $lastRun): ?string {
+		if ($lastRun > 0) {
+			return (new DateTime())->setTimestamp($lastRun)->format(DateTime::ATOM);
+		}
+
+		return null;
+	}//end lastRunAt()
 
 	/**
 	 * Administer one job's schedule.
@@ -115,29 +137,50 @@ class JobScheduleService implements JobScheduleServiceInterface {
 	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
 	public function administer(string $jobClass, JobScheduleChange $change): array {
-		$enabled         = $change->enabled;
-		$intervalSeconds = $change->intervalSeconds;
-		$windowStartHour = $change->windowStartHour;
-		$windowEndHour   = $change->windowEndHour;
+		$schedule = $this->changed(schedule: $this->read(jobClass: $jobClass), change: $change);
+		$this->store(jobClass: $jobClass, schedule: $schedule);
 
-		$schedule = $this->read(jobClass: $jobClass);
+		return $this->describe(jobClass: $jobClass);
 
-		if ($enabled !== null) {
-			$schedule['enabled'] = $enabled;
+	}//end administer()
+
+	/**
+	 * The schedule with the change applied, the interval and window hours clamped.
+	 *
+	 * @param array             $schedule The schedule in force.
+	 * @param JobScheduleChange $change   What to change; a null part is left as it is.
+	 *
+	 * @return array The changed schedule.
+	 */
+	private function changed(array $schedule, JobScheduleChange $change): array {
+		if ($change->enabled !== null) {
+			$schedule['enabled'] = $change->enabled;
 		}
 
-		if ($intervalSeconds !== null) {
-			$schedule['intervalSeconds'] = max(60, $intervalSeconds);
+		if ($change->intervalSeconds !== null) {
+			$schedule['intervalSeconds'] = max(60, $change->intervalSeconds);
 		}
 
-		if ($windowStartHour !== null) {
-			$schedule['windowStartHour'] = max(0, min(23, $windowStartHour));
+		if ($change->windowStartHour !== null) {
+			$schedule['windowStartHour'] = max(0, min(23, $change->windowStartHour));
 		}
 
-		if ($windowEndHour !== null) {
-			$schedule['windowEndHour'] = max(0, min(23, $windowEndHour));
+		if ($change->windowEndHour !== null) {
+			$schedule['windowEndHour'] = max(0, min(23, $change->windowEndHour));
 		}
 
+		return $schedule;
+	}//end changed()
+
+	/**
+	 * Store one job's schedule as JSON.
+	 *
+	 * @param string $jobClass The job class.
+	 * @param array  $schedule The schedule to store.
+	 *
+	 * @return void
+	 */
+	private function store(string $jobClass, array $schedule): void {
 		$encoded = json_encode($schedule);
 		if ($encoded === false) {
 			$encoded = '{}';
@@ -148,10 +191,7 @@ class JobScheduleService implements JobScheduleServiceInterface {
 			$this->key(jobClass: $jobClass),
 			$encoded
 		);
-
-		return $this->describe(jobClass: $jobClass);
-
-	}//end administer()
+	}//end store()
 
 	/**
 	 * May this job run at this moment.
@@ -182,43 +222,53 @@ class JobScheduleService implements JobScheduleServiceInterface {
 	 * @return array{enabled: bool, intervalSeconds: int, windowStartHour: int|null, windowEndHour: int|null} The schedule.
 	 */
 	private function read(string $jobClass): array {
-		$default = [
-			'enabled' => true,
-			'intervalSeconds' => self::DEFAULT_INTERVAL_SECONDS,
-			'windowStartHour' => null,
-			'windowEndHour' => null,
-		];
-
 		$stored = $this->config->getAppValue(self::APP_ID, $this->key(jobClass: $jobClass), '');
 
 		if ($stored === '') {
-			return $default;
+			return self::DEFAULT_SCHEDULE;
 		}
 
 		$decoded = json_decode($stored, true);
 
 		if (is_array($decoded) === false) {
-			return $default;
+			return self::DEFAULT_SCHEDULE;
 		}
 
-		$windowStartHour = null;
-		if (isset($decoded['windowStartHour']) === true) {
-			$windowStartHour = (int)$decoded['windowStartHour'];
-		}
+		return $this->fromStored(decoded: $decoded);
 
-		$windowEndHour = null;
-		if (isset($decoded['windowEndHour']) === true) {
-			$windowEndHour = (int)$decoded['windowEndHour'];
-		}
+	}//end read()
 
+	/**
+	 * A decoded stored schedule, cast, its interval at least a minute, missing parts defaulted.
+	 *
+	 * @param array $decoded The decoded stored schedule.
+	 *
+	 * @return array{enabled: bool, intervalSeconds: int, windowStartHour: int|null, windowEndHour: int|null} The schedule.
+	 */
+	private function fromStored(array $decoded): array {
 		return [
 			'enabled' => (bool)($decoded['enabled'] ?? true),
 			'intervalSeconds' => max(60, (int)($decoded['intervalSeconds'] ?? self::DEFAULT_INTERVAL_SECONDS)),
-			'windowStartHour' => $windowStartHour,
-			'windowEndHour' => $windowEndHour,
+			'windowStartHour' => $this->storedHour(decoded: $decoded, key: 'windowStartHour'),
+			'windowEndHour' => $this->storedHour(decoded: $decoded, key: 'windowEndHour'),
 		];
+	}//end fromStored()
 
-	}//end read()
+	/**
+	 * One stored window hour as an integer, or null when it is not set.
+	 *
+	 * @param array  $decoded The decoded stored schedule.
+	 * @param string $key     The hour's key.
+	 *
+	 * @return integer|null The hour.
+	 */
+	private function storedHour(array $decoded, string $key): ?int {
+		if (isset($decoded[$key]) === true) {
+			return (int)$decoded[$key];
+		}
+
+		return null;
+	}//end storedHour()
 
 	/**
 	 * When the job is next due, or null when it is disabled.
@@ -239,22 +289,36 @@ class JobScheduleService implements JobScheduleServiceInterface {
 			return new DateTime();
 		}
 
-		$due = (new DateTime())->setTimestamp(($lastRun + (int)$schedule['intervalSeconds']));
+		$earliest = ($lastRun + (int)$schedule['intervalSeconds']);
+		$due = (new DateTime())->setTimestamp($earliest);
 
 		if ($this->insideWindow(schedule: $schedule, hour: (int)$due->format('G')) === true) {
 			return $due;
 		}
 
 		// Outside the window: the next moment the window opens.
+		return $this->windowOpeningAfter(schedule: $schedule, earliest: $earliest);
+
+	}//end nextDue()
+
+	/**
+	 * The first opening of the schedule's window at or after a moment.
+	 *
+	 * @param array $schedule The schedule in force.
+	 * @param int   $earliest The unix time the job may run at the earliest.
+	 *
+	 * @return DateTime The window's opening that day, or the next day when that has already passed.
+	 */
+	private function windowOpeningAfter(array $schedule, int $earliest): DateTime {
+		$due = (new DateTime())->setTimestamp($earliest);
 		$due->setTime((int)$schedule['windowStartHour'], 0);
 
-		if ($due->getTimestamp() < ($lastRun + (int)$schedule['intervalSeconds'])) {
+		if ($due->getTimestamp() < $earliest) {
 			$due->modify('+1 day');
 		}
 
 		return $due;
-
-	}//end nextDue()
+	}//end windowOpeningAfter()
 
 	/**
 	 * Is an hour inside the administered window.
