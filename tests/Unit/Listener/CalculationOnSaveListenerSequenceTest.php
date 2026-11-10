@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
+use OCA\OpenRegister\Service\SequenceScope;
 use OCA\OpenRegister\Service\SequenceService;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -221,7 +222,7 @@ class CalculationOnSaveListenerSequenceTest extends TestCase {
 		$this->schemaWith(['identifier' => self::IDENTIFIER_CALC]);
 		$this->sequences->expects($this->once())
 			->method('reserveNext')
-			->with(16, 26, date('Y'))
+			->with(new SequenceScope(16, 26, date('Y')))
 			->willReturn(13);
 
 		$object = $this->objectWith(['title' => 'New case', 'startDate' => '2026-08-29']);

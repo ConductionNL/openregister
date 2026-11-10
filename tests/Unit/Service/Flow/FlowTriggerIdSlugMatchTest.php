@@ -137,7 +137,7 @@ class FlowTriggerIdSlugMatchTest extends TestCase {
 		);
 
 		$runner = $this->createMock(FlowRunService::class);
-		$runner->method('queue')->willReturnCallback(
+		$runner->method('queueRun')->willReturnCallback(
 			function (string $flowId): FlowRun {
 				$this->queued[] = $flowId;
 				$run = new FlowRun();
