@@ -137,18 +137,19 @@ class SpreadsheetExtractorGoldenTest extends TestCase {
 	}//end testCsv()
 
 	/**
-	 * A workbook without values still reads to its sheet header, so the
-	 * "empty text" branch does not fire for it.
+	 * A workbook without values has no text: its sheet headers alone do not count.
 	 *
 	 * @return void
 	 */
 	public function testEmptyWorkbook(): void {
-		self::assertSame("Sheet: Worksheet\n\n", $this->extract(self::xlsx(static function (Spreadsheet $book): void {
+		self::assertNull($this->extract(self::xlsx(static function (Spreadsheet $book): void {
+			$book->getActiveSheet()->setTitle('Empty');
+			$book->createSheet()->setTitle('Leeg');
 		})));
 		self::assertSame(
 			[
 				'debug [SpreadsheetExtractor] Extracting spreadsheet {"file":"SpreadsheetExtractor.php","fileId":77,"name":"lijst.xlsx"}',
-				'debug [SpreadsheetExtractor] Spreadsheet extracted successfully {"file":"SpreadsheetExtractor.php","fileId":77,"length":18}',
+				'warning [SpreadsheetExtractor] Spreadsheet extraction returned empty text {"file":"SpreadsheetExtractor.php","fileId":77}',
 			],
 			$this->logLines
 		);
