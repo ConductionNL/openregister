@@ -156,8 +156,7 @@ class OpenProjectLinksController extends Controller {
 		return $this->whenOpenConnectorInstalled(
 			answer: fn (): JSONResponse => $this->onLinkedObject(
 				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
-				action: LinkedSourceActions::linkById(
-					request: $this->request,
+				action: (new LinkedSourceActions(request: $this->request))->linkById(
 					param: 'workPackageId',
 					link: fn (ObjectEntity $object, int $workPackageId) => $this->linkService->linkWorkPackage($this->linkTargetOf(object: $object), $workPackageId)
 				)
@@ -196,8 +195,7 @@ class OpenProjectLinksController extends Controller {
 		return $this->whenOpenConnectorInstalled(
 			answer: fn (): JSONResponse => $this->onLinkedObject(
 				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
-				action: LinkedSourceActions::linkByTexts(
-					request: $this->request,
+				action: (new LinkedSourceActions(request: $this->request))->linkByTexts(
 					params: ['projectId', 'subject'],
 					link: $this->createWorkPackage(...)
 				)

@@ -38,7 +38,6 @@ final class TransferControllerFactory {
 		\OCP\IUserSession $userSession,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\TransferControllerServices(
 				transferRecords: $transferRecordService,

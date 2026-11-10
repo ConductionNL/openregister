@@ -144,16 +144,14 @@ class ArchiveActionDateCalculator implements ArchiveReferenceReaderInterface {
 	/**
 	 * Determine the brondatum (source date) based on afleidingswijze.
 	 *
-	 * @param ObjectEntity $object The object
-	 * @param Schema $schema The schema
-	 * @param string $afleidingswijze The derivation method
+	 * @param RecordDating $dating The record, its schema's archive configuration and the derivation method.
 	 *
 	 * @return DateTime|null The source date or null
 	 *
 	 * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-calculate-archiefactiedatum-using-configurable-afleidingswijzen
 	 */
-	public function determineBrondatum(ObjectEntity $object, Schema $schema, string $afleidingswijze): ?DateTime {
-		return $this->brondatumOf(dating: new RecordDating(object: $object, archive: $schema->getArchive(), afleidingswijze: $afleidingswijze));
+	public function determineBrondatum(RecordDating $dating): ?DateTime {
+		return $this->brondatumOf(dating: $dating);
 	}//end determineBrondatum()
 
 	/**

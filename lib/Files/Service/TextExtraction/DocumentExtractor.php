@@ -257,12 +257,12 @@ class DocumentExtractor {
 		}
 
 		$relationships = $package->relationships(partPath: $mainPath);
-		$structure = $this->bodyParser->parse(
+		$structure = $this->bodyParser->parsePart(part: new DocumentPart(
 			document: $document,
 			styles: $this->relatedPart(package: $package, relationships: $relationships, typeSuffix: '/styles', fallback: 'word/styles.xml'),
 			numbering: $this->relatedPart(package: $package, relationships: $relationships, typeSuffix: '/numbering', fallback: 'word/numbering.xml'),
 			relationships: $relationships
-		);
+		));
 		if ($structure !== null && $structure['title'] === '') {
 			$structure['title'] = $this->coreTitle(package: $package);
 		}

@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftsInterfac
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistryInterface;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayerInterface;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationScope;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewServiceInterface;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentRefusedException;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentServiceInterface;
@@ -42,6 +43,8 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationAddress;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftTarget;
 
 /**
  * Draft, preview, deploy, explain and roll back configuration.
@@ -214,27 +217,17 @@ class ConfigurationDeploymentController extends Controller {
 		$layer = (string)($this->request->getParam(key: 'layer') ?? ConfigurationLayerInterface::INSTANCE);
 		$layerRef = $this->optional(key: 'layerRef');
 		$configKey = (string)($this->request->getParam(key: 'key') ?? '');
+		$target = new ConfigurationDraftTarget(setUuid: $id, address: new ConfigurationAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey));
 
 		try {
 			if (((bool)($this->request->getParam(key: 'removes') ?? false)) === true) {
 				return new JSONResponse(
-					data: $this->drafts->draftRemoval(
-						setUuid: $id,
-						layer: $layer,
-						layerRef: $layerRef,
-						configKey: $configKey
-					)->jsonSerialize(),
+					data: $this->drafts->draftRemoval(target: $target)->jsonSerialize(),
 					statusCode: Http::STATUS_CREATED
 				);
 			}
 
-			$draft = $this->drafts->draftValue(
-				setUuid: $id,
-				layer: $layer,
-				layerRef: $layerRef,
-				configKey: $configKey,
-				value: $this->request->getParam(key: 'value')
-			);
+			$draft = $this->drafts->draftValue(target: $target, value: $this->request->getParam(key: 'value'));
 		} catch (DeploymentRefusedException $exception) {
 			return new JSONResponse(
 				data: $exception->toResponseBody(),
@@ -443,9 +436,11 @@ class ConfigurationDeploymentController extends Controller {
 		return new JSONResponse(
 			data: $this->explainer->explain(
 				configKey: $configKey,
-				register: $this->optional(key: 'register'),
-				bundle: $this->optional(key: 'bundle'),
-				subject: $this->optional(key: 'subject')
+				scope: new ConfigurationScope(
+					register: $this->optional(key: 'register'),
+					bundle: $this->optional(key: 'bundle'),
+					subject: $this->optional(key: 'subject')
+				)
 			)
 		);
 

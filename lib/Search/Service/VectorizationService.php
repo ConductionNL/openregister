@@ -33,6 +33,8 @@ use OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorChunkPosition;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorPayload;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSubject;
+use OCA\OpenRegister\Search\Service\Vectorization\EmbeddingProbe;
+use OCA\OpenRegister\Search\Service\Vectorization\HybridSearchRequest;
 
 /**
  * VectorizationService
@@ -628,10 +630,8 @@ class VectorizationService implements VectorizationServiceInterface {
 	 * Delegates to VectorEmbeddings. Caller supplies keyword search results;
 	 * vector search runs against the PostgreSQL database.
 	 *
-	 * @param string $query Query text
-	 * @param array $keywordResults Pre-fetched keyword search results to fuse
-	 * @param int $limit Maximum results
-	 * @param array $weights Weights for each search type ['keyword' => 0.5, 'vector' => 0.5]
+	 * @param HybridSearchRequest $request The query text, the pre-fetched keyword results to fuse, the maximum
+	 *                                     results and the weight per search type.
 	 *
 	 * @return array Hybrid search results with combined scores and source breakdown.
 	 *
@@ -639,13 +639,8 @@ class VectorizationService implements VectorizationServiceInterface {
 	 *
 	 * @spec exclude One-line facade delegation to VectorEmbeddings::hybridSearch; no logic of its own.
 	 */
-	public function hybridSearch(
-		string $query,
-		array $keywordResults = [],
-		int $limit = 20,
-		array $weights = ['keyword' => 0.5, 'vector' => 0.5],
-	): array {
-		return $this->vectorService->hybridSearch(query: $query, keywordResults: $keywordResults, limit: $limit, weights: $weights);
+	public function hybridSearch(HybridSearchRequest $request): array {
+		return $this->vectorService->hybridSearch(request: $request);
 	}//end hybridSearch()
 
 	/**
@@ -666,9 +661,7 @@ class VectorizationService implements VectorizationServiceInterface {
 	 *
 	 * Delegates to VectorEmbeddings.
 	 *
-	 * @param string $provider Provider name ('openai', 'fireworks', 'ollama')
-	 * @param array $config Provider-specific configuration
-	 * @param string $testText Optional test text to embed
+	 * @param EmbeddingProbe $probe The provider ('openai', 'fireworks', 'ollama'), its configuration and the text to embed.
 	 *
 	 * @return ((float[]|int|mixed|string)[]|bool|string)[] Test results
 	 *
@@ -679,8 +672,8 @@ class VectorizationService implements VectorizationServiceInterface {
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function testEmbedding(string $provider, array $config, string $testText = 'Test.'): array {
-		return $this->vectorService->testEmbedding(provider: $provider, config: $config, testText: $testText);
+	public function testEmbedding(EmbeddingProbe $probe): array {
+		return $this->vectorService->testEmbedding(probe: $probe);
 	}//end testEmbedding()
 
 	/**
