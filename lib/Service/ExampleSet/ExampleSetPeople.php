@@ -445,12 +445,20 @@ class ExampleSetPeople {
 			return;
 		}
 
-		$error = $this->accounts->createUser(
-			uid: $uid,
-			displayName: (string) $account['displayName'],
-			email: '',
-			password: $this->accounts->newPassword().$this->accounts->newPassword()
-		);
+		$this->installNewServiceUser(run: $run, account: $account);
+	}//end installServiceUser()
+
+	/**
+	 * Create a declared service account that does not exist yet, adopting one another writer made meanwhile.
+	 *
+	 * @param ExampleSetPeopleRun  $run     The install in progress.
+	 * @param array<string, mixed> $account The declared service account.
+	 *
+	 * @return void
+	 */
+	private function installNewServiceUser(ExampleSetPeopleRun $run, array $account): void {
+		$uid = (string) $account['uid'];
+		$error = $this->createServiceAccount(account: $account);
 		if ($error === ExampleSetAccounts::ALREADY_EXISTS && isset($run->record['users'][$uid]) === false) {
 			// Another writer made the declared account in between: the set adopts it, so remove leaves it.
 			$this->adopted(run: $run, uid: $uid);
@@ -463,7 +471,23 @@ class ExampleSetPeople {
 		}
 
 		$this->created(run: $run, uid: $uid);
-	}//end installServiceUser()
+	}//end installNewServiceUser()
+
+	/**
+	 * Create one service account: no address, and a password nobody is given.
+	 *
+	 * @param array<string, mixed> $account The declared service account.
+	 *
+	 * @return string The error, or '' when it was created.
+	 */
+	private function createServiceAccount(array $account): string {
+		return $this->accounts->createUser(
+			uid: (string) $account['uid'],
+			displayName: (string) $account['displayName'],
+			email: '',
+			password: $this->accounts->newPassword().$this->accounts->newPassword()
+		);
+	}//end createServiceAccount()
 
 	/**
 	 * What the cast refuses: a BSN that fails the eleven test, a group or member
