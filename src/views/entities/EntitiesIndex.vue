@@ -431,26 +431,9 @@ export default {
 		async loadEntities() {
 			this.loading = true
 			try {
-				const params = {
-					limit: this.limit,
-					offset: (this.currentPage - 1) * this.limit,
-				}
-
-				if (this.searchQuery) {
-					params.search = this.searchQuery
-				}
-
-				if (this.typeFilter) {
-					params.type = this.typeFilter
-				}
-
-				if (this.categoryFilter) {
-					params.category = this.categoryFilter
-				}
-
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/entities'),
-					{ params },
+					{ params: this.entityListParams() },
 				)
 
 				if (response.data.success) {
@@ -464,6 +447,32 @@ export default {
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * The page of entities to ask for, narrowed by the filters in use.
+		 *
+		 * @spec exclude list-view API fetch plumbing (linked-entity-types contract)
+		 * @return {object} The query parameters
+		 */
+		entityListParams() {
+			const params = {
+				limit: this.limit,
+				offset: (this.currentPage - 1) * this.limit,
+			}
+
+			if (this.searchQuery) {
+				params.search = this.searchQuery
+			}
+
+			if (this.typeFilter) {
+				params.type = this.typeFilter
+			}
+
+			if (this.categoryFilter) {
+				params.category = this.categoryFilter
+			}
+			return params
 		},
 
 		/**
