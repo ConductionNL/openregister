@@ -130,6 +130,16 @@ class AggregationRunner implements AggregationRunnerInterface {
 	private const JOIN_SELECT_METRICS = ['count', 'sum', 'avg', 'min', 'max', 'count_distinct'];
 
 	/**
+	 * The operators of an operator-map filter the native SQL renders.
+	 */
+	private const NATIVE_FILTER_OPERATORS = ['in', 'notIn', 'gt', 'gte', 'lt', 'lte', 'ne', NullFilter::ISNULL_OPERATOR];
+
+	/**
+	 * The comparison operators of an operator map and their SQL spelling.
+	 */
+	private const NATIVE_COMPARISONS = ['gt' => '>', 'gte' => '>=', 'lt' => '<', 'lte' => '<=', 'ne' => '<>'];
+
+	/**
 	 * Magic-table mapper used for the PHP fallback path.
 	 *
 	 * @var MagicMapperInterface
@@ -2560,6 +2570,17 @@ class AggregationRunner implements AggregationRunnerInterface {
 			return true;
 		}
 
+		return $this->groupsOnJoinedField(groupBy: $groupBy);
+	}//end nativePathCannotExpress()
+
+	/**
+	 * Whether a group field reaches into a joined schema (`parent.code`).
+	 *
+	 * @param array|null $groupBy The group spec
+	 *
+	 * @return bool
+	 */
+	private function groupsOnJoinedField(?array $groupBy): bool {
 		foreach ($this->resolveGroupFields(groupBy: $groupBy) as $groupField) {
 			if (str_contains($groupField, '.') === true) {
 				return true;
@@ -2567,7 +2588,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 		}
 
 		return false;
-	}//end nativePathCannotExpress()
+	}//end groupsOnJoinedField()
 
 	/**
 	 * Whether the platform runs this query shape natively.
@@ -2629,15 +2650,36 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	private static function nativeFilterSupported(array $filter, Schema $schema): bool {
-		$operators = ['in', 'notIn', 'gt', 'gte', 'lt', 'lte', 'ne', NullFilter::ISNULL_OPERATOR];
 		foreach ($filter as $value) {
-			if (is_array($value) === true && array_is_list($value) === false
-				&& array_diff(array_map('strval', array_keys($value)), $operators) !== []
-			) {
+			if (self::isUnsupportedOperatorMap(value: $value) === true) {
 				return false;
 			}
 		}
 
+		return self::filtersNoArrayProperty(filter: $filter, schema: $schema);
+	}//end nativeFilterSupported()
+
+	/**
+	 * Whether a filter value is an operator map with an operator the native SQL does not render.
+	 *
+	 * @param mixed $value A filter value
+	 *
+	 * @return bool
+	 */
+	private static function isUnsupportedOperatorMap(mixed $value): bool {
+		return is_array($value) === true && array_is_list($value) === false
+			&& array_diff(array_map('strval', array_keys($value)), self::NATIVE_FILTER_OPERATORS) !== [];
+	}//end isUnsupportedOperatorMap()
+
+	/**
+	 * Whether no filter is on an array-type property.
+	 *
+	 * @param array  $filter The placeholder-resolved filter map
+	 * @param Schema $schema The schema
+	 *
+	 * @return bool
+	 */
+	private static function filtersNoArrayProperty(array $filter, Schema $schema): bool {
 		$properties = ($schema->getProperties() ?? []);
 		foreach (array_keys($filter) as $filterField) {
 			if (($properties[(string) $filterField]['type'] ?? null) === 'array') {
@@ -2646,7 +2688,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 		}
 
 		return true;
-	}//end nativeFilterSupported()
+	}//end filtersNoArrayProperty()
 
 	/**
 	 * Add the predicates every native aggregation applies before the caller's filters.
@@ -2719,33 +2761,64 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	private function addDraftPredicate(NativeAggregationQuery $query, Schema $schema): void {
-		$draftLens     = new DraftListLens();
-		$statusMissing = in_array('_status', $this->magicMapper->getMetadataColumnHealer()->missingFor(tableName: $query->tableName), true);
-		if ($statusMissing === true) {
+		$draftLens = new DraftListLens();
+		if ($this->statusColumnMissing(query: $query) === true) {
 			return;
 		}
 
-		$draftOwner   = $this->userSession->getUser()?->getUID();
-		$ownerBinding = null;
-		if ($draftOwner !== null && $draftOwner !== '') {
-			$ownerBinding = '?';
-		}
-
+		$draftOwner     = $this->userSession->getUser()?->getUID();
 		$draftPredicate = $draftLens->clauseFor(
-			listing: new DraftListing(mode: $draftLens->modeFor(query: [], schema: $schema), owner: $ownerBinding),
+			listing: new DraftListing(mode: $draftLens->modeFor(query: [], schema: $schema), owner: self::draftOwnerBinding(owner: $draftOwner)),
 			columnPrefix: ''
 		);
 		if ($draftPredicate === null) {
 			return;
 		}
 
-		$bindings = [];
-		if ($ownerBinding !== null && str_contains($draftPredicate, '?') === true) {
-			$bindings[] = $draftOwner;
+		$query->where(predicate: $draftPredicate, bindings: self::draftBindings(predicate: $draftPredicate, owner: $draftOwner));
+	}//end addDraftPredicate()
+
+	/**
+	 * Whether the magic table lacks the `_status` column the draft lens reads.
+	 *
+	 * @param NativeAggregationQuery $query The query being built
+	 *
+	 * @return bool
+	 */
+	private function statusColumnMissing(NativeAggregationQuery $query): bool {
+		return in_array('_status', $this->magicMapper->getMetadataColumnHealer()->missingFor(tableName: $query->tableName), true);
+	}//end statusColumnMissing()
+
+	/**
+	 * The owner placeholder of the draft lens: `?` for a signed-in caller with an id, else null.
+	 *
+	 * @param string|null $owner The caller's id
+	 *
+	 * @return string|null
+	 */
+	private static function draftOwnerBinding(?string $owner): ?string {
+		if ($owner !== null && $owner !== '') {
+			return '?';
 		}
 
-		$query->where(predicate: $draftPredicate, bindings: $bindings);
-	}//end addDraftPredicate()
+		return null;
+	}//end draftOwnerBinding()
+
+	/**
+	 * The bindings of the draft predicate: the owner when the predicate carries its placeholder.
+	 *
+	 * @param string      $predicate The draft predicate
+	 * @param string|null $owner     The caller's id
+	 *
+	 * @return array<int, string>
+	 */
+	private static function draftBindings(string $predicate, ?string $owner): array {
+		if (self::draftOwnerBinding(owner: $owner) !== null && str_contains($predicate, '?') === true) {
+			return [$owner];
+		}
+
+		return [];
+	}//end draftBindings()
 
 	/**
 	 * The organisation scope the list path would apply to this register and schema.
@@ -2809,28 +2882,47 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 */
 	private static function addOrganisationPredicate(NativeAggregationQuery $query, array $orgScope): bool {
 		$orgColumn = $query->quoted(column: '_organisation');
-		switch ($orgScope['mode']) {
-			case OrganisationScopeResolverInterface::SCOPE_ALL:
-				return true;
-			case OrganisationScopeResolverInterface::SCOPE_NONE:
-				$query->where(predicate: '1 = 0');
-				return true;
-			case OrganisationScopeResolverInterface::SCOPE_NULL_ONLY:
-				$query->where(predicate: $orgColumn.' IS NULL');
-				return true;
-			case OrganisationScopeResolverInterface::SCOPE_IN:
-			case OrganisationScopeResolverInterface::SCOPE_IN_OR_NULL:
-				$inClause = $orgColumn.' IN ('.self::placeholders(count: count($orgScope['uuids'])).')';
-				if ($orgScope['mode'] === OrganisationScopeResolverInterface::SCOPE_IN_OR_NULL) {
-					$inClause = '('.$inClause.' OR '.$orgColumn.' IS NULL)';
-				}
-
-				$query->where(predicate: $inClause, bindings: array_values($orgScope['uuids']));
-				return true;
-			default:
-				return false;
-		}//end switch
+		return match ($orgScope['mode']) {
+			OrganisationScopeResolverInterface::SCOPE_ALL => true,
+			OrganisationScopeResolverInterface::SCOPE_NONE => self::addOrganisationWhere(query: $query, predicate: '1 = 0'),
+			OrganisationScopeResolverInterface::SCOPE_NULL_ONLY => self::addOrganisationWhere(query: $query, predicate: $orgColumn.' IS NULL'),
+			OrganisationScopeResolverInterface::SCOPE_IN,
+			OrganisationScopeResolverInterface::SCOPE_IN_OR_NULL => self::addOrganisationInPredicate(query: $query, orgScope: $orgScope),
+			default => false,
+		};
 	}//end addOrganisationPredicate()
+
+	/**
+	 * Add an organisation predicate without bindings.
+	 *
+	 * @param NativeAggregationQuery $query     The query being built
+	 * @param string                 $predicate The predicate
+	 *
+	 * @return bool Always true: the mode is expressed
+	 */
+	private static function addOrganisationWhere(NativeAggregationQuery $query, string $predicate): bool {
+		$query->where(predicate: $predicate);
+		return true;
+	}//end addOrganisationWhere()
+
+	/**
+	 * Add the `IN` organisation predicate, with the org-less rows for SCOPE_IN_OR_NULL.
+	 *
+	 * @param NativeAggregationQuery                         $query    The query being built
+	 * @param array{mode: string, uuids: array<int, string>} $orgScope The organisation scope
+	 *
+	 * @return bool Always true: the mode is expressed
+	 */
+	private static function addOrganisationInPredicate(NativeAggregationQuery $query, array $orgScope): bool {
+		$orgColumn = $query->quoted(column: '_organisation');
+		$inClause  = $orgColumn.' IN ('.self::placeholders(count: count($orgScope['uuids'])).')';
+		if ($orgScope['mode'] === OrganisationScopeResolverInterface::SCOPE_IN_OR_NULL) {
+			$inClause = '('.$inClause.' OR '.$orgColumn.' IS NULL)';
+		}
+
+		$query->where(predicate: $inClause, bindings: array_values($orgScope['uuids']));
+		return true;
+	}//end addOrganisationInPredicate()
 
 	/**
 	 * A comma-separated list of `count` placeholders.
@@ -2947,38 +3039,73 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	private function addOperatorPredicates(NativeFilterColumn $target, array $operators): void {
-		$query       = $target->query;
-		$column      = $target->column;
-		$comparisons = ['gt' => '>', 'gte' => '>=', 'lt' => '<', 'lte' => '<=', 'ne' => '<>'];
 		foreach ($operators as $op => $operand) {
-			$op = (string) $op;
-			if ($op === 'in' || $op === 'notIn') {
-				$list = [];
-				if (is_array($operand) === true) {
-					$list = $operand;
-				}
-
-				if ($op === 'notIn') {
-					$this->addNotInPredicate(target: $target, list: $list);
-					continue;
-				}
-
-				$this->addInPredicate(target: $target, list: $list);
-				continue;
-			}
-
-			if ($op === NullFilter::ISNULL_OPERATOR) {
-				$query->where(
-					predicate: $column.$this->nullPredicate(wantsNull: NullFilter::isNullOperatorAsksForNull(value: $operand))
-				);
-				continue;
-			}
-
-			if (isset($comparisons[$op]) === true) {
-				$query->where(predicate: $column.' '.$comparisons[$op].' ?', bindings: [$this->bindValue(value: $operand)]);
-			}
-		}//end foreach
+			$this->addOperatorPredicate(target: $target, term: new NativeOperatorTerm(operator: (string) $op, operand: $operand));
+		}
 	}//end addOperatorPredicates()
+
+	/**
+	 * Add the predicate of one operator-map term; an operator the SQL does not know adds none.
+	 *
+	 * @param NativeFilterColumn $target The query being built and the quoted column
+	 * @param NativeOperatorTerm $term   The operator and its operand
+	 *
+	 * @return void
+	 */
+	private function addOperatorPredicate(NativeFilterColumn $target, NativeOperatorTerm $term): void {
+		if ($term->operator === 'in' || $term->operator === 'notIn') {
+			$this->addListOperatorPredicate(target: $target, term: $term);
+			return;
+		}
+
+		if ($term->operator === NullFilter::ISNULL_OPERATOR) {
+			$target->query->where(
+				predicate: $target->column.$this->nullPredicate(wantsNull: NullFilter::isNullOperatorAsksForNull(value: $term->operand))
+			);
+			return;
+		}
+
+		$this->addComparisonPredicate(target: $target, term: $term);
+	}//end addOperatorPredicate()
+
+	/**
+	 * Add an `in` or `notIn` term; an operand that is not a list counts as an empty list.
+	 *
+	 * @param NativeFilterColumn $target The query being built and the quoted column
+	 * @param NativeOperatorTerm $term   The `in` or `notIn` term
+	 *
+	 * @return void
+	 */
+	private function addListOperatorPredicate(NativeFilterColumn $target, NativeOperatorTerm $term): void {
+		$list = [];
+		if (is_array($term->operand) === true) {
+			$list = $term->operand;
+		}
+
+		if ($term->operator === 'notIn') {
+			$this->addNotInPredicate(target: $target, list: $list);
+			return;
+		}
+
+		$this->addInPredicate(target: $target, list: $list);
+	}//end addListOperatorPredicate()
+
+	/**
+	 * Add a comparison term (`gt`, `gte`, `lt`, `lte`, `ne`); any other operator adds nothing.
+	 *
+	 * @param NativeFilterColumn $target The query being built and the quoted column
+	 * @param NativeOperatorTerm $term   The term
+	 *
+	 * @return void
+	 */
+	private function addComparisonPredicate(NativeFilterColumn $target, NativeOperatorTerm $term): void {
+		if (isset(self::NATIVE_COMPARISONS[$term->operator]) === true) {
+			$target->query->where(
+				predicate: $target->column.' '.self::NATIVE_COMPARISONS[$term->operator].' ?',
+				bindings: [$this->bindValue(value: $term->operand)]
+			);
+		}
+	}//end addComparisonPredicate()
 
 	/**
 	 * The aggregate expression of the query's metric over a field.
