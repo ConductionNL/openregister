@@ -9,32 +9,21 @@ import SearchSideBar from './SearchSideBar.vue'
  * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
  */
 
-jest.mock('@conduction/nextcloud-vue', () => ({}))
-jest.mock('@nextcloud/l10n', () => ({ translate: (app, text) => text, translatePlural: (app, one, many) => many }))
+jest.mock('@conduction/nextcloud-vue', () => ({ CnIndexSidebar: {} }))
+jest.mock('@nextcloud/l10n', () => ({ translate: (app, text) => text }))
 jest.mock('@nextcloud/router', () => ({ generateUrl: (path) => path }))
 jest.mock('@nextcloud/vue', () => ({}))
-jest.mock('vue-material-design-icons/CheckCircle.vue', () => ({}))
 jest.mock('vue-material-design-icons/CogOutline.vue', () => ({}))
-jest.mock('vue-material-design-icons/ContentCopy.vue', () => ({}))
 jest.mock('vue-material-design-icons/ContentSaveOutline.vue', () => ({}))
-jest.mock('vue-material-design-icons/DatabaseExport.vue', () => ({}))
 jest.mock('vue-material-design-icons/Delete.vue', () => ({}))
 jest.mock('vue-material-design-icons/Filter.vue', () => ({}))
 jest.mock('vue-material-design-icons/Magnify.vue', () => ({}))
-jest.mock('vue-material-design-icons/Merge.vue', () => ({}))
 jest.mock('vue-material-design-icons/Pencil.vue', () => ({}))
 jest.mock('vue-material-design-icons/Star.vue', () => ({}))
 jest.mock('vue-material-design-icons/StarOutline.vue', () => ({}))
-jest.mock('vue-material-design-icons/TrashCanOutline.vue', () => ({}))
 jest.mock('vue-material-design-icons/ViewDashboardOutline.vue', () => ({}))
-jest.mock('../../components/shared/SelectOption.vue', () => ({}))
-jest.mock('../../components/tables/EditableCell.vue', () => ({}))
 jest.mock('../../modals/view/DeleteView.vue', () => ({}))
 jest.mock('../../modals/view/EditView.vue', () => ({}))
-jest.mock('../../services/initialState.js', () => ({}))
-jest.mock('../../services/objectCopy.js', () => ({}))
-jest.mock('../../services/propertyEditor.js', () => ({}))
-jest.mock('../scopeListLoader.js', () => ({}))
 jest.mock('../../store/store.js', () => ({
 	navigationStore: {},
 	objectStore: {},
@@ -42,6 +31,7 @@ jest.mock('../../store/store.js', () => ({
 	schemaStore: {},
 	viewsStore: {},
 }))
+
 
 const FIELDS = {
 	'@self': {

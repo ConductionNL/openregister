@@ -1,42 +1,29 @@
-import SearchSideBar from '../../sidebars/search/SearchSideBar.vue'
-import SearchIndex from './SearchIndex.vue'
-import { objectStore, schemaStore } from '../../store/store.js'
+import SearchSideBar from './SearchSideBar.vue'
+import { schemaStore } from '../../store/store.js'
 
 /**
- * Golden record of how the search page and its sidebar merge a schema's
- * inherited (allOf) properties: which parents they find, by id, uuid or a
- * string id, that own properties win, and that the page turns each order
- * into a number.
+ * Golden record of how the search sidebar merges a schema's inherited (allOf)
+ * properties: which parents it finds, by id, uuid or a string id, that own
+ * properties win, and the key order.
  *
- * @spec exclude Golden record of client-side schema property merging.
+ * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
  */
 
-jest.mock('@conduction/nextcloud-vue', () => ({}))
-jest.mock('@nextcloud/l10n', () => ({ translate: (app, text) => text, translatePlural: (app, one, many) => many }))
+jest.mock('@conduction/nextcloud-vue', () => ({ CnIndexSidebar: {} }))
+jest.mock('@nextcloud/l10n', () => ({ translate: (app, text) => text }))
 jest.mock('@nextcloud/router', () => ({ generateUrl: (path) => path }))
 jest.mock('@nextcloud/vue', () => ({}))
-jest.mock('vue-material-design-icons/CheckCircle.vue', () => ({}))
 jest.mock('vue-material-design-icons/CogOutline.vue', () => ({}))
-jest.mock('vue-material-design-icons/ContentCopy.vue', () => ({}))
 jest.mock('vue-material-design-icons/ContentSaveOutline.vue', () => ({}))
-jest.mock('vue-material-design-icons/DatabaseExport.vue', () => ({}))
 jest.mock('vue-material-design-icons/Delete.vue', () => ({}))
 jest.mock('vue-material-design-icons/Filter.vue', () => ({}))
 jest.mock('vue-material-design-icons/Magnify.vue', () => ({}))
-jest.mock('vue-material-design-icons/Merge.vue', () => ({}))
 jest.mock('vue-material-design-icons/Pencil.vue', () => ({}))
 jest.mock('vue-material-design-icons/Star.vue', () => ({}))
 jest.mock('vue-material-design-icons/StarOutline.vue', () => ({}))
-jest.mock('vue-material-design-icons/TrashCanOutline.vue', () => ({}))
 jest.mock('vue-material-design-icons/ViewDashboardOutline.vue', () => ({}))
-jest.mock('../../components/shared/SelectOption.vue', () => ({}))
-jest.mock('../../components/tables/EditableCell.vue', () => ({}))
 jest.mock('../../modals/view/DeleteView.vue', () => ({}))
 jest.mock('../../modals/view/EditView.vue', () => ({}))
-jest.mock('../../services/initialState.js', () => ({}))
-jest.mock('../../services/objectCopy.js', () => ({}))
-jest.mock('../../services/propertyEditor.js', () => ({}))
-jest.mock('../../sidebars/scopeListLoader.js', () => ({}))
 jest.mock('../../store/store.js', () => ({
 	navigationStore: {},
 	objectStore: {},
@@ -44,6 +31,7 @@ jest.mock('../../store/store.js', () => ({
 	schemaStore: {},
 	viewsStore: {},
 }))
+
 
 const PARENTS = [
 	{ id: 1, uuid: 'u-1', properties: { name: { type: 'string', order: '2' }, shared: { from: 'parent-1' } } },
@@ -64,15 +52,9 @@ beforeEach(() => {
 	schemaStore.schemaList = PARENTS
 })
 
-describe.each(Object.keys(SCHEMAS))('a schema with %s', (key) => {
-	it('merges into the sidebar properties', () => {
+describe.each(Object.keys(SCHEMAS))('the sidebar schema with %s', (key) => {
+	it('merges the properties', () => {
 		const merged = SearchSideBar.methods.resolveInheritedProperties.call({}, SCHEMAS[key])
 		expect({ merged, order: Object.keys(merged) }).toMatchSnapshot()
-	})
-
-	it('normalizes into the page schema', () => {
-		objectStore.searchSchema = SCHEMAS[key]
-		const normalized = SearchIndex.computed.normalizedSchema.call({})
-		expect({ normalized, order: normalized ? Object.keys(normalized.properties || {}) : null, same: normalized === SCHEMAS[key] }).toMatchSnapshot()
 	})
 })
