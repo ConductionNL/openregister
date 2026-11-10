@@ -22,9 +22,11 @@ namespace OCA\OpenRegister\Tests\Unit\Repair;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\CaseItemAudit;
 use OCA\OpenRegister\Repair\SeedCaseFixtures;
+use OCA\OpenRegister\Service\Case\CasePlanStore;
 use OCA\OpenRegister\Tests\Unit\Service\Case\FakeCaseItemMapper;
 use OCA\OpenRegister\Tests\Unit\Service\Case\RecordingAuditMapper;
 use OCP\IAppConfig;
+use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -53,7 +55,10 @@ class SeedCaseFixturesTest extends TestCase {
 		$config = $this->createMock(IAppConfig::class);
 		$config->method('getValueBool')->with('openregister', SeedCaseFixtures::FLAG, false)->willReturn($enabled);
 
-		return new SeedCaseFixtures(appConfig: $config, items: $items, audits: $audits, logger: new NullLogger());
+		return new SeedCaseFixtures(
+			appConfig: $config,
+			store: new CasePlanStore(items: $items, audits: $audits, db: $this->createMock(IDBConnection::class), logger: new NullLogger())
+		);
 	}//end step()
 
 	/**

@@ -47,13 +47,11 @@ namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\CaseItemAudit;
-use OCA\OpenRegister\Db\CaseItemAuditMapperInterface;
-use OCA\OpenRegister\Db\CaseItemMapperInterface;
+use OCA\OpenRegister\Service\Case\CasePlanStore;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -91,16 +89,12 @@ class SeedCaseFixtures implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param IAppConfig $appConfig Holds the opt-in flag.
-	 * @param CaseItemMapperInterface $items The plan-item table.
-	 * @param CaseItemAuditMapperInterface $audits The append-only audit.
-	 * @param LoggerInterface $logger Failure reporting.
+	 * @param IAppConfig    $appConfig Holds the opt-in flag.
+	 * @param CasePlanStore $store     The plan-item table, the append-only audit and failure reporting.
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
-		private readonly CaseItemMapperInterface $items,
-		private readonly CaseItemAuditMapperInterface $audits,
-		private readonly LoggerInterface $logger,
+		private readonly CasePlanStore $store,
 	) {
 
 	}//end __construct()
@@ -142,7 +136,7 @@ class SeedCaseFixtures implements IRepairStep {
 				// A fixture must never fail an upgrade, and silence would be the
 				// repair-step defect this fleet already paid for once.
 				$output->warning(sprintf('Case-plan fixture %s failed: %s', (string)($fixture['uuid'] ?? '?'), $failure->getMessage()));
-				$this->logger->warning('[SeedCaseFixtures] Fixture failed: ' . $failure->getMessage(), ['uuid' => ($fixture['uuid'] ?? null)]);
+				$this->store->logger->warning('[SeedCaseFixtures] Fixture failed: ' . $failure->getMessage(), ['uuid' => ($fixture['uuid'] ?? null)]);
 			}
 		}
 
@@ -200,14 +194,14 @@ class SeedCaseFixtures implements IRepairStep {
 	private function seedTree(array $fixture, ?int $parentId): array {
 		$counts = ['seeded' => 0, 'present' => 0];
 		try {
-			$row = $this->items->findByUuid(uuid: (string)$fixture['uuid']);
+			$row = $this->store->items->findByUuid(uuid: (string)$fixture['uuid']);
 			$counts['present']++;
 		} catch (DoesNotExistException) {
 			$row = new CaseItem();
 			$row->hydrate($fixture['item']);
 			$row->setUuid((string)$fixture['uuid']);
 			$row->setParentItemId($parentId);
-			$row = $this->items->insert($row);
+			$row = $this->store->items->insert($row);
 			foreach (($fixture['audit'] ?? []) as $auditFixture) {
 				$entry = new CaseItemAudit();
 				$entry->setCaseItemId((int)$row->getId());
@@ -218,7 +212,7 @@ class SeedCaseFixtures implements IRepairStep {
 				$entry->setActor($auditFixture['actor'] ?? null);
 				$entry->setReason($auditFixture['reason'] ?? null);
 				$entry->setAuthorized((bool)($auditFixture['authorized'] ?? true));
-				$this->audits->insert($entry);
+				$this->store->audits->insert($entry);
 			}
 
 			$counts['seeded']++;
