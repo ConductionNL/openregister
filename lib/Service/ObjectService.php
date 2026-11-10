@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Rbac\MaskedWrite;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
@@ -6212,11 +6213,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $tableName = $this->objectMapper->getTableNameForRegisterSchema(register: $table->register, schema: $table->schema);
 
         $written = $this->objectMapper->bulkUpsert(
-            objects: $rows,
-            register: $table->register,
-            schema: $table->schema,
-            tableName: $tableName,
-            needsPreUpdateState: false
+            command: new BulkUpsertCommand(objects: $rows, table: $table, tableName: $tableName, needsPreUpdateState: false)
         );
 
         return count($written);
