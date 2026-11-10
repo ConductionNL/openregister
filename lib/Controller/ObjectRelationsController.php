@@ -686,7 +686,7 @@ class ObjectRelationsController extends Controller {
 	private function recordProvenance(DerivedLineage $lineage, array $link): ObjectRelation {
 		$provenance = new ProvenanceLink(entry: $link['entry'], relationType: $link['type']);
 		if ($lineage->inherited !== []) {
-			return $this->relations->recordDerivation(
+			return $this->relations->recordDerivationWith(
 				parent: $lineage->source,
 				child: $lineage->created,
 				link: $provenance,

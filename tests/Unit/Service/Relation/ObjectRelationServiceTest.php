@@ -163,7 +163,7 @@ class ObjectRelationServiceTest extends TestCase {
 			$applied['inherited']['classification']
 		);
 
-		$row = $this->service->recordDerivation(
+		$row = $this->service->recordDerivationWith(
 			parent: $parent,
 			child: $this->object('uuid-child'),
 			link: new ProvenanceLink(relationType: 'deelzaak'),
@@ -185,7 +185,7 @@ class ObjectRelationServiceTest extends TestCase {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function testADerivationKeepsTheEntryItCameOutOf(): void {
-		$row = $this->service->recordDerivation(
+		$row = $this->service->recordDerivationWith(
 			parent: $this->object('uuid-parent'),
 			child: $this->object('uuid-child'),
 			link: new ProvenanceLink(entry: 'entry-9', relationType: 'deelzaak'),
@@ -196,6 +196,28 @@ class ObjectRelationServiceTest extends TestCase {
 		$this->assertSame(ObjectRelation::ORIGIN_DERIVE, $row->getOrigin());
 		$this->assertSame('intern', $row->getInherited()['classification']['value']);
 	}//end testADerivationKeepsTheEntryItCameOutOf()
+
+	/**
+	 * The loose-value signature dossiq calls by name, and positionally, records the same row as the link variant.
+	 */
+	public function testTheLooseValueSignatureRecordsByNameAndPositionally(): void {
+		$inherited = ['classification' => ['property' => 'classificatie', 'value' => 'intern']];
+
+		$named = $this->service->recordDerivation(
+			parent: $this->object('uuid-parent'),
+			child: $this->object('uuid-child'),
+			relationType: 'deelzaak',
+			inherited: $inherited
+		);
+		$positional = $this->service->recordDerivation($this->object('uuid-parent'), $this->object('uuid-child'), 'deelzaak', $inherited, 'entry-9');
+
+		$this->assertSame(ObjectRelation::ORIGIN_DERIVE, $named->getOrigin());
+		$this->assertSame('deelzaak', $named->getRelationType());
+		$this->assertNull($named->getSourceEntry());
+		$this->assertSame('intern', $named->getInherited()['classification']['value']);
+		$this->assertSame('entry-9', $positional->getSourceEntry());
+		$this->assertSame('deelzaak', $positional->getRelationType());
+	}//end testTheLooseValueSignatureRecordsByNameAndPositionally()
 
 	/**
 	 * A derivation that inherited nothing records nothing rather than an empty

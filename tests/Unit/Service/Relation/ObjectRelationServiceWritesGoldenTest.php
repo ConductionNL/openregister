@@ -144,7 +144,7 @@ class ObjectRelationServiceWritesGoldenTest extends TestCase {
 			inherits: ['classification' => 'cls', 'confidentiality' => 'conf', 'responsible' => 'resp', 'x' => 'own', 'y' => 'zero', 'z' => 'none', 'w' => 'cls']
 		);
 		$out[] = $service->recordDerivation(parent: $parent, child: $child)->jsonSerialize();
-		$out[] = $service->recordDerivation(parent: $parent, child: $child, link: new ProvenanceLink(entry: 'e2', relationType: 'cites'), inherited: ['a' => 1])->jsonSerialize();
+		$out[] = $service->recordDerivationWith(parent: $parent, child: $child, link: new ProvenanceLink(entry: 'e2', relationType: 'cites'), inherited: ['a' => 1])->jsonSerialize();
 		$out[] = $service->addExternalLink(source: new RelationEndpoint(uuid: 's'), link: new ExternalLink(url: ' https://example.org/a '))->jsonSerialize();
 		$out[] = $service->addExternalLink(
 			source: new RelationEndpoint(uuid: 's', register: 5, schema: 6),

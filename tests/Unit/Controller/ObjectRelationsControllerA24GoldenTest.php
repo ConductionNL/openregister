@@ -374,7 +374,7 @@ class ObjectRelationsControllerA24GoldenTest extends TestCase {
 		$created = $this->object(uuid: 'child');
 		$this->objects->expects($this->once())->method('saveObject')->with(['t' => 1, 'zaaktype' => 'z'], [], 'r', 's')->willReturn($created);
 		$this->relations->expects($this->never())->method('recordSplit');
-		$this->relations->expects($this->once())->method('recordDerivation')
+		$this->relations->expects($this->once())->method('recordDerivationWith')
 			->with($this->isInstanceOf(ObjectEntity::class), $created, new ProvenanceLink('e1', 'deelzaak'), ['zaaktype' => 'z'])
 			->willReturn($this->row(uuid: 'prov'));
 
@@ -396,7 +396,7 @@ class ObjectRelationsControllerA24GoldenTest extends TestCase {
 		$this->relations->method('applyInheritance')->willReturn(['data' => ['t' => 1], 'inherited' => []]);
 		$created = $this->object(uuid: 'child');
 		$this->objects->method('saveObject')->willReturn($created);
-		$this->relations->expects($this->never())->method('recordDerivation');
+		$this->relations->expects($this->never())->method('recordDerivationWith');
 		$this->relations->expects($this->once())->method('recordSplit')
 			->with($this->isInstanceOf(ObjectEntity::class), $created, new ProvenanceLink(null, 'split-from'))
 			->willReturn($this->row(uuid: 'prov'));

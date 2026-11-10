@@ -200,7 +200,7 @@ interface ObjectRelationServiceInterface {
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	public function recordDerivation(
+	public function recordDerivationWith(
 		ObjectEntity $parent,
 		ObjectEntity $child,
 		?ProvenanceLink $link = null,

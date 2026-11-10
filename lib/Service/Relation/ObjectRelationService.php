@@ -180,7 +180,7 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	public function recordDerivation(
+	public function recordDerivationWith(
 		ObjectEntity $parent,
 		ObjectEntity $child,
 		?ProvenanceLink $link = null,
@@ -192,6 +192,31 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 			+ ['relationType' => $link->relationType, 'sourceEntry' => $link->entry, 'inherited' => $this->fields->recordOf(inherited: $inherited)]
 			+ ['createdBy' => $this->actor()]
 		);
+	}//end recordDerivationWith()
+
+	/**
+	 * Record a child created under a parent, by the loose values other apps pass by name.
+	 *
+	 * @param ObjectEntity         $parent       The parent object.
+	 * @param ObjectEntity         $child        The created child.
+	 * @param string|null          $relationType The vocabulary key naming the link.
+	 * @param array<string, mixed> $inherited    What the child took, as recorded.
+	 * @param string|null          $entry        The entry of the parent it came out of, when it came out of one.
+	 *
+	 * @return ObjectRelation The row.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	public function recordDerivation(
+		ObjectEntity $parent,
+		ObjectEntity $child,
+		?string $relationType=null,
+		array $inherited=[],
+		?string $entry=null,
+	): ObjectRelation {
+		$link = new ProvenanceLink(entry: $entry, relationType: $relationType);
+
+		return $this->recordDerivationWith(parent: $parent, child: $child, link: $link, inherited: $inherited);
 	}//end recordDerivation()
 
 	/**
