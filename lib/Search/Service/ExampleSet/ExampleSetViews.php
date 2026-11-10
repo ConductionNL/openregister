@@ -198,18 +198,20 @@ class ExampleSetViews extends ExampleSetEngineRows implements ExampleSetViewRows
 
 		try {
 			$view = $this->service()->create(
-				definition: new ViewDefinition(
-					name: (string) $data['name'],
-					description: (string) ($data['description'] ?? ''),
-					query: (array) ($data['query'] ?? []),
-					presentation: $this->optional(data: $data, field: 'presentation')
-				),
-				audience: new ViewAudience(
-					owner: (string) $data['owner'],
-					isPublic: ($data['isPublic'] ?? false) === true,
-					sharedWith: $this->shares(declared: ($data['sharedWith'] ?? []))
-				),
-				alert: $this->optional(data: $data, field: 'alert'),
+				edit: new ViewEdit(
+					definition: new ViewDefinition(
+						name: (string) $data['name'],
+						description: (string) ($data['description'] ?? ''),
+						query: (array) ($data['query'] ?? []),
+						presentation: $this->optional(data: $data, field: 'presentation')
+					),
+					audience: new ViewAudience(
+						owner: (string) $data['owner'],
+						isPublic: ($data['isPublic'] ?? false) === true,
+						sharedWith: $this->shares(declared: ($data['sharedWith'] ?? []))
+					),
+					alert: $this->optional(data: $data, field: 'alert'),
+				)
 			);
 			$view->setUuid($uuid);
 			$this->mapper()->update($view);
