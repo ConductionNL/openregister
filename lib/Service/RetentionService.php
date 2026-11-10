@@ -39,6 +39,9 @@ namespace OCA\OpenRegister\Service;
 use DateInterval;
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Archival\HoldStamp;
 use OCA\OpenRegister\Service\Archival\LegalHoldLedger;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -54,6 +57,7 @@ use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Archival\HoldAction;
 
 /**
  * Service for managing retention lifecycle of register objects.
@@ -584,11 +588,9 @@ class RetentionService implements RetentionServiceInterface {
 	public function placeHold(ObjectEntity $object, HoldOrder $order): ObjectEntity {
 		// One hold per matter, the same ledger LegalHoldService writes (#4172).
 		$object->setRetention(
-			(new LegalHoldLedger())->place(
+			(new LegalHoldLedger())->placeAction(
 				retention: ($object->getRetention() ?? []),
-				reason: $order->reason,
-				ownerKey: $order->ownerKey,
-				stamp: $this->holdStamp()
+				action: new HoldAction(ownerKey: $order->ownerKey, reason: $order->reason, stamp: $this->holdStamp())
 			)
 		);
 
@@ -628,11 +630,9 @@ class RetentionService implements RetentionServiceInterface {
 		}
 
 		$object->setRetention(
-			$ledger->release(
+			$ledger->releaseAction(
 				retention: $retention,
-				ownerKey: $order->ownerKey,
-				releaseReason: $order->reason,
-				stamp: $this->holdStamp()
+				action: new HoldAction(ownerKey: $order->ownerKey, reason: $order->reason, stamp: $this->holdStamp())
 			)
 		);
 
@@ -1035,12 +1035,11 @@ class RetentionService implements RetentionServiceInterface {
 			// feeds is "objects already on a pending destruction list", which
 			// means every sweep re-listed objects that were already awaiting
 			// approval, and nothing said so.
-			$pendingLists = $this->stores->objectMapper->findAll(
-				filters: [
-					'status' => ['in_review', 'approved', 'awaiting_second_approval'],
-				],
-				register: $register,
-				schema: $schema
+			$pendingLists = $this->stores->objectMapper->findAllListed(
+				request: new MagicListRequest(
+					table: new RegisterSchema(register: $register, schema: $schema),
+					query: ListQuery::unbounded(filters: ['status' => ['in_review', 'approved', 'awaiting_second_approval']])
+				)
 			);
 
 			return array_unique($this->listedObjectUuids(lists: $pendingLists));

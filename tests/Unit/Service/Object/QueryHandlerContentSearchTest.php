@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\ContentSearchHandler;
+use OCA\OpenRegister\Service\Object\ContentSearchWidening;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
@@ -78,7 +79,7 @@ class QueryHandlerContentSearchTest extends TestCase {
 	}//end setUp()
 
 	public function testContentSearchHandlerIsNeverCalledWhenFlagAbsent(): void {
-		$this->contentSearchHandler->expects($this->never())->method('augmentWithChunkMatches');
+		$this->contentSearchHandler->expects($this->never())->method('widen');
 
 		$result = $this->handler->searchObjectsPaginatedDatabase(
 			query: ['_search' => 'quarterly report'],
@@ -91,7 +92,7 @@ class QueryHandlerContentSearchTest extends TestCase {
 	}//end testContentSearchHandlerIsNeverCalledWhenFlagAbsent()
 
 	public function testContentSearchHandlerIsNeverCalledWhenFlagExplicitlyFalse(): void {
-		$this->contentSearchHandler->expects($this->never())->method('augmentWithChunkMatches');
+		$this->contentSearchHandler->expects($this->never())->method('widen');
 
 		$this->handler->searchObjectsPaginatedDatabase(
 			query: ['_search' => 'quarterly report', '_content_search' => false],
@@ -105,12 +106,14 @@ class QueryHandlerContentSearchTest extends TestCase {
 		$chunkMatch->setId(2);
 
 		$this->contentSearchHandler->expects($this->once())
-			->method('augmentWithChunkMatches')
+			->method('widen')
 			->with(
-				$this->callback(fn (array $query): bool => ($query['_content_search'] ?? null) === true),
-				$this->metadataMatchResults,
-				1,
-				20,
+				$this->callback(
+					fn (ContentSearchWidening $widening): bool => ($widening->query['_content_search'] ?? null) === true
+						&& $widening->page->results === $this->metadataMatchResults
+						&& $widening->page->total === 1
+						&& $widening->page->limit === 20
+				),
 				false,
 				false
 			)
@@ -142,7 +145,7 @@ class QueryHandlerContentSearchTest extends TestCase {
 	 */
 	public function testContentSearchHandlerIsInvokedForTruthyStringForms(mixed $flag): void {
 		$this->contentSearchHandler->expects($this->once())
-			->method('augmentWithChunkMatches')
+			->method('widen')
 			->willReturn(['results' => $this->metadataMatchResults, 'total' => 1]);
 
 		$this->handler->searchObjectsPaginatedDatabase(
@@ -158,7 +161,7 @@ class QueryHandlerContentSearchTest extends TestCase {
 	 * @dataProvider provideFalsyStringForms
 	 */
 	public function testContentSearchHandlerIsNotInvokedForFalsyStringForms(mixed $flag): void {
-		$this->contentSearchHandler->expects($this->never())->method('augmentWithChunkMatches');
+		$this->contentSearchHandler->expects($this->never())->method('widen');
 
 		$this->handler->searchObjectsPaginatedDatabase(
 			query: ['_search' => 'q', '_content_search' => $flag],

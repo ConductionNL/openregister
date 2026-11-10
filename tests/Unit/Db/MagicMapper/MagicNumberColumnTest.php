@@ -86,9 +86,9 @@ class MagicNumberColumnTest extends TestCase {
 	}//end testARowThatFitsItsColumnsPasses()
 
 	public function testAnOldTwoDecimalColumnIsWidenedNeverNarrowed(): void {
-		$this->assertSame(['precision' => 20, 'scale' => 6], $this->column->widening(currentColumn: ['type' => 'numeric', 'precision' => 10, 'scale' => 2], precision: 20, scale: 6));
-		$this->assertSame(['precision' => 16, 'scale' => 2], $this->column->widening(currentColumn: ['type' => 'decimal', 'precision' => 10, 'scale' => 2], precision: 16, scale: 2));
-		$this->assertNull($this->column->widening(currentColumn: ['type' => 'numeric', 'precision' => 20, 'scale' => 6], precision: 17, scale: 3));
-		$this->assertNull($this->column->widening(currentColumn: ['type' => 'text', 'precision' => null, 'scale' => null], precision: 20, scale: 6));
+		$this->assertSame(['precision' => 20, 'scale' => 6], $this->column->widening(currentColumn: ['type' => 'numeric', 'precision' => 10, 'scale' => 2], required: ['precision' => 20, 'scale' => 6]));
+		$this->assertSame(['precision' => 16, 'scale' => 2], $this->column->widening(currentColumn: ['type' => 'decimal', 'precision' => 10, 'scale' => 2], required: ['precision' => 16, 'scale' => 2]));
+		$this->assertNull($this->column->widening(currentColumn: ['type' => 'numeric', 'precision' => 20, 'scale' => 6], required: ['precision' => 17, 'scale' => 3]));
+		$this->assertNull($this->column->widening(currentColumn: ['type' => 'text', 'precision' => null, 'scale' => null], required: ['precision' => 20, 'scale' => 6]));
 	}//end testAnOldTwoDecimalColumnIsWidenedNeverNarrowed()
 }//end class

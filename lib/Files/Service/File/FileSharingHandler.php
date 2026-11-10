@@ -182,26 +182,6 @@ class FileSharingHandler implements FileSharingHandlerInterface {
 	}//end createShare()
 
 	/**
-	 * Share a file with a specific user.
-	 *
-	 * @param File $file The file to share.
-	 * @param string $userId The user ID to share with.
-	 * @param int $permissions The permissions to grant (default: 31 = all).
-	 *
-	 * @return void
-	 *
-	 * @throws Exception If sharing fails.
-	 *
-	 * @psalm-return   void
-	 * @phpstan-return void
-	 *
-	 * @spec openspec/specs/file-actions/spec.md
-	 */
-	public function shareFileWithUser(File $file, string $userId, int $permissions = 31): void {
-		$this->shareFile(grant: new UserShareGrant(node: $file, userId: $userId, permissions: $permissions));
-	}//end shareFileWithUser()
-
-	/**
 	 * Share a file with a user unless it already is.
 	 *
 	 * @param UserShareGrant $grant The file, the user and the permissions.
@@ -209,8 +189,10 @@ class FileSharingHandler implements FileSharingHandlerInterface {
 	 * @return void
 	 *
 	 * @throws Exception If sharing fails.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	private function shareFile(UserShareGrant $grant): void {
+	public function shareFileWithUser(UserShareGrant $grant): void {
 		try {
 			// Check if a share already exists with this user.
 			$existingShares = $this->shareManager->getSharesBy(
@@ -248,25 +230,7 @@ class FileSharingHandler implements FileSharingHandlerInterface {
 			);
 			throw $e;
 		}//end try
-	}//end shareFile()
-
-	/**
-	 * Share a folder with a specific user.
-	 *
-	 * @param Node $folder The folder to share.
-	 * @param string $userId The user ID to share with.
-	 * @param int $permissions The permissions to grant (default: 31 = all).
-	 *
-	 * @return IShare|null The created share or null if user doesn't exist.
-	 *
-	 * @psalm-return   IShare|null
-	 * @phpstan-return IShare|null
-	 *
-	 * @spec openspec/specs/file-actions/spec.md
-	 */
-	public function shareFolderWithUser(Node $folder, string $userId, int $permissions = 31): ?IShare {
-		return $this->shareFolder(grant: new UserShareGrant(node: $folder, userId: $userId, permissions: $permissions));
-	}//end shareFolderWithUser()
+	}//end shareFileWithUser()
 
 	/**
 	 * Share a folder with an existing user.
@@ -274,8 +238,10 @@ class FileSharingHandler implements FileSharingHandlerInterface {
 	 * @param UserShareGrant $grant The folder, the user and the permissions.
 	 *
 	 * @return IShare|null The created share, or null when the user does not exist or sharing fails.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	private function shareFolder(UserShareGrant $grant): ?IShare {
+	public function shareFolderWithUser(UserShareGrant $grant): ?IShare {
 		try {
 			// Check if user exists.
 			if ($this->accounts->userManager->userExists($grant->userId) === false) {
@@ -308,5 +274,5 @@ class FileSharingHandler implements FileSharingHandlerInterface {
 			$this->logger->error(message: '[FileSharingHandler] ' . $msg, context: ['file' => __FILE__, 'line' => __LINE__]);
 			return null;
 		}//end try
-	}//end shareFolder()
+	}//end shareFolderWithUser()
 }//end class

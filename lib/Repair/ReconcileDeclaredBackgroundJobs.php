@@ -95,7 +95,7 @@ class ReconcileDeclaredBackgroundJobs implements IRepairStep {
 			$tally[$this->reconcileOne(class: $class, output: $output)]++;
 		}
 
-		$output->info(self::summary(added: $tally['added'], skipped: $tally['skipped'], declared: count($declared)));
+		$output->info(self::summary(tally: $tally, declared: count($declared)));
 	}//end run()
 
 	/**
@@ -138,13 +138,14 @@ class ReconcileDeclaredBackgroundJobs implements IRepairStep {
 	/**
 	 * The closing line of the reconciliation.
 	 *
-	 * @param int $added    Jobs registered.
-	 * @param int $skipped  Jobs that could not be registered.
-	 * @param int $declared Jobs declared in info.xml.
+	 * @param array<string, int> $tally    Jobs per outcome: 'added', 'skipped' and 'present'.
+	 * @param int                $declared Jobs declared in info.xml.
 	 *
 	 * @return string The line to report.
 	 */
-	private static function summary(int $added, int $skipped, int $declared): string {
+	private static function summary(array $tally, int $declared): string {
+		$added = $tally['added'];
+		$skipped = $tally['skipped'];
 		if ($added === 0 && $skipped === 0) {
 			return '[OpenRegister] All ' . $declared . ' declared background jobs are already registered.';
 		}

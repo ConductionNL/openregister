@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
+use OCA\OpenRegister\Service\Configuration\DistinctKeyBudget;
 use OCA\OpenRegister\Service\Configuration\RateLimiterService;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -88,13 +89,13 @@ class RateLimiterServiceTest extends TestCase {
 
 		for ($i = 0; $i < 5; $i++) {
 			$this->assertNull(
-				$service->consumeDistinctKeyBudget(bucketKey: 'getmiss:alice', distinctKey: 'k-' . $i, maxKeys: 5, windowSeconds: 300),
+				$service->consumeFromBudget(budget: new DistinctKeyBudget(bucketKey: 'getmiss:alice', maxKeys: 5, windowSeconds: 300),distinctKey: 'k-' . $i),
 				'distinct key ' . $i . ' should pass'
 			);
 		}
 
 		// 6th distinct key exceeds the budget.
-		$retryAfter = $service->consumeDistinctKeyBudget(bucketKey: 'getmiss:alice', distinctKey: 'k-6', maxKeys: 5, windowSeconds: 300);
+		$retryAfter = $service->consumeFromBudget(budget: new DistinctKeyBudget(bucketKey: 'getmiss:alice', maxKeys: 5, windowSeconds: 300),distinctKey: 'k-6');
 		$this->assertNotNull($retryAfter);
 		$this->assertGreaterThanOrEqual(1, $retryAfter);
 	}//end testDistinctKeyBudgetAllowsUpToMaxThenBlocks()
@@ -107,7 +108,7 @@ class RateLimiterServiceTest extends TestCase {
 
 		for ($i = 0; $i < 20; $i++) {
 			$this->assertNull(
-				$service->consumeDistinctKeyBudget(bucketKey: 'getmiss:alice', distinctKey: 'same-key', maxKeys: 5, windowSeconds: 300),
+				$service->consumeFromBudget(budget: new DistinctKeyBudget(bucketKey: 'getmiss:alice', maxKeys: 5, windowSeconds: 300),distinctKey: 'same-key'),
 				'repeats of the same key never exhaust the budget'
 			);
 		}

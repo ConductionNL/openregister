@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\TranslationScope;
 use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -399,8 +400,8 @@ class RenderObjectRenderEntityPhasesTest extends TestCase {
 		$seen = [];
 		$this->translationHandler = $this->createMock(TranslationHandler::class);
 		$this->translationHandler->method('resolveTranslationsForRender')->willReturnCallback(
-			static function (array $objectData, Schema $schema, ?Register $register) use (&$seen): array {
-				$seen[] = [$schema, $register];
+			static function (array $objectData, TranslationScope $scope) use (&$seen): array {
+				$seen[] = [$scope->schema, $scope->register];
 				$objectData['translated'] = true;
 
 				return $objectData;
@@ -528,7 +529,11 @@ class RenderObjectRenderEntityPhasesTest extends TestCase {
 		$entity = $this->entity();
 		$entity->setCreated(new \DateTime('2026-01-02T00:00:00+00:00'));
 
-		$this->assertIsArray($this->render()->renderEntity(entity: $entity)->getArchivalRetention());
+		$retention = $this->render()->renderEntity(entity: $entity)->getArchivalRetention();
+		$this->assertIsArray($retention);
+		// The schema's default of one year runs from the creation date.
+		$this->assertSame('P1Y', $retention['retentionPeriod']);
+		$this->assertSame('2027-01-02T00:00:00+00:00', $retention['disposalDate']);
 	}//end testTheArchivalDecisionLandsOnTheEntity()
 
 	/**

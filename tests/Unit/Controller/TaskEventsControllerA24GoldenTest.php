@@ -41,6 +41,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\LinkTarget;
 
 /**
  * Pins allowed and refused outcomes of TaskEventsController.
@@ -219,8 +220,8 @@ class TaskEventsControllerA24GoldenTest extends TestCase {
 	public function testCreate(): void {
 		$this->givenReadable();
 		$link = new CalendarLink();
-		$this->links->expects($this->once())->method('createAndLinkEvent')
-			->with('real-uuid', 4, 9, ['summary' => 'Meet', 'objectTitle' => 'real-uuid'])
+		$this->links->expects($this->once())->method('createLinkedEvent')
+			->with((new LinkTarget(objectUuid: 'real-uuid', registerId: 4))->inSchema(schemaId: 9), ['summary' => 'Meet', 'objectTitle' => 'real-uuid'])
 			->willReturn($link);
 
 		$blank = $this->controller(params: ['summary' => '  '])->create('t-1');
@@ -237,7 +238,7 @@ class TaskEventsControllerA24GoldenTest extends TestCase {
 	 */
 	public function testCreateFailure(): void {
 		$this->givenReadable();
-		$this->links->method('createAndLinkEvent')->willThrowException(new Exception('nope'));
+		$this->links->method('createLinkedEvent')->willThrowException(new Exception('nope'));
 
 		$response = $this->controller(params: ['summary' => 'Meet'])->create('t-1');
 
@@ -367,7 +368,7 @@ class TaskEventsControllerA24GoldenTest extends TestCase {
 	 * @return void
 	 */
 	private function expectNothingTouched(): void {
-		foreach (['getLinkedEvents', 'createAndLinkEvent', 'linkEvent', 'unlinkEvent'] as $method) {
+		foreach (['getLinkedEvents', 'createLinkedEvent', 'linkEvent', 'unlinkEvent'] as $method) {
 			$this->links->expects($this->never())->method($method);
 		}
 
