@@ -59,7 +59,7 @@ class SaveObjectsSchemaAnalysisGoldenTest extends TestCase {
 	 */
 	private function analyse(Schema $schema): array {
 		$handler = new SaveObjects(
-			stores: new BulkSaveStores(objectEntityMapper: $this->createMock(MagicMapper::class), schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->createMock(RegisterMapper::class), saveHandler: $this->createMock(SaveObject::class)),
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapper::class)), saveHandler: $this->createMock(SaveObject::class)),
 			session: new BulkSaveSession(userSession: $this->createMock(IUserSession::class), organisationService: $this->createMock(OrganisationService::class)),
 			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class)),
 			checks: new BulkRowChecks()
