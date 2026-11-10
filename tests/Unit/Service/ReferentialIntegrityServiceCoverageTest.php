@@ -22,6 +22,7 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\Object\RefusedDeletion;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -376,7 +377,7 @@ class ReferentialIntegrityServiceCoverageTest extends TestCase {
 
 		$this->auditTrailMapper->expects($this->once())->method('insert');
 
-		$this->service->logRestrictBlock('target-uuid', '5', $analysis, 'admin');
+		$this->service->logRestrictBlock(new RefusedDeletion(objectUuid: 'target-uuid', schemaId: '5', userId: 'admin'), $analysis);
 	}
 
 	public function testLogRestrictBlockWithEmptyBlockers(): void {
@@ -384,7 +385,7 @@ class ReferentialIntegrityServiceCoverageTest extends TestCase {
 
 		$this->auditTrailMapper->expects($this->once())->method('insert');
 
-		$this->service->logRestrictBlock('target-uuid', '5', $analysis, 'admin');
+		$this->service->logRestrictBlock(new RefusedDeletion(objectUuid: 'target-uuid', schemaId: '5', userId: 'admin'), $analysis);
 	}
 
 	// =========================================================================
@@ -417,7 +418,7 @@ class ReferentialIntegrityServiceCoverageTest extends TestCase {
 		]);
 
 		// Should not throw
-		$this->service->logRestrictBlock('uuid', '1', $analysis, 'admin');
+		$this->service->logRestrictBlock(new RefusedDeletion(objectUuid: 'uuid', schemaId: '1', userId: 'admin'), $analysis);
 	}
 	/**
 	 * A real ArchivalRetentionGuard over schemas that declare no archival annotation.

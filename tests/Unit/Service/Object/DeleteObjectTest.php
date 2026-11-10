@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\RefusedDeletion;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -764,7 +765,7 @@ class DeleteObjectTest extends TestCase {
 		$this->integrityService
 			->expects($this->once())
 			->method('logRestrictBlock')
-			->with('uuid-do-2', '10', $analysis, 'system');
+			->with(new RefusedDeletion(objectUuid: 'uuid-do-2', schemaId: '10', userId: 'system'), $analysis);
 
 		$this->withNoUser();
 

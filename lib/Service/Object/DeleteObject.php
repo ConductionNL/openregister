@@ -901,10 +901,8 @@ class DeleteObject {
 		[$userId] = $this->resolveUserContext();
 
 		$this->integrityService->logRestrictBlock(
-			objectUuid: $uuid,
-			schemaId: $schemaId,
-			analysis: $analysis,
-			userId: $userId
+			refused: new RefusedDeletion(objectUuid: $uuid, schemaId: $schemaId, userId: $userId),
+			analysis: $analysis
 		);
 
 		throw new ReferentialIntegrityException(analysis: $analysis);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\RefusedDeletion;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -141,7 +142,7 @@ class ReferentialIntegrityServiceBranchTest extends TestCase {
 		$this->auditTrailMapper->expects($this->once())
 			->method('insert');
 
-		$this->service->logRestrictBlock('target-uuid', '5', $analysis, 'admin');
+		$this->service->logRestrictBlock(new RefusedDeletion(objectUuid: 'target-uuid', schemaId: '5', userId: 'admin'), $analysis);
 	}
 
 	public function testLogRestrictBlockEmptyBlockers(): void {
@@ -153,7 +154,7 @@ class ReferentialIntegrityServiceBranchTest extends TestCase {
 		$this->auditTrailMapper->expects($this->once())
 			->method('insert');
 
-		$this->service->logRestrictBlock('target-uuid', null, $analysis, 'admin');
+		$this->service->logRestrictBlock(new RefusedDeletion(objectUuid: 'target-uuid', schemaId: null, userId: 'admin'), $analysis);
 	}
 
 	// =========================================================================

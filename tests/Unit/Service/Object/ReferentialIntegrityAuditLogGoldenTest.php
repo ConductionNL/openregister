@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\RefusedDeletion;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -53,7 +54,7 @@ class ReferentialIntegrityAuditLogGoldenTest extends TestCase {
 			]
 		);
 
-		$this->service()->logRestrictBlock('obj-1', '12', $analysis, 'anna');
+		$this->service()->logRestrictBlock(new RefusedDeletion(objectUuid: 'obj-1', schemaId: '12', userId: 'anna'), $analysis);
 
 		$this->assertCount(1, $this->inserted);
 		$row = $this->inserted[0];
@@ -69,7 +70,10 @@ class ReferentialIntegrityAuditLogGoldenTest extends TestCase {
 	}//end testARestrictBlockIsAuditedWithItsFirstBlocker()
 
 	public function testARestrictBlockWithoutBlockersNamesNothing(): void {
-		$this->service()->logRestrictBlock('obj-2', null, new DeletionAnalysis(deletable: false), 'bob');
+		$this->service()->logRestrictBlock(
+			new RefusedDeletion(objectUuid: 'obj-2', schemaId: null, userId: 'bob'),
+			new DeletionAnalysis(deletable: false)
+		);
 
 		$this->assertSame(
 			['blockerCount' => 0, 'blockerSchema' => 'unknown', 'blockerProperty' => 'unknown', 'reason' => 'RESTRICT constraint prevents deletion'],
@@ -79,7 +83,10 @@ class ReferentialIntegrityAuditLogGoldenTest extends TestCase {
 	}//end testARestrictBlockWithoutBlockersNamesNothing()
 
 	public function testAFailedAuditInsertIsLoggedNotThrown(): void {
-		$this->service(insertFails: true)->logRestrictBlock('obj-3', '5', new DeletionAnalysis(deletable: false), 'anna');
+		$this->service(insertFails: true)->logRestrictBlock(
+			new RefusedDeletion(objectUuid: 'obj-3', schemaId: '5', userId: 'anna'),
+			new DeletionAnalysis(deletable: false)
+		);
 
 		$this->assertSame(
 			[[
