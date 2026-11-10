@@ -30,6 +30,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Service\ActivityFilterService;
+use OCP\IUserSession;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCP\App\IAppManager;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -74,7 +76,7 @@ class ActivityFilterServiceEntriesGoldenTest extends TestCase {
 			fn (): IQueryBuilder => $this->queryBuilder(rows: $rows, count: $count, fail: $fail)
 		);
 
-		return new ActivityFilterService(db: $db, appManager: $appManager, logger: $this->createMock(LoggerInterface::class));
+		return new ActivityFilterService(db: $db, runtime: new LinkServiceRuntime(appManager: $appManager, userSession: $this->createMock(IUserSession::class), logger: $this->createMock(LoggerInterface::class)));
 	}//end service()
 
 	/**

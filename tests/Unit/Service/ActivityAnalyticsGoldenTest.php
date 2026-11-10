@@ -18,6 +18,7 @@ use DateTime;
 use OCA\OpenRegister\Db\AnalyticsSeries;
 use OCA\OpenRegister\Db\AnalyticsSeriesMapper;
 use OCA\OpenRegister\Service\ActivityFilterService;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCA\OpenRegister\Service\AnalyticsSeriesService;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCP\App\IAppManager;
@@ -77,7 +78,7 @@ class ActivityAnalyticsGoldenTest extends TestCase {
 		];
 		foreach ($activity as $name => [$args, $over]) {
 			$w = $over + ['installed' => true, 'throws' => false, 'distinct' => null];
-			$service = new ActivityFilterService($this->database($w), $this->appManager($w['installed']), $this->logger());
+			$service = new ActivityFilterService($this->database($w), new LinkServiceRuntime($this->appManager($w['installed']), $this->createMock(IUserSession::class), $this->logger()));
 			$method = match ($w['distinct']) {
 				'type' => 'getActivityTypes',
 				'affecteduser' => 'getActivityActors',

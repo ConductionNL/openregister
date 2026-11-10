@@ -35,10 +35,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCP\App\IAppManager;
 use OCP\DB\IResult;
 use OCP\IDBConnection;
-use Psr\Log\LoggerInterface;
 use Throwable;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 
@@ -89,14 +87,12 @@ class ActivityFilterService implements ActivityFilterServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection $db NC DB connection.
-	 * @param IAppManager $appManager NC app manager (availability check).
-	 * @param LoggerInterface $logger Logger for the degraded (empty result) path.
+	 * @param IDBConnection      $db      NC DB connection.
+	 * @param LinkServiceRuntime $runtime App availability check and the logger for the degraded (empty result) path.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
-		private readonly IAppManager $appManager,
-		private readonly LoggerInterface $logger,
+		private readonly LinkServiceRuntime $runtime,
 	) {
 	}//end __construct()
 
@@ -106,7 +102,7 @@ class ActivityFilterService implements ActivityFilterServiceInterface {
 	 * @return bool
 	 */
 	public function isActivityAvailable(): bool {
-		return $this->appManager->isInstalled(self::REQUIRED_APP);
+		return $this->runtime->appManager()->isInstalled(self::REQUIRED_APP);
 	}//end isActivityAvailable()
 
 	/**
@@ -444,7 +440,7 @@ class ActivityFilterService implements ActivityFilterServiceInterface {
 	 * @return void
 	 */
 	private function logFailure(string $context, Throwable $e): void {
-		$this->logger->debug(
+		$this->runtime->logger()->debug(
 			'[ActivityFilterService] ' . $context . ' failed: ' . $e->getMessage(),
 			['exception' => $e]
 		);
