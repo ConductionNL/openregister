@@ -28,11 +28,10 @@ namespace OCA\OpenRegister\Service\Configuration;
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
-use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -381,8 +380,7 @@ class ExportHandler {
 	 */
 	private function exportRegisterObjects(Register $register): array {
 		$objects = [];
-		$listing = new MagicListRequest(table: null, query: ListQuery::unbounded(filters: ['register' => $register->getId()]));
-		foreach ($this->objectEntityMapper->findAllListed(request: $listing) as $object) {
+		foreach ($this->registerObjects(register: $register) as $object) {
 			$object = $object->jsonSerialize();
 			$registerId = (int)$object['@self']['register'];
 			$schemaId = (int)$object['@self']['schema'];
@@ -399,6 +397,22 @@ class ExportHandler {
 
 		return $objects;
 	}//end exportRegisterObjects()
+
+	/**
+	 * The objects of every schema table of a register.
+	 *
+	 * @param Register $register The register.
+	 *
+	 * @return list<ObjectEntity>
+	 */
+	private function registerObjects(Register $register): array {
+		$objects = [];
+		foreach ($this->registerMapper->getSchemasByRegisterId($register->getId()) as $schema) {
+			$objects = array_merge($objects, $this->objectEntityMapper->findAllInRegisterSchemaTable(register: $register, schema: $schema));
+		}
+
+		return $objects;
+	}//end registerObjects()
 
 	/**
 	 * A configuration's mappings by slug, without instance-specific properties.
