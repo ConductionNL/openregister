@@ -718,7 +718,7 @@ class CasePlanService implements CasePlanServiceInterface {
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
 	 */
-	private function visibleRows(string $objectUuid, ?string $uid): array {
+	private function visibleRows(string $objectUuid, string|null $uid): array {
 		$rows = $this->store->items->findByObject(objectUuid: $objectUuid);
 		if ($rows === []) {
 			throw new DoesNotExistException(sprintf('Object %s has no case plan.', $objectUuid));

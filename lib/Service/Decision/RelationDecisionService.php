@@ -210,13 +210,7 @@ class RelationDecisionService implements RelationDecisionServiceInterface {
 	 * @throws DecisionOwnedException When the decision belongs to someone else.
 	 */
 	private function assertMayChange(DecisionRun $run): void {
-		$owned = $run->current;
-		if ($owned === null && $run->linkedUuid !== null && $run->linkedUuid !== '') {
-			$owned = new Decision();
-			$owned->setUuid($run->linkedUuid);
-			$owned->setDecidedBy('');
-		}
-
+		$owned = self::ownedDecisionOf(run: $run);
 		if ($owned === null) {
 			return;
 		}
@@ -228,6 +222,30 @@ class RelationDecisionService implements RelationDecisionServiceInterface {
 			throw new DecisionOwnedException(refusal: $refusal);
 		}
 	}//end assertMayChange()
+
+	/**
+	 * The decision whose ownership the change must respect: the current one, else
+	 * a placeholder for the linked decision row (owned by nobody named), else none.
+	 *
+	 * @param DecisionRun $run The decide pass, before any write.
+	 *
+	 * @return Decision|null The owned decision.
+	 */
+	private static function ownedDecisionOf(DecisionRun $run): Decision|null {
+		if ($run->current !== null) {
+			return $run->current;
+		}
+
+		if ($run->linkedUuid === null || $run->linkedUuid === '') {
+			return null;
+		}
+
+		$owned = new Decision();
+		$owned->setUuid($run->linkedUuid);
+		$owned->setDecidedBy('');
+
+		return $owned;
+	}//end ownedDecisionOf()
 
 	/**
 	 * Whether a write that left the verdict and grounds as they were is still a decision worth recording.
@@ -275,7 +293,7 @@ class RelationDecisionService implements RelationDecisionServiceInterface {
 	 *
 	 * @throws CustomValidationException When the note is not a string.
 	 */
-	private function noteFrom(array $body): ?string {
+	private function noteFrom(array $body): string|null {
 		$note = ($body[self::NOTE_FIELD] ?? null);
 		if ($note !== null && is_string($note) === false) {
 			throw new CustomValidationException(
