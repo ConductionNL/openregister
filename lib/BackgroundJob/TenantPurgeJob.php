@@ -35,11 +35,11 @@ use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\TenantUsageMapperInterface;
 use OCA\OpenRegister\Service\TenantLifecycleServiceInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
+use OCA\OpenRegister\BackgroundJob\Support\TenantRecords;
+use OCA\OpenRegister\BackgroundJob\Support\ScheduledJobRuntime;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\BackgroundJob\Support\TenantPurgeStores;
 
 /**
  * Purges archived organisations after retention period.
@@ -67,22 +67,31 @@ class TenantPurgeJob extends TimedJob {
 	private readonly TenantUsageMapperInterface $tenantUsageMapper;
 
 	/**
+	 * App config
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Logger
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor
 	 *
-	 * @param ITimeFactory $time Time factory
-	 * @param TenantPurgeStores $stores Organisations and their usage rows.
-	 * @param IAppConfig $appConfig App config
-	 * @param LoggerInterface $logger Logger
+	 * @param ScheduledJobRuntime $runtime The clock, app config and log the job runs on.
+	 * @param TenantRecords       $tenants The organisations, their usage rows and lifecycle.
 	 */
-	public function __construct(
-		ITimeFactory $time,
-		TenantPurgeStores $stores,
-		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
-	) {
-		$this->organisationMapper = $stores->organisationMapper;
-		$this->tenantUsageMapper = $stores->tenantUsageMapper;
-		parent::__construct(time: $time);
+	public function __construct(ScheduledJobRuntime $runtime, TenantRecords $tenants) {
+		parent::__construct(time: $runtime->time);
+		$this->organisationMapper = $tenants->organisations;
+		$this->tenantUsageMapper = $tenants->usage;
+		$this->appConfig = $runtime->config;
+		$this->logger = $runtime->logger;
 		// Run daily.
 		$this->setInterval(seconds: 86400);
 	}//end __construct()
