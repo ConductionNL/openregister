@@ -43,6 +43,7 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Service\Flow\TaskAuditEntry;
 
 /**
  * Tests for {@see TaskService::openFor()}, {@see TaskService::record()} and
@@ -278,6 +279,6 @@ class TaskServicePortalWindowsTest extends TestCase {
 			container: $this->createMock(\Psr\Container\ContainerInterface::class),
 			logger: new NullLogger()
 		);
-		$bridge->record(uuid: 't-1', action: 'match', actor: 'caseworker', reason: 'the reason');
+		$bridge->record(entry: new TaskAuditEntry(uuid: 't-1', action: 'match', actor: 'caseworker', reason: 'the reason'));
 	}//end testTheBridgeRecordWindowDelegates()
 }//end class

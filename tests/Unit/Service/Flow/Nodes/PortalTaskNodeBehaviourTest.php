@@ -44,6 +44,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use UnexpectedValueException;
+use OCA\OpenRegister\Service\Flow\TaskAuditEntry;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode
@@ -165,7 +166,7 @@ class PortalTaskNodeBehaviourTest extends TestCase {
 				'clerk'
 			)
 			->willReturn($created);
-		$this->bridge->expects(self::once())->method('record')->with('t-1', 'match', 'clerk', self::stringContains('(cycle 1)'));
+		$this->bridge->expects(self::once())->method('record')->with(self::callback(static fn (TaskAuditEntry $entry): bool => [$entry->uuid, $entry->action, $entry->actor] === ['t-1', 'match', 'clerk'] && str_contains($entry->reason, '(cycle 1)')));
 		$this->delivery->expects(self::once())->method('request')->with($created, PortalTaskDelivery::KIND_ASK, ['title' => 'x']);
 
 		try {
