@@ -23,7 +23,9 @@ use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowMessagingService;
 use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\InAppNotice;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\PushRideAlong;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicy;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
@@ -289,6 +291,13 @@ class FlowMessagingServiceGoldenTest extends TestCase {
 		});
 		$sender->method('enqueueWebPush')->willReturnCallback(function (array $recipients, string $ruleId, string $originApp, string $subject, string $message, array $actions, $object): void {
 			$this->record(call: 'nc.webPush', args: [$recipients, $ruleId, $subject, $message, $object->getUuid()]);
+		});
+		$sender->method('notify')->willReturnCallback(function (InAppNotice $notice) {
+			$this->record(call: 'nc.send', args: [$notice->uid, $notice->object->getUuid(), $notice->object->getName(), $notice->rule->name, $notice->content->subject, $notice->content->message]);
+			return self::outcome(recipient: $notice->uid);
+		});
+		$sender->method('enqueuePush')->willReturnCallback(function (PushRideAlong $push): void {
+			$this->record(call: 'nc.webPush', args: [$push->recipients, $push->rule->name, $push->content->subject, $push->content->message, $push->object->getUuid()]);
 		});
 		return $sender;
 	}//end ncSender()
