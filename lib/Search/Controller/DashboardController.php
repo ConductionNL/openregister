@@ -527,13 +527,22 @@ class DashboardController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-8
 	 */
 	public function getAuditTrailStatistics(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): JSONResponse {
-		return $this->adminRead(
-			read: fn (): array => $this->dashboardService->auditReads()->getAuditTrailStatistics(
-				scope: new DashboardScope(registerId: $registerId, schemaId: $schemaId),
-				hours: $hours
-			)
-		);
+		return $this->auditStatistics(scope: new DashboardScope(registerId: $registerId, schemaId: $schemaId), hours: $hours);
 	}//end getAuditTrailStatistics()
+
+	/**
+	 * The audit trail statistics of a scope, for an administrator.
+	 *
+	 * @param DashboardScope $scope The register/schema scope.
+	 * @param int|null       $hours The look-back hours for recent activity.
+	 *
+	 * @return JSONResponse The statistics, 403 for anyone else, or 500 with the logged failure.
+	 */
+	private function auditStatistics(DashboardScope $scope, ?int $hours): JSONResponse {
+		return $this->adminRead(
+			read: fn (): array => $this->dashboardService->auditReads()->getAuditTrailStatistics(scope: $scope, hours: $hours)
+		);
+	}//end auditStatistics()
 
 	/**
 	 * Get action distribution data for audit trails
@@ -555,13 +564,22 @@ class DashboardController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-8
 	 */
 	public function getAuditTrailActionDistribution(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): JSONResponse {
-		return $this->adminRead(
-			read: fn (): array => $this->dashboardService->auditReads()->getAuditTrailActionDistribution(
-				scope: new DashboardScope(registerId: $registerId, schemaId: $schemaId),
-				hours: $hours
-			)
-		);
+		return $this->auditDistribution(scope: new DashboardScope(registerId: $registerId, schemaId: $schemaId), hours: $hours);
 	}//end getAuditTrailActionDistribution()
+
+	/**
+	 * The audit action distribution of a scope, for an administrator.
+	 *
+	 * @param DashboardScope $scope The register/schema scope.
+	 * @param int|null       $hours The look-back hours.
+	 *
+	 * @return JSONResponse The distribution, 403 for anyone else, or 500 with the logged failure.
+	 */
+	private function auditDistribution(DashboardScope $scope, ?int $hours): JSONResponse {
+		return $this->adminRead(
+			read: fn (): array => $this->dashboardService->auditReads()->getAuditTrailActionDistribution(scope: $scope, hours: $hours)
+		);
+	}//end auditDistribution()
 
 	/**
 	 * Get most active objects based on audit trail activity
