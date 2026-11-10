@@ -48,6 +48,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\Timeline;
 
+use OCA\OpenRegister\Files\Service\ObjectNotesQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
@@ -186,11 +187,12 @@ class PublicTimeline implements PublicTimelineInterface {
 	 */
 	private function notesOf(ObjectEntity $object, int $limit): array {
 		try {
-			return $this->notes->getNotesForObject(
-				objectUuid: (string)$object->getUuid(),
-				limit: $limit,
-				offset: 0,
-				visibility: TimelineVisibilityService::PUBLIC_ENTRY
+			return $this->notes->listNotes(
+				query: new ObjectNotesQuery(
+					objectUuid: (string)$object->getUuid(),
+					page: new ListQuery(limit: $limit, offset: 0),
+					visibility: TimelineVisibilityService::PUBLIC_ENTRY
+				)
 			);
 		} catch (Throwable $failure) {
 			$this->logger->warning(

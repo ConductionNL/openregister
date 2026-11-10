@@ -7,6 +7,11 @@ namespace Unit\Service;
 // phpcs:disable Squiz.PHP.DisallowInlineIf.Found -- PHPUnit fixture defaults.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Files\Service\ObjectNotesQuery;
+use OCA\OpenRegister\Files\Service\NoteEdit;
+use OCA\OpenRegister\Files\Service\NoteDraft;
+use OCA\OpenRegister\Files\Service\NoteAuthor;
+use OCA\OpenRegister\Db\ListQuery;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -112,7 +117,7 @@ class NoteServiceTest extends TestCase {
 			->with('openregister', 'obj-uuid', 10, 5)
 			->willReturn([]);
 
-		$this->service->getNotesForObject('obj-uuid', 10, 5);
+		$this->service->listNotes(new ObjectNotesQuery(objectUuid: 'obj-uuid', page: new ListQuery(limit: 10, offset: 5)));
 	}
 
 	public function testGetNotesForObjectIsCurrentUserFalse(): void {
@@ -153,7 +158,7 @@ class NoteServiceTest extends TestCase {
 		$this->commentsManager->expects($this->once())->method('save');
 		$this->userManager->method('get')->willReturn($user);
 
-		$result = $this->service->createNote('obj-uuid', 'New note');
+		$result = $this->service->createNote(new NoteDraft(objectUuid: 'obj-uuid', message: 'New note'));
 
 		$this->assertSame(1, $result['id']);
 		$this->assertSame('New note', $result['message']);
@@ -165,7 +170,7 @@ class NoteServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('No user logged in');
 
-		$this->service->createNote('obj-uuid', 'Note text');
+		$this->service->createNote(new NoteDraft(objectUuid: 'obj-uuid', message: 'Note text'));
 	}
 
 	public function testDeleteNoteSuccess(): void {
@@ -233,7 +238,7 @@ class NoteServiceTest extends TestCase {
 			->willReturn($comment);
 		$this->commentsManager->expects($this->once())->method('save');
 
-		$this->service->createNote('my-uuid', 'msg');
+		$this->service->createNote(new NoteDraft(objectUuid: 'my-uuid', message: 'msg'));
 	}
 
 	/**
@@ -297,7 +302,7 @@ class NoteServiceTest extends TestCase {
 		$this->userManager->method('get')->willReturn($user);
 		$this->commentsManager->method('create')->willReturn($comment);
 
-		$note = $this->service->createNote('my-uuid', 'msg');
+		$note = $this->service->createNote(new NoteDraft(objectUuid: 'my-uuid', message: 'msg'));
 
 		$this->assertSame(TimelineVisibilityService::INTERNAL, $note['visibility']);
 		$this->assertSame(['visibility' => 'internal'], $comment->getMetaData());
@@ -310,7 +315,7 @@ class NoteServiceTest extends TestCase {
 		$this->userManager->method('get')->willReturn($user);
 		$this->commentsManager->method('create')->willReturn($comment);
 
-		$note = $this->service->createNote('my-uuid', 'msg', 'public');
+		$note = $this->service->createNote(new NoteDraft(objectUuid: 'my-uuid', message: 'msg', visibility: 'public'));
 
 		$this->assertSame(TimelineVisibilityService::PUBLIC_ENTRY, $note['visibility']);
 	}
@@ -322,7 +327,7 @@ class NoteServiceTest extends TestCase {
 		$this->userManager->method('get')->willReturn($user);
 		$this->commentsManager->method('get')->willReturn($comment);
 
-		$this->service->updateNote(1, null, 'public');
+		$this->service->editNote(1, new NoteEdit(message: null, visibility: 'public'));
 
 		$this->assertSame(
 			['source' => 'berichtenbox', 'visibility' => 'public'],
@@ -336,7 +341,7 @@ class NoteServiceTest extends TestCase {
 		$this->commentsManager->method('getForObject')->willReturn([$internal, $public]);
 		$this->userManager->method('get')->willReturn($this->createUser('admin'));
 
-		$result = $this->service->getNotesForObject('obj-uuid', 50, 0, 'public');
+		$result = $this->service->listNotes(new ObjectNotesQuery(objectUuid: 'obj-uuid', page: new ListQuery(limit: 50, offset: 0), visibility: 'public'));
 
 		$this->assertCount(1, $result);
 		$this->assertSame('Public', $result[0]['message']);
@@ -349,7 +354,7 @@ class NoteServiceTest extends TestCase {
 		$this->userManager->method('get')->willReturn($user);
 		$this->commentsManager->method('get')->willReturn($comment);
 
-		$note = $this->service->updateNote(1, null, 'public');
+		$note = $this->service->editNote(1, new NoteEdit(message: null, visibility: 'public'));
 
 		$this->assertSame(TimelineVisibilityService::PUBLIC_ENTRY, $note['visibility']);
 	}
@@ -365,7 +370,7 @@ class NoteServiceTest extends TestCase {
 
 		$this->expectException(NoteEditForbiddenException::class);
 
-		$this->service->updateNote(1, 'rewritten', 'public', false);
+		$this->service->editNote(1, new NoteEdit(message: 'rewritten', visibility: 'public', mayManage: false));
 	}
 
 	public function testGetNoteReturnsTheFlagItCarries(): void {
@@ -396,7 +401,7 @@ class NoteServiceTest extends TestCase {
 			->with('Applicant called, will send documents');
 		$this->commentsManager->expects($this->once())->method('save');
 
-		$this->service->updateNote(1, 'Applicant called, will send documents');
+		$this->service->editNote(1, new NoteEdit(message: 'Applicant called, will send documents'));
 	}
 
 	public function testSomebodyWhoManagesTheObjectMayRewriteAnothersNote(): void {
@@ -410,7 +415,7 @@ class NoteServiceTest extends TestCase {
 			->method('record')
 			->with(1, $this->callback(self::noteReading(message: 'msg', actor: 'handler')), 'supervisor');
 
-		$this->service->updateNote(1, 'rewritten', null, true);
+		$this->service->editNote(1, new NoteEdit(message: 'rewritten', visibility: null, mayManage: true));
 	}
 
 	public function testALockedNoteRefusesTheEditAndWritesNoVersion(): void {
@@ -425,7 +430,7 @@ class NoteServiceTest extends TestCase {
 
 		$this->expectException(NoteLockedException::class);
 
-		$this->service->updateNote(1, 'rewritten', null, true);
+		$this->service->editNote(1, new NoteEdit(message: 'rewritten', visibility: null, mayManage: true));
 	}
 
 	public function testANoteReadCarriesItsEditSummary(): void {
@@ -498,10 +503,10 @@ class NoteServiceTest extends TestCase {
 		$object = new \OCA\OpenRegister\Db\ObjectEntity();
 		$this->versions->expects($this->once())
 			->method('auditEdit')
-			->with($object, 9, 2)
+			->with($object, ['id' => 9, 'versionCount' => 2])
 			->willReturn(true);
 
-		$this->assertTrue($this->service->auditEdit($object, 9, 2));
+		$this->assertTrue($this->service->auditEdit($object, ['id' => 9, 'versionCount' => 2]));
 	}
 
 	public function testNoteVersionsRefusesANoteThatIsNotThere(): void {

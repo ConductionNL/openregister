@@ -9,6 +9,10 @@ namespace Unit\Controller;
 // phpcs:disable Squiz.PHP.DisallowInlineIf.Found -- PHPUnit fixture defaults.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Files\Service\ObjectNotesQuery;
+use OCA\OpenRegister\Files\Service\NoteEdit;
+use OCA\OpenRegister\Files\Service\NoteDraft;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\NotesControllerFactory;
 use Exception;
 use OCA\OpenRegister\Notifications\Controller\NotesController;
@@ -81,7 +85,7 @@ class NotesControllerTest extends TestCase {
 		$this->objectService->method('getObject')->willReturn($object);
 
 		$notes = [['id' => 1, 'message' => 'Note 1']];
-		$this->noteService->method('getNotesForObject')->willReturn($notes);
+		$this->noteService->method('listNotes')->willReturn($notes);
 		$this->request->method('getParams')->willReturn([]);
 
 		$result = $this->controller->index('reg', 'schema', 'obj-id');
@@ -179,7 +183,7 @@ class NotesControllerTest extends TestCase {
 		$this->objectService->method('getObject')->willReturn($object);
 		$this->noteService->method('requireNoteOf')->willThrowException(new Exception('Note not found', 404));
 		$this->noteService->expects($this->never())->method('deleteNote');
-		$this->noteService->expects($this->never())->method('updateNote');
+		$this->noteService->expects($this->never())->method('editNote');
 
 		$this->assertSame(404, $this->controller->destroy('reg', 'schema', 'obj-id', '1')->getStatus());
 		$this->assertSame(404, $this->controller->update('reg', 'schema', 'obj-id', '1')->getStatus());
@@ -222,8 +226,8 @@ class NotesControllerTest extends TestCase {
 		$this->visibility->method('effectiveFilter')->willReturn('public');
 
 		$this->noteService->expects($this->once())
-			->method('getNotesForObject')
-			->with('uuid-123', 50, 0, 'public')
+			->method('listNotes')
+			->with(new ObjectNotesQuery(objectUuid: 'uuid-123', page: new ListQuery(limit: 50, offset: 0), visibility: 'public'))
 			->willReturn([['id' => 2, 'message' => 'Public', 'visibility' => 'public']]);
 
 		$result = $this->controller->index('reg', 'schema', 'obj-id');
@@ -243,8 +247,8 @@ class NotesControllerTest extends TestCase {
 		$this->visibility->method('effectiveFilter')->willReturn(null);
 
 		$this->noteService->expects($this->once())
-			->method('getNotesForObject')
-			->with('uuid-123', 50, 0, null)
+			->method('listNotes')
+			->with(new ObjectNotesQuery(objectUuid: 'uuid-123', page: new ListQuery(limit: 50, offset: 0)))
 			->willReturn([['id' => 1], ['id' => 2]]);
 
 		$result = $this->controller->index('reg', 'schema', 'obj-id');
@@ -286,7 +290,7 @@ class NotesControllerTest extends TestCase {
 
 		$this->noteService->expects($this->once())
 			->method('createNote')
-			->with('uuid-123', 'Hello', 'public')
+			->with(new NoteDraft(objectUuid: 'uuid-123', message: 'Hello', visibility: 'public'))
 			->willReturn(['id' => 1, 'message' => 'Hello', 'visibility' => 'public']);
 
 		$result = $this->controller->create('reg', 'schema', 'obj-id');
@@ -299,7 +303,7 @@ class NotesControllerTest extends TestCase {
 		$this->objectService->method('getObject')->willReturn($object);
 		$this->request->method('getParams')->willReturn(['visibility' => 'public']);
 		$this->visibility->method('mayManage')->willReturn(false);
-		$this->noteService->expects($this->never())->method('updateNote');
+		$this->noteService->expects($this->never())->method('editNote');
 
 		$result = $this->controller->update('reg', 'schema', 'obj-id', '5');
 
@@ -314,8 +318,8 @@ class NotesControllerTest extends TestCase {
 
 		$this->noteService->method('getNote')->willReturn(['id' => 5, 'visibility' => 'internal']);
 		$this->noteService->expects($this->once())
-			->method('updateNote')
-			->with(5, null, 'public')
+			->method('editNote')
+			->with(5, $this->callback(fn (NoteEdit $edit): bool => $edit->message === null && $edit->visibility === 'public'))
 			->willReturn(['id' => 5, 'visibility' => 'public']);
 
 		$this->visibility->expects($this->once())
@@ -425,7 +429,7 @@ class NotesControllerTest extends TestCase {
 		$object = $this->createRealObjectEntity();
 		$this->objectService->method('getObject')->willReturn($object);
 		$this->request->method('getParams')->willReturn(['message' => 'rewritten']);
-		$this->noteService->method('updateNote')
+		$this->noteService->method('editNote')
 			->willThrowException(new \OCA\OpenRegister\Exception\NoteLockedException(5));
 
 		$this->noteService->expects($this->never())->method('auditEdit');
@@ -446,7 +450,7 @@ class NotesControllerTest extends TestCase {
 		$object = $this->createRealObjectEntity();
 		$this->objectService->method('getObject')->willReturn($object);
 		$this->request->method('getParams')->willReturn(['message' => 'rewritten']);
-		$this->noteService->method('updateNote')
+		$this->noteService->method('editNote')
 			->willThrowException(new \OCA\OpenRegister\Exception\NoteEditForbiddenException());
 
 		$result = $this->controller->update('reg', 'schema', 'obj-id', '5');
@@ -473,8 +477,8 @@ class NotesControllerTest extends TestCase {
 			->willReturn($mayManage);
 
 		$this->noteService->expects($this->once())
-			->method('updateNote')
-			->with(5, 'rewritten', null, $mayManage)
+			->method('editNote')
+			->with(5, new NoteEdit(message: 'rewritten', visibility: null, mayManage: $mayManage))
 			->willReturn(['id' => 5, 'versionCount' => 1]);
 
 		$this->assertSame(200, $this->controller->update('reg', 'schema', 'obj-id', '5')->getStatus());
@@ -492,11 +496,11 @@ class NotesControllerTest extends TestCase {
 		$this->objectService->method('getObject')->willReturn($object);
 		$this->request->method('getParams')->willReturn(['message' => 'rewritten']);
 		$this->visibility->method('mayManageObject')->willReturn(true);
-		$this->noteService->method('updateNote')->willReturn(['id' => 5, 'versionCount' => 1]);
+		$this->noteService->method('editNote')->willReturn(['id' => 5, 'versionCount' => 1]);
 
 		$this->noteService->expects($this->once())
 			->method('auditEdit')
-			->with($object, 5, 1)
+			->with($object, ['id' => 5, 'versionCount' => 1])
 			->willReturn(true);
 
 		$this->assertSame(200, $this->controller->update('reg', 'schema', 'obj-id', '5')->getStatus());
@@ -515,7 +519,7 @@ class NotesControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn(['visibility' => 'public']);
 		$this->visibility->method('mayManage')->willReturn(true);
 		$this->noteService->method('getNote')->willReturn(['id' => 5, 'visibility' => 'internal']);
-		$this->noteService->method('updateNote')->willReturn(['id' => 5, 'visibility' => 'public']);
+		$this->noteService->method('editNote')->willReturn(['id' => 5, 'visibility' => 'public']);
 
 		$this->noteService->expects($this->never())->method('auditEdit');
 
@@ -534,7 +538,7 @@ class NotesControllerTest extends TestCase {
 		$this->objectService->method('getObject')->willReturn($object);
 		$this->request->method('getParams')->willReturn(['message' => 'rewritten']);
 		$this->noteService->expects($this->once())
-			->method('updateNote')
+			->method('editNote')
 			->willReturn(['id' => 5, 'message' => 'rewritten', 'versionCount' => 1]);
 
 		$result = $this->controller->patch('reg', 'schema', 'obj-id', '5');

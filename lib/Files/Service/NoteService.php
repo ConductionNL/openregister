@@ -108,20 +108,18 @@ class NoteService implements NoteServiceInterface {
 	}//end __construct()
 
 	/**
-	 * Get notes for a specific OpenRegister object.
+	 * Get the first page of notes on an OpenRegister object, whatever their visibility.
+	 *
+	 * A page or a visibility filter goes through {@see listNotes()}.
 	 *
 	 * @param string $objectUuid The UUID of the OpenRegister object
-	 * @param int $limit Maximum number of notes to return (default 50)
-	 * @param int $offset Number of notes to skip (default 0)
-	 * @param string|null $visibility Keep only notes carrying this flag; null returns every note
 	 *
 	 * @return array Array of note arrays in JSON-friendly format
 	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
 	 */
-	public function getNotesForObject(string $objectUuid, int $limit = 50, int $offset = 0, ?string $visibility = null): array {
-		$page = new ListQuery(limit: $limit, offset: $offset);
-		return $this->listNotes(query: new ObjectNotesQuery(objectUuid: $objectUuid, page: $page, visibility: $visibility));
+	public function getNotesForObject(string $objectUuid): array {
+		return $this->listNotes(query: new ObjectNotesQuery(objectUuid: $objectUuid, page: new ListQuery(limit: 50, offset: 0)));
 	}//end getNotesForObject()
 
 	/**
@@ -209,19 +207,18 @@ class NoteService implements NoteServiceInterface {
 	 * Record on the object that one of its notes was rewritten.
 	 *
 	 * The object is the caller's, which is why this is not folded into
-	 * {@see updateNote()}: the controller holds the object, this service holds
+	 * {@see editNote()}: the controller holds the object, this service holds
 	 * the history, and the audit entry needs both.
 	 *
 	 * @param ObjectEntityInterface $object The object the note hangs on
-	 * @param int $noteId The note that was rewritten
-	 * @param int $versions The number of versions the note now has
+	 * @param array<string, mixed>  $note   The rewritten note as editNote() returned it (its id and versionCount)
 	 *
 	 * @return bool True when an audit entry was written
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	public function auditEdit(ObjectEntityInterface $object, int $noteId, int $versions): bool {
-		return $this->versions->auditEdit(object: StoredEntity::object(object: $object), noteId: $noteId, versions: $versions);
+	public function auditEdit(ObjectEntityInterface $object, array $note): bool {
+		return $this->versions->auditEdit(object: StoredEntity::object(object: $object), note: $note);
 	}//end auditEdit()
 
 	/**
@@ -251,11 +248,10 @@ class NoteService implements NoteServiceInterface {
 	}//end withEditSummaries()
 
 	/**
-	 * Create a new note on an OpenRegister object.
+	 * Create a new note on an OpenRegister object as the session user.
 	 *
-	 * @param string $objectUuid The UUID of the OpenRegister object
-	 * @param string $message The note message content
-	 * @param string|null $visibility `internal` or `public`; anything else, including null, stays internal
+	 * @param NoteDraft $draft The object, the message and the visibility (`internal` or `public`;
+	 *                         anything else, including null, stays internal)
 	 *
 	 * @return array The created note in JSON-friendly format
 	 *
@@ -263,51 +259,27 @@ class NoteService implements NoteServiceInterface {
 	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
 	 */
-	public function createNote(string $objectUuid, string $message, ?string $visibility = null): array {
-		$author = $this->sessionAuthor();
-		return $this->postNote(draft: new NoteDraft(objectUuid: $objectUuid, message: $message, visibility: $visibility), author: $author);
+	public function createNote(NoteDraft $draft): array {
+		return $this->postNote(draft: $draft, author: $this->sessionAuthor());
 	}//end createNote()
-
-	/**
-	 * Create a note attributed to a principal that is not a session user.
-	 *
-	 * An access link is not an account, and the whole value of the audit trail
-	 * is that a comment left through a link says so. Nextcloud's comments carry
-	 * an actor TYPE beside the actor id for exactly this reason, so the note is
-	 * written as the link rather than as whoever minted it.
-	 *
-	 * The actor is an argument rather than something this method reaches for:
-	 * the identity that will sit on the note is decided by the caller and is
-	 * visible at that call site.
-	 *
-	 * @param string $objectUuid The UUID of the OpenRegister object
-	 * @param string $message The note message content
-	 * @param string $actorType The comment actor type, e.g. `users` or `openregister_links`
-	 * @param string $actorId The actor id within that type
-	 * @param string|null $visibility `internal` or `public`; anything else, including null, stays internal
-	 *
-	 * @return array The created note in JSON-friendly format
-	 *
-	 * @throws Exception When the actor is not named.
-	 *
-	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
-	 */
-	public function createNoteAs(string $objectUuid, string $message, string $actorType, string $actorId, ?string $visibility = null): array {
-		$draft = new NoteDraft(objectUuid: $objectUuid, message: $message, visibility: $visibility);
-		return $this->postNote(draft: $draft, author: new NoteAuthor(type: $actorType, id: $actorId));
-	}//end createNoteAs()
 
 	/**
 	 * Write a note on an object under the given author.
 	 *
+	 * An access link is not an account, and the whole value of the audit trail
+	 * is that a comment left through a link says so. Nextcloud's comments carry
+	 * an actor TYPE beside the actor id for exactly this reason, so a note left
+	 * through a link is written as the link rather than as whoever minted it.
+	 * The author is decided by the caller and is visible at that call site.
+	 *
 	 * @param NoteDraft  $draft  The object, the text and the requested visibility.
-	 * @param NoteAuthor $author The actor the note is filed under.
+	 * @param NoteAuthor $author The actor the note is filed under, e.g. type `users` or `openregister_links`.
 	 *
 	 * @throws Exception If the author is blank.
 	 *
 	 * @return array<string, mixed> The created note.
 	 *
-	 * @spec openspec/specs/file-actions/spec.md
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
 	 */
 	public function postNote(NoteDraft $draft, NoteAuthor $author): array {
 		if (trim($author->type) === '' || trim($author->id) === '') {
@@ -341,7 +313,7 @@ class NoteService implements NoteServiceInterface {
 	}//end sessionAuthor()
 
 	/**
-	 * Update an existing note's message.
+	 * Edit a note's text and/or visibility.
 	 *
 	 * Rewriting the message is the author's own right, or the right of
 	 * somebody who manages the object: a note is a signed statement, so
@@ -351,32 +323,8 @@ class NoteService implements NoteServiceInterface {
 	 * why a visibility-only write does not ask who wrote the note.
 	 *
 	 * The text the note is losing is kept as a version BEFORE the comment is
-	 * saved: after the save it no longer exists anywhere.
-	 *
-	 * @param int $noteId The ID of the note to update
-	 * @param string|null $message The new message content, or null to leave it alone
-	 * @param string|null $visibility The new flag, or null to leave it alone
-	 * @param bool $mayManage Whether the caller holds `manage` on the object the note hangs on
-	 *
-	 * @return array The updated note in JSON-friendly format
-	 *
-	 * @throws NoteLockedException If the note is locked
-	 * @throws NoteEditForbiddenException If the caller is neither the author nor a manager
-	 * @throws Exception If the note is not found or nobody is logged in
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $mayManage is a permission verdict the caller resolved, not a mode switch.
-	 *
-	 * @spec openspec/specs/object-interactions/spec.md
-	 */
-	public function updateNote(int $noteId, ?string $message = null, ?string $visibility = null, bool $mayManage = false): array {
-		return $this->editNote(noteId: $noteId, edit: new NoteEdit(message: $message, visibility: $visibility, mayManage: $mayManage));
-	}//end updateNote()
-
-	/**
-	 * Edit a note's text and/or visibility.
-	 *
-	 * A text edit by anyone but the author needs the manage right and keeps
-	 * the previous text as a version; a locked note refuses every edit.
+	 * saved: after the save it no longer exists anywhere. A locked note
+	 * refuses every edit.
 	 *
 	 * @param int      $noteId The note to edit.
 	 * @param NoteEdit $edit   The new text, the new visibility and the manage right.

@@ -26,6 +26,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Files\Service\ObjectNotesQuery;
+use OCA\OpenRegister\Files\Service\NoteEdit;
+use OCA\OpenRegister\Files\Service\NoteDraft;
+use OCA\OpenRegister\Db\ListQuery;
 use Exception;
 use OCA\OpenRegister\Controller\TaskNotesController;
 use OCA\OpenRegister\Db\Task;
@@ -213,7 +217,7 @@ class TaskNotesControllerA24GoldenTest extends TestCase {
 	 */
 	public function testIndexAllowed(): void {
 		$this->givenReadable();
-		$this->notes->expects($this->once())->method('getNotesForObject')->with('real-uuid', 5, 10)->willReturn([['id' => 1]]);
+		$this->notes->expects($this->once())->method('listNotes')->with(new ObjectNotesQuery(objectUuid: 'real-uuid', page: new ListQuery(limit: 5, offset: 10)))->willReturn([['id' => 1]]);
 
 		$response = $this->controller(params: ['limit' => '5', 'offset' => '10'])->index('t-1');
 
@@ -228,7 +232,7 @@ class TaskNotesControllerA24GoldenTest extends TestCase {
 	 */
 	public function testIndexDefaults(): void {
 		$this->givenReadable();
-		$this->notes->expects($this->once())->method('getNotesForObject')->with('real-uuid', 50, 0)->willReturn([]);
+		$this->notes->expects($this->once())->method('listNotes')->with(new ObjectNotesQuery(objectUuid: 'real-uuid', page: new ListQuery(limit: 50, offset: 0)))->willReturn([]);
 
 		$response = $this->controller()->index('t-1');
 
@@ -242,7 +246,7 @@ class TaskNotesControllerA24GoldenTest extends TestCase {
 	 */
 	public function testCreateAllowed(): void {
 		$this->givenReadable();
-		$this->notes->expects($this->once())->method('createNote')->with('real-uuid', 'hello')->willReturn(['id' => 3]);
+		$this->notes->expects($this->once())->method('createNote')->with(new NoteDraft(objectUuid: 'real-uuid', message: 'hello'))->willReturn(['id' => 3]);
 
 		$response = $this->controller(params: ['message' => '  hello  '])->create('t-1');
 
@@ -273,7 +277,7 @@ class TaskNotesControllerA24GoldenTest extends TestCase {
 	public function testUpdateAllowed(): void {
 		$this->givenReadable();
 		$this->notes->expects($this->once())->method('requireNoteOf')->with('t-1', 7);
-		$this->notes->expects($this->once())->method('updateNote')->with(7, 'new')->willReturn(['id' => 7]);
+		$this->notes->expects($this->once())->method('editNote')->with(7, new NoteEdit(message: 'new'))->willReturn(['id' => 7]);
 
 		$response = $this->controller(params: ['message' => 'new'])->update('t-1', '7');
 
@@ -289,7 +293,7 @@ class TaskNotesControllerA24GoldenTest extends TestCase {
 	public function testUpdateBlankMessageBeforeOwnership(): void {
 		$this->givenReadable();
 		$this->notes->expects($this->never())->method('requireNoteOf');
-		$this->notes->expects($this->never())->method('updateNote');
+		$this->notes->expects($this->never())->method('editNote');
 
 		$response = $this->controller(params: ['message' => ''])->update('t-1', '7');
 
@@ -305,7 +309,7 @@ class TaskNotesControllerA24GoldenTest extends TestCase {
 	public function testForeignNoteIsRefused(): void {
 		$this->givenReadable();
 		$this->notes->method('requireNoteOf')->willThrowException(new Exception('not yours'));
-		$this->notes->expects($this->never())->method('updateNote');
+		$this->notes->expects($this->never())->method('editNote');
 		$this->notes->expects($this->never())->method('deleteNote');
 
 		$update = $this->controller(params: ['message' => 'x'])->update('t-1', '7');
@@ -348,7 +352,7 @@ class TaskNotesControllerA24GoldenTest extends TestCase {
 	 * @return void
 	 */
 	private function expectNoNoteTouched(): void {
-		foreach (['getNotesForObject', 'createNote', 'updateNote', 'deleteNote', 'requireNoteOf'] as $method) {
+		foreach (['listNotes', 'createNote', 'editNote', 'deleteNote', 'requireNoteOf'] as $method) {
 			$this->notes->expects($this->never())->method($method);
 		}
 	}//end expectNoNoteTouched()

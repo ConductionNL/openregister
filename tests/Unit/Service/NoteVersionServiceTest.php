@@ -185,7 +185,7 @@ class NoteVersionServiceTest extends TestCase {
 				}
 			);
 
-		$this->assertTrue($this->service->auditEdit($object, 9, 1));
+		$this->assertTrue($this->service->auditEdit($object, ['id' => 9, 'versionCount' => 1]));
 
 		$this->assertSame(['noteId' => 9, 'versionCount' => 1], $context);
 		$this->assertSame('note.edited', NoteVersionService::AUDIT_ACTION);
@@ -199,6 +199,6 @@ class NoteVersionServiceTest extends TestCase {
 			->willThrowException(new RuntimeException('trail unavailable'));
 		$this->logger->expects($this->once())->method('error');
 
-		$this->assertFalse($this->service->auditEdit($object, 9, 1));
+		$this->assertFalse($this->service->auditEdit($object, ['id' => 9, 'versionCount' => 1]));
 	}
 }

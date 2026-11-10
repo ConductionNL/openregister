@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Files\Service\NoteDraft;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -128,8 +129,7 @@ class ObjectInteractionsIntegrationTest extends TestCase {
 		// real comments backend: created via NoteService, then readable
 		// via the same service's listing API.
 		$created = $this->noteService->createNote(
-			(string)$this->testObject->getUuid(),
-			'Integration test note message'
+			new NoteDraft(objectUuid: (string)$this->testObject->getUuid(), message: 'Integration test note message')
 		);
 
 		$this->assertIsArray($created);

@@ -26,6 +26,10 @@ use Exception;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Exception\NoteEditForbiddenException;
 use OCA\OpenRegister\Exception\NoteLockedException;
+use OCA\OpenRegister\Files\Service\NoteAuthor;
+use OCA\OpenRegister\Files\Service\NoteDraft;
+use OCA\OpenRegister\Files\Service\NoteEdit;
+use OCA\OpenRegister\Files\Service\ObjectNotesQuery;
 
 /**
  * Every public method of NoteService. Callers depend on this interface, not on the class.
@@ -33,23 +37,28 @@ use OCA\OpenRegister\Exception\NoteLockedException;
 interface NoteServiceInterface {
 
 	/**
-	 * Get notes for a specific OpenRegister object.
+	 * Get the first page of notes on an OpenRegister object, whatever their visibility.
+	 *
+	 * A page or a visibility filter goes through {@see listNotes()}.
 	 *
 	 * @param string $objectUuid The UUID of the OpenRegister object
-	 * @param int $limit Maximum number of notes to return (default 50)
-	 * @param int $offset Number of notes to skip (default 0)
-	 * @param string|null $visibility Keep only notes carrying this flag; null returns every note
 	 *
 	 * @return array Array of note arrays in JSON-friendly format
 	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
 	 */
-	public function getNotesForObject(
-		string $objectUuid,
-		int $limit = 50,
-		int $offset = 0,
-		?string $visibility = null,
-	): array;
+	public function getNotesForObject(string $objectUuid): array;
+
+	/**
+	 * One page of the notes on an object, with their edit summaries, filtered by visibility.
+	 *
+	 * @param ObjectNotesQuery $query The object, the page and the visibility filter.
+	 *
+	 * @return array<int, array<string, mixed>> The notes.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function listNotes(ObjectNotesQuery $query): array;
 
 	/**
 	 * Read one note by its id.
@@ -88,25 +97,23 @@ interface NoteServiceInterface {
 	 * Record on the object that one of its notes was rewritten.
 	 *
 	 * The object is the caller's, which is why this is not folded into
-	 * {@see updateNote()}: the controller holds the object, this service holds
+	 * {@see editNote()}: the controller holds the object, this service holds
 	 * the history, and the audit entry needs both.
 	 *
 	 * @param ObjectEntityInterface $object The object the note hangs on
-	 * @param int $noteId The note that was rewritten
-	 * @param int $versions The number of versions the note now has
+	 * @param array<string, mixed>  $note   The rewritten note as editNote() returned it (its id and versionCount)
 	 *
 	 * @return bool True when an audit entry was written
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	public function auditEdit(ObjectEntityInterface $object, int $noteId, int $versions): bool;
+	public function auditEdit(ObjectEntityInterface $object, array $note): bool;
 
 	/**
-	 * Create a new note on an OpenRegister object.
+	 * Create a new note on an OpenRegister object as the session user.
 	 *
-	 * @param string $objectUuid The UUID of the OpenRegister object
-	 * @param string $message The note message content
-	 * @param string|null $visibility `internal` or `public`; anything else, including null, stays internal
+	 * @param NoteDraft $draft The object, the message and the visibility (`internal` or `public`;
+	 *                         anything else, including null, stays internal)
 	 *
 	 * @return array The created note in JSON-friendly format
 	 *
@@ -114,42 +121,30 @@ interface NoteServiceInterface {
 	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
 	 */
-	public function createNote(string $objectUuid, string $message, ?string $visibility = null): array;
+	public function createNote(NoteDraft $draft): array;
 
 	/**
-	 * Create a note attributed to a principal that is not a session user.
+	 * Write a note on an object under the given author.
 	 *
 	 * An access link is not an account, and the whole value of the audit trail
 	 * is that a comment left through a link says so. Nextcloud's comments carry
-	 * an actor TYPE beside the actor id for exactly this reason, so the note is
-	 * written as the link rather than as whoever minted it.
+	 * an actor TYPE beside the actor id for exactly this reason, so a note left
+	 * through a link is written as the link rather than as whoever minted it.
+	 * The author is decided by the caller and is visible at that call site.
 	 *
-	 * The actor is an argument rather than something this method reaches for:
-	 * the identity that will sit on the note is decided by the caller and is
-	 * visible at that call site.
+	 * @param NoteDraft  $draft  The object, the text and the requested visibility.
+	 * @param NoteAuthor $author The actor the note is filed under, e.g. type `users` or `openregister_links`.
 	 *
-	 * @param string $objectUuid The UUID of the OpenRegister object
-	 * @param string $message The note message content
-	 * @param string $actorType The comment actor type, e.g. `users` or `openregister_links`
-	 * @param string $actorId The actor id within that type
-	 * @param string|null $visibility `internal` or `public`; anything else, including null, stays internal
+	 * @throws Exception If the author is blank.
 	 *
-	 * @return array The created note in JSON-friendly format
-	 *
-	 * @throws Exception When the actor is not named.
+	 * @return array<string, mixed> The created note.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
 	 */
-	public function createNoteAs(
-		string $objectUuid,
-		string $message,
-		string $actorType,
-		string $actorId,
-		?string $visibility = null,
-	): array;
+	public function postNote(NoteDraft $draft, NoteAuthor $author): array;
 
 	/**
-	 * Update an existing note's message.
+	 * Edit a note's text and/or visibility.
 	 *
 	 * Rewriting the message is the author's own right, or the right of
 	 * somebody who manages the object: a note is a signed statement, so
@@ -159,29 +154,21 @@ interface NoteServiceInterface {
 	 * why a visibility-only write does not ask who wrote the note.
 	 *
 	 * The text the note is losing is kept as a version BEFORE the comment is
-	 * saved: after the save it no longer exists anywhere.
+	 * saved: after the save it no longer exists anywhere. A locked note
+	 * refuses every edit.
 	 *
-	 * @param int $noteId The ID of the note to update
-	 * @param string|null $message The new message content, or null to leave it alone
-	 * @param string|null $visibility The new flag, or null to leave it alone
-	 * @param bool $mayManage Whether the caller holds `manage` on the object the note hangs on
+	 * @param int      $noteId The note to edit.
+	 * @param NoteEdit $edit   The new text, the new visibility and the manage right.
 	 *
-	 * @return array The updated note in JSON-friendly format
+	 * @throws Exception If no user is logged in or the note does not exist.
+	 * @throws NoteLockedException If the note is locked.
+	 * @throws NoteEditForbiddenException If the editor may not rewrite the text.
 	 *
-	 * @throws NoteLockedException If the note is locked
-	 * @throws NoteEditForbiddenException If the caller is neither the author nor a manager
-	 * @throws Exception If the note is not found or nobody is logged in
+	 * @return array<string, mixed> The updated note.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $mayManage is a permission verdict the caller resolved, not a mode switch.
-	 *
-	 * @spec openspec/specs/object-interactions/spec.md
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function updateNote(
-		int $noteId,
-		?string $message = null,
-		?string $visibility = null,
-		bool $mayManage = false,
-	): array;
+	public function editNote(int $noteId, NoteEdit $edit): array;
 
 	/**
 	 * Delete a note by its ID.

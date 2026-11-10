@@ -25,6 +25,11 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Files\Service\ObjectNotesQuery;
+use OCA\OpenRegister\Files\Service\NoteEdit;
+use OCA\OpenRegister\Files\Service\NoteDraft;
+use OCA\OpenRegister\Files\Service\NoteAuthor;
+use OCA\OpenRegister\Db\ListQuery;
 use Exception;
 use OCA\OpenRegister\Exception\NoteEditForbiddenException;
 use OCA\OpenRegister\Files\Service\NoteAccounts;
@@ -134,7 +139,7 @@ class NoteServiceWriteContractTest extends TestCase {
 		$this->comments->expects($this->never())->method('save');
 		$this->expectExceptionMessage('No user logged in');
 
-		$this->service->updateNote(noteId: 1, message: 'x');
+		$this->service->editNote(1, new NoteEdit(message: 'x'));
 	}//end testUpdateWithoutUserIsRefused()
 
 	/**
@@ -148,7 +153,7 @@ class NoteServiceWriteContractTest extends TestCase {
 		$this->comments->expects($this->never())->method('save');
 		$this->expectExceptionMessage('Note not found');
 
-		$this->service->updateNote(noteId: 1, message: 'x');
+		$this->service->editNote(1, new NoteEdit(message: 'x'));
 	}//end testUpdateOfUnknownNoteIsRefused()
 
 	/**
@@ -163,13 +168,13 @@ class NoteServiceWriteContractTest extends TestCase {
 
 		$refused = false;
 		try {
-			$this->service->updateNote(noteId: 1, message: 'x', visibility: null, mayManage: false);
+			$this->service->editNote(1, new NoteEdit(message: 'x', visibility: null, mayManage: false));
 		} catch (NoteEditForbiddenException $e) {
 			$refused = true;
 		}
 
 		self::assertTrue($refused);
-		$note = $this->service->updateNote(noteId: 1, message: 'x', visibility: null, mayManage: true);
+		$note = $this->service->editNote(1, new NoteEdit(message: 'x', visibility: null, mayManage: true));
 		self::assertSame(1, $note['id']);
 	}//end testRewriteOfAnothersNoteNeedsTheManageRight()
 
@@ -185,7 +190,7 @@ class NoteServiceWriteContractTest extends TestCase {
 		$comment->expects($this->once())->method('setMessage')->with('new text');
 		$this->versions->expects($this->once())->method('record');
 
-		$this->service->updateNote(noteId: 1, message: 'new text');
+		$this->service->editNote(1, new NoteEdit(message: 'new text'));
 	}//end testAuthorMayRewriteOwnNote()
 
 	/**
@@ -201,7 +206,7 @@ class NoteServiceWriteContractTest extends TestCase {
 		$comment->expects($this->once())->method('setMetaData')->with(['visibility' => 'public']);
 		$this->versions->expects($this->never())->method('record');
 
-		$this->service->updateNote(noteId: 1, message: null, visibility: 'public');
+		$this->service->editNote(1, new NoteEdit(message: null, visibility: 'public'));
 	}//end testVisibilityOnlyEditWritesNoVersion()
 
 	/**
@@ -214,7 +219,7 @@ class NoteServiceWriteContractTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('A note needs an actor');
 
-		$this->service->createNoteAs(objectUuid: 'u', message: 'm', actorType: 'users', actorId: '  ');
+		$this->service->postNote(new NoteDraft(objectUuid: 'u', message: 'm'), new NoteAuthor(type: 'users', id: '  '));
 	}//end testCreateAsWithBlankActorIsRefused()
 
 	/**
@@ -232,7 +237,7 @@ class NoteServiceWriteContractTest extends TestCase {
 		$comment->expects($this->once())->method('setMetaData')->with(['visibility' => 'public']);
 		$this->comments->expects($this->once())->method('save')->with($comment);
 
-		$this->service->createNoteAs(objectUuid: 'u', message: 'm', actorType: ' guests ', actorId: ' guest ', visibility: 'public');
+		$this->service->postNote(new NoteDraft(objectUuid: 'u', message: 'm', visibility: 'public'), new NoteAuthor(type: ' guests ', id: ' guest '));
 	}//end testCreateAsFilesTheTrimmedActor()
 
 	/**
@@ -246,7 +251,7 @@ class NoteServiceWriteContractTest extends TestCase {
 			->with('users', 'alice', 'openregister', 'u')
 			->willReturn($this->comment('alice'));
 
-		$this->service->createNote(objectUuid: 'u', message: 'm');
+		$this->service->createNote(new NoteDraft(objectUuid: 'u', message: 'm'));
 	}//end testCreateFilesUnderTheSessionUser()
 
 	/**
@@ -258,6 +263,6 @@ class NoteServiceWriteContractTest extends TestCase {
 		$this->comments->expects($this->never())->method('create');
 		$this->expectExceptionMessage('No user logged in');
 
-		$this->service->createNote(objectUuid: 'u', message: 'm');
+		$this->service->createNote(new NoteDraft(objectUuid: 'u', message: 'm'));
 	}//end testCreateWithoutUserIsRefused()
 }//end class

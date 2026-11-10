@@ -237,16 +237,18 @@ class NoteVersionService {
 	 * trail stays small and the text stays in the versions, which is what
 	 * ADR-003 asks of an immutable trail.
 	 *
-	 * @param ObjectEntity $object   The object the note hangs on.
-	 * @param integer      $noteId   The note that was rewritten.
-	 * @param integer      $versions The number of versions the note now has.
+	 * @param ObjectEntity         $object The object the note hangs on.
+	 * @param array<string, mixed> $note   The rewritten note, carrying its id and versionCount.
 	 *
 	 * @return boolean True when an audit entry was written.
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	public function auditEdit(ObjectEntity $object, int $noteId, int $versions): bool {
-		return $this->writeEditEntry(object: $object, context: ['noteId' => $noteId, 'versionCount' => $versions]);
+	public function auditEdit(ObjectEntity $object, array $note): bool {
+		return $this->writeEditEntry(
+			object: $object,
+			context: ['noteId' => (int)($note['id'] ?? 0), 'versionCount' => (int)($note['versionCount'] ?? 0)]
+		);
 	}//end auditEdit()
 
 	/**

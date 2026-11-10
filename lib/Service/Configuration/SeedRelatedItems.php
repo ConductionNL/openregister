@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Configuration;
 
+use OCA\OpenRegister\Files\Service\NoteDraft;
 use OCA\OpenRegister\Service\FileWriterInterface;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
@@ -310,7 +311,7 @@ final class SeedRelatedItems
 		}
 
 		try {
-			$this->noteService->createNote((string) $target->object->getUuid(), $message);
+			$this->noteService->createNote(draft: new NoteDraft(objectUuid: (string) $target->object->getUuid(), message: $message));
 			return 1;
 		} catch (Throwable $e) {
 			$this->failed(target: $target, detail: ['kind' => 'note', 'error' => $e->getMessage()]);

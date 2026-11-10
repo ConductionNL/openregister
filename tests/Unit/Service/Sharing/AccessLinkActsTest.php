@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Sharing;
 
+use OCA\OpenRegister\Files\Service\NoteDraft;
+use OCA\OpenRegister\Files\Service\NoteAuthor;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
@@ -51,8 +53,11 @@ class AccessLinkActsTest extends TestCase {
 		$object->setUuid('o-1');
 
 		$notes = $this->createMock(NoteServiceInterface::class);
-		$notes->expects($this->once())->method('createNoteAs')
-			->with('o-1', 'hello', 'openregister_links', 'link:l-1', 'public')
+		$notes->expects($this->once())->method('postNote')
+			->with(
+				new NoteDraft(objectUuid: 'o-1', message: 'hello', visibility: 'public'),
+				new NoteAuthor(type: 'openregister_links', id: 'link:l-1')
+			)
 			->willReturn(['id' => 9]);
 		$files = $this->createMock(ObjectFilesInterface::class);
 		$files->expects($this->never())->method('addFile');
@@ -77,7 +82,7 @@ class AccessLinkActsTest extends TestCase {
 			->willReturn($stored);
 		$files->expects($this->once())->method('formatFile')->with($stored)->willReturn(['name' => 'a.pdf', 'shared' => false]);
 		$notes = $this->createMock(NoteServiceInterface::class);
-		$notes->expects($this->never())->method('createNoteAs');
+		$notes->expects($this->never())->method('postNote');
 
 		$acts = new AccessLinkActs(notes: $notes, files: $files);
 

@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\Timeline;
 
+use OCA\OpenRegister\Files\Service\NoteDraft;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
@@ -89,9 +90,11 @@ class TimelineWriteService {
 		$message = $this->resolveMessage(object: $object, data: $data);
 
 		$note = $this->notes->createNote(
-			objectUuid: (string)$object->getUuid(),
-			message: $message,
-			visibility: $this->stringOrNull(data: $data, key: 'visibility')
+			draft: new NoteDraft(
+				objectUuid: (string)$object->getUuid(),
+				message: $message,
+				visibility: $this->stringOrNull(data: $data, key: 'visibility')
+			)
 		);
 
 		$noteParts = ['message' => $message, 'commentId' => ($note['id'] ?? null)];

@@ -27,6 +27,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Notifications\Controller;
 
+use OCA\OpenRegister\Files\Service\ObjectNotesQuery;
+use OCA\OpenRegister\Files\Service\NoteEdit;
+use OCA\OpenRegister\Files\Service\NoteDraft;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NoteEditForbiddenException;
@@ -167,13 +170,14 @@ class A26NotesControllerGoldenTest extends TestCase {
 
 	private function noteService(): NoteService {
 		$notes = $this->createMock(NoteService::class);
-		$notes->method('getNotesForObject')->willReturnCallback(function (string $objectUuid, int $limit, int $offset, ?string $visibility = null): array {
-			$this->log(call: 'getNotesForObject', args: [$objectUuid, $limit, $offset, $visibility]);
+		$notes->method('listNotes')->willReturnCallback(function (ObjectNotesQuery $query): array {
+			$this->log(call: 'getNotesForObject', args: [$query->objectUuid, $query->page->limit, $query->page->offset, $query->visibility]);
 			$this->failWhen(knob: 'list', call: 'list');
 			return [['id' => 1, 'visibility' => 'public']];
 		});
-		$notes->method('createNote')->willReturnCallback(function (string $objectUuid, string $message, ?string $visibility = null): array {
-			$this->log(call: 'createNote', args: [$objectUuid, $message, $visibility]);
+		$notes->method('createNote')->willReturnCallback(function (NoteDraft $draft): array {
+			$message = $draft->message;
+			$this->log(call: 'createNote', args: [$draft->objectUuid, $message, $draft->visibility]);
 			$this->failWhen(knob: 'create', call: 'create');
 			return ['id' => 12, 'message' => $message];
 		});
@@ -186,8 +190,9 @@ class A26NotesControllerGoldenTest extends TestCase {
 			$this->failWhen(knob: 'getNote', call: 'getNote');
 			return ['id' => $noteId, 'visibility' => 'internal'];
 		});
-		$notes->method('updateNote')->willReturnCallback(function (int $noteId, ?string $message = null, ?string $visibility = null, bool $mayManage = false): array {
-			$this->log(call: 'updateNote', args: [$noteId, $message, $visibility, $mayManage]);
+		$notes->method('editNote')->willReturnCallback(function (int $noteId, NoteEdit $edit): array {
+			$visibility = $edit->visibility;
+			$this->log(call: 'updateNote', args: [$noteId, $edit->message, $visibility, $edit->mayManage]);
 			match ($this->knobs['update'] ?? null) {
 				'locked'    => throw new NoteLockedException(12),
 				'forbidden' => throw new NoteEditForbiddenException(),
@@ -195,7 +200,7 @@ class A26NotesControllerGoldenTest extends TestCase {
 			};
 			return ['id' => $noteId, 'visibility' => $visibility ?? 'internal', 'versionCount' => '3'];
 		});
-		$notes->method('auditEdit')->willReturnCallback(fn (mixed $object, int $noteId, int $versions): bool => $this->log(call: 'auditEdit', args: [$noteId, $versions], result: true));
+		$notes->method('auditEdit')->willReturnCallback(fn (mixed $object, array $note): bool => $this->log(call: 'auditEdit', args: [$note['id'], (int)$note['versionCount']], result: true));
 		$notes->method('noteVersions')->willReturnCallback(function (int $noteId): array {
 			$this->log(call: 'noteVersions', args: [$noteId]);
 			$this->failWhen(knob: 'versions', call: 'versions');

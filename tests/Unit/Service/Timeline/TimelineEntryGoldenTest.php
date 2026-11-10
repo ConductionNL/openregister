@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Timeline;
 
+use OCA\OpenRegister\Files\Service\NoteDraft;
 use OCA\OpenRegister\Notifications\Service\Timeline\WrittenEntry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryDerivations;
@@ -255,8 +256,8 @@ class TimelineEntryGoldenTest extends TestCase {
 	private function writeService(TimelineEntryService $entries, ?callable $failing = null): TimelineWriteService {
 		$notes = $this->createMock(NoteService::class);
 		$notes->method('createNote')->willReturnCallback(
-			function (string $objectUuid, string $message, ?string $visibility): array {
-				$this->log[] = 'note '.json_encode([$objectUuid, $message, $visibility]);
+			function (NoteDraft $draft): array {
+				$this->log[] = 'note '.json_encode([$draft->objectUuid, $draft->message, $draft->visibility]);
 				return ['id' => 41];
 			}
 		);

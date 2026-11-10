@@ -28,6 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
+use OCA\OpenRegister\Files\Service\ObjectNotesQuery;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -106,8 +108,8 @@ class BuiltinProvidersMetadataTest extends TestCase {
 	public function testNotesProviderListDelegatesToService(): void {
 		$noteService = $this->createMock(NoteService::class);
 		$noteService->expects($this->once())
-			->method('getNotesForObject')
-			->with('object-uuid', 50, 0)
+			->method('listNotes')
+			->with(new ObjectNotesQuery(objectUuid: 'object-uuid', page: new ListQuery(limit: 50, offset: 0)))
 			->willReturn([['id' => 1, 'message' => 'hello']]);
 
 		$provider = new NotesProvider($noteService, $this->buildL10n());

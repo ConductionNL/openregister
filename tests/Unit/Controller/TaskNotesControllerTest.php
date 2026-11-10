@@ -39,6 +39,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Files\Service\ObjectNotesQuery;
+use OCA\OpenRegister\Files\Service\NoteEdit;
+use OCA\OpenRegister\Files\Service\NoteDraft;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Controller\TaskNotesController;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Files\Service\NoteService;
@@ -159,7 +163,7 @@ class TaskNotesControllerTest extends TestCase {
 	 */
 	public function testIndexIs404AndReadsNothingForACallerWhoMayNotReadTheTask(): void {
 		$this->givenUnreadable();
-		$this->notes->expects($this->never())->method('getNotesForObject');
+		$this->notes->expects($this->never())->method('listNotes');
 
 		$response = $this->controller()->index(uuid: 't-1');
 
@@ -178,14 +182,14 @@ class TaskNotesControllerTest extends TestCase {
 		$this->givenReadable();
 		$this->notes->method('requireNoteOf')->willThrowException(new \Exception('Note not found', 404));
 		$this->notes->expects($this->never())->method('deleteNote');
-		$this->notes->expects($this->never())->method('updateNote');
+		$this->notes->expects($this->never())->method('editNote');
 
 		$this->assertSame(404, $this->controller()->destroy('t-1', '5')->getStatus());
 		$this->assertSame(404, $this->controller(['message' => 'x'])->update('t-1', '5')->getStatus());
 	}
 
 	public function testAnAbsentTaskAnswersExactlyAsAnUnreadableOne(): void {
-		$this->notes->expects($this->never())->method('getNotesForObject');
+		$this->notes->expects($this->never())->method('listNotes');
 
 		$this->tasks->method('get')->willThrowException(new DoesNotExistException('gone'));
 		$absent = $this->controller()->index(uuid: 't-1');
@@ -215,7 +219,7 @@ class TaskNotesControllerTest extends TestCase {
 				return true;
 			}
 		);
-		$this->notes->method('getNotesForObject')->willReturn([]);
+		$this->notes->method('listNotes')->willReturn([]);
 
 		$this->controller()->index(uuid: 't-1');
 	}//end testVisibilityIsAskedAboutTheResolvedTaskAndTheSessionUid()
@@ -228,8 +232,8 @@ class TaskNotesControllerTest extends TestCase {
 	 */
 	public function testIndexReadsTheNotesOfTheTaskUuid(): void {
 		$this->givenReadable();
-		$this->notes->expects($this->once())->method('getNotesForObject')
-			->with('t-1', 5, 10)
+		$this->notes->expects($this->once())->method('listNotes')
+			->with(new ObjectNotesQuery(objectUuid: 't-1', page: new ListQuery(limit: 5, offset: 10)))
 			->willReturn([['id' => 1, 'message' => 'hello']]);
 
 		$response = $this->controller(['limit' => '5', 'offset' => '10'])->index(uuid: 't-1');
@@ -263,7 +267,7 @@ class TaskNotesControllerTest extends TestCase {
 	public function testCreateStoresTheNoteAgainstTheTaskUuid(): void {
 		$this->givenReadable();
 		$this->notes->expects($this->once())->method('createNote')
-			->with('t-1', 'looks good')
+			->with(new NoteDraft(objectUuid: 't-1', message: 'looks good'))
 			->willReturn(['id' => 7, 'message' => 'looks good']);
 
 		$response = $this->controller(['message' => '  looks good  '])->create(uuid: 't-1');
@@ -295,7 +299,7 @@ class TaskNotesControllerTest extends TestCase {
 	 */
 	public function testUpdateIs404AndRewritesNothingForACallerWhoMayNotReadTheTask(): void {
 		$this->givenUnreadable();
-		$this->notes->expects($this->never())->method('updateNote');
+		$this->notes->expects($this->never())->method('editNote');
 
 		$response = $this->controller(['message' => 'rewritten'])->update(uuid: 't-1', noteId: '7');
 
@@ -310,8 +314,8 @@ class TaskNotesControllerTest extends TestCase {
 	 */
 	public function testUpdateRewritesTheNamedNote(): void {
 		$this->givenReadable();
-		$this->notes->expects($this->once())->method('updateNote')
-			->with(7, 'rewritten')
+		$this->notes->expects($this->once())->method('editNote')
+			->with(7, new NoteEdit(message: 'rewritten'))
 			->willReturn(['id' => 7, 'message' => 'rewritten']);
 
 		$response = $this->controller(['message' => 'rewritten'])->update(uuid: 't-1', noteId: '7');

@@ -47,7 +47,7 @@ class ProviderItemsBelongToObjectTest extends TestCase {
 		$notes = $this->createMock(NoteService::class);
 		$notes->method('requireNoteOf')->with('uuid-mine', 5)->willThrowException(new Exception('Note not found', 404));
 		$notes->expects($this->never())->method('deleteNote');
-		$notes->expects($this->never())->method('updateNote');
+		$notes->expects($this->never())->method('editNote');
 
 		return new NotesProvider($notes, $this->createMock(IL10N::class));
 	}

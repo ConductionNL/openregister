@@ -29,6 +29,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 
+use OCA\OpenRegister\Files\Service\ObjectNotesQuery;
+use OCA\OpenRegister\Files\Service\NoteEdit;
+use OCA\OpenRegister\Files\Service\NoteDraft;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCP\IL10N;
@@ -141,7 +145,9 @@ class NotesProvider extends AbstractIntegrationProvider {
 	private function notesPage(string $objectId, array $filters): array {
 		$limit = (int)($filters['_limit'] ?? 50);
 		$offset = (int)($filters['_page'] ?? 0) * $limit;
-		return $this->noteService->getNotesForObject(objectUuid: $objectId, limit: $limit, offset: max(0, $offset));
+		return $this->noteService->listNotes(
+			query: new ObjectNotesQuery(objectUuid: $objectId, page: new ListQuery(limit: $limit, offset: max(0, $offset)))
+		);
 	}//end notesPage()
 
 	/**
@@ -165,7 +171,7 @@ class NotesProvider extends AbstractIntegrationProvider {
 	 */
 	public function create(string $register, string $schema, string $objectId, array $payload): array {
 		$message = (string)($payload['message'] ?? '');
-		return $this->noteService->createNote(objectUuid: $objectId, message: $message);
+		return $this->noteService->createNote(draft: new NoteDraft(objectUuid: $objectId, message: $message));
 	}//end create()
 
 	/**
@@ -184,7 +190,7 @@ class NotesProvider extends AbstractIntegrationProvider {
 	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
 		$this->noteService->requireNoteOf(objectUuid: $objectId, noteId: (int)$entityId);
 		$message = (string)($payload['message'] ?? '');
-		return $this->noteService->updateNote(noteId: (int)$entityId, message: $message);
+		return $this->noteService->editNote(noteId: (int)$entityId, edit: new NoteEdit(message: $message));
 	}//end update()
 
 	/**

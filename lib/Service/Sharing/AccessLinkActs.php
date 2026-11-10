@@ -35,6 +35,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Sharing;
 
+use OCA\OpenRegister\Files\Service\NoteDraft;
+use OCA\OpenRegister\Files\Service\NoteAuthor;
 use OCA\OpenRegister\Service\ObjectFilesInterface;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
@@ -79,12 +81,13 @@ class AccessLinkActs implements AccessLinkActsInterface {
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
 	 */
 	public function comment(LinkAct $act, string $message): array {
-		return $this->notes->createNoteAs(
-			objectUuid: (string)$act->object->getUuid(),
-			message: $message,
-			actorType: self::LINK_ACTOR_TYPE,
-			actorId: $act->link->principalId(),
-			visibility: TimelineVisibilityServiceInterface::PUBLIC_ENTRY
+		return $this->notes->postNote(
+			draft: new NoteDraft(
+				objectUuid: (string)$act->object->getUuid(),
+				message: $message,
+				visibility: TimelineVisibilityServiceInterface::PUBLIC_ENTRY
+			),
+			author: new NoteAuthor(type: self::LINK_ACTOR_TYPE, id: $act->link->principalId())
 		);
 	}//end comment()
 
