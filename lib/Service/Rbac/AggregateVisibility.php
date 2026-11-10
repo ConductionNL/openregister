@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -123,7 +125,7 @@ class AggregateVisibility implements AggregateVisibilityInterface {
 		}
 
 		try {
-			return $this->rbac->canReadProperty(schema: $schema, property: $property, object: []);
+			return $this->rbac->canReadProperty(property: new SchemaProperty(schema: $schema, name: $property), request: new PropertyAccessRequest(object: []));
 		} catch (Throwable $e) {
 			$this->warn(property: $property, reason: $e->getMessage());
 			return false;

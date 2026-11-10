@@ -52,6 +52,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use DateTimeInterface;
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -217,7 +219,7 @@ class ConflictReport implements ConflictReportInterface {
 	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-the-conflict-body-discloses-no-more-than-a-read-would-req-cso-002
 	 */
 	private function readingsFor(ConflictRun $run, string $property): array {
-		if ($this->properties->canReadProperty(schema: $run->schema, property: $property, object: $run->current) === false) {
+		if ($this->properties->canReadProperty(property: new SchemaProperty(schema: $run->schema, name: $property), request: new PropertyAccessRequest(object: $run->current)) === false) {
 			// Named, valueless. The caller learns their write collided and
 			// learns nothing they could not have read.
 			return ['status' => self::WITHHELD];

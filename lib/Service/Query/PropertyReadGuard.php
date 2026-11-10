@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Query;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use Psr\Container\ContainerInterface;
@@ -87,7 +89,7 @@ class PropertyReadGuard {
 		try {
 			$rbac = $this->container->get(PropertyRbacHandler::class);
 
-			return $rbac->canReadProperty(schema: $schema, property: $property, object: []);
+			return $rbac->canReadProperty(property: new SchemaProperty(schema: $schema, name: $property), request: new PropertyAccessRequest(object: []));
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[PropertyReadGuard] Could not check the property read rule; treating the property as unreadable',

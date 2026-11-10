@@ -28,6 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
@@ -133,7 +135,7 @@ class ExplicitRevealMasker {
 			return false;
 		}
 
-		return $this->properties->canReadProperty(schema: $run->schema, property: $property, object: $run->object);
+		return $this->properties->canReadProperty(property: new SchemaProperty(schema: $run->schema, name: $property), request: new PropertyAccessRequest(object: $run->object));
 	}//end mayReveal()
 
 	/**

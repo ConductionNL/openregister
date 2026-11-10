@@ -99,7 +99,7 @@ class PropertyRbacHandlerTest extends TestCase {
 			'field1' => ['type' => 'string'],
 		]);
 
-		$this->assertTrue($this->handler->canReadProperty($schema, 'field1', []));
+		$this->assertTrue($this->handler->canReadProperty(new SchemaProperty($schema, 'field1'), new PropertyAccessRequest([])));
 	}
 
 	// ── canReadProperty with public group ──
@@ -113,7 +113,7 @@ class PropertyRbacHandlerTest extends TestCase {
 			],
 		]);
 
-		$this->assertTrue($this->handler->canReadProperty($schema, 'field1', []));
+		$this->assertTrue($this->handler->canReadProperty(new SchemaProperty($schema, 'field1'), new PropertyAccessRequest([])));
 	}
 
 	// ── canReadProperty with authenticated group ──
@@ -127,7 +127,7 @@ class PropertyRbacHandlerTest extends TestCase {
 			],
 		]);
 
-		$this->assertTrue($this->handler->canReadProperty($schema, 'field1', []));
+		$this->assertTrue($this->handler->canReadProperty(new SchemaProperty($schema, 'field1'), new PropertyAccessRequest([])));
 	}
 
 	// ── canReadProperty denied ──
@@ -141,7 +141,7 @@ class PropertyRbacHandlerTest extends TestCase {
 			],
 		]);
 
-		$this->assertFalse($this->handler->canReadProperty($schema, 'field1', []));
+		$this->assertFalse($this->handler->canReadProperty(new SchemaProperty($schema, 'field1'), new PropertyAccessRequest([])));
 	}
 
 	// ── getUnauthorizedProperties ──
@@ -242,7 +242,7 @@ class PropertyRbacHandlerTest extends TestCase {
 
 		$this->conditionMatcher->method('objectMatchesConditions')->willReturn(true);
 
-		$this->assertTrue($this->handler->canReadProperty($schema, 'field1', ['_organisation' => 'org1']));
+		$this->assertTrue($this->handler->canReadProperty(new SchemaProperty($schema, 'field1'), new PropertyAccessRequest(['_organisation' => 'org1'])));
 	}
 
 	public function testCanReadPropertyWithConditionalMatchFailing(): void {
@@ -260,7 +260,7 @@ class PropertyRbacHandlerTest extends TestCase {
 
 		$this->conditionMatcher->method('objectMatchesConditions')->willReturn(false);
 
-		$this->assertFalse($this->handler->canReadProperty($schema, 'field1', ['_organisation' => 'wrong']));
+		$this->assertFalse($this->handler->canReadProperty(new SchemaProperty($schema, 'field1'), new PropertyAccessRequest(['_organisation' => 'wrong'])));
 	}
 
 	// ── writeOnly stripping (property-level-read-rbac / closes #380) ──
