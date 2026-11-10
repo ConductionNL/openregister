@@ -102,7 +102,15 @@ final class ConfigurationDraftStageTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 
-		return new ConfigurationDraftService($sets, $drafts, $store, new ConfigurationKeyRegistry(), $session, $this->createMock(IAppConfig::class), 'openregister');
+		return new ConfigurationDraftService(
+			$sets,
+			$drafts,
+			$store,
+			new ConfigurationKeyRegistry(),
+			$session,
+			$this->createMock(IAppConfig::class),
+			'openregister'
+		);
 	}
 
 	public function testRestagingAnAddressRebasesTheDraftInFieldOrder(): void {
