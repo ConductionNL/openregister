@@ -29,6 +29,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Controller\Support\SchemasControllerServices;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -688,7 +689,7 @@ class SchemasController extends Controller {
 				// Get register counts for all schemas in one call.
 				$registerCounts = $this->schemaMapper->getRegisterCountPerSchema();
 				$schemaArr['stats'] = [
-					'objects' => $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $schemaArr['id']),
+					'objects' => $this->objectEntityMapper->getStatistics(scope: new StatisticsScope(schemaId: $schemaArr['id'])),
 					'logs' => $this->auditLogStats(schemaId: (int)$schemaArr['id']),
 					'files' => [ 'total' => 0, 'size' => 0 ],
 					// Add the number of registers referencing this schema.
@@ -1782,7 +1783,7 @@ class SchemasController extends Controller {
 			// only returns a real count when BOTH register AND schema are present
 			// in the @self filter, and silently returns 0 on single-axis queries,
 			// which would let DELETE silently succeed on schemas with objects.
-			$objectStats = $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $schemaToDelete->getId());
+			$objectStats = $this->objectEntityMapper->getStatistics(scope: new StatisticsScope(schemaId: $schemaToDelete->getId()));
 			$objectCount = (int)($objectStats['total'] ?? 0);
 
 			if ($deleteObjects === true) {
@@ -2363,7 +2364,7 @@ class SchemasController extends Controller {
 			// Default every key: mapper variants (and mocked test doubles) may
 			// return partial maps, which otherwise emits "Undefined array key"
 			// PHP warnings for empty schemas.
-			$objectStats = $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $id);
+			$objectStats = $this->objectEntityMapper->getStatistics(scope: new StatisticsScope(schemaId: $id));
 			$objectStats = array_merge(
 				['total' => 0, 'invalid' => 0, 'deleted' => 0, 'locked' => 0, 'size' => 0],
 				$objectStats

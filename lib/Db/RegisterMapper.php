@@ -23,6 +23,7 @@
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Event\RegisterCreatedEvent;
 use OCA\OpenRegister\Event\RegisterDeletedEvent;
 use OCA\OpenRegister\Event\RegisterUpdatedEvent;
@@ -908,7 +909,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		}
 
 		$objectEntityMapper = $this->container->get(MagicMapperInterface::class);
-		$stats = $objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null);
+		$stats = $objectEntityMapper->getStatistics(scope: new StatisticsScope(registerId: $registerId));
 		if (($stats['total'] ?? 0) > 0) {
 			throw new ValidationException(message: 'Cannot delete register: objects are still attached.');
 		}

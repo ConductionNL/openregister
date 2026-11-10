@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\RegistersController;
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\RegistersControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -129,7 +130,8 @@ class RegistersControllerIndexGoldenTest extends TestCase {
 		});
 
 		$objectMapper = $this->createMock(MagicMapper::class);
-		$objectMapper->method('getStatistics')->willReturnCallback(function (...$args) {
+		$objectMapper->method('getStatistics')->willReturnCallback(function (StatisticsScope $scope) {
+			$args = [$scope->registerId, $scope->schemaId, $scope->exclude];
 			$this->calls[] = ['objectMapper.getStatistics' => $args];
 			return ['total' => 1, 'size' => 2];
 		});
