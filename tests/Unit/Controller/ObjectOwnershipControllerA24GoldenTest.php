@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\MapperBackedSchemaCatalog;
 use OCA\OpenRegister\Controller\ObjectOwnershipController;
 use OCA\OpenRegister\Controller\Support\ObjectOwnershipControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -95,15 +96,13 @@ class ObjectOwnershipControllerA24GoldenTest extends TestCase {
 		$schemas->method('find')->willReturn(new Schema());
 
 		return new ObjectOwnershipController(
-			appName: 'openregister',
 			request: $request,
 			services: new ObjectOwnershipControllerServices(
 				objectService: $objects,
-				registerMapper: $registers,
-				schemaMapper: $schemas,
-				ownership: $this->ownership
-			),
-			logger: $this->logger
+				catalog: new MapperBackedSchemaCatalog(registers: $registers, schemas: $schemas),
+				ownership: $this->ownership,
+				logger: $this->logger
+			)
 		);
 	}
 
