@@ -55,7 +55,7 @@ class GrantChangeAuditorTest extends TestCase {
 		$this->mapper = $this->createMock(AuditTrailMapper::class);
 		$this->settings = $this->createMock(SettingsChangeAuditor::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->auditor = new GrantChangeAuditor($this->mapper, $this->settings, $this->logger);
+		$this->auditor = new GrantChangeAuditor(new \OCA\OpenRegister\Service\Object\AuditRecording($this->mapper, $this->logger), $this->settings);
 	}//end setUp()
 
 	/**
@@ -130,9 +130,8 @@ class GrantChangeAuditorTest extends TestCase {
 		);
 
 		$this->auditor->recordSpecialRight(
-			organisationUuid: 'org-1',
-			before: ['records-service'],
-			after: ['records-service', 'second-service']
+			'org-1',
+			new \OCA\OpenRegister\Service\Rbac\SpecialRightChange(['records-service'], ['records-service', 'second-service'])
 		);
 	}//end testAChangeOfTheSpecialRightListIsASettingsChangeOnTheSameChain()
 

@@ -182,7 +182,7 @@ class OAuth2TokenRefreshJobBehaviourTest extends TestCase {
 	}
 
 	private function deprovisionJob(OrganisationMapperInterface $mapper, TenantLifecycleServiceInterface $lifecycle): TenantDeprovisionJob {
-		return new TenantDeprovisionJob($this->createMock(ITimeFactory::class), $mapper, $lifecycle, $this->logger());
+		return new TenantDeprovisionJob(new \OCA\OpenRegister\BackgroundJob\Support\ScheduledJobRuntime($this->createMock(ITimeFactory::class), $this->createMock(\OCP\IAppConfig::class), $this->logger()), new \OCA\OpenRegister\BackgroundJob\Support\TenantRecords($mapper, $this->createMock(\OCA\OpenRegister\Db\TenantUsageMapperInterface::class), $lifecycle));
 	}
 
 	private static function tenant(string $uuid): Organisation {

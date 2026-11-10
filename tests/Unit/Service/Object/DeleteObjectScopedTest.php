@@ -134,9 +134,8 @@ class DeleteObjectScopedTest extends TestCase {
 			$this->objectMapper,
 			$this->cacheHandler,
 			$this->userSession,
-			$this->auditTrailMapper,
+			new \OCA\OpenRegister\Service\Object\AuditRecording($this->auditTrailMapper, $this->logger),
 			$this->settingsService,
-			$this->logger,
 			$this->integrityService,
 			$this->createMock(IDBConnection::class),
 			$this->createMock(OrganisationMapper::class)
