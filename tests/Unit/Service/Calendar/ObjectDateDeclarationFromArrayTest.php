@@ -102,4 +102,55 @@ class ObjectDateDeclarationFromArrayTest extends TestCase {
 			[$declaration->summaryTemplate, $declaration->attendeesProperty, $declaration->calendarSlug]
 		);
 	}//end testNonStringOptionalStringsReadAsNull()
+	/**
+	 * Field refusals and dates-block refusals, with the exact message.
+	 *
+	 * @return array<string, array{0: array, 1: string}>
+	 */
+	public static function refusedFields(): array {
+		return [
+			'alarm on an appointment' => [['dates' => ['due' => ['kind' => 'appointment', 'alarmOffsetDays' => 1]]], 'calendarProvider.dates.due declares alarmOffsetDays on a appointment; only a deadline carries an alarm.'],
+			'timer on a period' => [['dates' => ['due' => ['kind' => 'period', 'endProperty' => 'end', 'timerPurpose' => 'due']]], 'calendarProvider.dates.due declares timerPurpose on a period; only a deadline is computed by the term engine.'],
+			'unknown timer purpose' => [['dates' => ['due' => ['kind' => 'deadline', 'timerPurpose' => 'soon']]], "calendarProvider.dates.due declares timerPurpose 'soon': use due or expiry."],
+			'blank property name' => [['dates' => [' ' => ['kind' => 'deadline']]], 'calendarProvider.dates carries an entry with no property name.'],
+			'dates not an object' => [['dates' => 'due'], 'calendarProvider.dates must be an object keyed by property name.'],
+		];
+	}//end refusedFields()
+
+	/**
+	 * allFromConfig() refuses an unusable field or dates block with the exact message.
+	 *
+	 * @param array  $calendarConfig The calendarProvider config.
+	 * @param string $message        The refusal.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('refusedFields')]
+	public function testARefusedFieldIsNamed(array $calendarConfig, string $message): void {
+		$this->expectException(CalendarDateKindException::class);
+		$this->expectExceptionMessage($message);
+
+		ObjectDateDeclaration::allFromConfig($calendarConfig);
+	}//end testARefusedFieldIsNamed()
+
+	/**
+	 * Null dates declare nothing; a deadline with a known purpose and alarm reads both.
+	 *
+	 * @return void
+	 */
+	public function testAllFromConfigReadsInOrder(): void {
+		$this->assertSame([], ObjectDateDeclaration::allFromConfig(['dates' => null]));
+
+		$declarations = ObjectDateDeclaration::allFromConfig(
+			['dates' => ['a' => ['kind' => 'deadline', 'timerPurpose' => ' expiry ', 'alarmOffsetDays' => 0], 'b' => ['kind' => 'appointment']]]
+		);
+
+		$this->assertSame(
+			[['a', 'deadline', 'expiry', 0], ['b', 'appointment', null, null]],
+			array_map(
+				static fn (ObjectDateDeclaration $d): array => [$d->property, $d->kind, $d->timerPurpose, $d->alarmOffsetDays],
+				$declarations
+			)
+		);
+	}//end testAllFromConfigReadsInOrder()
 }//end class
