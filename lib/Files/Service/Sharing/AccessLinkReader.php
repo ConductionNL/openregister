@@ -52,14 +52,8 @@ use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
-use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimelineInterface;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionStore;
 use Psr\Log\LoggerInterface;
 use Throwable;
-use OCA\OpenRegister\Service\Sharing\AccessLinkSubjectInterface;
 
 /**
  * Resolves and renders the subject behind an access link.
@@ -106,55 +100,6 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	private const MAX_VIEW_OBJECTS = 200;
 
 	/**
-	 * The object read path.
-	 *
-	 * @var ObjectOperationsInterface
-	 */
-	private readonly ObjectOperationsInterface $objects;
-
-	/**
-	 * Resolves the schema whose rules apply.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemas;
-
-	/**
-	 * Strips write-only and unreadable properties.
-	 *
-	 * @var PropertyRbacHandlerInterface
-	 */
-	private readonly PropertyRbacHandlerInterface $properties;
-
-	/**
-	 * Reads and projects the public half of the timeline.
-	 *
-	 * @var PublicTimelineInterface
-	 */
-	private readonly PublicTimelineInterface $timeline;
-
-	/**
-	 * Reads which object a subject names.
-	 *
-	 * @var AccessLinkSubjectInterface
-	 */
-	private readonly AccessLinkSubjectInterface $subjects;
-
-	/**
-	 * PSR logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * Refuses a restricted file to a link. Null only in legacy fixtures.
-	 *
-	 * @var FileRestrictionStore|null
-	 */
-	private readonly ?FileRestrictionStore $restrictions;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param AccessLinkReaderSources $sources The object read path, the subject parser and the optional file restriction store.
@@ -162,17 +107,10 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	 * @param LoggerInterface         $logger  PSR logger.
 	 */
 	public function __construct(
-		AccessLinkReaderSources $sources,
-		AccessLinkReaderFilters $filters,
-		LoggerInterface $logger,
+		private readonly AccessLinkReaderSources $sources,
+		private readonly AccessLinkReaderFilters $filters,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->objects = $sources->objects;
-		$this->subjects = $sources->subjects;
-		$this->restrictions = $sources->restrictions;
-		$this->schemas = $filters->schemas;
-		$this->properties = $filters->properties;
-		$this->timeline = $filters->timeline;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -199,7 +137,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 		}
 
 		if ($link->getSubjectType() === AccessLink::SUBJECT_FILE) {
-			$uuid = $this->subjects->objectUuid(
+			$uuid = $this->sources->subjects->objectUuid(
 				subjectType: AccessLink::SUBJECT_FILE,
 				subjectId: (string)$link->getSubjectId()
 			);
@@ -209,7 +147,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 		}
 
 		try {
-			$object = $this->objects->find(
+			$object = $this->sources->objects->find(
 				id: $uuid,
 				_rbac: false,
 				_multitenancy: false,
@@ -270,7 +208,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 		if ($link->getSubjectType() === AccessLink::SUBJECT_FILE) {
 			$body['file'] = $this->fileDescriptor(
 				object: $object,
-				fileId: (string)$this->subjects->fileId(subjectId: (string)$link->getSubjectId())
+				fileId: (string)$this->sources->subjects->fileId(subjectId: (string)$link->getSubjectId())
 			);
 			if ($body['file'] === null) {
 				// A file the object does not carry is a file that is not there.
@@ -310,7 +248,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 			// exactly as for the schema read in filteredProperties()) and every way
 			// of failing to apply it throws, which the catch below turns into "this
 			// link no longer resolves".
-			$results = $this->objects->searchObjects(
+			$results = $this->sources->objects->searchObjects(
 				query: ['_limit' => self::MAX_VIEW_OBJECTS],
 				_rbac: false,
 				_multitenancy: false,
@@ -413,7 +351,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 		}
 
 		try {
-			$schema = $this->schemas->find(id: $schemaId, _rbac: false, _multitenancy: false);
+			$schema = $this->filters->schemas->find(id: $schemaId, _rbac: false, _multitenancy: false);
 		} catch (Throwable $missing) {
 			$this->logger->warning(
 				'[AccessLinkReader] Refusing to publish an object whose schema does not resolve: '
@@ -424,7 +362,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 
 		$readable = $object->filterAsRecord(
 			data: $data,
-			filter: fn (array $probe): array => $this->properties->filterReadableProperties(schema: $schema, object: $probe)
+			filter: fn (array $probe): array => $this->filters->properties->filterReadableProperties(schema: $schema, object: $probe)
 		);
 
 		// A link never reveals an explicit-reveal value: it reads masked.
@@ -453,7 +391,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-never-sees-past-the-objects-own-rules-req-abl-004
 	 */
 	private function publicTimeline(ObjectEntity $object): array {
-		return $this->timeline->forObject(object: $object);
+		return $this->filters->timeline->forObject(object: $object);
 	}//end publicTimeline()
 
 	/**
@@ -476,7 +414,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 		}
 
 		// A link admits whoever holds it, and a restricted file admits only the people it names.
-		if (ctype_digit($wanted) === true && $this->restrictions?->find(fileId: (int)$wanted) !== null) {
+		if (ctype_digit($wanted) === true && $this->sources->restrictions?->find(fileId: (int)$wanted) !== null) {
 			return null;
 		}
 

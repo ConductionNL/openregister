@@ -367,6 +367,8 @@ class FilesControllerTest extends TestCase {
 	public function testPage(): void {
 		$result = $this->controller->page();
 		$this->assertInstanceOf(TemplateResponse::class, $result);
+		$this->assertSame('index', $result->getTemplateName());
+		$this->assertSame('openregister', $result->getApp());
 	}
 
 	// ==================== index() Tests ====================
@@ -449,6 +451,9 @@ class FilesControllerTest extends TestCase {
 		$result = $this->controller->show('reg1', 'schema1', 'obj1', 1);
 
 		$this->assertInstanceOf(StreamResponse::class, $result);
+		$this->assertSame('text/plain', $result->getHeaders()['Content-Type']);
+		$this->assertStringContainsString('filename="test.txt"', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('42', $result->getHeaders()['Content-Length']);
 		fclose($resource);
 	}
 
@@ -528,6 +533,9 @@ class FilesControllerTest extends TestCase {
 		$result = $this->controller->show('reg1', 'schema1', 'obj1', 42);
 
 		$this->assertInstanceOf(StreamResponse::class, $result);
+		$this->assertSame('image/png', $result->getHeaders()['Content-Type']);
+		$this->assertStringContainsString('filename="logo.png"', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('1024', $result->getHeaders()['Content-Length']);
 		fclose($resource);
 	}
 
@@ -614,6 +622,9 @@ class FilesControllerTest extends TestCase {
 		$result = $this->controller->show('reg1', 'schema1', 'obj1', 42);
 
 		$this->assertInstanceOf(StreamResponse::class, $result);
+		$this->assertSame('application/pdf', $result->getHeaders()['Content-Type']);
+		$this->assertStringContainsString('filename="doc.pdf"', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('2048', $result->getHeaders()['Content-Length']);
 		fclose($resource);
 	}
 
@@ -1709,6 +1720,8 @@ class FilesControllerTest extends TestCase {
 	// -- validateUploadedFile --
 
 	public function testValidateUploadedFileSuccess(): void {
+		$this->expectNotToPerformAssertions();
+
 		$tmpFile = tempnam(sys_get_temp_dir(), 'test_');
 		file_put_contents($tmpFile, 'test content');
 
@@ -1720,7 +1733,6 @@ class FilesControllerTest extends TestCase {
 
 		// Should not throw
 		$this->invokePrivateMethod('validateUploadedFile', [$file]);
-		$this->assertTrue(true);
 
 		@unlink($tmpFile);
 	}

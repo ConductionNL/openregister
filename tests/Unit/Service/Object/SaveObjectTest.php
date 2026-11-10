@@ -49,6 +49,7 @@ use ReflectionMethod;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceText;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
+use OCA\OpenRegister\Service\Object\SaveObject\TemplateSource;
 
 /**
  * Unit tests for SaveObject
@@ -873,8 +874,8 @@ class SaveObjectTest extends TestCase {
 		$schemaProps = [];
 
 		$this->metaHydrationHandler->expects($this->once())
-			->method('processTwigLikeTemplate')
-			->with($context, '{{ voornaam }} {{ achternaam }}', $schemaProps)
+			->method('renderTemplate')
+			->with('{{ voornaam }} {{ achternaam }}', new TemplateSource(data: $context, schemaProperties: $schemaProps))
 			->willReturn('Jan Jansen');
 
 		$result = $this->invokePrivateMethod(
@@ -890,7 +891,7 @@ class SaveObjectTest extends TestCase {
 	}
 
 	public function testResolveDefaultTemplateValueNullOnException(): void {
-		$this->metaHydrationHandler->method('processTwigLikeTemplate')
+		$this->metaHydrationHandler->method('renderTemplate')
 			->willThrowException(new Exception('Template error'));
 
 		$result = $this->invokePrivateMethod(
@@ -2418,7 +2419,7 @@ class SaveObjectTest extends TestCase {
 		$entity = new ObjectEntity();
 		$entity->setObject([]);
 
-		$this->metaHydrationHandler->method('processTwigLikeTemplate')
+		$this->metaHydrationHandler->method('renderTemplate')
 			->willReturn('Jan Jansen');
 
 		$data = ['firstName' => 'Jan', 'lastName' => 'Jansen'];

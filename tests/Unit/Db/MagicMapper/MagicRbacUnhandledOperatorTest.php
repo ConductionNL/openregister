@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\AliasedRows;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\RbacMatchSql;
 use OCA\OpenRegister\Db\MagicMapper\RbacQueryMatch;
@@ -122,7 +123,7 @@ class MagicRbacUnhandledOperatorTest extends TestCase {
 		);
 		$schema->setAuthorization(['read' => [['group' => 'members', 'match' => $match]]]);
 
-		return $this->handler()->buildRbacPredicateForAlias(schema: $schema, alias: 't', action: 'read');
+		return $this->handler()->buildRbacPredicateForAlias(schema: $schema, rows: new AliasedRows(alias: 't', action: 'read'));
 	}//end listPredicateFor()
 
 	/**

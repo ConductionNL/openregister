@@ -81,6 +81,19 @@ interface AppointmentAttendeeServiceInterface {
 	): array;
 
 	/**
+	 * Record one invitee's answer on the object, as recordResponse() does.
+	 *
+	 * @param AttendeeResponse $response The answer as submitted.
+	 *
+	 * @return array<int, array<string, mixed>> The full response list after the write.
+	 *
+	 * @throws InvalidArgumentException When the status is not an answer, or the object is unknown.
+	 *
+	 * @spec openspec/specs/calendar-provider/spec.md
+	 */
+	public function recordAttendeeResponse(AttendeeResponse $response): array;
+
+	/**
 	 * The answers recorded on an object, as stored.
 	 *
 	 * @param string $objectUuid The object.
