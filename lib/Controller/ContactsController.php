@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\ContactPlacement;
 use OCA\OpenRegister\Service\ContactServiceInterface;
 use OCA\OpenRegister\Service\PersonLinkServiceInterface;
 use OCP\AppFramework\Controller;
@@ -351,12 +352,13 @@ class ContactsController extends Controller {
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
 	private function createdContact(ObjectEntity $object, array $data): JSONResponse {
-		$created = $this->contactService->createAndLinkContact(
-			$object->getUuid(),
-			(int)$object->getRegister(),
-			$data,
-			$this->resolveSchemaId(object: $object)
+		$placement = new ContactPlacement(
+			objectUuid: $object->getUuid(),
+			registerId: (int)$object->getRegister(),
+			schemaId: $this->resolveSchemaId(object: $object),
+			role: ($data['role'] ?? null)
 		);
+		$created   = $this->contactService->createAndLinkContact(placement: $placement, data: $data);
 
 		return new JSONResponse($created, 201);
 	}//end createdContact()

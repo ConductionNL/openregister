@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\NewForm;
+use OCA\OpenRegister\Service\FormLinkScope;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\FormLink;
@@ -293,7 +295,7 @@ final class FormLinkServiceGoldenTest extends TestCase {
 		$codes = [];
 		foreach (['NC Forms app is not installed', 'NC Forms classes not available'] as $message) {
 			try {
-				$this->service->createAndLinkForm(objectUuid: 'o', registerId: 1, title: 't');
+				$this->service->createAndLinkForm(scope: new FormLinkScope(objectUuid: 'o', registerId: 1), form: new NewForm(title: 't'));
 				$codes[] = 'none';
 			} catch (Exception $e) {
 				$codes[] = $e->getMessage() . ':' . $e->getCode();

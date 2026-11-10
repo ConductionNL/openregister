@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use OCA\OpenRegister\Db\FormLink;
+use OCA\OpenRegister\Db\FormSubmissionRef;
 
 /**
  * Links Nextcloud Forms forms and their submissions to objects.
@@ -44,11 +45,8 @@ interface FormLinkServiceInterface {
 	 * `FormMapper` not on the classpath), an exception is thrown so
 	 * the caller can return a clean 503/501.
 	 *
-	 * @param string $objectUuid The OR object UUID.
-	 * @param integer $registerId The OR register id.
-	 * @param string $title Initial form title.
-	 * @param string $description Initial form description.
-	 * @param integer $schemaId Optional OR schema id.
+	 * @param FormLinkScope $scope The object, register and schema.
+	 * @param NewForm       $form  The initial title and description.
 	 *
 	 * @return FormLink The link row pointing at the freshly-created form.
 	 *
@@ -56,13 +54,7 @@ interface FormLinkServiceInterface {
 	 *
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-and-link contract is owned by the integration-forms capability.
 	 */
-	public function createAndLinkForm(
-		string $objectUuid,
-		int $registerId,
-		string $title,
-		string $description = '',
-		?int $schemaId = null,
-	): FormLink;
+	public function createAndLinkForm(FormLinkScope $scope, NewForm $form): FormLink;
 
 	/**
 	 * Return the set of NC Forms forms the current user owns so the
@@ -173,13 +165,12 @@ interface FormLinkServiceInterface {
 	 *
 	 * Form-level row (if any) is left untouched.
 	 *
-	 * @param string $objectUuid The OR object UUID.
-	 * @param integer $formId The parent form id.
-	 * @param integer $submissionId The submission id.
+	 * @param string            $objectUuid The OR object UUID.
+	 * @param FormSubmissionRef $submission The parent form and the submission ids.
 	 *
 	 * @return boolean True when a row was removed, false when none existed.
 	 *
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the unlink-submission contract is owned by the integration-forms capability.
 	 */
-	public function unlinkSubmission(string $objectUuid, int $formId, int $submissionId): bool;
+	public function unlinkSubmission(string $objectUuid, FormSubmissionRef $submission): bool;
 }//end interface

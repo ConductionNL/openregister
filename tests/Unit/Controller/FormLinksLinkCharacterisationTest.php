@@ -29,6 +29,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Service\NewForm;
+use OCA\OpenRegister\Service\FormLinkScope;
 use Exception;
 use OCA\OpenRegister\Controller\FormLinksController;
 use OCA\OpenRegister\Db\FormLink;
@@ -163,7 +165,7 @@ class FormLinksLinkCharacterisationTest extends TestCase {
 		$this->resolvesTo('-1');
 		$this->params = ['title' => ' Intake ', 'description' => 12];
 		$this->service->expects($this->once())->method('createAndLinkForm')
-			->with('obj-1', 3, 'Intake', '12', null)
+			->with($this->equalTo((new FormLinkScope('obj-1', 3))->inSchema(null)), $this->equalTo(new NewForm('Intake', '12')))
 			->willReturn($link = new FormLink());
 
 		$this->assertSame([201, $link], $this->answer($this->controller->create('r', 's', 'o')));

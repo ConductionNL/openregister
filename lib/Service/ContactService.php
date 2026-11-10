@@ -776,31 +776,10 @@ class ContactService implements ContactServiceInterface {
 	/**
 	 * Create a new contact and link it to an object.
 	 *
-	 * Tier-2: extended to persist `phone` / `org` straight from the
-	 * caller-supplied payload, and to accept an optional `schemaId`
-	 * + free-form `org` field. The avatar URL falls back to the
-	 * per-uid Contacts route (no PHOTO is set on freshly-created
-	 * vCards yet).
-	 *
-	 * @param string $objectUuid The object UUID.
-	 * @param int $registerId The register ID.
-	 * @param array $data Contact data: `fullName` or `displayName`, `email`,
-	 *                    `phone`, `org`, `role`.
-	 * @param int|null $schemaId Optional schema id (Tier-2).
-	 *
-	 * @return ContactLink The created link.
-	 *
-	 * @throws Exception If no user or addressbook.
-	 *
-	 * @spec openspec/specs/contacts-actions/spec.md
-	 */
-	public function createAndLinkContact(string $objectUuid, int $registerId, array $data, ?int $schemaId = null): ContactLink {
-		$placement = new ContactPlacement(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, role: $data['role'] ?? null);
-		return $this->createCard(placement: $placement, data: $data);
-	}//end createAndLinkContact()
-
-	/**
-	 * Create a vCard in the user's first addressbook and insert the link row of it.
+	 * Creates a vCard in the user's first addressbook and inserts the link row of it.
+	 * Tier-2: persists `phone` / `org` straight from the caller-supplied payload. The
+	 * avatar URL falls back to the per-uid Contacts route (no PHOTO is set on
+	 * freshly-created vCards yet).
 	 *
 	 * @param ContactPlacement $placement Where it is linked, and in what role.
 	 * @param array            $data      Contact data: `fullName` or `displayName`, `email`, `phone`, `org`.
@@ -811,7 +790,7 @@ class ContactService implements ContactServiceInterface {
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
-	public function createCard(ContactPlacement $placement, array $data): ContactLink {
+	public function createAndLinkContact(ContactPlacement $placement, array $data): ContactLink {
 		$user = $this->requireUser();
 
 		$addressbook = $this->findUserAddressbook();
@@ -846,7 +825,7 @@ class ContactService implements ContactServiceInterface {
 		$this->stampLinkedBy(link: $link, uid: $user->getUID());
 
 		return $this->contactLinkMapper->insert($link);
-	}//end createCard()
+	}//end createAndLinkContact()
 
 	/**
 	 * The display name, email, phone and organisation of a new contact.
