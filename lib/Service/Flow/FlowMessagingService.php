@@ -221,12 +221,27 @@ class FlowMessagingService {
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
 	 */
 	public function previewMessages(string $channel, array $config, array $items, array $context): array {
-		$preview = new FlowMessagePreview(addresses: $this->addresses, templating: $this->platform->templating);
-
-		$step = new MessageSend(config: $config, items: $items, context: $this->scalarContext(context: $context));
-
-		return $preview->messages(channel: $channel, step: $step);
+		return $this->preview(channel: $channel, step: new MessageSend(config: $config, items: $items, context: $context));
 	}//end previewMessages()
+
+	/**
+	 * The messages a step would send, composed and not sent; see {@see self::previewMessages()}.
+	 *
+	 * Only the scalar entries of the run context reach the templates.
+	 *
+	 * @param string      $channel `email`, `notification` or `talk`.
+	 * @param MessageSend $step    The step configuration, items and run context (no step name).
+	 *
+	 * @return array<int, array{channel: string, to: array<int, string>, subject: string, body: string}>
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
+	 */
+	public function preview(string $channel, MessageSend $step): array {
+		$preview = new FlowMessagePreview(addresses: $this->addresses, templating: $this->platform->templating);
+		$scalar  = new MessageSend(config: $step->config, items: $step->items, context: $this->scalarContext(context: $step->context));
+
+		return $preview->messages(channel: $channel, step: $scalar);
+	}//end preview()
 
 	/**
 	 * Send an email per recipient per item.
