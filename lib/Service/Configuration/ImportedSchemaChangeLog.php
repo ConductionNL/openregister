@@ -73,7 +73,10 @@ final class ImportedSchemaChangeLog
 		}
 
 		try {
-			return $this->versioning->classify(existing: $existing, incoming: new IncomingDefinition(definition: $this->definition(existing: $existing, data: $data)));
+			return $this->versioning->classify(
+				existing: $existing,
+				incoming: new IncomingDefinition(definition: $this->definition(existing: $existing, data: $data))
+			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: ImportLogTag::PREFIX.'Could not classify an imported schema change: ' . $e->getMessage(),
