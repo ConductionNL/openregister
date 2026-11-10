@@ -23,6 +23,7 @@ use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\ReadEventVisibility;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * @covers \OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders
@@ -48,9 +49,7 @@ final class ObjectHistoryAfterAMoveTest extends TestCase {
 		);
 
 		$this->history(audit: $audit)->page(
-			register: '5',
-			schema: '7',
-			id: 'u-1',
+			ref: new ObjectRef(register: '5', schema: '7', id: 'u-1'),
 			params: ['filters' => ['register' => '5', 'schema' => '7', 'action' => 'update']]
 		);
 

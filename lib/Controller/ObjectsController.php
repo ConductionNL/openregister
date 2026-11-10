@@ -131,6 +131,7 @@ use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * Objects controller for OpenRegister
@@ -4733,9 +4734,7 @@ class ObjectsController extends Controller {
 
 		try {
 			$page = $this->container->get(ObjectHistoryForReadersInterface::class)->page(
-				register: $register,
-				schema: $schema,
-				id: $id,
+				ref: new ObjectRef(register: $register, schema: $schema, id: $id),
 				params: [
 					'limit' => $config['limit'],
 					'offset' => $config['offset'],

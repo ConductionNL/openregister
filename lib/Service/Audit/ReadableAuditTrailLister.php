@@ -120,10 +120,9 @@ class ReadableAuditTrailLister implements ReadableAuditTrailListerInterface {
 	 * client hands back the `nextCursor` it was given and is never told how
 	 * many rows were skipped to fill its page.
 	 *
-	 * @param string|null     $userId  The caller, or null when anonymous.
-	 * @param int             $limit   How many readable rows the caller asked for.
-	 * @param int|string|null $cursor  A sealed cursor this list handed out under the same caller, filters and search.
-	 * @param AuditTrailQuery|null $query The filters and search, from {@see query()}; none when null.
+	 * @param string|null      $userId  The caller, or null when anonymous.
+	 * @param TrailPageOptions $options The page size, a sealed cursor this list handed out under the same caller,
+	 *                                  filters and search, and the filters and search from {@see query()}.
 	 *
 	 * @return array{results: array<int, array>, limit: int, cursor: int|string|null, nextCursor: string|null}
 	 *     The page. `nextCursor` is null when the trail was exhausted, and a
@@ -132,13 +131,9 @@ class ReadableAuditTrailLister implements ReadableAuditTrailListerInterface {
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-is-readable-within-a-callers-own-scope
 	 */
-	public function page(
-		?string $userId,
-		int $limit = 20,
-		int|string|null $cursor = null,
-		?AuditTrailQuery $query = null,
-	): array {
-		$limit = max(1, min($limit, self::MAX_LIMIT));
+	public function page(?string $userId, TrailPageOptions $options=new TrailPageOptions()): array {
+		$limit  = max(1, min($options->limit, self::MAX_LIMIT));
+		$cursor = $options->cursor;
 
 		// An anonymous caller holds no readable scope, and asking the mapper
 		// for candidates it would then drop is work done to reach the same
@@ -147,7 +142,7 @@ class ReadableAuditTrailLister implements ReadableAuditTrailListerInterface {
 			return ['results' => [], 'limit' => $limit, 'cursor' => $cursor, 'nextCursor' => null];
 		}
 
-		$request = new ReadableTrailPageRequest(userId: $userId, limit: $limit, cursor: $cursor, query: ($query ?? new AuditTrailQuery()));
+		$request = new ReadableTrailPageRequest(userId: $userId, limit: $limit, cursor: $cursor, query: $options->query);
 
 		return $this->readablePage(request: $request);
 	}//end page()
