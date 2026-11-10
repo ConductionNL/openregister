@@ -46,7 +46,7 @@ use DateTime;
 use OCA\OpenRegister\Controller\Support\TaskCompletionCommand;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\TaskControllerServices;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\TaskInboxAnchor;
 use OCA\OpenRegister\Db\TaskInboxAudience;
 use OCA\OpenRegister\Db\TaskInboxCriteria;

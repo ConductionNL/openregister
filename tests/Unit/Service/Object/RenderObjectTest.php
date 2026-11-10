@@ -3648,7 +3648,7 @@ class RenderObjectTest extends TestCase {
 		$objectData = ['id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'name' => 'Test'];
 		$extend = ['@self.register', '@self.schema'];
 
-		$run = new \OCA\OpenRegister\Service\Object\RenderRun($entity, new RenderContext(new \OCA\OpenRegister\Service\Object\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true));
+		$run = new \OCA\OpenRegister\Service\Object\RenderRun($entity, new RenderContext(new \OCA\OpenRegister\Kernel\Contracts\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true));
 		$run->data = $objectData;
 		$result = $this->invokePrivate('extendObject', [$run]);
 
@@ -3676,7 +3676,7 @@ class RenderObjectTest extends TestCase {
 		$objectData = ['id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ref' => $uuid];
 		$extend = ['ref'];
 
-		$run = new \OCA\OpenRegister\Service\Object\RenderRun($entity, new RenderContext(new \OCA\OpenRegister\Service\Object\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true));
+		$run = new \OCA\OpenRegister\Service\Object\RenderRun($entity, new RenderContext(new \OCA\OpenRegister\Kernel\Contracts\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true));
 		$run->data = $objectData;
 		$result = $this->invokePrivate('extendObject', [$run]);
 
@@ -3704,7 +3704,7 @@ class RenderObjectTest extends TestCase {
 		$objectData = ['id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ref' => $uuid];
 		$extend = ['all'];
 
-		$run = new \OCA\OpenRegister\Service\Object\RenderRun($entity, new RenderContext(new \OCA\OpenRegister\Service\Object\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true));
+		$run = new \OCA\OpenRegister\Service\Object\RenderRun($entity, new RenderContext(new \OCA\OpenRegister\Kernel\Contracts\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true));
 		$run->data = $objectData;
 		$result = $this->invokePrivate('extendObject', [$run]);
 
@@ -7135,7 +7135,7 @@ class RenderObjectTest extends TestCase {
 	public function testRenderRowsRendersEveryRowWithTheSelection(): void {
 		$this->setupBasicMocks();
 		$calls = [];
-		$selection = new \OCA\OpenRegister\Service\Object\RenderSelection(['owner'], ['a' => 'b'], ['name'], ['secret']);
+		$selection = new \OCA\OpenRegister\Kernel\Contracts\RenderSelection(['owner'], ['a' => 'b'], ['name'], ['secret']);
 		$this->renderEntitySpy($calls)->renderRows([$this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001')], $selection, false, true);
 
 		$this->assertSame([['owner'], 0, ['a' => 'b'], ['name'], ['secret'], [], [], [], [], false, true], $calls[0]['args']);

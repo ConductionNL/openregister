@@ -28,6 +28,7 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedPass;
 use Adbar\Dot;
 use Exception;

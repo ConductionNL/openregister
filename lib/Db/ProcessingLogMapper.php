@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use OCA\OpenRegister\Db\ProcessingLog\ProcessingLogSubject;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IQueryBuilder;

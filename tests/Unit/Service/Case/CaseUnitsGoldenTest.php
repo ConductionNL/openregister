@@ -85,7 +85,7 @@ use Psr\Log\NullLogger;
 use RuntimeException;
 use Stringable;
 use Throwable;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\Case\CaseAdHocRequest;
 use OCA\OpenRegister\Service\Case\CaseCompletion;
 use OCA\OpenRegister\Service\Case\CaseItemTransition;
