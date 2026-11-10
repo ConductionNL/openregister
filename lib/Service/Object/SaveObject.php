@@ -523,10 +523,10 @@ class SaveObject implements SaveObjectInterface {
 		$values = $services->handlers->values;
 		$platform = $services->platform;
 		$tenancy = $services->tenancy;
-		$this->objectEntityMapper = $mappers->objectEntityMapper;
+		$this->objectEntityMapper = $mappers->catalog->tables();
 		$this->unifiedObjectMapper = $mappers->unifiedObjectMapper;
-		$this->schemaMapper = $mappers->schemaMapper;
-		$this->registerMapper = $mappers->registerMapper;
+		$this->schemaMapper = $mappers->catalog->schemas();
+		$this->registerMapper = $mappers->catalog->registers();
 		$this->auditTrailMapper = $records->auditTrailMapper;
 		$this->settingsService = $records->settingsService;
 		$this->tmloService = $records->tmloService;

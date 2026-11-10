@@ -23,8 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 
 /**
  * The mappers a single-object save reads and writes through.
@@ -35,18 +34,14 @@ final class SaveObjectMappers {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param MagicMapperInterface    $objectEntityMapper  Object entity mapper.
-	 * @param MagicMapperInterface    $unifiedObjectMapper Unified object mapper.
-	 * @param SchemaMapperInterface   $schemaMapper        Schema mapper.
-	 * @param RegisterMapperInterface $registerMapper      Register mapper.
+	 * @param SchemaCatalogInterface $catalog             The register, schema and object entity mappers.
+	 * @param MagicMapperInterface   $unifiedObjectMapper Unified object mapper.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function __construct(
-		public readonly MagicMapperInterface $objectEntityMapper,
+		public readonly SchemaCatalogInterface $catalog,
 		public readonly MagicMapperInterface $unifiedObjectMapper,
-		public readonly SchemaMapperInterface $schemaMapper,
-		public readonly RegisterMapperInterface $registerMapper,
 	) {
 	}//end __construct()
 }//end class
