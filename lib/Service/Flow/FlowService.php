@@ -772,12 +772,14 @@ class FlowService implements FlowServiceInterface {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	private function start(Flow $flow, FlowRunOptions $options): FlowRun {
-		$run = $this->dispatch->runner->queue(
+		$run = $this->dispatch->runner->queueRun(
 			flowId: (string)$flow->getUuid(),
-			subject: $options->subject,
-			trigger: $options->trigger,
-			context: $options->context,
-			user: $this->caller()->actingUser()
+			options: new FlowRunQueueOptions(
+				subject: $options->subject,
+				trigger: $options->trigger,
+				context: $options->context,
+				user: $this->caller()->actingUser()
+			)
 		);
 
 		if ($options->sync === false) {
