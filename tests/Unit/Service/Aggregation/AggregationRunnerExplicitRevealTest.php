@@ -24,10 +24,12 @@ declare(strict_types=1);
 
 namespace Unit\Service\Aggregation;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -130,7 +132,7 @@ class AggregationRunnerExplicitRevealTest extends TestCase {
 		$magicMapper = $this->createMock(originalClassName: MagicMapper::class);
 		$magicMapper->method('callerQualifiesForAction')->willReturn(true);
 		$magicMapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			function (): array {
+			function (RegisterSchema $table, ListQuery $listing): array {
 				$this->fail(message: 'the refused aggregation reached the data');
 			}
 		);

@@ -27,10 +27,12 @@ use OCA\OpenRegister\Service\TableDeletionOptions;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
@@ -38,6 +40,7 @@ use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Service\SchemaDeletionService;
 use OCA\OpenRegister\Service\SchemaDeletionStores;
 use OCA\OpenRegister\Service\SchemaTeardownOverride;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IFunctionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -139,7 +142,8 @@ final class SchemaDeletionServiceGoldenTest extends TestCase {
 		$magic->method('tableExistsForRegisterSchema')->willReturnCallback(
 			fn (Register $r, Schema $s): bool => isset($this->rows[$r->getId() . '_' . $s->getId()])
 		);
-		$magic->method('findAllInRegisterSchemaTable')->willReturnCallback(function (Register $register, Schema $schema, $limit, $offset, $filters) {
+		$magic->method('findAllInRegisterSchemaTable')->willReturnCallback(function (RegisterSchema $table, ListQuery $listing) {
+			[$register, $schema, $limit, $offset, $filters] = [$table->register, $table->schema, $listing->limitOrNull(), $listing->offset, ($listing->filters === [] ? null : $listing->filters)];
 			$this->trace[] = 'findAll ' . $register->getId() . '_' . $schema->getId() . ' ' . $offset . ' ' . json_encode($filters);
 			return ($offset === 0 ? ($this->rows[$register->getId() . '_' . $schema->getId()] ?? []) : []);
 		});
@@ -188,12 +192,12 @@ final class SchemaDeletionServiceGoldenTest extends TestCase {
 		});
 
 		$audit = $this->createMock(AuditTrailMapperInterface::class);
-		$audit->method('createAuditTrailEntry')->willReturnCallback(function ($object, $action, $context = []) {
+		$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(function ($object, $action, $context = []) {
 			$this->trace[] = 'audit ' . $action . ' ' . $object->getUuid();
 			unset($context['snapshot']);
 			$this->audits[] = [$action, $object->getUuid(), $context];
 			return new AuditTrail();
-		});
+		}));
 
 		$logger = $this->createMock(LoggerInterface::class);
 		foreach (['info', 'warning', 'error'] as $level) {

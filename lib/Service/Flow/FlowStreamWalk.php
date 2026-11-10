@@ -39,6 +39,7 @@ namespace OCA\OpenRegister\Service\Flow;
 use DateTime;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowStream;
+use Symfony\Component\Workflow\Transition;
 
 /**
  * One run's streams, for one worker pass.
@@ -323,16 +324,19 @@ class FlowStreamWalk {
 	 * A refusal marks the stream refused for this pass: the firing stays
 	 * enabled and the run ends the pass `queued`, never waited on.
 	 *
-	 * @param string $id The stream id.
-	 * @param string $transition The transition name.
-	 * @param array<int, string> $places `froms ∪ tos`.
+	 * @param string     $id         The stream id.
+	 * @param Transition $transition The firing transition; it touches its froms ∪ tos.
 	 *
 	 * @return array<int, string>|null The claimed places, or null when refused.
 	 *
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-firing-must-exclusively-claim-every-place-it-touches
 	 */
-	public function claim(string $id, string $transition, array $places): ?array {
-		return $this->claimFiring(firing: new FiringClaim(runUuid: (string)$this->run->getUuid(), streamId: $id, transition: $transition, places: $places));
+	public function claim(string $id, Transition $transition): ?array {
+		$places = array_map('strval', array_merge($transition->getFroms(), $transition->getTos()));
+
+		return $this->claimFiring(
+			firing: new FiringClaim(runUuid: (string)$this->run->getUuid(), streamId: $id, transition: $transition->getName(), places: $places)
+		);
 	}//end claim()
 
 	/**
@@ -385,7 +389,7 @@ class FlowStreamWalk {
 		$placed = $firing->withConsumedStreamIds(consumedStreamIds: $this->streamsOn(places: $firing->froms, except: $id))
 			->withStreamPath(path: $stream->path, parent: $stream->parent);
 
-		$result = $this->parts->commit->commitFiring(run: $this->run, firing: $placed, owner: $this->limits->owner);
+		$result = $this->parts->commit->commitFiring(run: $this->run, firing: new FlowPassFiring(firing: $placed, owner: $this->limits->owner));
 		$this->fired++;
 
 		// The commit is the authority on lineage, and a sibling pass may have

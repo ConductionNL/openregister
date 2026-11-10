@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
@@ -69,7 +70,7 @@ class RelationHandlerUsedByPurposeTest extends TestCase {
 		$magic->method('find')->willReturn($target);
 		$magic->method('findByRelationAcrossAllMagicTables')->willReturn([$open, $bound]);
 		$magic->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			static fn (Register $register, Schema $schema): array => match ($schema->getId()) {
+			static fn (RegisterSchema $table): array => match ($table->schema->getId()) {
 				3 => [$open],
 				self::BOUND_SCHEMA => [$bound],
 				default => [],

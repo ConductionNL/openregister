@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Calculation;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
@@ -322,10 +323,8 @@ class ReferencedCalculationRefresher implements ReferencedCalculationRefresherIn
 	private function referrersOf(RegisterSchema $table, ReferencePointer $pointer): ?array {
 		try {
 			return $this->catalog->tables()->findAllInRegisterSchemaTable(
-				register: $table->register,
-				schema: $table->schema,
-				limit: self::SYNC_LIMIT,
-				filters: $pointer->filters()
+				table: $table,
+				listing: new ListQuery(limit: self::SYNC_LIMIT, filters: $pointer->filters())
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(

@@ -156,7 +156,7 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 
 		$this->applyFilters(qb: $qb, filter: new HistoryListFilter(filters: $query->filters, asOf: ($asOf ?? new DateTime())));
 		$qb->orderBy('dispatched_at', 'DESC');
-		$this->page(qb: $qb, limit: $query->limitOrNull(), offset: $query->offset);
+		$this->page(qb: $qb, query: $query);
 
 		return $this->findEntities(query: $qb);
 	}//end findFiltered()

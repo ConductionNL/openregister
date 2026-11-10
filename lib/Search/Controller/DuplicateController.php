@@ -177,10 +177,8 @@ class DuplicateController extends Controller {
 
 		try {
 			$matches = $this->duplicates->checkCandidate(
-				register: $register,
-				schema: $schema,
-				candidate: $candidate,
-				threshold: $threshold
+				request: new DedupRun(register: $register, schema: $schema, threshold: $threshold),
+				candidate: $candidate
 			);
 		} catch (NotAuthorizedException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);

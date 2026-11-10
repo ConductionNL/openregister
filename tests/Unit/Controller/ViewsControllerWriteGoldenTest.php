@@ -191,6 +191,10 @@ class ViewsControllerWriteGoldenTest extends TestCase {
 					$args = self::updateArguments(id: $args[0], edit: $args[1]);
 				}
 
+				if ($recordedAs === 'create') {
+					$args = [$args[0]->definition, $args[0]->audience, $args[0]->alert];
+				}
+
 				$this->calls[] = ['viewService.' . $recordedAs => $args];
 				if (isset($case['serviceThrows']) === true) {
 					throw new Exception($case['serviceThrows']);

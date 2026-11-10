@@ -25,12 +25,15 @@ namespace OCA\OpenRegister\Files\Service\File;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Exception\ObjectFolderConflictException;
 use OCA\OpenRegister\Service\FileServiceInterface;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\Node;
 use OCP\Files\NotFoundException;
+use OCA\OpenRegister\Service\File\FileRename;
 
 /**
  * The object folder as a small tree the files browser can walk.
@@ -174,7 +177,10 @@ class ObjectFolderBrowser {
 			$fileName = $relative . '/' . $name;
 		}
 
-		$file = $this->fileService->addFile(objectEntity: $object, fileName: $fileName, content: $upload->content);
+		$file = $this->fileService->addFile(
+			target: new FileTarget(object: $object),
+			upload: new FileUpload(fileName: $fileName, content: $upload->content, share: false)
+		);
 
 		return $this->describe(root: $root, node: $file);
 	}//end upload()
@@ -221,7 +227,9 @@ class ObjectFolderBrowser {
 		$this->assertFree(folder: $node->getParent(), name: $rename->name);
 		if ($node instanceof File === true) {
 			// A file keeps FileService's rename: its lock check and name rules.
-			return $this->fileService->renameFile(object: $rename->object, fileId: (int)$node->getId(), newName: $rename->name);
+			return $this->fileService->renameAttachedFile(
+				rename: new FileRename(object: $rename->object, fileId: (int)$node->getId(), newName: $rename->name)
+			);
 		}
 
 		$this->assertNothingLockedBelow(node: $node);

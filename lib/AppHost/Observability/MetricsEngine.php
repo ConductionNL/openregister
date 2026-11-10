@@ -213,7 +213,7 @@ class MetricsEngine {
 	private function implicitMetrics(string $appId): array {
 		return [
 			$this->infoMetric(appId: $appId),
-			MetricSample::single(name: 'up', type: 'gauge', help: 'Whether the application is up', value: 1),
+			new MetricSample(name: 'up', type: 'gauge', help: 'Whether the application is up', samples: [['labels' => [], 'value' => 1]]),
 		];
 	}//end implicitMetrics()
 

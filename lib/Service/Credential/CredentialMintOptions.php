@@ -30,6 +30,16 @@ namespace OCA\OpenRegister\Service\Credential;
  */
 final class CredentialMintOptions {
 	/**
+	 * The secrets, keyed by the options that hold them.
+	 *
+	 * Kept outside the instance so that no dump, export, array cast or
+	 * serialisation of the options can reach the secret.
+	 *
+	 * @var \WeakMap<self, string|null>|null
+	 */
+	private static ?\WeakMap $secrets = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param array<int, string> $allowedApps  The app ids permitted to use this credential (Guard 2 at broker time).
@@ -41,11 +51,24 @@ final class CredentialMintOptions {
 	 */
 	public function __construct(
 		public readonly array $allowedApps=[],
-		#[\SensitiveParameter] public readonly ?string $secret=null,
+		#[\SensitiveParameter] ?string $secret=null,
 		public readonly string $scope='personal',
 		public readonly ?string $organisation=null,
 	) {
+		self::$secrets ??= new \WeakMap();
+		self::$secrets[$this] = $secret;
 	}//end __construct()
+
+	/**
+	 * The raw secret, or null to mint metadata only.
+	 *
+	 * @return string|null The secret.
+	 *
+	 * @spec exclude ADR-011 value-object plumbing, accessor only
+	 */
+	public function secret(): ?string {
+		return self::$secrets[$this] ?? null;
+	}//end secret()
 
 	/**
 	 * The options as var_dump() and print_r() show them, with the secret masked.
@@ -56,7 +79,7 @@ final class CredentialMintOptions {
 	 */
 	public function __debugInfo(): array {
 		$secret = null;
-		if ($this->secret !== null) {
+		if ($this->secret() !== null) {
 			$secret = '[redacted]';
 		}
 
@@ -67,4 +90,17 @@ final class CredentialMintOptions {
 			'organisation' => $this->organisation,
 		];
 	}//end __debugInfo()
+
+	/**
+	 * Refuse serialisation: the secret cannot travel with the options.
+	 *
+	 * @return array<string, mixed> Never returns.
+	 *
+	 * @throws \LogicException Always.
+	 *
+	 * @spec exclude ADR-011 value-object plumbing, redaction only
+	 */
+	public function __serialize(): array {
+		throw new \LogicException('CredentialMintOptions cannot be serialised.');
+	}//end __serialize()
 }//end class

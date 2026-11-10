@@ -205,37 +205,21 @@ class FlowVersionService implements FlowVersionServiceInterface {
 	}//end graphOf()
 
 	/**
-	 * Publish the flow's head, deprecating whatever was published before it.
+	 * Publish the flow's head, deprecating whatever was published before it, in one transaction.
 	 *
-	 * @param Flow        $flow        The flow whose head is being published.
-	 * @param string|null $publishedBy The acting user.
-	 * @param string|null $bump        `major` to raise the derived verdict,
-	 *                                 `minor` to assert there was no removal,
-	 *                                 which is REFUSED when the diff found
-	 *                                 one. Null lets the diff decide.
-	 *
-	 * @return FlowVersion The now-published version.
+	 * @param Flow               $flow    The flow whose head is being published.
+	 * @param FlowPublishOptions $options Who publishes (null: no acting user), and the bump asked for: `major` to
+	 *                                    raise the derived verdict, `minor` to assert there was no removal, which is
+	 *                                    REFUSED when the diff found one; null lets the diff decide.
 	 *
 	 * @throws FlowLifecycleRefused When the head is not a draft, or has a dead end.
 	 * @throws Throwable            When the transaction could not be committed.
 	 *
-	 * @spec openspec/specs/flow-definition-versioning/spec.md
-	 */
-	public function publish(Flow $flow, ?string $publishedBy = null, ?string $bump = null): FlowVersion {
-		return $this->publishWith(flow: $flow, options: new FlowPublishOptions(publishedBy: $publishedBy, bump: $bump));
-	}//end publish()
-
-	/**
-	 * Publish the flow's head, deprecating whatever was published before it, in one transaction.
-	 *
-	 * @param Flow               $flow    The flow whose head is being published.
-	 * @param FlowPublishOptions $options Who publishes, and the bump asked for.
-	 *
 	 * @return FlowVersion The now-published version.
 	 *
 	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
-	public function publishWith(Flow $flow, FlowPublishOptions $options): FlowVersion {
+	public function publish(Flow $flow, FlowPublishOptions $options=new FlowPublishOptions()): FlowVersion {
 		$run = new FlowPublishRun(flow: $flow, options: $options);
 		$run->graph = $this->graphOf(flow: $flow);
 		$run->hash = $this->pinPublishable(flow: $flow, graph: $run->graph);
@@ -251,7 +235,7 @@ class FlowVersionService implements FlowVersionServiceInterface {
 		}
 
 		return $stored;
-	}//end publishWith()
+	}//end publish()
 
 	/**
 	 * Inside the transaction: deprecate the old published version and store the head as published.
@@ -388,7 +372,7 @@ class FlowVersionService implements FlowVersionServiceInterface {
 
 		$this->createDraft(flow: $flow);
 
-		return $this->publish(flow: $flow, publishedBy: null);
+		return $this->publish(flow: $flow);
 
 	}//end publishShippedUpdate()
 

@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\LiveSubject;
 use OCA\OpenRegister\Service\Flow\FlowSubjectItems;
@@ -92,9 +93,9 @@ final class FlowItemsDelegationGoldenTest extends TestCase {
 		$this->assertSame(['json' => [], 'binary' => [], 'pairedItem' => null], FlowItems::item(json: []));
 		$this->assertSame(
 			['json' => ['x' => 1], 'binary' => ['b' => 1], 'pairedItem' => ['item' => 0], 'output' => 'o'],
-			FlowItems::item(json: ['x' => 1], binary: ['b' => 1], fromItemIndex: 0, output: 'o')
+			FlowItems::item(json: ['x' => 1], options: new FlowItemOptions(binary: ['b' => 1], fromItemIndex: 0, output: 'o'))
 		);
-		$this->assertSame(['json' => [], 'binary' => [], 'pairedItem' => null], FlowItems::item(json: [], binary: [], fromItemIndex: null, output: ''));
+		$this->assertSame(['json' => [], 'binary' => [], 'pairedItem' => null], FlowItems::item(json: [], options: new FlowItemOptions(binary: [], fromItemIndex: null, output: '')));
 		$this->assertNull(FlowItems::outputOf(member: ['output' => 5]));
 		$this->assertSame('a', FlowItems::outputOf(member: ['output' => 'a']));
 	}//end testItemAndOutput()
