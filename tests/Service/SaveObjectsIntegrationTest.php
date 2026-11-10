@@ -15,6 +15,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
+use OCA\OpenRegister\Service\Object\BulkSaveOptions;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -165,10 +167,9 @@ class SaveObjectsIntegrationTest extends TestCase {
 	public function testSaveObjectsEmpty(): void {
 		$result = $this->saveObjectsHandler->saveObjects(
 			[],
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false
+			new BulkSaveOptions(new BulkBatchDefaults($this->testRegister, $this->testSchema), validation: false, events: false, audit: true),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertIsArray($result);
@@ -192,14 +193,9 @@ class SaveObjectsIntegrationTest extends TestCase {
 
 		$result = $this->saveObjectsHandler->saveObjects(
 			$objects,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			true,
-			true
+			new BulkSaveOptions(new BulkBatchDefaults($this->testRegister, $this->testSchema), validation: false, events: false, audit: true),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertIsArray($result);
@@ -233,14 +229,9 @@ class SaveObjectsIntegrationTest extends TestCase {
 
 		$result = $this->saveObjectsHandler->saveObjects(
 			$objects,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			true,
-			true
+			new BulkSaveOptions(new BulkBatchDefaults($this->testRegister, $this->testSchema), validation: false, events: false, audit: true),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertIsArray($result);
@@ -281,14 +272,9 @@ class SaveObjectsIntegrationTest extends TestCase {
 
 		$result = $this->saveObjectsHandler->saveObjects(
 			$objects,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			true,
-			true
+			new BulkSaveOptions(new BulkBatchDefaults($this->testRegister, $this->testSchema), validation: false, events: false, audit: true),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertIsArray($result);
