@@ -159,6 +159,24 @@ import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import { fetchUserOptions, organisationOption } from './joinOptions.js'
 
+/**
+ * A fetched organisation as an NcSelect option, keyed by its uuid.
+ *
+ * @param {object} organisation The organisation as the store returns it
+ * @return {object} The option
+ */
+function preselectedOption(organisation) {
+	return {
+		id: organisation.uuid,
+		uuid: organisation.uuid,
+		name: organisation.name,
+		label: organisation.name,
+		description: organisation.description,
+		users: organisation.users || [],
+		isDefault: organisation.isDefault,
+	}
+}
+
 export default {
 	name: 'JoinOrganisation',
 	components: {
@@ -281,36 +299,11 @@ export default {
 		 */
 		async loadPreselectedOrganisation(uuid) {
 			try {
-				// Find the organisation in already loaded options
-				let orgOption = this.organisationOptions.find(
-					(org) => org.uuid === uuid || org.id === uuid,
-				)
-
-				// If not found in options, fetch it
-				if (!orgOption) {
-					const organisation =
-						await organisationStore.getOrganisation(uuid)
-
-					if (organisation) {
-						orgOption = {
-							id: organisation.uuid,
-							uuid: organisation.uuid,
-							name: organisation.name,
-							label: organisation.name,
-							description: organisation.description,
-							users: organisation.users || [],
-							isDefault: organisation.isDefault,
-						}
-						// Add to options if not already there
-						if (
-							!this.organisationOptions.some(
-								(o) => o.uuid === orgOption.uuid,
-							)
-						) {
-							this.organisationOptions.unshift(orgOption)
-						}
-					}
-				}
+				// Find the organisation in already loaded options, else fetch it
+				const orgOption =
+					this.organisationOptions.find(
+						(org) => org.uuid === uuid || org.id === uuid,
+					) || (await this.fetchPreselectedOption(uuid))
 
 				// Select the organisation
 				if (orgOption) {
@@ -319,6 +312,25 @@ export default {
 			} catch (error) {
 				console.error('Error loading preselected organisation:', error)
 			}
+		},
+
+		/**
+		 * Fetch an organisation that is not among the loaded options and add
+		 * it to them, unless an option with its uuid is already there.
+		 *
+		 * @param {string} uuid The UUID of the organisation to load
+		 * @return {Promise<object|undefined>} Its option, or undefined when the store has none
+		 */
+		async fetchPreselectedOption(uuid) {
+			const organisation = await organisationStore.getOrganisation(uuid)
+			if (!organisation) {
+				return undefined
+			}
+			const orgOption = preselectedOption(organisation)
+			if (!this.organisationOptions.some((o) => o.uuid === orgOption.uuid)) {
+				this.organisationOptions.unshift(orgOption)
+			}
+			return orgOption
 		},
 
 		/**
