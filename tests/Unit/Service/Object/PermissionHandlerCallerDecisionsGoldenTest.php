@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\DenialQuestion;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -204,7 +205,10 @@ class PermissionHandlerCallerDecisionsGoldenTest extends TestCase {
 		foreach (self::ACTIONS as $action) {
 			$handler = $this->newHandler($caller);
 			$answers["denial $action"] = $this->answer(
-				static fn () => $handler->denialFor(authorization: $block, action: $action, userId: $userId, object: $object)
+				static fn () => $handler->denialFor(
+					question: (new DenialQuestion(authorization: $block, action: $action))->about(principals: [], object: $object),
+					userId: $userId
+				)
 			);
 			$answers["allowed $action"] = $this->answer(
 				fn () => $this->newHandler($caller)->hasPermission(schema: $schema, action: $action, userId: $userId, object: $object)
