@@ -88,25 +88,22 @@ class SourceRecordResolver implements SourceRecordResolverInterface {
 	 * Resolve the competing source records for a master, honouring the
 	 * annotation's `sourceLink.mode`.
 	 *
-	 * @param array<string, mixed> $masterData Master object payload.
-	 * @param string $masterUuid Master object uuid (needed for reverse-FK).
+	 * @param MasterRecord         $master The master: its payload, uuid (needed for reverse-FK) and register ref,
+	 *                                     the reverse-FK source register when the annotation omits one.
 	 * @param array<string, mixed> $config `x-openregister-survivorship` (or `-merge`) config.
-	 * @param string $masterRegister Master's register ref, used as the reverse-FK
-	 *                               source register when the annotation omits one
-	 *                               (the magic-table query needs a register + schema).
 	 *
 	 * @return array<int, array<string, mixed>> Resolved source-record payloads.
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.1
 	 */
-	public function resolveSources(array $masterData, string $masterUuid, array $config, string $masterRegister = ''): array {
+	public function resolveSources(MasterRecord $master, array $config): array {
 		$reverseFk = $this->reverseFkConfig(config: $config);
 		if ($reverseFk === null) {
-			return $this->embeddedSources(data: $masterData, config: $config);
+			return $this->embeddedSources(data: $master->data, config: $config);
 		}
 
-		$reverseFk = $this->withSourceRegister(reverseFk: $reverseFk, masterRegister: $masterRegister);
-		return $this->resolveReverseFk(query: $this->reverseFkQuery(reverseFk: $reverseFk, masterUuid: $masterUuid));
+		$reverseFk = $this->withSourceRegister(reverseFk: $reverseFk, masterRegister: $master->register);
+		return $this->resolveReverseFk(query: $this->reverseFkQuery(reverseFk: $reverseFk, masterUuid: $master->uuid));
 	}//end resolveSources()
 
 	/**

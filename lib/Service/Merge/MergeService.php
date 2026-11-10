@@ -51,6 +51,7 @@ use OCA\OpenRegister\Exception\MergeDecisionException;
 use OCA\OpenRegister\Exception\MergeNotFullyReadableException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Survivorship\MasterRecord;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipTrustLookup;
@@ -882,16 +883,16 @@ class MergeService implements ObjectMergerInterface {
 
 		return array_merge(
 			$this->sourceRecordResolver->resolveSources(
-				masterData: $intoData,
-				masterUuid: (string)$pair->intoObject->getUuid(),
-				config: $survivorshipConfig,
-				masterRegister: (string)$pair->intoObject->getRegister()
+				master: new MasterRecord(data: $intoData, uuid: (string)$pair->intoObject->getUuid(), register: (string)$pair->intoObject->getRegister()),
+				config: $survivorshipConfig
 			),
 			$this->sourceRecordResolver->resolveSources(
-				masterData: ($pair->fromObject->getObject() ?? []),
-				masterUuid: (string)$pair->fromObject->getUuid(),
-				config: $survivorshipConfig,
-				masterRegister: (string)$pair->fromObject->getRegister()
+				master: new MasterRecord(
+					data: ($pair->fromObject->getObject() ?? []),
+					uuid: (string)$pair->fromObject->getUuid(),
+					register: (string)$pair->fromObject->getRegister()
+				),
+				config: $survivorshipConfig
 			)
 		);
 	}//end survivorSources()
