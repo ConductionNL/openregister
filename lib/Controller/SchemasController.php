@@ -2185,12 +2185,41 @@ class SchemasController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)  Uuid::v4 is a named constructor.
 	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
 	 *
 	 * @spec openspec/specs/openapi-generation/spec.md#requirement-schema-authoring-sub-resources-and-meta-entity-operational-endpoints
 	 */
 	public function upload(?int $id = null): JSONResponse {
+		$schema = $this->authorizedUploadTarget(id: $id);
+		if ($schema instanceof JSONResponse) {
+			return $schema;
+		}
+
+		$phpArray = $this->checkedUploadDocument(schema: $schema);
+		if ($phpArray instanceof JSONResponse) {
+			return $phpArray;
+		}
+
+		try {
+			return new JSONResponse(data: $this->saveUploadedSchema(schema: $schema, document: $this->uploadDocument(document: $phpArray, id: $id)));
+		} catch (Exception $e) {
+			return $this->schemaWriteErrorResponse(e: $e, failure: $this->uploadFailure(id: $id));
+		}
+	}//end upload()
+
+	/**
+	 * The schema an upload writes, when the caller may make it.
+	 *
+	 * A new schema gets a fresh uuid; an update writes the stored schema.
+	 *
+	 * @param int|null $id The ID of the schema to update, or null for a new schema.
+	 *
+	 * @return Schema|JSONResponse The schema, or the 403 of {@see uploadPermissionError()}.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)  Uuid::v4 is a named constructor.
+	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter.
+	 */
+	private function authorizedUploadTarget(?int $id): Schema|JSONResponse {
 		$schema = new Schema();
 		$schema->setUuid(Uuid::v4()->toRfc4122());
 		if ($id !== null) {
@@ -2202,6 +2231,36 @@ class SchemasController extends Controller {
 			return $denied;
 		}
 
+		return $schema;
+	}//end authorizedUploadTarget()
+
+	/**
+	 * The uploaded document, mapped from its dialect and with authorization as stored, unless it is refused.
+	 *
+	 * @param Schema $schema The schema the upload writes.
+	 *
+	 * @return array<string, mixed>|JSONResponse The document, or the refusal.
+	 */
+	private function checkedUploadDocument(Schema $schema): array|JSONResponse {
+		$phpArray = $this->uploadedDocument();
+		if ($phpArray instanceof JSONResponse) {
+			return $phpArray;
+		}
+
+		$refusal = $this->uploadRefusal(schema: $schema, document: $phpArray);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return $phpArray;
+	}//end checkedUploadDocument()
+
+	/**
+	 * The uploaded body as a schema document: decoded, mapped from its dialect, authorization as stored.
+	 *
+	 * @return array<string, mixed>|JSONResponse The document, or the error of reading or mapping it.
+	 */
+	private function uploadedDocument(): array|JSONResponse {
 		$phpArray = $this->services->platform->uploadService->getUploadedJson($this->request->getParams());
 		if ($phpArray instanceof JSONResponse) {
 			return $phpArray;
@@ -2214,24 +2273,36 @@ class SchemasController extends Controller {
 			return $dialectResult;
 		}
 
-		$phpArray = $this->withAuthorizationAsStored(document: $dialectResult);
-		$old      = $schema->getAuthorization();
-		$refusal  = ($this->crossOrganisationRefusal(old: $old, document: $phpArray)
-			?? $this->externalGrantRefusal(data: $phpArray)
-			?? $this->orphanCleanupRefusal(schema: $schema, document: $phpArray));
-		if ($refusal !== null) {
-			return $refusal;
-		}
+		return $this->withAuthorizationAsStored(document: $dialectResult);
+	}//end uploadedDocument()
 
-		try {
-			return new JSONResponse(data: $this->saveUploadedSchema(schema: $schema, document: $this->uploadDocument(document: $phpArray, id: $id)));
-		} catch (Exception $e) {
-			return $this->schemaWriteErrorResponse(
-				e: $e,
-				failure: ['message' => '[SchemasController] Schema upload failed', 'context' => ['schema_id' => $id]]
-			);
-		}
-	}//end upload()
+	/**
+	 * Why an uploaded document is refused: a cross-organisation grant, an unbounded external grant, or orphan cleanup.
+	 *
+	 * @param Schema               $schema   The schema the upload writes.
+	 * @param array<string, mixed> $document The uploaded document, authorization as stored.
+	 *
+	 * @return JSONResponse|null The first refusal, or null when the upload may be saved.
+	 */
+	private function uploadRefusal(Schema $schema, array $document): ?JSONResponse {
+		$old = $schema->getAuthorization();
+		return ($this->crossOrganisationRefusal(old: $old, document: $document)
+			?? $this->externalGrantRefusal(data: $document)
+			?? $this->orphanCleanupRefusal(schema: $schema, document: $document));
+	}//end uploadRefusal()
+
+	/**
+	 * The log message and context of a failed upload.
+	 *
+	 * @param int|null $id The ID of the schema the upload updates, or null for a new schema.
+	 *
+	 * @return array{message: string, context: array<string, mixed>}
+	 *
+	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter.
+	 */
+	private function uploadFailure(?int $id): array {
+		return ['message' => '[SchemasController] Schema upload failed', 'context' => ['schema_id' => $id]];
+	}//end uploadFailure()
 
 	/**
 	 * The uploaded body as it is saved: an update keeps the stored identity and
