@@ -20,7 +20,9 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\ObjectUpdateOptions;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\StoredObjectUpdate;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
@@ -122,12 +124,13 @@ final class SaveObjectUpdateObjectTest extends TestCase {
 		}
 
 		$updated = $handler->updateObject(
-			register: (($case['ids'] ?? false) === true) ? 3 : $register,
-			schema: (($case['ids'] ?? false) === true) ? '7' : $schema,
-			data: $case['data'],
-			existingObject: $existing,
-			silent: ($case['silent'] ?? false),
-			oldObject: $old
+			update: new StoredObjectUpdate(
+				register: (($case['ids'] ?? false) === true) ? 3 : $register,
+				schema: (($case['ids'] ?? false) === true) ? '7' : $schema,
+				data: $case['data'],
+				existingObject: $existing
+			),
+			options: new ObjectUpdateOptions(silent: ($case['silent'] ?? false), oldObject: $old)
 		);
 
 		$lines = array_values(array_filter($logger->lines, static fn (string $l): bool => str_contains($l, 'updateInverseRelations') || str_contains($l, 'archive')));
