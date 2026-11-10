@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Rbac\TokenGrantUse;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\TokenGrant;
 use OCA\OpenRegister\Service\Rbac\TokenGrantReach;
@@ -277,12 +278,7 @@ class TokenGrantTest extends TestCase {
 			tokenId: 'leverancier'
 		);
 
-		$block = $narrower->narrow(
-			authorization: null,
-			grant: $expired,
-			target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken'),
-			now: $this->now()
-		);
+		$block = $narrower->narrow(authorization: null, use: new TokenGrantUse(grant: $expired, target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken'), now: $this->now()));
 
 		$this->assertNotEmpty($block, 'an empty block is read as "no rules configured" and grants everything');
 		$this->assertFalse(
@@ -306,12 +302,7 @@ class TokenGrantTest extends TestCase {
 			tokenId: 'leverancier'
 		);
 
-		$block = $narrower->narrow(
-			authorization: ['read' => ['medewerkers'], 'update' => ['medewerkers']],
-			grant: $grant,
-			target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken'),
-			now: $this->now()
-		);
+		$block = $narrower->narrow(authorization: ['read' => ['medewerkers'], 'update' => ['medewerkers']], use: new TokenGrantUse(grant: $grant, target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken'), now: $this->now()));
 
 		$this->assertTrue($narrower->markerPermits(authorization: $block, action: 'read'));
 		$this->assertFalse(
@@ -338,12 +329,7 @@ class TokenGrantTest extends TestCase {
 			terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('2026-11-01T00:00:00+00:00'))
 		);
 
-		$block = $narrower->narrow(
-			authorization: ['read' => ['medewerkers']],
-			grant: $grant,
-			target: new TokenGrantTarget(schemaSlug: 'persoon', registerSlug: 'zaken'),
-			now: $this->now()
-		);
+		$block = $narrower->narrow(authorization: ['read' => ['medewerkers']], use: new TokenGrantUse(grant: $grant, target: new TokenGrantTarget(schemaSlug: 'persoon', registerSlug: 'zaken'), now: $this->now()));
 
 		$this->assertFalse(
 			$narrower->markerPermits(authorization: $block, action: 'read'),
@@ -363,12 +349,7 @@ class TokenGrantTest extends TestCase {
 		$narrower = new TokenGrantNarrower();
 		$block = ['read' => ['medewerkers'], 'update' => ['medewerkers']];
 
-		$result = $narrower->narrow(
-			authorization: $block,
-			grant: null,
-			target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken'),
-			now: $this->now()
-		);
+		$result = $narrower->narrow(authorization: $block, use: new TokenGrantUse(grant: null, target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken'), now: $this->now()));
 
 		$this->assertSame($block, $result, 'a person calling with no token keeps exactly the rules they had');
 		$this->assertTrue($narrower->markerPermits(authorization: $result, action: 'update'));
@@ -386,27 +367,17 @@ class TokenGrantTest extends TestCase {
 			TokenGrantNarrower::MARKER => ['verbs' => ['read', 'update', 'delete']],
 		];
 
-		$withoutToken = $narrower->narrow(
-			authorization: $forged,
-			grant: null,
-			target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken'),
-			now: $this->now()
-		);
+		$withoutToken = $narrower->narrow(authorization: $forged, use: new TokenGrantUse(grant: null, target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken'), now: $this->now()));
 		$this->assertArrayNotHasKey(
 			TokenGrantNarrower::MARKER,
 			$withoutToken,
 			'a marker a schema wrote must not be read as a grant somebody holds'
 		);
 
-		$withToken = $narrower->narrow(
-			authorization: $forged,
-			grant: new TokenGrant(
+		$withToken = $narrower->narrow(authorization: $forged, use: new TokenGrantUse(grant: new TokenGrant(
 				verbs: ['read'],
 				terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('2026-11-01T00:00:00+00:00'))
-			),
-			target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken'),
-			now: $this->now()
-		);
+			), target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken'), now: $this->now()));
 		$this->assertFalse(
 			$narrower->markerPermits(authorization: $withToken, action: 'delete'),
 			'and the real grant overwrites it rather than merging with it'

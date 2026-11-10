@@ -31,6 +31,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rbac\TokenGrantUse;
 use OCA\OpenRegister\Service\Rbac\TokenGrant;
 use OCA\OpenRegister\Service\Rbac\TokenGrantReach;
 use OCA\OpenRegister\Service\Rbac\TokenGrantTerms;
@@ -87,16 +88,12 @@ class PermissionHandlerTokenCeilingTest extends TestCase {
 	 * @return array<string, mixed> The block.
 	 */
 	private function narrowedToReadOnly(): array {
-		return (new TokenGrantNarrower())->narrow(
-			authorization: ['read' => ['medewerkers'], 'update' => ['medewerkers']],
-			grant: new TokenGrant(
+		return (new TokenGrantNarrower())->narrow(authorization: ['read' => ['medewerkers'], 'update' => ['medewerkers']], use: new TokenGrantUse(grant: new TokenGrant(
 				verbs: ['read'],
 				reach: new TokenGrantReach(schemas: ['zaak']),
 				terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('+10 years')),
 				tokenId: 'leverancier'
-			),
-			target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken')
-		);
+			), target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken')));
 	}//end narrowedToReadOnly()
 
 	/**
@@ -204,15 +201,11 @@ class PermissionHandlerTokenCeilingTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnExpiredTokenIsRefusedEvenItsOwnVerb(): void {
-		$block = (new TokenGrantNarrower())->narrow(
-			authorization: ['read' => ['medewerkers']],
-			grant: new TokenGrant(
+		$block = (new TokenGrantNarrower())->narrow(authorization: ['read' => ['medewerkers']], use: new TokenGrantUse(grant: new TokenGrant(
 				verbs: ['read'],
 				terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('2020-01-01T00:00:00+00:00')),
 				tokenId: 'leverancier'
-			),
-			target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken')
-		);
+			), target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken')));
 
 		$this->assertFalse(
 			$this->handler()->hasGroupPermission(

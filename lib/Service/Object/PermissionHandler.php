@@ -49,6 +49,7 @@ use OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCA\OpenRegister\Service\OrganisationContext;
+use OCA\OpenRegister\Service\Rbac\TokenGrantUse;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
@@ -2835,8 +2836,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		return $this->grants->derived->tokenGrantNarrower->narrow(
 			authorization: $authorization,
-			grant: $grant,
-			target: new TokenGrantTarget(schemaSlug: $schema->getSlug(), registerSlug: $registerSlug)
+			use: new TokenGrantUse(grant: $grant, target: new TokenGrantTarget(schemaSlug: $schema->getSlug(), registerSlug: $registerSlug))
 		);
 	}//end narrowByToken()
 
