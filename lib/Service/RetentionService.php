@@ -177,7 +177,8 @@ class RetentionService implements RetentionServiceInterface {
 	private function archivalRetention(ObjectEntity $object, Schema $schema): array {
 		$archiveConfig = $schema->getArchive();
 
-		$applied = $this->resolveArchivalDefaults(archiveConfig: $archiveConfig, classification: self::effectiveCategory(object: $object, archiveConfig: $archiveConfig));
+		$classification = self::effectiveCategory(object: $object, archiveConfig: $archiveConfig);
+		$applied = $this->resolveArchivalDefaults(archiveConfig: $archiveConfig, classification: $classification);
 		$retentionPeriod = $applied['bewaartermijn'];
 
 		$retention = $this->withArchivalDefaults(retention: ($object->getRetention() ?? []), applied: $applied);
