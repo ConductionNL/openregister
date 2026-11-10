@@ -953,6 +953,30 @@ describe('the editor', () => {
 		expect(vm.jsonError).not.toMatch(/&#39;|&quot;|&amp;/)
 	})
 
+	it.each([['null'], ['[]'], ['3'], ['"pack"']])(
+		'refuses the JSON %s, which is not an object, and keeps the draft',
+		async (text) => {
+			const vm = await loadedEditor()
+			vm.showJson()
+			const draft = vm.draft
+			vm.jsonText = text
+			expect(vm.applyJson()).toBe(false)
+			expect(vm.jsonError).toBe('A pack definition is a JSON object.')
+			expect(vm.draft).toBe(draft)
+		},
+	)
+
+	it('clears an earlier JSON error once the JSON applies', async () => {
+		const vm = await loadedEditor()
+		vm.showJson()
+		vm.jsonText = '{ not json'
+		expect(vm.applyJson()).toBe(false)
+		expect(vm.jsonError).not.toBe('')
+		vm.jsonText = JSON.stringify(MODULE_PACK)
+		expect(vm.applyJson()).toBe(true)
+		expect(vm.jsonError).toBe('')
+	})
+
 	it('keeps focus on a moved row and announces where it went', async () => {
 		const vm = await loadedEditor()
 		const container = document.createElement('div')
