@@ -135,9 +135,14 @@ class OAuth2InstanceClient implements OAuth2InstanceClientInterface {
 		#[\SensitiveParameter] array $decoded,
 		OAuth2FlowClaims $flow,
 	): string {
-		$minted = $this->broker->mint(
-			name: 'OAuth2 client for ' . $instanceBaseUrl, provider: 'generic-oauth2', owner: $flow->string(key: 'u'), allowedApps: ['openregister'],
-			secret: (string)($decoded['client_secret'] ?? ''), scope: $flow->string(key: 's', default: 'personal'), organisation: $flow->organisation()
+		$minted = $this->broker->mintCredential(
+			mint: new CredentialMint(name: 'OAuth2 client for ' . $instanceBaseUrl, provider: 'generic-oauth2', owner: $flow->string(key: 'u')),
+			options: new CredentialMintOptions(
+				allowedApps: ['openregister'],
+				secret: (string)($decoded['client_secret'] ?? ''),
+				scope: $flow->string(key: 's', default: 'personal'),
+				organisation: $flow->organisation()
+			)
 		);
 
 		return (string)$minted->getUuid();
