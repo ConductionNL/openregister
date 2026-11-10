@@ -50,13 +50,20 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AccessLinkControllerServices;
 use OCA\OpenRegister\Db\AccessLink;
-use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
-use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
-use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
+use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
-use OCA\OpenRegister\Service\Sharing\AccessLinkService;
+use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
+use OCA\OpenRegister\Service\Sharing\AccessLinkActsInterface;
+use OCA\OpenRegister\Service\Sharing\LinkAct;
+use OCA\OpenRegister\Service\Sharing\LinkFile;
+use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuardInterface;
+use OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface;
+use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
+use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
+use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -85,14 +92,14 @@ class AccessLinkController extends Controller {
 	 *
 	 * @var string
 	 */
-	public const THROTTLE_ACTION = ThrottledSurfaces::ACCESS_LINK;
+	public const THROTTLE_ACTION = ThrottledSurfacesInterface::ACCESS_LINK;
 
 	/**
 	 * The link lifecycle.
 	 *
-	 * @var AccessLinkService
+	 * @var AccessLinkServiceInterface
 	 */
-	private readonly AccessLinkService $links;
+	private readonly AccessLinkServiceInterface $links;
 
 	/**
 	 * Serves what a link opens.
@@ -104,16 +111,16 @@ class AccessLinkController extends Controller {
 	/**
 	 * Decides whether a caller may publish a subject.
 	 *
-	 * @var AccessLinkMintGuard
+	 * @var AccessLinkMintGuardInterface
 	 */
-	private readonly AccessLinkMintGuard $mintGuard;
+	private readonly AccessLinkMintGuardInterface $mintGuard;
 
 	/**
 	 * Performs the comment and the upload, as the link.
 	 *
-	 * @var AccessLinkActs
+	 * @var AccessLinkActsInterface
 	 */
-	private readonly AccessLinkActs $acts;
+	private readonly AccessLinkActsInterface $acts;
 
 	/**
 	 * The current session, on the owner endpoints.
@@ -139,16 +146,14 @@ class AccessLinkController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name (injected by Nextcloud).
 	 * @param IRequest $request Current request.
 	 * @param AccessLinkControllerServices $services The access link controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		AccessLinkControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->links = $services->domain->links;
 		$this->reader = $services->domain->reader;
 		$this->mintGuard = $services->domain->mintGuard;
@@ -181,7 +186,7 @@ class AccessLinkController extends Controller {
 
 		// Resolved once and threaded through: the reader needs it to serve the
 		// subject and the audit entry needs it to name what was read.
-		$object = $this->reader->subjectObject(link: $link);
+		$object = StoredEntity::object(object: $this->reader->subjectObject(link: $link));
 
 		$body = $this->reader->read(link: $link, object: $object);
 		if ($body === null) {
@@ -192,9 +197,11 @@ class AccessLinkController extends Controller {
 
 		$this->links->recordUse(
 			link: $link,
-			act: AccessLinkService::ACT_READ,
-			object: $object,
-			ipAddress: $this->request->getRemoteAddress()
+			use: new AccessLinkUse(
+				act: AccessLinkServiceInterface::ACT_READ,
+				object: $object,
+				ipAddress: $this->request->getRemoteAddress()
+			)
 		);
 
 		return new JSONResponse(array_merge(['link' => $link->publicDescriptor()], $body));
@@ -225,7 +232,7 @@ class AccessLinkController extends Controller {
 			return $link;
 		}
 
-		$object = $this->reader->subjectObject(link: $link);
+		$object = StoredEntity::object(object: $this->reader->subjectObject(link: $link));
 		if ($object === null) {
 			$this->registerRejectedAttempt();
 
@@ -238,7 +245,7 @@ class AccessLinkController extends Controller {
 		}
 
 		try {
-			$note = $this->acts->comment(link: $link, object: $object, message: $message);
+			$note = $this->acts->comment(act: new LinkAct(link: $link, object: $object), message: $message);
 		} catch (Throwable $failure) {
 			$this->logger->warning('[AccessLinkController] A link comment failed: ' . $failure->getMessage());
 
@@ -247,9 +254,11 @@ class AccessLinkController extends Controller {
 
 		$this->links->recordUse(
 			link: $link,
-			act: AccessLinkService::ACT_COMMENT,
-			object: $object,
-			ipAddress: $this->request->getRemoteAddress()
+			use: new AccessLinkUse(
+				act: AccessLinkServiceInterface::ACT_COMMENT,
+				object: $object,
+				ipAddress: $this->request->getRemoteAddress()
+			)
 		);
 
 		return new JSONResponse($note, Http::STATUS_CREATED);
@@ -280,7 +289,7 @@ class AccessLinkController extends Controller {
 			return $link;
 		}
 
-		$object = $this->reader->subjectObject(link: $link);
+		$object = StoredEntity::object(object: $this->reader->subjectObject(link: $link));
 		if ($object === null) {
 			$this->registerRejectedAttempt();
 
@@ -311,10 +320,8 @@ class AccessLinkController extends Controller {
 
 		try {
 			$stored = $this->acts->upload(
-				link: $link,
-				object: $object,
-				fileName: $fileName,
-				content: $content
+				act: new LinkAct(link: $link, object: $object),
+				file: new LinkFile(fileName: $fileName, content: $content)
 			);
 		} catch (Throwable $failure) {
 			$this->logger->warning('[AccessLinkController] A link upload failed: ' . $failure->getMessage());
@@ -324,10 +331,12 @@ class AccessLinkController extends Controller {
 
 		$this->links->recordUse(
 			link: $link,
-			act: AccessLinkService::ACT_UPLOAD,
-			object: $object,
-			ipAddress: $this->request->getRemoteAddress(),
-			context: ['fileName' => $fileName]
+			use: new AccessLinkUse(
+				act: AccessLinkServiceInterface::ACT_UPLOAD,
+				object: $object,
+				ipAddress: $this->request->getRemoteAddress(),
+				context: ['fileName' => $fileName]
+			)
 		);
 
 		return new JSONResponse($stored, Http::STATUS_CREATED);
@@ -368,13 +377,17 @@ class AccessLinkController extends Controller {
 
 		try {
 			$minted = $this->links->mint(
-				userId: $user->getUID(),
-				subjectType: $subjectType,
-				subjectId: $subjectId,
-				capabilities: $this->capabilitiesParam(),
-				expiresAt: $this->stringParam(name: 'expiresAt'),
-				password: $this->stringParam(name: 'password'),
-				label: $this->stringParam(name: 'label')
+				new LinkMintRequest(
+					minter: $user->getUID(),
+					subjectType: $subjectType,
+					subjectId: $subjectId,
+					terms: new AccessLinkTerms(
+						capabilities: $this->capabilitiesParam(),
+						expiresAt: $this->stringParam(name: 'expiresAt'),
+						password: $this->stringParam(name: 'password'),
+						label: $this->stringParam(name: 'label')
+					)
+				)
 			);
 		} catch (InvalidArgumentException $refused) {
 			return new JSONResponse(['message' => $refused->getMessage()], Http::STATUS_BAD_REQUEST);
@@ -420,11 +433,7 @@ class AccessLinkController extends Controller {
 			return $this->notFound();
 		}
 
-		$updated = $this->links->setDisabled(
-			id: $id,
-			userId: $user->getUID(),
-			disabled: ((bool)$this->request->getParam('disabled', false))
-		);
+		$updated = $this->switched(id: $id, userId: $user->getUID());
 
 		if ($updated === null) {
 			return $this->notFound();
@@ -432,6 +441,22 @@ class AccessLinkController extends Controller {
 
 		return new JSONResponse($updated, Http::STATUS_OK);
 	}//end update()
+
+	/**
+	 * Switch one of the caller's own links off or back on, as the request's `disabled` asks.
+	 *
+	 * @param int    $id     The link row id.
+	 * @param string $userId The calling principal.
+	 *
+	 * @return array<string, mixed>|null The updated link, or null when the caller has no such link.
+	 */
+	private function switched(int $id, string $userId): ?array {
+		if ((bool)$this->request->getParam('disabled', false) === true) {
+			return $this->links->disable(id: $id, userId: $userId);
+		}
+
+		return $this->links->enable(id: $id, userId: $userId);
+	}//end switched()
 
 	/**
 	 * DELETE /api/access-links/{id}

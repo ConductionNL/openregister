@@ -161,17 +161,24 @@ class DerivedGrantResolver {
 	 */
 	public function groupsFor(array $grants, array $area, GrantConstraints $constraints): array {
 		$now = new DateTimeImmutable();
+		$reaching = array_filter(
+			$grants,
+			static fn (mixed $grant): bool => is_array($grant) === true && $constraints->reaches(entry: $grant, point: new ConstraintPoint(area: $area, now: $now)) === true
+		);
 
+		return $this->groupsIn(grants: $reaching);
+	}//end groupsFor()
+
+	/**
+	 * The distinct group ids a set of grants names, in first-seen order.
+	 *
+	 * @param array<int, array<string, mixed>> $grants The grants.
+	 *
+	 * @return array<int, string> The group ids.
+	 */
+	private function groupsIn(array $grants): array {
 		$groups = [];
 		foreach ($grants as $grant) {
-			if (is_array($grant) === false) {
-				continue;
-			}
-
-			if ($constraints->reaches(entry: $grant, area: $area, now: $now) === false) {
-				continue;
-			}
-
 			foreach ($this->stringsIn(value: ($grant['groups'] ?? [])) as $group) {
 				if (in_array($group, $groups, true) === false) {
 					$groups[] = $group;
@@ -180,7 +187,7 @@ class DerivedGrantResolver {
 		}
 
 		return $groups;
-	}//end groupsFor()
+	}//end groupsIn()
 
 	/**
 	 * Whether the asserted claim satisfies one rule.

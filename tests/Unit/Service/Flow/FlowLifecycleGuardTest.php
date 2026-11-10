@@ -107,9 +107,14 @@ class FlowLifecycleGuardTest extends TestCase {
 	 * @return void
 	 */
 	public function testEditingADraftIsAllowed(): void {
-		$this->guard()->refuseEditUnlessDraft('f', FlowVersion::STATUS_DRAFT);
+		$refusedFor = null;
+		try {
+			$this->guard()->refuseEditUnlessDraft('f', FlowVersion::STATUS_DRAFT);
+		} catch (FlowLifecycleRefused $refusal) {
+			$refusedFor = $refusal->getReason();
+		}
 
-		$this->expectNotToPerformAssertions();
+		$this->assertNull($refusedFor, 'A draft must stay editable; the guard refused it.');
 	}//end testEditingADraftIsAllowed()
 
 	/**
@@ -120,9 +125,14 @@ class FlowLifecycleGuardTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFlowWithNoLifecycleYetIsNotRefused(): void {
-		$this->guard()->refuseEditUnlessDraft('f', null);
+		$refusedFor = null;
+		try {
+			$this->guard()->refuseEditUnlessDraft('f', null);
+		} catch (FlowLifecycleRefused $refusal) {
+			$refusedFor = $refusal->getReason();
+		}
 
-		$this->expectNotToPerformAssertions();
+		$this->assertNull($refusedFor, 'A flow with no lifecycle yet must not be refused; the guard refused it.');
 	}//end testAFlowWithNoLifecycleYetIsNotRefused()
 
 	/**

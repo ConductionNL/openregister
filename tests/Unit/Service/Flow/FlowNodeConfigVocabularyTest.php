@@ -103,6 +103,10 @@ use UnexpectedValueException;
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\SwitchNode
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\WaitNode
  * @uses \OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopAdvance
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopRouting
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopPlan
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunStart
  * @uses \OCA\OpenRegister\Service\Flow\FlowHop
  * @uses \OCA\OpenRegister\Service\Flow\FlowWalkHop
  * @uses \OCA\OpenRegister\Service\Flow\FlowWalkPass

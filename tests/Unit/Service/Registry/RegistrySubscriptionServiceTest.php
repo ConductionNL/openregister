@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace Unit\Service\Registry;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Registry\InboundUpdate;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegistrySubscription;
 use OCA\OpenRegister\Db\RegistrySubscriptionMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Registry\RegistryIdentity;
+use OCA\OpenRegister\Service\Registry\RegistryInboundServices;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionNotifier;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
 use OCA\OpenRegister\Service\Registry\RegistryUpdateTargetGuard;
@@ -43,9 +46,8 @@ class RegistrySubscriptionServiceTest extends TestCase {
 
 		$this->service = new RegistrySubscriptionService(
 			$this->subscriptionMapper,
-			$this->objectService,
 			$this->notifier,
-			$this->updateTargetGuard,
+			new RegistryInboundServices(objectService: $this->objectService, updateTargetGuard: $this->updateTargetGuard),
 			$this->createMock(LoggerInterface::class),
 		);
 	}
@@ -107,11 +109,8 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		$this->notifier->expects($this->once())
 			->method('requested')
 			->with(
-				$this->anything(),
-				'dossiq',
-				'brpPerson',
-				'brp',
-				'999990019',
+				$this->callback(fn (ObjectEntity $object): bool => $object->getRegister() === 'dossiq' && $object->getSchema() === 'brpPerson'),
+				new RegistryIdentity('brp', '999990019'),
 			);
 
 		$row = $this->service->requestSubscription($this->personObject(), $this->brpSchema());
@@ -148,7 +147,7 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		$this->subscriptionMapper->method('findForObject')->willReturn($row);
 		$this->subscriptionMapper->method('save')->willReturnArgument(0);
 
-		$this->notifier->expects($this->once())->method('ended')->with($this->anything(), 'brp', '999990019');
+		$this->notifier->expects($this->once())->method('ended')->with($this->anything(), new RegistryIdentity('brp', '999990019'));
 
 		$result = $this->service->endSubscription($this->personObject());
 
@@ -161,7 +160,7 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		$this->subscriptionMapper->method('findActiveByIdentity')->willReturn([]);
 		$this->updateTargetGuard->expects($this->never())->method('evaluate');
 
-		$result = $this->service->applyInboundUpdate('brp', '999990019', ['address' => 'Dam 1'], 'evt-1');
+		$result = $this->service->applyInboundUpdate(new InboundUpdate(new RegistryIdentity('brp', '999990019'), ['address' => 'Dam 1'], 'evt-1'));
 
 		$this->assertSame(0, $result['matched']);
 		$this->assertSame([], $result['applied']);
@@ -207,14 +206,14 @@ class RegistrySubscriptionServiceTest extends TestCase {
 
 		$this->notifier->expects($this->once())
 			->method('auditInboundUpdate')
-			->willReturnCallback(function ($object, $registry, $eventReference, $properties) use ($saved) {
+			->willReturnCallback(function ($object, $update) use ($saved) {
 				$this->assertSame($saved, $object);
-				$this->assertSame('brp', $registry);
-				$this->assertSame('evt-1', $eventReference);
-				$this->assertSame(['address'], $properties);
+				$this->assertSame('brp', $update->identity->registry);
+				$this->assertSame('evt-1', $update->eventReference);
+				$this->assertSame(['address'], $update->propertyNames());
 			});
 
-		$result = $this->service->applyInboundUpdate('brp', '999990019', ['address' => 'Dam 1'], 'evt-1');
+		$result = $this->service->applyInboundUpdate(new InboundUpdate(new RegistryIdentity('brp', '999990019'), ['address' => 'Dam 1'], 'evt-1'));
 
 		$this->assertSame(['obj-uuid-1'], $result['applied']);
 		$this->assertSame([], $result['rejected']);
@@ -235,7 +234,7 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		$this->objectService->expects($this->never())->method('saveObject');
 		$this->objectService->expects($this->never())->method('patchObject');
 
-		$result = $this->service->applyInboundUpdate('brp', '999990019', ['notes' => 'secret'], 'evt-1');
+		$result = $this->service->applyInboundUpdate(new InboundUpdate(new RegistryIdentity('brp', '999990019'), ['notes' => 'secret'], 'evt-1'));
 
 		$this->assertSame([], $result['applied']);
 		$this->assertCount(1, $result['rejected']);
@@ -259,7 +258,7 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		$this->objectService->expects($this->never())->method('patchObject');
 		$this->notifier->expects($this->never())->method('auditInboundUpdate');
 
-		$result = $this->service->applyInboundUpdate('brp', '999990019', [], 'evt-1');
+		$result = $this->service->applyInboundUpdate(new InboundUpdate(new RegistryIdentity('brp', '999990019'), [], 'evt-1'));
 
 		// matched=1 (a subscription DOES exist) but nothing to apply — the
 		// controller's 404-vs-200-noop distinction depends on telling this

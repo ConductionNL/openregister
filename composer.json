@@ -60,6 +60,7 @@
 		"test:db": "if [ ! -f ../../lib/base.php ]; then echo 'SKIPPED: the Database suite needs a booted Nextcloud server and a live database (../../lib/base.php not found) - run from inside a Nextcloud checkout or in CI'; else ./vendor/bin/phpunit --testsuite=\"Database Tests\" --colors=always; fi",
 		"test:service": "if [ ! -f ../../lib/base.php ]; then echo 'SKIPPED: the Service suite needs a booted Nextcloud server container (../../lib/base.php not found) - run from inside a Nextcloud checkout or in CI'; else ./vendor/bin/phpunit --testsuite=\"Service Tests\" --colors=always; fi",
 		"test:all": "./vendor/bin/phpunit --colors=always",
+		"test:mutation": "vendor-bin/infection/run.sh",
 		"test:docker": "docker exec -u 33 master-nextcloud-1 bash -c 'cd /var/www/html/apps-extra/openregister && ./vendor/bin/phpunit --colors=always'",
 		"test:api": "docker exec -u 33 master-nextcloud-1 bash -c 'cd /var/www/html/apps-extra/openregister && ./vendor/bin/phpunit --testsuite=\"Integration Tests\" --colors=always'",
 		"test:newman": "bash tests/newman/run-all.sh",

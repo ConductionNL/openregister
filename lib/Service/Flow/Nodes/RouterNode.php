@@ -34,33 +34,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowExpression;
+use OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
-use OCP\IL10N;
-use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use UnexpectedValueException;
 
 /**
  * Tags each item with the output branch it should go to.
  */
-class RouterNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
-	/**
-	 * Constructor.
-	 *
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
-	 */
-	public function __construct(
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
-	) {
-
-	}//end __construct()
-
+class RouterNode extends LogicNodeBase implements IFlowNode, RouterNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
 	/**
 	 * The step type.
 	 *
@@ -96,17 +81,6 @@ class RouterNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, I
 	public function getIcon(): string {
 		return $this->urls->imagePath('core', 'actions/arrow-right.svg');
 	}//end getIcon()
-
-	/**
-	 * Routing grants no privilege.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * The config vocabulary of a route step.
@@ -156,19 +130,66 @@ class RouterNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, I
 	 * @return array The items, each tagged (or dropped when unmatched).
 	 */
 	public function execute(array $items, array $config, array $context): array {
-		$rules = $this->rulesOf(config: $config);
-		$fallback = trim((string)($config['default'] ?? ''));
-		$count = count($items);
+		$documents = $this->documentsFor(items: $items, context: $context);
 
+		return $this->tagged(items: $items, outputs: $this->outputsFor(config: $config, documents: $documents));
+	}//end execute()
+
+	/**
+	 * The output each document selects, keyed as the documents are.
+	 *
+	 * @param array $config    The step configuration.
+	 * @param array $documents The data documents, keyed by input index.
+	 *
+	 * @return array<int|string, string|null> The output per input index, null for none.
+	 */
+	private function outputsFor(array $config, array $documents): array {
+		$outputs = [];
+		foreach ($documents as $index => $data) {
+			$outputs[$index] = $this->outputFor(config: $config, data: $data);
+		}
+
+		return $outputs;
+	}//end outputsFor()
+
+	/**
+	 * The expression document of each item, keyed by its input index.
+	 *
+	 * Every item is evaluated at position 0 of the list, as the router always did.
+	 *
+	 * @param array $items   The input items.
+	 * @param array $context Run-level metadata.
+	 *
+	 * @return array<int|string, array> One data document per item.
+	 */
+	private function documentsFor(array $items, array $context): array {
+		$count = count($items);
+		$documents = [];
+		foreach ($items as $index => $item) {
+			$documents[$index] = FlowExpression::documentFor(
+				item: (array)$item,
+				options: new FlowExpressionDataOptions(
+					itemCount: $count,
+					context: $context
+				)
+			);
+		}
+
+		return $documents;
+	}//end documentsFor()
+
+	/**
+	 * Each item tagged for its output; an item with no output goes nowhere.
+	 *
+	 * @param array $items   The input items.
+	 * @param array $outputs The output per input index, null for none.
+	 *
+	 * @return array The tagged items.
+	 */
+	private function tagged(array $items, array $outputs): array {
 		$out = [];
 		foreach ($items as $index => $item) {
-			$data = FlowExpression::dataFor(
-				item: (array)$item,
-				itemCount: $count,
-				context: $context
-			);
-			$output = $this->outputFor(rules: $rules, data: $data, fallback: $fallback);
-			if ($output === null) {
+			if ($outputs[$index] === null) {
 				// No rule matched and no fallback: this item goes nowhere.
 				continue;
 			}
@@ -177,24 +198,23 @@ class RouterNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, I
 				json: (array)($item[FlowItems::JSON] ?? []),
 				binary: (array)($item[FlowItems::BINARY] ?? []),
 				fromItemIndex: $index,
-				output: $output
+				output: $outputs[$index]
 			);
-		}//end foreach
+		}
 
 		return $out;
-	}//end execute()
+	}//end tagged()
 
 	/**
 	 * The output branch an item's data selects, or null when it selects none.
 	 *
-	 * @param array<int, array> $rules The routing rules.
-	 * @param array $data The item's expression data.
-	 * @param string $fallback The default output, empty for none.
+	 * @param array $config The step configuration.
+	 * @param array $data   The item's expression data.
 	 *
 	 * @return string|null The chosen output, or null.
 	 */
-	private function outputFor(array $rules, array $data, string $fallback): ?string {
-		foreach ($rules as $rule) {
+	private function outputFor(array $config, array $data): ?string {
+		foreach ($this->rulesOf(config: $config) as $rule) {
 			$output = trim((string)($rule['output'] ?? ''));
 			if ($output === '') {
 				continue;
@@ -205,6 +225,7 @@ class RouterNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, I
 			}
 		}
 
+		$fallback = trim((string)($config['default'] ?? ''));
 		if ($fallback !== '') {
 			return $fallback;
 		}
@@ -239,16 +260,4 @@ class RouterNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, I
 		return IFlowNodeTaxonomy::KIND_GATEWAY;
 
 	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_LOGIC;
-
-	}//end getCategory()
 }//end class

@@ -35,27 +35,50 @@ use RuntimeException;
  * @category Service
  * @package  OCA\OpenRegister\Service\Hardening
  */
-class HardeningFloorException extends RuntimeException {
+class HardeningFloorException extends RuntimeException implements HardeningFloorExceptionInterface {
+
+	/**
+	 * The control that would have been weakened.
+	 *
+	 * @var string
+	 */
+	public readonly string $control;
+
+	/**
+	 * The floor in force.
+	 *
+	 * @var integer
+	 */
+	public readonly int $floor;
+
+	/**
+	 * The value that was asked for.
+	 *
+	 * @var integer
+	 */
+	public readonly int $proposed;
+
+	/**
+	 * `atLeast` or `atMost`.
+	 *
+	 * @var string
+	 */
+	public readonly string $comparator;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param string $control The control that would have been weakened.
-	 * @param int $floor The floor in force.
-	 * @param int $proposed The value that was asked for.
-	 * @param string $comparator `atLeast` or `atMost`.
-	 * @param string $message The refusal, in one sentence.
+	 * @param FloorBreach $breach  The floor the value would have crossed.
+	 * @param string      $message The refusal, in one sentence.
 	 *
 	 * @return void
 	 */
-	public function __construct(
-		public readonly string $control,
-		public readonly int $floor,
-		public readonly int $proposed,
-		public readonly string $comparator,
-		string $message,
-	) {
+	public function __construct(FloorBreach $breach, string $message) {
 		parent::__construct(message: $message);
+		$this->control = $breach->control;
+		$this->floor = $breach->floor;
+		$this->proposed = $breach->proposed;
+		$this->comparator = $breach->comparator;
 
 	}//end __construct()
 

@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Service\Support\TextExtractionServiceFactory;
 use Exception;
 use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
@@ -41,6 +42,9 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Files\Service\ChunkSizing;
+use OCA\OpenRegister\Files\Service\SplitLevel;
+use OCA\OpenRegister\Files\Service\SourceStamp;
 
 /**
  * Coverage tests for TextExtractionService
@@ -114,7 +118,7 @@ class TextExtractionServiceCoverageTest extends TestCase {
 		$this->riskLevelService = $this->createMock(RiskLevelService::class);
 		$this->emlParser = $this->createMock(EmlParser::class);
 
-		$this->service = new TextExtractionService(
+		$this->service = TextExtractionServiceFactory::create(
 			fileMapper: $this->fileMapper,
 			chunkMapper: $this->chunkMapper,
 			rootFolder: $this->rootFolder,
@@ -164,8 +168,7 @@ class TextExtractionServiceCoverageTest extends TestCase {
 
 		$result = $this->invokePrivate('chunkFixedSize', [
 			$text,
-			200,
-			0,
+			new ChunkSizing(200, 0),
 		]);
 
 		$this->assertGreaterThan(1, count($result));
@@ -188,8 +191,7 @@ class TextExtractionServiceCoverageTest extends TestCase {
 
 		$result = $this->invokePrivate('chunkFixedSize', [
 			$text,
-			200,
-			0,
+			new ChunkSizing(200, 0),
 		]);
 
 		$this->assertCount(1, $result);
@@ -210,8 +212,7 @@ class TextExtractionServiceCoverageTest extends TestCase {
 
 		$result = $this->invokePrivate('chunkFixedSize', [
 			$text,
-			200,
-			0,
+			new ChunkSizing(200, 0),
 		]);
 
 		foreach ($result as $chunk) {
@@ -236,8 +237,7 @@ class TextExtractionServiceCoverageTest extends TestCase {
 
 		$result = $this->invokePrivate('chunkRecursive', [
 			$text,
-			200,
-			20,
+			new ChunkSizing(200, 20),
 		]);
 
 		$this->assertGreaterThan(1, count($result));
@@ -257,8 +257,7 @@ class TextExtractionServiceCoverageTest extends TestCase {
 
 		$result = $this->invokePrivate('chunkRecursive', [
 			trim($text),
-			200,
-			20,
+			new ChunkSizing(200, 20),
 		]);
 
 		$this->assertGreaterThan(1, count($result));
@@ -283,9 +282,7 @@ class TextExtractionServiceCoverageTest extends TestCase {
 
 		$result = $this->invokePrivate('recursiveSplit', [
 			$text,
-			["\n\n", ' '],
-			200,
-			20,
+			new SplitLevel(separators: ["\n\n", ' '], sizing: new ChunkSizing(200, 20)),
 		]);
 
 		$this->assertGreaterThan(2, count($result));
@@ -301,9 +298,7 @@ class TextExtractionServiceCoverageTest extends TestCase {
 
 		$result = $this->invokePrivate('recursiveSplit', [
 			$text,
-			[],
-			200,
-			0, // Zero overlap to avoid chunkFixedSize infinite loop bug.
+			new SplitLevel(separators: [], sizing: new ChunkSizing(200, 0)), // Zero overlap to avoid chunkFixedSize infinite loop bug.
 		]);
 
 		$this->assertGreaterThan(0, count($result));
@@ -319,9 +314,7 @@ class TextExtractionServiceCoverageTest extends TestCase {
 
 		$result = $this->invokePrivate('recursiveSplit', [
 			trim($text),
-			['. '],
-			200,
-			0,
+			new SplitLevel(separators: ['. '], sizing: new ChunkSizing(200, 0)),
 		]);
 
 		// All chunks should be non-empty.
@@ -340,9 +333,7 @@ class TextExtractionServiceCoverageTest extends TestCase {
 
 		$result = $this->invokePrivate('recursiveSplit', [
 			trim($text),
-			['. '],
-			200,
-			50,
+			new SplitLevel(separators: ['. '], sizing: new ChunkSizing(200, 50)),
 		]);
 
 		$this->assertGreaterThan(1, count($result));
@@ -937,9 +928,11 @@ class TextExtractionServiceCoverageTest extends TestCase {
 			->willThrowException(new Exception('Risk level computation failed'));
 
 		// Should not throw — warning is logged.
+		$this->logger->expects($this->once())
+			->method('warning')
+			->with('[TextExtractionService] Failed to update risk level', $this->anything());
+
 		$this->service->extractFile(1);
-		// If we reach here, no exception was thrown.
-		$this->assertTrue(true);
 	}
 
 	/**
@@ -979,9 +972,11 @@ class TextExtractionServiceCoverageTest extends TestCase {
 			->willThrowException(new Exception('Entity handler failure'));
 
 		// Should not throw — error is logged.
+		$this->logger->expects($this->once())
+			->method('error')
+			->with('[TextExtractionService] Entity extraction failed', $this->anything());
+
 		$this->service->extractFile(1);
-		// If we reach here, no exception was thrown.
-		$this->assertTrue(true);
 	}
 
 	// ================================================================
@@ -1070,7 +1065,7 @@ class TextExtractionServiceCoverageTest extends TestCase {
 	 * @return void
 	 */
 	public function testIsSourceUpToDateFalseWhenForced(): void {
-		$result = $this->invokePrivate('isSourceUpToDate', [1, 'file', 100, true]);
+		$result = $this->invokePrivate('isSourceUpToDate', [new SourceStamp(sourceType: 'file', sourceId: 1, timestamp: 100), true]);
 
 		$this->assertFalse($result);
 	}
@@ -1084,7 +1079,7 @@ class TextExtractionServiceCoverageTest extends TestCase {
 		$this->chunkMapper->method('getLatestUpdatedTimestamp')
 			->willReturn(200);
 
-		$result = $this->invokePrivate('isSourceUpToDate', [1, 'file', 100, false]);
+		$result = $this->invokePrivate('isSourceUpToDate', [new SourceStamp(sourceType: 'file', sourceId: 1, timestamp: 100), false]);
 
 		$this->assertTrue($result);
 	}
@@ -1098,7 +1093,7 @@ class TextExtractionServiceCoverageTest extends TestCase {
 		$this->chunkMapper->method('getLatestUpdatedTimestamp')
 			->willReturn(null);
 
-		$result = $this->invokePrivate('isSourceUpToDate', [1, 'file', 100, false]);
+		$result = $this->invokePrivate('isSourceUpToDate', [new SourceStamp(sourceType: 'file', sourceId: 1, timestamp: 100), false]);
 
 		$this->assertFalse($result);
 	}
@@ -1112,7 +1107,7 @@ class TextExtractionServiceCoverageTest extends TestCase {
 		$this->chunkMapper->method('getLatestUpdatedTimestamp')
 			->willReturn(50);
 
-		$result = $this->invokePrivate('isSourceUpToDate', [1, 'file', 100, false]);
+		$result = $this->invokePrivate('isSourceUpToDate', [new SourceStamp(sourceType: 'file', sourceId: 1, timestamp: 100), false]);
 
 		$this->assertFalse($result);
 	}

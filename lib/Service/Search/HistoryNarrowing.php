@@ -32,7 +32,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Search;
 
-use OCA\OpenRegister\Db\StateHistoryMapper;
+use OCA\OpenRegister\Db\StateChangePeriod;
+use OCA\OpenRegister\Db\StateHistoryMapperInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -45,11 +46,11 @@ class HistoryNarrowing {
 	/**
 	 * Constructor.
 	 *
-	 * @param StateHistoryMapper $mapper The projection.
+	 * @param StateHistoryMapperInterface $mapper The projection.
 	 * @param LoggerInterface    $logger Diagnostics.
 	 */
 	public function __construct(
-		private readonly StateHistoryMapper $mapper,
+		private readonly StateHistoryMapperInterface $mapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -67,25 +68,7 @@ class HistoryNarrowing {
 	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public function narrow(HistoryPredicate $predicate, ?array $ids = null): array {
-		$candidates = null;
-
-		foreach ($predicate->wasEver() as $property => $value) {
-			$candidates = $this->intersect(
-				current: $candidates,
-				next: $this->mapper->findObjectUuidsEverAt(property: $property, value: $value)
-			);
-		}
-
-		foreach ($predicate->changedBetween() as $property => $period) {
-			$candidates = $this->intersect(
-				current: $candidates,
-				next: $this->mapper->findObjectUuidsChangedBetween(
-					property: $property,
-					after: $period['after'],
-					before: $period['before']
-				)
-			);
-		}
+		$candidates = $this->candidatesFor(predicate: $predicate);
 
 		if ($candidates === null) {
 			// Nothing read, so nothing to narrow by. The caller checks
@@ -104,6 +87,38 @@ class HistoryNarrowing {
 
 		return $candidates;
 	}//end narrow()
+
+	/**
+	 * Intersect the candidates of every filter, was-ever filters first.
+	 *
+	 * @param HistoryPredicate $predicate The parsed predicate.
+	 *
+	 * @return string[]|null The candidates, or null when no filter read.
+	 *
+	 * @psalm-return list<string>|null
+	 */
+	private function candidatesFor(HistoryPredicate $predicate): ?array {
+		$candidates = null;
+
+		foreach ($predicate->wasEver() as $property => $value) {
+			$candidates = $this->intersect(
+				current: $candidates,
+				next: $this->mapper->findObjectUuidsEverAt(property: $property, value: $value)
+			);
+		}
+
+		foreach ($predicate->changedBetween() as $property => $period) {
+			$candidates = $this->intersect(
+				current: $candidates,
+				next: $this->mapper->findObjectUuidsChangedBetween(
+					property: $property,
+					period: new StateChangePeriod(after: $period['after'], before: $period['before'])
+				)
+			);
+		}
+
+		return $candidates;
+	}//end candidatesFor()
 
 	/**
 	 * Intersect two candidate sets, treating "not yet set" as "everything".

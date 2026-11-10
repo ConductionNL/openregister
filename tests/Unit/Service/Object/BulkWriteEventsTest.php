@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
+use OCA\OpenRegister\Service\Object\BulkSaveOptions;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -31,7 +33,11 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
 use OCA\OpenRegister\Service\Object\BulkRowRules;
+use OCA\OpenRegister\Service\Object\BulkSaveReporting;
+use OCA\OpenRegister\Service\Object\BulkSaveSession;
+use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\BulkWriteEvents;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
@@ -189,18 +195,10 @@ class BulkWriteEventsTest extends TestCase {
 	 */
 	private function saveObjects(IEventDispatcher $dispatcher): SaveObjects {
 		return new SaveObjects(
-			objectEntityMapper: $this->objectMapper,
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			registerMapper: $this->registerMapper,
-			saveHandler: $this->createMock(SaveObject::class),
-			userSession: $this->userSession,
-			organisationService: $this->organisationService,
-			logger: $this->createMock(LoggerInterface::class),
-			groupManager: $this->groupManager,
-			permissionHandler: $this->permissionHandler,
-			eventDispatcher: $dispatcher,
-			auditTrailMapper: $this->createMock(AuditTrailMapper::class),
-			rowRules: new BulkRowRules(bulkWriteEvents: $this->policy($dispatcher))
+			stores: new BulkSaveStores(objectEntityMapper: $this->objectMapper, schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->registerMapper, saveHandler: $this->createMock(SaveObject::class)),
+			session: new BulkSaveSession(userSession: $this->userSession, organisationService: $this->organisationService, groupManager: $this->groupManager),
+			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class), eventDispatcher: $dispatcher, auditTrailMapper: $this->createMock(AuditTrailMapper::class)),
+			checks: new BulkRowChecks(permissionHandler: $this->permissionHandler, rowRules: new BulkRowRules(bulkWriteEvents: $this->policy($dispatcher)))
 		);
 	}//end saveObjects()
 
@@ -436,9 +434,8 @@ class BulkWriteEventsTest extends TestCase {
 		$this->writerAnswers('updated');
 
 		$result = $this->saveObjects($this->dispatcher($this->deliberationGuard()))->saveObjects(
-			objects: $rows,
-			register: $this->register(),
-			schema: $this->schema([BulkWriteEvents::CONFIG_KEY => true])
+			$rows,
+			new BulkSaveOptions(new BulkBatchDefaults($this->register(), $this->schema([BulkWriteEvents::CONFIG_KEY => true])), validation: false, events: false, audit: true)
 		);
 
 		$this->assertSame(['u-2'], $this->writtenUuids());
@@ -465,10 +462,8 @@ class BulkWriteEventsTest extends TestCase {
 		$this->writerAnswers('updated');
 
 		$this->saveObjects($this->dispatcher())->saveObjects(
-			objects: $rows,
-			register: $this->register(),
-			schema: $this->schema([BulkWriteEvents::CONFIG_KEY => true]),
-			_audit: false
+			$rows,
+			new BulkSaveOptions(new BulkBatchDefaults($this->register(), $this->schema([BulkWriteEvents::CONFIG_KEY => true])), validation: false, events: false, audit: false)
 		);
 
 		$updated = $this->eventsOf(ObjectUpdatedEvent::class);
@@ -484,9 +479,8 @@ class BulkWriteEventsTest extends TestCase {
 		$this->writerAnswers('updated');
 
 		$result = $this->saveObjects($this->dispatcher($this->deliberationGuard()))->saveObjects(
-			objects: $rows,
-			register: $this->register(),
-			schema: $this->schema([BulkWriteEvents::CONFIG_KEY => true])
+			$rows,
+			new BulkSaveOptions(new BulkBatchDefaults($this->register(), $this->schema([BulkWriteEvents::CONFIG_KEY => true])), validation: false, events: false, audit: true)
 		);
 
 		$this->assertSame(['u-2'], $this->writtenUuids());
@@ -502,9 +496,8 @@ class BulkWriteEventsTest extends TestCase {
 		$this->writerAnswers('updated');
 
 		$result = $this->saveObjects($this->dispatcher($this->deliberationGuard()))->saveObjects(
-			objects: $rows,
-			register: $this->register([BulkWriteEvents::CONFIG_KEY => true]),
-			schema: $this->schema()
+			$rows,
+			new BulkSaveOptions(new BulkBatchDefaults($this->register([BulkWriteEvents::CONFIG_KEY => true]), $this->schema()), validation: false, events: false, audit: true)
 		);
 
 		$this->assertSame(['u-2'], $this->writtenUuids());
@@ -520,9 +513,8 @@ class BulkWriteEventsTest extends TestCase {
 		$this->writerAnswers('updated');
 
 		$this->saveObjects($this->dispatcher())->saveObjects(
-			objects: [$row],
-			register: $this->register(),
-			schema: $this->schema([BulkWriteEvents::CONFIG_KEY => true])
+			[$row],
+			new BulkSaveOptions(new BulkBatchDefaults($this->register(), $this->schema([BulkWriteEvents::CONFIG_KEY => true])), validation: false, events: false, audit: true)
 		);
 
 		$this->assertSame(['u-1'], $this->writtenUuids());
@@ -537,9 +529,8 @@ class BulkWriteEventsTest extends TestCase {
 		$this->writerAnswers('created');
 
 		$this->saveObjects($this->dispatcher())->saveObjects(
-			objects: [['@self' => ['register' => '9'], 'title' => 'imported']],
-			register: $this->register([BulkWriteEvents::CONFIG_KEY => true]),
-			schema: $this->schema()
+			[['@self' => ['register' => '9'], 'title' => 'imported']],
+			new BulkSaveOptions(new BulkBatchDefaults($this->register([BulkWriteEvents::CONFIG_KEY => true]), $this->schema()), validation: false, events: false, audit: true)
 		);
 
 		$this->assertCount(1, $this->written);
@@ -553,9 +544,8 @@ class BulkWriteEventsTest extends TestCase {
 		$this->writerAnswers('created');
 
 		$this->saveObjects($this->dispatcher())->saveObjects(
-			objects: [['@self' => ['register' => '9'], 'title' => 'imported']],
-			register: $this->register([BulkWriteEvents::CONFIG_KEY => false]),
-			schema: $this->schema()
+			[['@self' => ['register' => '9'], 'title' => 'imported']],
+			new BulkSaveOptions(new BulkBatchDefaults($this->register([BulkWriteEvents::CONFIG_KEY => false]), $this->schema()), validation: false, events: false, audit: true)
 		);
 
 		$this->assertCount(1, $this->written);
@@ -569,9 +559,8 @@ class BulkWriteEventsTest extends TestCase {
 		$this->writerAnswers('updated');
 
 		$result = $this->saveObjects($this->dispatcher($this->deliberationGuard()))->saveObjects(
-			objects: $rows,
-			register: $this->register(),
-			schema: $this->schema([BulkWriteEvents::CONFIG_KEY => true])
+			$rows,
+			new BulkSaveOptions(new BulkBatchDefaults($this->register(), $this->schema([BulkWriteEvents::CONFIG_KEY => true])), validation: false, events: false, audit: true)
 		);
 
 		$this->assertSame(['u-2'], $this->writtenUuids());
@@ -584,10 +573,8 @@ class BulkWriteEventsTest extends TestCase {
 		$this->writerAnswers('updated');
 
 		$this->saveObjects($this->dispatcher())->saveObjects(
-			objects: $rows,
-			register: $this->register(),
-			schema: $this->schema([BulkWriteEvents::CONFIG_KEY => true]),
-			_events: true
+			$rows,
+			new BulkSaveOptions(new BulkBatchDefaults($this->register(), $this->schema([BulkWriteEvents::CONFIG_KEY => true])), validation: false, events: true, audit: true)
 		);
 
 		$this->assertCount(2, $this->eventsOf(ObjectUpdatingEvent::class));
@@ -601,9 +588,8 @@ class BulkWriteEventsTest extends TestCase {
 
 		$result = SystemOperationContext::run(
 			fn (): array => $service->saveObjects(
-				objects: $rows,
-				register: $this->register(),
-				schema: $this->schema([BulkWriteEvents::CONFIG_KEY => true])
+				$rows,
+				new BulkSaveOptions(new BulkBatchDefaults($this->register(), $this->schema([BulkWriteEvents::CONFIG_KEY => true])), validation: false, events: false, audit: true)
 			)
 		);
 
@@ -618,9 +604,8 @@ class BulkWriteEventsTest extends TestCase {
 		$this->writerAnswers('updated');
 
 		$result = $this->saveObjects($this->dispatcher($this->deliberationGuard()))->saveObjects(
-			objects: $rows,
-			register: $this->register(),
-			schema: $this->schema(['x-openregister-lifecycle' => ['field' => 'status']])
+			$rows,
+			new BulkSaveOptions(new BulkBatchDefaults($this->register(), $this->schema(['x-openregister-lifecycle' => ['field' => 'status']])), validation: false, events: false, audit: true)
 		);
 
 		$this->assertSame(['u-2'], $this->writtenUuids());
@@ -632,9 +617,8 @@ class BulkWriteEventsTest extends TestCase {
 		$this->writerAnswers('updated');
 
 		$result = $this->saveObjects($this->dispatcher())->saveObjects(
-			objects: $rows,
-			register: $this->register([BulkWriteEvents::CONFIG_KEY => true]),
-			schema: $this->schema()
+			$rows,
+			new BulkSaveOptions(new BulkBatchDefaults($this->register([BulkWriteEvents::CONFIG_KEY => true]), $this->schema()), validation: false, events: false, audit: true)
 		);
 
 		$this->assertSame(['u-1', 'u-2'], $this->writtenUuids());
@@ -648,9 +632,8 @@ class BulkWriteEventsTest extends TestCase {
 		$this->writerAnswers('updated');
 
 		$result = $this->saveObjects($this->dispatcher($this->deliberationGuard()))->saveObjects(
-			objects: $rows,
-			register: $this->register(),
-			schema: $this->schema([BulkWriteEvents::CONFIG_KEY => false, 'x-openregister-lifecycle' => ['field' => 'status']])
+			$rows,
+			new BulkSaveOptions(new BulkBatchDefaults($this->register(), $this->schema([BulkWriteEvents::CONFIG_KEY => false, 'x-openregister-lifecycle' => ['field' => 'status']])), validation: false, events: false, audit: true)
 		);
 
 		$this->assertSame(['u-1', 'u-2'], $this->writtenUuids());
@@ -672,9 +655,8 @@ class BulkWriteEventsTest extends TestCase {
 		};
 
 		$result = $this->saveObjects($this->dispatcher($numbering))->saveObjects(
-			objects: [['title' => 'new request']],
-			register: $this->register(),
-			schema: $this->schema([BulkWriteEvents::CONFIG_KEY => true])
+			[['title' => 'new request']],
+			new BulkSaveOptions(new BulkBatchDefaults($this->register(), $this->schema([BulkWriteEvents::CONFIG_KEY => true])), validation: false, events: false, audit: true)
 		);
 
 		$this->assertCount(1, $this->written);
@@ -701,9 +683,8 @@ class BulkWriteEventsTest extends TestCase {
 		};
 
 		$result = $this->saveObjects($this->dispatcher($refuse))->saveObjects(
-			objects: [['title' => 'refuse'], ['title' => 'keep']],
-			register: $this->register(),
-			schema: $this->schema([BulkWriteEvents::CONFIG_KEY => true])
+			[['title' => 'refuse'], ['title' => 'keep']],
+			new BulkSaveOptions(new BulkBatchDefaults($this->register(), $this->schema([BulkWriteEvents::CONFIG_KEY => true])), validation: false, events: false, audit: true)
 		);
 
 		$this->assertCount(1, $this->written);

@@ -44,34 +44,27 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RunObjectLock;
-use OCA\OpenRegister\Db\RunObjectLockMapper;
-use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\RunObjectLockMapperInterface;
 use Throwable;
 
 /**
  * Records and releases the object locks a flow run holds.
  */
-class RunLockRegistry {
+class RunLockRegistry implements RunLockReleaseInterface {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param RunObjectLockMapper $registry The run-lock rows.
-	 * @param MagicMapperInterface $magicMapper Resolves and mutates the objects themselves.
-	 * @param AuditTrailMapperInterface $auditTrailMapper Records the releases.
-	 * @param LoggerInterface $logger Failure reporting.
+	 * @param RunObjectLockMapperInterface $registry  The run-lock rows.
+	 * @param ObjectChangeRecording        $recording Resolves and mutates the objects themselves, records
+	 *                                                the releases and reports failures.
 	 */
 	public function __construct(
-		private readonly RunObjectLockMapper $registry,
-		private readonly MagicMapperInterface $magicMapper,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly LoggerInterface $logger,
+		private readonly RunObjectLockMapperInterface $registry,
+		private readonly ObjectChangeRecording $recording,
 	) {
-
 	}//end __construct()
 
 	/**
@@ -83,42 +76,56 @@ class RunLockRegistry {
 	 * all. The TTL still bounds a lock whose row is missing.
 	 *
 	 * @param ObjectEntity $object The locked object.
-	 * @param string|null $runUuid The holding run, or null for a user lock.
-	 * @param string|null $nodeId The flow node that took it.
+	 * @param LockRunStep  $step   The holding run (null for a user lock) and the flow node that took it.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-every-lock-a-run-holds-is-released-when-the-run-ends
 	 */
-	public function record(ObjectEntity $object, ?string $runUuid, ?string $nodeId): void {
-		if ($runUuid === null || trim($runUuid) === '') {
+	public function record(ObjectEntity $object, LockRunStep $step): void {
+		$runUuid = trim((string)$step->runUuid);
+		if ($runUuid === '') {
 			return;
 		}
 
 		try {
-			$payload = ($object->getLocked() ?? []);
-			$expires = null;
-			if (isset($payload['expiration']) === true) {
-				$expires = new DateTime((string)$payload['expiration']);
-			}
-
-			$row = new RunObjectLock();
-			$row->setRunUuid(trim($runUuid));
-			$row->setObjectUuid((string)$object->getUuid());
-			$row->setRegisterId((string)$object->getRegister());
-			$row->setSchemaId((string)$object->getSchema());
-			$row->setNodeId($nodeId);
-			$row->setLockedAt(new DateTime());
-			$row->setExpiresAt($expires);
-
-			$this->registry->record(lock: $row);
+			$this->registry->record(lock: $this->lockRowFor(object: $object, step: new LockRunStep($runUuid, $step->nodeId)));
 		} catch (Throwable $e) {
-			$this->logger->warning(
+			$this->recording->logger->warning(
 				message: '[RunLockRegistry] Could not record a run lock; the lock itself stands',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'runUuid' => $runUuid, 'error' => $e->getMessage()]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'runUuid' => $step->runUuid, 'error' => $e->getMessage()]
 			);
 		}//end try
 	}//end record()
+
+	/**
+	 * The registry row of a run's lock on an object, expiring with the lock.
+	 *
+	 * @param ObjectEntity $object The locked object.
+	 * @param LockRunStep  $step   The run, trimmed, and the flow node.
+	 *
+	 * @return RunObjectLock The row
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-every-lock-a-run-holds-is-released-when-the-run-ends
+	 */
+	private function lockRowFor(ObjectEntity $object, LockRunStep $step): RunObjectLock {
+		$payload = ($object->getLocked() ?? []);
+		$expires = null;
+		if (isset($payload['expiration']) === true) {
+			$expires = new DateTime((string)$payload['expiration']);
+		}
+
+		$row = new RunObjectLock();
+		$row->setRunUuid((string)$step->runUuid);
+		$row->setObjectUuid((string)$object->getUuid());
+		$row->setRegisterId((string)$object->getRegister());
+		$row->setSchemaId((string)$object->getSchema());
+		$row->setNodeId($step->nodeId);
+		$row->setLockedAt(new DateTime());
+		$row->setExpiresAt($expires);
+
+		return $row;
+	}//end lockRowFor()
 
 	/**
 	 * Forget one run's row for one object, after the lock has been released.
@@ -135,7 +142,7 @@ class RunLockRegistry {
 			$this->registry->forget(runUuid: $runUuid, objectUuid: $objectUuid);
 		} catch (Throwable $e) {
 			// A row left behind is collected by the sweep on its own terms.
-			$this->logger->debug(
+			$this->recording->logger->debug(
 				message: '[RunLockRegistry] Could not forget a run lock row',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
@@ -243,7 +250,7 @@ class RunLockRegistry {
 			// `includeDeleted`: a soft-deleted object can still carry a live
 			// lock, and it is precisely the object nobody is watching. Leaving
 			// it out would strand that lock and its registry row forever.
-			$context = $this->magicMapper->findAcrossAllSources(
+			$context = $this->recording->objects->findAcrossAllSources(
 				identifier: $objectUuid,
 				includeDeleted: true,
 				_rbac: false,
@@ -256,16 +263,16 @@ class RunLockRegistry {
 				return false;
 			}
 
-			$objectAfter = $this->magicMapper->unlockObjectEntity(
+			$objectAfter = $this->recording->objects->unlockObjectEntity(
 				entity: $objectBefore,
 				register: $context['register'],
 				schema: $context['schema'],
 				break: true
 			);
 
-			$this->auditTrailMapper->createAuditTrail(old: $objectBefore, new: $objectAfter, action: 'unlock');
+			$this->recording->auditTrail->createAuditTrail(old: $objectBefore, new: $objectAfter, action: 'unlock');
 
-			$this->logger->info(
+			$this->recording->logger->info(
 				message: '[RunLockRegistry] Released a run lock',
 				context: [
 					'file' => __FILE__,
@@ -280,7 +287,7 @@ class RunLockRegistry {
 			// Never propagate: layer 1 runs inside the run's own terminal
 			// write transaction, and a throw would unwind the status change.
 			// The TTL is the remaining backstop and the sweep sees the row again.
-			$this->logger->warning(
+			$this->recording->logger->warning(
 				message: '[RunLockRegistry] Could not release a run lock',
 				context: [
 					'file' => __FILE__,

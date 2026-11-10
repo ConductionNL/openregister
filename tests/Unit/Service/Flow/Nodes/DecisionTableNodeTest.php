@@ -41,6 +41,7 @@ use OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
@@ -78,8 +79,7 @@ class DecisionTableNodeTest extends TestCase {
 		$this->node = new DecisionTableNode(
 			engine: new DecisionTableEvaluator(),
 			validator: new DecisionTableValidator(),
-			l10n: $l10n,
-			urls: $urls
+			presentation: new FlowNodePresentation(l10n: $l10n, urls: $urls)
 		);
 
 	}//end setUp()

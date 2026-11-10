@@ -19,10 +19,12 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RelationHandlerStores;
 use OCA\OpenRegister\Service\Object\RelatedReadFilter;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -58,14 +60,32 @@ class RelationHandlerDeepTest extends TestCase {
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 
 		$this->handler = new RelationHandler(
-			$this->objectMapper,
-			$this->schemaMapper,
+			new RelationHandlerStores($this->objectMapper, $this->schemaMapper, $this->registerMapper),
 			$this->rbacHandler,
-			$this->logger,
-			$this->registerMapper
+			$this->logger
 		);
 
 	}//end setUp()
+
+	/**
+	 * The cross-table lookup and the per-table read both answer these rows, readable by an admin.
+	 *
+	 * @param ObjectEntity[] $entities The related rows.
+	 *
+	 * @return void
+	 */
+	private function relatedRowsAre(array $entities): void {
+		foreach ($entities as $entity) {
+			$entity->setRegister('1');
+			$entity->setSchema('1');
+		}
+
+		$this->objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn($entities);
+		$this->objectMapper->method('findAllInRegisterSchemaTable')->willReturn($entities);
+		$this->registerMapper->method('find')->willReturn(new Register());
+		$this->schemaMapper->method('find')->willReturn(new Schema());
+		$this->rbacHandler->method('isAdmin')->willReturn(true);
+	}//end relatedRowsAre()
 
 	// =========================================================================
 	// extractRelatedData
@@ -98,11 +118,12 @@ class RelationHandlerDeepTest extends TestCase {
 		}
 
 		// The method will cap at 200 and then batch load.
-		$this->objectMapper->method('findAll')->willReturn([]);
+		// 300 ids are capped at 200, loaded in four batches of 50.
+		$this->objectMapper->expects($this->exactly(4))->method('findMultipleAcrossAllMagicTables')->willReturn([]);
 
 		$result = $this->handler->bulkLoadRelationshipsBatched($ids);
 		// Should still work (returns empty because mock returns []).
-		$this->assertIsArray($result);
+		$this->assertSame([], $result);
 
 	}//end testBulkLoadRelationshipsBatchedCap()
 
@@ -120,7 +141,7 @@ class RelationHandlerDeepTest extends TestCase {
 		$idProp->setAccessible(true);
 		$idProp->setValue($obj, 1);
 
-		$this->objectMapper->method('findAll')->willReturn([$obj]);
+		$this->relatedRowsAre(entities: [$obj]);
 
 		$result = $this->handler->bulkLoadRelationshipsBatched(['uuid-1']);
 		$this->assertArrayHasKey('uuid-1', $result);
@@ -134,12 +155,12 @@ class RelationHandlerDeepTest extends TestCase {
 	 * @return void
 	 */
 	public function testBulkLoadRelationshipsBatchedBatchException(): void {
-		$this->objectMapper->method('findAll')
+		$this->objectMapper->method('findMultipleAcrossAllMagicTables')
 			->willThrowException(new \Exception('DB error'));
 
 		// Should not throw — continues past failed batch.
 		$result = $this->handler->bulkLoadRelationshipsBatched(['uuid-1']);
-		$this->assertIsArray($result);
+		$this->assertSame([], $result);
 
 	}//end testBulkLoadRelationshipsBatchedBatchException()
 
@@ -164,7 +185,7 @@ class RelationHandlerDeepTest extends TestCase {
 	 * @return void
 	 */
 	public function testLoadRelationshipChunkOptimizedException(): void {
-		$this->objectMapper->method('findAll')
+		$this->objectMapper->method('findMultipleAcrossAllMagicTables')
 			->willThrowException(new \Exception('Query failed'));
 
 		$result = $this->handler->loadRelationshipChunkOptimized(['uuid-1']);
@@ -178,11 +199,13 @@ class RelationHandlerDeepTest extends TestCase {
 	 * @return void
 	 */
 	public function testLoadRelationshipChunkOptimizedReturns(): void {
-		$obj = $this->createMock(ObjectEntity::class);
-		$this->objectMapper->method('findAll')->willReturn([$obj]);
+		$obj = new ObjectEntity();
+		$obj->setUuid('uuid-1');
+		$this->relatedRowsAre(entities: [$obj]);
 
 		$result = $this->handler->loadRelationshipChunkOptimized(['uuid-1']);
 		$this->assertCount(1, $result);
+		$this->assertSame(expected: $obj, actual: $result[0]);
 
 	}//end testLoadRelationshipChunkOptimizedReturns()
 
@@ -360,7 +383,7 @@ class RelationHandlerDeepTest extends TestCase {
 		$obj->setOwner('admin');
 
 		// First call returns true (has permission), second returns false.
-		$this->rbacHandler->method('hasPermission')->willReturn(true);
+		$this->rbacHandler->method('hasRowPermission')->willReturn(true);
 
 		$result = $filter->admitted(objects: [$obj]);
 		$this->assertCount(1, $result);
@@ -386,7 +409,7 @@ class RelationHandlerDeepTest extends TestCase {
 		$obj->setOrganisation('org-1');
 		$obj->setOwner('admin');
 
-		$this->rbacHandler->method('hasPermission')->willReturn(false);
+		$this->rbacHandler->method('hasRowPermission')->willReturn(false);
 
 		$result = $filter->admitted(objects: [$obj]);
 		$this->assertCount(0, $result);

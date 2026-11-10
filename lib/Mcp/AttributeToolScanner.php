@@ -45,15 +45,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp;
 
 use OCA\OpenRegister\Mcp\Attribute\McpTool;
-use OCA\OpenRegister\Service\Capability\ToolReachResolver;
-use OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator;
-use Psr\Log\LoggerInterface;
+use ReflectionAttribute;
 use ReflectionClass;
 use ReflectionMethod;
 use ReflectionNamedType;
 use ReflectionParameter;
-use ReflectionType;
-use ReflectionUnionType;
 use Throwable;
 
 /**
@@ -81,9 +77,9 @@ final class AttributeToolScanner {
 	 * Scan every declared scannable class for one app and return every
 	 * attributed-method descriptor found across all of them.
 	 *
-	 * @param string $appId The owning app id (id prefix of every emitted tool id).
+	 * @param McpLeafApp   $app        The owning app (its id prefixes every emitted tool id) and
+	 *                                 its logger (malformed classes/methods are logged, not thrown).
 	 * @param list<string> $classNames Candidate scannable service FQCNs (see {@see IMcpScannableServices}).
-	 * @param LoggerInterface $logger PSR logger (malformed classes/methods are logged, not thrown).
 	 *
 	 * @return list<array{id: string, name: string, description: string, inputSchema: array,
 	 *         outputSchema?: array, class: class-string, method: string, paramNames: list<string>}>
@@ -91,7 +87,7 @@ final class AttributeToolScanner {
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 *   (Requirement: REQ-ATTR-002 — Reflection scanner registers attributed tools in the same catalog)
 	 */
-	public function scanClasses(string $appId, array $classNames, LoggerInterface $logger): array {
+	public function scanClasses(McpLeafApp $app, array $classNames): array {
 		$descriptors = [];
 
 		foreach ($classNames as $className) {
@@ -99,7 +95,8 @@ final class AttributeToolScanner {
 				continue;
 			}
 
-			foreach ($this->scanClass(appId: $appId, className: $className, logger: $logger) as $descriptor) {
+			$subject = new ToolScanSubject(appId: $app->appId, className: $className, logger: $app->logger);
+			foreach ($this->scanClass(subject: $subject) as $descriptor) {
 				$descriptors[] = $descriptor;
 			}
 		}
@@ -110,45 +107,49 @@ final class AttributeToolScanner {
 	/**
 	 * Scan a single class for `#[McpTool]`-attributed public methods.
 	 *
-	 * @param string $appId The owning app id.
-	 * @param string $className The FQCN to reflect.
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param ToolScanSubject $subject The owning app id, the FQCN to reflect and the logger.
 	 *
 	 * @return list<array{id: string, name: string, description: string, inputSchema: array,
 	 *         outputSchema?: array, class: class-string, method: string, paramNames: list<string>}>
 	 */
-	public function scanClass(string $appId, string $className, LoggerInterface $logger): array {
-		$subject = new ToolScanSubject(appId: $appId, className: $className, logger: $logger);
-		if (class_exists($className) === false) {
-			$subject->warn(message: '[AttributeToolScanner] Scannable class does not exist');
-			return [];
-		}
-
-		try {
-			$reflectionClass = new ReflectionClass($className);
-		} catch (Throwable $e) {
-			$subject->warn(message: '[AttributeToolScanner] Could not reflect scannable class', context: ['error' => $e->getMessage()]);
+	public function scanClass(ToolScanSubject $subject): array {
+		$reflectionClass = $this->reflect(subject: $subject);
+		if ($reflectionClass === null) {
 			return [];
 		}
 
 		$descriptors = [];
-
 		foreach ($reflectionClass->getMethods() as $method) {
-			$attributeInstance = $this->toolAttribute(method: $method, subject: $subject);
-			if ($attributeInstance === null) {
-				continue;
+			$run       = new MethodScanRun(subject: $subject, method: $method);
+			$attribute = $this->toolAttribute(run: $run);
+			if ($attribute !== null) {
+				$descriptors[] = $this->buildDescriptor(run: $run, attribute: $attribute);
 			}
-
-			$descriptors[] = $this->buildDescriptor(
-				appId: $appId,
-				className: $className,
-				method: $method,
-				attribute: $attributeInstance
-			);
 		}
 
 		return $descriptors;
 	}//end scanClass()
+
+	/**
+	 * Reflect the scanned class; a missing or unreflectable class is logged.
+	 *
+	 * @param ToolScanSubject $subject The class being scanned.
+	 *
+	 * @return ReflectionClass<object>|null The reflection, or null.
+	 */
+	private function reflect(ToolScanSubject $subject): ?ReflectionClass {
+		if (class_exists($subject->className) === false) {
+			$subject->warn(message: '[AttributeToolScanner] Scannable class does not exist');
+			return null;
+		}
+
+		try {
+			return new ReflectionClass($subject->className);
+		} catch (Throwable $e) {
+			$subject->warn(message: '[AttributeToolScanner] Could not reflect scannable class', context: ['error' => $e->getMessage()]);
+			return null;
+		}
+	}//end reflect()
 
 	/**
 	 * The `#[McpTool]` attribute of a method, or null when the method is not a tool.
@@ -157,65 +158,94 @@ final class AttributeToolScanner {
 	 * its attribute cannot be instantiated, or its attribute declares a value the
 	 * scanner does not recognise; each of the last three is logged.
 	 *
-	 * @param ReflectionMethod $method  The method.
-	 * @param ToolScanSubject  $subject The class being scanned.
+	 * @param MethodScanRun $run The class being scanned and the method.
 	 *
 	 * @return McpTool|null
 	 */
-	private function toolAttribute(ReflectionMethod $method, ToolScanSubject $subject): ?McpTool {
-		$attributes = $method->getAttributes(McpTool::class);
-		if ($attributes === [] || $this->isCallableTool(method: $method, subject: $subject) === false) {
+	private function toolAttribute(MethodScanRun $run): ?McpTool {
+		$reflected = $this->reflectedAttribute(run: $run);
+		if ($reflected === null) {
 			return null;
 		}
 
-		try {
-			$attributeInstance = $attributes[0]->newInstance();
-		} catch (Throwable $e) {
-			$subject->warn(
-				message: '[AttributeToolScanner] Could not instantiate #[McpTool] attribute',
-				context: ['method' => $method->getName(), 'error' => $e->getMessage()]
-			);
+		$attribute = $this->instantiate(run: $run, attribute: $reflected);
+		if ($attribute === null || $this->isRecognised(run: $run, attribute: $attribute) === false) {
 			return null;
 		}
 
-		$invalid = $this->unrecognisedDeclaration(attribute: $attributeInstance);
-		if ($invalid !== null) {
-			$subject->warn(
-				message: sprintf('[AttributeToolScanner] #[McpTool] declares an unrecognised `%s`; tool skipped', $invalid['key']),
-				context: [
-					'method' => $method->getName(),
-					$invalid['key'] => $invalid['value'],
-					'allowed' => $invalid['allowed'],
-				]
-			);
-			return null;
-		}
-
-		return $attributeInstance;
+		return $attribute;
 	}//end toolAttribute()
+
+	/**
+	 * The method's `#[McpTool]` attribute when the method may be a tool.
+	 *
+	 * @param MethodScanRun $run The class being scanned and the method.
+	 *
+	 * @return ReflectionAttribute<McpTool>|null The reflected attribute, or null.
+	 */
+	private function reflectedAttribute(MethodScanRun $run): ?ReflectionAttribute {
+		$attributes = $run->method->getAttributes(McpTool::class);
+		if ($attributes === [] || $this->isCallableTool(run: $run) === false) {
+			return null;
+		}
+
+		return $attributes[0];
+	}//end reflectedAttribute()
+
+	/**
+	 * Instantiate the attribute; a failure is logged.
+	 *
+	 * @param MethodScanRun                $run       The class being scanned and the attributed method.
+	 * @param ReflectionAttribute<McpTool> $attribute The reflected attribute.
+	 *
+	 * @return McpTool|null The instance, or null.
+	 */
+	private function instantiate(MethodScanRun $run, ReflectionAttribute $attribute): ?McpTool {
+		try {
+			return $attribute->newInstance();
+		} catch (Throwable $e) {
+			$run->warn(message: '[AttributeToolScanner] Could not instantiate #[McpTool] attribute', context: ['error' => $e->getMessage()]);
+			return null;
+		}
+	}//end instantiate()
+
+	/**
+	 * Whether every closed-vocabulary declaration is valid; logs the first one that is not.
+	 *
+	 * @param MethodScanRun $run       The class being scanned and the attributed method.
+	 * @param McpTool       $attribute The attribute instance.
+	 *
+	 * @return bool
+	 */
+	private function isRecognised(MethodScanRun $run, McpTool $attribute): bool {
+		$invalid = ToolDeclarationCheck::unrecognised(attribute: $attribute);
+		if ($invalid === null) {
+			return true;
+		}
+
+		$run->warn(
+			message: sprintf('[AttributeToolScanner] #[McpTool] declares an unrecognised `%s`; tool skipped', $invalid['key']),
+			context: [$invalid['key'] => $invalid['value'], 'allowed' => $invalid['allowed']]
+		);
+		return false;
+	}//end isRecognised()
 
 	/**
 	 * Whether an attributed method is a public instance method; logs why when it is not.
 	 *
-	 * @param ReflectionMethod $method  The attributed method.
-	 * @param ToolScanSubject  $subject The class being scanned.
+	 * @param MethodScanRun $run The class being scanned and the attributed method.
 	 *
 	 * @return bool
 	 */
-	private function isCallableTool(ReflectionMethod $method, ToolScanSubject $subject): bool {
+	private function isCallableTool(MethodScanRun $run): bool {
+		$method = $run->method;
 		if ($method->isPublic() === false) {
-			$subject->warn(
-				message: '[AttributeToolScanner] #[McpTool] on a non-public method is ignored',
-				context: ['method' => $method->getName()]
-			);
+			$run->warn(message: '[AttributeToolScanner] #[McpTool] on a non-public method is ignored');
 			return false;
 		}
 
 		if ($method->isStatic() === true || $method->isAbstract() === true) {
-			$subject->warn(
-				message: '[AttributeToolScanner] #[McpTool] on a static or abstract method is ignored',
-				context: ['method' => $method->getName()]
-			);
+			$run->warn(message: '[AttributeToolScanner] #[McpTool] on a static or abstract method is ignored');
 			return false;
 		}
 
@@ -223,12 +253,11 @@ final class AttributeToolScanner {
 	}//end isCallableTool()
 
 	/**
-	 * Build one descriptor for an attributed method.
+	 * Build one descriptor for an attributed method: the inferred core, the
+	 * output schema when inferable, then the author-declared extras.
 	 *
-	 * @param string $appId The owning app id.
-	 * @param string $className The declaring class FQCN.
-	 * @param ReflectionMethod $method The attributed method.
-	 * @param McpTool $attribute The resolved attribute instance.
+	 * @param MethodScanRun $run       The owning app, the declaring class and the attributed method.
+	 * @param McpTool       $attribute The resolved attribute instance.
 	 *
 	 * @return array{id: string, name: string, description: string, inputSchema: array,
 	 *         outputSchema?: array, class: class-string, method: string, paramNames: list<string>,
@@ -239,247 +268,55 @@ final class AttributeToolScanner {
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 *   (Requirement: REQ-ATTR-005 — Attribute-declared hints/scope reach both MCP surfaces)
 	 */
-	private function buildDescriptor(string $appId, string $className, ReflectionMethod $method, McpTool $attribute): array {
-		$docLines = $this->docblockLines(docComment: $method->getDocComment());
-		$docParams = $this->parseParams(docLines: $docLines);
-		$docReturn = $this->parseReturn(docLines: $docLines);
-
-		$name = $attribute->name ?? $method->getName();
-		$description = $attribute->description ?? $this->parseSummary(docLines: $docLines);
-		if ($description === null || $description === '') {
-			$description = sprintf('%s::%s (no description declared).', $className, $method->getName());
-		}
+	private function buildDescriptor(MethodScanRun $run, McpTool $attribute): array {
+		$method   = $run->method;
+		$docLines = ToolDocblock::lines(docComment: $method->getDocComment());
+		$name     = $attribute->name ?? $method->getName();
 
 		$descriptor = [
-			'id' => $appId . '.' . $name,
+			'id' => $run->subject->appId . '.' . $name,
 			'name' => $name,
-			'description' => $description,
-			'inputSchema' => $this->inferInputSchema(method: $method, docParams: $docParams),
-			'class' => $className,
+			'description' => $this->describe(run: $run, attribute: $attribute),
+			'inputSchema' => $this->inferInputSchema(method: $method, docParams: ToolDocblock::params(docLines: $docLines)),
+			'class' => $run->subject->className,
 			'method' => $method->getName(),
-			'paramNames' => array_map(
-				callback: static fn (ReflectionParameter $param): string => $param->getName(),
-				array: $method->getParameters()
-			),
+			'paramNames' => $this->paramNames(method: $method),
 		];
 
-		$outputSchema = $this->inferOutputSchema(method: $method, docReturn: $docReturn);
-		if ($outputSchema !== null) {
-			$descriptor['outputSchema'] = $outputSchema;
-		}
-
-		// MCP 2025-11-25 annotation hints + advisory `scope` (REQ-ATTR-005).
-		// Forwarded additively — a key is present ONLY when the author set
-		// it on the attribute; nothing here ever infers or fabricates a
-		// value (an invented `readOnlyHint: true` on an unannotated write
-		// tool would be a dangerous lie). Both are advisory UX metadata
-		// only — OpenRegister RBAC and the owning method's own
-		// authorization remain the sole authoritative invoke-time gate.
-		foreach (McpAnnotationValidator::HINT_KEYS as $hintKey) {
-			$hintValue = $this->hintValue(attribute: $attribute, hintKey: $hintKey);
-			if ($hintValue !== null) {
-				$descriptor[$hintKey] = $hintValue;
-			}
-		}
-
-		if ($attribute->scope !== null) {
-			$descriptor['scope'] = $attribute->scope;
-		}
-
-		return ($descriptor + $this->taxonomyOf(attribute: $attribute) + $this->titleOf(attribute: $attribute, method: $method));
+		return ($descriptor + $this->outputSchemaOf(method: $method) + ToolDescriptorExtras::of(attribute: $attribute, method: $method));
 	}//end buildDescriptor()
 
 	/**
-	 * The tool's human title (`#[McpToolTitle]`), as the descriptor's top-level `title`, or an empty array.
+	 * The declared description, else the docblock summary, else a placeholder.
 	 *
-	 * A blank title is no declaration. The `annotations` map never carries it.
+	 * @param MethodScanRun $run       The declaring class and the attributed method.
+	 * @param McpTool       $attribute The attribute instance.
 	 *
-	 * @param McpTool          $attribute The method's #[McpTool].
-	 * @param ReflectionMethod $method    The attributed method.
-	 *
-	 * @return array{title?: string} The declared title only.
-	 *
-	 * @spec openspec/specs/ai-mcp/spec.md
+	 * @return string The description.
 	 */
-	private function titleOf(McpTool $attribute, ReflectionMethod $method): array {
-		$title = trim((string)$attribute->titleOn(method: $method));
-		if ($title === '') {
-			return [];
+	private function describe(MethodScanRun $run, McpTool $attribute): string {
+		$docLines    = ToolDocblock::lines(docComment: $run->method->getDocComment());
+		$description = $attribute->description ?? ToolDocblock::summary(docLines: $docLines);
+		if ($description === null || $description === '') {
+			$description = sprintf('%s::%s (no description declared).', $run->subject->className, $run->method->getName());
 		}
 
-		return ['title' => $title];
-	}//end titleOf()
+		return $description;
+	}//end describe()
 
 	/**
-	 * The grant-matrix taxonomy (subject, action) and the declared reach, or an empty array.
+	 * The method's parameter names, in order.
 	 *
-	 * Forwarded on the same additive terms as the annotation hints: a key is
-	 * present ONLY when the author declared it, never inferred from the method
-	 * name. `ToolRegistryFacade::describeTools()` makes the same choice
-	 * downstream, and for the same reason — an inferred subject is
-	 * indistinguishable from a declared one, so a consumer handed one cannot
-	 * know whether to trust it.
+	 * @param ReflectionMethod $method The attributed method.
 	 *
-	 * ⚠️ The consequence is that an OMISSION HAS NO SYMPTOM: the tool simply
-	 * arrives at the grant matrix ungroupable, with nothing failing anywhere.
-	 * Apps are expected to pin this with a test, the way hermiq's provider
-	 * does.
-	 *
-	 * Its own method rather than a loop inside `buildDescriptor()`, which was
-	 * already at the cyclomatic-complexity ceiling — two more branches there
-	 * tipped it over.
-	 *
-	 * @param McpTool $attribute The resolved attribute instance.
-	 *
-	 * @return array<string, mixed> The declared taxonomy keys only.
+	 * @return list<string> The names.
 	 */
-	private function taxonomyOf(McpTool $attribute): array {
-		$taxonomy = [];
-
-		if ($attribute->subject !== null && trim($attribute->subject) !== '') {
-			$taxonomy['subject'] = $attribute->subject;
-		}
-
-		// Already validated against ToolReachResolver::ORDER at scan time
-		// (REQ-ATTR-006); forwarded only when declared, never inferred.
-		if ($attribute->reach !== null) {
-			$taxonomy[ToolReachResolver::REACH_KEY] = $attribute->reach;
-		}
-
-		if ($attribute->action !== null && trim($attribute->action) !== '') {
-			$taxonomy['action'] = $attribute->action;
-		}
-
-		// Free-form marks a consuming app reads (REQ-ATTR-007), validated at
-		// scan time; an empty map is no declaration and is not forwarded.
-		if ($attribute->annotations !== []) {
-			$taxonomy['annotations'] = $attribute->annotations;
-		}
-
-		return $taxonomy;
-
-	}//end taxonomyOf()
-
-	/**
-	 * Read one boolean hint property off the attribute by its
-	 * {@see McpAnnotationValidator::HINT_KEYS} name.
-	 *
-	 * @param McpTool $attribute The resolved attribute instance.
-	 * @param string $hintKey One of `readOnlyHint`/`destructiveHint`/`idempotentHint`.
-	 *
-	 * @return bool|null The declared hint value, or null when the author did not set it.
-	 */
-	private function hintValue(McpTool $attribute, string $hintKey): ?bool {
-		return match ($hintKey) {
-			'readOnlyHint' => $attribute->readOnlyHint,
-			'destructiveHint' => $attribute->destructiveHint,
-			'idempotentHint' => $attribute->idempotentHint,
-			default => null,
-		};
-	}//end hintValue()
-
-	/**
-	 * True when the attribute declares a non-null `scope` that is not one
-	 * of {@see McpAnnotationValidator::SCOPES} (REQ-ATTR-005 — an unknown
-	 * scope is rejected at scan time, mirroring how this scanner already
-	 * fail-softs on other malformed attribute input).
-	 *
-	 * @param McpTool $attribute The resolved attribute instance.
-	 *
-	 * @return bool True when `scope` is set to an unrecognised value.
-	 */
-	private function hasUnknownScope(McpTool $attribute): bool {
-		if ($attribute->scope === null) {
-			return false;
-		}
-
-		return in_array($attribute->scope, McpAnnotationValidator::SCOPES, true) === false;
-	}//end hasUnknownScope()
-
-	/**
-	 * The first closed-vocabulary declaration on the attribute that holds a
-	 * value outside its vocabulary, or null when every declared one is valid.
-	 *
-	 * `scope` is checked against {@see McpAnnotationValidator::SCOPES}
-	 * (REQ-ATTR-005) and `reach` against {@see ToolReachResolver::ORDER}
-	 * (REQ-ATTR-006), and every `annotations` entry must be a string key
-	 * holding a scalar (REQ-ATTR-007). A misspelt reach would otherwise resolve to `external`
-	 * in silence: safe, but the author would never learn why the tool keeps
-	 * asking for a grant, so the scanner refuses it loudly instead.
-	 *
-	 * @param McpTool $attribute The resolved attribute instance.
-	 *
-	 * @return array{key: string, value: string, allowed: list<string>}|null The offending declaration.
-	 *
-	 * @spec openspec/specs/ai-mcp/spec.md
-	 *   (Requirement: REQ-ATTR-006 — A curated attribute tool declares its reach)
-	 */
-	private function unrecognisedDeclaration(McpTool $attribute): ?array {
-		if ($this->hasUnknownScope(attribute: $attribute) === true) {
-			return ['key' => 'scope', 'value' => (string) $attribute->scope, 'allowed' => McpAnnotationValidator::SCOPES];
-		}
-
-		if ($attribute->reach !== null && in_array($attribute->reach, ToolReachResolver::ORDER, true) === false) {
-			return ['key' => 'reach', 'value' => $attribute->reach, 'allowed' => ToolReachResolver::ORDER];
-		}
-
-		$badAnnotation = $this->malformedAnnotation(annotations: $attribute->annotations);
-		if ($badAnnotation !== null) {
-			return [
-				'key' => 'annotations',
-				'value' => $badAnnotation,
-				'allowed' => ['non-empty string key => scalar value, other than the MCP hint keys ' . implode(', ', self::RESERVED_ANNOTATION_KEYS)],
-			];
-		}
-
-		return null;
-	}//end unrecognisedDeclaration()
-
-	/**
-	 * The first entry of a declared annotations map that is not a non-empty
-	 * string key holding a scalar, or that uses one of the MCP specification's
-	 * reserved hint keys, or null when the whole map is well formed.
-	 *
-	 * The map is free-form on purpose (OpenRegister reads none of it), but
-	 * not shapeless: a nested array or an integer key would reach a consumer
-	 * as something it cannot compare against a mark, and the tool would
-	 * silently never qualify. Refusing it at scan time names the mistake. The
-	 * map is forwarded to external MCP clients under `annotations`, the key the
-	 * specification uses for tool hints, so a hint key in it (`readOnlyHint` on
-	 * a write tool) would be trusted by a client that auto-approves read-only
-	 * tools while OpenRegister's own checks say otherwise; those keys are
-	 * refused too, compared case-insensitively.
-	 *
-	 * @param array<mixed> $annotations The declared map.
-	 *
-	 * @return string|null The offending key, or null.
-	 *
-	 * @spec openspec/specs/ai-mcp/spec.md
-	 *   (Requirement: REQ-ATTR-007 — A curated attribute tool forwards free-form annotations)
-	 */
-	private function malformedAnnotation(array $annotations): ?string {
-		foreach ($annotations as $key => $value) {
-			if (is_string($key) === false || trim($key) === '' || is_scalar($value) === false || $this->isReservedAnnotationKey(key: $key) === true) {
-				return (string) $key;
-			}
-		}
-
-		return null;
-	}//end malformedAnnotation()
-
-	/**
-	 * Whether a key is one the MCP specification reserves for tool hints.
-	 *
-	 * @param string $key The annotation key.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/ai-mcp/spec.md
-	 *   (Requirement: REQ-ATTR-007 — A curated attribute tool forwards free-form annotations)
-	 */
-	private function isReservedAnnotationKey(string $key): bool {
-		return in_array(strtolower(trim($key)), array_map('strtolower', self::RESERVED_ANNOTATION_KEYS), true);
-	}//end isReservedAnnotationKey()
+	private function paramNames(ReflectionMethod $method): array {
+		return array_map(
+			callback: static fn (ReflectionParameter $param): string => $param->getName(),
+			array: $method->getParameters()
+		);
+	}//end paramNames()
 
 	/**
 	 * Infer the `inputSchema` from the method's parameter type hints and
@@ -496,28 +333,15 @@ final class AttributeToolScanner {
 	 */
 	private function inferInputSchema(ReflectionMethod $method, array $docParams): array {
 		$properties = [];
-		$required = [];
-
+		$required   = [];
 		foreach ($method->getParameters() as $param) {
-			$property = $this->paramSchema(param: $param);
-
-			$paramDescription = ($docParams[$param->getName()] ?? '');
-			if ($paramDescription !== '') {
-				$property['description'] = $paramDescription;
-			}
-
-			$properties[$param->getName()] = $property;
-
+			$properties[$param->getName()] = $this->paramSchema(param: $param, description: ($docParams[$param->getName()] ?? ''));
 			if ($param->isOptional() === false) {
 				$required[] = $param->getName();
 			}
 		}
 
-		$schema = [
-			'type' => 'object',
-			'properties' => $properties,
-		];
-
+		$schema = ['type' => 'object', 'properties' => $properties];
 		if ($required !== []) {
 			$schema['required'] = $required;
 		}
@@ -526,234 +350,69 @@ final class AttributeToolScanner {
 	}//end inferInputSchema()
 
 	/**
-	 * JSON-Schema-shaped property for a single parameter, from its PHP type hint.
+	 * JSON-Schema-shaped property for a single parameter, from its PHP type
+	 * hint and its docblock description.
 	 *
-	 * @param ReflectionParameter $param The parameter to describe.
+	 * @param ReflectionParameter $param       The parameter to describe.
+	 * @param string              $description The `@param` description, or ''.
 	 *
-	 * @return array<string, mixed> The property schema (possibly empty when the type cannot be inferred).
+	 * @return array<string, mixed> The property schema (possibly empty when nothing can be inferred).
 	 */
-	private function paramSchema(ReflectionParameter $param): array {
-		$jsonType = $this->mapReflectionType(type: $param->getType());
-		if ($jsonType === null) {
-			return [];
+	private function paramSchema(ReflectionParameter $param, string $description): array {
+		$property = [];
+		$jsonType = ReflectionJsonType::of(type: $param->getType());
+		if ($jsonType !== null) {
+			$property['type'] = $jsonType;
 		}
 
-		return ['type' => $jsonType];
+		if ($description !== '') {
+			$property['description'] = $description;
+		}
+
+		return $property;
 	}//end paramSchema()
 
 	/**
-	 * Best-effort `outputSchema` from the return type + `@return` tag.
+	 * The `outputSchema` descriptor key, when an output schema is inferable.
+	 *
+	 * @param ReflectionMethod $method The attributed method.
+	 *
+	 * @return array{outputSchema?: array<string, mixed>}
+	 */
+	private function outputSchemaOf(ReflectionMethod $method): array {
+		$outputSchema = $this->inferOutputSchema(method: $method);
+		if ($outputSchema === null) {
+			return [];
+		}
+
+		return ['outputSchema' => $outputSchema];
+	}//end outputSchemaOf()
+
+	/**
+	 * Best-effort `outputSchema` from the return type.
 	 * Omitted (null) for untyped/void/mixed/bare-array returns per
 	 * design.md's "best-effort" contract.
 	 *
 	 * @param ReflectionMethod $method The attributed method.
-	 * @param string|null $docReturn The raw `@return` type token, when declared.
 	 *
 	 * @return array<string, mixed>|null The output schema, or null when not inferable.
 	 *
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 *   (Requirement: REQ-ATTR-001 — outputSchema inferred from return type / @return where available)
 	 */
-	private function inferOutputSchema(ReflectionMethod $method, ?string $docReturn): ?array {
-		unset($docReturn);
-
+	private function inferOutputSchema(ReflectionMethod $method): ?array {
 		$type = $method->getReturnType();
 		if (($type instanceof ReflectionNamedType) === false) {
 			return null;
 		}
 
-		$jsonType = $this->mapNamedType(type: $type);
+		$jsonType = ReflectionJsonType::named(type: $type);
 		if ($jsonType === null || $jsonType === 'array') {
 			// Untyped array / mixed / void — too little information to be
 			// useful; deliberately omitted (design.md "best-effort").
 			return null;
 		}
 
-		if ($type->allowsNull() === true) {
-			return ['type' => [$jsonType, 'null']];
-		}
-
-		return ['type' => $jsonType];
+		return ['type' => ReflectionJsonType::of(type: $type)];
 	}//end inferOutputSchema()
-
-	/**
-	 * Map a (possibly nullable/union) reflection type to a JSON-Schema type.
-	 *
-	 * @param ReflectionType|null $type The parameter/return reflection type, or null when untyped.
-	 *
-	 * @return string|list<string>|null A JSON-Schema type, a `[type, 'null']` pair, or null when unconstrained.
-	 */
-	private function mapReflectionType(?ReflectionType $type): string|array|null {
-		if ($type === null) {
-			return null;
-		}
-
-		if ($type instanceof ReflectionUnionType) {
-			$types = [];
-			$nullable = false;
-
-			foreach ($type->getTypes() as $member) {
-				if (($member instanceof ReflectionNamedType) === false) {
-					continue;
-				}
-
-				if ($member->getName() === 'null') {
-					$nullable = true;
-					continue;
-				}
-
-				$mapped = $this->mapNamedType(type: $member);
-				if ($mapped !== null) {
-					$types[] = $mapped;
-				}
-			}
-
-			$types = array_values(array_unique($types));
-			if ($nullable === true) {
-				$types[] = 'null';
-			}
-
-			if (count($types) === 0) {
-				return null;
-			}
-
-			if (count($types) === 1) {
-				return $types[0];
-			}
-
-			return $types;
-		}//end if
-
-		if ($type instanceof ReflectionNamedType) {
-			$jsonType = $this->mapNamedType(type: $type);
-			if ($jsonType === null) {
-				return null;
-			}
-
-			if ($type->allowsNull() === true) {
-				return [$jsonType, 'null'];
-			}
-
-			return $jsonType;
-		}
-
-		// ReflectionIntersectionType or other exotic forms — unconstrained.
-		return null;
-	}//end mapReflectionType()
-
-	/**
-	 * Map one PHP named type to its JSON-Schema type, or null when the type
-	 * carries no useful schema information (`mixed`, `void`, `never`).
-	 *
-	 * @param ReflectionNamedType $type The named type to map.
-	 *
-	 * @return string|null The JSON-Schema type, or null when unconstrained.
-	 */
-	private function mapNamedType(ReflectionNamedType $type): ?string {
-		if ($type->isBuiltin() === false) {
-			// A class/interface/enum type hint — best-effort "object".
-			return 'object';
-		}
-
-		return match ($type->getName()) {
-			'int' => 'integer',
-			'float' => 'number',
-			'string' => 'string',
-			'bool' => 'boolean',
-			'array', 'iterable' => 'array',
-			default => null,
-		};
-	}//end mapNamedType()
-
-	/**
-	 * Split a docblock into trimmed, marker-stripped lines.
-	 *
-	 * @param string|false $docComment The raw `ReflectionMethod::getDocComment()` value.
-	 *
-	 * @return list<string> Trimmed lines, in order, trailing blank lines removed.
-	 */
-	private function docblockLines(string|false $docComment): array {
-		if ($docComment === false || trim($docComment) === '') {
-			return [];
-		}
-
-		$rawLines = preg_split('/\r\n|\r|\n/', $docComment);
-		if ($rawLines === false) {
-			return [];
-		}
-
-		$lines = [];
-		foreach ($rawLines as $rawLine) {
-			$line = trim($rawLine);
-			$line = preg_replace('#^/\*\*#', '', $line) ?? $line;
-			$line = preg_replace('#\*/$#', '', $line) ?? $line;
-			$line = ltrim($line, '* ');
-			$lines[] = rtrim($line);
-		}
-
-		while ($lines !== [] && end($lines) === '') {
-			array_pop($lines);
-		}
-
-		return $lines;
-	}//end docblockLines()
-
-	/**
-	 * The docblock summary — the first non-empty, non-tag line.
-	 *
-	 * @param list<string> $docLines Lines from {@see docblockLines()}.
-	 *
-	 * @return string|null The summary line, or null when absent.
-	 */
-	private function parseSummary(array $docLines): ?string {
-		foreach ($docLines as $line) {
-			if ($line === '') {
-				continue;
-			}
-
-			if (str_starts_with($line, '@') === true) {
-				return null;
-			}
-
-			return $line;
-		}
-
-		return null;
-	}//end parseSummary()
-
-	/**
-	 * Every `@param $name description` tag, keyed by parameter name.
-	 *
-	 * @param list<string> $docLines Lines from {@see docblockLines()}.
-	 *
-	 * @return array<string, string> Parameter name → description (may be empty string).
-	 */
-	private function parseParams(array $docLines): array {
-		$params = [];
-
-		foreach ($docLines as $line) {
-			if (preg_match('/^@param\s+\S+\s+\$(\w+)(?:\s+(.*))?$/', $line, $matches) === 1) {
-				$params[$matches[1]] = trim($matches[2] ?? '');
-			}
-		}
-
-		return $params;
-	}//end parseParams()
-
-	/**
-	 * The raw `@return` type token, when declared.
-	 *
-	 * @param list<string> $docLines Lines from {@see docblockLines()}.
-	 *
-	 * @return string|null The `@return` type token, or null when absent.
-	 */
-	private function parseReturn(array $docLines): ?string {
-		foreach ($docLines as $line) {
-			if (preg_match('/^@return\s+(\S+)/', $line, $matches) === 1) {
-				return $matches[1];
-			}
-		}
-
-		return null;
-	}//end parseReturn()
 }//end class

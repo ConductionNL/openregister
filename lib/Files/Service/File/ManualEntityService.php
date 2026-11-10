@@ -34,12 +34,13 @@ namespace OCA\OpenRegister\Files\Service\File;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
 use OCA\OpenRegister\Files\Db\DetectionMethod;
+use OCA\OpenRegister\Files\Db\EntityMention;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\GdprEntity;
-use OCA\OpenRegister\Db\GdprEntityMapper;
+use OCA\OpenRegister\Db\GdprEntityMapperInterface;
 use OCA\OpenRegister\Exception\ChunkMatcherException;
 use OCA\OpenRegister\Exception\ManualEntityException;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
@@ -78,29 +79,81 @@ class ManualEntityService {
 	private const CHUNK_SOURCE_TYPE = 'file';
 
 	/**
+	 * Catalogue mapper.
+	 *
+	 * @var GdprEntityMapperInterface
+	 */
+	private readonly GdprEntityMapperInterface $gdprEntityMapper;
+
+	/**
+	 * Relation mapper.
+	 *
+	 * @var EntityRelationMapperInterface
+	 */
+	private readonly EntityRelationMapperInterface $entityRelationMapper;
+
+	/**
+	 * Chunk reader for the target file.
+	 *
+	 * @var ChunkSourceReaderInterface
+	 */
+	private readonly ChunkSourceReaderInterface $chunkMapper;
+
+	/**
+	 * Chunk-aware string-match utility.
+	 *
+	 * @var ChunkTextMatcher
+	 */
+	private readonly ChunkTextMatcher $matcher;
+
+	/**
+	 * Audit-trail persistence.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
+	 * Nextcloud root folder (for file-write access check).
+	 *
+	 * @var IRootFolder
+	 */
+	private readonly IRootFolder $rootFolder;
+
+	/**
+	 * Connection for explicit transaction control.
+	 *
+	 * @var IDBConnection
+	 */
+	private readonly IDBConnection $db;
+
+	/**
+	 * Structured log sink for write-access failures and forensic context on rollback paths.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param GdprEntityMapper $gdprEntityMapper Catalogue mapper.
-	 * @param EntityRelationMapperInterface $entityRelationMapper Relation mapper.
-	 * @param ChunkMapper $chunkMapper Chunk reader for the target file.
-	 * @param ChunkTextMatcher $matcher Chunk-aware string-match utility.
-	 * @param AuditTrailMapperInterface $auditTrailMapper Audit-trail persistence.
-	 * @param IRootFolder $rootFolder Nextcloud root folder (for file-write access check).
-	 * @param IDBConnection $db Connection for explicit transaction control.
-	 * @param LoggerInterface $logger Structured log sink for write-access failures and
-	 *                                forensic context on rollback paths.
+	 * @param ManualEntityCatalogue $catalogue The entity catalogue, relation and chunk mappers and the chunk text matcher
+	 * @param ManualEntityRecording $recording The audit trail mapper, the root folder and the database connection
+	 * @param LoggerInterface       $logger    Structured log sink for write-access failures and forensic context on rollback paths.
 	 */
 	public function __construct(
-		private readonly GdprEntityMapper $gdprEntityMapper,
-		private readonly EntityRelationMapperInterface $entityRelationMapper,
-		private readonly ChunkMapper $chunkMapper,
-		private readonly ChunkTextMatcher $matcher,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly IRootFolder $rootFolder,
-		private readonly IDBConnection $db,
-		private readonly LoggerInterface $logger,
+		ManualEntityCatalogue $catalogue,
+		ManualEntityRecording $recording,
+		LoggerInterface $logger,
 	) {
-
+		$this->gdprEntityMapper = $catalogue->gdprEntityMapper;
+		$this->entityRelationMapper = $catalogue->entityRelationMapper;
+		$this->chunkMapper = $catalogue->chunkMapper;
+		$this->matcher = $catalogue->matcher;
+		$this->auditTrailMapper = $recording->auditTrailMapper;
+		$this->rootFolder = $recording->rootFolder;
+		$this->db = $recording->db;
+		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -118,12 +171,9 @@ class ManualEntityService {
 	 *   8. Write audit-trail entries.
 	 *   9. Commit. On any exception in steps 4-8, rollback and re-throw.
 	 *
-	 * @param int $fileId Nextcloud file id the manual entity applies to.
-	 * @param string $value Operator-supplied text to add as an anonymisable entity.
-	 * @param string $type Entity type tag (e.g. `PERSON`, `ORGANIZATION`).
-	 * @param bool $wholeWord Wrap the needle in `\b...\b` regex boundaries when true.
-	 * @param bool $caseSensitive Use case-sensitive matching when true.
-	 * @param IUser $actor The acting user (already authenticated upstream).
+	 * @param ManualEntityRequest $request The file, the operator-supplied value and type,
+	 *                                     the match options and the acting user (already
+	 *                                     authenticated upstream).
 	 *
 	 * @return ManualEntityResult The persisted entity + relation rows + match counts.
 	 *
@@ -132,17 +182,8 @@ class ManualEntityService {
 	 *
 	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
-	public function addManualEntity(
-		int $fileId,
-		string $value,
-		string $type,
-		bool $wholeWord,
-		bool $caseSensitive,
-		IUser $actor,
-	): ManualEntityResult {
-		$request = (new ManualEntityRequest(fileId: $fileId, value: $value, type: $type, actor: $actor))
-			->withMatching(wholeWord: $wholeWord, caseSensitive: $caseSensitive);
-		$this->assertFileWriteAccess(fileId: $fileId, actor: $actor);
+	public function addManualEntity(ManualEntityRequest $request): ManualEntityResult {
+		$this->assertFileWriteAccess(fileId: $request->fileId, actor: $request->actor);
 
 		// Run the matcher BEFORE opening the transaction: a regex compile
 		// failure aborts the operation without any DB writes to roll back.
@@ -184,13 +225,11 @@ class ManualEntityService {
 		}
 
 		try {
-			return $this->matcher->match(
+			return $this->matcher->search(search: new ChunkSearch(
 				chunks: $chunks,
-				needle: $request->value,
-				wholeWord: $request->wholeWord(),
-				caseSensitive: $request->caseSensitive(),
+				request: $request,
 				chunkOverlap: $chunkOverlap
-			);
+			));
 		} catch (ChunkMatcherException $e) {
 			// Both `value_too_long` and `regex_compile_failure` map to
 			// `regex_compile_failure`; the controller does not distinguish them.
@@ -222,8 +261,7 @@ class ManualEntityService {
 			);
 
 			[$insertedRelations, $matchesSkipped] = $this->createRelationsForMatches(
-				fileId: $request->fileId,
-				entity: $entity,
+				placement: new EntityPlacement(fileId: $request->fileId, entity: $entity),
 				matches: $matches
 			);
 
@@ -231,7 +269,6 @@ class ManualEntityService {
 				entity: $entity,
 				entityWasNew: $entityWasNew,
 				relations: $insertedRelations,
-				matchCount: count($matches),
 				matchesSkipped: $matchesSkipped
 			);
 			$this->writeAuditTrails(request: $request, result: $result);
@@ -418,35 +455,29 @@ class ManualEntityService {
 	 * For each match position, insert a new relation row unless one
 	 * already exists at exactly that position.
 	 *
-	 * @param int $fileId Target file id.
-	 * @param GdprEntity $entity Catalogue entry the relations point to.
+	 * @param EntityPlacement $placement Target file and the catalogue entry the relations point to.
 	 * @param array<int, array{chunkId: int, positionStart: int, positionEnd: int, context: string}> $matches Output of `ChunkTextMatcher::match`.
 	 *
 	 * @return array{0: EntityRelation[], 1: int} Tuple of (insertedRelations, matchesSkipped).
 	 */
-	private function createRelationsForMatches(int $fileId, GdprEntity $entity, array $matches): array {
+	private function createRelationsForMatches(EntityPlacement $placement, array $matches): array {
+		$fileId = $placement->fileId;
 		$rowsToInsert = [];
 		$matchesSkipped = 0;
 
 		foreach ($matches as $match) {
-			$existsAlready = $this->entityRelationMapper->existsForFileAtPosition(
-				fileId: $fileId,
-				entityId: (int)$entity->getId(),
-				chunkId: $match['chunkId'],
-				positionStart: $match['positionStart'],
-				positionEnd: $match['positionEnd']
-			);
-			if ($existsAlready === true) {
+			$mention = EntityMention::atMatch(entityId: $placement->entityId(), match: $match);
+			if ($this->entityRelationMapper->existsForFileAtPosition(fileId: $fileId, mention: $mention) === true) {
 				$matchesSkipped++;
 				continue;
 			}
 
 			$rowsToInsert[] = [
-				'entityId' => (int)$entity->getId(),
+				'entityId' => $mention->entityId,
 				'fileId' => $fileId,
-				'chunkId' => $match['chunkId'],
-				'positionStart' => $match['positionStart'],
-				'positionEnd' => $match['positionEnd'],
+				'chunkId' => $mention->chunkId,
+				'positionStart' => $mention->positionStart,
+				'positionEnd' => $mention->positionEnd,
 				'context' => $match['context'],
 				'detectionMethod' => DetectionMethod::MANUAL,
 				'role' => 'anonymisable',

@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\ObjectHandlerAccessInterface;
 
 /**
  * The object, register and schema a delete route names, and the service answering it.
@@ -37,13 +37,13 @@ final class ObjectDeleteRoute {
 	 * @param string        $id            The object ID or UUID.
 	 * @param string        $register      The register on the route.
 	 * @param string        $schema        The schema on the route.
-	 * @param ObjectService $objectService The object service.
+	 * @param ObjectHandlerAccessInterface $objectService The object service.
 	 */
 	public function __construct(
 		public readonly string $id,
 		public readonly string $register,
 		public readonly string $schema,
-		public readonly ObjectService $objectService,
+		public readonly ObjectHandlerAccessInterface $objectService,
 	) {
 	}//end __construct()
 }//end class

@@ -42,6 +42,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Service\Configuration\SchemaImportOptions;
 
 /**
  * Unit tests for ImportHandler.
@@ -230,69 +231,6 @@ class ImportHandlerTest extends TestCase {
 	// =========================================================================
 
 	// =========================================================================
-	// ensureArrayStructure()
-	// =========================================================================
-
-	/**
-	 * ensureArrayStructure() converts a flat stdClass to an array.
-	 */
-	public function testEnsureArrayStructureConvertsStdClass(): void {
-		$obj = new \stdClass();
-		$obj->key = 'val';
-		$obj->other = 42;
-
-		$result = $this->handler->ensureArrayStructure($obj);
-
-		$this->assertIsArray($result);
-		$this->assertSame('val', $result['key']);
-		$this->assertSame(42, $result['other']);
-
-	}//end testEnsureArrayStructureConvertsStdClass()
-
-	/**
-	 * ensureArrayStructure() recursively converts nested stdClass objects.
-	 */
-	public function testEnsureArrayStructureConvertsNestedObjects(): void {
-		$inner = new \stdClass();
-		$inner->deep = 'value';
-		$outer = new \stdClass();
-		$outer->child = $inner;
-
-		$result = $this->handler->ensureArrayStructure($outer);
-
-		$this->assertIsArray($result['child']);
-		$this->assertSame('value', $result['child']['deep']);
-
-	}//end testEnsureArrayStructureConvertsNestedObjects()
-
-	/**
-	 * ensureArrayStructure() leaves a plain array untouched.
-	 */
-	public function testEnsureArrayStructureLeavesArraysIntact(): void {
-		$input = ['a' => 1, 'b' => [2, 3]];
-		$result = $this->handler->ensureArrayStructure($input);
-
-		$this->assertSame($input, $result);
-
-	}//end testEnsureArrayStructureLeavesArraysIntact()
-
-	/**
-	 * ensureArrayStructure() handles arrays containing objects.
-	 */
-	public function testEnsureArrayStructureConvertsObjectsInsideArray(): void {
-		$obj = new \stdClass();
-		$obj->foo = 'bar';
-		$input = ['item' => $obj, 'plain' => 'text'];
-
-		$result = $this->handler->ensureArrayStructure($input);
-
-		$this->assertIsArray($result['item']);
-		$this->assertSame('bar', $result['item']['foo']);
-		$this->assertSame('text', $result['plain']);
-
-	}//end testEnsureArrayStructureConvertsObjectsInsideArray()
-
-	// =========================================================================
 	// getJSONfromFile()
 	// =========================================================================
 
@@ -346,11 +284,7 @@ class ImportHandlerTest extends TestCase {
 			->method('update')
 			->willReturn($register);
 
-		$result = $this->handler->importRegister(
-			data:    ['slug' => 'my-register', 'version' => '1.0.0', 'title' => 'My Register'],
-			owner:   'owner@test.nl',
-			appId:   'myapp'
-		);
+		$result = $this->handler->importRegister(data: ['slug' => 'my-register', 'version' => '1.0.0', 'title' => 'My Register'], options: new SchemaImportOptions(owner: 'owner@test.nl', appId: 'myapp'));
 
 		$this->assertSame('owner@test.nl', $result->getOwner());
 		$this->assertSame('myapp', $result->getApplication());
@@ -370,10 +304,7 @@ class ImportHandlerTest extends TestCase {
 		$this->registerMapper->expects($this->never())->method('createFromArray');
 		$this->registerMapper->expects($this->never())->method('update');
 
-		$result = $this->handler->importRegister(
-			data:  ['slug' => 'stable-register', 'version' => '2.0.0', 'title' => 'Stable'],
-			force: false
-		);
+		$result = $this->handler->importRegister(data: ['slug' => 'stable-register', 'version' => '2.0.0', 'title' => 'Stable'], options: new SchemaImportOptions(force: false));
 
 		$this->assertSame(5, $result->getId());
 
@@ -391,10 +322,7 @@ class ImportHandlerTest extends TestCase {
 		$this->registerMapper->expects($this->never())->method('createFromArray');
 		$this->registerMapper->expects($this->never())->method('update');
 
-		$result = $this->handler->importRegister(
-			data:  ['slug' => 'stable-register', 'version' => '2.0.0', 'title' => 'Old'],
-			force: false
-		);
+		$result = $this->handler->importRegister(data: ['slug' => 'stable-register', 'version' => '2.0.0', 'title' => 'Old'], options: new SchemaImportOptions(force: false));
 
 		$this->assertSame(5, $result->getId());
 
@@ -443,10 +371,7 @@ class ImportHandlerTest extends TestCase {
 			->method('update')
 			->willReturn($existing);
 
-		$result = $this->handler->importRegister(
-			data:  ['slug' => 'my-register', 'version' => '1.0.0', 'title' => 'Old'],
-			force: true
-		);
+		$result = $this->handler->importRegister(data: ['slug' => 'my-register', 'version' => '1.0.0', 'title' => 'Old'], options: new SchemaImportOptions(force: true));
 
 		$this->assertSame(5, $result->getId());
 
@@ -1761,7 +1686,7 @@ class ImportHandlerTest extends TestCase {
 		$connectorSvc = $this->getMockBuilder(\stdClass::class)
 			->addMethods(['importConfiguration'])
 			->getMock();
-		$connectorSvc->method('importConfiguration')
+		$connectorSvc->expects($this->once())->method('importConfiguration')
 			->willThrowException(new Exception('Connector unavailable'));
 
 		$this->handler->setOpenConnectorConfigurationService($connectorSvc);
@@ -1774,6 +1699,7 @@ class ImportHandlerTest extends TestCase {
 		);
 
 		$this->assertIsArray($result);
+		$this->assertSame([], $result['schemas']);
 
 	}//end testImportFromJsonContinuesWhenOpenConnectorThrows()
 
@@ -2015,10 +1941,7 @@ class ImportHandlerTest extends TestCase {
 			->method('update')
 			->willReturn($register);
 
-		$result = $this->handler->importRegister(
-			data:  ['slug' => 'owner-only-register', 'version' => '1.0.0', 'title' => 'Owner Only'],
-			owner: 'the-owner'
-		);
+		$result = $this->handler->importRegister(data: ['slug' => 'owner-only-register', 'version' => '1.0.0', 'title' => 'Owner Only'], options: new SchemaImportOptions(owner: 'the-owner'));
 
 		$this->assertSame('the-owner', $result->getOwner());
 
@@ -2041,12 +1964,7 @@ class ImportHandlerTest extends TestCase {
 			->method('update')
 			->willReturnArgument(0);
 
-		$result = $this->handler->importRegister(
-			data:  ['slug' => 'my-register', 'version' => '1.0.0', 'title' => 'Old'],
-			owner: 'new-owner',
-			appId: 'new-app',
-			force: true
-		);
+		$result = $this->handler->importRegister(data: ['slug' => 'my-register', 'version' => '1.0.0', 'title' => 'Old'], options: new SchemaImportOptions(owner: 'new-owner', appId: 'new-app', force: true));
 
 		$this->assertSame('new-owner', $result->getOwner());
 		$this->assertSame('new-app', $result->getApplication());
@@ -3649,10 +3567,7 @@ class ImportHandlerTest extends TestCase {
 			->method('update')
 			->willReturn($register);
 
-		$result = $this->handler->importRegister(
-			data:  ['slug' => 'app-only-register', 'version' => '1.0.0', 'title' => 'App Only'],
-			appId: 'just-the-app'
-		);
+		$result = $this->handler->importRegister(data: ['slug' => 'app-only-register', 'version' => '1.0.0', 'title' => 'App Only'], options: new SchemaImportOptions(appId: 'just-the-app'));
 
 		$this->assertSame('just-the-app', $result->getApplication());
 
@@ -3665,31 +3580,6 @@ class ImportHandlerTest extends TestCase {
 	// =========================================================================
 	// decode() — edge cases
 	// =========================================================================
-
-	/**
-	 * ensureArrayStructure() handles mixed array containing both objects and scalars.
-	 *
-	 * When an array contains objects nested alongside scalar values, the recursive
-	 * call should convert only the object entries while leaving scalars unchanged.
-	 */
-	public function testEnsureArrayStructureHandlesMixedArray(): void {
-		$inner = new \stdClass();
-		$inner->key = 'value';
-
-		$input = [
-			'scalar' => 42,
-			'nested' => $inner,
-			'list' => ['a', 'b'],
-		];
-
-		$result = $this->handler->ensureArrayStructure($input);
-
-		$this->assertSame(42, $result['scalar']);
-		$this->assertIsArray($result['nested']);
-		$this->assertSame('value', $result['nested']['key']);
-		$this->assertSame(['a', 'b'], $result['list']);
-
-	}//end testEnsureArrayStructureHandlesMixedArray()
 
 	// =========================================================================
 	// importFromJson() — result structure completeness

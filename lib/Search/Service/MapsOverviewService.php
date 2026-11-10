@@ -2,7 +2,7 @@
 
 /**
  * MapsOverviewService — page-level multi-object MAP render surface, the
- * maps equivalent of {@see AnalyticsSeriesService}.
+ * maps equivalent of {@see AnalyticsSeriesServiceInterface}.
  *
  * Where the per-object {@see \OCA\OpenRegister\Service\Integration\Providers\MapsProvider}
  * lists the locations linked to ONE object (a sidebar tab), this service
@@ -10,11 +10,11 @@
  * markers on a single map (procest's "cases on map" overview, issue #112).
  *
  * Two responsibilities, both additive:
- *   1. registerOverview() — declares a `map` page widget on the
+ *   1. declareOverview() — declares a `map` page widget on the
  *      IntegrationRegistry (declarative render contract + optional
  *      base-layer config such as PDOK WMTS), so the nc-vue render layer
  *      can discover and place the map surface. Mirrors
- *      AnalyticsSeriesService::register()'s widget declaration.
+ *      AnalyticsSeriesServiceInterface::register()'s widget declaration.
  *   2. queryPoints() — resolves the marker point set for a register/schema
  *      (+ optional filters) by running the CANONICAL OpenRegister read
  *      path with `_rbac: true`, then extracting `{id,label,lat,lng,...}`
@@ -50,11 +50,10 @@ namespace OCA\OpenRegister\Search\Service;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
-use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
-use OCP\IGroupManager;
-use OCP\IUserSession;
-use OCA\OpenRegister\Service\AnalyticsSeriesService;
+use OCA\OpenRegister\Search\Service\Geo\FeatureShape;
+use OCA\OpenRegister\Service\Integration\PageWidgetRegistryInterface;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
+use OCA\OpenRegister\Service\AnalyticsSeriesServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 
 /**
@@ -95,20 +94,14 @@ class MapsOverviewService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectOperationsInterface $objectService Canonical RBAC-scoped object read facade.
-	 * @param GeoFeatureCollectionBuilder $geoBuilder Extracts geometry from object rows.
-	 * @param IntegrationRegistry $registry Registry for the page-widget surface.
-	 * @param IUserSession $userSession Current user (RBAC / write guard).
-	 * @param IGroupManager $groupManager Admin check (RBAC bypass for admins).
+	 * @param MapsOverviewSources $sources The object read facade, geometry builder and page-widget registry.
+	 * @param CallerContext $caller The current user (write guard) and the group manager (admin RBAC bypass).
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private ObjectOperationsInterface $objectService,
-		private GeoFeatureCollectionBuilder $geoBuilder,
-		private IntegrationRegistry $registry,
-		private IUserSession $userSession,
-		private IGroupManager $groupManager,
+		private readonly MapsOverviewSources $sources,
+		private readonly CallerContext $caller,
 	) {
 	}//end __construct()
 
@@ -126,32 +119,15 @@ class MapsOverviewService {
 	 * @spec openspec/specs/integration-maps-overview/spec.md
 	 */
 	public function ensureCanRegister(): void {
-		if ($this->userSession->getUser() === null) {
+		if ($this->caller->userSession->getUser() === null) {
 			throw new InvalidArgumentException('A logged-in user is required to register a map overview');
 		}
 	}//end ensureCanRegister()
 
 	/**
-	 * Register (declare) a page-level map overview widget.
+	 * Declare a page-level map overview widget.
 	 *
-	 * Declares a `map` page widget on the IntegrationRegistry so the
-	 * nc-vue render layer can discover and place a multi-object map. The
-	 * descriptor carries the register/schema scope, an optional default
-	 * filter set, an optional geo-property hint and the declarative base
-	 * layer. It carries NO per-request marker data — the points are fetched
-	 * separately, RBAC-scoped, via queryPoints().
-	 *
-	 * Mirrors AnalyticsSeriesService::register()'s widget declaration:
-	 * first-write-wins inside the registry (a re-declare with the same id
-	 * is a harmless no-op logged as a duplicate).
-	 *
-	 * @param string $overviewKey Stable overview/widget key.
-	 * @param string|int $register Register slug or id the markers come from.
-	 * @param string|int $schema Schema slug or id the markers come from.
-	 * @param string|null $title Display title for the map widget.
-	 * @param string|null $geoProperty Object property holding the geometry; null = auto-detect.
-	 * @param array<string,mixed> $filters Default filters narrowing the object set.
-	 * @param array<string,mixed>|null $baseLayer Declarative base-layer override; null = PDOK default.
+	 * @param MapOverview $overview The key, marker source, title and base layer.
 	 *
 	 * @return array<string,mixed> The stored widget render contract.
 	 *
@@ -159,46 +135,61 @@ class MapsOverviewService {
 	 *
 	 * @spec openspec/specs/integration-maps-overview/spec.md
 	 */
-	public function registerOverview(
-		string $overviewKey,
-		string|int $register,
-		string|int $schema,
-		?string $title = null,
-		?string $geoProperty = null,
-		array $filters = [],
-		?array $baseLayer = null,
-	): array {
+	public function declareOverview(MapOverview $overview): array {
+		$this->assertRegistrable(overviewKey: $overview->key, source: $overview->source);
+
+		// (Re)declare the page widget so the render layer can discover it.
+		// First-write-wins inside the registry; harmless on a re-declare.
+		$this->sources->registry->registerPageWidget(
+			[
+				'id' => $overview->widgetId(),
+				'type' => 'map',
+				'title' => $overview->title,
+				'providerId' => 'maps-overview',
+				'config' => $this->widgetConfig(overview: $overview),
+			]
+		);
+
+		return $this->sources->registry->getPageWidget($overview->widgetId()) ?? [];
+	}//end declareOverview()
+
+	/**
+	 * The config a map overview widget carries: its scope, filters and base layer, no marker data.
+	 *
+	 * @param MapOverview $overview The overview.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function widgetConfig(MapOverview $overview): array {
+		return [
+			'overviewKey' => $overview->key,
+			'register' => $overview->source->register,
+			'schema' => $overview->source->schema,
+			'geoProperty' => $overview->source->geoProperty,
+			'filters' => $overview->source->filters,
+			'baseLayer' => ($overview->baseLayer ?? self::DEFAULT_BASE_LAYER),
+		];
+	}//end widgetConfig()
+
+	/**
+	 * Refuse an overview declaration without a key or scope.
+	 *
+	 * @param string          $overviewKey Stable overview/widget key.
+	 * @param MapMarkerSource $source      The register and schema the markers come from.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException On empty key / register / schema.
+	 */
+	private function assertRegistrable(string $overviewKey, MapMarkerSource $source): void {
 		if (trim($overviewKey) === '') {
 			throw new InvalidArgumentException('overviewKey is required to register a map overview');
 		}
 
-		if ((string)$register === '' || (string)$schema === '') {
+		if ((string)$source->register === '' || (string)$source->schema === '') {
 			throw new InvalidArgumentException('register and schema are required to register a map overview');
 		}
-
-		$config = [
-			'overviewKey' => $overviewKey,
-			'register' => $register,
-			'schema' => $schema,
-			'geoProperty' => $geoProperty,
-			'filters' => $filters,
-			'baseLayer' => ($baseLayer ?? self::DEFAULT_BASE_LAYER),
-		];
-
-		// (Re)declare the page widget so the render layer can discover it.
-		// First-write-wins inside the registry; harmless on a re-declare.
-		$this->registry->registerPageWidget(
-			[
-				'id' => 'maps-overview:' . $overviewKey,
-				'type' => 'map',
-				'title' => $title,
-				'providerId' => 'maps-overview',
-				'config' => $config,
-			]
-		);
-
-		return $this->registry->getPageWidget('maps-overview:' . $overviewKey) ?? [];
-	}//end registerOverview()
+	}//end assertRegistrable()
 
 	/**
 	 * Authorisation guard for the points (read) path — RBAC-scopes the
@@ -211,11 +202,8 @@ class MapsOverviewService {
 	 * only ever sees public-readable objects (fail-closed, no leak). The
 	 * register/schema scope keys are caller-immutable.
 	 *
-	 * @param string|int $register Register slug or id to query.
-	 * @param string|int $schema Schema slug or id to query.
-	 * @param array<string,mixed> $filters Extra object filters (property=value).
-	 * @param string|null $geoProperty Geometry property name; null = auto-detect.
-	 * @param int|null $limit Max markers (capped at MAX_POINTS).
+	 * @param MapMarkerSource $source The register, schema, filters and geo property to query.
+	 * @param int|null        $limit  Max markers (capped at MAX_POINTS).
 	 *
 	 * @return array<int,array<string,mixed>> The RBAC-scoped marker point set.
 	 *
@@ -223,20 +211,8 @@ class MapsOverviewService {
 	 *
 	 * @spec openspec/specs/integration-maps-overview/spec.md
 	 */
-	public function ensureReadablePoints(
-		string|int $register,
-		string|int $schema,
-		array $filters = [],
-		?string $geoProperty = null,
-		?int $limit = null,
-	): array {
-		return $this->queryPoints(
-			register: $register,
-			schema: $schema,
-			filters: $filters,
-			geoProperty: $geoProperty,
-			limit: $limit
-		);
+	public function ensureReadablePoints(MapMarkerSource $source, ?int $limit = null): array {
+		return $this->queryPoints(source: $source, limit: $limit);
 	}//end ensureReadablePoints()
 
 	/**
@@ -249,11 +225,8 @@ class MapsOverviewService {
 	 * marker `{id,label,lat,lng,register,schema,...}`. Objects without
 	 * geometry are silently skipped (nothing to plot).
 	 *
-	 * @param string|int $register Register slug or id to query.
-	 * @param string|int $schema Schema slug or id to query.
-	 * @param array<string,mixed> $filters Extra object filters (property=value).
-	 * @param string|null $geoProperty Geometry property name; null = auto-detect.
-	 * @param int|null $limit Max markers to return (capped at MAX_POINTS).
+	 * @param MapMarkerSource $source The register, schema, filters and geo property to query.
+	 * @param int|null        $limit  Max markers to return (capped at MAX_POINTS).
 	 *
 	 * @return array<int,array<string,mixed>> The RBAC-scoped marker point set.
 	 *
@@ -261,20 +234,9 @@ class MapsOverviewService {
 	 *
 	 * @spec openspec/specs/integration-maps-overview/spec.md
 	 */
-	public function queryPoints(
-		string|int $register,
-		string|int $schema,
-		array $filters = [],
-		?string $geoProperty = null,
-		?int $limit = null,
-	): array {
-		if ((string)$register === '' || (string)$schema === '') {
+	public function queryPoints(MapMarkerSource $source, ?int $limit = null): array {
+		if ((string)$source->register === '' || (string)$source->schema === '') {
 			throw new InvalidArgumentException('register and schema are required to query map points');
-		}
-
-		$cap = self::MAX_POINTS;
-		if ($limit !== null && $limit > 0 && $limit < $cap) {
-			$cap = $limit;
 		}
 
 		// RBAC: admins read everything; everyone else (anonymous included)
@@ -285,11 +247,11 @@ class MapsOverviewService {
 
 		// Sanitise the filters into the OpenRegister findAll filter shape:
 		// register/schema are mandatory scope keys; the rest narrow the set.
-		$objectFilters = $this->buildFilters(register: $register, schema: $schema, filters: $filters);
+		$objectFilters = $source->objectFilters();
 
-		$result = $this->objectService->findAll(
+		$result = $this->sources->objectService->findAll(
 			config: [
-				'limit' => $cap,
+				'limit' => $this->pointCap(limit: $limit),
 				'filters' => $objectFilters,
 			],
 			_rbac: $rbac,
@@ -305,21 +267,48 @@ class MapsOverviewService {
 		// register/schema — indistinguishable from "nothing has geometry".
 		// `jsonSerialize()` is the rendered array shape `pointFromRow()` reads
 		// (@self + id + the schema properties at top level).
+		return $this->rowsToPoints(rows: $result, source: $source);
+	}//end queryPoints()
+
+	/**
+	 * The marker cap: a positive limit below MAX_POINTS, else MAX_POINTS.
+	 *
+	 * @param int|null $limit Requested limit.
+	 *
+	 * @return int
+	 */
+	private function pointCap(?int $limit): int {
+		if ($limit !== null && $limit > 0 && $limit < self::MAX_POINTS) {
+			return $limit;
+		}
+
+		return self::MAX_POINTS;
+	}//end pointCap()
+
+	/**
+	 * Turn readable rows into markers, skipping unusable and geometry-less rows.
+	 *
+	 * @param iterable<mixed>  $rows   Rows as returned by ObjectService::findAll().
+	 * @param MapMarkerSource $source The geo property and the scope echoed onto each marker.
+	 *
+	 * @return array<int,array<string,mixed>> The markers, in row order.
+	 */
+	private function rowsToPoints(iterable $rows, MapMarkerSource $source): array {
 		$points = [];
-		foreach ($result as $row) {
+		foreach ($rows as $row) {
 			$rowArray = $this->rowToArray(row: $row);
 			if ($rowArray === null) {
 				continue;
 			}
 
-			$point = $this->pointFromRow(row: $rowArray, geoProperty: $geoProperty, register: $register, schema: $schema);
+			$point = $this->pointFromRow(row: $rowArray, source: $source);
 			if ($point !== null) {
 				$points[] = $point;
 			}
 		}
 
 		return $points;
-	}//end queryPoints()
+	}//end rowsToPoints()
 
 	/**
 	 * Normalise one `findAll()` row to the rendered array shape.
@@ -354,36 +343,6 @@ class MapsOverviewService {
 	}//end rowToArray()
 
 	/**
-	 * Build the OpenRegister findAll filter array for a map query.
-	 *
-	 * Register/schema become the scope keys; every other supplied filter is
-	 * copied through verbatim (the OR read path validates + RBAC-scopes
-	 * them). The reserved scope keys cannot be overridden by the leaf.
-	 *
-	 * @param string|int $register Register slug or id.
-	 * @param string|int $schema Schema slug or id.
-	 * @param array<string,mixed> $filters Caller filters.
-	 *
-	 * @return array<string,mixed> The findAll filter array.
-	 */
-	private function buildFilters(string|int $register, string|int $schema, array $filters): array {
-		$clean = [];
-		foreach ($filters as $key => $value) {
-			// Reserved scope keys are owned by this method, not the caller.
-			if (in_array($key, ['register', 'schema', 'limit', 'offset', 'page'], true) === true) {
-				continue;
-			}
-
-			$clean[$key] = $value;
-		}
-
-		$clean['register'] = $register;
-		$clean['schema'] = $schema;
-
-		return $clean;
-	}//end buildFilters()
-
-	/**
 	 * Extract a marker point from a rendered object row.
 	 *
 	 * Reuses {@see GeoFeatureCollectionBuilder} to locate the geometry, then
@@ -391,20 +350,13 @@ class MapsOverviewService {
 	 * Point / first vertex of a Polygon ring etc.). Returns null when the
 	 * object carries no recognisable geometry.
 	 *
-	 * @param array<string,mixed> $row The rendered object row.
-	 * @param string|null $geoProperty Geometry property name; null = auto-detect.
-	 * @param string|int $register Register scope (echoed onto the marker).
-	 * @param string|int $schema Schema scope (echoed onto the marker).
+	 * @param array<string,mixed> $row    The rendered object row.
+	 * @param MapMarkerSource     $source The geo property and the scope echoed onto the marker.
 	 *
 	 * @return array<string,mixed>|null The marker, or null when no geometry.
 	 */
-	private function pointFromRow(
-		array $row,
-		?string $geoProperty,
-		string|int $register,
-		string|int $schema,
-	): ?array {
-		$feature = $this->geoBuilder->buildFeature(row: $row, geoProperty: $geoProperty);
+	private function pointFromRow(array $row, MapMarkerSource $source): ?array {
+		$feature = $this->sources->geoBuilder->feature(row: $row, shape: new FeatureShape(geoProperty: $source->geoProperty));
 		if ($feature === null) {
 			return null;
 		}
@@ -416,7 +368,7 @@ class MapsOverviewService {
 
 		$self = ($row['@self'] ?? []);
 		$id = ($row['id'] ?? ($self['id'] ?? ($feature['id'] ?? null)));
-		$label = $this->deriveLabel(row: $row, self: $self, id: $id);
+		$label = $this->deriveLabel(row: $row, id: $id);
 
 		$idString = null;
 		if ($id !== null) {
@@ -428,8 +380,8 @@ class MapsOverviewService {
 			'label' => $label,
 			'lat' => $latLng['lat'],
 			'lng' => $latLng['lng'],
-			'register' => (string)$register,
-			'schema' => (string)$schema,
+			'register' => (string)$source->register,
+			'schema' => (string)$source->schema,
 			'geometry' => ($feature['geometry'] ?? null),
 		];
 	}//end pointFromRow()
@@ -451,18 +403,8 @@ class MapsOverviewService {
 			return null;
 		}
 
-		// Drill down to the first [lon, lat] position regardless of nesting
-		// depth (Point=0, LineString=1, Polygon=2, MultiPolygon=3).
-		$position = $coordinates;
-		$guard = 0;
-		while (isset($position[0]) === true && is_array($position[0]) === true && $guard < 4) {
-			$position = $position[0];
-			$guard++;
-		}
-
-		if (isset($position[0]) === false || isset($position[1]) === false
-			|| is_numeric($position[0]) === false || is_numeric($position[1]) === false
-		) {
+		$position = $this->firstPosition(coordinates: $coordinates);
+		if ($this->isNumericPair(position: $position) === false) {
 			return null;
 		}
 
@@ -473,6 +415,37 @@ class MapsOverviewService {
 	}//end representativeLatLng()
 
 	/**
+	 * Drill down to the first [lon, lat] position regardless of nesting
+	 * depth (Point=0, LineString=1, Polygon=2, MultiPolygon=3), at most four levels.
+	 *
+	 * @param array<int|string,mixed> $coordinates GeoJSON coordinates.
+	 *
+	 * @return array<int|string,mixed> The innermost position reached.
+	 */
+	private function firstPosition(array $coordinates): array {
+		$position = $coordinates;
+		$guard = 0;
+		while (isset($position[0]) === true && is_array($position[0]) === true && $guard < 4) {
+			$position = $position[0];
+			$guard++;
+		}
+
+		return $position;
+	}//end firstPosition()
+
+	/**
+	 * Whether a position starts with two numeric values.
+	 *
+	 * @param array<int|string,mixed> $position A GeoJSON position.
+	 *
+	 * @return bool
+	 */
+	private function isNumericPair(array $position): bool {
+		return isset($position[0]) === true && isset($position[1]) === true
+			&& is_numeric($position[0]) === true && is_numeric($position[1]) === true;
+	}//end isNumericPair()
+
+	/**
 	 * Derive a human-readable marker label from a rendered object row.
 	 *
 	 * Prefers @self.name / @self.title, then a top-level name/title field,
@@ -480,22 +453,15 @@ class MapsOverviewService {
 	 * did not already return.
 	 *
 	 * @param array<string,mixed> $row The rendered object row.
-	 * @param array<string,mixed> $self The @self metadata block.
 	 * @param mixed $id The resolved id.
 	 *
 	 * @return string The marker label.
 	 */
-	private function deriveLabel(array $row, array $self, mixed $id): string {
-		foreach (['name', 'title'] as $key) {
-			if (isset($self[$key]) === true && is_scalar($self[$key]) === true && (string)$self[$key] !== '') {
-				return (string)$self[$key];
-			}
-		}
-
-		foreach (['name', 'title', 'naam', 'titel'] as $key) {
-			if (isset($row[$key]) === true && is_scalar($row[$key]) === true && (string)$row[$key] !== '') {
-				return (string)$row[$key];
-			}
+	private function deriveLabel(array $row, mixed $id): string {
+		$label = $this->firstFilledScalar(source: ($row['@self'] ?? []), keys: ['name', 'title'])
+			?? $this->firstFilledScalar(source: $row, keys: ['name', 'title', 'naam', 'titel']);
+		if ($label !== null) {
+			return $label;
 		}
 
 		if ($id !== null) {
@@ -506,16 +472,45 @@ class MapsOverviewService {
 	}//end deriveLabel()
 
 	/**
+	 * The first of the given keys holding a non-empty scalar, as a string.
+	 *
+	 * @param array<string,mixed> $source The array to read.
+	 * @param string[] $keys Keys to try, in order.
+	 *
+	 * @return string|null The value, or null when no key holds one.
+	 */
+	private function firstFilledScalar(array $source, array $keys): ?string {
+		foreach ($keys as $key) {
+			if ($this->isFilledScalar(value: ($source[$key] ?? null)) === true) {
+				return (string)$source[$key];
+			}
+		}
+
+		return null;
+	}//end firstFilledScalar()
+
+	/**
+	 * Whether a value is a scalar that does not stringify to ''.
+	 *
+	 * @param mixed $value The value (null when the key is absent).
+	 *
+	 * @return bool
+	 */
+	private function isFilledScalar(mixed $value): bool {
+		return $value !== null && is_scalar($value) === true && (string)$value !== '';
+	}//end isFilledScalar()
+
+	/**
 	 * Whether the current user is an admin (RBAC bypass).
 	 *
 	 * @return bool True when the logged-in user is in the `admin` group.
 	 */
 	private function isCurrentUserAdmin(): bool {
-		$user = $this->userSession->getUser();
+		$user = $this->caller->userSession->getUser();
 		if ($user === null) {
 			return false;
 		}
 
-		return $this->groupManager->isAdmin($user->getUID());
+		return $this->caller->groupManager->isAdmin($user->getUID());
 	}//end isCurrentUserAdmin()
 }//end class

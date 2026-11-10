@@ -49,11 +49,10 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\FlowLink;
-use OCA\OpenRegister\Db\FlowLinkMapper;
 use OCP\App\IAppManager;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\IDBConnection;
 use OCP\IGroupManager;
+use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -69,23 +68,19 @@ use Throwable;
  *     logger. Each dependency is required for one of the Tier-2 flows
  *     (link, unlink, list, picker, admin gating, graceful degradation).
  */
-class FlowLinkService {
+class FlowLinkService implements FlowLinkServiceInterface {
 	private const REQUIRED_APP = 'workflowengine';
 
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowLinkMapper $flowLinkMapper Persistence for link rows.
-	 * @param IDBConnection $db Database connection.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IUserSession $userSession Active session.
-	 * @param IGroupManager $groupManager Group manager (for admin checks).
-	 * @param LoggerInterface $logger Logger.
+	 * @param FlowLinkPlatform $platform     Link-row mapper, database connection and app manager.
+	 * @param IUserSession     $userSession  Active session.
+	 * @param IGroupManager    $groupManager Group manager (for admin checks).
+	 * @param LoggerInterface  $logger       Logger.
 	 */
 	public function __construct(
-		private readonly FlowLinkMapper $flowLinkMapper,
-		private readonly IDBConnection $db,
-		private readonly IAppManager $appManager,
+		private readonly FlowLinkPlatform $platform,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
@@ -98,7 +93,7 @@ class FlowLinkService {
 	 * @return bool
 	 */
 	public function isFlowAvailable(): bool {
-		return $this->appManager->isInstalled(self::REQUIRED_APP);
+		return $this->platform->appManager->isInstalled(self::REQUIRED_APP);
 	}//end isFlowAvailable()
 
 	/**
@@ -125,10 +120,8 @@ class FlowLinkService {
 	 *
 	 * Admin-only. Idempotent: a duplicate link raises a 409 Exception.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
-	 * @param int $operationId workflowengine operation id.
+	 * @param LinkTarget $target      The parent OR object: its uuid, register id and schema id.
+	 * @param int        $operationId workflowengine operation id.
 	 *
 	 * @return FlowLink The persisted link row.
 	 *
@@ -137,7 +130,33 @@ class FlowLinkService {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function linkOperation(string $objectUuid, int $registerId, int $schemaId, int $operationId): FlowLink {
+	public function linkOperation(LinkTarget $target, int $operationId): FlowLink {
+		$user  = $this->requireLinkingAdmin();
+		$onRow = $this->requireUnlinkedOperation(objectUuid: $target->objectUuid, operationId: $operationId);
+
+		$link = new FlowLink();
+		$link->setObjectUuid($target->objectUuid);
+		$link->setRegisterId($target->registerId);
+		$link->setSchemaId($target->schemaId());
+		$link->setOperationId($operationId);
+		$link->setOperationClass((string)($onRow['class'] ?? ''));
+		$link->setOperationName((string)($onRow['name'] ?? ''));
+		$link->setEntityType((string)($onRow['entity'] ?? ''));
+		$link->setEnabled(true);
+		$link->setLinkedBy($user->getUID());
+		$link->setLinkedAt(new DateTime());
+
+		return $this->platform->flowLinkMapper->insert($link);
+	}//end linkOperation()
+
+	/**
+	 * The logged-in administrator, when Flow is available to link against.
+	 *
+	 * @return IUser The administrator.
+	 *
+	 * @throws Exception On missing user, non-admin (403) or Flow unavailable (503).
+	 */
+	private function requireLinkingAdmin(): IUser {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
@@ -151,7 +170,21 @@ class FlowLinkService {
 			throw new Exception('NC Flow is not available', 503);
 		}
 
-		$existing = $this->flowLinkMapper->findByObjectAndOperation($objectUuid, $operationId);
+		return $user;
+	}//end requireLinkingAdmin()
+
+	/**
+	 * The Flow row of an operation not yet linked to the object.
+	 *
+	 * @param string $objectUuid  Parent OR object uuid.
+	 * @param int    $operationId workflowengine operation id.
+	 *
+	 * @return array<string,mixed> The operation row.
+	 *
+	 * @throws Exception On duplicate (409) or missing operation (404).
+	 */
+	private function requireUnlinkedOperation(string $objectUuid, int $operationId): array {
+		$existing = $this->platform->flowLinkMapper->findByObjectAndOperation($objectUuid, $operationId);
 		if ($existing !== null) {
 			throw new Exception('Operation already linked to this object', 409);
 		}
@@ -161,20 +194,8 @@ class FlowLinkService {
 			throw new Exception('Flow operation not found', 404);
 		}
 
-		$link = new FlowLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
-		$link->setOperationId($operationId);
-		$link->setOperationClass((string)($onRow['class'] ?? ''));
-		$link->setOperationName((string)($onRow['name'] ?? ''));
-		$link->setEntityType((string)($onRow['entity'] ?? ''));
-		$link->setEnabled(true);
-		$link->setLinkedBy($user->getUID());
-		$link->setLinkedAt(new DateTime());
-
-		return $this->flowLinkMapper->insert($link);
-	}//end linkOperation()
+		return $onRow;
+	}//end requireUnlinkedOperation()
 
 	/**
 	 * Unlink an operation from an object.
@@ -196,7 +217,7 @@ class FlowLinkService {
 			throw new Exception('Only administrators can unlink Flow operations', 403);
 		}
 
-		$deleted = $this->flowLinkMapper->deleteByObjectAndOperation($objectUuid, $operationId);
+		$deleted = $this->platform->flowLinkMapper->deleteByObjectAndOperation($objectUuid, $operationId);
 		if ($deleted === 0) {
 			throw new Exception('Flow link not found', 404);
 		}
@@ -218,7 +239,7 @@ class FlowLinkService {
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function getLinkedOperations(string $objectUuid): array {
-		$links = $this->flowLinkMapper->findByObjectUuid($objectUuid);
+		$links = $this->platform->flowLinkMapper->findByObjectUuid($objectUuid);
 		$available = $this->isFlowAvailable();
 
 		$results = [];
@@ -276,40 +297,71 @@ class FlowLinkService {
 			return [];
 		}
 
+		return $this->pickerRows(rows: $this->operationRows(search: ($search ?? '')));
+	}//end getAvailableOperations()
+
+	/**
+	 * The picker entries of `flow_operations` rows.
+	 *
+	 * @param array<int,array<string,mixed>> $rows The operation rows.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function pickerRows(array $rows): array {
+		$out = [];
+		foreach ($rows as $row) {
+			$out[] = $this->pickerRow(row: $row);
+		}
+
+		return $out;
+	}//end pickerRows()
+
+	/**
+	 * The `flow_operations` rows, newest first, optionally filtered on name.
+	 *
+	 * @param string $search Name-substring filter; '' for none.
+	 *
+	 * @return array<int,array<string,mixed>> The rows; [] when the query failed.
+	 */
+	private function operationRows(string $search): array {
 		try {
-			$qb = $this->db->getQueryBuilder();
+			$qb = $this->platform->db->getQueryBuilder();
 			$qb->select('id', 'class', 'name', 'entity', 'operation', 'events', 'checks')
 				->from('flow_operations')
 				->orderBy('id', 'DESC');
 
-			if ($search !== null && $search !== '') {
+			if ($search !== '') {
 				$qb->andWhere(
 					$qb->expr()->iLike('name', $qb->createNamedParameter('%' . $search . '%'))
 				);
 			}
 
-			$rows = $qb->executeQuery()->fetchAll();
+			return $qb->executeQuery()->fetchAll();
 		} catch (Throwable $e) {
 			$this->logger->warning('FlowLinkService::getAvailableOperations failed: ' . $e->getMessage());
 			return [];
 		}
+	}//end operationRows()
 
-		$out = [];
-		foreach ($rows as $row) {
-			$out[] = [
-				'id' => (int)($row['id'] ?? 0),
-				'name' => (string)($row['name'] ?? ''),
-				'class' => (string)($row['class'] ?? ''),
-				'entity' => (string)($row['entity'] ?? ''),
-				'operation' => (string)($row['operation'] ?? ''),
-				'events' => $this->decodeJsonField(value: ($row['events'] ?? null)),
-				'checks' => $this->decodeJsonField(value: ($row['checks'] ?? null)),
-				'enabled' => true,
-			];
-		}
-
-		return $out;
-	}//end getAvailableOperations()
+	/**
+	 * One picker entry of a `flow_operations` row.
+	 *
+	 * @param array<string,mixed> $row The operation row.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function pickerRow(array $row): array {
+		return [
+			'id' => (int)($row['id'] ?? 0),
+			'name' => (string)($row['name'] ?? ''),
+			'class' => (string)($row['class'] ?? ''),
+			'entity' => (string)($row['entity'] ?? ''),
+			'operation' => (string)($row['operation'] ?? ''),
+			'events' => $this->decodeJsonField(value: ($row['events'] ?? null)),
+			'checks' => $this->decodeJsonField(value: ($row['checks'] ?? null)),
+			'enabled' => true,
+		];
+	}//end pickerRow()
 
 	/**
 	 * Fetch a single operation row from `flow_operations`.
@@ -320,7 +372,7 @@ class FlowLinkService {
 	 */
 	private function fetchOperationRow(int $operationId): ?array {
 		try {
-			$qb = $this->db->getQueryBuilder();
+			$qb = $this->platform->db->getQueryBuilder();
 			$qb->select('id', 'class', 'name', 'entity', 'operation', 'events', 'checks')
 				->from('flow_operations')
 				->where($qb->expr()->eq('id', $qb->createNamedParameter($operationId, IQueryBuilder::PARAM_INT)));
@@ -356,15 +408,22 @@ class FlowLinkService {
 			return [];
 		}
 
-		try {
-			$decoded = json_decode($value, true);
-			if (is_array($decoded) === true) {
-				return $decoded;
-			}
-		} catch (Throwable $e) {
-			// Fall through.
+		return $this->decodeJsonText(text: $value);
+	}//end decodeJsonField()
+
+	/**
+	 * Decode JSON text to an array; [] when it is not a JSON array or object.
+	 *
+	 * @param string $text The JSON text.
+	 *
+	 * @return array<int|string,mixed>
+	 */
+	private function decodeJsonText(string $text): array {
+		$decoded = json_decode($text, true);
+		if (is_array($decoded) === true) {
+			return $decoded;
 		}
 
 		return [];
-	}//end decodeJsonField()
+	}//end decodeJsonText()
 }//end class

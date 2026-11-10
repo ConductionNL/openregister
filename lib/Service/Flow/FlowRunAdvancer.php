@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use Psr\Log\LoggerInterface;
@@ -42,22 +43,41 @@ use Throwable;
  *
  * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
  */
-class FlowRunAdvancer {
+class FlowRunAdvancer implements FlowRunAdvancerInterface {
+	/**
+	 * Executes the run.
+	 *
+	 * @var FlowRunServiceInterface
+	 */
+	private readonly FlowRunServiceInterface $runner;
+
+	/**
+	 * Resolves the flow and its subject.
+	 *
+	 * @var FlowLocator
+	 */
+	private readonly FlowLocator $resolvers;
+
+	/**
+	 * Records failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapperInterface $mapper Persists a run that cannot proceed.
-	 * @param FlowRunServiceInterface $runner Executes the run.
-	 * @param FlowLocator $resolvers Resolves the flow and its subject.
-	 * @param LoggerInterface $logger Records failures.
+	 * @param FlowRunMapperInterface $mapper    Persists a run that cannot proceed.
+	 * @param FlowExecution          $execution Resolves the flow and its subject, executes the run and logs.
 	 */
 	public function __construct(
 		private readonly FlowRunMapperInterface $mapper,
-		private readonly FlowRunServiceInterface $runner,
-		private readonly FlowLocator $resolvers,
-		private readonly LoggerInterface $logger,
+		FlowExecution $execution,
 	) {
-
+		$this->runner    = $execution->runner;
+		$this->resolvers = $execution->resolvers;
+		$this->logger    = $execution->logger;
 	}//end __construct()
 
 	/**
@@ -114,10 +134,12 @@ class FlowRunAdvancer {
 			// seeded from its payload). Only resolve one when the run names it.
 			$subject = null;
 			if (trim((string)$run->getSubjectUuid()) !== '') {
-				$subject = $this->resolvers->resolveSubject(
-					(string)$run->getSubjectUuid(),
-					(string)$run->getSubjectRegister(),
-					(string)$run->getSubjectSchema()
+				$subject = $this->resolvers->resolveObject(
+					ref: new ObjectRef(
+						register: (string)$run->getSubjectRegister(),
+						schema: (string)$run->getSubjectSchema(),
+						id: (string)$run->getSubjectUuid()
+					)
 				);
 
 				if ($subject === null) {
@@ -201,10 +223,12 @@ class FlowRunAdvancer {
 
 		$subject = null;
 		if (trim((string)$run->getSubjectUuid()) !== '') {
-			$subject = $this->resolvers->resolveSubject(
-				(string)$run->getSubjectUuid(),
-				(string)$run->getSubjectRegister(),
-				(string)$run->getSubjectSchema()
+			$subject = $this->resolvers->resolveObject(
+				ref: new ObjectRef(
+					register: (string)$run->getSubjectRegister(),
+					schema: (string)$run->getSubjectSchema(),
+					id: (string)$run->getSubjectUuid()
+				)
 			);
 
 			if ($subject === null) {
@@ -217,12 +241,9 @@ class FlowRunAdvancer {
 
 		// A resumed walk reads its items from the run, never from a seed, so a
 		// subjectless run needs only the bare marking holder here.
-		return $this->runner->advanceStream(
-			run: $run,
-			flow: $flow,
-			subject: ($subject ?? new stdClass()),
-			streamId: $streamId,
-			budget: $budget
+		return $this->runner->advanceBranch(
+			pass: new FlowRunPass(run: $run, flow: $flow, subject: ($subject ?? new stdClass())),
+			advance: new FlowStreamAdvance(streamId: $streamId, budget: $budget)
 		);
 	}//end advanceStream()
 

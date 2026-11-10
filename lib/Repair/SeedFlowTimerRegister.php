@@ -32,19 +32,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\ConfigurationServiceInterface;
-use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
  * Imports the flow-timers register descriptor idempotently on upgrade/install.
  */
-class SeedFlowTimerRegister implements IRepairStep {
+class SeedFlowTimerRegister implements IRepairStep, FlowTimerRegisterPathInterface {
+
 	/**
-	 * App-relative path to the register descriptor imported by this step.
+	 * The descriptor this step imports, as a literal so the step's own code names the file.
 	 *
 	 * @var string
 	 */
@@ -71,14 +69,10 @@ class SeedFlowTimerRegister implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConfigurationServiceInterface $configurationService The OR configuration importer.
-	 * @param IAppManager $appManager Resolves the openregister app path on disk.
-	 * @param LoggerInterface $logger Logger for import diagnostics.
+	 * @param RegisterDescriptorImport $descriptors Importer, app path and log for the descriptor.
 	 */
 	public function __construct(
-		private readonly ConfigurationServiceInterface $configurationService,
-		private readonly IAppManager $appManager,
-		private readonly LoggerInterface $logger,
+		private readonly RegisterDescriptorImport $descriptors,
 	) {
 	}//end __construct()
 
@@ -104,7 +98,7 @@ class SeedFlowTimerRegister implements IRepairStep {
 	 */
 	public function run(IOutput $output): void {
 		try {
-			$path = $this->appManager->getAppPath('openregister') . self::REGISTER_PATH;
+			$path = $this->descriptors->appManager->getAppPath('openregister') . self::REGISTER_PATH;
 			if (is_file($path) === false) {
 				$output->warning('Flow-timers register descriptor not found: ' . $path);
 				return;
@@ -118,7 +112,7 @@ class SeedFlowTimerRegister implements IRepairStep {
 
 			// The importer takes the DECODED descriptor; force: false keeps
 			// the import idempotent and leaves administrator edits in place.
-			$this->configurationService->importFromApp(
+			$this->descriptors->configurationService->importFromApp(
 				appId: 'openregister',
 				data: $data,
 				version: self::REGISTER_VERSION,
@@ -127,7 +121,7 @@ class SeedFlowTimerRegister implements IRepairStep {
 
 			$output->info('Flow-timers register imported (working-calendar + escalation-ladder schemas and seeded defaults)');
 		} catch (Throwable $e) {
-			$this->logger->warning('[SeedFlowTimerRegister] import failed: ' . $e->getMessage());
+			$this->descriptors->logger->warning('[SeedFlowTimerRegister] import failed: ' . $e->getMessage());
 			$output->warning('Flow-timers register import skipped: ' . $e->getMessage());
 		}//end try
 	}//end run()

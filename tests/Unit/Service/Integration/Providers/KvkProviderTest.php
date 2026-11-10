@@ -41,7 +41,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention; mirroring XwikiProviderTest in this repo.
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
+use OCA\OpenRegister\Service\Integration\Providers\CompanySearch;
 use OCA\OpenRegister\Service\Integration\Providers\KvkProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -83,12 +85,7 @@ class KvkProviderTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 		$logger = $this->createMock(LoggerInterface::class);
 
-		$this->provider = new KvkProvider(
-			router: $this->router,
-			appManager: $this->appManager,
-			l10n: $l10n,
-			logger: $logger,
-		);
+		$this->provider = new KvkProvider(routing: new ConnectorRouting(router: $this->router, appManager: $this->appManager, l10n: $l10n), logger: $logger);
 	}//end setUp()
 
 	public function testMetadataMatchesLeafSpec(): void {
@@ -190,7 +187,7 @@ class KvkProviderTest extends TestCase {
 			)
 		);
 
-		$result = $this->provider->searchCompanies('Acme', [], 25, 1);
+		$result = $this->provider->searchCompanies(new CompanySearch('Acme', 25, 1));
 		$this->assertTrue($result['unavailable']);
 		$this->assertSame('upstream-service-down', $result['cause']);
 		$this->assertSame(25, $result['limit']);
@@ -214,7 +211,7 @@ class KvkProviderTest extends TestCase {
 			)
 			->willReturn(['resultaten' => []]);
 
-		$result = $this->provider->searchCompanies('Bakery', ['plaats' => 'Utrecht'], 500, 1);
+		$result = $this->provider->searchCompanies((new CompanySearch('Bakery', 500, 1))->narrowedBy(['plaats' => 'Utrecht']));
 		$this->assertSame(100, $result['limit']);
 	}//end testSearchClampsLimitAndPassesCriteria()
 

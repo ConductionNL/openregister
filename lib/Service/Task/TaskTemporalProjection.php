@@ -77,19 +77,24 @@ final class TaskTemporalProjection {
 	public function project(TaskInterface $task, ?DateTimeInterface $now = null): array {
 		$now ??= $this->now();
 		$deadline = ($task->getDueAt() ?? $task->getExpiresAt());
-
 		if ($deadline === null) {
-			return [
-				'overdue' => false,
-				'daysUntilDue' => null,
-				'daysOverdue' => null,
-			];
+			return self::shape(overdue: false, days: null);
 		}
 
-		$overdue = ($deadline < $now);
 		$seconds = ($deadline->getTimestamp() - $now->getTimestamp());
-		$days = intdiv(abs($seconds), 86400);
 
+		return self::shape(overdue: ($deadline < $now), days: intdiv(abs($seconds), 86400));
+	}//end project()
+
+	/**
+	 * The projection's shape: the whole days count on the side the deadline is on.
+	 *
+	 * @param bool $overdue Whether the deadline has passed.
+	 * @param int|null $days Whole days between now and the deadline; null without a deadline.
+	 *
+	 * @return array{overdue: bool, daysUntilDue: int|null, daysOverdue: int|null} The projection.
+	 */
+	private static function shape(bool $overdue, ?int $days): array {
 		if ($overdue === true) {
 			return [
 				'overdue' => true,
@@ -103,5 +108,5 @@ final class TaskTemporalProjection {
 			'daysUntilDue' => $days,
 			'daysOverdue' => null,
 		];
-	}//end project()
+	}//end shape()
 }//end class

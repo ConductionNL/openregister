@@ -29,12 +29,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service\Aggregation;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 
 /**
  * Aggregation result cache.
@@ -82,15 +82,26 @@ class AggregationCache implements AggregationCacheInterface {
 		private readonly LoggerInterface $logger,
 		private readonly OrganisationServiceInterface $organisationService,
 	) {
+		$this->cache = $this->openCache(cacheFactory: $cacheFactory);
+	}//end __construct()
+
+	/**
+	 * The distributed cache, or null when no backend is available.
+	 *
+	 * @param ICacheFactory $cacheFactory Factory used to create the distributed cache.
+	 *
+	 * @return ICache|null
+	 */
+	private function openCache(ICacheFactory $cacheFactory): ?ICache {
 		try {
-			$this->cache = $cacheFactory->createDistributed('openregister_aggregations');
+			return $cacheFactory->createDistributed('openregister_aggregations');
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				sprintf('[AggregationCache] cache backend unavailable: %s', $e->getMessage())
 			);
-			$this->cache = null;
+			return null;
 		}
-	}//end __construct()
+	}//end openCache()
 
 	/**
 	 * Look up a cached aggregation result.
@@ -98,77 +109,96 @@ class AggregationCache implements AggregationCacheInterface {
 	 * Returns the cached associative array (with the same shape
 	 * AggregationRunner emits) or null on miss.
 	 *
-	 * @param string $registerSlug Register slug component of the cache key.
-	 * @param string $schemaSlug Schema slug component of the cache key.
-	 * @param string $name Aggregation name component of the cache key.
-	 * @param array<string, mixed> $filter Resolved filter (placeholders concrete).
+	 * @param AggregationSlot $slot The register, schema, aggregation name and resolved filter (placeholders concrete).
 	 *
 	 * @return array<string, mixed>|null Cached result or null on miss.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
 	 */
-	public function get(string $registerSlug, string $schemaSlug, string $name, array $filter): ?array {
-		if ($this->cache === null) {
-			return null;
-		}
-
-		try {
-			$blob = $this->cache->get(
-				$this->key(
-					registerSlug: $registerSlug,
-					schemaSlug: $schemaSlug,
-					name: $name,
-					filter: $filter
-				)
-			);
-			if (is_string($blob) === false) {
-				return null;
-			}
-
-			$decoded = json_decode($blob, true);
-			if (is_array($decoded) === true) {
-				return $decoded;
-			}
-
-			return null;
-		} catch (\Throwable $e) {
-			return null;
-		}//end try
+	public function get(AggregationSlot $slot): ?array {
+		return $this->read(slot: $slot);
 	}//end get()
 
 	/**
 	 * Store an aggregation result.
 	 *
-	 * @param string $registerSlug Register slug component of the cache key.
-	 * @param string $schemaSlug Schema slug component of the cache key.
-	 * @param string $name Aggregation name component of the cache key.
-	 * @param array<string, mixed> $filter Resolved filter (placeholders concrete).
+	 * @param AggregationSlot      $slot   The register, schema, aggregation name and resolved filter.
 	 * @param array<string, mixed> $result Result envelope to store.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/aggregations-backend-native/spec.md
 	 */
-	public function set(string $registerSlug, string $schemaSlug, string $name, array $filter, array $result): void {
+	public function set(AggregationSlot $slot, array $result): void {
+		$this->write(slot: $slot, result: $result);
+	}//end set()
+
+	/**
+	 * The cached result in a slot, or null on a miss, an unreadable blob or a backend failure.
+	 *
+	 * @param AggregationSlot $slot The slot to read.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function read(AggregationSlot $slot): ?array {
+		if ($this->cache === null) {
+			return null;
+		}
+
+		try {
+			$blob = $this->cache->get($this->key(slot: $slot));
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		return $this->decode(blob: $blob);
+	}//end read()
+
+	/**
+	 * A cached blob as an array, or null when it is not a JSON object or list.
+	 *
+	 * @param mixed $blob The raw cache value.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function decode(mixed $blob): ?array {
+		if (is_string($blob) === false) {
+			return null;
+		}
+
+		$decoded = json_decode($blob, true);
+		if (is_array($decoded) === true) {
+			return $decoded;
+		}
+
+		return null;
+	}//end decode()
+
+	/**
+	 * Store a result in a slot for TTL seconds; a backend failure is swallowed.
+	 *
+	 * @param AggregationSlot      $slot   The slot to write.
+	 * @param array<string, mixed> $result The aggregation result.
+	 *
+	 * @return void
+	 */
+	private function write(AggregationSlot $slot, array $result): void {
 		if ($this->cache === null) {
 			return;
 		}
 
 		try {
-			$this->cache->set(
-				$this->key(
-					registerSlug: $registerSlug,
-					schemaSlug: $schemaSlug,
-					name: $name,
-					filter: $filter
-				),
-				json_encode($result),
-				self::TTL
-			);
+			$this->cache->set($this->key(slot: $slot), json_encode($result), self::TTL);
 		} catch (\Throwable $e) {
 			// Don't escalate: a cache write failure shouldn't break the response.
+			$this->logger->debug(
+				message: '[AggregationCache] Cache write failed',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
-	}//end set()
+	}//end write()
 
 	/**
 	 * Look up a cached ad-hoc aggregation result.
@@ -186,13 +216,8 @@ class AggregationCache implements AggregationCacheInterface {
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
 	 */
 	public function getAdhoc(string $registerSlug, string $schemaSlug, AggregationQuery $query): ?array {
-		return $this->get(
-			registerSlug: $registerSlug,
-			schemaSlug: $schemaSlug,
-			name: $this->adhocName(query: $query),
-			filter: $query->filter
-		);
-
+		$table = new RegisterSchemaRef(register: $registerSlug, schema: $schemaSlug);
+		return $this->read(slot: AggregationSlot::fromAdhocQuery(table: $table, query: $query));
 	}//end getAdhoc()
 
 	/**
@@ -212,36 +237,9 @@ class AggregationCache implements AggregationCacheInterface {
 	 * @spec openspec/specs/aggregations-backend-native/spec.md
 	 */
 	public function setAdhoc(string $registerSlug, string $schemaSlug, AggregationQuery $query, array $result): void {
-		$this->set(
-			registerSlug: $registerSlug,
-			schemaSlug: $schemaSlug,
-			name: $this->adhocName(query: $query),
-			filter: $query->filter,
-			result: $result
-		);
-
+		$table = new RegisterSchemaRef(register: $registerSlug, schema: $schemaSlug);
+		$this->write(slot: AggregationSlot::fromAdhocQuery(table: $table, query: $query), result: $result);
 	}//end setAdhoc()
-
-	/**
-	 * Derive the cache name slot for an ad-hoc query.
-	 *
-	 * Computes `'adhoc:'.sha1(json_encode($query->toArray()))`. The
-	 * `AggregationQuery::toArray()` output is ksort-stable so two
-	 * structurally-equivalent queries produce identical hashes.
-	 *
-	 * @param AggregationQuery $query The ad-hoc query value object.
-	 *
-	 * @return string The cache name slot, prefixed with `adhoc:`.
-	 */
-	private function adhocName(AggregationQuery $query): string {
-		$encoded = json_encode($query->toArray());
-		$encodedStr = '';
-		if ($encoded !== false) {
-			$encodedStr = $encoded;
-		}
-
-		return 'adhoc:' . sha1($encodedStr);
-	}//end adhocName()
 
 	/**
 	 * Evict every cached aggregation for a (register, schema). Called by
@@ -291,16 +289,14 @@ class AggregationCache implements AggregationCacheInterface {
 	 *   - identical filters from the same scope hit the same key
 	 *   - different filters or different scopes are independent entries
 	 *
-	 * @param string $registerSlug Register slug component.
-	 * @param string $schemaSlug Schema slug component.
-	 * @param string $name Aggregation name.
-	 * @param array<string, mixed> $filter Resolved filter map.
+	 * @param AggregationSlot $slot Register, schema, aggregation name and resolved filter.
 	 *
 	 * @return string The cache key string.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
 	 */
-	private function key(string $registerSlug, string $schemaSlug, string $name, array $filter): string {
+	private function key(AggregationSlot $slot): string {
+		$filter = $slot->filter;
 		ksort($filter);
 		$filterEncoded = json_encode($filter);
 		$filterStr = '';
@@ -308,23 +304,20 @@ class AggregationCache implements AggregationCacheInterface {
 			$filterStr = $filterEncoded;
 		}
 
-		$filterHash = sha1($filterStr);
-		$rbacHash = $this->rbacScopeHash();
-
 		// Fold the per-(register, schema) version into the key so eviction can be
 		// scoped by bumping that version (scope-cache-invalidation) rather than
 		// wiping the whole aggregation cache: after a bump, every key for the
 		// schema carries the new version and old entries become unreachable.
-		$version = $this->schemaVersion(registerSlug: $registerSlug, schemaSlug: $schemaSlug);
+		$version = $this->schemaVersion(registerSlug: $slot->registerSlug, schemaSlug: $slot->schemaSlug);
 
 		return sprintf(
 			'agg:%s:%s:v%d:%s:%s:%s',
-			$registerSlug,
-			$schemaSlug,
+			$slot->registerSlug,
+			$slot->schemaSlug,
 			$version,
-			$name,
-			$filterHash,
-			$rbacHash
+			$slot->name,
+			sha1($filterStr),
+			$this->rbacScopeHash()
 		);
 	}//end key()
 

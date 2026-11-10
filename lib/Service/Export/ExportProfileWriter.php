@@ -37,7 +37,7 @@ use OCA\OpenRegister\Db\ExportProfile;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Formats\UuidFormat;
-use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 use Throwable;
 
 /**
@@ -53,24 +53,17 @@ use Throwable;
  *
  * @spec openspec/specs/data-import-export/spec.md
  */
-class ExportProfileWriter {
-	/**
-	 * The prefix of the CSV metadata line.
-	 *
-	 * @var string
-	 */
-	public const CSV_METADATA_PREFIX = '#openregister-export ';
-
+class ExportProfileWriter implements ExportProfileWriterInterface {
 	/**
 	 * Wire the name resolver and the value renderer.
 	 *
-	 * @param CacheHandlerInterface        $cacheHandler Uuid to name resolution for rendered relations.
+	 * @param ObjectNameCacheInterface        $cacheHandler Uuid to name resolution for rendered relations.
 	 * @param ExportValueRenderer $renderer     What a single cell says, in the profile's mode.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly CacheHandlerInterface $cacheHandler,
+		private readonly ObjectNameCacheInterface $cacheHandler,
 		private readonly ExportValueRenderer $renderer,
 	) {
 	}//end __construct()
@@ -78,42 +71,53 @@ class ExportProfileWriter {
 	/**
 	 * Write the objects the profile declares, in the order it declares them.
 	 *
-	 * @param ExportProfile  $profile The profile.
-	 * @param ObjectEntity[] $objects The objects to write.
-	 * @param Schema|null    $schema  The schema, when it resolves, for enum labels and relation hints.
+	 * @param ProfileProjection $projection The profile and the schema, when it resolves, for enum labels and relation hints.
+	 * @param ObjectEntity[]    $objects    The objects to write.
 	 *
 	 * @return array{bytes: string, rowCount: int, metadata: array<string, mixed>} The file and what it is.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function write(ExportProfile $profile, array $objects, ?Schema $schema = null): array {
-		$fields = $profile->getFieldsArray();
-		$rows = $this->rows(profile: $profile, objects: $objects, fields: $fields, schema: $schema);
+	public function write(ProfileProjection $projection, array $objects): array {
+		return $this->writeProjection(run: new ProjectionRun(profile: $projection->profile, schema: $projection->schema), objects: $objects);
+	}//end write()
+
+	/**
+	 * Write one projection as the file its profile asks for.
+	 *
+	 * @param ProjectionRun  $run     The profile, its schema and its field set.
+	 * @param ObjectEntity[] $objects The objects to write.
+	 *
+	 * @return array{bytes: string, rowCount: int, metadata: array<string, mixed>} The file and what it is.
+	 */
+	private function writeProjection(ProjectionRun $run, array $objects): array {
+		$profile = $run->profile;
+		$rows = $this->rows(run: $run, objects: $objects);
 
 		$metadata = [
 			'profile' => ($profile->getName() ?? ''),
 			'profileUuid' => ($profile->getUuid() ?? ''),
 			'valueMode' => ($profile->getValueMode() ?? ExportProfile::MODE_STORED),
 			'format' => ($profile->getFormat() ?? 'csv'),
-			'fields' => $fields,
+			'fields' => $run->fields,
 			'rowCount' => count($rows),
 			'generatedAt' => (new DateTimeImmutable())->format(DATE_ATOM),
 		];
 
 		if (($profile->getFormat() ?? 'csv') === 'json') {
 			return [
-				'bytes' => $this->toJson(metadata: $metadata, rows: $rows, fields: $fields),
+				'bytes' => $this->toJson(metadata: $metadata, rows: $rows),
 				'rowCount' => count($rows),
 				'metadata' => $metadata,
 			];
 		}
 
 		return [
-			'bytes' => $this->toCsv(metadata: $metadata, rows: $rows, fields: $fields),
+			'bytes' => $this->toCsv(metadata: $metadata, rows: $rows),
 			'rowCount' => count($rows),
 			'metadata' => $metadata,
 		];
-	}//end write()
+	}//end writeProjection()
 
 	/**
 	 * One CSV data line for a single object, with no header and no metadata.
@@ -122,22 +126,21 @@ class ExportProfileWriter {
 	 * already open, so it needs the row without the envelope the request path
 	 * builds around it.
 	 *
-	 * @param ExportProfile $profile The profile.
-	 * @param ObjectEntity  $object  The object.
-	 * @param Schema|null   $schema  The schema, when it resolves.
+	 * @param ProfileProjection $projection The profile and the schema, when it resolves.
+	 * @param ObjectEntity      $object     The object.
 	 *
 	 * @return string The CSV line, newline terminated.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function csvLineFor(ExportProfile $profile, ObjectEntity $object, ?Schema $schema = null): string {
-		$fields = $profile->getFieldsArray();
-		$rows = $this->rows(profile: $profile, objects: [$object], fields: $fields, schema: $schema);
+	public function csvLineFor(ProfileProjection $projection, ObjectEntity $object): string {
+		$run = new ProjectionRun(profile: $projection->profile, schema: $projection->schema);
+		$rows = $this->rows(run: $run, objects: [$object]);
 		if ($rows === []) {
 			return '';
 		}
 
-		return $this->csvRow(row: $rows[0], fields: $fields) . "\n";
+		return $this->csvRow(row: $rows[0], fields: $run->fields) . "\n";
 	}//end csvLineFor()
 
 	/**
@@ -166,24 +169,13 @@ class ExportProfileWriter {
 	/**
 	 * Project every object onto the field set.
 	 *
-	 * @param ExportProfile  $profile The profile.
+	 * @param ProjectionRun  $run     The profile, its schema and its field set.
 	 * @param ObjectEntity[] $objects The objects.
-	 * @param array<int, string> $fields The ordered field set.
-	 * @param Schema|null    $schema  The schema, when it resolves.
 	 *
 	 * @return array<int, array<string, mixed>> One map per object, keyed by field.
 	 */
-	private function rows(ExportProfile $profile, array $objects, array $fields, ?Schema $schema): array {
-		$rendered = (($profile->getValueMode() ?? ExportProfile::MODE_STORED) === ExportProfile::MODE_RENDERED);
-		$names = [];
-		if ($rendered === true) {
-			$names = $this->nameMap(objects: $objects, fields: $fields);
-		}
-
-		$properties = [];
-		if ($schema !== null) {
-			$properties = $schema->getProperties();
-		}
+	private function rows(ProjectionRun $run, array $objects): array {
+		$columns = $this->columnsFor(run: $run, objects: $objects);
 
 		$rows = [];
 		foreach ($objects as $object) {
@@ -191,26 +183,58 @@ class ExportProfileWriter {
 				continue;
 			}
 
-			$row = [];
-			foreach ($fields as $field) {
-				$raw = $this->rawValue(object: $object, field: $field);
-				if ($rendered === false) {
-					$row[$field] = $this->renderer->stored(value: $raw);
-					continue;
-				}
-
-				$row[$field] = $this->renderer->rendered(
-					value: $raw,
-					property: ($properties[$field] ?? []),
-					names: $names
-				);
-			}
-
-			$rows[] = $row;
-		}//end foreach
+			$rows[] = $this->rowFor(object: $object, columns: $columns);
+		}
 
 		return $rows;
 	}//end rows()
+
+	/**
+	 * How each field renders: null for every field in the stored mode.
+	 *
+	 * @param ProjectionRun  $run     The profile, its schema and its field set.
+	 * @param ObjectEntity[] $objects The objects, whose relations are named in the rendered mode.
+	 *
+	 * @return array<string, ColumnRendering|null> Per field, in the profile's order.
+	 */
+	private function columnsFor(ProjectionRun $run, array $objects): array {
+		if ($run->rendered() === false) {
+			return array_fill_keys($run->fields, null);
+		}
+
+		$names = $this->nameMap(objects: $objects, fields: $run->fields);
+		$properties = ($run->schema?->getProperties() ?? []);
+
+		$columns = [];
+		foreach ($run->fields as $field) {
+			$columns[$field] = new ColumnRendering(property: ($properties[$field] ?? []), names: $names);
+		}
+
+		return $columns;
+	}//end columnsFor()
+
+	/**
+	 * One object projected onto the columns.
+	 *
+	 * @param ObjectEntity                        $object  The object.
+	 * @param array<string, ColumnRendering|null> $columns How each field renders; null writes it stored.
+	 *
+	 * @return array<string, mixed> The row, keyed by field.
+	 */
+	private function rowFor(ObjectEntity $object, array $columns): array {
+		$row = [];
+		foreach ($columns as $field => $column) {
+			$raw = $this->rawValue(object: $object, field: (string)$field);
+			if ($column === null) {
+				$row[$field] = $this->renderer->stored(value: $raw);
+				continue;
+			}
+
+			$row[$field] = $this->renderer->rendered(value: $raw, column: $column);
+		}
+
+		return $row;
+	}//end rowFor()
 
 	/**
 	 * The value the object holds for one declared field.
@@ -311,17 +335,16 @@ class ExportProfileWriter {
 	/**
 	 * The file as JSON, with the metadata in the envelope.
 	 *
-	 * @param array<string, mixed> $metadata The metadata.
-	 * @param array<int, array<string, mixed>> $rows The projected rows.
-	 * @param array<int, string> $fields The ordered field set.
+	 * @param array<string, mixed>             $metadata The metadata, whose `fields` is the ordered field set.
+	 * @param array<int, array<string, mixed>> $rows     The projected rows.
 	 *
 	 * @return string The bytes.
 	 */
-	private function toJson(array $metadata, array $rows, array $fields): string {
+	private function toJson(array $metadata, array $rows): string {
 		$ordered = [];
 		foreach ($rows as $row) {
 			$entry = [];
-			foreach ($fields as $field) {
+			foreach ($metadata['fields'] as $field) {
 				$entry[$field] = ($row[$field] ?? '');
 			}
 
@@ -337,20 +360,19 @@ class ExportProfileWriter {
 	/**
 	 * The file as CSV, with the metadata on its first line.
 	 *
-	 * @param array<string, mixed> $metadata The metadata.
-	 * @param array<int, array<string, mixed>> $rows The projected rows.
-	 * @param array<int, string> $fields The ordered field set.
+	 * @param array<string, mixed>             $metadata The metadata, whose `fields` is the ordered field set.
+	 * @param array<int, array<string, mixed>> $rows     The projected rows.
 	 *
 	 * @return string The bytes.
 	 */
-	private function toCsv(array $metadata, array $rows, array $fields): string {
+	private function toCsv(array $metadata, array $rows): string {
 		$lines = [
 			$this->metadataLine(metadata: $metadata),
-			implode(',', array_map([$this, 'csvCell'], $fields)),
+			implode(',', array_map([$this, 'csvCell'], $metadata['fields'])),
 		];
 
 		foreach ($rows as $row) {
-			$lines[] = $this->csvRow(row: $row, fields: $fields);
+			$lines[] = $this->csvRow(row: $row, fields: $metadata['fields']);
 		}
 
 		return implode("\n", $lines) . "\n";

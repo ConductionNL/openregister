@@ -35,7 +35,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\Task;
-use OCA\OpenRegister\Service\Task\TaskProjectionService;
+use OCA\OpenRegister\Service\Task\TaskProjectionServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\Notification\IManager as INotificationManager;
@@ -55,12 +55,12 @@ class TaskTerminalProjectionListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param INotificationManager $notifications Withdrawal only, never delivery.
-	 * @param TaskProjectionService $projections Failure-isolated re-render.
+	 * @param TaskProjectionServiceInterface $projections Failure-isolated re-render.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
 		private readonly INotificationManager $notifications,
-		private readonly TaskProjectionService $projections,
+		private readonly TaskProjectionServiceInterface $projections,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -81,6 +81,20 @@ class TaskTerminalProjectionListener implements IEventListener {
 			return;
 		}
 
+		$this->withdrawNotifications(task: $task);
+		$this->projections->reconcileTask(task: $task);
+	}//end handle()
+
+	/**
+	 * Withdraw every notification about the task; a failure is logged, never thrown.
+	 *
+	 * @param Task $task The terminal task.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-notification-for-an-answered-task-is-withdrawn
+	 */
+	private function withdrawNotifications(Task $task): void {
 		try {
 			$notification = $this->notifications->createNotification();
 			$notification->setApp('openregister')->setObject('object', (string)$task->getUuid());
@@ -91,9 +105,7 @@ class TaskTerminalProjectionListener implements IEventListener {
 				['task' => $task->getUuid()]
 			);
 		}
-
-		$this->projections->reconcileTask(task: $task);
-	}//end handle()
+	}//end withdrawNotifications()
 
 	/**
 	 * The terminal task an event carries, or null when it carries none.
@@ -110,10 +122,23 @@ class TaskTerminalProjectionListener implements IEventListener {
 		}
 
 		$task = $event->getTask();
-		if (($task instanceof Task) === false || $task->isInTerminalState() === false || trim((string)$task->getUuid()) === '') {
+		if ($this->isTerminalTask(task: $task) === false) {
 			return null;
 		}
 
 		return $task;
 	}//end terminalTaskOf()
+
+	/**
+	 * Whether the value is a terminal task with a uuid.
+	 *
+	 * @param mixed $task What the event carries as its task.
+	 *
+	 * @return bool True for a terminal task with a uuid.
+	 *
+	 * @phpstan-assert-if-true Task $task
+	 */
+	private function isTerminalTask(mixed $task): bool {
+		return ($task instanceof Task) === true && $task->isInTerminalState() === true && trim((string)$task->getUuid()) !== '';
+	}//end isTerminalTask()
 }//end class

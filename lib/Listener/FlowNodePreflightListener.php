@@ -35,9 +35,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
-use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
+use OCA\OpenRegister\Service\Flow\FlowNodePreflightInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -53,11 +54,11 @@ class FlowNodePreflightListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowNodePreflight $preflight Resolves step types against the registry.
+	 * @param FlowNodePreflightInterface $preflight Resolves step types against the registry.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
-		private readonly FlowNodePreflight $preflight,
+		private readonly FlowNodePreflightInterface $preflight,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -74,45 +75,83 @@ class FlowNodePreflightListener implements IEventListener {
 	 */
 	public function handle(Event $event): void {
 		if ($event instanceof ObjectCreatingEvent) {
-			$object = $event->getObject();
-		} elseif ($event instanceof ObjectUpdatingEvent) {
-			$object = $event->getNewObject();
-		} else {
-			return;
+			$this->check(event: $event, object: $event->getObject());
 		}
 
+		if ($event instanceof ObjectUpdatingEvent) {
+			$this->check(event: $event, object: $event->getNewObject());
+		}
+
+	}//end handle()
+
+	/**
+	 * Run the preflight on the object being saved, refusing the save on failure.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event  The save event.
+	 * @param ObjectEntity                            $object The object being saved.
+	 *
+	 * @return void
+	 */
+	private function check(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $object): void {
 		$data = $object->getObject();
-		if (is_array($data) === false || $data === []) {
-			return;
-		}
-
-		if ($this->preflight->looksLikeFlow(data: $data) === false) {
+		if ($data === [] || $this->preflight->looksLikeFlow(data: $data) === false) {
 			return;
 		}
 
 		try {
-			$this->preflight->assertRunnable(
-				flow: $data,
-				label: (string)($data['name'] ?? $object->getUuid() ?? 'flow')
-			);
+			$this->preflight->assertRunnable(flow: $data, label: $this->label(data: $data, object: $object));
 		} catch (UnexpectedValueException $e) {
-			$event->setErrors(
-				[
-					'code' => 'flow-node-type-unavailable',
-					'message' => $e->getMessage(),
-				]
-			);
-			$event->stopPropagation();
+			$this->refuse(event: $event, reason: $e);
 		} catch (Throwable $e) {
-			// Preflight is a guard, not a gate on unrelated saves. If it fails
-			// for a reason of its own the save proceeds — the run-time refusal
-			// in FlowNodeRegistry::get() is still there as the backstop, which
-			// is exactly the situation before this listener existed.
-			$this->logger->warning(
-				message: '[FlowNodePreflightListener] Preflight itself failed, allowing the save: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => get_class($e)]
-			);
-		}//end try
+			$this->allowAfterOwnFailure(error: $e);
+		}
 
-	}//end handle()
+	}//end check()
+
+	/**
+	 * Refuse the save with the reason the preflight gave.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event  The save event.
+	 * @param UnexpectedValueException                $reason The preflight refusal.
+	 *
+	 * @return void
+	 */
+	private function refuse(ObjectCreatingEvent|ObjectUpdatingEvent $event, UnexpectedValueException $reason): void {
+		$event->setErrors(['code' => 'flow-node-type-unavailable', 'message' => $reason->getMessage()]);
+		$event->stopPropagation();
+
+	}//end refuse()
+
+	/**
+	 * The label a refusal names the flow by.
+	 *
+	 * @param array        $data   The flow document.
+	 * @param ObjectEntity $object The object being saved.
+	 *
+	 * @return string
+	 */
+	private function label(array $data, ObjectEntity $object): string {
+		return (string) ($data['name'] ?? $object->getUuid() ?? 'flow');
+
+	}//end label()
+
+	/**
+	 * Log a failure of the preflight itself; the save proceeds.
+	 *
+	 * Preflight is a guard, not a gate on unrelated saves. If it fails for a
+	 * reason of its own the save proceeds — the run-time refusal in
+	 * FlowNodeRegistry::get() is still there as the backstop, which is exactly
+	 * the situation before this listener existed.
+	 *
+	 * @param Throwable $error The failure.
+	 *
+	 * @return void
+	 */
+	private function allowAfterOwnFailure(Throwable $error): void {
+		$this->logger->warning(
+			message: '[FlowNodePreflightListener] Preflight itself failed, allowing the save: ' . $error->getMessage(),
+			context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => get_class($error)]
+		);
+
+	}//end allowAfterOwnFailure()
 }//end class

@@ -19,12 +19,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\UnlockRequest;
+use OCA\OpenRegister\Service\Object\LockRunStep;
+use OCA\OpenRegister\Service\Object\LockRequest;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Service\Object\AdvisoryLockStore;
+use OCA\OpenRegister\Service\Object\LockAuthorization;
 use OCA\OpenRegister\Service\Object\LockHandler;
+use OCA\OpenRegister\Service\Object\LockStores;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -68,17 +73,17 @@ class LockHandlerAdvisoryTest extends TestCase {
 		$this->appConfig = $this->createMock(IAppConfig::class);
 
 		$this->handler = new LockHandler(
-			$this->magicMapper,
-			$this->auditTrailMapper,
+			new LockStores(
+				magicMapper: $this->magicMapper,
+				auditTrailMapper: $this->auditTrailMapper,
+				// A REAL AdvisoryLockStore over the mocked app-config, so these
+				// tests keep exercising the advisory behaviour end to end through
+				// LockHandler rather than asserting against a mock of the very
+				// thing they exist to check.
+				advisory: new AdvisoryLockStore($this->appConfig, $this->userSession, $this->logger)
+			),
 			$this->logger,
-			$this->userSession,
-			$this->groupManager,
-			$this->schemaMapper,
-			// A REAL AdvisoryLockStore over the mocked app-config, so these
-			// tests keep exercising the advisory behaviour end to end through
-			// LockHandler rather than asserting against a mock of the very
-			// thing they exist to check.
-			new AdvisoryLockStore($this->appConfig, $this->userSession, $this->logger)
+			new LockAuthorization($this->userSession, $this->groupManager, $this->schemaMapper)
 		);
 	}//end setUp()
 
@@ -121,7 +126,9 @@ class LockHandlerAdvisoryTest extends TestCase {
 				)
 			);
 
-		$result = $this->handler->lock($identifier);
+		$result = $this->handler->lock(
+			request: new LockRequest(identifier: $identifier, process: null, duration: null, runStep: new LockRunStep(runUuid: null, nodeId: null))
+		);
 
 		$this->assertSame($identifier, $result['uuid']);
 		$this->assertTrue($result['locked']['advisory']);
@@ -149,7 +156,9 @@ class LockHandlerAdvisoryTest extends TestCase {
 		$this->appConfig->expects($this->never())->method('setValueString');
 
 		$this->expectException(LockedException::class);
-		$this->handler->lock($identifier);
+		$this->handler->lock(
+			request: new LockRequest(identifier: $identifier, process: null, duration: null, runStep: new LockRunStep(runUuid: null, nodeId: null))
+		);
 	}//end testLockOnUnresolvableIdRespectsStillValidAdvisoryLock()
 
 	public function testLockOnUnresolvableIdOverwritesExpiredAdvisoryLock(): void {
@@ -171,7 +180,9 @@ class LockHandlerAdvisoryTest extends TestCase {
 
 		$this->appConfig->expects($this->once())->method('setValueString');
 
-		$result = $this->handler->lock($identifier);
+		$result = $this->handler->lock(
+			request: new LockRequest(identifier: $identifier, process: null, duration: null, runStep: new LockRunStep(runUuid: null, nodeId: null))
+		);
 		$this->assertSame($identifier, $result['uuid']);
 		$this->assertTrue($result['locked']['advisory']);
 	}//end testLockOnUnresolvableIdOverwritesExpiredAdvisoryLock()
@@ -201,7 +212,7 @@ class LockHandlerAdvisoryTest extends TestCase {
 			->method('deleteKey')
 			->with('openregister', $this->advisoryKey($identifier));
 
-		$this->assertTrue($this->handler->unlock($identifier));
+		$this->assertTrue($this->handler->unlock(request: new UnlockRequest(identifier: $identifier, advisory: false, runUuid: null, break: false)));
 	}//end testUnlockOnUnresolvableIdReleasesAdvisoryLock()
 
 	public function testUnlockOnUnresolvableIdIsNoOpWhenNoAdvisoryLockHeld(): void {
@@ -218,6 +229,6 @@ class LockHandlerAdvisoryTest extends TestCase {
 
 		$this->appConfig->expects($this->never())->method('deleteKey');
 
-		$this->assertTrue($this->handler->unlock($identifier));
+		$this->assertTrue($this->handler->unlock(request: new UnlockRequest(identifier: $identifier, advisory: false, runUuid: null, break: false)));
 	}//end testUnlockOnUnresolvableIdIsNoOpWhenNoAdvisoryLockHeld()
 }//end class

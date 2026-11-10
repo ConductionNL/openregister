@@ -25,6 +25,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Controller\ArchivalController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -32,6 +33,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchivalNominationService;
 use OCA\OpenRegister\Service\Archival\DestructionListCreator;
+use OCA\OpenRegister\Service\Archival\ArchivalRegisterMappers;
 use OCA\OpenRegister\Service\Archival\DestructionListRepository;
 use OCA\OpenRegister\Service\Archival\DestructionReviewService;
 use OCA\OpenRegister\Service\Archival\DestructionService;
@@ -47,6 +49,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 
 class ArchivalCertificatesTest extends TestCase {
 
@@ -75,7 +78,7 @@ class ArchivalCertificatesTest extends TestCase {
 
 		$objectMapper = $this->getMockBuilder(MagicMapper::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['find', 'findAll', 'update'])
+			->onlyMethods(['find', 'findAllListed', 'update'])
 			->getMock();
 		$objectMapper->method('find')->willReturnCallback(
 			function (string|int $identifier): ObjectEntity {
@@ -86,8 +89,9 @@ class ArchivalCertificatesTest extends TestCase {
 				return $this->objects[(string)$identifier];
 			}
 		);
-		$objectMapper->method('findAll')->willReturnCallback(
-			function (?int $limit = null, ?int $offset = null, ?array $filters = null): array {
+		$objectMapper->method('findAllListed')->willReturnCallback(
+			function (MagicListRequest $request): array {
+				$filters = $request->query->filters;
 				$statuses = ($filters['status'] ?? null);
 				return array_values(
 					array_filter(
@@ -107,9 +111,7 @@ class ArchivalCertificatesTest extends TestCase {
 		$schemaMapper->method('find')->willReturn(new Schema());
 
 		$repository = new DestructionListRepository(
-			$objectMapper,
-			$registerMapper,
-			$schemaMapper,
+			new ArchivalRegisterMappers(new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $objectMapper)),
 			$settings,
 			$this->createMock(LoggerInterface::class)
 		);

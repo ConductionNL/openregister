@@ -30,7 +30,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
-use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
 
 /**
  * Warns when a nominated property's value is already held elsewhere.
@@ -60,7 +59,7 @@ class UniqueHintChecker {
 	 * Wire collaborators.
 	 *
 	 * @param ObjectOperationsInterface $objectService Object query path (RBAC + tenant scoped).
-	 * @param UniqueHintAnnotationValidator $annotation Reader for the nominations.
+	 * @param UniqueHintAnnotationValidatorInterface $annotation Reader for the nominations.
 	 * @param UniqueHintWarnings $warnings Per-request collector the controller drains.
 	 * @param LoggerInterface $logger PSR logger.
 	 *
@@ -68,7 +67,7 @@ class UniqueHintChecker {
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objectService,
-		private readonly UniqueHintAnnotationValidator $annotation,
+		private readonly UniqueHintAnnotationValidatorInterface $annotation,
 		private readonly UniqueHintWarnings $warnings,
 		private readonly LoggerInterface $logger,
 	) {
@@ -82,8 +81,7 @@ class UniqueHintChecker {
 	 * not reported as a collision with yourself.
 	 *
 	 * @param array<string, mixed> $configuration The schema's configuration block.
-	 * @param int|string $register Register reference.
-	 * @param int|string $schema Schema reference.
+	 * @param UniqueHintScope $scope The register and schema references the write goes to.
 	 * @param array<string, mixed> $data The incoming payload.
 	 * @param string|null $selfUuid Uuid of the object being written, on an update.
 	 *
@@ -91,62 +89,53 @@ class UniqueHintChecker {
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
-	public function check(array $configuration, $register, $schema, array $data, ?string $selfUuid = null): void {
-		$nominated = $this->annotation->nominated(configuration: $configuration);
-		if (count($nominated) === 0) {
-			return;
-		}
-
-		foreach ($nominated as $property) {
-			$value = ($data[$property] ?? null);
-			if (is_scalar($value) === false || (string)$value === '') {
-				continue;
-			}
-
-			$this->checkOne(
-				property: $property,
-				value: $value,
-				register: $register,
-				schema: $schema,
-				selfUuid: $selfUuid
-			);
+	public function check(array $configuration, UniqueHintScope $scope, array $data, ?string $selfUuid = null): void {
+		$candidate = new UniqueHintCandidate(scope: $scope, data: $data, selfUuid: $selfUuid);
+		foreach ($this->annotation->nominated(configuration: $configuration) as $property) {
+			$this->checkProperty(candidate: $candidate, property: $property);
 		}
 	}//end check()
 
 	/**
+	 * Check one nominated property of the incoming write; an absent, empty or
+	 * non-scalar value is not checked.
+	 *
+	 * @param UniqueHintCandidate $candidate The scope, the incoming payload and the object's own uuid.
+	 * @param string              $property  The nominated property.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 */
+	private function checkProperty(UniqueHintCandidate $candidate, string $property): void {
+		$value = ($candidate->data[$property] ?? null);
+		if (is_scalar($value) === false || (string)$value === '') {
+			return;
+		}
+
+		$this->checkOne(lookup: $candidate->scope->lookup(property: $property, value: $value), selfUuid: $candidate->selfUuid);
+	}//end checkProperty()
+
+	/**
 	 * Check one nominated property.
 	 *
-	 * @param string $property The nominated property.
-	 * @param scalar $value The incoming value.
-	 * @param int|string $register Register reference.
-	 * @param int|string $schema Schema reference.
+	 * @param UniqueHintLookup $lookup The nominated property, its incoming value, and the register and schema.
 	 * @param string|null $selfUuid Uuid to exclude, on an update.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
-	private function checkOne(string $property, $value, $register, $schema, ?string $selfUuid): void {
-		$visible = $this->holdersOf(
-			property: $property,
-			value: $value,
-			register: $register,
-			schema: $schema,
-			scoped: true
-		);
-		$all = $this->holdersOf(
-			property: $property,
-			value: $value,
-			register: $register,
-			schema: $schema,
-			scoped: false
-		);
+	private function checkOne(UniqueHintLookup $lookup, ?string $selfUuid): void {
+		$property = $lookup->property;
+		$visible = $this->holdersOf(lookup: $lookup, scoped: true);
+		$all = $this->holdersOf(lookup: $lookup, scoped: false);
 
 		$visibleUuids = $this->uuidsExcludingSelf(holders: $visible, selfUuid: $selfUuid);
 		$allUuids = $this->uuidsExcludingSelf(holders: $all, selfUuid: $selfUuid);
 
 		if (count($visibleUuids) > 0) {
-			$this->warnings->record(property: $property, matches: $visibleUuids, visible: true);
+			$this->warnings->recordVisible(property: $property, matches: $visibleUuids);
 			return;
 		}
 
@@ -161,7 +150,7 @@ class UniqueHintChecker {
 		// says "somewhere in this schema, one exists", which is exactly what a
 		// database unique constraint would have leaked anyway, and nothing
 		// about whose it is or what else it holds.
-		$this->warnings->record(property: $property, matches: [], visible: false);
+		$this->warnings->recordHidden(property: $property);
 	}//end checkOne()
 
 	/**
@@ -201,10 +190,7 @@ class UniqueHintChecker {
 	 * cannot become a way to ask whether a BSN exists in a register you have
 	 * no access to.
 	 *
-	 * @param string $property The nominated property.
-	 * @param scalar $value The incoming value.
-	 * @param int|string $register Register reference.
-	 * @param int|string $schema Schema reference.
+	 * @param UniqueHintLookup $lookup The nominated property, its incoming value, and the register and schema.
 	 * @param bool $scoped Whether to apply RBAC and tenancy; false counts holders the caller may not read.
 	 *
 	 * @return array<int, ObjectEntity> The holders.
@@ -217,14 +203,14 @@ class UniqueHintChecker {
 	 *   from "somebody you may not see holds this", and two methods would be
 	 *   two copies of one filter drifting apart.
 	 */
-	private function holdersOf(string $property, $value, $register, $schema, bool $scoped = true): array {
+	private function holdersOf(UniqueHintLookup $lookup, bool $scoped = true): array {
 		try {
 			$objects = $this->objectService->findAll(
 				[
 					'filters' => [
-						'register' => $register,
-						'schema' => $schema,
-						$property => $value,
+						'register' => $lookup->register,
+						'schema' => $lookup->schema,
+						$lookup->property => $lookup->value,
 					],
 					'limit' => self::MAX_CANDIDATES,
 				],

@@ -42,11 +42,13 @@ use LLPhant\Chat\OpenAIChat;
 use LLPhant\Exception\MissingFeatureException;
 use LLPhant\OllamaConfig;
 use LLPhant\OpenAIConfig;
+use OCA\OpenRegister\Kernel\Contracts\ChatStreamChannelInterface;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Mcp\Tool\StreamingToolInstanceWrapper;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
 
 /**
  * ResponseGenerationHandler
@@ -72,27 +74,6 @@ use ReflectionClass;
 class ResponseGenerationHandler {
 
 	/**
-	 * Settings service
-	 *
-	 * @var SettingsServiceInterface
-	 */
-	private SettingsServiceInterface $settingsService;
-
-	/**
-	 * Tool management handler
-	 *
-	 * @var ToolManagementHandler
-	 */
-	private ToolManagementHandler $toolHandler;
-
-	/**
-	 * Logger
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
-
-	/**
 	 * Token/latency usage from the last generateResponse() call, for per-run cost recording
 	 * (run-analytics). Populated from the LLPhant chat instance; empty when the provider
 	 * does not expose usage. Keys: promptTokens, completionTokens, totalDurationMs, llmSeconds.
@@ -113,13 +94,10 @@ class ResponseGenerationHandler {
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function __construct(
-		SettingsServiceInterface $settingsService,
-		ToolManagementHandler $toolHandler,
-		LoggerInterface $logger,
+		private readonly SettingsServiceInterface $settingsService,
+		private readonly ToolManagementHandler $toolHandler,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->settingsService = $settingsService;
-		$this->toolHandler = $toolHandler;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -139,38 +117,52 @@ class ResponseGenerationHandler {
 	 * blocking call so providers that advertise streaming but fail at
 	 * runtime degrade gracefully (contract's non-streaming-provider clause).
 	 *
-	 * @param string $userMessage User's message text.
-	 * @param array $context RAG context with 'text' and 'sources' keys.
-	 * @param array $messageHistory Array of LLPhantMessage objects.
-	 * @param Agent|null $agent Agent configuration (optional).
-	 * @param array $selectedTools Tools selected for this request (optional).
-	 * @param StreamYieldChannel|null $channel Streaming channel; when supplied the handler
-	 *                                         attempts the LLPhant streaming surface and
-	 *                                         forwards token / tool-call / tool-result
-	 *                                         events to the channel. When null the handler
-	 *                                         runs in legacy blocking mode (load-bearing
-	 *                                         for `POST /api/chat/send`).
-	 * @param array $cnAiContext Optional Conduction AI context overrides
-	 *                           (provider/model hints, defaults to empty array).
+	 * @param ChatMessageRequest $request        The turn: the user's message, the selected tools,
+	 *                                           the streaming channel (when supplied the handler
+	 *                                           attempts the LLPhant streaming surface and forwards
+	 *                                           token / tool-call / tool-result events to it; when
+	 *                                           null it runs in legacy blocking mode, load-bearing
+	 *                                           for `POST /api/chat/send`) and the Conduction AI
+	 *                                           context overrides (provider/model hints).
+	 * @param ReplyGrounding     $grounding      The RAG context, the earlier messages (LLPhantMessage
+	 *                                           objects) and the agent configuration.
 	 *
 	 * @return string Generated response text
 	 *
 	 * @throws \Exception If LLM provider is not configured or API call fails
 	 *
-	 * @psalm-param  array{text: string, sources: list<array>} $context
 	 * @psalm-return string
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
-	public function generateResponse(
-		string $userMessage,
-		array $context,
-		array $messageHistory,
-		?Agent $agent,
-		array $selectedTools = [],
-		?StreamYieldChannel $channel = null,
-		array $cnAiContext = [],
-	): string {
+	public function generateResponse(ChatMessageRequest $request, ReplyGrounding $grounding): string {
+		return $this->respond(
+			turn: [
+				'userMessage' => $request->userMessage,
+				'context' => $grounding->context,
+				'agent' => $grounding->agent,
+				'selectedTools' => $request->selectedTools,
+				'channel' => $request->channel,
+				'cnAiContext' => $request->cnAiContext,
+			],
+			messageHistory: $grounding->messageHistory
+		);
+	}//end generateResponse()
+
+	/**
+	 * Generate the response to one turn: load the tools, build the conversation and run the chat.
+	 *
+	 * @param array $turn           The user's message, the RAG context, the agent, the selected tools,
+	 *                              the streaming channel and the app context.
+	 * @param array $messageHistory Array of LLPhantMessage objects.
+	 *
+	 * @return string Generated response text
+	 *
+	 * @throws \Exception If LLM provider is not configured or API call fails
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function respond(array $turn, array $messageHistory): string {
 		$startTime = microtime(true);
 
 		$this->logger->info(
@@ -178,16 +170,16 @@ class ResponseGenerationHandler {
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'messageLength' => strlen($userMessage),
-				'contextLength' => strlen($context['text']),
+				'messageLength' => strlen($turn['userMessage']),
+				'contextLength' => strlen($turn['context']['text']),
 				'historyCount' => count($messageHistory),
-				'selectedTools' => count($selectedTools),
+				'selectedTools' => count($turn['selectedTools']),
 			]
 		);
 
 		// Get enabled tools for agent, filtered by selectedTools.
 		$toolsStartTime = microtime(true);
-		$tools = $this->agentTools(agent: $agent, selectedTools: $selectedTools);
+		$tools = $this->agentTools(agent: $turn['agent'], selectedTools: $turn['selectedTools']);
 		$toolsTime = microtime(true) - $toolsStartTime;
 
 		$llmConfig = $this->settingsService->getLLMSettingsOnly();
@@ -197,13 +189,18 @@ class ResponseGenerationHandler {
 			return $this->generateWithProvider(
 				request: [
 					'provider' => $chatProvider,
-					'config' => $this->buildChatConfig(llmConfig: $llmConfig, agent: $agent),
+					'config' => $this->buildChatConfig(llmConfig: $llmConfig, agent: $turn['agent']),
 					'messageHistory' => $this->conversation(
 						messageHistory: $messageHistory,
-						turn: ['agent' => $agent, 'userMessage' => $userMessage, 'context' => $context, 'cnAiContext' => $cnAiContext]
+						turn: [
+							'agent' => $turn['agent'],
+							'userMessage' => $turn['userMessage'],
+							'context' => $turn['context'],
+							'cnAiContext' => $turn['cnAiContext'],
+						]
 					),
 					'tools' => $tools,
-					'channel' => $channel,
+					'channel' => $turn['channel'],
 				],
 				timings: ['start' => $startTime, 'tools' => $toolsTime]
 			);
@@ -219,7 +216,7 @@ class ResponseGenerationHandler {
 			);
 			throw new Exception('Failed to generate response: ' . $e->getMessage(), $e->getCode(), $e);
 		}//end try
-	}//end generateResponse()
+	}//end respond()
 
 	/**
 	 * Put the system prompt before the history and the user's message after it.
@@ -576,12 +573,7 @@ class ResponseGenerationHandler {
 			);
 		}
 
-		return $this->invokeChat(
-			chat: $chat,
-			messageHistory: $request['messageHistory'],
-			channel: $request['channel'],
-			provider: $request['provider']
-		);
+		return $this->invokeChat(chat: $chat, request: $request);
 	}//end invokeChatWithTools()
 
 	/**
@@ -625,7 +617,7 @@ class ResponseGenerationHandler {
 	 *
 	 * @param OpenAIChat|OllamaChat $chat Configured LLPhant chat instance.
 	 * @param array $messageHistory Array of LLPhantMessage objects.
-	 * @param StreamYieldChannel|null $channel Streaming channel, or null for blocking mode.
+	 * @param ChatStreamChannelInterface|null $channel Streaming channel, or null for blocking mode.
 	 * @param string $provider Provider identifier for log context.
 	 *
 	 * @return string Full assistant text (concatenation of streamed chunks
@@ -643,7 +635,7 @@ class ResponseGenerationHandler {
 	 *
 	 * @param array $functionInfoObjects LLPhant FunctionInfo[] from
 	 *                                   ToolManagementHandler::convertFunctionsToFunctionInfo.
-	 * @param StreamYieldChannel|null $channel Streaming channel, or null for blocking mode.
+	 * @param ChatStreamChannelInterface|null $channel Streaming channel, or null for blocking mode.
 	 *
 	 * @return array FunctionInfo[] with `$instance` rewritten when wrapping is active.
 	 *
@@ -652,7 +644,7 @@ class ResponseGenerationHandler {
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
-	private function wrapToolsForStreaming(array $functionInfoObjects, ?StreamYieldChannel $channel): array {
+	private function wrapToolsForStreaming(array $functionInfoObjects, ?ChatStreamChannelInterface $channel): array {
 		if ($channel === null) {
 			return $functionInfoObjects;
 		}
@@ -672,21 +664,17 @@ class ResponseGenerationHandler {
 	/**
 	 * Invoke the configured chat client, preferring streaming where possible.
 	 *
-	 * @param OpenAIChat|OllamaChat $chat Configured chat client.
-	 * @param array $messageHistory LLPhant message history.
-	 * @param StreamYieldChannel|null $channel Optional streaming channel.
-	 * @param string $provider Provider slug (for logging).
+	 * @param OpenAIChat|OllamaChat $chat    Configured chat client.
+	 * @param array                 $request The LLPhant message history (`messageHistory`), the optional
+	 *                                       streaming channel (`channel`) and the provider slug for
+	 *                                       logging (`provider`).
 	 *
 	 * @return string The assistant's textual response.
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
-	private function invokeChat(
-		OpenAIChat|OllamaChat $chat,
-		array $messageHistory,
-		?StreamYieldChannel $channel,
-		string $provider,
-	): string {
+	private function invokeChat(OpenAIChat|OllamaChat $chat, array $request): string {
+		$channel = $request['channel'];
 		// Ollama-with-tools degrades to blocking. OllamaChat::generateChatStream
 		// does NOT process tool_calls — it just streams the raw assistant
 		// delta. Only the blocking `generateChat` path handles the
@@ -699,7 +687,7 @@ class ResponseGenerationHandler {
 			&& $ollamaWithTools === false
 		) {
 			try {
-				return $this->streamChat(chat: $chat, messageHistory: $messageHistory, channel: $channel);
+				return $this->streamChat(chat: $chat, request: $request);
 			} catch (MissingFeatureException $e) {
 				// Provider advertises streaming but cannot deliver — log + degrade.
 				$this->logger->info(
@@ -707,7 +695,7 @@ class ResponseGenerationHandler {
 					context: [
 						'file' => __FILE__,
 						'line' => __LINE__,
-						'provider' => $provider,
+						'provider' => $request['provider'],
 						'error' => $e->getMessage(),
 					]
 				);
@@ -720,7 +708,7 @@ class ResponseGenerationHandler {
 		// still fires from the blocking callFunction path so tool_call /
 		// tool_result frames reach the SSE consumer even without token
 		// streaming.
-		return $chat->generateChat($messageHistory);
+		return $chat->generateChat($request['messageHistory']);
 	}//end invokeChat()
 
 	/**
@@ -767,9 +755,9 @@ class ResponseGenerationHandler {
 	 * distinct SSE frames during streaming would require patching LLPhant
 	 * to surface per-invocation hooks; tracked separately.
 	 *
-	 * @param OpenAIChat|OllamaChat $chat Configured chat instance.
-	 * @param array $messageHistory Array of LLPhantMessage objects.
-	 * @param StreamYieldChannel $channel Channel to forward chunks to.
+	 * @param OpenAIChat|OllamaChat $chat    Configured chat instance.
+	 * @param array                 $request The LLPhantMessage objects (`messageHistory`) and the
+	 *                                       ChatStreamChannelInterface to forward chunks to (`channel`).
 	 *
 	 * @return string Assembled assistant text.
 	 *
@@ -777,12 +765,9 @@ class ResponseGenerationHandler {
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
-	private function streamChat(
-		OpenAIChat|OllamaChat $chat,
-		array $messageHistory,
-		StreamYieldChannel $channel,
-	): string {
-		$stream = $chat->generateChatStream($messageHistory);
+	private function streamChat(OpenAIChat|OllamaChat $chat, array $request): string {
+		$channel = $request['channel'];
+		$stream = $chat->generateChatStream($request['messageHistory']);
 		$assembled = '';
 
 		// PSR-7 StreamInterface: read until EOF; LLPhant emits one chunk

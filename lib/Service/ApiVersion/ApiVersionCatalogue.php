@@ -73,7 +73,7 @@ use Throwable;
  *         The repo carries the same suppression shape on VocabularyController,
  *         CodedValueGuard and DestructionScopeService for the same reason.
  */
-class ApiVersionCatalogue {
+class ApiVersionCatalogue implements ApiVersionCatalogueInterface {
 
 	/**
 	 * The app the configuration lives under.
@@ -81,13 +81,6 @@ class ApiVersionCatalogue {
 	 * @var string
 	 */
 	public const APP_ID = 'openregister';
-
-	/**
-	 * Configuration key holding the administered declaration, a JSON list.
-	 *
-	 * @var string
-	 */
-	public const CONFIG_KEY = 'api_versions';
 
 	/**
 	 * The identifier of the version this instance has always served.

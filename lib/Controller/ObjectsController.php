@@ -41,6 +41,7 @@ use OCA\OpenRegister\Controller\Support\ObjectCreateControls;
 use OCA\OpenRegister\Controller\Support\ObjectReadOptions;
 use OCA\OpenRegister\Controller\Support\ObjectRequestParams;
 use OCA\OpenRegister\Controller\Support\ObjectShow;
+use OCA\OpenRegister\Files\Service\File\BulkDownloadArchive;
 use OCA\OpenRegister\Controller\Support\LinkedDataServices;
 use OCA\OpenRegister\Controller\Support\RelationUrlStamper;
 use OCA\OpenRegister\Controller\Support\GeoServices;
@@ -56,6 +57,7 @@ use OCA\OpenRegister\Controller\Support\ReferenceOptionsAnswer;
 use OCA\OpenRegister\Controller\Support\ReferenceOptionsAsk;
 use OCA\OpenRegister\Controller\Support\ResultWindow;
 use OCA\OpenRegister\Controller\Support\SentWrite;
+use OCA\OpenRegister\Controller\Support\ServedExport;
 use OCA\OpenRegister\Controller\Support\ShowServices;
 use OCA\OpenRegister\Controller\Support\ShownEntity;
 use OCA\OpenRegister\Controller\Support\VersionClaim;
@@ -65,6 +67,7 @@ use OCA\OpenRegister\Controller\Support\RenderedObjectUuids;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
@@ -84,29 +87,39 @@ use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
-use OCA\OpenRegister\Service\Export\ExportAuditRecorder;
+use OCA\OpenRegister\Service\Export\ExportAuditRecorderInterface;
 use OCA\OpenRegister\Service\Export\ExportRightService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
-use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\Hinge\InheritedGeoCollector;
-use OCA\OpenRegister\Service\Hinge\ReferencedByService;
-use OCA\OpenRegister\Service\Interaction\ReadStateService;
-use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Export\ExportRunContent;
+use OCA\OpenRegister\Service\Export\ExportRunFile;
+use OCA\OpenRegister\Service\Export\ExportRunOrigin;
+use OCA\OpenRegister\Service\FileServiceInterface;
+use OCA\OpenRegister\Service\Hinge\InheritedGeoCollectorInterface;
+use OCA\OpenRegister\Service\Hinge\ReferencedByServiceInterface;
+use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
+use OCA\OpenRegister\Service\Object\QueryHandlerInterface;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
+use OCA\OpenRegister\Service\Object\UpsertOnKeyRequest;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceException;
 use OCA\OpenRegister\Service\ObjectSource\DbalWriteException;
-use OCA\OpenRegister\Service\Object\UpsertOnKeyHandler;
-use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrs;
+use OCA\OpenRegister\Service\ObjectHandlerAccessInterface;
+use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrsFactory;
+use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrsInterface;
+use OCA\OpenRegister\Service\Geo\GeocodeOptions;
 use OCA\OpenRegister\Service\Object\PaginationLinks;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
-use OCA\OpenRegister\Service\Search\SearchTermParser;
+use OCA\OpenRegister\Service\Search\HistoryPredicateInterface;
+use OCA\OpenRegister\Service\Search\SearchGrammar;
 use OCA\OpenRegister\Service\WebhookService;
 use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Support\FilterParams;
+use OCA\OpenRegister\Support\UnknownFilterKeys;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -127,6 +140,8 @@ use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Notifications\Service\PresenceBeat;
+use OCA\OpenRegister\Notifications\Service\PresenceLookup;
 
 /**
  * Objects controller for OpenRegister
@@ -289,32 +304,31 @@ class ObjectsController extends Controller {
 	 * The caller's own flags are passed in rather than assumed, so an admin -
 	 * who reads exempt on the primary path - still gets the helpful answer.
 	 *
-	 * @param string $id The identifier the caller asked for.
-	 * @param bool $rbac The caller's own RBAC posture, as used by the read.
-	 * @param bool $multitenancy The caller's own tenancy posture, as used by the read.
-	 * @param int|null $registerIdScope The register named in the URL, so the lookup cannot wander.
+	 * @param ObjectShow        $show The identifier the caller asked for, and the register named in the
+	 *                               URL (when numeric), so the lookup cannot wander.
+	 * @param ObjectReadOptions $read The caller's own RBAC and tenancy posture, as used by the read.
 	 *
 	 * @return array<string, mixed>|null The refusal body, or null when the object does not exist.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	private function deletedRefusal(
-		string $id,
-		bool $rbac,
-		bool $multitenancy,
-		?int $registerIdScope = null,
-	): ?array {
+	private function deletedRefusal(ObjectShow $show, ObjectReadOptions $read): ?array {
 		if ($this->governance->windowService === null) {
 			return null;
+		}
+
+		$registerIdScope = null;
+		if (is_numeric($show->resolved['register']) === true) {
+			$registerIdScope = (int)$show->resolved['register'];
 		}
 
 		try {
 			$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapperInterface::class);
 			$context = $magicMapper->findAcrossAllSources(
-				identifier: $id,
+				identifier: $show->id,
 				includeDeleted: true,
-				_rbac: $rbac,
-				_multitenancy: $multitenancy,
+				_rbac: $read->scoped,
+				_multitenancy: $read->scoped,
 				registerIdScope: $registerIdScope
 			);
 		} catch (\Throwable $e) {
@@ -816,7 +830,7 @@ class ObjectsController extends Controller {
 	 * @return array<string, mixed> The query.
 	 */
 	private function crossTableQuery(ObjectOperationsInterface $objectService): array {
-		$query   = $objectService->buildSearchQuery(requestParams: $this->request->getParams());
+		$query   = $this->crossTablePaged(query: $objectService->buildSearchQuery(requestParams: $this->request->getParams()));
 		$isAdmin = $this->isCurrentUserAdmin();
 		$query['_rbac']         = ($isAdmin === false);
 		$query['_multitenancy'] = ($isAdmin === false);
@@ -835,6 +849,27 @@ class ObjectsController extends Controller {
 	}//end crossTableQuery()
 
 	/**
+	 * The query with `_page` turned into the `_offset` the mapper pages on.
+	 *
+	 * An explicit `_offset` wins, as on the single-schema list. The page counts
+	 * in the page size the search can return.
+	 *
+	 * @param array<string, mixed> $query The search query.
+	 *
+	 * @return array<string, mixed> The query.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-list-page-size-is-bounded-by-a-hard-maximum
+	 */
+	private function crossTablePaged(array $query): array {
+		$limit = min((int)($query['_limit'] ?? 20), QueryHandlerInterface::MAX_PAGE_SIZE);
+		if (($query['_page'] ?? null) !== null && ($query['_offset'] ?? null) === null && $limit > 0) {
+			$query['_offset'] = ((max(1, (int)$query['_page']) - 1) * $limit);
+		}
+
+		return $query;
+	}//end crossTablePaged()
+
+	/**
 	 * The rendered, serialised page of cross-table search results.
 	 *
 	 * This direct magic-mapper path bypasses renderEntity, so the write-only redaction
@@ -850,7 +885,7 @@ class ObjectsController extends Controller {
 	 * @return array<int, array> The rows.
 	 */
 	private function crossTableRows(array $results, array $query): array {
-		$renderHandler = $this->container->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
+		$renderHandler = $this->container->get(\OCA\OpenRegister\Service\Object\RenderObjectInterface::class);
 		$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac']);
 		$renderHandler->applyLensesToRows(rows: $results, _rbac: $query['_rbac']);
 		$renderHandler->resolveTranslationsForRows(rows: $results);
@@ -889,7 +924,7 @@ class ObjectsController extends Controller {
 	 * @return array{total: int|null, pages: int, page: int, limit: int} The fields.
 	 */
 	private function crossTablePagination(array $query, ?int $total): array {
-		$limit  = (int)($query['_limit'] ?? 20);
+		$limit  = min((int)($query['_limit'] ?? 20), QueryHandlerInterface::MAX_PAGE_SIZE);
 		$offset = (int)($query['_offset'] ?? 0);
 		$pages  = 1;
 		$page   = 1;
@@ -935,14 +970,24 @@ class ObjectsController extends Controller {
 				schema: ($resolved['schemaEntity'] ?? null)
 			);
 		} catch (\OCA\OpenRegister\Service\Audit\PurposeRefusedException $refusal) {
-			return new JSONResponse(
-				data: $refusal->toResponseBody(),
-				statusCode: $refusal->getStatusCode()
-			);
+			return self::purposeRefusal(refusal: $refusal);
 		}
 
 		return null;
 	}//end refuseUnboundPurpose()
+
+	/**
+	 * The answer to a read refused for want of a purpose.
+	 *
+	 * @param \OCA\OpenRegister\Service\Audit\PurposeRefusedException $refusal The refusal.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private static function purposeRefusal(\OCA\OpenRegister\Service\Audit\PurposeRefusedException $refusal): JSONResponse {
+		return new JSONResponse(data: $refusal->toResponseBody(), statusCode: $refusal->getStatusCode());
+	}//end purposeRefusal()
 
 	/**
 	 * Resolve a register/schema path pair to numeric ids.
@@ -965,11 +1010,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
 	 */
 	private function resolveRegisterSchemaIds(string $register, string $schema, ObjectOperationsInterface $objectService): array {
-		return $this->resolveRegisterAndSchema(
-			register: $register,
-			schema: $schema,
-			objectService: $objectService
-		);
+		return $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 	}//end resolveRegisterSchemaIds()
 
 	/**
@@ -997,10 +1038,11 @@ class ObjectsController extends Controller {
 
 		FilterParams::warnUnknownKeys(
 			logger: $this->logger,
-			keys: FilterParams::unknownObjectFilterKeys(query: $query, properties: $schemaEntity->getProperties()),
-			endpoint: 'objects#index',
-			register: $listing['register'],
-			schema: $listing['schema']
+			unknown: new UnknownFilterKeys(
+				keys: FilterParams::unknownObjectFilterKeys(query: $query, properties: $schemaEntity->getProperties()),
+				endpoint: 'objects#index',
+				table: new RegisterSchemaRef(register: $listing['register'], schema: $listing['schema'])
+			)
 		);
 	}//end warnUnknownFilterKeys()
 
@@ -1029,7 +1071,7 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			(new SearchTermParser())->parse(term: $term);
+			SearchGrammar::termParser()->parse(term: $term);
 		} catch (SearchTermSyntaxException $exception) {
 			return $this->searchSyntaxRefusal(exception: $exception);
 		}
@@ -1053,7 +1095,7 @@ class ObjectsController extends Controller {
 		}
 
 		$term = trim($search);
-		if ((new SearchTermParser())->needsParsing(term: $term) === true) {
+		if (SearchGrammar::termParser()->needsParsing(term: $term) === true) {
 			return $term;
 		}
 
@@ -1103,7 +1145,7 @@ class ObjectsController extends Controller {
 			return null;
 		}
 
-		$predicate = \OCA\OpenRegister\Service\Search\HistoryPredicate::parse(query: $params);
+		$predicate = SearchGrammar::historyPredicate(query: $params);
 		if ($predicate->narrows() === false) {
 			return null;
 		}
@@ -1114,13 +1156,13 @@ class ObjectsController extends Controller {
 	/**
 	 * The 400 for a history predicate over a property with no recorded history.
 	 *
-	 * @param \OCA\OpenRegister\Service\Search\HistoryPredicate $predicate The parsed predicate.
+	 * @param HistoryPredicateInterface $predicate The parsed predicate.
 	 *
 	 * @return JSONResponse|null A 400 naming the property, or null.
 	 *
 	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
-	private function historyRefusal(\OCA\OpenRegister\Service\Search\HistoryPredicate $predicate): ?JSONResponse {
+	private function historyRefusal(HistoryPredicateInterface $predicate): ?JSONResponse {
 		$refusal = $predicate->refusalFor(projectedProperties: $this->governance->stateHistory->projectedProperties());
 		if ($refusal === null) {
 			return null;
@@ -1180,7 +1222,7 @@ class ObjectsController extends Controller {
 		// from the write path, so search and single-read reported no
 		// per-request counts at all. Stamp + flush here so the same in-PHP
 		// counters that made the write numbers trustworthy cover reads too.
-		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.index.in');
+		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.index.in');
 
 		$params = $this->request->getParams();
 
@@ -1515,7 +1557,7 @@ class ObjectsController extends Controller {
 	private function fullyRenderedRows(array $results, array $listing): array {
 		$query = $listing['query'];
 
-		return $this->container->get(\OCA\OpenRegister\Service\Object\RenderObject::class)->renderEntities(
+		return $this->container->get(\OCA\OpenRegister\Service\Object\RenderObjectInterface::class)->renderEntities(
 			entities: $results,
 			_extend: $listing['extend'],
 			_filter: ($query['_filter'] ?? null),
@@ -2252,13 +2294,13 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Geo feature builder not configured'], statusCode: 501);
 		}
 
-		$crs = new GeoResponseCrs(accept: $this->request->getHeader('Accept-Crs'));
+		$crs = GeoResponseCrsFactory::fromAccept(accept: $this->request->getHeader('Accept-Crs'));
 		if ($crs->isServable() === false) {
 			return new JSONResponse(data: $crs->refusal(), statusCode: Http::STATUS_NOT_ACCEPTABLE);
 		}
 
 		$params = $this->request->getParams();
-		$rows = $this->scopedGeoRows(register: $register, schema: $schema, objectService: $objectService);
+		$rows = $this->scopedGeoRows(table: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 
 		$collection = $this->geo->geoFeatureBuilder->buildFeatureCollection(
 			rows: $rows,
@@ -2277,14 +2319,14 @@ class ObjectsController extends Controller {
 	/**
 	 * A FeatureCollection in the requested CRS, naming that CRS when one was asked for.
 	 *
-	 * @param array<string, mixed> $collection The collection, in WGS84.
-	 * @param GeoResponseCrs       $crs        The negotiated CRS.
+	 * @param array<string, mixed>    $collection The collection, in WGS84.
+	 * @param GeoResponseCrsInterface $crs        The negotiated CRS.
 	 *
 	 * @return JSONResponse The response.
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-015
 	 */
-	private function geoCollectionResponse(array $collection, GeoResponseCrs $crs): JSONResponse {
+	private function geoCollectionResponse(array $collection, GeoResponseCrsInterface $crs): JSONResponse {
 		$response = new JSONResponse(data: $crs->applyTo(collection: $collection));
 		$contentCrs = $crs->contentCrs();
 		if ($contentCrs !== null) {
@@ -2321,13 +2363,13 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Geo feature builder not configured'], statusCode: 501);
 		}
 
-		$crs = new GeoResponseCrs(accept: $this->request->getHeader('Accept-Crs'));
+		$crs = GeoResponseCrsFactory::fromAccept(accept: $this->request->getHeader('Accept-Crs'));
 		if ($crs->isServable() === false) {
 			return new JSONResponse(data: $crs->refusal(), statusCode: Http::STATUS_NOT_ACCEPTABLE);
 		}
 
 		$params = $this->request->getParams();
-		$rows = $this->scopedGeoRows(register: $register, schema: $schema, objectService: $objectService);
+		$rows = $this->scopedGeoRows(table: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 
 		$response = $this->geo->geoFeatureBuilder->buildWfsResponse(
 			rows: $rows,
@@ -2368,7 +2410,7 @@ class ObjectsController extends Controller {
 		$query = ($params['q'] ?? null);
 		if ($query !== null && trim((string)$query) !== '') {
 			$bagOnly = filter_var(($params['bagOnly'] ?? false), FILTER_VALIDATE_BOOLEAN);
-			$suggestions = $this->geo->pdokGeocoder->geocodeFree(query: (string)$query, maxItems: 5, bagOnly: $bagOnly);
+			$suggestions = $this->geo->pdokGeocoder->geocodeFree(query: (string)$query, options: new GeocodeOptions(maxItems: 5, bagOnly: $bagOnly));
 			return new JSONResponse(data: ['available' => $available, 'suggestions' => $suggestions]);
 		}
 
@@ -2477,16 +2519,15 @@ class ObjectsController extends Controller {
 	 * per-object read access — then returns just the `results`. Geo
 	 * endpoints build on this so they can never widen access.
 	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema Schema slug or id.
+	 * @param RegisterSchemaRef         $table         Register and schema slugs or ids.
 	 * @param ObjectOperationsInterface $objectService Object service via DI.
 	 *
 	 * @return array The RBAC-scoped result rows.
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
 	 */
-	private function scopedGeoRows(string $register, string $schema, ObjectOperationsInterface $objectService): array {
-		$listing = $this->index(register: $register, schema: $schema, objectService: $objectService);
+	private function scopedGeoRows(RegisterSchemaRef $table, ObjectOperationsInterface $objectService): array {
+		$listing = $this->index(register: (string)$table->register, schema: (string)$table->schema, objectService: $objectService);
 		$payload = (array)$listing->getData();
 		$rows = ($payload['results'] ?? []);
 		if (is_array($rows) === true) {
@@ -2742,7 +2783,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	private function renderedMagicRows(array $results, bool $rbac): array {
-		$renderHandler = $this->container->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
+		$renderHandler = $this->container->get(\OCA\OpenRegister\Service\Object\RenderObjectInterface::class);
 		$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $rbac);
 		$renderHandler->applyLensesToRows(rows: $results, _rbac: $rbac);
 		$renderHandler->resolveTranslationsForRows(rows: $results);
@@ -2807,6 +2848,8 @@ class ObjectsController extends Controller {
 			$result = $objectService->searchObjectsPaginated($query);
 		} catch (NotAuthorizedException $exception) {
 			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+		} catch (\OCA\OpenRegister\Service\Audit\PurposeRefusedException $refusal) {
+			return self::purposeRefusal(refusal: $refusal);
 		}
 
 		if ($this->wantsEmptyValues() === false && is_array(($result['results'] ?? null)) === true) {
@@ -2941,7 +2984,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The object ID
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectHandlerAccessInterface $objectService The object service
 	 *
 	 * @NoAdminRequired
 	 *
@@ -2959,8 +3002,8 @@ class ObjectsController extends Controller {
 	 */
 	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
-	public function show(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
-		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.show.in');
+	public function show(string $id, string $register, string $schema, ObjectHandlerAccessInterface $objectService): JSONResponse {
+		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.show.in');
 
 		try {
 			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
@@ -2984,13 +3027,13 @@ class ObjectsController extends Controller {
 	/**
 	 * What show() asks of the request's object service.
 	 *
-	 * @param ObjectService $objectService The object service.
+	 * @param ObjectHandlerAccessInterface $objectService The object service.
 	 *
 	 * @return ShowServices The services.
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	private function showServices(ObjectService $objectService): ShowServices {
+	private function showServices(ObjectHandlerAccessInterface $objectService): ShowServices {
 		return new ShowServices(
 			objects: $objectService,
 			permissions: $objectService->getPermissionHandler(),
@@ -3068,12 +3111,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	private function absentObject(ObjectShow $show, ObjectReadOptions $read): JSONResponse {
-		$registerScope = null;
-		if (is_numeric($show->resolved['register']) === true) {
-			$registerScope = (int)$show->resolved['register'];
-		}
-
-		$deleted = $this->deletedRefusal(id: $show->id, rbac: $read->scoped, multitenancy: $read->scoped, registerIdScope: $registerScope);
+		$deleted = $this->deletedRefusal(show: $show, read: $read);
 		if ($deleted !== null) {
 			return new JSONResponse(data: $deleted, statusCode: Http::STATUS_NOT_FOUND);
 		}
@@ -3125,8 +3163,8 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	private function grantExplicitReveal(ObjectEntity $object): void {
-		$explicitReveal = $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitReveal::class);
-		if ($explicitReveal instanceof \OCA\OpenRegister\Service\Rbac\ExplicitReveal) {
+		$explicitReveal = $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface::class);
+		if ($explicitReveal instanceof \OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface) {
 			$params = $this->request->getParams();
 			$explicitReveal->grantFor(objectId: (string)$object->getUuid(), reveal: (string)($params['_reveal'] ?? ''));
 		}
@@ -3340,7 +3378,7 @@ class ObjectsController extends Controller {
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function create(string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
-		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.create.in');
+		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.create.in');
 		try {
 			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
@@ -3473,13 +3511,13 @@ class ObjectsController extends Controller {
 			return ['object' => $save(null), 'created' => true];
 		}
 
-		return $upsert->upsert(
+		$keyed = new UpsertOnKeyRequest(
 			constraintName: $create->controls->upsertOn,
 			object: $create->object,
 			register: $create->resolved['registerEntity'],
-			schema: $create->resolved['schemaEntity'],
-			save: $save
+			schema: $create->resolved['schemaEntity']
 		);
+		return $upsert->upsert(request: $keyed, save: $save);
 	}//end savedObject()
 
 	/**
@@ -3675,6 +3713,12 @@ class ObjectsController extends Controller {
 			}
 		} catch (\Throwable $e) {
 			// Not registered in this context; the session below is the answer.
+			$this->logger->debug(
+				message: '[ObjectsController] userId not registered in the container, using the session',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return $this->userSession->getUser()?->getUID();
@@ -3711,7 +3755,7 @@ class ObjectsController extends Controller {
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function update(string $register, string $schema, string $id, ObjectOperationsInterface $objectService): JSONResponse {
-		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.update.in');
+		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.update.in');
 
 		try {
 			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
@@ -3885,9 +3929,9 @@ class ObjectsController extends Controller {
 		try {
 			$objectEntity = $update->saved(uuid: ($existing->getUuid() ?? $update->target->id));
 			$this->releaseOwnLockAfterWrite(objectEntity: $objectEntity);
-			\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.update.unlocked');
+			\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.update.unlocked');
 			$body = $objectEntity->jsonSerialize();
-			\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.update.out');
+			\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.update.out');
 
 			return new JSONResponse(data: $body);
 		} catch (\Exception $exception) {
@@ -4192,7 +4236,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The ID/UUID of the object to delete
 	 * @param string $register The register ID
 	 * @param string $schema The schema ID
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectHandlerAccessInterface $objectService The object service
 	 *
 	 * @return JSONResponse JSON response with success or error.
 	 *
@@ -4206,8 +4250,8 @@ class ObjectsController extends Controller {
 	 */
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 30, period: 60)]
-	public function destroy(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
-		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.destroy.in');
+	public function destroy(string $id, string $register, string $schema, ObjectHandlerAccessInterface $objectService): JSONResponse {
+		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.destroy.in');
 
 		$route = new ObjectDeleteRoute(id: $id, register: $register, schema: $schema, objectService: $objectService);
 		try {
@@ -4314,13 +4358,13 @@ class ObjectsController extends Controller {
 	 * The answer to a delete referential integrity refuses; a non-admin hears only what they may read.
 	 *
 	 * @param ReferentialIntegrityException $exception     The refusal.
-	 * @param ObjectService                 $objectService The object service.
+	 * @param ObjectHandlerAccessInterface  $objectService The object service.
 	 *
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	private function integrityDeleteRefusal(ReferentialIntegrityException $exception, ObjectService $objectService): JSONResponse {
+	private function integrityDeleteRefusal(ReferentialIntegrityException $exception, ObjectHandlerAccessInterface $objectService): JSONResponse {
 		if ($this->isCurrentUserAdmin() === false) {
 			$readable = $objectService->readableDeletionAnalysis(analysis: $exception->getAnalysis());
 			$exception = new ReferentialIntegrityException(analysis: $readable);
@@ -4421,7 +4465,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The ID/UUID of the object to check
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectHandlerAccessInterface $objectService The object service
 	 *
 	 * @return JSONResponse JSON response with DeletionAnalysis
 	 *
@@ -4434,7 +4478,7 @@ class ObjectsController extends Controller {
 		string $id,
 		string $register,
 		string $schema,
-		ObjectService $objectService,
+		ObjectHandlerAccessInterface $objectService,
 	): JSONResponse {
 		try {
 			$objectService->setRegister(register: $register);
@@ -4832,8 +4876,8 @@ class ObjectsController extends Controller {
 		$logs = $objectService->getLogs(uuid: $id, filters: $config['filters']);
 
 		// An explicit-reveal value reads masked for an administrator too.
-		$trailMasker = $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker::class);
-		if ($trailMasker instanceof \OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker) {
+		$trailMasker = $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface::class);
+		if ($trailMasker instanceof \OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface) {
 			$logs = $trailMasker->mask(entries: $logs);
 		}
 
@@ -4866,7 +4910,7 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			$page = $this->container->get(ObjectHistoryForReaders::class)->page(
+			$page = $this->container->get(ObjectHistoryForReadersInterface::class)->page(
 				register: $register,
 				schema: $schema,
 				id: $id,
@@ -5150,9 +5194,8 @@ class ObjectsController extends Controller {
 	 * and refile it" does today and what this replaces.
 	 *
 	 * Authorised on BOTH SIDES: the object is read under the caller's own
-	 * permissions, and the target is resolved the same way, so a caller who
-	 * could not read the object cannot move it and a caller who could not write
-	 * the target cannot put anything there.
+	 * permissions, and {@see mayMove()} asks for update on it and create on the
+	 * target schema before anything is written.
 	 *
 	 * @param string $register The source register.
 	 * @param string $schema The source schema.
@@ -5173,7 +5216,7 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			$object = $this->presenceObject(register: $register, schema: $schema, id: $id);
+			$object = $this->presenceObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 		} catch (MultipleObjectsReturnedException $e) {
 			return $this->ambiguousIdentifierResponse(id: $id);
 		}
@@ -5210,7 +5253,11 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'No such register or schema'], statusCode: 404);
 		}
 
-		$outcome = $this->container->get(\OCA\OpenRegister\Service\Object\MoveObject::class)->move(
+		if ($this->mayMove(object: $object, schemas: [$ends['from']['schema'], $ends['to']['schema']]) === false) {
+			return new JSONResponse(data: ['error' => 'You may not move this object there.'], statusCode: 403);
+		}
+
+		$outcome = $this->container->get(\OCA\OpenRegister\Service\Object\MoveObjectInterface::class)->move(
 			object: $object,
 			sourceRegister: $ends['from']['register'],
 			sourceSchema: $ends['from']['schema'],
@@ -5263,6 +5310,25 @@ class ObjectsController extends Controller {
 
 		return new JSONResponse(data: $outcome);
 	}//end moveResponse()
+
+	/**
+	 * Whether the caller may take this object out of its schema and create it in the target.
+	 *
+	 * The rights a migration asks for: update on the object, create on the target schema.
+	 *
+	 * @param ObjectEntity                $object  The object.
+	 * @param array{0: Schema, 1: Schema} $schemas The source and the target schema.
+	 *
+	 * @return bool True when both rights are held.
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
+	 */
+	private function mayMove(ObjectEntity $object, array $schemas): bool {
+		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
+
+		return $permissions->hasPermission(schema: $schemas[0], action: 'update', objectOwner: $object->getOwner(), object: $object)
+			&& $permissions->hasPermission(schema: $schemas[1], action: 'create');
+	}//end mayMove()
 
 	/**
 	 * Note, and discard, a cause a request tried to name for itself.
@@ -5373,7 +5439,7 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			$object = $this->presenceObject(register: $register, schema: $schema, id: $id);
+			$object = $this->presenceObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 		} catch (MultipleObjectsReturnedException $e) {
 			return $this->ambiguousIdentifierResponse(id: $id);
 		}
@@ -5383,15 +5449,15 @@ class ObjectsController extends Controller {
 		}
 
 		$service = $this->container->get(\OCA\OpenRegister\Notifications\Service\PresenceServiceInterface::class);
-		$beat = $service->heartbeat(userId: $caller, objectUuid: $id);
-		$present = $service->present(objectUuid: $id, exceptUser: $caller);
+		$beat = $service->heartbeat(beat: new PresenceBeat(userId: $caller, objectUuid: $id, now: new DateTimeImmutable()));
+		$present = $service->present(lookup: new PresenceLookup(objectUuid: $id, exceptUser: $caller));
 
 		// ONLY on an arrival. A renewal that changed nothing is silent, which
 		// is the whole of D-2 and the reason `heartbeat()` reports which it was
 		// rather than leaving the caller to work it out.
 		if ($beat['arrived'] === true) {
-			$this->container->get(\OCA\OpenRegister\Listener\NotifyPushListener::class)
-				->pushPresence(object: $object, present: $service->present(objectUuid: $id));
+			$this->container->get(\OCA\OpenRegister\Listener\PresencePushInterface::class)
+				->pushPresence(object: $object, present: $service->present(lookup: new PresenceLookup(objectUuid: $id)));
 		}
 
 		return new JSONResponse(
@@ -5430,18 +5496,18 @@ class ObjectsController extends Controller {
 			// The departure above is already done and keyed by the identifier as sent, so an
 			// ambiguous identifier only means there is no object to push to: the answer stays 200.
 			try {
-				$object = $this->presenceObject(register: $register, schema: $schema, id: $id);
+				$object = $this->presenceObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 			} catch (MultipleObjectsReturnedException $e) {
 				$object = null;
 			}
 
 			if ($object !== null) {
-				$this->container->get(\OCA\OpenRegister\Listener\NotifyPushListener::class)
-					->pushPresence(object: $object, present: $service->present(objectUuid: $id));
+				$this->container->get(\OCA\OpenRegister\Listener\PresencePushInterface::class)
+					->pushPresence(object: $object, present: $service->present(lookup: new PresenceLookup(objectUuid: $id)));
 			}
 		}
 
-		return new JSONResponse(data: ['present' => $service->present(objectUuid: $id, exceptUser: $caller)]);
+		return new JSONResponse(data: ['present' => $service->present(lookup: new PresenceLookup(objectUuid: $id, exceptUser: $caller))]);
 	}//end presenceDepart()
 
 	/**
@@ -5501,7 +5567,7 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			$object = $this->presenceObject(register: $register, schema: $schema, id: $id);
+			$object = $this->presenceObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 		} catch (MultipleObjectsReturnedException $e) {
 			return $this->ambiguousIdentifierResponse(id: $id);
 		}
@@ -5513,7 +5579,7 @@ class ObjectsController extends Controller {
 		return new JSONResponse(
 			data: [
 				'present' => $this->container->get(\OCA\OpenRegister\Notifications\Service\PresenceServiceInterface::class)
-					->present(objectUuid: $id, exceptUser: $caller),
+					->present(lookup: new PresenceLookup(objectUuid: $id, exceptUser: $caller)),
 			]
 		);
 	}//end presenceList()
@@ -5541,9 +5607,7 @@ class ObjectsController extends Controller {
 	 * caller who cannot read the object gets 404 and learns nothing, including
 	 * whether it exists.
 	 *
-	 * @param string $register The register.
-	 * @param string $schema The schema.
-	 * @param string $id The object.
+	 * @param ObjectRef $ref The register, schema and object.
 	 *
 	 * @return ObjectEntity|null The object, or null when it cannot be read.
 	 *
@@ -5551,11 +5615,11 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
 	 */
-	private function presenceObject(string $register, string $schema, string $id): ?ObjectEntity {
+	private function presenceObject(ObjectRef $ref): ?ObjectEntity {
 		try {
-			$this->objectService->setRegister(register: $register);
-			$this->objectService->setSchema(schema: $schema);
-			$found = WriteCause::asLookup(fn () => $this->objectService->find($id));
+			$this->objectService->setRegister(register: $ref->register);
+			$this->objectService->setSchema(schema: $ref->schema);
+			$found = WriteCause::asLookup(fn () => $this->objectService->find($ref->id));
 		} catch (MultipleObjectsReturnedException $e) {
 			// Not "cannot be read": the caller can act on it, by asking with the uuid.
 			throw $e;
@@ -5709,12 +5773,7 @@ class ObjectsController extends Controller {
 			currentUser: $this->userSession->getUser()
 		);
 
-		$this->recordExportCompleted(
-			register: $export->register,
-			schema: $export->schema,
-			format: 'csv',
-			rowCount: $this->countCsvExportRows(csv: $content)
-		);
+		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'csv', rowCount: $this->countCsvExportRows(csv: $content)));
 
 		return $export->download(format: 'csv', content: $content);
 	}//end csvExport()
@@ -5735,12 +5794,7 @@ class ObjectsController extends Controller {
 			filters: $export->filters
 		);
 
-		$this->recordExportCompleted(
-			register: $export->register,
-			schema: $export->schema,
-			format: 'json',
-			rowCount: $this->countJsonExportRows(json: $content)
-		);
+		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'json', rowCount: $this->countJsonExportRows(json: $content)));
 
 		return $export->download(format: 'json', content: $content);
 	}//end jsonExport()
@@ -5783,16 +5837,12 @@ class ObjectsController extends Controller {
 	 * @spec openspec/specs/export-pdf-format/spec.md
 	 */
 	private function recordPdfExport(ObjectExport $export): void {
-		$this->recordExportCompleted(
+		$rowCount = $this->services->transfer->exportService->countExportRows(
 			register: $export->register,
 			schema: $export->schema,
-			format: 'pdf',
-			rowCount: $this->services->transfer->exportService->countExportRows(
-				register: $export->register,
-				schema: $export->schema,
-				filters: $export->filters
-			)
+			filters: $export->filters
 		);
+		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'pdf', rowCount: $rowCount));
 	}//end recordPdfExport()
 
 	/**
@@ -5839,12 +5889,8 @@ class ObjectsController extends Controller {
 		$writer->save('php://output');
 		$content = ob_get_clean();
 
-		$this->recordExportCompleted(
-			register: $export->register,
-			schema: $export->schema,
-			format: 'excel',
-			rowCount: $this->countSpreadsheetExportRows(spreadsheet: $spreadsheet)
-		);
+		$rowCount = $this->countSpreadsheetExportRows(spreadsheet: $spreadsheet);
+		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'excel', rowCount: $rowCount));
 
 		return $export->download(format: 'excel', content: $content);
 	}//end excelExport()
@@ -5897,7 +5943,7 @@ class ObjectsController extends Controller {
 			return null;
 		}
 
-		$this->recordExportRefusal(refusal: $refusal, register: $register, schema: $schema);
+		$this->recordExportRefusal(refusal: $refusal, table: new RegisterSchema(register: $register, schema: $schema));
 
 		return new JSONResponse(data: $refusal->toResponseBody(), statusCode: $refusal->getStatusCode());
 	}//end exportRefusalFor()
@@ -5906,18 +5952,13 @@ class ObjectsController extends Controller {
 	 * Record a refused export on the audit trail.
 	 *
 	 * @param \OCA\OpenRegister\Service\Export\ExportRefusedException $refusal The refusal.
-	 * @param Register $register The register that was asked for.
-	 * @param Schema $schema The schema that was asked for.
+	 * @param RegisterSchema                                         $table   The register and schema that were asked for.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function recordExportRefusal(
-		\OCA\OpenRegister\Service\Export\ExportRefusedException $refusal,
-		Register $register,
-		Schema $schema,
-	): void {
+	private function recordExportRefusal(\OCA\OpenRegister\Service\Export\ExportRefusedException $refusal, RegisterSchema $table): void {
 		$recorder = $this->exportAuditRecorder();
 		if ($recorder === null) {
 			return;
@@ -5927,24 +5968,22 @@ class ObjectsController extends Controller {
 			profile: 'ad-hoc',
 			rule: $refusal->getRule(),
 			reason: $refusal->getMessage(),
-			register: $register->getId(),
-			schema: $schema->getId()
+			register: $table->register->getId(),
+			schema: $table->schema->getId()
 		);
 	}//end recordExportRefusal()
 
 	/**
 	 * Record a completed export on the audit trail.
 	 *
-	 * @param Register $register The register exported.
-	 * @param Schema $schema The schema exported.
-	 * @param string $format The format written.
-	 * @param int $rowCount How many rows left the instance.
+	 * @param ObjectExport $export The export, for its register and schema.
+	 * @param ServedExport $served The format written and how many rows left the instance.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function recordExportCompleted(Register $register, Schema $schema, string $format, int $rowCount): void {
+	private function recordExportCompleted(ObjectExport $export, ServedExport $served): void {
 		$recorder = $this->exportAuditRecorder();
 		if ($recorder === null) {
 			return;
@@ -5952,14 +5991,14 @@ class ObjectsController extends Controller {
 
 		$recorder->recordCompleted(
 			profile: 'ad-hoc',
-			rowCount: $rowCount,
-			format: $format,
+			rowCount: $served->rowCount,
+			format: $served->format,
 			valueMode: null,
-			register: $register->getId(),
-			schema: $schema->getId()
+			register: $export->register->getId(),
+			schema: $export->schema->getId()
 		);
 
-		$this->recordExportRun(register: $register, schema: $schema, format: $format, rowCount: $rowCount);
+		$this->recordExportRun(export: $export, served: $served);
 	}//end recordExportCompleted()
 
 	/**
@@ -5970,16 +6009,14 @@ class ObjectsController extends Controller {
 	 * in this response. A recorder that cannot be resolved or fails costs the
 	 * row, never the export.
 	 *
-	 * @param Register $register The register exported.
-	 * @param Schema $schema The schema exported.
-	 * @param string $format The format served.
-	 * @param int $rowCount The rows served.
+	 * @param ObjectExport $export The export, for its register and schema.
+	 * @param ServedExport $served The format and the rows served.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md
 	 */
-	private function recordExportRun(Register $register, Schema $schema, string $format, int $rowCount): void {
+	private function recordExportRun(ObjectExport $export, ServedExport $served): void {
 		try {
 			$runs = $this->container->get(ExportRunRecorder::class);
 			if ($runs instanceof ExportRunRecorder === false) {
@@ -5987,15 +6024,21 @@ class ObjectsController extends Controller {
 			}
 
 			$runs->record(
-				source: 'api',
-				actor: (string)($this->userSession->getUser()?->getUID() ?? ''),
-				format: $format,
-				rowCount: $rowCount,
-				profile: 'ad-hoc',
-				registerName: (string)($register->getSlug() ?? $register->getId()),
-				schemaName: (string)($schema->getSlug() ?? $schema->getId()),
-				retentionSeconds: null,
-				downloadCount: 1
+				origin: new ExportRunOrigin(
+					source: 'api',
+					actor: (string)($this->userSession->getUser()?->getUID() ?? ''),
+					profile: 'ad-hoc'
+				),
+				content: new ExportRunContent(
+					format: $served->format,
+					rowCount: $served->rowCount,
+					registerName: (string)($export->register->getSlug() ?? $export->register->getId()),
+					schemaName: (string)($export->schema->getSlug() ?? $export->schema->getId())
+				),
+				file: new ExportRunFile(
+					downloadCount: 1
+				),
+				retentionSeconds: null
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
@@ -6012,11 +6055,11 @@ class ObjectsController extends Controller {
 	 * export: see ExportAuditRecorder's own note on why a ledger hiccup must
 	 * not fail a monthly aanlevering.
 	 *
-	 * @return ExportAuditRecorder|null The recorder.
+	 * @return ExportAuditRecorderInterface|null The recorder.
 	 */
-	private function exportAuditRecorder(): ?ExportAuditRecorder {
+	private function exportAuditRecorder(): ?ExportAuditRecorderInterface {
 		try {
-			return $this->container->get(ExportAuditRecorder::class);
+			return $this->container->get(ExportAuditRecorderInterface::class);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[ObjectsController] Export audit recorder unresolvable, the export is not on the trail',
@@ -6127,6 +6170,16 @@ class ObjectsController extends Controller {
 				return new JSONResponse(data: ['error' => $refusal], statusCode: 400);
 			}
 
+			// The merge reads and writes both objects without RBAC, so the
+			// caller's own rights on them are checked before it runs.
+			$denied = $this->mergeAccessRefusal(
+				source: new ObjectRef(register: $register, schema: $schema, id: $id),
+				targetId: (string)$requestParams['target']
+			);
+			if ($denied !== null) {
+				return $denied;
+			}
+
 			// Perform the merge operation with the new payload structure.
 			$mergeResult = $objectService->mergeObjects(sourceObjectId: $id, mergeData: $requestParams);
 			return new JSONResponse(data: $mergeResult);
@@ -6143,6 +6196,43 @@ class ObjectsController extends Controller {
 			);
 		}//end try
 	}//end merge()
+
+	/**
+	 * Why the caller may not merge these two objects, or null when they may.
+	 *
+	 * Both objects must be readable to the caller (otherwise they do not exist
+	 * for them: 404), the target must be theirs to update and the source theirs
+	 * to delete, because a merge overwrites the one and removes the other.
+	 *
+	 * @param ObjectRef $source   The register, schema and object merged away.
+	 * @param string    $targetId The object merged into, in the same register and schema.
+	 *
+	 * @return JSONResponse|null The refusal, or null when the merge may run.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private function mergeAccessRefusal(ObjectRef $source, string $targetId): ?JSONResponse {
+		$sourceObject = $this->presenceObject(ref: $source);
+		$target = $this->presenceObject(ref: new ObjectRef(register: $source->register, schema: $source->schema, id: $targetId));
+		if ($sourceObject === null || $target === null) {
+			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		}
+
+		$schemaEntity = $this->services->store->schemaMapper->find($source->schema);
+		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
+		$mayUpdateTarget = $permissions->hasPermission(schema: $schemaEntity, action: 'update', objectOwner: $target->getOwner(), object: $target);
+		$mayDeleteSource = $permissions->hasPermission(
+			schema: $schemaEntity,
+			action: 'delete',
+			objectOwner: $sourceObject->getOwner(),
+			object: $sourceObject
+		);
+		if ($mayUpdateTarget === false || $mayDeleteSource === false) {
+			return new JSONResponse(data: ['error' => 'You may not merge these objects.'], statusCode: 403);
+		}
+
+		return null;
+	}//end mergeAccessRefusal()
 
 	/**
 	 * What a merge request is missing.
@@ -6295,10 +6385,10 @@ class ObjectsController extends Controller {
 
 			/*
 			 * Get the FileService from the container.
-			 * @var FileService $fileService
+			 * @var FileServiceInterface $fileService
 			 */
 
-			$fileService = $this->container->get(FileService::class);
+			$fileService = $this->container->get(FileServiceInterface::class);
 
 			// Optional: get custom filename from query parameters.
 			$customFilename = $this->request->getParam(key: 'filename');
@@ -6368,17 +6458,26 @@ class ObjectsController extends Controller {
 	 */
 	private function auditBulkDownload(ObjectEntity $object, array $zipInfo): void {
 		try {
-			$fileService = $this->container->get(FileService::class);
+			$fileService = $this->container->get(FileServiceInterface::class);
 			$files = $fileService->getFiles($object);
 			$fileService->getAuditHandler()->logBulkDownload(
-				$object,
-				array_map(static fn ($file) => $file->getId(), $files),
-				array_map(static fn ($file) => $file->getName(), $files),
-				$zipInfo['filename'],
-				$zipInfo['size'] ?? null
+				object: $object,
+				archive: new BulkDownloadArchive(
+					fileIds: array_map(static fn ($file) => $file->getId(), $files),
+					fileNames: array_map(static fn ($file) => $file->getName(), $files),
+					zipName: $zipInfo['filename'],
+					totalBytes: $zipInfo['size'] ?? null
+				)
 			);
 		} catch (\Throwable $auditError) {
-			// Silently swallow — audit-trail must never break the response.
+			// The audit trail must never break the download response.
+			$this->logger->warning(
+				message: '[ObjectsController] Bulk download audit entry not written',
+				context: [
+					'zipName' => $zipInfo['filename'],
+					'exception' => $auditError->getMessage(),
+				]
+			);
 		}
 	}//end auditBulkDownload()
 
@@ -6723,12 +6822,12 @@ class ObjectsController extends Controller {
 	 */
 	private function callerRunUuid(): ?string {
 		try {
-			$flowContext = $this->container->get(\OCA\OpenRegister\Service\Flow\FlowRunContext::class);
+			$flowContext = $this->container->get(\OCA\OpenRegister\Service\Flow\FlowRunContextInterface::class);
 		} catch (\Throwable $unavailable) {
 			return null;
 		}
 
-		if ($flowContext instanceof \OCA\OpenRegister\Service\Flow\FlowRunContext === false) {
+		if ($flowContext instanceof \OCA\OpenRegister\Service\Flow\FlowRunContextInterface === false) {
 			return null;
 		}
 
@@ -6784,18 +6883,18 @@ class ObjectsController extends Controller {
 	 * nothing at all. Having none keeps the pre-existing refusal; calling a
 	 * method on null would turn a patch into a fatal.
 	 *
-	 * @return SchemaTypeConverter|null The converter.
+	 * @return SchemaTypeConverterInterface|null The converter.
 	 *
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
-	private function stringTypeConverter(): ?SchemaTypeConverter {
+	private function stringTypeConverter(): ?SchemaTypeConverterInterface {
 		try {
-			$converter = $this->container->get(SchemaTypeConverter::class);
+			$converter = $this->container->get(SchemaTypeConverterInterface::class);
 		} catch (NotFoundExceptionInterface|ContainerExceptionInterface $unavailable) {
 			return null;
 		}
 
-		if (($converter instanceof SchemaTypeConverter) === false) {
+		if (($converter instanceof SchemaTypeConverterInterface) === false) {
 			return null;
 		}
 
@@ -6920,7 +7019,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
 	 */
 	private function unreadCounts(ObjectEntity $object): array {
-		$readState = $this->container->get(ReadStateService::class);
+		$readState = $this->container->get(ReadStateServiceInterface::class);
 		if ($readState->callerUid() === null) {
 			return [];
 		}
@@ -6941,7 +7040,7 @@ class ObjectsController extends Controller {
 	 * @param string $register The register slug or identifier.
 	 * @param string $schema The schema slug or identifier.
 	 * @param ObjectOperationsInterface $objectService The object service.
-	 * @param ReferencedByService $referencedByService The reverse view.
+	 * @param ReferencedByServiceInterface $referencedByService The reverse view.
 	 *
 	 * @NoAdminRequired
 	 *
@@ -6956,7 +7055,7 @@ class ObjectsController extends Controller {
 		string $register,
 		string $schema,
 		ObjectOperationsInterface $objectService,
-		ReferencedByService $referencedByService,
+		ReferencedByServiceInterface $referencedByService,
 	): JSONResponse {
 		$isAdmin = $this->isCurrentUserAdmin();
 		$rbac = ($isAdmin === false);
@@ -7008,7 +7107,7 @@ class ObjectsController extends Controller {
 	 * @param string $register The register slug or identifier.
 	 * @param string $schema The schema slug or identifier.
 	 * @param ObjectOperationsInterface $objectService The object service.
-	 * @param InheritedGeoCollector $collector The feature collector.
+	 * @param InheritedGeoCollectorInterface $collector The feature collector.
 	 *
 	 * @NoAdminRequired
 	 *
@@ -7023,7 +7122,7 @@ class ObjectsController extends Controller {
 		string $register,
 		string $schema,
 		ObjectOperationsInterface $objectService,
-		InheritedGeoCollector $collector,
+		InheritedGeoCollectorInterface $collector,
 	): JSONResponse {
 		$isAdmin = $this->isCurrentUserAdmin();
 		$rbac = ($isAdmin === false);

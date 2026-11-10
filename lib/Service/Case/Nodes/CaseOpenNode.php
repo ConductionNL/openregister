@@ -29,7 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Case\Nodes;
 
 use OCA\OpenRegister\Exception\CasePlanExistsException;
-use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Case\CasePlanCreation;
 use UnexpectedValueException;
 
 /**
@@ -37,7 +37,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
  */
-class CaseOpenNode extends CaseNodeBase {
+class CaseOpenNode extends CaseNodeBase implements CaseOpenNodeInterface {
 
 	/**
 	 * The step type this node answers to.
@@ -108,12 +108,7 @@ class CaseOpenNode extends CaseNodeBase {
 				'required' => true,
 				'help' => $this->l10n->t('The plan to start: settings and items, the same shape the case plan API takes.'),
 			],
-			[
-				'key' => 'uuid',
-				'label' => $this->l10n->t('Object'),
-				'type' => 'text',
-				'help' => $this->l10n->t('Which object the case is. Leave empty to use the object the step receives.'),
-			],
+			$this->objectField(),
 		];
 	}//end configForm()
 
@@ -147,52 +142,26 @@ class CaseOpenNode extends CaseNodeBase {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	public function execute(array $items, array $config, array $context): array {
-		if ($items === []) {
-			return $items;
-		}
+		$definition = ($config['definition'] ?? null);
+		$work = fn (CaseStepCall $call): array => $this->open(call: $call, definition: $definition);
 
-		$this->validateConfig(config: $config);
-		$uid = $this->actingUid(context: $context);
-		$results = [];
-		foreach ($this->targets(items: $items, config: $config) as $uuid => $target) {
-			$results[$uuid] = $this->scope->call(
-				context: $context,
-				operation: fn (): array => $this->open(target: $target, definition: $config['definition'], uid: $uid)
-			);
-		}
-
-		$out = [];
-		foreach ($items as $index => $item) {
-			$json = ($item[FlowItems::JSON] ?? []);
-			$targets = $this->targets(items: [$item], config: $config);
-			$json['case'] = $results[(string)array_key_first($targets)];
-			$item[FlowItems::JSON] = $json;
-			$out[$index] = $item;
-		}
-
-		return $out;
+		return $this->perTarget(run: new CaseStepRun(items: $items, config: $config, context: $context), work: $work);
 	}//end execute()
 
 	/**
 	 * Create the plan, or report that one exists.
 	 *
-	 * @param array{uuid: string, register: int|null, schema: int|null} $target The object.
-	 * @param array $definition The plan.
-	 * @param string $uid The acting identity.
+	 * @param CaseStepCall $call       The object and the acting identity.
+	 * @param array        $definition The plan.
 	 *
 	 * @return array{opened: bool, reason: string} What happened.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
-	private function open(array $target, array $definition, string $uid): array {
+	private function open(CaseStepCall $call, array $definition): array {
+		$target = $call->target;
 		try {
-			$this->plans->createPlan(
-				objectUuid: $target['uuid'],
-				registerId: $target['register'],
-				schemaId: $target['schema'],
-				definition: $definition,
-				uid: $uid
-			);
+			$this->steps->plans->createPlan(creation: new CasePlanCreation(anchor: $target, definition: $definition, actor: $call->uid));
 		} catch (CasePlanExistsException) {
 			return ['opened' => false, 'reason' => 'exists'];
 		}

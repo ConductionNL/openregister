@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCA\OpenRegister\Db\FlowStateMapper;
+use OCA\OpenRegister\Db\Flow\FlowSelection;
 use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowService;
@@ -43,6 +44,10 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Flow\FlowDefinitionStore;
+use OCA\OpenRegister\Service\Flow\FlowDeletionSweep;
+use OCA\OpenRegister\Service\Flow\FlowRunDispatch;
+use OCA\OpenRegister\Service\Flow\FlowServicePlatform;
 
 /**
  * Storage of the `applicationSlug` field on a flow.
@@ -123,16 +128,24 @@ final class FlowApplicationSlugRoundTripTest extends TestCase {
 	 */
 	private function serviceWith(FlowMapper $mapper, ?ContainerInterface $container = null): FlowService {
 		return new FlowService(
-			$mapper,
-			$this->createMock(FlowTriggerIndex::class),
-			$this->createMock(FlowRunService::class),
-			$this->createMock(FlowRunAdvancer::class),
-			$this->createMock(FlowRunMapper::class),
-			$this->createMock(FlowRunStepMapper::class),
-			$this->createMock(FlowStateMapper::class),
-			$this->signedInSession(),
-			$this->createMock(LoggerInterface::class),
-			($container ?? $this->createMock(ContainerInterface::class))
+			new FlowDefinitionStore(
+				$mapper,
+				$this->createMock(FlowTriggerIndex::class)
+			),
+			new FlowRunDispatch(
+				$this->createMock(FlowRunService::class),
+				$this->createMock(FlowRunAdvancer::class)
+			),
+			new FlowDeletionSweep(
+				$this->createMock(FlowRunMapper::class),
+				$this->createMock(FlowRunStepMapper::class),
+				$this->createMock(FlowStateMapper::class)
+			),
+			new FlowServicePlatform(
+				$this->signedInSession(),
+				$this->createMock(LoggerInterface::class),
+				($container ?? $this->createMock(ContainerInterface::class))
+			)
 		);
 
 	}//end serviceWith()
@@ -318,7 +331,7 @@ final class FlowApplicationSlugRoundTripTest extends TestCase {
 		$mapper = $this->createMock(FlowMapper::class);
 		$mapper->expects($this->once())
 			->method('countFlows')
-			->with(null, 'hydra', self::ORGANISATION)
+			->with(new FlowSelection(app: null, applicationSlug: 'hydra', organisation: self::ORGANISATION))
 			->willReturn(3);
 
 		$result = $this->serviceWith($mapper, $this->organisationContainer())->count(app: null, applicationSlug: 'hydra');

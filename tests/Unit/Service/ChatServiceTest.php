@@ -18,6 +18,11 @@ use OCA\OpenRegister\Mcp\Service\ChatService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores;
+use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers;
+use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
+use OCA\OpenRegister\Mcp\Service\Chat\ReplyGrounding;
+use OCA\OpenRegister\Mcp\Service\Chat\TitleClaim;
 
 class ChatServiceTest extends TestCase {
 
@@ -80,14 +85,18 @@ class ChatServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new ChatService(
-			$this->conversationMapper,
-			$this->messageMapper,
-			$this->agentMapper,
-			$this->contextHandler,
-			$this->responseHandler,
-			$this->conversationHandler,
-			$this->historyHandler,
-			$this->logger
+			new ChatServiceStores(
+				$this->conversationMapper,
+				$this->messageMapper,
+				$this->agentMapper,
+			),
+			new ChatServiceHandlers(
+				$this->contextHandler,
+				$this->responseHandler,
+				$this->conversationHandler,
+				$this->historyHandler,
+			),
+			$this->logger,
 		);
 	}
 
@@ -109,8 +118,12 @@ class ChatServiceTest extends TestCase {
 			->willReturn($conversation);
 
 		$this->historyHandler
-			->expects($this->exactly(2))
-			->method('storeMessage');
+			->expects($this->once())
+			->method('storeUserMessage');
+
+		$this->historyHandler
+			->expects($this->once())
+			->method('storeAssistantMessage');
 
 		$this->conversationHandler
 			->expects($this->once())
@@ -289,7 +302,7 @@ class ChatServiceTest extends TestCase {
 		$this->conversationHandler
 			->expects($this->once())
 			->method('ensureUniqueTitle')
-			->with('Title', 'user1', 5)
+			->with(new TitleClaim(baseTitle: 'Title', userId: 'user1', agentId: 5))
 			->willReturn('Title (2)');
 
 		$result = $this->service->ensureUniqueTitle('Title', 'user1', 5);
@@ -356,15 +369,10 @@ class ChatServiceTest extends TestCase {
 			->expects($this->once())
 			->method('generateResponse')
 			->willReturnCallback(function (
-				string $userMessage,
-				array $context,
-				array $messageHistory,
-				$agent,
-				array $selectedTools,
-				?StreamYieldChannel $channelArg = null,
-				array $cnAiContext = [],
+				ChatMessageRequest $request,
+				ReplyGrounding $grounding,
 			) use (&$capturedChannel): string {
-				$capturedChannel = $channelArg;
+				$capturedChannel = $request->channel;
 				return 'AI says hello';
 			});
 
@@ -404,15 +412,10 @@ class ChatServiceTest extends TestCase {
 			->expects($this->once())
 			->method('generateResponse')
 			->willReturnCallback(function (
-				string $userMessage,
-				array $context,
-				array $messageHistory,
-				$agent,
-				array $selectedTools,
-				?StreamYieldChannel $channelArg = null,
-				array $cnAiContext = [],
+				ChatMessageRequest $request,
+				ReplyGrounding $grounding,
 			) use (&$capturedChannel): string {
-				$capturedChannel = $channelArg;
+				$capturedChannel = $request->channel;
 				return 'response';
 			});
 

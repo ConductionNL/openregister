@@ -47,12 +47,11 @@ use OCA\OpenRegister\Db\OutcomeFilter;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\SchemaRun;
 use OCA\OpenRegister\Db\SchemaRunEntry;
-use OCA\OpenRegister\Db\SchemaRunEntryMapper;
-use OCA\OpenRegister\Db\SchemaRunMapper;
+use OCA\OpenRegister\Db\SchemaRunEntryMapperInterface;
+use OCA\OpenRegister\Db\SchemaRunMapperInterface;
 use OCA\OpenRegister\Exception\SchemaRunConcurrencyException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
-use Psr\Log\LoggerInterface;
 
 /**
  * Declarative migration engine with rollback.
@@ -60,16 +59,11 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The thirteenth class is WriteCause, the ambient
  *                                                  audit-cause frame its object reads run in.
  */
-class SchemaMigrationService {
+class SchemaMigrationService implements SchemaMigrationServiceInterface, SchemaBatchMigratorInterface {
 
 	use SchemaRunPopulation;
 
-	/**
-	 * Default preview sample size.
-	 *
-	 * @var int
-	 */
-	public const DEFAULT_PREVIEW_SAMPLE = 10;
+	// DEFAULT_PREVIEW_SAMPLE is declared on SchemaMigrationServiceInterface.
 
 	/**
 	 * Default per-batch object count.
@@ -79,24 +73,61 @@ class SchemaMigrationService {
 	public const DEFAULT_BATCH = 100;
 
 	/**
+	 * The report of a migration run that has processed nothing.
+	 *
+	 * @var array<string, int>
+	 */
+	private const EMPTY_REPORT = ['migrated' => 0, 'unchanged' => 0, 'failed' => 0];
+
+	/**
+	 * The type and state a new migration run starts with.
+	 *
+	 * @var array<string, string>
+	 */
+	private const RUNNING_MIGRATION = ['type' => SchemaRun::TYPE_MIGRATION, 'state' => SchemaRun::STATE_RUNNING];
+
+	/**
+	 * Run persistence.
+	 *
+	 * @var SchemaRunMapperInterface
+	 */
+	private readonly SchemaRunMapperInterface $runMapper;
+
+	/**
+	 * Per-object run entries.
+	 *
+	 * @var SchemaRunEntryMapperInterface
+	 */
+	private readonly SchemaRunEntryMapperInterface $runEntryMapper;
+
+	/**
+	 * Schema lookup.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Object read/save pipeline.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SchemaMigrationPlanner $planner Pure transform engine.
-	 * @param SchemaRunMapper $runMapper Run persistence.
-	 * @param SchemaRunEntryMapper $runEntryMapper Per-object run entries.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
-	 * @param ObjectOperationsInterface $objectService Object read/save pipeline.
-	 * @param LoggerInterface $logger Logger.
+	 * @param SchemaPopulationRuns   $runs    The run ledger, the schema lookup and the object population.
 	 */
 	public function __construct(
 		private readonly SchemaMigrationPlanner $planner,
-		private readonly SchemaRunMapper $runMapper,
-		private readonly SchemaRunEntryMapper $runEntryMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly LoggerInterface $logger,
+		SchemaPopulationRuns $runs,
 	) {
-
+		$this->runMapper      = $runs->runMapper;
+		$this->runEntryMapper = $runs->runEntryMapper;
+		$this->schemaMapper   = $runs->schemaMapper;
+		$this->objectService  = $runs->objectService;
 	}//end __construct()
 
 	/**
@@ -115,44 +146,24 @@ class SchemaMigrationService {
 	/**
 	 * Preview a plan against a bounded sample without persisting.
 	 *
-	 * @param int $schemaId The schema id.
-	 * @param int $registerId The register id.
-	 * @param array<int, array<string, mixed>> $plan The transform chain.
-	 * @param int $sampleSize The sample size.
+	 * @param MigrationRequest $request    The schema, its register and the transform chain.
+	 * @param int              $sampleSize The sample size.
 	 *
 	 * @return array<int, array<string, mixed>> Before/after pairs.
 	 *
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
-	public function preview(int $schemaId, int $registerId, array $plan, int $sampleSize = self::DEFAULT_PREVIEW_SAMPLE): array {
-		$objects = $this->loadSample(schemaId: $schemaId, registerId: $registerId, sampleSize: $sampleSize);
-		$pairs = [];
+	public function previewSample(MigrationRequest $request, int $sampleSize = self::DEFAULT_PREVIEW_SAMPLE): array {
+		$objects = $this->loadSample(request: $request, sampleSize: $sampleSize);
 
-		foreach ($objects as $object) {
-			$before = $object->getObject();
-			$result = $this->planner->apply($before, $plan);
-
-			$pairs[] = [
-				'uuid' => $object->getUuid(),
-				'before' => $before,
-				'after' => $result->getData(),
-				'changed' => $result->isChanged(),
-				'failed' => $result->isFailed(),
-				'error' => $result->getFailure(),
-			];
-		}
-
-		return $pairs;
-	}//end preview()
+		return array_map(fn (ObjectEntity $object): array => $this->previewPair(object: $object, plan: $request->plan), $objects);
+	}//end previewSample()
 
 	/**
-	 * Start a migration run.
+	 * Start a migration run for a migration request.
 	 *
-	 * @param int $schemaId The schema id.
-	 * @param int $registerId The register id.
-	 * @param array<int, array<string, mixed>> $plan The transform chain.
-	 * @param array<string, mixed> $options Options (stopOnError).
-	 * @param string|null $startedBy The starting user.
+	 * @param MigrationRequest $request   The schema, register, plan and options.
+	 * @param string|null      $startedBy The starting user.
 	 *
 	 * @return SchemaRun The created run.
 	 *
@@ -161,31 +172,22 @@ class SchemaMigrationService {
 	 *
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
-	public function start(int $schemaId, int $registerId, array $plan, array $options = [], ?string $startedBy = null): SchemaRun {
-		$problems = $this->planner->validatePlan($plan);
-		if (count($problems) > 0) {
-			throw new InvalidArgumentException(implode(' ', $problems));
-		}
-
-		$this->assertNoActiveRun(schemaId: $schemaId);
-
-		$total = $this->countPopulation(schemaId: $schemaId, registerId: $registerId);
+	public function startMigration(MigrationRequest $request, ?string $startedBy = null): SchemaRun {
+		$this->assertValidPlan(plan: $request->plan);
+		$this->assertNoActiveRun(schemaId: $request->schemaId);
+		$scope = ['schemaId' => $request->schemaId, 'registerId' => $request->registerId];
 
 		return $this->runMapper->createFromArray(
-			[
-				'schemaId' => $schemaId,
-				'registerId' => $registerId,
-				'type' => SchemaRun::TYPE_MIGRATION,
-				'state' => SchemaRun::STATE_RUNNING,
-				'plan' => $plan,
-				'options' => $options,
-				'total' => $total,
+			$scope + self::RUNNING_MIGRATION + [
+				'plan' => $request->plan,
+				'options' => $request->options,
+				'total' => $this->countPopulation(schemaId: $request->schemaId, registerId: $request->registerId),
 				'startedBy' => $startedBy,
-				'report' => ['migrated' => 0, 'unchanged' => 0, 'failed' => 0],
+				'report' => self::EMPTY_REPORT,
 			]
 		);
 
-	}//end start()
+	}//end startMigration()
 
 	/**
 	 * Process one batch of a migration run.
@@ -199,103 +201,19 @@ class SchemaMigrationService {
 	 */
 	public function processBatch(SchemaRun $run, int $batchSize = self::DEFAULT_BATCH): bool {
 		$schema = $this->schemaMapper->find($run->getSchemaId());
-		$plan = ($run->getPlan() ?? []);
-		$stopOnError = (bool)(($run->getOptions() ?? [])['stopOnError'] ?? false);
-
-		$objects = $this->loadBatch(run: $run, batchSize: $batchSize);
-		if (count($objects) === 0) {
-			$this->finish(run: $run, state: SchemaRun::STATE_COMPLETED);
+		$objects = $this->nextBatch(run: $run, batchSize: $batchSize);
+		if ($objects === []) {
 			return false;
 		}
 
-		$report = ($run->getReport() ?? ['migrated' => 0, 'unchanged' => 0, 'failed' => 0]);
-		$maxId = $run->getCursor();
-
+		$batch = new SchemaRunBatch(run: $run, schema: $schema, emptyReport: self::EMPTY_REPORT);
 		foreach ($objects as $object) {
-			$maxId = max($maxId, (int)$object->getId());
-			$before = $object->getObject();
-			$result = $this->planner->apply($before, $plan);
-
-			if ($result->isFailed() === true) {
-				$report['failed'] = (($report['failed'] ?? 0) + 1);
-				$this->runEntryMapper->createFromArray(
-					[
-						'runId' => $run->getId(),
-						'objectUuid' => $object->getUuid(),
-						'outcome' => SchemaRunEntry::OUTCOME_FAILED,
-						'message' => $result->getFailure(),
-					]
-				);
-
-				$run->setProcessed(($run->getProcessed() + 1));
-
-				if ($stopOnError === true) {
-					$run->setCursor($maxId);
-					$run->setReport($report);
-					$this->finish(run: $run, state: SchemaRun::STATE_FAILED);
-					return false;
-				}
-
-				continue;
-			}//end if
-
-			if ($result->isChanged() === false) {
-				$report['unchanged'] = (($report['unchanged'] ?? 0) + 1);
-				$run->setProcessed(($run->getProcessed() + 1));
-				continue;
+			if ($this->migrateOne(batch: $batch, object: $object) === false) {
+				return $this->haltBatch(batch: $batch);
 			}
+		}
 
-			// Persist the changed object through the standard save pipeline.
-			$preVersion = $object->getVersion();
-			try {
-				$saved = $this->objectService->saveObject(
-					object: $result->getData(),
-					register: $run->getRegisterId(),
-					schema: $schema,
-					uuid: $object->getUuid(),
-					_rbac: false,
-					_multitenancy: false
-				);
-
-				$report['migrated'] = (($report['migrated'] ?? 0) + 1);
-				$this->runEntryMapper->createFromArray(
-					[
-						'runId' => $run->getId(),
-						'objectUuid' => $object->getUuid(),
-						'outcome' => SchemaRunEntry::OUTCOME_MIGRATED,
-						'preVersion' => $preVersion,
-						'postVersion' => $saved->getVersion(),
-						'preData' => $before,
-					]
-				);
-			} catch (\Throwable $e) {
-				$report['failed'] = (($report['failed'] ?? 0) + 1);
-				$this->runEntryMapper->createFromArray(
-					[
-						'runId' => $run->getId(),
-						'objectUuid' => $object->getUuid(),
-						'outcome' => SchemaRunEntry::OUTCOME_FAILED,
-						'message' => $e->getMessage(),
-					]
-				);
-
-				if ($stopOnError === true) {
-					$run->setProcessed(($run->getProcessed() + 1));
-					$run->setCursor($maxId);
-					$run->setReport($report);
-					$this->finish(run: $run, state: SchemaRun::STATE_FAILED);
-					return false;
-				}
-			}//end try
-
-			$run->setProcessed(($run->getProcessed() + 1));
-		}//end foreach
-
-		$run->setCursor($maxId);
-		$run->setReport($report);
-		$this->runMapper->save($run);
-
-		return true;
+		return $this->saveBatch(batch: $batch);
 	}//end processBatch()
 
 	/**
@@ -315,12 +233,223 @@ class SchemaMigrationService {
 	 * @throws \InvalidArgumentException When the run is not a migration.
 	 *
 	 * @spec openspec/specs/schema-migration/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function rollback(int $runId, ?string $startedBy = null): SchemaRun {
 		$run = $this->runMapper->find($runId);
+		$this->assertRollbackable(run: $run, runId: $runId);
 
+		$batch = new SchemaRunBatch(run: $run, schema: $this->schemaMapper->find($run->getSchemaId()), emptyReport: []);
+		$entries = $this->runEntryMapper->findByRun(runId: $runId, filter: new OutcomeFilter(outcome: SchemaRunEntry::OUTCOME_MIGRATED));
+		$tally = new SchemaRollbackTally();
+		foreach ($entries as $entry) {
+			$rollback        = new SchemaEntryRollbackRun();
+			$rollback->batch = $batch;
+			$rollback->entry = $entry;
+			$rollback->tally = $tally;
+			$this->rollbackOne(rollback: $rollback);
+		}
+
+		$this->markRolledBack(run: $run, tally: $tally);
+
+		return $run;
+	}//end rollback()
+
+	/**
+	 * Add the rollback counts to the run's report and persist it as rolled back.
+	 *
+	 * @param SchemaRun           $run   The run.
+	 * @param SchemaRollbackTally $tally The restored and conflict counts.
+	 *
+	 * @return void
+	 */
+	private function markRolledBack(SchemaRun $run, SchemaRollbackTally $tally): void {
+		$report = ($run->getReport() ?? []);
+		$report['rollback'] = $tally->toArray();
+		$run->setReport($report);
+		$run->setState(SchemaRun::STATE_ROLLED_BACK);
+		$this->runMapper->save($run);
+
+	}//end markRolledBack()
+
+	/**
+	 * Refuse an invalid plan.
+	 *
+	 * @param array<int, array<string, mixed>> $plan The transform chain.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the plan is invalid.
+	 */
+	private function assertValidPlan(array $plan): void {
+		$problems = $this->planner->validatePlan($plan);
+		if (count($problems) > 0) {
+			throw new InvalidArgumentException(implode(' ', $problems));
+		}
+
+	}//end assertValidPlan()
+
+	/**
+	 * One before/after pair of a preview.
+	 *
+	 * @param ObjectEntity                     $object The sampled object.
+	 * @param array<int, array<string, mixed>> $plan   The transform chain.
+	 *
+	 * @return array<string, mixed> The pair.
+	 */
+	private function previewPair(ObjectEntity $object, array $plan): array {
+		$before = $object->getObject();
+		$result = $this->planner->apply($before, $plan);
+
+		return [
+			'uuid' => $object->getUuid(),
+			'before' => $before,
+			'after' => $result->getData(),
+			'changed' => $result->isChanged(),
+			'failed' => $result->isFailed(),
+			'error' => $result->getFailure(),
+		];
+	}//end previewPair()
+
+	/**
+	 * Migrate one object of a batch.
+	 *
+	 * @param SchemaRunBatch $batch  The batch.
+	 * @param ObjectEntity   $object The object.
+	 *
+	 * @return bool False when the run must halt.
+	 */
+	private function migrateOne(SchemaRunBatch $batch, ObjectEntity $object): bool {
+		$batch->reach(object: $object);
+		$continue = $this->applyPlan(batch: $batch, object: $object);
+		$batch->markProcessed();
+
+		return $continue;
+	}//end migrateOne()
+
+	/**
+	 * Apply the run's plan to one object in memory and persist a change.
+	 *
+	 * An object whose chain fails is recorded and left untouched: no partial write.
+	 *
+	 * @param SchemaRunBatch $batch  The batch.
+	 * @param ObjectEntity   $object The object.
+	 *
+	 * @return bool False when the run must halt.
+	 */
+	private function applyPlan(SchemaRunBatch $batch, ObjectEntity $object): bool {
+		$migration         = new SchemaObjectMigrationRun();
+		$migration->batch  = $batch;
+		$migration->object = $object;
+
+		$result = $this->planner->apply($object->getObject(), ($batch->run->getPlan() ?? []));
+		if ($result->isFailed() === true) {
+			return $this->recordFailure(migration: $migration, message: $result->getFailure());
+		}
+
+		if ($result->isChanged() === false) {
+			$batch->tally(key: 'unchanged');
+			return true;
+		}
+
+		return $this->persist(migration: $migration, data: $result->getData());
+	}//end applyPlan()
+
+	/**
+	 * Persist a changed object through the standard save pipeline.
+	 *
+	 * The entry keeps the pre-migration version and data for a rollback.
+	 *
+	 * @param SchemaObjectMigrationRun $migration The object's migration.
+	 * @param array<string, mixed>     $data      The migrated data.
+	 *
+	 * @return bool False when the run must halt.
+	 */
+	private function persist(SchemaObjectMigrationRun $migration, array $data): bool {
+		try {
+			$write = new SchemaObjectWrite(data: $data, uuid: $migration->object->getUuid());
+			$saved = $this->saveAs(batch: $migration->batch, write: $write);
+			$migration->batch->tally(key: 'migrated');
+			$this->recordMigrated(migration: $migration, saved: $saved);
+		} catch (\Throwable $e) {
+			return $this->recordFailure(migration: $migration, message: $e->getMessage());
+		}
+
+		return true;
+	}//end persist()
+
+	/**
+	 * Record a migrated object with its pre/post version and pre-migration data.
+	 *
+	 * @param SchemaObjectMigrationRun $migration The object's migration.
+	 * @param ObjectEntity             $saved     The object as it was saved.
+	 *
+	 * @return void
+	 */
+	private function recordMigrated(SchemaObjectMigrationRun $migration, ObjectEntity $saved): void {
+		$object = $migration->object;
+		$this->recordEntry(
+			run: $migration->batch->run,
+			entry: [
+				'objectUuid' => $object->getUuid(),
+				'outcome' => SchemaRunEntry::OUTCOME_MIGRATED,
+				'preVersion' => $object->getVersion(),
+				'postVersion' => $saved->getVersion(),
+				'preData' => $object->getObject(),
+			]
+		);
+
+	}//end recordMigrated()
+
+	/**
+	 * Record a failed object; the run halts when it stops on error.
+	 *
+	 * @param SchemaObjectMigrationRun $migration The object's migration.
+	 * @param string|null              $message   Why it failed.
+	 *
+	 * @return bool False when the run must halt.
+	 */
+	private function recordFailure(SchemaObjectMigrationRun $migration, ?string $message): bool {
+		$run = $migration->batch->run;
+		$migration->batch->tally(key: 'failed');
+		$this->recordEntry(
+			run: $run,
+			entry: ['objectUuid' => $migration->object->getUuid(), 'outcome' => SchemaRunEntry::OUTCOME_FAILED, 'message' => $message]
+		);
+
+		return ((bool)(($run->getOptions() ?? [])['stopOnError'] ?? false)) === false;
+	}//end recordFailure()
+
+	/**
+	 * Save object data into the run's register and schema, without RBAC or multitenancy.
+	 *
+	 * @param SchemaRunBatch    $batch The batch.
+	 * @param SchemaObjectWrite $write The object data and uuid.
+	 *
+	 * @return ObjectEntity The saved object.
+	 */
+	private function saveAs(SchemaRunBatch $batch, SchemaObjectWrite $write): ObjectEntity {
+		return $this->objectService->saveObject(
+			object: $write->data,
+			register: $batch->run->getRegisterId(),
+			schema: $batch->schema,
+			uuid: $write->uuid,
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end saveAs()
+
+	/**
+	 * Refuse to roll back a run that is not a migration or was rolled back already.
+	 *
+	 * @param SchemaRun $run   The run.
+	 * @param int       $runId The run id asked for.
+	 *
+	 * @return void
+	 *
+	 * @throws SchemaRunConcurrencyException When the run was already rolled back.
+	 * @throws InvalidArgumentException When the run is not a migration.
+	 */
+	private function assertRollbackable(SchemaRun $run, int $runId): void {
 		if ($run->getType() !== SchemaRun::TYPE_MIGRATION) {
 			throw new InvalidArgumentException('Only migration runs can be rolled back.');
 		}
@@ -329,118 +458,121 @@ class SchemaMigrationService {
 			throw new SchemaRunConcurrencyException(message: sprintf('Run #%d has already been rolled back.', $runId));
 		}
 
-		$schema = $this->schemaMapper->find($run->getSchemaId());
-		$entries = $this->runEntryMapper->findByRun(runId: $runId, filter: new OutcomeFilter(outcome: SchemaRunEntry::OUTCOME_MIGRATED));
+	}//end assertRollbackable()
 
-		$restored = 0;
-		$conflicts = 0;
+	/**
+	 * Restore one migrated object, unless it is gone or was edited since.
+	 *
+	 * @param SchemaEntryRollbackRun $rollback The entry's rollback.
+	 *
+	 * @return void
+	 */
+	private function rollbackOne(SchemaEntryRollbackRun $rollback): void {
+		$current  = $this->findCurrent(batch: $rollback->batch, uuid: $rollback->entry->getObjectUuid());
+		$conflict = $this->rollbackConflict(current: $current, entry: $rollback->entry);
+		if ($conflict !== null) {
+			$rollback->tally->conflict();
+			$this->recordOutcome(rollback: $rollback, outcome: [SchemaRunEntry::OUTCOME_CONFLICT, $conflict]);
+			return;
+		}
 
-		foreach ($entries as $entry) {
-			$object = WriteCause::asLookup(fn () => $this->objectService->find(
-				id: $entry->getObjectUuid(),
-				register: $run->getRegisterId(),
-				schema: $schema,
-				_rbac: false,
-				_multitenancy: false
-			));
+		$this->restore(rollback: $rollback);
 
-			if ($object === null) {
-				$conflicts++;
-				$this->recordRollbackEntry(
-					run: $run,
-					objectUuid: $entry->getObjectUuid(),
-					outcome: SchemaRunEntry::OUTCOME_CONFLICT,
-					message: 'Object no longer exists.'
-				);
-				continue;
-			}
+	}//end rollbackOne()
 
-			// Conflict guard: skip objects edited by other writers since the migration.
-			if ((string)$object->getVersion() !== (string)$entry->getPostVersion()) {
-				$conflicts++;
-				$this->recordRollbackEntry(
-					run: $run,
-					objectUuid: $entry->getObjectUuid(),
-					outcome: SchemaRunEntry::OUTCOME_CONFLICT,
-					message: sprintf('Object modified after migration (current version %s).', (string)$object->getVersion())
-				);
-				continue;
-			}
+	/**
+	 * Save an object's pre-migration snapshot; a refused save is a conflict.
+	 *
+	 * @param SchemaEntryRollbackRun $rollback The entry's rollback.
+	 *
+	 * @return void
+	 */
+	private function restore(SchemaEntryRollbackRun $rollback): void {
+		$entry = $rollback->entry;
+		try {
+			$this->saveAs(batch: $rollback->batch, write: new SchemaObjectWrite(data: ($entry->getPreData() ?? []), uuid: $entry->getObjectUuid()));
+			$rollback->tally->restore();
+			$this->recordOutcome(rollback: $rollback, outcome: [SchemaRunEntry::OUTCOME_RESTORED, null]);
+		} catch (\Throwable $e) {
+			$rollback->tally->conflict();
+			$this->recordOutcome(rollback: $rollback, outcome: [SchemaRunEntry::OUTCOME_CONFLICT, $e->getMessage()]);
+		}
 
-			try {
-				$this->objectService->saveObject(
-					object: ($entry->getPreData() ?? []),
-					register: $run->getRegisterId(),
-					schema: $schema,
-					uuid: $entry->getObjectUuid(),
-					_rbac: false,
-					_multitenancy: false
-				);
-				$restored++;
-				$this->recordRollbackEntry(
-					run: $run,
-					objectUuid: $entry->getObjectUuid(),
-					outcome: SchemaRunEntry::OUTCOME_RESTORED,
-					message: null
-				);
-			} catch (\Throwable $e) {
-				$conflicts++;
-				$this->recordRollbackEntry(
-					run: $run,
-					objectUuid: $entry->getObjectUuid(),
-					outcome: SchemaRunEntry::OUTCOME_CONFLICT,
-					message: $e->getMessage()
-				);
-			}//end try
-		}//end foreach
+	}//end restore()
 
-		$report = ($run->getReport() ?? []);
-		$report['rollback'] = ['restored' => $restored, 'conflicts' => $conflicts];
-		$run->setReport($report);
-		$run->setState(SchemaRun::STATE_ROLLED_BACK);
-		$this->runMapper->save($run);
+	/**
+	 * Why an object may not be restored, or null when it may.
+	 *
+	 * Conflict guard: an object gone, or edited by another writer since the migration, is skipped.
+	 *
+	 * @param ObjectEntity|null $current The object as it is now.
+	 * @param SchemaRunEntry    $entry   The migrated entry.
+	 *
+	 * @return string|null The conflict message.
+	 */
+	private function rollbackConflict(?ObjectEntity $current, SchemaRunEntry $entry): ?string {
+		if ($current === null) {
+			return 'Object no longer exists.';
+		}
 
-		return $run;
-	}//end rollback()
+		if ((string)$current->getVersion() !== (string)$entry->getPostVersion()) {
+			return sprintf('Object modified after migration (current version %s).', (string)$current->getVersion());
+		}
+
+		return null;
+	}//end rollbackConflict()
+
+	/**
+	 * Read an object as it is now, without RBAC or multitenancy.
+	 *
+	 * @param SchemaRunBatch $batch The rollback batch.
+	 * @param string|null    $uuid  The object uuid.
+	 *
+	 * @return ObjectEntity|null The object, or null when it is gone.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
+	 */
+	private function findCurrent(SchemaRunBatch $batch, ?string $uuid): ?ObjectEntity {
+		return WriteCause::asLookup(fn () => $this->objectService->find(
+			id: $uuid,
+			register: $batch->run->getRegisterId(),
+			schema: $batch->schema,
+			_rbac: false,
+			_multitenancy: false
+		));
+	}//end findCurrent()
 
 	/**
 	 * Record a rollback per-object entry.
 	 *
-	 * @param SchemaRun $run The run.
-	 * @param string|null $objectUuid The object UUID.
-	 * @param string $outcome The outcome.
-	 * @param string|null $message The message.
+	 * @param SchemaEntryRollbackRun           $rollback The entry's rollback.
+	 * @param array{0: string, 1: string|null} $outcome  The outcome and its message.
 	 *
 	 * @return void
 	 */
-	private function recordRollbackEntry(SchemaRun $run, ?string $objectUuid, string $outcome, ?string $message): void {
-		$this->runEntryMapper->createFromArray(
-			[
-				'runId' => $run->getId(),
-				'objectUuid' => $objectUuid,
-				'outcome' => $outcome,
-				'message' => $message,
-			]
+	private function recordOutcome(SchemaEntryRollbackRun $rollback, array $outcome): void {
+		$this->recordEntry(
+			run: $rollback->batch->run,
+			entry: ['objectUuid' => $rollback->entry->getObjectUuid(), 'outcome' => $outcome[0], 'message' => $outcome[1]]
 		);
 
-	}//end recordRollbackEntry()
+	}//end recordOutcome()
 
 	/**
-	 * Load a bounded sample of objects.
+	 * Load a bounded sample of the request's objects.
 	 *
-	 * @param int $schemaId The schema id.
-	 * @param int $registerId The register id.
-	 * @param int $sampleSize The sample size.
+	 * @param MigrationRequest $request    The schema and register to sample.
+	 * @param int              $sampleSize The sample size.
 	 *
 	 * @return ObjectEntity[] The objects.
 	 */
-	private function loadSample(int $schemaId, int $registerId, int $sampleSize): array {
+	private function loadSample(MigrationRequest $request, int $sampleSize): array {
 		$result = $this->objectService->findAll(
 			config: [
 				'limit' => $sampleSize,
 				'filters' => [
-					'register' => $registerId,
-					'schema' => $schemaId,
+					'register' => $request->registerId,
+					'schema' => $request->schemaId,
 				],
 			],
 			_rbac: false,

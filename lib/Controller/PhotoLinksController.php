@@ -33,12 +33,18 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use Closure;
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\PhotoLinksControllerServices;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
+use OCA\OpenRegister\Controller\Support\LinkedSourceActions;
+use OCA\OpenRegister\Controller\Support\LinkedSourceResponses;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\PhotoLinkService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\PhotoLinkServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -53,20 +59,32 @@ class PhotoLinksController extends Controller {
 	use ObjectLinkActionsTrait;
 
 	/**
+	 * Backing service.
+	 *
+	 * @var PhotoLinkServiceInterface
+	 */
+	private readonly PhotoLinkServiceInterface $photoLinkService;
+
+	/**
+	 * OR object resolver.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
-	 * @param IRequest $request HTTP request.
-	 * @param PhotoLinkService $photoLinkService Backing service.
-	 * @param ObjectOperationsInterface $objectService OR object resolver.
+	 * @param IRequest                     $request  HTTP request.
+	 * @param PhotoLinksControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly PhotoLinkService $photoLinkService,
-		private readonly ObjectOperationsInterface $objectService,
+		PhotoLinksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->photoLinkService = $services->photoLinkService;
+		$this->objectService = $services->objectService;
 	}//end __construct()
 
 	/**
@@ -84,15 +102,24 @@ class PhotoLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		if ($this->photoLinkService->isPhotosAvailable() === false) {
-			return $this->appNotInstalled(appName: 'NC Photos');
-		}
-
-		return $this->listLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->photoLinkService->getLinkedAlbums($object->getUuid()))
-		);
+		return $this->indexForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end index()
+
+	/**
+	 * index() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function indexForObject(ObjectRef $ref): JSONResponse {
+		return $this->whenPhotosInstalled(
+			answer: fn (): JSONResponse => $this->listLinkedObject(
+				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
+				action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->photoLinkService->getLinkedAlbums($object->getUuid()))
+			)
+		);
+	}//end indexForObject()
 
 	/**
 	 * Link an existing Photos album.
@@ -111,27 +138,27 @@ class PhotoLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
-		if ($this->photoLinkService->isPhotosAvailable() === false) {
-			return $this->appNotInstalled(appName: 'NC Photos');
-		}
-
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object): JSONResponse {
-				$albumId = (int)$this->request->getParam('albumId', 0);
-				if ($albumId === 0) {
-					return new JSONResponse(['error' => 'albumId is required'], 400);
-				}
-
-				$link = $this->photoLinkService->linkAlbum(
-					$this->linkTargetOf(object: $object),
-					$albumId
-				);
-
-				return new JSONResponse($link->jsonSerialize(), 201);
-			}
-		);
+		return $this->linkForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end link()
+
+	/**
+	 * link() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function linkForObject(ObjectRef $ref): JSONResponse {
+		return $this->whenPhotosInstalled(
+			answer: fn (): JSONResponse => $this->onLinkedObject(
+				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
+				action: (new LinkedSourceActions(request: $this->request))->linkById(
+					param: 'albumId',
+					link: fn (ObjectEntity $object, int $albumId) => $this->photoLinkService->linkAlbum($this->linkTargetOf(object: $object), $albumId)
+				)
+			)
+		);
+	}//end linkForObject()
 
 	/**
 	 * Create a new Photos album and link it.
@@ -150,15 +177,24 @@ class PhotoLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function createAndLink(string $register, string $schema, string $id): JSONResponse {
-		if ($this->photoLinkService->isPhotosAvailable() === false) {
-			return $this->appNotInstalled(appName: 'NC Photos');
-		}
-
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: $this->namedLinkOf(create: $this->photoLinkService->createAndLinkAlbum(...))
-		);
+		return $this->createAndLinkForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end createAndLink()
+
+	/**
+	 * createAndLink() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function createAndLinkForObject(ObjectRef $ref): JSONResponse {
+		return $this->whenPhotosInstalled(
+			answer: fn (): JSONResponse => $this->onLinkedObject(
+				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
+				action: $this->namedLinkOf(create: $this->photoLinkService->createAndLinkAlbum(...))
+			)
+		);
+	}//end createAndLinkForObject()
 
 	/**
 	 * Unlink a Photos album.
@@ -176,19 +212,25 @@ class PhotoLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function destroy(string $register, string $schema, string $id, string $albumId): JSONResponse {
-		if ($this->photoLinkService->isPhotosAvailable() === false) {
-			return $this->appNotInstalled(appName: 'NC Photos');
-		}
-
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object) use ($albumId): JSONResponse {
-				$this->photoLinkService->unlinkAlbum($object->getUuid(), (int)$albumId);
-
-				return new JSONResponse(['success' => true]);
-			}
-		);
+		return $this->destroyForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id), albumId: $albumId);
 	}//end destroy()
+
+	/**
+	 * destroy() for the object the route names.
+	 *
+	 * @param ObjectRef $ref     The object the route names.
+	 * @param string    $albumId Album id (numeric).
+	 *
+	 * @return JSONResponse
+	 */
+	private function destroyForObject(ObjectRef $ref, string $albumId): JSONResponse {
+		return $this->whenPhotosInstalled(
+			answer: fn (): JSONResponse => $this->onLinkedObject(
+				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
+				action: LinkedSourceActions::unlink(unlink: fn (string $uuid) => $this->photoLinkService->unlinkAlbum($uuid, (int)$albumId))
+			)
+		);
+	}//end destroyForObject()
 
 	/**
 	 * List the current user's Photos albums (picker source).
@@ -204,18 +246,29 @@ class PhotoLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function available(): JSONResponse {
+		return $this->whenPhotosInstalled(
+			answer: fn (): JSONResponse => LinkedSourceResponses::listed(
+				items: $this->photoLinkService->getAvailableAlbums(LinkedSourceActions::search(request: $this->request))
+			)
+		);
+	}//end available()
+
+	/**
+	 * Run the answer when the Photos app is installed; 501 otherwise.
+	 *
+	 * @param Closure $answer Returns the response.
+	 *
+	 * @return JSONResponse The answer, or 501.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
+	 */
+	private function whenPhotosInstalled(Closure $answer): JSONResponse {
 		if ($this->photoLinkService->isPhotosAvailable() === false) {
 			return $this->appNotInstalled(appName: 'NC Photos');
 		}
 
-		$search = $this->request->getParam('search');
-		if ($search !== null) {
-			$search = (string)$search;
-		}
-
-		$albums = $this->photoLinkService->getAvailableAlbums($search);
-		return new JSONResponse(['results' => $albums, 'total' => count($albums)]);
-	}//end available()
+		return $answer();
+	}//end whenPhotosInstalled()
 
 	/**
 	 * Map a service-layer Exception to a JSONResponse.
@@ -233,11 +286,6 @@ class PhotoLinksController extends Controller {
 	 * @return JSONResponse
 	 */
 	protected function mapException(Exception $exception): JSONResponse {
-		$code = $exception->getCode();
-		if (in_array($code, [400, 401, 404, 409, 503], true) === true) {
-			return new JSONResponse(['error' => $exception->getMessage()], $code);
-		}
-
-		return new JSONResponse(['error' => $exception->getMessage()], 400);
+		return LinkedSourceResponses::failure(exception: $exception, passThrough: [400, 401, 404, 409, 503]);
 	}//end mapException()
 }//end class

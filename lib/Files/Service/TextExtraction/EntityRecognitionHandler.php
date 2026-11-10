@@ -25,14 +25,14 @@ namespace OCA\OpenRegister\Files\Service\TextExtraction;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Files\Db\Chunk;
-use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\GdprEntity;
-use OCA\OpenRegister\Db\GdprEntityMapper;
+use OCA\OpenRegister\Db\GdprEntityMapperInterface;
 use OCA\OpenRegister\Exception\AnalyzeRequestRejectedException;
-use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
-use OCA\OpenRegister\Service\Anonymisation\BackendState;
+use OCA\OpenRegister\Service\Anonymisation\AnonymiserRequestInterface;
+use OCA\OpenRegister\Service\Anonymisation\BackendMethodsInterface;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\NlPatternSet;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -119,24 +119,14 @@ class EntityRecognitionHandler {
 	/**
 	 * Constructor.
 	 *
-	 * @param ChunkMapper $chunkMapper Chunk mapper.
-	 * @param GdprEntityMapper $entityMapper Entity mapper.
-	 * @param EntityRelationMapperInterface $entityRelationMapper Entity relation mapper.
-	 * @param IDBConnection $db Database connection.
-	 * @param LoggerInterface $logger Logger.
-	 * @param SettingsServiceInterface $settingsService Settings service.
-	 * @param AnonymisationBackendService $anonymisationBackendService Backend state + ExApp client.
-	 * @param ContainerInterface|null $container App container, consulted lazily for the object mapper.
+	 * @param EntityRecognitionStores   $stores   Chunk, entity and relation stores plus the DB connection.
+	 * @param EntityRecognitionBackends $backends Settings, anonymisation backend and the lazy app container.
+	 * @param LoggerInterface           $logger   Logger.
 	 */
 	public function __construct(
-		private readonly ChunkMapper $chunkMapper,
-		private readonly GdprEntityMapper $entityMapper,
-		private readonly EntityRelationMapperInterface $entityRelationMapper,
-		private readonly IDBConnection $db,
+		private readonly EntityRecognitionStores $stores,
+		private readonly EntityRecognitionBackends $backends,
 		private readonly LoggerInterface $logger,
-		private readonly SettingsServiceInterface $settingsService,
-		private readonly AnonymisationBackendService $anonymisationBackendService,
-		private readonly ?ContainerInterface $container = null,
 	) {
 	}//end __construct()
 
@@ -159,11 +149,31 @@ class EntityRecognitionHandler {
 	 *
 	 * @psalm-return array{chunks_processed: int<0, max>, entities_found: int<0, max>, relations_created: int<0, max>}
 	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-14
+	 */
+	public function processSourceChunks(string $sourceType, int $sourceId, array $options = []): array {
+		return $this->extractEntities(request: new EntityExtractionRequest(sourceType: $sourceType, sourceId: $sourceId, options: $options));
+	}//end processSourceChunks()
+
+	/**
+	 * Extract the entities of every content chunk of one source.
+	 *
+	 * @param EntityExtractionRequest $request The source and the processing options.
+	 *
+	 * @return int[]
+	 *
+	 * @throws Exception When processing fails.
+	 *
+	 * @psalm-return array{chunks_processed: int<0, max>, entities_found: int<0, max>, relations_created: int<0, max>}
+	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Chunk processing requires multiple condition checks
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-14
 	 */
-	public function processSourceChunks(string $sourceType, int $sourceId, array $options = []): array {
+	public function extractEntities(EntityExtractionRequest $request): array {
+		$sourceType = $request->sourceType;
+		$sourceId = $request->sourceId;
+		$options = $request->options;
 		$this->logger->info(
 			message: '[EntityRecognitionHandler] Processing chunks for entity extraction',
 			context: [
@@ -175,7 +185,7 @@ class EntityRecognitionHandler {
 		);
 
 		// Get all chunks for this source (excluding metadata chunks).
-		$chunks = $this->chunkMapper->findBySource(sourceType: $sourceType, sourceId: $sourceId);
+		$chunks = $this->stores->chunkMapper->findBySource(sourceType: $sourceType, sourceId: $sourceId);
 
 		// Filter out metadata chunks (chunk_index = -1).
 		$chunks = array_filter(
@@ -226,7 +236,7 @@ class EntityRecognitionHandler {
 			'entities_found' => $totalEntities,
 			'relations_created' => $totalRelations,
 		];
-	}//end processSourceChunks()
+	}//end extractEntities()
 
 	/**
 	 * Extract entities from a text chunk.
@@ -277,10 +287,12 @@ class EntityRecognitionHandler {
 
 		// Extract entities using selected method.
 		$detectedEntities = $this->detectEntities(
-			text: $text,
-			method: $method,
-			entityTypes: $entityTypes,
-			confidenceThreshold: $confidenceThreshold
+			query: new EntityDetectionQuery(
+				text: $text,
+				entityTypes: $entityTypes,
+				confidenceThreshold: $confidenceThreshold
+			),
+			method: $method
 		);
 
 		if (empty($detectedEntities) === true) {
@@ -294,10 +306,12 @@ class EntityRecognitionHandler {
 		// Store entities and create relations.
 		return $this->storeDetectedEntities(
 			detectedEntities: $detectedEntities,
-			chunk: $chunk,
-			text: $text,
-			method: $method,
-			contextWindow: $contextWindow
+			scan: new ChunkEntityScan(
+				chunk: $chunk,
+				text: $text,
+				method: $method,
+				contextWindow: $contextWindow
+			)
 		);
 	}//end extractFromChunk()
 
@@ -307,87 +321,28 @@ class EntityRecognitionHandler {
 	 * Iterates over detected entities, finds or creates each entity record,
 	 * creates a relation linking the entity to the chunk, and collects results.
 	 *
-	 * @param array $detectedEntities Array of detected entity data from detection methods.
-	 * @param Chunk $chunk The chunk the entities were extracted from.
-	 * @param string $text The full text content of the chunk.
-	 * @param string $method The detection method used.
-	 * @param int $contextWindow Characters of context to extract around each entity.
+	 * @param array           $detectedEntities Array of detected entity data from detection methods.
+	 * @param ChunkEntityScan $scan             The chunk, its text, the method and the context window.
 	 *
 	 * @return array{entities_found: int, relations_created: int, entities: array} Storage results.
 	 */
-	private function storeDetectedEntities(
-		array $detectedEntities,
-		Chunk $chunk,
-		string $text,
-		string $method,
-		int $contextWindow,
-	): array {
+	private function storeDetectedEntities(array $detectedEntities, ChunkEntityScan $scan): array {
 		$entitiesFound = 0;
 		$relationsCreated = 0;
 		$storedEntities = [];
 
 		foreach ($detectedEntities as $detected) {
 			try {
-				// Find or create entity. Scrub the value to valid UTF-8: text
-				// extracted from some PDFs contains ill-formed byte sequences
-				// (e.g. a stray 0xC3 lead byte) that PostgreSQL (UTF8) rejects
-				// with SQLSTATE[22021], aborting the insert and losing the entity.
-				$entity = $this->findOrCreateEntity(
-					type: $detected['type'],
-					value: $this->sanitizeUtf8(value: trim((string)($detected['value'] ?? ''))),
-					category: $detected['category'] ?? self::getCategoryForType(type: $detected['type'])
-				);
-
-				// Create entity relation.
-				$relation = new EntityRelation();
-				$relation->setEntityId($entity->getId());
-				$relation->setChunkId($chunk->getId());
-				$relation->setPositionStart($detected['position_start']);
-				$relation->setPositionEnd($detected['position_end']);
-				$relation->setConfidence($detected['confidence']);
-				$relation->setDetectionMethod($method);
-				$context = $this->extractContext(
-					text: $text,
-					positionStart: $detected['position_start'],
-					positionEnd: $detected['position_end'],
-					window: $contextWindow
-				);
-				$relation->setContext($this->sanitizeUtf8(value: $context));
-				$relation->setCreatedAt(new DateTime());
-
-				// Set source references based on chunk source type.
-				if ($chunk->getSourceType() === 'file') {
-					$relation->setFileId($chunk->getSourceId());
-				} elseif ($chunk->getSourceType() === 'object') {
-					$relation->setObjectId($chunk->getSourceId());
-
-					// Populate disambiguating columns so DSAR /
-					// retention-enforcement composition can resolve the
-					// owning object deterministically across magic-tables.
-					// The int `object_id` alone collides because magic-table
-					// sequences are scoped per-table.
-					$this->populateObjectContextOnRelation(
-						relation: $relation,
-						objectId: $chunk->getSourceId()
-					);
-				}
-
-				$this->entityRelationMapper->insert($relation);
-
+				$storedEntities[] = $this->storeDetectedEntity(detected: $detected, scan: $scan);
 				$entitiesFound++;
 				$relationsCreated++;
-				$storedEntities[] = [
-					'type' => $detected['type'],
-					'value' => $detected['value'],
-					'confidence' => $detected['confidence'],
-				];
 			} catch (Exception $e) {
 				$this->logger->error(
 					message: '[EntityRecognitionHandler] Failed to store entity',
 					context: [
 						'file' => __FILE__,
 						'line' => __LINE__,
-						'chunk_id' => $chunk->getId(),
+						'chunk_id' => $scan->chunk->getId(),
 						'type' => $detected['type'] ?? 'unknown',
 						'value' => substr($detected['value'] ?? '', 0, 50),
 						'error' => $e->getMessage(),
@@ -404,44 +359,90 @@ class EntityRecognitionHandler {
 	}//end storeDetectedEntities()
 
 	/**
+	 * Store one detected entity and the relation linking it to the chunk.
+	 *
+	 * @param array           $detected One detected entity.
+	 * @param ChunkEntityScan $scan     The chunk, its text, the method and the context window.
+	 *
+	 * @return array{type: mixed, value: mixed, confidence: mixed} The stored entity summary.
+	 *
+	 * @throws Exception When the entity or the relation cannot be stored.
+	 */
+	private function storeDetectedEntity(array $detected, ChunkEntityScan $scan): array {
+		$chunk = $scan->chunk;
+
+		// Find or create entity.
+		$entity = $this->findOrCreateEntity(detected: $detected);
+
+		// Create entity relation.
+		$relation = new EntityRelation();
+		$relation->setEntityId($entity->getId());
+		$relation->setChunkId($chunk->getId());
+		$relation->setPositionStart($detected['position_start']);
+		$relation->setPositionEnd($detected['position_end']);
+		$relation->setConfidence($detected['confidence']);
+		$relation->setDetectionMethod($scan->method);
+		$context = $this->extractContext(detected: $detected, scan: $scan);
+		$relation->setContext($this->sanitizeUtf8(value: $context));
+		$relation->setCreatedAt(new DateTime());
+
+		$this->setRelationSource(relation: $relation, chunk: $chunk);
+
+		$this->stores->entityRelationMapper->insert($relation);
+
+		return [
+			'type' => $detected['type'],
+			'value' => $detected['value'],
+			'confidence' => $detected['confidence'],
+		];
+	}//end storeDetectedEntity()
+
+	/**
+	 * Set the source references on a relation from the chunk's source type.
+	 *
+	 * @param EntityRelation $relation The relation being built.
+	 * @param Chunk          $chunk    The chunk the entity was found in.
+	 *
+	 * @return void
+	 */
+	private function setRelationSource(EntityRelation $relation, Chunk $chunk): void {
+		if ($chunk->getSourceType() === 'file') {
+			$relation->setFileId($chunk->getSourceId());
+			return;
+		}
+
+		if ($chunk->getSourceType() === 'object') {
+			$relation->setObjectId($chunk->getSourceId());
+
+			// Populate disambiguating columns so DSAR /
+			// retention-enforcement composition can resolve the
+			// owning object deterministically across magic-tables.
+			// The int `object_id` alone collides because magic-table
+			// sequences are scoped per-table.
+			$this->populateObjectContextOnRelation(
+				relation: $relation,
+				objectId: $chunk->getSourceId()
+			);
+		}
+	}//end setRelationSource()
+
+	/**
 	 * Detect entities in text using specified method.
 	 *
-	 * @param string $text Text to analyze.
-	 * @param string $method Detection method.
-	 * @param array|null $entityTypes Entity types to detect (null = all).
-	 * @param float $confidenceThreshold Minimum confidence.
+	 * @param EntityDetectionQuery $query  Text, entity filter (null = all) and minimum confidence.
+	 * @param string               $method Detection method.
 	 *
 	 * @return array Detected entities with type, value, category, position, and confidence.
 	 */
-	private function detectEntities(string $text, string $method, ?array $entityTypes, float $confidenceThreshold): array {
+	private function detectEntities(EntityDetectionQuery $query, string $method): array {
 		$method = $this->resolveMethod(method: $method);
 
 		return match ($method) {
-			self::METHOD_REGEX => $this->detectWithRegex(
-				text: $text,
-				entityTypes: $entityTypes,
-				confidenceThreshold: $confidenceThreshold
-			),
-			self::METHOD_PRESIDIO => $this->detectWithPresidio(
-				text: $text,
-				entityTypes: $entityTypes,
-				confidenceThreshold: $confidenceThreshold
-			),
-			self::METHOD_OPENANONYMISER => $this->detectWithOpenAnonymiser(
-				text: $text,
-				entityTypes: $entityTypes,
-				confidenceThreshold: $confidenceThreshold
-			),
-			self::METHOD_LLM => $this->detectWithLLM(
-				text: $text,
-				entityTypes: $entityTypes,
-				confidenceThreshold: $confidenceThreshold
-			),
-			self::METHOD_HYBRID => $this->detectWithHybrid(
-				text: $text,
-				entityTypes: $entityTypes,
-				confidenceThreshold: $confidenceThreshold
-			),
+			self::METHOD_REGEX => $this->detectWithRegex(query: $query),
+			self::METHOD_PRESIDIO => $this->detectWithPresidio(query: $query),
+			self::METHOD_OPENANONYMISER => $this->detectWithOpenAnonymiser(query: $query),
+			self::METHOD_LLM => $this->detectWithLLM(query: $query),
+			self::METHOD_HYBRID => $this->detectWithHybrid(query: $query),
 			default => throw new Exception("Unknown detection method: {$method}")
 		};//end match
 	}//end detectEntities()
@@ -456,15 +457,15 @@ class EntityRecognitionHandler {
 	 *
 	 * @param string $method The requested method.
 	 *
-	 * @return string A concrete method from BackendState::METHODS.
+	 * @return string A concrete method from BackendMethodsInterface::METHODS.
 	 */
 	private function resolveMethod(string $method): string {
-		if (in_array($method, BackendState::METHODS, true) === true) {
+		if (in_array($method, BackendMethodsInterface::METHODS, true) === true) {
 			return $method;
 		}
 
 		try {
-			return $this->anonymisationBackendService->getState()->effectiveMethod;
+			return $this->backends->anonymisationBackendService->getState()->effectiveMethod;
 		} catch (Exception $e) {
 			$this->logger->warning(
 				message: '[EntityRecognitionHandler] Could not resolve method "' . $method . '", falling back to regex: ' . $e->getMessage(),
@@ -477,55 +478,77 @@ class EntityRecognitionHandler {
 	/**
 	 * Detect entities using regex patterns.
 	 *
-	 * @param string $text Text to analyze.
-	 * @param array|null $entityTypes Entity types to detect.
-	 * @param float $confidenceThreshold Minimum confidence.
+	 * @param EntityDetectionQuery $query Text, entity filter and minimum confidence.
 	 *
 	 * @return array Detected entities with type, value, category, position, and confidence.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple entity type patterns require separate conditions
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple regex pattern matching paths
 	 */
-	private function detectWithRegex(string $text, ?array $entityTypes, float $confidenceThreshold): array {
-		$entities = [];
-		$patterns = $this->getRegexPatterns();
-
-		foreach ($patterns as $patternDef) {
-			// Skip entity types not requested.
-			if ($entityTypes !== null && in_array($patternDef['type'], $entityTypes, true) === false) {
-				continue;
-			}
-
-			if (preg_match_all($patternDef['pattern'], $text, $matches, PREG_OFFSET_CAPTURE) > 0) {
-				foreach ($matches[0] as $match) {
-					$entities[] = [
-						'type' => $patternDef['type'],
-						'value' => $match[0],
-						'category' => $patternDef['category'],
-						'position_start' => $match[1],
-						'position_end' => $match[1] + strlen($match[0]),
-						'confidence' => $patternDef['confidence'],
-					];
-				}
-			}
-		}//end foreach
+	private function detectWithRegex(EntityDetectionQuery $query): array {
+		$entities = $this->matchRegexPatterns(query: $query);
 
 		// Country-specific identifiers come from a jurisdiction pattern set,
 		// not from the generic patterns above (or#4104). The Dutch set finds
 		// a BSN only when it passes the elfproef, and reports it as SSN, the
 		// type the risk service rates very high.
-		if ($entityTypes === null || in_array(self::ENTITY_TYPE_SSN, $entityTypes, true) === true) {
+		if ($query->wants(type: self::ENTITY_TYPE_SSN) === true) {
 			$entities = $this->withoutPhoneOverlapping(
-				entities: array_merge($entities, (new NlPatternSet())->detect(text: $text))
+				entities: array_merge($entities, (new NlPatternSet())->detect(text: $query->text))
 			);
 		}
 
 		// Filter by confidence threshold.
+		$confidenceThreshold = $query->confidenceThreshold;
 		return array_filter(
 			$entities,
 			fn ($e) => $e['confidence'] >= $confidenceThreshold
 		);
 	}//end detectWithRegex()
+
+	/**
+	 * Match the generic regex patterns the query asks for.
+	 *
+	 * @param EntityDetectionQuery $query Text and entity filter.
+	 *
+	 * @return array Matched entities, unfiltered by confidence.
+	 */
+	private function matchRegexPatterns(EntityDetectionQuery $query): array {
+		$entities = [];
+		foreach ($this->getRegexPatterns() as $patternDef) {
+			// Skip entity types not requested.
+			if ($query->wants(type: $patternDef['type']) === false) {
+				continue;
+			}
+
+			$entities = array_merge($entities, $this->matchRegexPattern(patternDef: $patternDef, text: $query->text));
+		}
+
+		return $entities;
+	}//end matchRegexPatterns()
+
+	/**
+	 * Match one regex pattern definition against the text.
+	 *
+	 * @param array  $patternDef Pattern definition (type, pattern, category, confidence).
+	 * @param string $text       Text to analyse.
+	 *
+	 * @return array The entities the pattern matched.
+	 */
+	private function matchRegexPattern(array $patternDef, string $text): array {
+		$entities = [];
+		if (preg_match_all($patternDef['pattern'], $text, $matches, PREG_OFFSET_CAPTURE) > 0) {
+			foreach ($matches[0] as $match) {
+				$entities[] = [
+					'type' => $patternDef['type'],
+					'value' => $match[0],
+					'category' => $patternDef['category'],
+					'position_start' => $match[1],
+					'position_end' => $match[1] + strlen($match[0]),
+					'confidence' => $patternDef['confidence'],
+				];
+			}
+		}
+
+		return $entities;
+	}//end matchRegexPattern()
 
 	/**
 	 * Drop PHONE matches that overlap a BSN.
@@ -540,12 +563,7 @@ class EntityRecognitionHandler {
 	 * @return array The entities without a PHONE that overlaps an SSN span.
 	 */
 	private function withoutPhoneOverlapping(array $entities): array {
-		$bsnSpans = [];
-		foreach ($entities as $entity) {
-			if ($entity['type'] === self::ENTITY_TYPE_SSN) {
-				$bsnSpans[] = [$entity['position_start'], $entity['position_end']];
-			}
-		}
+		$bsnSpans = self::bsnSpans(entities: $entities);
 
 		if ($bsnSpans === []) {
 			return $entities;
@@ -554,22 +572,47 @@ class EntityRecognitionHandler {
 		return array_values(
 			array_filter(
 				$entities,
-				static function (array $entity) use ($bsnSpans): bool {
-					if ($entity['type'] !== self::ENTITY_TYPE_PHONE) {
-						return true;
-					}
-
-					foreach ($bsnSpans as [$start, $end]) {
-						if ($entity['position_start'] < $end && $entity['position_end'] > $start) {
-							return false;
-						}
-					}
-
-					return true;
-				}
+				static fn (array $entity): bool => $entity['type'] !== self::ENTITY_TYPE_PHONE
+					|| self::overlapsAnySpan(entity: $entity, spans: $bsnSpans) === false
 			)
 		);
 	}//end withoutPhoneOverlapping()
+
+	/**
+	 * The [start, end] spans of the SSN entities.
+	 *
+	 * @param array $entities The detected entities.
+	 *
+	 * @return array<int, array{0: mixed, 1: mixed}> The SSN spans.
+	 */
+	private static function bsnSpans(array $entities): array {
+		$bsnSpans = [];
+		foreach ($entities as $entity) {
+			if ($entity['type'] === self::ENTITY_TYPE_SSN) {
+				$bsnSpans[] = [$entity['position_start'], $entity['position_end']];
+			}
+		}
+
+		return $bsnSpans;
+	}//end bsnSpans()
+
+	/**
+	 * Whether an entity overlaps any of the given spans.
+	 *
+	 * @param array $entity The entity.
+	 * @param array $spans  The [start, end] spans.
+	 *
+	 * @return bool True when the entity overlaps a span.
+	 */
+	private static function overlapsAnySpan(array $entity, array $spans): bool {
+		foreach ($spans as [$start, $end]) {
+			if ($entity['position_start'] < $end && $entity['position_end'] > $start) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end overlapsAnySpan()
 
 	/**
 	 * Get regex pattern definitions for entity detection.
@@ -605,71 +648,77 @@ class EntityRecognitionHandler {
 	/**
 	 * Detect entities using Presidio service.
 	 *
-	 * @param string $text Text to analyze.
-	 * @param array|null $entityTypes Entity types to detect.
-	 * @param float $confidenceThreshold Minimum confidence.
+	 * @param EntityDetectionQuery $query Text, entity filter and minimum confidence.
 	 *
 	 * @return array Detected entities with type, value, category, position, and confidence.
 	 */
-	private function detectWithPresidio(string $text, ?array $entityTypes, float $confidenceThreshold): array {
+	private function detectWithPresidio(EntityDetectionQuery $query): array {
 		try {
-			// Get Presidio settings.
-			$fileSettings = $this->settingsService->getFileSettingsOnly();
-			// Strip a trailing slash to avoid a double-slash "//analyze" URL
-			// (some servers 404, silently sending the run to the regex fallback).
-			$presidioEndpoint = rtrim(trim((string)($fileSettings['presidioApiEndpoint'] ?? '')), '/');
-
-			if (empty($presidioEndpoint) === true) {
-				$this->logger->warning(
-					message: '[EntityRecognitionHandler] Presidio endpoint not configured, falling back to regex',
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				return $this->detectWithRegex(
-					text: $text,
-					entityTypes: $entityTypes,
-					confidenceThreshold: $confidenceThreshold
-				);
-			}
-
-			// Build request body.
-			$requestBody = $this->buildAnalyzeRequestBody(text: $text, language: 'en', entityTypes: $entityTypes);
-
-			// Make HTTP request and parse response.
-			$apiResults = $this->postAnalyzeRequest(
-				url: $presidioEndpoint . '/analyze',
-				requestBody: $requestBody,
-				serviceName: 'Presidio'
-			);
-
-			if ($apiResults === null) {
-				return $this->detectWithRegex(
-					text: $text,
-					entityTypes: $entityTypes,
-					confidenceThreshold: $confidenceThreshold
-				);
-			}
-
-			$this->logger->debug(
-				message: '[EntityRecognitionHandler] Presidio found ' . count($apiResults) . ' entities',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			// Convert results to our format.
-			return $this->convertApiResultsToEntities(
-				apiResults: $apiResults,
-				text: $text,
-				confidenceThreshold: $confidenceThreshold,
-				method: self::METHOD_PRESIDIO,
-				defaultConfidence: 0
-			);
+			return $this->runPresidio(query: $query);
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[EntityRecognitionHandler] Presidio detection failed: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
-			return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
+			return $this->detectWithRegex(query: $query);
 		}//end try
 	}//end detectWithPresidio()
+
+	/**
+	 * Ask Presidio for entities, falling back to regex when it is not configured or not reachable.
+	 *
+	 * @param EntityDetectionQuery $query Text, entity filter and minimum confidence.
+	 *
+	 * @return array Detected entities.
+	 *
+	 * @throws Exception When settings or the request fail.
+	 */
+	private function runPresidio(EntityDetectionQuery $query): array {
+		// Get Presidio settings.
+		$fileSettings = $this->backends->settingsService->getFileSettingsOnly();
+		// Strip a trailing slash to avoid a double-slash "//analyze" URL
+		// (some servers 404, silently sending the run to the regex fallback).
+		$presidioEndpoint = rtrim(trim((string)($fileSettings['presidioApiEndpoint'] ?? '')), '/');
+
+		if (empty($presidioEndpoint) === true) {
+			$this->logger->warning(
+				message: '[EntityRecognitionHandler] Presidio endpoint not configured, falling back to regex',
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return $this->detectWithRegex(query: $query);
+		}
+
+		$request = new AnalyzeRequest(
+			query: $query,
+			dialect: new AnalyzeDialect(
+				language: 'en',
+				nameMap: null,
+				method: self::METHOD_PRESIDIO,
+				defaultConfidence: 0
+			)
+		);
+
+		// Make HTTP request and parse response.
+		$apiResults = $this->postAnalyzeRequest(
+			call: new AnalyzeCall(
+				url: $presidioEndpoint . '/analyze',
+				requestBody: $this->buildAnalyzeRequestBody(request: $request),
+				serviceName: 'Presidio'
+			)
+		);
+
+		if ($apiResults === null) {
+			return $this->detectWithRegex(query: $query);
+		}
+
+		$this->logger->debug(
+			message: '[EntityRecognitionHandler] Presidio found ' . count($apiResults) . ' entities',
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+
+		// Convert results to our format.
+		return $this->convertApiResultsToEntities(apiResults: $apiResults, request: $request);
+	}//end runPresidio()
 
 	/**
 	 * Detect entities using OpenAnonymiser service.
@@ -679,80 +728,15 @@ class EntityRecognitionHandler {
 	 * wrapped in {"pii_entities": [...]}, includes "text" field per entity, and
 	 * defaults to Dutch language.
 	 *
-	 * @param string $text Text to analyze.
-	 * @param array|null $entityTypes Entity types to detect.
-	 * @param float $confidenceThreshold Minimum confidence.
+	 * @param EntityDetectionQuery $query Text, entity filter and minimum confidence.
 	 *
 	 * @return array Detected entities with type, value, category, position, and confidence.
+	 *
+	 * @throws AnalyzeRequestRejectedException When OpenAnonymiser refuses the request.
 	 */
-	private function detectWithOpenAnonymiser(string $text, ?array $entityTypes, float $confidenceThreshold): array {
+	private function detectWithOpenAnonymiser(EntityDetectionQuery $query): array {
 		try {
-			// Get OpenAnonymiser settings.
-			$fileSettings = $this->settingsService->getFileSettingsOnly();
-			// Strip a trailing slash: a configured endpoint like
-			// "https://host/" would otherwise build "https://host//api/v1/analyze"
-			// (double slash), which some servers 404 — sending the run silently
-			// to the regex fallback.
-			$anonEndpoint = rtrim(trim((string)($fileSettings['openAnonymiserApiEndpoint'] ?? '')), '/');
-			// Source: 'internal' (AppAPI ExApp, default) or 'external' (operator-entered URL).
-			$useExternal = (($fileSettings['openAnonymiserSource'] ?? 'internal') === 'external');
-
-			// Build request body (shared by both transports), in anonymiq's
-			// own entity names: it rejects Presidio's (or#4115).
-			$requestBody = $this->buildAnalyzeRequestBody(
-				text: $text,
-				language: 'nl',
-				entityTypes: $entityTypes,
-				nameMap: self::OPENANONYMISER_ENTITY_NAMES
-			);
-
-			// A filter anonymiq knows none of asks it for nothing. Sending no
-			// `entities` list would ask it for EVERY type instead.
-			if ($entityTypes !== null && $entityTypes !== [] && isset($requestBody['entities']) === false) {
-				return [];
-			}
-
-			$responseData = $this->sendOpenAnonymiserRequest(
-				requestBody: $requestBody,
-				anonEndpoint: $anonEndpoint,
-				useExternal: $useExternal,
-				authHeaders: $this->openAnonymiserAuthHeaders(fileSettings: $fileSettings)
-			);
-
-			if ($responseData === null) {
-				$this->logger->warning(
-					message: '[EntityRecognitionHandler] OpenAnonymiser unreachable, falling back to regex',
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				return $this->detectWithRegex(
-					text: $text,
-					entityTypes: $entityTypes,
-					confidenceThreshold: $confidenceThreshold
-				);
-			}
-
-			// OpenAnonymiser wraps results in {"pii_entities": [...]}.
-			// If the response is a flat array of entities, use it directly.
-			$anonymiserResults = $responseData;
-			if (isset($responseData['pii_entities']) === true) {
-				$anonymiserResults = $responseData['pii_entities'];
-			}
-
-			$this->logger->debug(
-				message: '[EntityRecognitionHandler] OpenAnonymiser found ' . count($anonymiserResults) . ' entities',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			// Convert results to our format.
-			// OpenAnonymiser may return null score for NLP-detected entities (e.g. PERSON).
-			// Treat null as high confidence (0.85) since these are spaCy NER detections.
-			return $this->convertApiResultsToEntities(
-				apiResults: $anonymiserResults,
-				text: $text,
-				confidenceThreshold: $confidenceThreshold,
-				method: self::METHOD_OPENANONYMISER,
-				defaultConfidence: 0.85
-			);
+			return $this->runOpenAnonymiser(query: $query);
 		} catch (AnalyzeRequestRejectedException $e) {
 			// Reached and refused: the request is wrong, not the network, and
 			// the regex fallback would hide that behind e-mail/phone/IBAN only.
@@ -766,9 +750,82 @@ class EntityRecognitionHandler {
 				message: '[EntityRecognitionHandler] OpenAnonymiser detection failed: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
-			return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
+			return $this->detectWithRegex(query: $query);
 		}//end try
 	}//end detectWithOpenAnonymiser()
+
+	/**
+	 * Ask OpenAnonymiser for entities, falling back to regex when it cannot be reached.
+	 *
+	 * @param EntityDetectionQuery $query Text, entity filter and minimum confidence.
+	 *
+	 * @return array Detected entities.
+	 *
+	 * @throws AnalyzeRequestRejectedException When OpenAnonymiser refuses the request.
+	 * @throws Exception                       When settings or the request fail.
+	 */
+	private function runOpenAnonymiser(EntityDetectionQuery $query): array {
+		// Get OpenAnonymiser settings.
+		$fileSettings = $this->backends->settingsService->getFileSettingsOnly();
+		// Strip a trailing slash: a configured endpoint like
+		// "https://host/" would otherwise build "https://host//api/v1/analyze"
+		// (double slash), which some servers 404 — sending the run silently
+		// to the regex fallback.
+		$anonEndpoint = rtrim(trim((string)($fileSettings['openAnonymiserApiEndpoint'] ?? '')), '/');
+		// Source: 'internal' (AppAPI ExApp, default) or 'external' (operator-entered URL).
+		$useExternal = (($fileSettings['openAnonymiserSource'] ?? 'internal') === 'external');
+
+		$request = new AnalyzeRequest(
+			query: $query,
+			dialect: new AnalyzeDialect(
+				language: 'nl',
+				nameMap: self::OPENANONYMISER_ENTITY_NAMES,
+				method: self::METHOD_OPENANONYMISER,
+				defaultConfidence: 0.85
+			)
+		);
+
+		// Build request body (shared by both transports), in anonymiq's
+		// own entity names: it rejects Presidio's (or#4115).
+		$requestBody = $this->buildAnalyzeRequestBody(request: $request);
+
+		// A filter anonymiq knows none of asks it for nothing. Sending no
+		// `entities` list would ask it for EVERY type instead.
+		if ($query->hasEntityFilter() === true && isset($requestBody['entities']) === false) {
+			return [];
+		}
+
+		$responseData = $this->sendOpenAnonymiserRequest(
+			requestBody: $requestBody,
+			transport: new OpenAnonymiserTransport(
+				endpoint: $anonEndpoint,
+				useExternal: $useExternal,
+				authHeaders: $this->openAnonymiserAuthHeaders(fileSettings: $fileSettings)
+			)
+		);
+
+		if ($responseData === null) {
+			$this->logger->warning(
+				message: '[EntityRecognitionHandler] OpenAnonymiser unreachable, falling back to regex',
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return $this->detectWithRegex(query: $query);
+		}
+
+		// OpenAnonymiser wraps results in {"pii_entities": [...]}.
+		// If the response is a flat array of entities, use it directly.
+		$anonymiserResults = $responseData['pii_entities'] ?? $responseData;
+
+		$this->logger->debug(
+			message: '[EntityRecognitionHandler] OpenAnonymiser found ' . count($anonymiserResults) . ' entities',
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+
+		// Convert results to our format.
+		// OpenAnonymiser may return null score for NLP-detected entities (e.g. PERSON).
+		// Treat null as high confidence (0.85) since these are spaCy NER detections.
+		return $this->convertApiResultsToEntities(apiResults: $anonymiserResults, request: $request);
+	}//end runOpenAnonymiser()
 
 	/**
 	 * Send an analyze request to OpenAnonymiser over the configured transport.
@@ -777,26 +834,18 @@ class EntityRecognitionHandler {
 	 * external endpoint when the ExApp is unreachable; external posts to the
 	 * operator-entered URL. A 4xx is thrown by either transport (or#4115).
 	 *
-	 * @param array  $requestBody  The analyze request body.
-	 * @param string $anonEndpoint The external endpoint, without a trailing slash; empty when none.
-	 * @param bool   $useExternal  Whether the operator chose the external endpoint.
-	 * @param array<int, string> $authHeaders Credentials for the external endpoint; empty sends none.
+	 * @param array                   $requestBody The analyze request body.
+	 * @param OpenAnonymiserTransport $transport   Endpoint, transport choice and credentials.
 	 *
 	 * @return array|null The response data, or null when OpenAnonymiser could not be reached.
 	 *
 	 * @throws AnalyzeRequestRejectedException When OpenAnonymiser refuses the request.
 	 */
-	private function sendOpenAnonymiserRequest(
-		array $requestBody,
-		string $anonEndpoint,
-		bool $useExternal,
-		array $authHeaders=[]
-	): ?array {
+	private function sendOpenAnonymiserRequest(array $requestBody, OpenAnonymiserTransport $transport): ?array {
 		$responseData = null;
-		if ($useExternal === false) {
-			$responseData = $this->anonymisationBackendService->requestOpenAnonymiser(
-				route: '/api/v1/analyze',
-				params: $requestBody
+		if ($transport->useExternal === false) {
+			$responseData = $this->backends->anonymisationBackendService->requestOpenAnonymiser(
+				call: new \OCA\OpenRegister\Service\Anonymisation\AnonymiserCall(route: '/api/v1/analyze', params: $requestBody, method: 'POST')
 			);
 		}
 
@@ -804,24 +853,36 @@ class EntityRecognitionHandler {
 			return $responseData;
 		}
 
-		if ($anonEndpoint === '') {
-			if ($useExternal === true) {
-				$this->logger->warning(
-					message: '[EntityRecognitionHandler] OpenAnonymiser external endpoint not configured, falling back to regex',
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}
-
+		if ($transport->endpoint === '') {
+			$this->warnExternalEndpointMissing(transport: $transport);
 			return null;
 		}
 
 		return $this->postAnalyzeRequest(
-			url: $anonEndpoint.'/api/v1/analyze',
-			requestBody: $requestBody,
-			serviceName: 'OpenAnonymiser',
-			extraHeaders: $authHeaders
+			call: new AnalyzeCall(
+				url: $transport->endpoint.'/api/v1/analyze',
+				requestBody: $requestBody,
+				serviceName: 'OpenAnonymiser',
+				extraHeaders: $transport->authHeaders
+			)
 		);
 	}//end sendOpenAnonymiserRequest()
+
+	/**
+	 * Warn when the operator chose the external endpoint but configured none.
+	 *
+	 * @param OpenAnonymiserTransport $transport The configured transport.
+	 *
+	 * @return void
+	 */
+	private function warnExternalEndpointMissing(OpenAnonymiserTransport $transport): void {
+		if ($transport->useExternal === true) {
+			$this->logger->warning(
+				message: '[EntityRecognitionHandler] OpenAnonymiser external endpoint not configured, falling back to regex',
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+	}//end warnExternalEndpointMissing()
 
 	/**
 	 * The HTTP Basic header for an external OpenAnonymiser, when configured.
@@ -842,7 +903,7 @@ class EntityRecognitionHandler {
 			return [];
 		}
 
-		$password = $this->settingsService->getOpenAnonymiserPassword();
+		$password = $this->backends->settingsService->getOpenAnonymiserPassword();
 
 		return ['Authorization: Basic '.base64_encode($username.':'.$password)];
 	}//end openAnonymiserAuthHeaders()
@@ -852,38 +913,51 @@ class EntityRecognitionHandler {
 	 *
 	 * Constructs the JSON request payload with text, language, and optional entity type filters.
 	 *
-	 * @param string $text Text to analyze.
-	 * @param string $language Language code (e.g. 'en', 'nl').
-	 * @param array|null $entityTypes Entity types to detect (null = all).
-	 * @param array<string, string>|null $nameMap Our type to the backend's name; null uses Presidio's names.
+	 * @param AnalyzeRequest $request Text and entity filter (null = all), language and the backend's entity names.
 	 *
 	 * @return array The request body array ready for JSON encoding.
 	 */
-	private function buildAnalyzeRequestBody(string $text, string $language, ?array $entityTypes, ?array $nameMap = null): array {
+	private function buildAnalyzeRequestBody(AnalyzeRequest $request): array {
+		$query   = $request->query;
+		$dialect = $request->dialect;
 		$requestBody = [
-			'text' => $text,
-			'language' => $language,
+			'text' => $query->text,
+			'language' => $dialect->language,
 		];
 
 		// Add entity types filter if specified.
-		if ($entityTypes !== null && empty($entityTypes) === false) {
-			$backendEntities = $this->mapToPresidioEntityTypes(entityTypes: $entityTypes);
-			if ($nameMap !== null) {
-				$backendEntities = array_values(
-					array_filter(
-						array_map(static fn ($type) => ($nameMap[$type] ?? null), $entityTypes),
-						static fn ($name) => $name !== null
-					)
-				);
-			}
+		if ($query->hasEntityFilter() === false) {
+			return $requestBody;
+		}
 
-			if (empty($backendEntities) === false) {
-				$requestBody['entities'] = $backendEntities;
-			}
+		$backendEntities = $this->backendEntityNames(entityTypes: $query->entityTypes, nameMap: $dialect->nameMap);
+		if (empty($backendEntities) === false) {
+			$requestBody['entities'] = $backendEntities;
 		}
 
 		return $requestBody;
 	}//end buildAnalyzeRequestBody()
+
+	/**
+	 * Translate our entity types into the backend's names.
+	 *
+	 * @param array                      $entityTypes Our entity types.
+	 * @param array<string, string>|null $nameMap     Our type to the backend's name; null uses Presidio's names.
+	 *
+	 * @return array The backend's entity names; types it does not know are dropped.
+	 */
+	private function backendEntityNames(array $entityTypes, ?array $nameMap): array {
+		if ($nameMap === null) {
+			return $this->mapToPresidioEntityTypes(entityTypes: $entityTypes);
+		}
+
+		return array_values(
+			array_filter(
+				array_map(static fn ($type) => ($nameMap[$type] ?? null), $entityTypes),
+				static fn ($name) => $name !== null
+			)
+		);
+	}//end backendEntityNames()
 
 	/**
 	 * Post an analyze request to an external entity detection service.
@@ -891,29 +965,27 @@ class EntityRecognitionHandler {
 	 * Handles the curl POST request, error checking, and JSON response parsing.
 	 * Returns null on any failure (connection error, non-200, invalid JSON).
 	 *
-	 * @param string $url The full URL to POST to.
-	 * @param array $requestBody The request body to JSON-encode.
-	 * @param string $serviceName Human-readable service name for log messages.
-	 * @param array<int, string> $extraHeaders Additional header lines, such as credentials.
+	 * @param AnalyzeCall $call URL, request body, service name and extra headers.
 	 *
 	 * @return array|null Parsed JSON response array, or null on failure.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) The exception's own status predicate.
+	 * @throws AnalyzeRequestRejectedException When the service answers with a request error.
 	 */
-	private function postAnalyzeRequest(string $url, array $requestBody, string $serviceName, array $extraHeaders=[]): ?array {
-		$ch = curl_init($url);
+	private function postAnalyzeRequest(AnalyzeCall $call): ?array {
+		$serviceName = $call->serviceName;
+		$ch = curl_init($call->url);
 		curl_setopt_array(
 			$ch,
 			[
 				CURLOPT_RETURNTRANSFER => true,
 				CURLOPT_POST => true,
-				CURLOPT_POSTFIELDS => json_encode($requestBody),
+				CURLOPT_POSTFIELDS => json_encode($call->requestBody),
 				CURLOPT_HTTPHEADER => array_merge(
 					[
 						'Content-Type: application/json',
 						'Accept: application/json',
 					],
-					$extraHeaders
+					$call->extraHeaders
 				),
 				CURLOPT_TIMEOUT => 30,
 			]
@@ -932,14 +1004,8 @@ class EntityRecognitionHandler {
 			return null;
 		}
 
-		if (is_int($httpCode) === true && AnalyzeRequestRejectedException::isRequestError(status: $httpCode) === true) {
-			$detail = '';
-			if (is_string($response) === true) {
-				$detail = $response;
-			}
-
-			throw new AnalyzeRequestRejectedException(service: $serviceName, status: $httpCode, detail: $detail);
-		}
+		$reply = new AnalyzeResponse(status: $httpCode, body: $response);
+		$this->refuseRequestError(serviceName: $serviceName, response: $reply);
 
 		if ($httpCode !== 200) {
 			$this->logger->error(
@@ -949,7 +1015,44 @@ class EntityRecognitionHandler {
 			return null;
 		}
 
-		if (is_string($response) === false) {
+		return $this->decodeAnalyzeResponse(serviceName: $serviceName, response: $reply);
+	}//end postAnalyzeRequest()
+
+	/**
+	 * Throw when the service answered with a request (4xx) error.
+	 *
+	 * @param string          $serviceName Human-readable service name.
+	 * @param AnalyzeResponse $response    The HTTP status curl reported and the raw response body.
+	 *
+	 * @return void
+	 *
+	 * @throws AnalyzeRequestRejectedException When the status is a request error.
+	 */
+	private function refuseRequestError(string $serviceName, AnalyzeResponse $response): void {
+		$httpCode = $response->status;
+		if (is_int($httpCode) === false || AnalyzeRequestRejectedException::isRequestError(status: $httpCode) === false) {
+			return;
+		}
+
+		$detail = '';
+		if (is_string($response->body) === true) {
+			$detail = $response->body;
+		}
+
+		throw new AnalyzeRequestRejectedException(service: $serviceName, status: $httpCode, detail: $detail);
+	}//end refuseRequestError()
+
+	/**
+	 * Decode a 200 analyze response body.
+	 *
+	 * @param string          $serviceName Human-readable service name for log messages.
+	 * @param AnalyzeResponse $response    The raw response body.
+	 *
+	 * @return array|null The decoded array, or null when the body is not a JSON array.
+	 */
+	private function decodeAnalyzeResponse(string $serviceName, AnalyzeResponse $response): ?array {
+		$body = $response->body;
+		if (is_string($body) === false) {
 			$this->logger->error(
 				message: "[EntityRecognitionHandler] {$serviceName} returned non-string response",
 				context: ['file' => __FILE__, 'line' => __LINE__]
@@ -957,7 +1060,7 @@ class EntityRecognitionHandler {
 			return null;
 		}
 
-		$decoded = json_decode($response, true);
+		$decoded = json_decode($body, true);
 		if (json_last_error() !== JSON_ERROR_NONE || is_array($decoded) === false) {
 			$this->logger->error(
 				message: "[EntityRecognitionHandler] Failed to parse {$serviceName} response",
@@ -967,7 +1070,7 @@ class EntityRecognitionHandler {
 		}
 
 		return $decoded;
-	}//end postAnalyzeRequest()
+	}//end decodeAnalyzeResponse()
 
 	/**
 	 * Convert API entity detection results to our internal entity format.
@@ -975,35 +1078,29 @@ class EntityRecognitionHandler {
 	 * Handles both Presidio-style and OpenAnonymiser-style result arrays, extracting
 	 * entity type, value, position, and confidence for each detected entity.
 	 *
-	 * @param array $apiResults Array of entity detection results from the API.
-	 * @param string $text The original text that was analyzed.
-	 * @param float $confidenceThreshold Minimum confidence to include.
-	 * @param string $method Detection method constant (e.g. METHOD_PRESIDIO).
-	 * @param float $defaultConfidence Default confidence when score is missing.
+	 * @param array          $apiResults Array of entity detection results from the API.
+	 * @param AnalyzeRequest $request    The analysed text, the minimum confidence to include, the detection
+	 *                                   method and the default confidence for a missing score.
 	 *
 	 * @return array Array of entities in our internal format.
 	 */
-	private function convertApiResultsToEntities(
-		array $apiResults,
-		string $text,
-		float $confidenceThreshold,
-		string $method,
-		float $defaultConfidence,
-	): array {
+	private function convertApiResultsToEntities(array $apiResults, AnalyzeRequest $request): array {
+		$query    = $request->query;
+		$dialect  = $request->dialect;
 		$entities = [];
 
 		foreach ($apiResults as $result) {
-			$score = $result['score'] ?? $defaultConfidence;
+			$score = $result['score'] ?? $dialect->defaultConfidence;
 
 			// Skip low confidence results.
-			if ($score < $confidenceThreshold) {
+			if ($score < $query->confidenceThreshold) {
 				continue;
 			}
 
 			$start = $result['start'] ?? 0;
 			$end = $result['end'] ?? 0;
 			// Use 'text' field if available (OpenAnonymiser), otherwise extract from source text.
-			$value = $result['text'] ?? substr($text, $start, ($end - $start));
+			$value = $result['text'] ?? substr($query->text, $start, ($end - $start));
 
 			$entityType = $this->mapFromPresidioEntityType(presidioType: $result['entity_type'] ?? 'UNKNOWN');
 
@@ -1014,7 +1111,7 @@ class EntityRecognitionHandler {
 				'position_start' => $start,
 				'position_end' => $end,
 				'confidence' => $score,
-				'method' => $method,
+				'method' => $dialect->method,
 			];
 		}//end foreach
 
@@ -1081,13 +1178,11 @@ class EntityRecognitionHandler {
 	/**
 	 * Detect entities using LLM.
 	 *
-	 * @param string $text Text to analyze.
-	 * @param array|null $entityTypes Entity types to detect.
-	 * @param float $confidenceThreshold Minimum confidence.
+	 * @param EntityDetectionQuery $query Text, entity filter and minimum confidence.
 	 *
 	 * @return array Detected entities with type, value, category, position, and confidence.
 	 */
-	private function detectWithLLM(string $text, ?array $entityTypes, float $confidenceThreshold): array {
+	private function detectWithLLM(EntityDetectionQuery $query): array {
 		// TODO: Implement LLM-based entity extraction.
 		// For now, fall back to regex.
 		$this->logger->debug(
@@ -1095,25 +1190,19 @@ class EntityRecognitionHandler {
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 
-		return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
+		return $this->detectWithRegex(query: $query);
 	}//end detectWithLLM()
 
 	/**
 	 * Detect entities using hybrid approach (combines multiple methods).
 	 *
-	 * @param string $text Text to analyze.
-	 * @param array|null $entityTypes Entity types to detect.
-	 * @param float $confidenceThreshold Minimum confidence.
+	 * @param EntityDetectionQuery $query Text, entity filter and minimum confidence.
 	 *
 	 * @return array Detected entities with type, value, category, position, and confidence.
 	 */
-	private function detectWithHybrid(string $text, ?array $entityTypes, float $confidenceThreshold): array {
+	private function detectWithHybrid(EntityDetectionQuery $query): array {
 		// Start with regex for fast detection.
-		$regexEntities = $this->detectWithRegex(
-			text: $text,
-			entityTypes: $entityTypes,
-			confidenceThreshold: $confidenceThreshold
-		);
+		$regexEntities = $this->detectWithRegex(query: $query);
 
 		// TODO: Add Presidio validation for higher confidence.
 		// TODO: Add LLM validation for ambiguous cases.
@@ -1123,9 +1212,7 @@ class EntityRecognitionHandler {
 	/**
 	 * Find or create an entity.
 	 *
-	 * @param string $type Entity type.
-	 * @param string $value Entity value.
-	 * @param string $category Entity category.
+	 * @param array $detected One detected entity: its type, value and (optional) category.
 	 *
 	 * @return GdprEntity Entity instance.
 	 *
@@ -1133,10 +1220,18 @@ class EntityRecognitionHandler {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
 	 */
-	private function findOrCreateEntity(string $type, string $value, string $category): GdprEntity {
+	private function findOrCreateEntity(array $detected): GdprEntity {
+		$type = $detected['type'];
+		// Scrub the value to valid UTF-8: text extracted from some PDFs
+		// contains ill-formed byte sequences (e.g. a stray 0xC3 lead byte)
+		// that PostgreSQL (UTF8) rejects with SQLSTATE[22021], aborting the
+		// insert and losing the entity.
+		$value    = $this->sanitizeUtf8(value: trim((string)($detected['value'] ?? '')));
+		$category = ($detected['category'] ?? self::getCategoryForType(type: $type));
+
 		// Try to find existing entity by value and type.
 		try {
-			$qb = $this->db->getQueryBuilder();
+			$qb = $this->stores->db->getQueryBuilder();
 			$qb->select('*')
 				->from('openregister_entities')
 				->where($qb->expr()->eq('type', $qb->createNamedParameter($type)))
@@ -1147,12 +1242,12 @@ class EntityRecognitionHandler {
 			 * @psalm-suppress InaccessibleMethod - findEntities is accessible via inheritance.
 			 */
 
-			$existingEntities = $this->entityMapper->findEntitiesPublic($qb);
+			$existingEntities = $this->stores->entityMapper->findEntitiesPublic($qb);
 			if (empty($existingEntities) === false) {
 				$existing = $existingEntities[0];
 				// Update timestamp.
 				$existing->setUpdatedAt(new DateTime());
-				$this->entityMapper->update($existing);
+				$this->stores->entityMapper->update($existing);
 				return $existing;
 			}
 
@@ -1168,7 +1263,7 @@ class EntityRecognitionHandler {
 			$entity->setDetectedAt(new DateTime());
 			$entity->setUpdatedAt(new DateTime());
 
-			return $this->entityMapper->insert($entity);
+			return $this->stores->entityMapper->insert($entity);
 		}//end try
 	}//end findOrCreateEntity()
 
@@ -1204,18 +1299,16 @@ class EntityRecognitionHandler {
 	/**
 	 * Extract context around entity position.
 	 *
-	 * @param string $text Full text.
-	 * @param int $positionStart Start position.
-	 * @param int $positionEnd End position.
-	 * @param int $window Context window size.
+	 * @param array           $detected One detected entity: its start and end position.
+	 * @param ChunkEntityScan $scan     The full text and the context window size.
 	 *
 	 * @return string Context string.
 	 */
-	private function extractContext(string $text, int $positionStart, int $positionEnd, int $window): string {
-		$start = max(0, $positionStart - $window);
-		$end = min(strlen($text), $positionEnd + $window);
+	private function extractContext(array $detected, ChunkEntityScan $scan): string {
+		$start = max(0, $detected['position_start'] - $scan->contextWindow);
+		$end = min(strlen($scan->text), $detected['position_end'] + $scan->contextWindow);
 
-		return substr($text, $start, $end - $start);
+		return substr($scan->text, $start, $end - $start);
 	}//end extractContext()
 
 	/**
@@ -1274,12 +1367,12 @@ class EntityRecognitionHandler {
 		// graph reaches back into this service's collaborators), never through
 		// `\OC::$server`: outside a booted Nextcloud that autowires an unbounded
 		// cycle and eats all memory (19 GB on 2026-09-08).
-		if ($this->container === null) {
+		if ($this->backends->container === null) {
 			return;
 		}
 
 		try {
-			$objectMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapperInterface::class);
+			$objectMapper = $this->backends->container->get(\OCA\OpenRegister\Db\MagicMapperInterface::class);
 			$object = $objectMapper->find(
 				$objectId,
 				_rbac: false,

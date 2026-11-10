@@ -34,8 +34,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Service\Notification;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Interaction\WatcherService;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\IGroupManager;
 use OCP\IServerContainer;
 use OCP\IUserManager;
@@ -83,31 +83,14 @@ class NotificationRecipientResolver implements NotificationRecipientResolverInte
 	 * object at dispatch time.
 	 *
 	 * @param array<int, mixed> $recipientsSpec The rule's `recipients` declaration.
-	 * @param array<string, mixed> $data The object's stored data (or a flow item's json).
-	 * @param ObjectEntity|null $object The object, for `object-acl` and `expression` kinds.
-	 * @param array<string, mixed> $context Trigger-specific extras handed to expression resolvers.
-	 * @param array<string, array<int, string>> $roleGroups Role name to assigned group ids, for the `role` kind.
+	 * @param RecipientSource $source The object, its data, the trigger context and the role assignment.
 	 *
 	 * @return array<int, string> Verified, deduplicated uids.
 	 *
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
-	public function resolve(
-		array $recipientsSpec,
-		array $data,
-		?ObjectEntity $object = null,
-		array $context = [],
-		array $roleGroups = [],
-	): array {
-		$resolved = $this->resolveWithDiagnostics(
-			recipientsSpec: $recipientsSpec,
-			data: $data,
-			object: $object,
-			context: $context,
-			roleGroups: $roleGroups
-		);
-
-		return $resolved['uids'];
+	public function resolve(array $recipientsSpec, RecipientSource $source): array {
+		return $this->resolveFrom(recipientsSpec: $recipientsSpec, source: $source)['uids'];
 	}//end resolve()
 
 	/**
@@ -143,6 +126,37 @@ class NotificationRecipientResolver implements NotificationRecipientResolverInte
 		array $roleGroups = [],
 	): array {
 		$source = new RecipientSource(data: $data, object: $object, context: $context, roleGroups: $roleGroups);
+
+		return $this->resolveFromSource(recipientsSpec: $recipientsSpec, source: $source);
+	}//end resolveWithDiagnostics()
+
+	/**
+	 * Resolve a recipients spec against one source, and say which entries resolved to nobody.
+	 *
+	 * The outcome of {@see resolveWithDiagnostics()}, for a caller that holds the source.
+	 *
+	 * @param array<int, mixed> $recipientsSpec The rule's `recipients` declaration.
+	 * @param RecipientSource   $source         The object, its data, the trigger context and the role assignment.
+	 *
+	 * @return array{uids: array<int, string>, unresolved: array<int, array{kind: string, id: string, reason: string}>}
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-group-or-a-declared-role-is-a-recipient-req-nrg-001
+	 */
+	public function resolveFromSource(array $recipientsSpec, RecipientSource $source): array {
+		return $this->resolveFrom(recipientsSpec: $recipientsSpec, source: $source);
+	}//end resolveFromSource()
+
+	/**
+	 * Resolve a recipients spec against one source, with the entries that resolved to nobody.
+	 *
+	 * @param array<int, mixed> $recipientsSpec The rule's `recipients` declaration.
+	 * @param RecipientSource $source The object, its data, the trigger context and the role assignment.
+	 *
+	 * @return array{uids: array<int, string>, unresolved: array<int, array{kind: string, id: string, reason: string}>}
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-group-or-a-declared-role-is-a-recipient-req-nrg-001
+	 */
+	private function resolveFrom(array $recipientsSpec, RecipientSource $source): array {
 		$uids = [];
 		$unresolved = [];
 		foreach ($recipientsSpec as $entry) {
@@ -159,7 +173,7 @@ class NotificationRecipientResolver implements NotificationRecipientResolverInte
 			'uids' => array_values(array_unique($uids)),
 			'unresolved' => $unresolved,
 		];
-	}//end resolveWithDiagnostics()
+	}//end resolveFrom()
 
 	/**
 	 * Resolve one recipients entry by its kind.
@@ -287,16 +301,8 @@ class NotificationRecipientResolver implements NotificationRecipientResolverInte
 	 * @return array<int, string>
 	 */
 	private function resolveExpressionEntry(array $entry, RecipientSource $source): array {
-		if ($source->object === null) {
-			return [];
-		}
-
 		return array_values(
-			$this->resolveExpressionRecipients(
-				resolverTag: (string)($entry['resolver'] ?? ''),
-				object: $source->object,
-				context: $source->context
-			)
+			$this->resolveExpressionRecipients(resolverTag: (string)($entry['resolver'] ?? ''), source: $source)
 		);
 	}//end resolveExpressionEntry()
 
@@ -437,13 +443,13 @@ class NotificationRecipientResolver implements NotificationRecipientResolverInte
 		}
 
 		try {
-			$watchers = $this->serverContainer->get(WatcherService::class);
+			$watchers = $this->serverContainer->get(WatcherServiceInterface::class);
 			$uids = $watchers->watcherUids(objectUuid: (string)$object->getUuid());
 			if ($uids === []) {
 				return [];
 			}
 
-			$readable = $this->serverContainer->get(PermissionHandler::class)
+			$readable = $this->serverContainer->get(PermissionHandlerInterface::class)
 				->getReadableByUsers(object: $object);
 			if ($readable === []) {
 				return $uids;
@@ -654,14 +660,15 @@ class NotificationRecipientResolver implements NotificationRecipientResolverInte
 	 * its dependencies. Skips silently when the resolver doesn't exist
 	 * or doesn't implement the interface.
 	 *
-	 * @param string $resolverTag DI tag (or FQCN) of the resolver service.
-	 * @param ObjectEntity $object The object whose recipients are being resolved.
-	 * @param array<string, mixed> $context Per-event context passed through to the resolver.
+	 * @param string          $resolverTag DI tag (or FQCN) of the resolver service.
+	 * @param RecipientSource $source      The object whose recipients are being resolved (none: nobody)
+	 *                                     and the per-event context passed through to the resolver.
 	 *
 	 * @return array<int, string>
 	 */
-	private function resolveExpressionRecipients(string $resolverTag, ObjectEntity $object, array $context): array {
-		if ($resolverTag === '' || $this->serverContainer === null) {
+	private function resolveExpressionRecipients(string $resolverTag, RecipientSource $source): array {
+		$object = $source->object;
+		if ($object === null || $resolverTag === '' || $this->serverContainer === null) {
 			return [];
 		}
 
@@ -674,7 +681,7 @@ class NotificationRecipientResolver implements NotificationRecipientResolverInte
 				return [];
 			}
 
-			return array_values($resolver->resolve($object, $context));
+			return array_values($resolver->resolve($object, $source->context));
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				sprintf('[NotificationRecipientResolver] expression resolver "%s" failed: %s', $resolverTag, $e->getMessage())

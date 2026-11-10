@@ -43,7 +43,7 @@ use DateTime;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectReadState;
-use OCA\OpenRegister\Db\ObjectReadStateMapper;
+use OCA\OpenRegister\Db\ObjectReadStateMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -57,7 +57,7 @@ use Psr\Log\LoggerInterface;
  * and one is the memo reset the write path needs. Splitting them would put the single
  * permission rule in more than one class, which is the drift this class prevents.
  */
-class ReadStateService {
+class ReadStateService implements ReadStateServiceInterface {
 
 	/**
 	 * The uuids the current user has already seen, loaded once per request.
@@ -72,13 +72,13 @@ class ReadStateService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectReadStateMapper $mapper The read-state rows.
+	 * @param ObjectReadStateMapperInterface $mapper The read-state rows.
 	 * @param IUserSession $userSession Resolves the calling user.
 	 * @param UnreadCountCalculator $counter Counts what is unread on the tabs.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly ObjectReadStateMapper $mapper,
+		private readonly ObjectReadStateMapperInterface $mapper,
 		private readonly IUserSession $userSession,
 		private readonly UnreadCountCalculator $counter,
 		private readonly LoggerInterface $logger,
@@ -120,27 +120,42 @@ class ReadStateService {
 		?string $schema = null,
 		?string $subResource = null
 	): ObjectReadState {
-		$uid = $this->requireCaller();
-		$uuid = $this->requireUuid(object: $object);
+		return $this->recordSighting(
+			target: new AddressedObject(object: $object, register: $register, schema: $schema),
+			subResource: $subResource
+		);
+
+	}//end markRead()
+
+	/**
+	 * Store the calling user's sighting of the addressed object.
+	 *
+	 * @param AddressedObject $target      The object and how the caller addressed it.
+	 * @param string|null     $subResource A sub-resource that was opened, when one was.
+	 *
+	 * @throws NotAuthorizedException When the caller is anonymous.
+	 *
+	 * @return ObjectReadState The stored read state.
+	 *
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 */
+	private function recordSighting(AddressedObject $target, ?string $subResource): ObjectReadState {
 		$now = new DateTime();
 
-		$subSeen = null;
+		$sighting = new ObjectReadState();
+		$sighting->setUserId($this->requireCaller());
+		$sighting->setObjectUuid($this->requireUuid(object: $target->object));
+		$sighting->setRegister($target->register);
+		$sighting->setSchema($target->schema);
+		$sighting->setLastSeenAt($now);
 		if ($subResource !== null && $subResource !== '') {
-			$subSeen = [$subResource => $now->format(DateTimeInterface::ATOM)];
+			$sighting->setSubSeen([$subResource => $now->format(DateTimeInterface::ATOM)]);
 		}
 
 		$this->forgetMemo();
 
-		return $this->mapper->markSeen(
-			userId: $uid,
-			objectUuid: $uuid,
-			register: $register,
-			schema: $schema,
-			subSeen: $subSeen,
-			seenAt: $now
-		);
-
-	}//end markRead()
+		return $this->mapper->markSeen(sighting: $sighting);
+	}//end recordSighting()
 
 	/**
 	 * Put an object back to unread for the calling user.

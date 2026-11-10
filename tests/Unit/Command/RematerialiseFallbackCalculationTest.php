@@ -26,6 +26,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Command;
 
 use OCA\OpenRegister\Command\RematerialiseCalculationsCommand;
+use OCA\OpenRegister\Command\Support\RematerialiseEvaluation;
+use OCA\OpenRegister\Command\Support\RematerialiseStorage;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -39,6 +42,8 @@ use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Object\ValidationLookups;
+use OCA\OpenRegister\Service\Object\ValidationSchemaSource;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use OCP\IUserManager;
@@ -99,12 +104,9 @@ class RematerialiseFallbackCalculationTest extends TestCase {
 
 		// The REAL readOnly rule ObjectService::enforceReadOnlyOnUpdate() applies.
 		$rules = new ValidateObject(
-			$this->createMock(IAppConfig::class),
-			$this->createMock(MagicMapper::class),
-			$schemas,
-			$this->createMock(IURLGenerator::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IUserManager::class)
+			schemas: new ValidationSchemaSource(config: $this->createMock(IAppConfig::class), schemaMapper: $schemas, urlGenerator: $this->createMock(IURLGenerator::class)),
+			lookups: new ValidationLookups(objectMapper: $this->createMock(MagicMapper::class), userManager: $this->createMock(IUserManager::class)),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('saveObject')->willReturnCallback(
@@ -130,13 +132,9 @@ class RematerialiseFallbackCalculationTest extends TestCase {
 		);
 
 		$command = new RematerialiseCalculationsCommand(
-			$registers,
-			$schemas,
-			$magic,
-			$objects,
-			$evaluator,
-			$this->createMock(ReferenceResolver::class),
-			($aggregates ?? $this->createMock(AggregateReferenceResolver::class))
+			new RematerialiseStorage(new SchemaCatalog($registers, $schemas, $magic), $objects),
+			new RematerialiseEvaluation($evaluator, $this->createMock(ReferenceResolver::class), ($aggregates ?? $this->createMock(AggregateReferenceResolver::class))),
+			new \OCA\OpenRegister\Service\Object\SchemaTypeConverter()
 		);
 
 		$output = new BufferedOutput();

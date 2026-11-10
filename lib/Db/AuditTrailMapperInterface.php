@@ -23,6 +23,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\AuditTrail\ExportOutcome;
+use OCA\OpenRegister\Db\AuditTrail\HardeningChange;
+use OCA\OpenRegister\Db\AuditTrail\PurposeRefusal;
+use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusal;
+use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
+use OCA\OpenRegister\Db\AuditTrail\ToolInvocation;
+use OCA\OpenRegister\Db\AuditTrail\ActionScope;
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -202,16 +210,12 @@ interface AuditTrailMapperInterface {
 	 * (single insert) and {@see insertAuditTrails()} (batched multi-row insert),
 	 * so both paths produce identical audit rows.
 	 *
-	 * @param ObjectEntity|null $old The old state of the object
-	 * @param ObjectEntity|null $new The new state of the object
-	 * @param string|null $action The action to record. NULL (the default) infers it from which
-	 *                            entities are present: no `new` is a delete, no `old` is a create,
-	 *                            otherwise an update. A NAMED action is used verbatim — the
-	 *                            inference used to overwrite an explicit 'update' because it was
-	 *                            indistinguishable from the old default (#2217).
-	 * @param array|null $cascadeContext Optional referential-integrity cascade context to fold
-	 *                                   into the `changed` column (keys: triggerObject,
-	 *                                   triggerSchema, action_type, property).
+	 * @param AuditedChange $change The old and new state of the object; the action to record (NULL
+	 *                              infers it from which entities are present: no `new` is a delete,
+	 *                              no `old` is a create, otherwise an update; a NAMED action is used
+	 *                              verbatim, #2217); and the optional referential-integrity cascade
+	 *                              context folded into the `changed` column (keys: triggerObject,
+	 *                              triggerSchema, action_type, property).
 	 *
 	 * @return AuditTrail The populated (unpersisted) audit trail entity
 	 *
@@ -219,9 +223,7 @@ interface AuditTrailMapperInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function buildAuditTrail(
-		?ObjectEntity $old = null, ?ObjectEntity $new = null, ?string $action = null, ?array $cascadeContext = null
-	): AuditTrail;
+	public function buildEntry(AuditedChange $change): AuditTrail;
 
 	/**
 	 * Stamp an audit row's expiry and retention source from the retention of
@@ -253,7 +255,7 @@ interface AuditTrailMapperInterface {
 	 *
 	 * Each entry is an array with keys `old` (?ObjectEntity), `new` (?ObjectEntity)
 	 * and `action` (string). Rows are built through the exact same
-	 * {@see buildAuditTrail()} logic as {@see createAuditTrail()} so their content
+	 * {@see buildEntry()} logic as {@see createAuditTrail()} so their content
 	 * is identical, but they are persisted with one multi-row INSERT per chunk of
 	 * 100 instead of one INSERT (plus 3 hash-chain queries) per row. After each
 	 * chunk the rows are sealed into the SHA-256 hash chain in a single batched
@@ -262,7 +264,7 @@ interface AuditTrailMapperInterface {
 	 * rather than losing the audit records.
 	 *
 	 * @param array $entries Mixed list: ['old' => ?ObjectEntity, 'new' => ?ObjectEntity, 'action' => string,
-	 *                       'cascadeContext' => ?array] entries built through {@see buildAuditTrail()}, and/or
+	 *                       'cascadeContext' => ?array] entries built through {@see buildEntry()}, and/or
 	 *                       pre-built AuditTrail entities (each must carry a uuid) persisted as-is
 	 * @param int $chunkSize Number of rows per multi-row INSERT statement
 	 *
@@ -365,16 +367,15 @@ interface AuditTrailMapperInterface {
 	/**
 	 * Get detailed statistics for audit trails including action counts within timeframe
 	 *
-	 * @param int|null $registerId Optional register ID to filter by
-	 * @param int|null $schemaId Optional schema ID to filter by
-	 * @param int|null $hours Optional number of hours to look back for recent activity (default: 24)
+	 * @param AuditTrail\AuditStatisticsScope $scope The register and schema to filter by (each optional) and the hours to look
+	 *                                    back for recent activity (default: 24).
 	 *
 	 * @return int[]
 	 *
 	 * @psalm-return array{total: int, creates: int, updates: int,
 	 *     deletes: int, reads: int}
 	 */
-	public function getDetailedStatistics(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): array;
+	public function detailedStatistics(AuditTrail\AuditStatisticsScope $scope): array;
 
 	/**
 	 * Lifetime row counts per action, for the actions that start with a prefix
@@ -394,7 +395,7 @@ interface AuditTrailMapperInterface {
 	/**
 	 * Get lifetime audit trail counts grouped by action
 	 *
-	 * Unlike getDetailedStatistics(), which windows the per-action counts to
+	 * Unlike detailedStatistics(), which windows the per-action counts to
 	 * the last N hours, this returns lifetime counts so the audit-trail page
 	 * statistics line up with the (unwindowed) audit-trail list beside them.
 	 * Keys are singular to match the audit-trail REST surface; the windowed
@@ -415,29 +416,26 @@ interface AuditTrailMapperInterface {
 	/**
 	 * Get action distribution data with percentages
 	 *
-	 * @param int|null $registerId Optional register ID to filter by
-	 * @param int|null $schemaId Optional schema ID to filter by
-	 * @param int|null $hours Optional number of hours to look back (default: 24)
+	 * @param AuditTrail\AuditStatisticsScope $scope The register and schema to filter by (each optional) and the hours to look
+	 *                                    back (default: 24).
 	 *
 	 * @return (int|mixed)[][][]
 	 *
 	 * @psalm-return array{actions: list<array{count: int, name: mixed}>}
 	 */
-	public function getActionDistribution(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): array;
+	public function actionDistribution(AuditTrail\AuditStatisticsScope $scope): array;
 
 	/**
 	 * Get most active objects based on audit trail activity
 	 *
-	 * @param int|null $registerId Optional register ID to filter by
-	 * @param int|null $schemaId Optional schema ID to filter by
-	 * @param int|null $limit Optional limit for number of results (default: 10)
-	 * @param int|null $hours Optional number of hours to look back (default: 24)
+	 * @param AuditTrail\AuditStatisticsScope $scope The register and schema to filter by (each optional), the number of results
+	 *                                    (default: 10) and the hours to look back (default: 24).
 	 *
 	 * @return (int|mixed|string)[][][]
 	 *
 	 * @psalm-return array{objects: list<array{count: int, id: mixed, name: string}>}
 	 */
-	public function getMostActiveObjects(?int $registerId = null, ?int $schemaId = null, ?int $limit = 10, ?int $hours = 24): array;
+	public function mostActiveObjects(AuditTrail\AuditStatisticsScope $scope): array;
 
 	/**
 	 * Tombstone every audit-trail entry.
@@ -459,15 +457,15 @@ interface AuditTrailMapperInterface {
 	 * nothing left to destroy and counting them would make a preview promise
 	 * work it will not do.
 	 *
-	 * @param string $objectUuid The object's UUID.
-	 * @param array<int, string>|null $onlyActions Restrict to these actions, or null for every action.
-	 * @param array<int, string> $excludeActions Actions never touched, such as the destruction record.
+	 * @param string      $objectUuid The object's UUID.
+	 * @param ActionScope $scope      The actions included (null for every action) and the actions never
+	 *                                touched, such as the destruction record.
 	 *
 	 * @return int The number of rows that would be tombstoned.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	public function countForObject(string $objectUuid, ?array $onlyActions = null, array $excludeActions = []): int;
+	public function countObjectTrail(string $objectUuid, ActionScope $scope): int;
 
 	/**
 	 * Read the audit rows of one object, by action, newest first.
@@ -499,9 +497,9 @@ interface AuditTrailMapperInterface {
 	 * is how the evidence of a destruction survives the destruction it
 	 * describes.
 	 *
-	 * @param string $objectUuid The object's UUID.
-	 * @param array<int, string>|null $onlyActions Restrict to these actions, or null for every action.
-	 * @param array<int, string> $excludeActions Actions never touched, such as the destruction record.
+	 * @param string      $objectUuid The object's UUID.
+	 * @param ActionScope $scope      The actions included (null for every action) and the actions never
+	 *                                touched, such as the destruction record.
 	 *
 	 * @return int The number of rows tombstoned.
 	 *
@@ -509,7 +507,7 @@ interface AuditTrailMapperInterface {
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	public function tombstoneForObject(string $objectUuid, ?array $onlyActions = null, array $excludeActions = []): int;
+	public function tombstoneObjectTrail(string $objectUuid, ActionScope $scope): int;
 
 	/**
 	 * Clear all audit trail logs (not just expired ones)
@@ -600,13 +598,8 @@ interface AuditTrailMapperInterface {
 	 * human user yet (tracked as a DEFERRED_QUESTION coordinated with
 	 * Hermiq's `agent-tool-governance-and-disclosure` change).
 	 *
-	 * @param string $toolId Full namespaced tool id, e.g. `pipelinq.lead.search`.
-	 * @param string $paramsDigest SHA-256 hex digest of the invocation's canonical arguments (never raw values).
-	 * @param array $resultSummary Structured outcome summary (count/ids/isError/errorClass).
-	 * @param int|null $register Register id touched by the invocation, when known.
-	 * @param int|null $schema Schema id touched by the invocation, when known.
-	 * @param int|null $object Object id touched by the invocation, when known (writes / get).
-	 * @param string|null $objectUuid Object uuid touched by the invocation, when known (writes / get).
+	 * @param ToolInvocation $invocation The tool id, the SHA-256 digest of its canonical arguments (never raw
+	 *                                   values), the outcome summary and the register, schema and object it touched.
 	 *
 	 * @return AuditTrail The persisted, hash-chained entry.
 	 *
@@ -615,10 +608,7 @@ interface AuditTrailMapperInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
 	 */
-	public function createToolInvocationEntry(
-		string $toolId, string $paramsDigest, array $resultSummary, ?int $register = null, ?int $schema = null, ?int $object = null,
-		?string $objectUuid = null
-	): AuditTrail;
+	public function recordToolInvocation(ToolInvocation $invocation): AuditTrail;
 
 	/**
 	 * Get processing activities from audit trail entries.
@@ -678,7 +668,7 @@ interface AuditTrailMapperInterface {
 	 * and a 403 alone cannot answer. This is the answer.
 	 *
 	 * Object-less by construction, following
-	 * {@see createPartyQueryRefusalEntry()}: there is no object, because the
+	 * {@see recordPartyQueryRefusal()}: there is no object, because the
 	 * write never happened. `object` has been nullable since
 	 * Version1Date20260423100000 for exactly this shape of row.
 	 *
@@ -688,28 +678,18 @@ interface AuditTrailMapperInterface {
 	 * because the same context also goes to the log and the two must not
 	 * disagree about what a line may carry.
 	 *
-	 * @param string $holderOrganisation UUID of the organisation that holds the shared resource.
-	 * @param string $sourceOrganisation UUID of the organisation that attempted the write.
-	 * @param string $resourceType Either `register` or `schema`.
-	 * @param array $context Already-redacted refusal context.
-	 * @param int|null $register Register id the write targeted, when known.
-	 * @param int|null $schema Schema id the write targeted, when known.
-	 * @param string|null $objectUuid Object uuid the caller named, when it named one.
-	 * @param string|null $actorId Acting user id, or null for a system context.
-	 * @param string|null $actorReference Pseudonymous actor reference for the `user_name` column.
+	 * @param SharedMasterDataRefusal $refusal The holding and the attempting organisation, the resource type
+	 *                                         (`register` or `schema`), and the already-redacted context, the
+	 *                                         target and the pseudonymous actor.
 	 *
 	 * @return AuditTrail The persisted, hash-chained entry.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createPartyQueryRefusalEntry.
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Every parameter is one column of the refusal record.
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as recordPartyQueryRefusal.
 	 *
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
 	 */
-	public function createSharedMasterDataRefusalEntry(
-		string $holderOrganisation, string $sourceOrganisation, string $resourceType, array $context = [], ?int $register = null,
-		?int $schema = null, ?string $objectUuid = null, ?string $actorId = null, ?string $actorReference = null
-	): AuditTrail;
+	public function recordSharedMasterDataRefusal(SharedMasterDataRefusal $refusal): AuditTrail;
 
 	/**
 	 * Create one immutable, hash-chained audit record for a party query that
@@ -725,18 +705,16 @@ interface AuditTrailMapperInterface {
 	 * It is a search term an authenticated caller typed, not a record about a
 	 * person, and the trail is already the instance's protected surface.
 	 *
-	 * @param string $query The query that was refused.
-	 * @param int $cap The administered maximum result count.
-	 * @param int $would How many parties the query would have matched.
-	 * @param int|null $schema Schema id searched, when the query named one.
+	 * @param AuditTrail\PartyQueryRefusal $refusal The query that was refused, the administered maximum result count, how many
+	 *                                   parties it would have matched, and the schema searched when it named one.
 	 *
 	 * @return AuditTrail The persisted, hash-chained entry.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createToolInvocationEntry.
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as recordToolInvocation.
 	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
 	 */
-	public function createPartyQueryRefusalEntry(string $query, int $cap, int $would, ?int $schema = null): AuditTrail;
+	public function recordPartyQueryRefusal(AuditTrail\PartyQueryRefusal $refusal): AuditTrail;
 
 	/**
 	 * Create one immutable, hash-chained audit record for a read that was
@@ -750,18 +728,16 @@ interface AuditTrailMapperInterface {
 	 * The purpose is quoted back verbatim. It is a short administered code the
 	 * caller itself sent, not a record about a person.
 	 *
-	 * @param string      $rule     Which refusal it was, one of PurposeRefusedException's RULE_ constants.
-	 * @param string|null $purpose  The purpose the caller named, or null when none was.
-	 * @param int|null    $register The register that was being read, when known.
-	 * @param int|null    $schema   The schema that was being read, when known.
+	 * @param PurposeRefusal $refusal Which refusal it was (one of PurposeRefusedException's RULE_ constants),
+	 *                                the purpose the caller named, and the register and schema being read.
 	 *
 	 * @return AuditTrail The persisted, hash-chained entry.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createPartyQueryRefusalEntry.
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as recordPartyQueryRefusal.
 	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
-	public function createPurposeRefusalEntry(string $rule, ?string $purpose = null, ?int $register = null, ?int $schema = null): AuditTrail;
+	public function recordPurposeRefusal(PurposeRefusal $refusal): AuditTrail;
 
 	/**
 	 * Count audit rows per purpose over a period.
@@ -796,13 +772,10 @@ interface AuditTrailMapperInterface {
 	 * No object, no register and no schema: a control is instance-wide, and
 	 * attaching it to an arbitrary object would put it on that object's timeline
 	 * where it does not belong. Same shape as
-	 * {@see createPartyQueryRefusalEntry()}.
+	 * {@see recordPartyQueryRefusal()}.
 	 *
-	 * @param string $control The control identifier.
-	 * @param int|string|array $before The value before the change.
-	 * @param int|string|array $after The value asked for.
-	 * @param bool $accepted Whether the change was made.
-	 * @param string $refusal The refusal, when the change was not made.
+	 * @param HardeningChange $change   The control, the value before, the value asked for, and the refusal.
+	 * @param bool            $accepted Whether the change was made.
 	 *
 	 * @return AuditTrail The persisted, hash-chained entry.
 	 *
@@ -810,9 +783,7 @@ interface AuditTrailMapperInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern.
 	 */
-	public function createHardeningChangeEntry(
-		string $control, int|string|array $before, int|string|array $after, bool $accepted, string $refusal = ''
-	): AuditTrail;
+	public function recordHardeningChange(HardeningChange $change, bool $accepted): AuditTrail;
 
 	/**
 	 * Create one immutable, hash-chained audit record for an export.
@@ -828,23 +799,19 @@ interface AuditTrailMapperInterface {
 	 *
 	 * The entry hangs on a register and a schema rather than on an object,
 	 * because an export has no single object. Same shape as
-	 * {@see createPartyQueryRefusalEntry()}.
+	 * {@see recordPartyQueryRefusal()}.
 	 *
-	 * @param string $outcome Either `completed` or `refused`.
-	 * @param array<string, mixed> $summary Profile, format, value mode, row count and, on a refusal, the reason.
-	 * @param int|null $register Register id exported, when known.
-	 * @param int|null $schema Schema id exported, when known.
-	 * @param string|null $actorId The principal the export ran as, when it is not the session user.
+	 * @param ExportOutcome $export `completed` or `refused`; the profile, format, value mode, row count and, on a
+	 *                              refusal, the reason; the register and schema; and the principal the export ran as
+	 *                              when it is not the session user.
 	 *
 	 * @return AuditTrail The persisted, hash-chained entry.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createToolInvocationEntry.
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as recordToolInvocation.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function createExportEntry(
-		string $outcome, array $summary, ?int $register = null, ?int $schema = null, ?string $actorId = null
-	): AuditTrail;
+	public function recordExport(ExportOutcome $export): AuditTrail;
 
 	/**
 	 * Create one immutable, hash-chained audit record for a slug backfill run.
@@ -852,23 +819,21 @@ interface AuditTrailMapperInterface {
 	 * The backfill (`occ openregister:backfill-slugs`) writes the slug column directly: no per-object version and no
 	 * per-object audit row. This single entry per run keeps the change
 	 * reconstructable: it lists the objects whose slug changed with the old and
-	 * the new value (bounded, see slugBackfillResultSummary()). Hangs on the register and schema, not on an object, like
-	 * {@see createExportEntry()}.
+	 * the new value (bounded, see slugBackfillSummary()). Hangs on the register and schema, not on an object, like
+	 * {@see recordExport()}.
 	 *
 	 * The run mode is always `fill`: a set slug is never rewritten.
 	 *
-	 * @param list<array{uuid: string, old: ?string, new: ?string}> $changes Every slug the run wrote (the entry keeps the first 1,000).
-	 * @param array<string, mixed> $summary The run's counters.
-	 * @param int|null $register Register id.
-	 * @param int|null $schema Schema id.
+	 * @param SlugBackfill $backfill Every slug the run wrote (the entry keeps the first 1,000), the run's counters,
+	 *                               and the register and schema.
 	 *
 	 * @return AuditTrail The persisted, hash-chained entry.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createExportEntry.
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as recordExport.
 	 */
-	public function createSlugBackfillEntry(array $changes, array $summary, ?int $register = null, ?int $schema = null): AuditTrail;
+	public function recordSlugBackfill(SlugBackfill $backfill): AuditTrail;
 
 	/**
 	 * What a slug backfill entry stores: the counters and a bounded change list.
@@ -879,15 +844,14 @@ interface AuditTrailMapperInterface {
 	 * uuid, old and new slug, next to the total count; the caller logs the full
 	 * list.
 	 *
-	 * @param string $mode    The run mode, `fill`.
-	 * @param array  $changes Every slug the run wrote.
-	 * @param array  $summary The run's counters.
+	 * @param SlugBackfill $backfill The slugs the run wrote and its counters.
+	 * @param string       $mode     The run mode, `fill`.
 	 *
 	 * @return array<string, mixed> The result summary of the entry.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
-	public function slugBackfillResultSummary(string $mode, array $changes, array $summary): array;
+	public function slugBackfillSummary(SlugBackfill $backfill, string $mode): array;
 
 	/**
 	 * The objects one user read most recently, newest first.

@@ -42,14 +42,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
+use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolverInterface;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
-use OCA\OpenRegister\Service\ObjectRelationCleanupService;
-use OCA\OpenRegister\Service\OrganisationServiceInterface;
+use OCA\OpenRegister\Service\ObjectRelationCleanupServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
-use OCP\IUserManager;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\BackgroundJob\Support\ActorForwardingServices;
 
 /**
  * Deferred deleted-object relation cleanup under the forwarded actor.
@@ -61,30 +58,24 @@ class ObjectCleanupJob extends ActorForwardedJob {
 	 * Wire the cleanup collaborators on top of the actor plumbing.
 	 *
 	 * @param ITimeFactory $time Time factory for the parent job class.
-	 * @param IUserSession $userSession Session to impersonate on / restore.
-	 * @param IUserManager $userManager Resolver for the captured user id.
-	 * @param OrganisationServiceInterface $organisation Active-organisation resolver.
-	 * @param LoggerInterface $logger PSR logger.
-	 * @param DeferredEntryObjectResolver $resolver Re-create guard lookup.
-	 * @param ObjectRelationCleanupService $cleanup Shared cleanup implementation.
+	 * @param ActorForwardingServices $actor The identity plumbing the parent job runs the work as.
+	 * @param DeferredEntryObjectResolverInterface $resolver Re-create guard lookup.
+	 * @param ObjectRelationCleanupServiceInterface $cleanup Shared cleanup implementation.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		IUserSession $userSession,
-		IUserManager $userManager,
-		OrganisationServiceInterface $organisation,
-		LoggerInterface $logger,
-		private readonly DeferredEntryObjectResolver $resolver,
-		private readonly ObjectRelationCleanupService $cleanup,
+		ActorForwardingServices $actor,
+		private readonly DeferredEntryObjectResolverInterface $resolver,
+		private readonly ObjectRelationCleanupServiceInterface $cleanup,
 	) {
 		parent::__construct(
 			time: $time,
-			userSession: $userSession,
-			userManager: $userManager,
-			organisation: $organisation,
-			logger: $logger
+			userSession: $actor->userSession,
+			userManager: $actor->userManager,
+			organisation: $actor->organisation,
+			logger: $actor->logger
 		);
 	}//end __construct()
 

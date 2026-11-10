@@ -40,7 +40,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ApiCaller;
 
 use DateTime;
-use OCA\OpenRegister\Db\ApiCallRecordMapper;
+use OCA\OpenRegister\Db\ApiCallKeys;
+use OCA\OpenRegister\Db\ApiCallRecordMapperInterface;
 use OCP\IAppConfig;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -52,7 +53,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\ApiCaller
  */
-class ApiCallRecorder {
+class ApiCallRecorder implements ApiCallRecorderInterface {
 
 	/**
 	 * The app the switch lives under.
@@ -83,7 +84,7 @@ class ApiCallRecorder {
 	/**
 	 * Constructor.
 	 *
-	 * @param ApiCallRecordMapper $mapper Writes the record.
+	 * @param ApiCallRecordMapperInterface $mapper Writes the record.
 	 * @param IUserSession $userSession Names the caller.
 	 * @param IAppConfig $appConfig Reads the switch.
 	 * @param LoggerInterface $logger Records a write that did not happen.
@@ -91,7 +92,7 @@ class ApiCallRecorder {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ApiCallRecordMapper $mapper,
+		private readonly ApiCallRecordMapperInterface $mapper,
 		private readonly IUserSession $userSession,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
@@ -137,45 +138,34 @@ class ApiCallRecorder {
 	}//end principal()
 
 	/**
-	 * Record one call.
+	 * Count one observed call against the caller making the current request.
 	 *
-	 * @param string $principal The caller.
-	 * @param string $path The request path.
-	 * @param string $method The HTTP method.
-	 * @param string $apiVersion The contract version that served it.
-	 * @param DateTime|null $moment When it happened; defaults to now.
+	 * A failure to count is logged and never fails the call itself.
+	 *
+	 * @param ApiCallObservation $call The path, method, API version and moment.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 */
-	public function record(
-		string $principal,
-		string $path,
-		string $method,
-		string $apiVersion,
-		?DateTime $moment = null,
-	): void {
+	public function recordCall(ApiCallObservation $call): void {
 		if ($this->isEnabled() === false) {
 			return;
 		}
 
 		try {
-			$this->mapper->count(
-				principal: $principal,
-				route: self::routeOf(path: $path),
-				method: strtoupper(substr($method, 0, 10)),
-				apiVersion: $apiVersion,
-				moment: ($moment ?? new DateTime()),
+			$key = ApiCallKeys::of(
+				principal: $this->principal(),
+				route: self::routeOf(path: $call->path),
+				method: strtoupper(substr($call->method, 0, 10)),
+				apiVersion: $call->apiVersion,
 			);
+			$this->mapper->count(key: $key, moment: ($call->moment ?? new DateTime()));
 		} catch (Throwable $e) {
-			$this->logger->debug(
-				'OpenRegister: could not record an API call.',
-				['exception' => $e]
-			);
+			$this->logger->debug('OpenRegister: could not record an API call.', ['exception' => $e]);
 		}
 
-	}//end record()
+	}//end recordCall()
 
 	/**
 	 * Collapse an expanded path back to the route it came from.

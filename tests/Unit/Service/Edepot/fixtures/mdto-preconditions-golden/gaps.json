@@ -1,0 +1,34 @@
+[
+    [
+        "restricted",
+        "allowed",
+        []
+    ],
+    [
+        "unrestricted",
+        "allowed",
+        [
+            "beperkingGebruik: MDTO-XML1.0.1 declares minOccurs=\"1\", and this object declares no use restriction and carries no active legal hold, so it is emitted as \"Nader te bepalen\""
+        ]
+    ],
+    [
+        "report restricted",
+        "allowed",
+        null
+    ],
+    [
+        "warning",
+        "[MdtoXmlGenerator] Required MDTO elements carry the standard's \"not recorded\" term",
+        {
+            "objectUuid": "u-1",
+            "gaps": [
+                "beperkingGebruik: MDTO-XML1.0.1 declares minOccurs=\"1\", and this object declares no use restriction and carries no active legal hold, so it is emitted as \"Nader te bepalen\""
+            ]
+        }
+    ],
+    [
+        "report unrestricted",
+        "allowed",
+        null
+    ]
+]

@@ -40,25 +40,51 @@ namespace OCA\OpenRegister\Service\Archival;
 final class AnonymisationPlan {
 
 	/**
+	 * The payload as it is now.
+	 *
+	 * @var array<string, mixed>
+	 */
+	public readonly array $before;
+
+	/**
+	 * The payload as it will be.
+	 *
+	 * @var array<string, mixed>
+	 */
+	public readonly array $after;
+
+	/**
+	 * The properties this touches.
+	 *
+	 * @var string[]
+	 */
+	public readonly array $changedProperties;
+
+	/**
+	 * The properties deliberately kept.
+	 *
+	 * @var string[]
+	 */
+	public readonly array $keptProperties;
+
+	/**
 	 * Hold the plan.
 	 *
-	 * @param string               $objectUuid      The record.
-	 * @param string               $profileName     The profile applied.
-	 * @param array<string, mixed> $before          The payload as it is now.
-	 * @param array<string, mixed> $after           The payload as it will be.
-	 * @param string[]             $changedProperties The properties this touches.
-	 * @param string[]             $keptProperties  The properties deliberately kept.
-	 * @param string               $saltFingerprint Which salt the pseudonyms came from.
+	 * @param string            $objectUuid      The record.
+	 * @param string            $profileName     The profile applied.
+	 * @param AnonymisedPayload $payload         The payload before and after, and what that touches.
+	 * @param string            $saltFingerprint Which salt the pseudonyms came from.
 	 */
 	public function __construct(
 		public readonly string $objectUuid,
 		public readonly string $profileName,
-		public readonly array $before,
-		public readonly array $after,
-		public readonly array $changedProperties,
-		public readonly array $keptProperties,
+		AnonymisedPayload $payload,
 		public readonly string $saltFingerprint,
 	) {
+		$this->before = $payload->before;
+		$this->after = $payload->after;
+		$this->changedProperties = $payload->changedProperties;
+		$this->keptProperties = $payload->keptProperties;
 	}//end __construct()
 
 	/**

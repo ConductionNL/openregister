@@ -25,6 +25,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -102,39 +104,15 @@ final class MassValidationRun {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
 	 */
 	public function run(array $config): array {
-		$this->start = [
-			'time' => microtime(true),
-			'memory' => memory_get_usage(true),
-			'peak' => memory_get_peak_usage(true),
-		];
+		$this->start = $this->readClock();
 		$this->config = $config;
 
 		$totalObjects = $this->countObjects();
-		$this->logger->info(
-			message: '[SettingsService] 🚀 STARTING MASS VALIDATION',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'totalObjects' => $totalObjects,
-				'batchSize' => $config['batch_size'],
-				'mode' => $config['mode'],
-				'collectErrors' => $config['collect_errors'],
-			]
-		);
-
+		$this->logStart(totalObjects: $totalObjects);
 		$this->results = $this->initialResults(totalObjects: $totalObjects);
 		$batchJobs = $this->createBatchJobs(totalObjects: $totalObjects, batchSize: $config['batch_size']);
 		$this->results['stats']['batches_processed'] = count($batchJobs);
-
-		$this->logger->info(
-			message: '[SettingsService] 📋 BATCH JOBS CREATED',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'totalBatches' => count($batchJobs),
-				'estimatedDuration' => round((count($batchJobs) * 2)) . 's',
-			]
-		);
+		$this->logBatchJobsCreated(batchCount: count($batchJobs));
 
 		$this->processJobs(batchJobs: $batchJobs);
 
@@ -142,6 +120,59 @@ final class MassValidationRun {
 		$this->recordOutcome();
 		return $this->results;
 	}//end run()
+
+	/**
+	 * Clock and memory readings at this moment.
+	 *
+	 * @return array{time: float, memory: int, peak: int}
+	 */
+	private function readClock(): array {
+		return [
+			'time' => microtime(true),
+			'memory' => memory_get_usage(true),
+			'peak' => memory_get_peak_usage(true),
+		];
+	}//end readClock()
+
+	/**
+	 * Log the start of the run.
+	 *
+	 * @param int $totalObjects Number of objects to validate.
+	 *
+	 * @return void
+	 */
+	private function logStart(int $totalObjects): void {
+		$this->logger->info(
+			message: '[SettingsService] 🚀 STARTING MASS VALIDATION',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'totalObjects' => $totalObjects,
+				'batchSize' => $this->config['batch_size'],
+				'mode' => $this->config['mode'],
+				'collectErrors' => $this->config['collect_errors'],
+			]
+		);
+	}//end logStart()
+
+	/**
+	 * Log how many batch jobs the run will process.
+	 *
+	 * @param int $batchCount Number of batch jobs.
+	 *
+	 * @return void
+	 */
+	private function logBatchJobsCreated(int $batchCount): void {
+		$this->logger->info(
+			message: '[SettingsService] 📋 BATCH JOBS CREATED',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'totalBatches' => $batchCount,
+				'estimatedDuration' => round(($batchCount * 2)) . 's',
+			]
+		);
+	}//end logBatchJobsCreated()
 
 	/**
 	 * Number of objects to validate: all objects, capped by max_objects when set.
@@ -175,21 +206,32 @@ final class MassValidationRun {
 		return [
 			'success' => true,
 			'message' => 'Mass validation completed successfully',
-			'stats' => [
-				'total_objects' => $totalObjects,
-				'processed_objects' => 0,
-				'successful_saves' => 0,
-				'failed_saves' => 0,
-				'duration_seconds' => 0,
-				'batches_processed' => 0,
-				'objects_per_second' => 0,
-			],
+			'stats' => $this->initialStats(totalObjects: $totalObjects),
 			'errors' => [],
 			'batches_processed' => 0,
 			'timestamp' => date('c'),
 			'config_used' => $this->config,
 		];
 	}//end initialResults()
+
+	/**
+	 * The statistics before any batch ran.
+	 *
+	 * @param int $totalObjects Number of objects to validate.
+	 *
+	 * @return array<string, int> The initial statistics.
+	 */
+	private function initialStats(int $totalObjects): array {
+		return [
+			'total_objects' => $totalObjects,
+			'processed_objects' => 0,
+			'successful_saves' => 0,
+			'failed_saves' => 0,
+			'duration_seconds' => 0,
+			'batches_processed' => 0,
+			'objects_per_second' => 0,
+		];
+	}//end initialStats()
 
 	/**
 	 * Split the objects into batch jobs of at most batchSize objects.
@@ -244,42 +286,86 @@ final class MassValidationRun {
 		foreach ($batchJobs as $job) {
 			$batch = $this->saveBatch(job: $job);
 			$this->addBatch(batch: $batch);
-
-			$objectsPerSecond = 0;
-			if ($batch['duration'] > 0) {
-				$objectsPerSecond = round($batch['processed'] / $batch['duration'], 2);
-			}
-
-			$this->logger->info(
-				message: '[SettingsService] 📈 MASS VALIDATION PROGRESS',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'batchNumber' => $job['batchNumber'],
-					'totalBatches' => count($batchJobs),
-					'processed' => $batch['processed'],
-					'successful' => $batch['successful'],
-					'failed' => $batch['failed'],
-					'batchDuration' => round($batch['duration'] * 1000) . 'ms',
-					'objectsPerSecond' => $objectsPerSecond,
-					'totalProcessed' => $this->results['stats']['processed_objects'],
-				]
-			);
-
+			$this->logProgress(job: $job, batch: $batch);
 			if ($job['batchNumber'] % 10 === 0) {
-				$this->logger->debug(
-					message: '[SettingsService] 🧹 MEMORY CLEANUP',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'memoryUsage' => round(memory_get_usage() / 1024 / 1024, 2) . 'MB',
-						'peakMemory' => round(memory_get_peak_usage() / 1024 / 1024, 2) . 'MB',
-					]
-				);
-				gc_collect_cycles();
+				$this->cleanupMemory();
 			}
-		}//end foreach
+		}
 	}//end processJobsSerial()
+
+	/**
+	 * Log the progress after one serial batch.
+	 *
+	 * @param array $job   The batch job.
+	 * @param array $batch The batch counts.
+	 *
+	 * @return void
+	 */
+	private function logProgress(array $job, array $batch): void {
+		$this->logger->info(
+			message: '[SettingsService] 📈 MASS VALIDATION PROGRESS',
+			context: array_merge(
+				['file' => __FILE__, 'line' => __LINE__],
+				$this->progressContext(job: $job, batch: $batch)
+			)
+		);
+	}//end logProgress()
+
+	/**
+	 * The progress figures logged after one serial batch.
+	 *
+	 * The run's batch count was recorded before any batch ran.
+	 *
+	 * @param array $job   The batch job.
+	 * @param array $batch The batch counts.
+	 *
+	 * @return array<string, mixed> The log context, without file and line.
+	 */
+	private function progressContext(array $job, array $batch): array {
+		return [
+			'batchNumber' => $job['batchNumber'],
+			'totalBatches' => $this->results['stats']['batches_processed'],
+			'processed' => $batch['processed'],
+			'successful' => $batch['successful'],
+			'failed' => $batch['failed'],
+			'batchDuration' => round($batch['duration'] * 1000) . 'ms',
+			'objectsPerSecond' => $this->objectsPerSecond(batch: $batch),
+			'totalProcessed' => $this->results['stats']['processed_objects'],
+		];
+	}//end progressContext()
+
+	/**
+	 * The throughput of one batch, or 0 when it took no measurable time.
+	 *
+	 * @param array $batch The batch counts and duration.
+	 *
+	 * @return float|int Objects per second.
+	 */
+	private function objectsPerSecond(array $batch): float|int {
+		if ($batch['duration'] > 0) {
+			return round($batch['processed'] / $batch['duration'], 2);
+		}
+
+		return 0;
+	}//end objectsPerSecond()
+
+	/**
+	 * Log memory use and collect garbage cycles.
+	 *
+	 * @return void
+	 */
+	private function cleanupMemory(): void {
+		$this->logger->debug(
+			message: '[SettingsService] 🧹 MEMORY CLEANUP',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'memoryUsage' => round(memory_get_usage() / 1024 / 1024, 2) . 'MB',
+				'peakMemory' => round(memory_get_peak_usage() / 1024 / 1024, 2) . 'MB',
+			]
+		);
+		gc_collect_cycles();
+	}//end cleanupMemory()
 
 	/**
 	 * Run the batch jobs in chunks of PARALLEL_BATCHES, logging progress per chunk.
@@ -290,44 +376,76 @@ final class MassValidationRun {
 	 */
 	private function processJobsParallel(array $batchJobs): void {
 		$batchChunks = array_chunk($batchJobs, self::PARALLEL_BATCHES);
-
 		foreach ($batchChunks as $chunkIndex => $chunk) {
-			$this->logger->info(
-				message: '[SettingsService] 🔄 PROCESSING PARALLEL CHUNK',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'chunkIndex' => $chunkIndex + 1,
-					'totalChunks' => count($batchChunks),
-					'batchesInChunk' => count($chunk),
-				]
-			);
-
+			$this->logChunkStart(chunkIndex: $chunkIndex, batchChunks: $batchChunks);
 			$chunkStartTime = microtime(true);
-			$chunkResults = [];
-			foreach ($chunk as $job) {
-				$chunkResults[] = $this->saveBatch(job: $job);
-			}
-
-			foreach ($chunkResults as $batch) {
-				$this->addBatch(batch: $batch);
-			}
-
-			$this->logger->info(
-				message: '[SettingsService] ✅ COMPLETED PARALLEL CHUNK',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'chunkIndex' => $chunkIndex + 1,
-					'chunkTime' => round((microtime(true) - $chunkStartTime) * 1000, 2) . 'ms',
-					'objectsProcessed' => array_sum(array_column($chunkResults, 'processed')),
-					'totalProcessed' => $this->results['stats']['processed_objects'],
-				]
-			);
-
+			$chunkResults = $this->saveChunk(chunk: $chunk);
+			$this->logChunkDone(result: new ValidationChunkResult(index: $chunkIndex, startedAt: $chunkStartTime, batches: $chunkResults));
 			gc_collect_cycles();
-		}//end foreach
+		}
 	}//end processJobsParallel()
+
+	/**
+	 * Re-save every batch of a chunk, then add the batches to the result.
+	 *
+	 * @param array $chunk The batch jobs of the chunk.
+	 *
+	 * @return list<array> The batch counts, in job order.
+	 */
+	private function saveChunk(array $chunk): array {
+		$chunkResults = [];
+		foreach ($chunk as $job) {
+			$chunkResults[] = $this->saveBatch(job: $job);
+		}
+
+		foreach ($chunkResults as $batch) {
+			$this->addBatch(batch: $batch);
+		}
+
+		return $chunkResults;
+	}//end saveChunk()
+
+	/**
+	 * Log the start of a parallel chunk.
+	 *
+	 * @param int         $chunkIndex  Zero-based chunk index.
+	 * @param list<array> $batchChunks All chunks of batch jobs.
+	 *
+	 * @return void
+	 */
+	private function logChunkStart(int $chunkIndex, array $batchChunks): void {
+		$this->logger->info(
+			message: '[SettingsService] 🔄 PROCESSING PARALLEL CHUNK',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'chunkIndex' => $chunkIndex + 1,
+				'totalChunks' => count($batchChunks),
+				'batchesInChunk' => count($batchChunks[$chunkIndex]),
+			]
+		);
+	}//end logChunkStart()
+
+	/**
+	 * Log the end of a parallel chunk.
+	 *
+	 * @param ValidationChunkResult $result The chunk: its index, start time and batch counts.
+	 *
+	 * @return void
+	 */
+	private function logChunkDone(ValidationChunkResult $result): void {
+		$this->logger->info(
+			message: '[SettingsService] ✅ COMPLETED PARALLEL CHUNK',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'chunkIndex' => $result->index + 1,
+				'chunkTime' => round((microtime(true) - $result->startedAt) * 1000, 2) . 'ms',
+				'objectsProcessed' => array_sum(array_column($result->batches, 'processed')),
+				'totalProcessed' => $this->results['stats']['processed_objects'],
+			]
+		);
+	}//end logChunkDone()
 
 	/**
 	 * Re-save the objects of one batch job.
@@ -340,33 +458,62 @@ final class MassValidationRun {
 	 */
 	private function saveBatch(array $job): array {
 		$batchStartTime = microtime(true);
-		$objects = $this->objectMapper->findAll(limit: $job['limit'], offset: $job['offset']);
+		$listing = new ListQuery(limit: $job['limit'], offset: $job['offset']);
+		$objects = $this->objectMapper->findAllListed(request: new MagicListRequest(table: null, query: $listing));
 
+		$batch = $this->resaveAll(objects: $objects);
+		$batch['failed'] = count($batch['errors']);
+		$batch['duration'] = microtime(true) - $batchStartTime;
+		return $batch;
+	}//end saveBatch()
+
+	/**
+	 * Re-save objects in order, stopping at the first failure unless collect_errors is set.
+	 *
+	 * @param iterable<ObjectEntity> $objects The objects.
+	 *
+	 * @return array{processed: int, successful: int, failed: int, errors: list<array>} The counts.
+	 */
+	private function resaveAll(iterable $objects): array {
 		$batch = ['processed' => 0, 'successful' => 0, 'failed' => 0, 'errors' => []];
 		foreach ($objects as $object) {
 			$batch['processed']++;
-			try {
-				// Re-saving triggers all business logic; saveObject() signals failure by throwing.
-				$this->objectService()->saveObject(
-					object: $object->getObject(),
-					extend: [],
-					register: $object->getRegister(),
-					schema: $object->getSchema(),
-					uuid: $object->getUuid()
-				);
-				$batch['successful']++;
-			} catch (Exception $e) {
-				$batch['errors'][] = $this->recordFailure(object: $object, error: $e);
+			$error = $this->resave(object: $object);
+			if ($error !== null) {
+				$batch['errors'][] = $error;
 				if ($this->config['collect_errors'] === false) {
 					break;
 				}
 			}
 		}
 
-		$batch['failed'] = count($batch['errors']);
-		$batch['duration'] = microtime(true) - $batchStartTime;
+		// Every re-saved object either succeeded or left exactly one error entry.
+		$batch['successful'] = ($batch['processed'] - count($batch['errors']));
 		return $batch;
-	}//end saveBatch()
+	}//end resaveAll()
+
+	/**
+	 * Re-save one object.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return array|null The error entry, or null when the save succeeded.
+	 */
+	private function resave(ObjectEntity $object): ?array {
+		try {
+			// Re-saving triggers all business logic; saveObject() signals failure by throwing.
+			$this->objectService()->saveObject(
+				object: $object->getObject(),
+				extend: [],
+				register: $object->getRegister(),
+				schema: $object->getSchema(),
+				uuid: $object->getUuid()
+			);
+			return null;
+		} catch (Exception $e) {
+			return $this->recordFailure(object: $object, error: $e);
+		}
+	}//end resave()
 
 	/**
 	 * The ObjectService, taken from the container on first use: SettingsService cannot
@@ -391,17 +538,10 @@ final class MassValidationRun {
 	 * @return array The error entry.
 	 */
 	private function recordFailure(ObjectEntity $object, Exception $error): array {
-		$serial = $this->config['mode'] !== 'parallel';
-		if ($serial === true) {
-			$this->logger->error(
-				message: "[SettingsService] Mass validation failed for object {$object->getUuid()}: {$error->getMessage()}",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-		}
-
 		$batchMode = 'parallel_optimized';
-		if ($serial === true) {
+		if ($this->config['mode'] !== 'parallel') {
 			$batchMode = 'serial_optimized';
+			$this->logFailure(object: $object, error: $error);
 		}
 
 		return [
@@ -413,6 +553,21 @@ final class MassValidationRun {
 			'batch_mode' => $batchMode,
 		];
 	}//end recordFailure()
+
+	/**
+	 * Log a failed re-save.
+	 *
+	 * @param ObjectEntity $object The object that failed.
+	 * @param Exception    $error  The failure.
+	 *
+	 * @return void
+	 */
+	private function logFailure(ObjectEntity $object, Exception $error): void {
+		$this->logger->error(
+			message: "[SettingsService] Mass validation failed for object {$object->getUuid()}: {$error->getMessage()}",
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end logFailure()
 
 	/**
 	 * Add one batch's counts and errors to the result.
@@ -443,8 +598,20 @@ final class MassValidationRun {
 			$this->results['stats']['objects_per_second'] = round($this->results['stats']['processed_objects'] / $duration, 2);
 		}
 
+		$this->results['memory_usage'] = $this->memoryUsage(endMemory: $endMemory, peakMemory: $peakMemory);
+	}//end recordMetrics()
+
+	/**
+	 * The memory use of the run, raw and formatted.
+	 *
+	 * @param int $endMemory  Memory in use at the end of the run.
+	 * @param int $peakMemory Peak memory use of the run.
+	 *
+	 * @return array The memory_usage entry of the result.
+	 */
+	private function memoryUsage(int $endMemory, int $peakMemory): array {
 		$peakPercentage = round(($peakMemory / (1024 * 1024 * 1024)) * 100, 1);
-		$this->results['memory_usage'] = [
+		return [
 			'start_memory' => $this->start['memory'],
 			'end_memory' => $endMemory,
 			'peak_memory' => $peakMemory,
@@ -456,7 +623,7 @@ final class MassValidationRun {
 				'peak_percentage' => $peakPercentage . '%',
 			],
 		];
-	}//end recordMetrics()
+	}//end memoryUsage()
 
 	/**
 	 * Set success and message from the failures, and log the completed run.
@@ -465,24 +632,69 @@ final class MassValidationRun {
 	 */
 	private function recordOutcome(): void {
 		$stats = $this->results['stats'];
-		if ($stats['failed_saves'] > 0 && $this->config['collect_errors'] === true) {
-			$this->results['success'] = $stats['successful_saves'] > 0;
-			$this->results['message'] = sprintf(
-				'Mass validation completed with %d errors out of %d objects (%d successful)',
-				$stats['failed_saves'],
-				$stats['total_objects'],
-				$stats['successful_saves']
-			);
-		} elseif ($stats['failed_saves'] > 0) {
-			$this->results['success'] = false;
-			$this->results['message'] = sprintf(
-				'Mass validation stopped after %d errors (processed %d out of %d objects)',
-				$stats['failed_saves'],
-				$stats['processed_objects'],
-				$stats['total_objects']
-			);
+		if ($stats['failed_saves'] > 0) {
+			$this->results['success'] = $this->config['collect_errors'] === true && $stats['successful_saves'] > 0;
+			$this->results['message'] = $this->failureMessage(stats: $stats);
 		}
 
+		$this->logCompleted(stats: $stats);
+	}//end recordOutcome()
+
+	/**
+	 * The result message of a run with failures.
+	 *
+	 * @param array $stats The run statistics.
+	 *
+	 * @return string The message.
+	 */
+	private function failureMessage(array $stats): string {
+		if ($this->config['collect_errors'] === true) {
+			return $this->collectedMessage(stats: $stats);
+		}
+
+		return $this->stoppedMessage(stats: $stats);
+	}//end failureMessage()
+
+	/**
+	 * The result message of a run that collected its failures.
+	 *
+	 * @param array $stats The run statistics.
+	 *
+	 * @return string The message.
+	 */
+	private function collectedMessage(array $stats): string {
+		return sprintf(
+			'Mass validation completed with %d errors out of %d objects (%d successful)',
+			$stats['failed_saves'],
+			$stats['total_objects'],
+			$stats['successful_saves']
+		);
+	}//end collectedMessage()
+
+	/**
+	 * The result message of a run that stopped at its first failure.
+	 *
+	 * @param array $stats The run statistics.
+	 *
+	 * @return string The message.
+	 */
+	private function stoppedMessage(array $stats): string {
+		return sprintf(
+			'Mass validation stopped after %d errors (processed %d out of %d objects)',
+			$stats['failed_saves'],
+			$stats['processed_objects'],
+			$stats['total_objects']
+		);
+	}//end stoppedMessage()
+
+	/**
+	 * Log the completed run.
+	 *
+	 * @param array $stats The run statistics.
+	 *
+	 * @return void
+	 */
+	private function logCompleted(array $stats): void {
 		$this->logger->info(
 			message: '[SettingsService] ✅ MASS VALIDATION COMPLETED',
 			context: [
@@ -496,5 +708,5 @@ final class MassValidationRun {
 				'mode' => $this->config['mode'],
 			]
 		);
-	}//end recordOutcome()
+	}//end logCompleted()
 }//end class

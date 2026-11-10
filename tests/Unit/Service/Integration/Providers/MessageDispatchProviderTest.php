@@ -85,12 +85,7 @@ class MessageDispatchProviderTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 		$logger = $this->createMock(LoggerInterface::class);
 
-		$this->provider = new MessageDispatchProvider(
-			router: $this->router,
-			appManager: $this->appManager,
-			l10n: $l10n,
-			logger: $logger,
-		);
+		$this->provider = new MessageDispatchProvider(routing: new \OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting($this->router, $this->appManager, $l10n), logger: $logger);
 	}//end setUp()
 
 	public function testMetadataMatchesLeafSpec(): void {
@@ -232,6 +227,14 @@ class MessageDispatchProviderTest extends TestCase {
 		// Source still reset even on the degraded path.
 		$this->assertSame('whatsapp-cloud-api', $this->provider->getOpenConnectorSource());
 	}//end testDispatchDegradesOnUpstreamDown()
+
+	public function testDispatchDegradesOnATransportFailure(): void {
+		$this->router->method('call')->willThrowException(new \RuntimeException('connection reset'));
+
+		$result = $this->provider->dispatch(source: 'twilio-sms', body: ['x' => 1], path: 'messages');
+		$this->assertSame(['unavailable' => true, 'cause' => 'upstream-service-down'], $result);
+		$this->assertSame('whatsapp-cloud-api', $this->provider->getOpenConnectorSource());
+	}//end testDispatchDegradesOnATransportFailure()
 
 	public function testHealthDefersToRouterProbe(): void {
 		$probe = ['status' => 'ok', 'authStatus' => 'configured', 'message' => null];

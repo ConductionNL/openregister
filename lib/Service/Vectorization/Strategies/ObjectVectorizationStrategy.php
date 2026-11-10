@@ -25,7 +25,6 @@ namespace OCA\OpenRegister\Service\Vectorization\Strategies;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Search\Service\Vectorization\Strategies\VectorizationStrategyInterface;
 
 /**
  * ObjectVectorizationStrategy
@@ -39,28 +38,7 @@ use OCA\OpenRegister\Search\Service\Vectorization\Strategies\VectorizationStrate
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization
  */
-class ObjectVectorizationStrategy implements VectorizationStrategyInterface {
-
-	/**
-	 * Object service
-	 *
-	 * @var ObjectOperationsInterface
-	 */
-	private ObjectOperationsInterface $objectService;
-
-	/**
-	 * Settings service
-	 *
-	 * @var SettingsServiceInterface
-	 */
-	private SettingsServiceInterface $settingsService;
-
-	/**
-	 * Logger
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
+class ObjectVectorizationStrategy implements ObjectVectorizationStrategyInterface {
 
 	/**
 	 * Constructor
@@ -70,13 +48,11 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface {
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
-		ObjectOperationsInterface $objectService,
-		SettingsServiceInterface $settingsService,
-		LoggerInterface $logger,
+		private readonly ObjectOperationsInterface $objectService,
+		private readonly SettingsServiceInterface $settingsService,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->objectService = $objectService;
-		$this->settingsService = $settingsService;
-		$this->logger = $logger;
+
 	}//end __construct()
 
 	/**

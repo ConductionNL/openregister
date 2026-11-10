@@ -1,0 +1,117 @@
+{
+    "grouped rows": {
+        "result": {
+            "5": {
+                "total": 2,
+                "size": 7
+            },
+            "6": {
+                "total": 0,
+                "size": 0
+            },
+            "9": {
+                "total": 0,
+                "size": 0
+            }
+        },
+        "queries": [
+            "#1 select(schema, COUNT(id) as total, COALESCE(SUM(size), 0) as size)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"5\",\"9\"], 102",
+            "#1 expr.in(schema, :p1, NULL)",
+            "#1 where(in(schema, :p1, NULL))",
+            "#1 groupBy(schema)",
+            "#1 executeQuery()"
+        ]
+    },
+    "grouped empty": {
+        "result": {
+            "5": {
+                "total": 0,
+                "size": 0
+            },
+            "9": {
+                "total": 0,
+                "size": 0
+            }
+        },
+        "queries": [
+            "#1 select(schema, COUNT(id) as total, COALESCE(SUM(size), 0) as size)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"5\",\"9\"], 102",
+            "#1 expr.in(schema, :p1, NULL)",
+            "#1 where(in(schema, :p1, NULL))",
+            "#1 groupBy(schema)",
+            "#1 executeQuery()"
+        ]
+    },
+    "grouped no ids": [],
+    "most active without limit": [],
+    "failing getStatistics": {
+        "result": {
+            "total": 0,
+            "size": 0
+        },
+        "logged": []
+    },
+    "failing getActionChartData": {
+        "result": {
+            "labels": [],
+            "series": []
+        },
+        "logged": []
+    },
+    "failing getDetailedStatistics": {
+        "result": {
+            "total": 0,
+            "creates": 0,
+            "updates": 0,
+            "deletes": 0,
+            "reads": 0
+        },
+        "logged": []
+    },
+    "failing getActionCounts": {
+        "result": {
+            "total": 0,
+            "create": 0,
+            "update": 0,
+            "delete": 0,
+            "read": 0
+        },
+        "logged": [
+            {
+                "message": "Failed to count audit trails by action: database down",
+                "context": {
+                    "registerId": 5,
+                    "schemaId": 9
+                }
+            }
+        ]
+    },
+    "failing getActionDistribution": {
+        "result": {
+            "actions": []
+        },
+        "logged": []
+    },
+    "failing getMostActiveObjects": {
+        "result": {
+            "objects": []
+        },
+        "logged": []
+    },
+    "failing getStatisticsGroupedBySchema": {
+        "result": {
+            "5": {
+                "total": 0,
+                "size": 0
+            },
+            "9": {
+                "total": 0,
+                "size": 0
+            }
+        },
+        "logged": []
+    }
+}

@@ -22,7 +22,6 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -33,6 +32,9 @@ use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
+use OCA\OpenRegister\Service\Object\CacheHandlerRuntime;
+use OCA\OpenRegister\Service\Object\CacheHandlerStores;
+use OCA\OpenRegister\Service\Object\CacheNameScopeSources;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
 use OCA\OpenRegister\Service\SchemaImport\DialectDetector;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
@@ -226,7 +228,7 @@ final class ServiceRegistrar {
 			PortalPartyResolver::class,
 			function (ContainerInterface $container) {
 				return new PortalPartyResolver(
-					objects: $container->get(MagicMapper::class)
+					objects: $container->get(MagicMapperInterface::class)
 				);
 			}
 		);
@@ -323,9 +325,8 @@ final class ServiceRegistrar {
 	private static function buildTaskInboxService(ContainerInterface $container): TaskInboxService {
 			return new TaskInboxService(
 				tasks: $container->get(\OCA\OpenRegister\Db\TaskMapper::class),
-				temporal: $container->get(\OCA\OpenRegister\Service\Task\TaskTemporalProjection::class),
 				logger: $container->get('Psr\Log\LoggerInterface'),
-				objects: $container->get(MagicMapper::class),
+				objects: $container->get(MagicMapperInterface::class),
 				deliveries: $container->get(\OCA\OpenRegister\Db\PortalTaskDeliveryMapper::class),
 				// Reads a located task's subject from its own table instead
 				// of searching every magic table for it.
@@ -342,14 +343,20 @@ final class ServiceRegistrar {
 	 */
 	private static function buildCacheHandler(ContainerInterface $container): CacheHandlerInterface {
 			return new CacheHandler(
-				organisationMapper: $container->get(OrganisationMapperInterface::class),
-				logger: $container->get('Psr\Log\LoggerInterface'),
-				cacheFactory: $container->get('OCP\ICacheFactory'),
-				userSession: $container->get('OCP\IUserSession'),
-				container: $container,
-				registerMapper: $container->get(RegisterMapperInterface::class),
-				schemaMapper: $container->get(SchemaMapperInterface::class),
-				db: $container->get('OCP\IDBConnection')
+				stores: new CacheHandlerStores(
+					organisationMapper: $container->get(OrganisationMapperInterface::class),
+					registerMapper: $container->get(RegisterMapperInterface::class),
+					schemaMapper: $container->get(SchemaMapperInterface::class),
+					db: $container->get('OCP\IDBConnection')
+				),
+				runtime: new CacheHandlerRuntime(
+					logger: $container->get('Psr\Log\LoggerInterface'),
+					cacheFactory: $container->get('OCP\ICacheFactory'),
+					container: $container
+				),
+				nameScope: new CacheNameScopeSources(
+					userSession: $container->get('OCP\IUserSession')
+				)
 			);
 	}//end buildCacheHandler()
 
@@ -363,7 +370,7 @@ final class ServiceRegistrar {
 	private static function buildFolderManagementHandler(ContainerInterface $container): FolderManagementHandler {
 			return new FolderManagementHandler(
 				rootFolder: $container->get('OCP\Files\IRootFolder'),
-				objectEntityMapper: $container->get(MagicMapper::class),
+				objectEntityMapper: $container->get(MagicMapperInterface::class),
 				registerMapper: $container->get(RegisterMapperInterface::class),
 				userSession: $container->get('OCP\IUserSession'),
 				groupManager: $container->get('OCP\IGroupManager'),

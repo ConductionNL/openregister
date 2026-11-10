@@ -36,12 +36,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\CospendProjectDraft;
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
+use OCA\OpenRegister\Controller\Support\CospendLinksControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\CospendLinkService;
+use OCA\OpenRegister\Service\CospendLinkServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -56,20 +60,32 @@ class CospendLinksController extends Controller {
 	use ObjectLinkActionsTrait;
 
 	/**
+	 * Backing service.
+	 *
+	 * @var CospendLinkServiceInterface
+	 */
+	private readonly CospendLinkServiceInterface $cospendLinkService;
+
+	/**
+	 * OR object resolver.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param CospendLinkService $cospendLinkService Backing service.
-	 * @param ObjectOperationsInterface $objectService OR object resolver.
+	 * @param CospendLinksControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly CospendLinkService $cospendLinkService,
-		private readonly ObjectOperationsInterface $objectService,
+		CospendLinksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->cospendLinkService = $services->cospendLinkService;
+		$this->objectService = $services->objectService;
 	}//end __construct()
 
 	/**
@@ -89,15 +105,26 @@ class CospendLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
+		return $this->indexFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end index()
+
+	/**
+	 * List linked Cospend entries for an object: the body of index() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function indexFor(ObjectRef $ref): JSONResponse {
 		if ($this->cospendLinkService->isCospendAvailable() === false) {
 			return $this->appNotInstalled(appName: 'NC Cospend');
 		}
 
 		return $this->listLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			route: $this->routeOf(ref: $ref),
 			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->cospendLinkService->getLinkedEntries($object->getUuid()))
 		);
-	}//end index()
+	}//end indexFor()
 
 	/**
 	 * Link an existing Cospend project or bill.
@@ -120,12 +147,23 @@ class CospendLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
+		return $this->linkFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end link()
+
+	/**
+	 * Link an existing Cospend project or bill: the body of link() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function linkFor(ObjectRef $ref): JSONResponse {
 		if ($this->cospendLinkService->isCospendAvailable() === false) {
 			return $this->appNotInstalled(appName: 'NC Cospend');
 		}
 
 		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			route: $this->routeOf(ref: $ref),
 			action: function (ObjectEntity $object): JSONResponse {
 				$projectId = (string)$this->request->getParam('projectId', '');
 				if (trim($projectId) === '') {
@@ -147,7 +185,7 @@ class CospendLinksController extends Controller {
 				return new JSONResponse($link->jsonSerialize(), 201);
 			}
 		);
-	}//end link()
+	}//end linkFor()
 
 	/**
 	 * Create a new Cospend project and link it.
@@ -168,12 +206,23 @@ class CospendLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function createAndLink(string $register, string $schema, string $id): JSONResponse {
+		return $this->createAndLinkFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end createAndLink()
+
+	/**
+	 * Create a new Cospend project and link it: the body of createAndLink() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function createAndLinkFor(ObjectRef $ref): JSONResponse {
 		if ($this->cospendLinkService->isCospendAvailable() === false) {
 			return $this->appNotInstalled(appName: 'NC Cospend');
 		}
 
 		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			route: $this->routeOf(ref: $ref),
 			action: function (ObjectEntity $object): JSONResponse {
 				$name = (string)$this->request->getParam('name', '');
 				if (trim($name) === '') {
@@ -183,15 +232,14 @@ class CospendLinksController extends Controller {
 				$currency = (string)$this->request->getParam('currency', '');
 
 				$link = $this->cospendLinkService->createAndLinkProject(
-					$this->linkTargetOf(object: $object),
-					$name,
-					$currency
+					target: $this->linkTargetOf(object: $object),
+					draft: new CospendProjectDraft(name: $name, currency: $currency)
 				);
 
 				return new JSONResponse($link->jsonSerialize(), 201);
 			}
 		);
-	}//end createAndLink()
+	}//end createAndLinkFor()
 
 	/**
 	 * Unlink a Cospend entry.
@@ -211,19 +259,31 @@ class CospendLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function destroy(string $register, string $schema, string $id, string $entryId): JSONResponse {
+		return $this->destroyFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id), entryId: $entryId);
+	}//end destroy()
+
+	/**
+	 * Unlink a Cospend entry: the body of destroy() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 * @param string $entryId Link row id (numeric).
+	 *
+	 * @return JSONResponse
+	 */
+	private function destroyFor(ObjectRef $ref, string $entryId): JSONResponse {
 		if ($this->cospendLinkService->isCospendAvailable() === false) {
 			return $this->appNotInstalled(appName: 'NC Cospend');
 		}
 
 		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			route: $this->routeOf(ref: $ref),
 			action: function (ObjectEntity $object) use ($entryId): JSONResponse {
 				$this->cospendLinkService->unlink($object->getUuid(), (int)$entryId);
 
 				return new JSONResponse(['success' => true]);
 			}
 		);
-	}//end destroy()
+	}//end destroyFor()
 
 	/**
 	 * List the current user's Cospend projects (picker source).
@@ -275,4 +335,15 @@ class CospendLinksController extends Controller {
 
 		return new JSONResponse(['error' => $exception->getMessage()], 400);
 	}//end mapException()
+
+	/**
+	 * The link route of the object a route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return ObjectLinkRoute The route the link traits resolve.
+	 */
+	private function routeOf(ObjectRef $ref): ObjectLinkRoute {
+		return new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
+	}//end routeOf()
 }//end class

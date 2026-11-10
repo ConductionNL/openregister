@@ -5,6 +5,8 @@ namespace Unit\Service;
 use Exception;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
+use OCA\OpenRegister\Notifications\Service\EmailLinkedSchemas;
+use OCA\OpenRegister\Notifications\Service\EmailMailAppReader;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
@@ -13,6 +15,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Notifications\Service\EmailLinkRequest;
 
 class EmailServiceTest extends TestCase {
 	private EmailLinkMapper&MockObject $emailLinkMapper;
@@ -34,12 +38,12 @@ class EmailServiceTest extends TestCase {
 
 		$this->service = new EmailService(
 			$this->emailLinkMapper,
-			$this->appManager,
-			$this->db,
-			$this->userSession,
-			$this->logger,
-			$this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class),
-			$this->createMock(\OCA\OpenRegister\Db\MagicMapper::class)
+			new EmailMailAppReader($this->appManager, $this->db, $this->userSession),
+			new EmailLinkedSchemas(
+				$this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class),
+				$this->createMock(\OCA\OpenRegister\Db\MagicMapper::class)
+			),
+			$this->logger
 		);
 	}
 
@@ -67,7 +71,7 @@ class EmailServiceTest extends TestCase {
 		$this->emailLinkMapper->method('findByObjectUuid')->with('abc-123', 10, 0)->willReturn([$link]);
 		$this->emailLinkMapper->method('countByObjectUuid')->with('abc-123')->willReturn(1);
 
-		$result = $this->service->getEmailsForObject('abc-123', 10, 0);
+		$result = $this->service->getEmailsForObject('abc-123', new ListQuery(limit: 10, offset: 0));
 
 		$this->assertSame(1, $result['total']);
 		$this->assertCount(1, $result['results']);
@@ -91,7 +95,7 @@ class EmailServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Email already linked to this object');
 
-		$this->service->linkEmail('abc-123', 5, 1, 42);
+		$this->service->linkEmail(new EmailLinkRequest(objectUuid: 'abc-123', registerId: 5, mailAccountId: 1, mailMessageId: 42));
 	}
 
 	/**
@@ -124,11 +128,87 @@ class EmailServiceTest extends TestCase {
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 		$this->emailLinkMapper->method('insert')->willReturnArgument(0);
 
-		$link = $this->service->linkEmail('abc-123', 5, 4, 44);
+		$link = $this->service->linkEmail(new EmailLinkRequest(objectUuid: 'abc-123', registerId: 5, mailAccountId: 4, mailMessageId: 44));
 
 		$this->assertSame(expected: 'sanne.devries@zuiddrecht.example', actual: $link->getSender());
 		$this->assertSame(expected: 'Sanne de Vries', actual: $link->getSenderName());
 		$this->assertSame(expected: '<a1@zuiddrecht.example>', actual: $link->getRfcMessageId());
+	}
+
+	/**
+	 * A message the Mail app does not hold is refused with 404 and nothing is stored.
+	 *
+	 * @return void
+	 */
+	public function testLinkEmailRefusesAMessageMailDoesNotHave(): void {
+		$this->emailLinkMapper->method('findByObjectAndMessage')->willReturn(null);
+		$this->db->method('getQueryBuilder')->willReturn($this->mailQuery(row: false));
+		$this->emailLinkMapper->expects($this->never())->method('insert');
+
+		$this->expectExceptionCode(404);
+
+		$this->service->linkEmail(new EmailLinkRequest(objectUuid: 'abc-123', registerId: 5, mailAccountId: 4, mailMessageId: 44));
+	}
+
+	/**
+	 * Without a signed-in user nothing is stored.
+	 *
+	 * @return void
+	 */
+	public function testLinkEmailRefusesWithoutAUser(): void {
+		$this->emailLinkMapper->method('findByObjectAndMessage')->willReturn(null);
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->db->method('getQueryBuilder')->willReturn($this->mailQuery(row: ['uid' => '44', 'subject' => 'S']));
+		$this->emailLinkMapper->expects($this->never())->method('insert');
+
+		$this->expectExceptionMessage('No user logged in');
+
+		$this->service->linkEmail(new EmailLinkRequest(objectUuid: 'abc-123', registerId: 5, mailAccountId: 4, mailMessageId: 44));
+	}
+
+	/**
+	 * The stored link carries the object, register, account, message and the linking user.
+	 *
+	 * @return void
+	 */
+	public function testLinkEmailStoresWhatWasAskedAndWhoAsked(): void {
+		$this->emailLinkMapper->method('findByObjectAndMessage')->willReturn(null);
+		$this->userSession->method('getUser')->willReturn($this->createUser(uid: 'pieter'));
+		$this->db->method('getQueryBuilder')->willReturn($this->mailQuery(row: ['uid' => '44', 'subject' => 'S', 'sent_at' => 1760512500]));
+		$this->emailLinkMapper->method('insert')->willReturnArgument(0);
+
+		$link = $this->service->linkEmail(new EmailLinkRequest(objectUuid: 'abc-123', registerId: 5, mailAccountId: 4, mailMessageId: 44));
+
+		$this->assertSame('abc-123', $link->getObjectUuid());
+		$this->assertSame(5, $link->getRegisterId());
+		$this->assertSame(4, $link->getMailAccountId());
+		$this->assertSame(44, $link->getMailMessageId());
+		$this->assertSame('pieter', $link->getLinkedBy());
+		$this->assertSame('S', $link->getSubject());
+		$this->assertNotNull($link->getLinkedAt());
+		$this->assertNotNull($link->getMailDate());
+	}
+
+	/**
+	 * A query builder answering one Mail message row, or false for none.
+	 *
+	 * @param array<string, mixed>|false $row The row.
+	 *
+	 * @return \OCP\DB\QueryBuilder\IQueryBuilder&MockObject The builder.
+	 */
+	private function mailQuery(array|false $row): \OCP\DB\QueryBuilder\IQueryBuilder&MockObject {
+		$qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+		foreach (['select', 'addSelect', 'from', 'leftJoin', 'where', 'andWhere', 'setMaxResults'] as $fluent) {
+			$qb->method($fluent)->willReturnSelf();
+		}
+		$qb->method('expr')->willReturn($this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class));
+		$qb->method('createFunction')->willReturn($this->createMock(\OCP\DB\QueryBuilder\IQueryFunction::class));
+		$qb->method('getSQL')->willReturn('');
+		$result = $this->createMock(\OCP\DB\IResult::class);
+		$result->method('fetch')->willReturn($row);
+		$qb->method('executeQuery')->willReturn($result);
+
+		return $qb;
 	}
 
 	public function testUnlinkEmailSuccess(): void {

@@ -34,6 +34,9 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Controller\ObjectIntegrationsController;
+use OCA\OpenRegister\Controller\Support\ObjectIntegrationsAccess;
+use OCA\OpenRegister\Controller\Support\ObjectIntegrationsControllerServices;
+use OCA\OpenRegister\Controller\Support\ObjectIntegrationsDomain;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
@@ -143,14 +146,19 @@ class ObjectIntegrationsControllerTest extends TestCase {
 	): ObjectIntegrationsController {
 		$request = $request ?? $this->createMock(IRequest::class);
 		return new ObjectIntegrationsController(
-			appName: 'openregister',
 			request: $request,
-			registry: $registry,
-			logger: new NullLogger(),
-			objectService: $objectService ?? $this->accessibleObjectService(),
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			visibility: $visibility ?? $this->passThroughVisibility(),
-			permissions: $permissions ?? $this->permissions(mayUpdate: true)
+			services: new ObjectIntegrationsControllerServices(
+				domain: new ObjectIntegrationsDomain(
+					registry: $registry,
+					objectService: $objectService ?? $this->accessibleObjectService(),
+					schemaMapper: $this->createMock(SchemaMapper::class)
+				),
+				access: new ObjectIntegrationsAccess(
+					visibility: $visibility ?? $this->passThroughVisibility(),
+					permissions: $permissions ?? $this->permissions(mayUpdate: true)
+				),
+				logger: new NullLogger()
+			)
 		);
 	}//end buildController()
 
@@ -402,6 +410,18 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		$this->assertSame(['title' => 'X'], $stub->createCalled['payload']);
 	}//end testCreateReturns201()
 
+	/**
+	 * A create that fails keeps the failure's own status: only a success becomes 201.
+	 *
+	 * @return void
+	 */
+	public function testAFailedCreateKeepsItsStatus(): void {
+		$registry = new IntegrationRegistry(new NullLogger());
+		$registry->addProvider(new _ControllerStubProvider('stub'));
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $this->buildController($registry)->create('r', 's', 'o', 'missing')->getStatus());
+	}//end testAFailedCreateKeepsItsStatus()
+
 	public function testAnItemOfAnotherObjectAnswers404(): void {
 		$provider = new class('stub') extends _ControllerStubProvider {
 			public function delete(string $register, string $schema, string $objectId, string $entityId): void {
@@ -485,9 +505,11 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		$registry = new IntegrationRegistry(new NullLogger());
 		$registry->addProvider(
 			new \OCA\OpenRegister\Service\Integration\Providers\ContactsProvider(
-				$contacts,
-				$this->createMock(\OCP\App\IAppManager::class),
-				$this->createMock(\OCP\IL10N::class)
+				new \OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription(
+					$this->createMock(\OCP\App\IAppManager::class),
+					$this->createMock(\OCP\IL10N::class)
+				),
+				$contacts
 			)
 		);
 		$controller = $this->buildController(registry: $registry, request: $this->buildRequest(['role' => 'x']));
@@ -566,11 +588,9 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		);
 
 		$visibility = new \OCA\OpenRegister\Notifications\Service\TimelineVisibilityService(
-			$this->createMock(SchemaMapper::class),
+			new \OCA\OpenRegister\Notifications\Service\TimelineVisibilityPlatform($this->createMock(SchemaMapper::class), $this->createMock(\OCP\IUserSession::class), new NullLogger()),
 			$this->permissionHandlerAnswering(false),
-			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class),
-			$this->createMock(\OCP\IUserSession::class),
-			new NullLogger()
+			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class)
 		);
 
 		$controller = $this->buildController(
@@ -599,11 +619,9 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		$registry->addProvider(new _ControllerStubProvider('files'));
 
 		$visibility = new \OCA\OpenRegister\Notifications\Service\TimelineVisibilityService(
-			$this->createMock(SchemaMapper::class),
+			new \OCA\OpenRegister\Notifications\Service\TimelineVisibilityPlatform($this->createMock(SchemaMapper::class), $this->createMock(\OCP\IUserSession::class), new NullLogger()),
 			$this->permissionHandlerAnswering(false),
-			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class),
-			$this->createMock(\OCP\IUserSession::class),
-			new NullLogger()
+			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class)
 		);
 
 		$controller = $this->buildController(

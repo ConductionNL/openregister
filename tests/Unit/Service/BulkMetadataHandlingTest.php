@@ -29,11 +29,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
+use OCA\OpenRegister\Service\Object\BulkSaveOptions;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
+use OCA\OpenRegister\Service\Object\BulkSaveReporting;
+use OCA\OpenRegister\Service\Object\BulkSaveSession;
+use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -169,13 +175,10 @@ class BulkMetadataHandlingTest extends TestCase {
 
 		// Create the SaveObjects handler with mocked dependencies.
 		$this->saveObjectsHandler = new SaveObjects(
-			$this->mockObjectMapper,
-			$this->mockSchemaMapper,
-			$this->mockRegisterMapper,
-			$this->mockSaveHandler,
-			$this->mockUserSession,
-			$this->mockOrganisationService,
-			$this->createMock(LoggerInterface::class)
+			stores: new BulkSaveStores(objectEntityMapper: $this->mockObjectMapper, schemaMapper: $this->mockSchemaMapper, registerMapper: $this->mockRegisterMapper, saveHandler: $this->mockSaveHandler),
+			session: new BulkSaveSession(userSession: $this->mockUserSession, organisationService: $this->mockOrganisationService),
+			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class)),
+			checks: new BulkRowChecks()
 		);
 
 	}//end setUp()
@@ -221,13 +224,10 @@ class BulkMetadataHandlingTest extends TestCase {
 
 		// Execute the bulk save operation.
 		$result = $this->saveObjectsHandler->saveObjects(
-			objects: $testObjects,
-			register: $this->testRegister,
-			schema: $this->testSchema,
+			$testObjects,
+			new BulkSaveOptions(new BulkBatchDefaults($this->testRegister, $this->testSchema), validation: false, events: false, audit: true),
 			_rbac: false,
-			_multitenancy: false,
-			_validation: false,
-			_events: false
+			_multitenancy: false
 		);
 
 		// Verify the operation was successful.
@@ -267,13 +267,10 @@ class BulkMetadataHandlingTest extends TestCase {
 
 		// Execute the bulk save operation.
 		$result = $this->saveObjectsHandler->saveObjects(
-			objects: $testObjects,
-			register: $this->testRegister,
-			schema: $this->testSchema,
+			$testObjects,
+			new BulkSaveOptions(new BulkBatchDefaults($this->testRegister, $this->testSchema), validation: false, events: false, audit: true),
 			_rbac: false,
-			_multitenancy: false,
-			_validation: false,
-			_events: false
+			_multitenancy: false
 		);
 
 		// Verify the operation was successful.
@@ -313,13 +310,10 @@ class BulkMetadataHandlingTest extends TestCase {
 
 		// Execute the bulk save operation.
 		$result = $this->saveObjectsHandler->saveObjects(
-			objects: $testObjects,
-			register: $this->testRegister,
-			schema: $this->testSchema,
+			$testObjects,
+			new BulkSaveOptions(new BulkBatchDefaults($this->testRegister, $this->testSchema), validation: false, events: false, audit: true),
 			_rbac: false,
-			_multitenancy: false,
-			_validation: false,
-			_events: false
+			_multitenancy: false
 		);
 
 		// Verify the operation was successful.
@@ -356,13 +350,10 @@ class BulkMetadataHandlingTest extends TestCase {
 
 		// Execute the bulk save operation.
 		$result = $this->saveObjectsHandler->saveObjects(
-			objects: $testObjects,
-			register: $this->testRegister,
-			schema: $this->testSchema,
+			$testObjects,
+			new BulkSaveOptions(new BulkBatchDefaults($this->testRegister, $this->testSchema), validation: false, events: false, audit: true),
 			_rbac: false,
-			_multitenancy: false,
-			_validation: false,
-			_events: false
+			_multitenancy: false
 		);
 
 		// Verify the operation was successful despite null user.
@@ -404,13 +395,10 @@ class BulkMetadataHandlingTest extends TestCase {
 
 		// Execute the bulk save operation.
 		$this->saveObjectsHandler->saveObjects(
-			objects: $testObjects,
-			register: $this->testRegister,
-			schema: $this->testSchema,
+			$testObjects,
+			new BulkSaveOptions(new BulkBatchDefaults($this->testRegister, $this->testSchema), validation: false, events: false, audit: true),
 			_rbac: false,
-			_multitenancy: false,
-			_validation: false,
-			_events: false
+			_multitenancy: false
 		);
 
 	}//end testGracefulHandlingWhenOrganisationServiceFails()
@@ -472,13 +460,10 @@ class BulkMetadataHandlingTest extends TestCase {
 
 		// Execute the bulk save operation.
 		$result = $this->saveObjectsHandler->saveObjects(
-			objects: $testObjects,
-			register: $this->testRegister,
-			schema: $this->testSchema,
+			$testObjects,
+			new BulkSaveOptions(new BulkBatchDefaults($this->testRegister, $this->testSchema), validation: false, events: false, audit: true),
 			_rbac: false,
-			_multitenancy: false,
-			_validation: false,
-			_events: false
+			_multitenancy: false
 		);
 
 		// Verify the operation was successful for all objects.
@@ -530,13 +515,10 @@ class BulkMetadataHandlingTest extends TestCase {
 
 		// Execute the bulk save operation.
 		$result = $this->saveObjectsHandler->saveObjects(
-			objects: $testObjects,
-			register: $this->testRegister,
-			schema: $this->testSchema,
+			$testObjects,
+			new BulkSaveOptions(new BulkBatchDefaults($this->testRegister, $this->testSchema), validation: false, events: false, audit: true),
 			_rbac: false,
-			_multitenancy: false,
-			_validation: false,
-			_events: false
+			_multitenancy: false
 		);
 
 		// Verify the operation was successful for all objects.

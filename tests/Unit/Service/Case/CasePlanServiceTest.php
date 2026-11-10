@@ -30,14 +30,19 @@ use OCA\OpenRegister\Exception\CaseTransitionException;
 use OCA\OpenRegister\Exception\CaseValidationException;
 use OCA\OpenRegister\Service\Case\CaseAnchorReader;
 use OCA\OpenRegister\Service\Case\CaseBusinessStateWriter;
+use OCA\OpenRegister\Service\Case\CaseCascadeReaders;
 use OCA\OpenRegister\Service\Case\CasePlanAuthorizationService;
 use OCA\OpenRegister\Service\Case\CasePlanCascade;
 use OCA\OpenRegister\Service\Case\CasePlanDefinition;
+use OCA\OpenRegister\Service\Case\CasePlanAnchorAccess;
+use OCA\OpenRegister\Service\Case\CasePlanBringOver;
+use OCA\OpenRegister\Service\Case\CasePlanMechanics;
+use OCA\OpenRegister\Service\Case\CasePlanStore;
 use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Service\Case\CasePlanStateMachine;
-use OCA\OpenRegister\Service\Case\CasePlanTransitions;
 use OCA\OpenRegister\Service\Case\CaseRealisationService;
 use OCA\OpenRegister\Service\Case\CaseSentryEvaluator;
+use OCA\OpenRegister\Service\Case\CaseTransitionEffects;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
@@ -45,6 +50,13 @@ use OCP\IGroupManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Service\Case\CaseAdHocRequest;
+use OCA\OpenRegister\Service\Case\CaseAnchor;
+use OCA\OpenRegister\Service\Case\CaseCompletion;
+use OCA\OpenRegister\Service\Case\CaseItemTransition;
+use OCA\OpenRegister\Service\Case\CasePlanCreation;
+use OCA\OpenRegister\Service\Case\CasePlanTrigger;
 
 /**
  * Coverage of CasePlanService over the real machine, cascade, evaluator,
@@ -63,6 +75,8 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Case\CasePlanTransitions
  * @uses \OCA\OpenRegister\Service\Case\CasePlanTree
  * @uses \OCA\OpenRegister\Service\Case\CaseSentryEvaluator
+ * @uses \OCA\OpenRegister\Service\Case\CaseSentryOnPart
+ * @uses \OCA\OpenRegister\Service\Case\CaseSentryMoment
  * @uses \OCA\OpenRegister\Service\Flow\EventCatalogService
  * @uses \OCA\OpenRegister\Service\Flow\FlowExpression
  * @uses \OCA\OpenRegister\Service\Case\CasePlanEnsurer
@@ -156,27 +170,29 @@ class CasePlanServiceTest extends TestCase {
 		$groups->method('groupExists')->willReturnCallback(static fn (string $gid): bool => $gid !== 'ghost');
 		$sentries = new CaseSentryEvaluator(catalog: new EventCatalogService());
 		$machine = new CasePlanStateMachine(
-			items: $this->items,
-			audits: $this->audits,
-			table: new CasePlanTransitions(),
-			realiser: $this->realiser,
-			writer: $this->writer,
-			db: $db,
-			logger: new NullLogger()
+			store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $db, logger: new NullLogger()),
+			effects: new CaseTransitionEffects(realiser: $this->realiser, writer: $this->writer)
 		);
 
 		return new CasePlanService(
-			items: $this->items,
-			audits: $this->audits,
-			machine: $machine,
-			cascade: new CasePlanCascade(items: $this->items, machine: $machine, sentries: $sentries, realiser: $this->realiser, anchor: $this->anchor, db: $db, logger: new NullLogger()),
-			sentries: $sentries,
-			authorization: new CasePlanAuthorizationService(groupManager: $groups),
-			anchor: $this->anchor,
-			writer: $this->writer,
-			definitions: new CasePlanDefinition(sentries: $sentries),
-			db: $db,
-			logger: new NullLogger()
+			store: new CasePlanStore(
+				items: $this->items,
+				audits: $this->audits,
+				db: $db,
+				logger: new NullLogger()
+			),
+			mechanics: new CasePlanMechanics(
+				machine: $machine,
+				cascade: new CasePlanCascade(machine: $machine, readers: new CaseCascadeReaders(sentries: $sentries, realiser: $this->realiser, anchor: $this->anchor)),
+				sentries: $sentries,
+				definitions: new CasePlanDefinition(sentries: $sentries)
+			),
+			anchorAccess: new CasePlanAnchorAccess(
+				authorization: new CasePlanAuthorizationService(groupManager: $groups),
+				anchor: $this->anchor,
+				writer: $this->writer
+			),
+			bringOver: new CasePlanBringOver()
 		);
 	}//end service()
 
@@ -206,7 +222,7 @@ class CasePlanServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testCreateEntersThePlanAndReadsAreVisibilityGated(): void {
-		$plan = $this->service()->createPlan(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1, definition: CasePlanDefinitionTest::permitDefinition(), uid: 'alice');
+		$plan = $this->service()->createPlan(creation: new CasePlanCreation(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1), definition: CasePlanDefinitionTest::permitDefinition(), actor: 'alice'));
 
 		$expected = ['intake' => 'active', 'completeness-check' => 'active', 'application-complete' => 'available', 'assessment' => 'available', 'external-advice' => 'available', 'decide' => 'available', 'run-stage' => 'available'];
 		ksort($expected);
@@ -222,7 +238,7 @@ class CasePlanServiceTest extends TestCase {
 		}
 
 		try {
-			$this->service()->createPlan(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1, definition: CasePlanDefinitionTest::permitDefinition(), uid: 'alice');
+			$this->service()->createPlan(creation: new CasePlanCreation(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1), definition: CasePlanDefinitionTest::permitDefinition(), actor: 'alice'));
 			$this->fail('one plan per object');
 		} catch (CaseValidationException $refusal) {
 			$this->assertInstanceOf(\OCA\OpenRegister\Exception\CasePlanExistsException::class, $refusal, 'An existing plan is told apart by type.');
@@ -253,14 +269,14 @@ class CasePlanServiceTest extends TestCase {
 		$bad = CasePlanDefinitionTest::permitDefinition();
 		$bad['items'][0]['entryCriteria'] = [['on' => ['event' => 'case.item.started']]];
 		try {
-			$this->service()->createPlan(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1, definition: $bad, uid: 'alice');
+			$this->service()->createPlan(creation: new CasePlanCreation(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1), definition: $bad, actor: 'alice'));
 			$this->fail('unknown event');
 		} catch (CaseValidationException $refusal) {
 			$this->assertStringContainsString("'case.item.started'", $refusal->getMessage());
 		}
 
 		try {
-			$this->service()->createPlan(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1, definition: CasePlanDefinitionTest::permitDefinition(), uid: 'bob');
+			$this->service()->createPlan(creation: new CasePlanCreation(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1), definition: CasePlanDefinitionTest::permitDefinition(), actor: 'bob'));
 			$this->fail('bob does not hold the root authorization');
 		} catch (CaseAccessDeniedException) {
 			$this->addToAssertionCount(1);
@@ -279,7 +295,7 @@ class CasePlanServiceTest extends TestCase {
 	 */
 	public function testEnableIsAuthorizedFailClosedAndAudited(): void {
 		$service = $this->service();
-		$service->createPlan(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1, definition: CasePlanDefinitionTest::permitDefinition(), uid: 'alice');
+		$service->createPlan(creation: new CasePlanCreation(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1), definition: CasePlanDefinitionTest::permitDefinition(), actor: 'alice'));
 		// Reach assessment: the check completes.
 		$this->outcomes['task-for-completeness-check'] = CaseItem::STATE_COMPLETED;
 		$service->evaluate(objectUuid: CaseFixtures::OBJECT, uid: 'alice');
@@ -341,11 +357,11 @@ class CasePlanServiceTest extends TestCase {
 	 */
 	public function testAttachAdHocDerivesAuthorizationAndEntersAtOnce(): void {
 		$service = $this->service();
-		$service->createPlan(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1, definition: CasePlanDefinitionTest::permitDefinition(), uid: 'alice');
+		$service->createPlan(creation: new CasePlanCreation(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1), definition: CasePlanDefinitionTest::permitDefinition(), actor: 'alice'));
 		$definitionRows = count($this->items->rows);
 
 		try {
-			$service->attachAdHoc(objectUuid: CaseFixtures::OBJECT, data: ['key' => 'visit', 'type' => 'humanTask', 'parent' => 'intake'], uid: 'stranger');
+			$service->attachAdHoc(request: new CaseAdHocRequest(objectUuid: CaseFixtures::OBJECT, data: ['key' => 'visit', 'type' => 'humanTask', 'parent' => 'intake'], actor: 'stranger'));
 			$this->fail('stranger');
 		} catch (CaseAccessDeniedException) {
 			$last = end($this->audits->entries);
@@ -354,7 +370,7 @@ class CasePlanServiceTest extends TestCase {
 		}
 
 		try {
-			$service->attachAdHoc(objectUuid: CaseFixtures::OBJECT, data: ['key' => 'visit', 'type' => 'humanTask', 'parent' => 'intake', 'authorization' => []], uid: 'alice');
+			$service->attachAdHoc(request: new CaseAdHocRequest(objectUuid: CaseFixtures::OBJECT, data: ['key' => 'visit', 'type' => 'humanTask', 'parent' => 'intake', 'authorization' => []], actor: 'alice'));
 			$this->fail('cannot declare itself unguarded');
 		} catch (CaseValidationException $refusal) {
 			$this->assertStringContainsString('cannot declare its own authorization', $refusal->getMessage());
@@ -362,7 +378,7 @@ class CasePlanServiceTest extends TestCase {
 
 		foreach ([['parent' => 'assessment'], ['parent' => 'completeness-check'], ['parent' => 'nope'], ['key' => 'intake']] as $bad) {
 			try {
-				$service->attachAdHoc(objectUuid: CaseFixtures::OBJECT, data: array_merge(['key' => 'visit', 'type' => 'humanTask', 'parent' => 'intake'], $bad), uid: 'alice');
+				$service->attachAdHoc(request: new CaseAdHocRequest(objectUuid: CaseFixtures::OBJECT, data: array_merge(['key' => 'visit', 'type' => 'humanTask', 'parent' => 'intake'], $bad), actor: 'alice'));
 				$this->fail('refused: ' . json_encode($bad));
 			} catch (CaseValidationException) {
 				$this->addToAssertionCount(1);
@@ -371,7 +387,7 @@ class CasePlanServiceTest extends TestCase {
 
 		$this->assertCount($definitionRows, $this->items->rows, 'Nothing was written by the refusals.');
 
-		$visit = $service->attachAdHoc(objectUuid: CaseFixtures::OBJECT, data: ['key' => 'visit', 'type' => 'humanTask', 'name' => 'Locatiebezoek', 'parent' => 'intake', 'required' => false, 'candidateUsers' => ['alice']], uid: 'alice');
+		$visit = $service->attachAdHoc(request: new CaseAdHocRequest(objectUuid: CaseFixtures::OBJECT, data: ['key' => 'visit', 'type' => 'humanTask', 'name' => 'Locatiebezoek', 'parent' => 'intake', 'required' => false, 'candidateUsers' => ['alice']], actor: 'alice'));
 		$this->assertSame(CaseItem::ORIGIN_ADHOC, $visit->getOrigin());
 		$this->assertNull($visit->getDefinitionItemKey());
 		$this->assertNull($visit->getAuthorizationRules(), 'Derived, not declared.');
@@ -382,12 +398,12 @@ class CasePlanServiceTest extends TestCase {
 		$this->assertCount($definitionRows + 1, $this->items->rows);
 
 		// A root-level ad-hoc item derives from the plan root.
-		$rootLevel = $service->attachAdHoc(objectUuid: CaseFixtures::OBJECT, data: ['key' => 'note', 'type' => 'milestone', 'name' => 'Notitie'], uid: 'alice');
+		$rootLevel = $service->attachAdHoc(request: new CaseAdHocRequest(objectUuid: CaseFixtures::OBJECT, data: ['key' => 'note', 'type' => 'milestone', 'name' => 'Notitie'], actor: 'alice'));
 		$this->assertNull($rootLevel->getParentItemId());
 		$this->assertSame(CaseItem::STATE_COMPLETED, $rootLevel->getState(), 'A root milestone with no criteria completes at once.');
 
 		$this->expectException(DoesNotExistException::class);
-		$service->attachAdHoc(objectUuid: 'no-plan', data: ['key' => 'x', 'type' => 'milestone'], uid: 'alice');
+		$service->attachAdHoc(request: new CaseAdHocRequest(objectUuid: 'no-plan', data: ['key' => 'x', 'type' => 'milestone'], actor: 'alice'));
 	}//end testAttachAdHocDerivesAuthorizationAndEntersAtOnce()
 
 	/**
@@ -398,15 +414,15 @@ class CasePlanServiceTest extends TestCase {
 	 */
 	public function testTransitionsOnDifferentItemsDoNotClobberEachOther(): void {
 		$service = $this->service();
-		$service->createPlan(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1, definition: CasePlanDefinitionTest::permitDefinition(), uid: 'alice');
-		$visitA = $service->attachAdHoc(objectUuid: CaseFixtures::OBJECT, data: ['key' => 'a', 'type' => 'humanTask', 'parent' => 'intake', 'required' => false], uid: 'alice');
-		$visitB = $service->attachAdHoc(objectUuid: CaseFixtures::OBJECT, data: ['key' => 'b', 'type' => 'humanTask', 'parent' => 'intake', 'required' => false], uid: 'alice');
+		$service->createPlan(creation: new CasePlanCreation(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1), definition: CasePlanDefinitionTest::permitDefinition(), actor: 'alice'));
+		$visitA = $service->attachAdHoc(request: new CaseAdHocRequest(objectUuid: CaseFixtures::OBJECT, data: ['key' => 'a', 'type' => 'humanTask', 'parent' => 'intake', 'required' => false], actor: 'alice'));
+		$visitB = $service->attachAdHoc(request: new CaseAdHocRequest(objectUuid: CaseFixtures::OBJECT, data: ['key' => 'b', 'type' => 'humanTask', 'parent' => 'intake', 'required' => false], actor: 'alice'));
 
 		// Both read as active, then both complete "at the same time": each
 		// conditional update sees its own row still active.
 		$this->realiser->expects($this->exactly(2))->method('terminate');
-		$doneA = $service->transition(itemUuid: (string)$visitA->getUuid(), to: CaseItem::STATE_COMPLETED, uid: 'alice', reason: 'done a');
-		$doneB = $service->transition(itemUuid: (string)$visitB->getUuid(), to: CaseItem::STATE_COMPLETED, uid: 'alice', reason: 'done b');
+		$doneA = $service->transition(transition: new CaseItemTransition(itemUuid: (string)$visitA->getUuid(), to: CaseItem::STATE_COMPLETED, actor: 'alice', reason: 'done a'));
+		$doneB = $service->transition(transition: new CaseItemTransition(itemUuid: (string)$visitB->getUuid(), to: CaseItem::STATE_COMPLETED, actor: 'alice', reason: 'done b'));
 		$this->assertSame(CaseItem::STATE_COMPLETED, $doneA->getState());
 		$this->assertSame(CaseItem::STATE_COMPLETED, $doneB->getState());
 		// Into variables first: end() takes its argument by reference, and
@@ -419,21 +435,21 @@ class CasePlanServiceTest extends TestCase {
 		$this->assertSame('done b', $this->audits->findForItem((int)$visitB->getId())[2]->getReason());
 
 		try {
-			$service->transition(itemUuid: 'item-3', to: CaseItem::STATE_ACTIVE, uid: 'alice');
+			$service->transition(transition: new CaseItemTransition(itemUuid: 'item-3', to: CaseItem::STATE_ACTIVE, actor: 'alice'));
 			$this->fail('a milestone cannot become active');
 		} catch (CaseTransitionException) {
 			$this->addToAssertionCount(1);
 		}
 
 		try {
-			$service->transition(itemUuid: 'item-3', to: 'paused', uid: 'alice');
+			$service->transition(transition: new CaseItemTransition(itemUuid: 'item-3', to: 'paused', actor: 'alice'));
 			$this->fail('not a state');
 		} catch (CaseValidationException) {
 			$this->addToAssertionCount(1);
 		}
 
 		$this->expectException(CaseAccessDeniedException::class);
-		$service->transition(itemUuid: 'item-3', to: CaseItem::STATE_COMPLETED, uid: 'stranger');
+		$service->transition(transition: new CaseItemTransition(itemUuid: 'item-3', to: CaseItem::STATE_COMPLETED, actor: 'stranger'));
 	}//end testTransitionsOnDifferentItemsDoNotClobberEachOther()
 
 	/**
@@ -445,17 +461,17 @@ class CasePlanServiceTest extends TestCase {
 	 */
 	public function testCompleteCaseConstrainsTheResultAndDeleteLeavesTheAudit(): void {
 		$service = $this->service();
-		$service->createPlan(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1, definition: CasePlanDefinitionTest::permitDefinition(), uid: 'alice');
+		$service->createPlan(creation: new CasePlanCreation(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1), definition: CasePlanDefinitionTest::permitDefinition(), actor: 'alice'));
 
 		try {
-			$service->completeCase(objectUuid: CaseFixtures::OBJECT, result: 'misschien', uid: 'alice');
+			$service->completeCase(completion: new CaseCompletion(objectUuid: CaseFixtures::OBJECT, result: 'misschien', actor: 'alice'));
 			$this->fail('outside the set');
 		} catch (CaseValidationException $refusal) {
 			$this->assertStringContainsString('[verleend, geweigerd]', $refusal->getMessage());
 		}
 
 		try {
-			$service->completeCase(objectUuid: CaseFixtures::OBJECT, result: 'verleend', uid: 'alice');
+			$service->completeCase(completion: new CaseCompletion(objectUuid: CaseFixtures::OBJECT, result: 'verleend', actor: 'alice'));
 			$this->fail('intake is still open');
 		} catch (CaseValidationException $refusal) {
 			$this->assertStringContainsString("'intake'", $refusal->getMessage());
@@ -466,13 +482,13 @@ class CasePlanServiceTest extends TestCase {
 		$this->outcomes['task-for-decide'] = CaseItem::STATE_COMPLETED;
 		$service->evaluate(objectUuid: CaseFixtures::OBJECT, uid: 'alice');
 		$this->writer->expects($this->once())->method('mirrorResult')->with($this->anything(), 'verleend')->willReturn(true);
-		$finished = $service->completeCase(objectUuid: CaseFixtures::OBJECT, result: 'verleend', uid: 'alice');
+		$finished = $service->completeCase(completion: new CaseCompletion(objectUuid: CaseFixtures::OBJECT, result: 'verleend', actor: 'alice'));
 		$this->assertSame('verleend', $finished['result']);
 		$this->assertSame('completed', self::states($finished)['assessment']);
 		$this->assertSame('available', self::states($finished)['run-stage'], 'Optional and never admitted: not in the way.');
 
 		try {
-			$service->completeCase(objectUuid: CaseFixtures::OBJECT, result: 'verleend', uid: 'bob');
+			$service->completeCase(completion: new CaseCompletion(objectUuid: CaseFixtures::OBJECT, result: 'verleend', actor: 'bob'));
 			$this->fail('bob may not administer');
 		} catch (CaseAccessDeniedException) {
 			$this->addToAssertionCount(1);
@@ -486,7 +502,7 @@ class CasePlanServiceTest extends TestCase {
 		foreach (['completeCase', 'deletePlan'] as $verb) {
 			try {
 				$verb === 'completeCase'
-					? $service->completeCase(objectUuid: 'nope', result: 'x', uid: 'boss')
+					? $service->completeCase(completion: new CaseCompletion(objectUuid: 'nope', result: 'x', actor: 'boss'))
 					: $service->deletePlan(objectUuid: 'nope', uid: 'boss');
 				$this->fail("$verb on no plan");
 			} catch (DoesNotExistException) {
@@ -504,7 +520,7 @@ class CasePlanServiceTest extends TestCase {
 	 */
 	public function testEventEntryPointsAndTheStuckQuery(): void {
 		$service = $this->service();
-		$service->createPlan(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1, definition: CasePlanDefinitionTest::permitDefinition(), uid: 'alice');
+		$service->createPlan(creation: new CasePlanCreation(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1), definition: CasePlanDefinitionTest::permitDefinition(), actor: 'alice'));
 
 		$this->outcomes['task-for-completeness-check'] = CaseItem::STATE_COMPLETED;
 		$service->onRealisationTerminal(taskUuid: 'task-for-completeness-check');
@@ -516,17 +532,17 @@ class CasePlanServiceTest extends TestCase {
 		$this->anchor->method('read')->willReturn(['automate' => true]);
 		$this->anchor->method('mayRead')->willReturn(true);
 		$service = $this->service();
-		$service->onObjectEvent(objectUuid: 'object-without-plan', event: 'object.updated', payload: []);
-		$service->onObjectEvent(objectUuid: CaseFixtures::OBJECT, event: 'object.updated', payload: ['automate' => true]);
+		$service->onObjectEvent(trigger: new CasePlanTrigger(objectUuid: 'object-without-plan', event: 'object.updated', payload: []));
+		$service->onObjectEvent(trigger: new CasePlanTrigger(objectUuid: CaseFixtures::OBJECT, event: 'object.updated', payload: ['automate' => true]));
 		$this->assertSame('active', self::states($service->getPlan(objectUuid: CaseFixtures::OBJECT, uid: 'alice'))['run-stage']);
 
-		$page = $service->findStuck(type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_ACTIVE, limit: 1, offset: 0, uid: 'boss');
+		$page = $service->findStuck(query: new ListQuery(limit: 1, offset: 0, filters: ['type' => CaseItem::TYPE_HUMAN_TASK, 'state' => CaseItem::STATE_ACTIVE]), uid: 'boss');
 		$this->assertSame(1, $page['total'], 'decide is the one active human item.');
 		$this->assertSame('decide', $page['results'][0]['key']);
 		$this->assertSame(1, $page['limit']);
 
 		$this->expectException(CaseAccessDeniedException::class);
-		$service->findStuck(type: null, state: null, limit: 25, offset: 0, uid: 'alice');
+		$service->findStuck(query: new ListQuery(limit: 25, offset: 0, filters: ['type' => null, 'state' => null]), uid: 'alice');
 	}//end testEventEntryPointsAndTheStuckQuery()
 
 	/**
@@ -536,7 +552,7 @@ class CasePlanServiceTest extends TestCase {
 	 */
 	public function testEventDrivenEvaluationFailuresAreSwallowed(): void {
 		$service = $this->service();
-		$service->createPlan(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1, definition: CasePlanDefinitionTest::permitDefinition(), uid: 'alice');
+		$service->createPlan(creation: new CasePlanCreation(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1), definition: CasePlanDefinitionTest::permitDefinition(), actor: 'alice'));
 		$this->audits->failNext = true;
 		$this->outcomes['task-for-completeness-check'] = CaseItem::STATE_COMPLETED;
 		$service->onRealisationTerminal(taskUuid: 'task-for-completeness-check');
@@ -576,7 +592,7 @@ class CasePlanServiceTest extends TestCase {
 		}
 
 		try {
-			$this->service()->createPlan(objectUuid: 'other-object', registerId: 1, schemaId: 1, definition: CasePlanDefinitionTest::permitDefinition(), uid: null);
+			$this->service()->createPlan(creation: new CasePlanCreation(anchor: new CaseAnchor(objectUuid: 'other-object', registerId: 1, schemaId: 1), definition: CasePlanDefinitionTest::permitDefinition(), actor: null));
 			$this->fail('a null identity stays refused on the user verb');
 		} catch (CaseAccessDeniedException $denied) {
 			$this->assertStringContainsString('no acting identity', $denied->getMessage());

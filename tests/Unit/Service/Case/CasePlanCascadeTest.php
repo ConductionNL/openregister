@@ -29,12 +29,14 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Exception\CaseCascadeBoundException;
 use OCA\OpenRegister\Service\Case\CaseAnchorReader;
 use OCA\OpenRegister\Service\Case\CaseBusinessStateWriter;
+use OCA\OpenRegister\Service\Case\CaseCascadeReaders;
 use OCA\OpenRegister\Service\Case\CasePlanCascade;
 use OCA\OpenRegister\Service\Case\CasePlanStateMachine;
-use OCA\OpenRegister\Service\Case\CasePlanTransitions;
+use OCA\OpenRegister\Service\Case\CasePlanStore;
 use OCA\OpenRegister\Service\Case\CasePlanTree;
 use OCA\OpenRegister\Service\Case\CaseRealisationService;
 use OCA\OpenRegister\Service\Case\CaseSentryEvaluator;
+use OCA\OpenRegister\Service\Case\CaseTransitionEffects;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -55,6 +57,8 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Case\CasePlanTransitions
  * @uses \OCA\OpenRegister\Service\Case\CasePlanTree
  * @uses \OCA\OpenRegister\Service\Case\CaseSentryEvaluator
+ * @uses \OCA\OpenRegister\Service\Case\CaseSentryOnPart
+ * @uses \OCA\OpenRegister\Service\Case\CaseSentryMoment
  * @uses \OCA\OpenRegister\Service\Flow\FlowExpression
  * @uses \OCA\OpenRegister\Db\FlowRun
  */
@@ -152,23 +156,17 @@ class CasePlanCascadeTest extends TestCase {
 	 */
 	private function cascade(): CasePlanCascade {
 		$machine = new CasePlanStateMachine(
-			items: $this->items,
-			audits: $this->audits,
-			table: new CasePlanTransitions(),
-			realiser: $this->realiser,
-			writer: $this->createMock(CaseBusinessStateWriter::class),
-			db: $this->db,
-			logger: new NullLogger()
+			store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $this->db, logger: new NullLogger()),
+			effects: new CaseTransitionEffects(realiser: $this->realiser, writer: $this->createMock(CaseBusinessStateWriter::class))
 		);
 
 		return new CasePlanCascade(
-			items: $this->items,
 			machine: $machine,
-			sentries: new CaseSentryEvaluator(catalog: new EventCatalogService()),
-			realiser: $this->realiser,
-			anchor: $this->anchor,
-			db: $this->db,
-			logger: new NullLogger()
+			readers: new CaseCascadeReaders(
+				sentries: new CaseSentryEvaluator(catalog: new EventCatalogService()),
+				realiser: $this->realiser,
+				anchor: $this->anchor
+			)
 		);
 	}//end cascade()
 

@@ -78,7 +78,7 @@ use Throwable;
  *
  * @spec openspec/specs/register-scoped-slug-resolution/spec.md
  */
-class RegisterScopedSchemaResolver {
+class RegisterScopedSchemaResolver implements RegisterScopedSchemaResolverInterface {
 
 	/**
 	 * Constructor.
@@ -179,7 +179,7 @@ class RegisterScopedSchemaResolver {
 		if ($this->isUniqueIdentifier(ref: $schemaRef) === true) {
 			try {
 				return $this->schemaMapper->find($schemaRef);
-			} catch (\Throwable) {
+			} catch (\Exception) {
 				// Genuinely absent, not merely unlisted — fall through to the
 				// refusal below. The global lookup widens for AMBIGUITY, never
 				// for absence.

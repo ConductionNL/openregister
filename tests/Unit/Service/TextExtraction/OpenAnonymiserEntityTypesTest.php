@@ -40,11 +40,15 @@ use OCA\OpenRegister\Exception\AnalyzeRequestRejectedException;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionBackends;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery;
+use OCA\OpenRegister\Service\Anonymisation\AnonymiserCall;
 
 /**
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler
@@ -87,18 +91,19 @@ class OpenAnonymiserEntityTypesTest extends TestCase {
 		}
 
 		$handler = new EntityRecognitionHandler(
-			$this->createMock(ChunkMapper::class),
-			$this->createMock(GdprEntityMapper::class),
-			$this->createMock(EntityRelationMapper::class),
-			$this->createMock(IDBConnection::class),
-			$logger,
-			$settings,
-			$this->backend
+			stores: new EntityRecognitionStores(
+				chunkMapper: $this->createMock(ChunkMapper::class),
+				entityMapper: $this->createMock(GdprEntityMapper::class),
+				entityRelationMapper: $this->createMock(EntityRelationMapper::class),
+				db: $this->createMock(IDBConnection::class)
+			),
+			backends: new EntityRecognitionBackends(settingsService: $settings, anonymisationBackendService: $this->backend),
+			logger: $logger
 		);
 
 		$method = new ReflectionMethod(EntityRecognitionHandler::class, 'detectWithOpenAnonymiser');
 
-		return $method->invoke($handler, 'Jan de Vries, jan@example.nl, NL91ABNA0417164300', $entityTypes, 0.5);
+		return $method->invoke($handler, new EntityDetectionQuery('Jan de Vries, jan@example.nl, NL91ABNA0417164300', $entityTypes, 0.5));
 
 	}//end detect()
 
@@ -121,8 +126,8 @@ class OpenAnonymiserEntityTypesTest extends TestCase {
 	public function testAFilterIsSentInAnonymiqsNames(): void {
 		$sent = null;
 		$this->backend->method('requestOpenAnonymiser')->willReturnCallback(
-			function (string $route, array $params) use (&$sent): array {
-				$sent = $params;
+			function (AnonymiserCall $call) use (&$sent): array {
+				$sent = $call->params;
 				return ['pii_entities' => []];
 			}
 		);
@@ -144,8 +149,8 @@ class OpenAnonymiserEntityTypesTest extends TestCase {
 	public function testATypeAnonymiqDoesNotKnowIsLeftOut(): void {
 		$sent = null;
 		$this->backend->method('requestOpenAnonymiser')->willReturnCallback(
-			function (string $route, array $params) use (&$sent): array {
-				$sent = $params;
+			function (AnonymiserCall $call) use (&$sent): array {
+				$sent = $call->params;
 				return ['pii_entities' => []];
 			}
 		);

@@ -31,6 +31,10 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ScheduledReportService;
+use OCA\OpenRegister\Service\ScheduledReportDelivery;
+use OCA\OpenRegister\Service\ScheduledReportExporters;
+use OCA\OpenRegister\Service\ScheduledReportOwnerServices;
+use OCA\OpenRegister\Service\ScheduledReportStores;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
@@ -146,7 +150,25 @@ class ScheduledReportServiceRunGoldenTest extends TestCase {
 			$recorder = $this->getMockBuilder(ExportRunRecorder::class)->disableOriginalConstructor()->onlyMethods(['record'])->getMock();
 			$recorder->method('record')->willReturnCallback(
 				function (...$args) use ($opt) {
-					$this->calls[] = ['recorder.record', $this->plain($args)];
+					// The fixture pins the run's fields in the order record() took
+					// them before they were grouped; flatten the groups back.
+					[$origin, $content, $file, $retention] = $args;
+					$fields = [
+						$origin->source,
+						$origin->actor,
+						$content->format,
+						$content->rowCount,
+						$origin->profile,
+						$file->filename,
+						$content->registerName,
+						$content->schemaName,
+						$file->fileId,
+						$file->filePath,
+						$retention,
+						$file->downloadCount,
+						$origin->status,
+					];
+					$this->calls[] = ['recorder.record', $this->plain($fields)];
 					if (($opt['recorder'] ?? 'ok') === 'throws') {
 						throw new RuntimeException('no table');
 					}
@@ -157,19 +179,14 @@ class ScheduledReportServiceRunGoldenTest extends TestCase {
 		}
 
 		$service = new ScheduledReportService(
-			$mapper,
-			$registers,
-			$this->createMock(SchemaMapper::class),
-			$export,
-			$this->rootFolderFor($opt),
-			$users,
-			$this->createMock(IUserSession::class),
-			$notifications,
-			$this->createMock(LoggerInterface::class),
-			$mailer,
-			$config,
-			null,
-			$recorder
+			new ScheduledReportStores($mapper, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registers, schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
+			new ScheduledReportExporters($export, null, $recorder),
+			new ScheduledReportDelivery(
+				new ScheduledReportOwnerServices($users, $this->createMock(IUserSession::class), $this->rootFolderFor($opt), $notifications),
+				$mailer,
+				$config
+			),
+			$this->createMock(LoggerInterface::class)
 		);
 
 		$report = $this->report($mode, $opt);

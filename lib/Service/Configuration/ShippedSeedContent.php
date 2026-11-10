@@ -58,37 +58,66 @@ class ShippedSeedContent {
 	/**
 	 * The object to write over a stored seed, or null when the stored seed stays.
 	 *
-	 * @param array<string, mixed> $stored     The stored object, with `@self`.
-	 * @param array<string, mixed> $shipped    The seed as listed, with `@self`.
-	 * @param string|null          $remembered The hash of the content last shipped; null when none was kept.
+	 * @param array<string, mixed> $stored  The stored object, with `@self`.
+	 * @param ShippedSeed          $shipped The seed as listed and the hash of the content last shipped.
 	 *
 	 * @return array<string, mixed>|null
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function update(array $stored, array $shipped, ?string $remembered): ?array {
-		if ($remembered !== null && $remembered !== $this->hash(shipped: $shipped)) {
-			return $shipped;
+	public function updateFrom(array $stored, ShippedSeed $shipped): ?array {
+		if ($shipped->remembered !== null && $shipped->remembered !== $this->hash(shipped: $shipped->content)) {
+			return $shipped->content;
 		}
 
-		$data    = $stored;
-		$missing = false;
+		return $this->filledGaps(stored: $stored, shipped: $shipped->content);
+	}//end updateFrom()
+
+	/**
+	 * The stored seed with the fields it lacks taken from the shipped seed, or null when it lacks none.
+	 *
+	 * @param array<string, mixed> $stored  The stored object, with `@self`.
+	 * @param array<string, mixed> $shipped The seed as listed, with `@self`.
+	 *
+	 * @return array<string, mixed>|null
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function filledGaps(array $stored, array $shipped): ?array {
+		$data = $stored;
 		unset($data['@self']);
-		foreach ($shipped as $field => $value) {
-			if ($field !== '@self' && ($data[$field] ?? null) === null && $value !== null) {
-				$data[$field] = $value;
-				$missing      = true;
-			}
+		$gaps = $this->gaps(data: $data, shipped: $shipped);
+		if ($gaps === []) {
+			return null;
 		}
 
-		if ($missing === false) {
-			return null;
+		foreach ($gaps as $field => $value) {
+			$data[$field] = $value;
 		}
 
 		$data['@self'] = $shipped['@self'];
 
 		return $data;
-	}//end update()
+	}//end filledGaps()
+
+	/**
+	 * The shipped fields, `@self` left out, that are set where the stored seed has none.
+	 *
+	 * @param array<string, mixed> $data    The stored object, without `@self`.
+	 * @param array<string, mixed> $shipped The seed as listed, with `@self`.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function gaps(array $data, array $shipped): array {
+		$gaps = [];
+		foreach ($shipped as $field => $value) {
+			if ($field !== '@self' && ($data[$field] ?? null) === null && $value !== null) {
+				$gaps[$field] = $value;
+			}
+		}
+
+		return $gaps;
+	}//end gaps()
 
 	/**
 	 * A value with every object's keys in order, so equal content hashes equal.

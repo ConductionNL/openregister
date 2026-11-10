@@ -23,9 +23,12 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Decision\DecisionOwnership;
+use OCA\OpenRegister\Service\Decision\DecisionVisibilityPlatform;
+use OCA\OpenRegister\Service\Decision\ReviewPolicyFileOwners;
 use OCA\OpenRegister\Service\Decision\DecisionService;
 use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\Decision\RelationDecisionService;
+use OCA\OpenRegister\Service\Decision\RelationDecisionStores;
 use OCA\OpenRegister\Service\Decision\ReviewPolicyResolver;
 use OCA\OpenRegister\Service\File\ManagedFileOwnerLookup;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -62,6 +65,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Decision\DecisionService
  * @uses   \OCA\OpenRegister\Service\Decision\ReviewPolicy
  * @uses   \OCA\OpenRegister\Service\Decision\ReviewPolicyResolver
+ * @uses \OCA\OpenRegister\Event\AbstractDecisionRequestEvent
  * @uses   \OCA\OpenRegister\Event\DecisionChangeRequestedEvent
  * @uses   \OCA\OpenRegister\Service\Settings\FileSettingsHandler
  * @uses   \OCA\OpenRegister\Db\Decision
@@ -195,17 +199,14 @@ class DecisionOwnershipTest extends TestCase {
 
 		$logger = $this->createMock(LoggerInterface::class);
 		$decide = new RelationDecisionService(
-			relationMapper: $relations,
-			decisions: new DecisionService(decisionMapper: $decisionMapper),
-			ownership: new DecisionOwnership(groupManager: $groups, eventDispatcher: $this->createMock(IEventDispatcher::class), logger: $logger),
+			stores: new RelationDecisionStores(relationMapper: $relations, decisions: new DecisionService(decisionMapper: $decisionMapper), db: $this->createMock(IDBConnection::class)),
+			ownership: new DecisionOwnership(groupManager: $groups, platform: new DecisionVisibilityPlatform($this->createMock(IEventDispatcher::class), $logger)),
 			policies: new ReviewPolicyResolver(
 				schemaMapper: $schemas,
 				fileSettings: new FileSettingsHandler(appConfig: $this->createMock(IAppConfig::class)),
-				rootFolder: $this->createMock(IRootFolder::class),
-				owners: $this->createMock(ManagedFileOwnerLookup::class),
+				fileOwners: new ReviewPolicyFileOwners($this->createMock(IRootFolder::class), $this->createMock(ManagedFileOwnerLookup::class)),
 				logger: $logger
-			),
-			db: $this->createMock(IDBConnection::class)
+			)
 		);
 
 		return EntityRelationsControllerFactory::create(
@@ -225,15 +226,14 @@ class DecisionOwnershipTest extends TestCase {
 				resolver: new ReviewPolicyResolver(
 					schemaMapper: $schemas,
 					fileSettings: new FileSettingsHandler(appConfig: $this->createMock(IAppConfig::class)),
-					rootFolder: $this->createMock(IRootFolder::class),
-					owners: $this->createMock(ManagedFileOwnerLookup::class),
+					fileOwners: new ReviewPolicyFileOwners($this->createMock(IRootFolder::class), $this->createMock(ManagedFileOwnerLookup::class)),
 					logger: $logger
 				),
 				decisions: new DecisionService(decisionMapper: $decisionMapper),
 				groupManager: $groups,
-				eventDispatcher: $this->createMock(IEventDispatcher::class),
-				logger: $logger
-			)
+				platform: new DecisionVisibilityPlatform($this->createMock(IEventDispatcher::class), $logger)
+			),
+			$this->createMock(IGroupManager::class)
 		);
 	}//end controllerAs()
 

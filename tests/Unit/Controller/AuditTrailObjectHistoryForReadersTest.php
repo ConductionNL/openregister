@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\BackgroundJob\AuditExportSource;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\AuditTrailControllerFactory;
 use OCA\OpenRegister\Controller\AuditTrailController;
 use OCA\OpenRegister\Db\AuditTrail;
@@ -32,6 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Audit\AuditTrailPageService;
 use OCA\OpenRegister\Service\Audit\HistoryEntryRedactor;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryServices;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
@@ -121,13 +124,7 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 			fn (string $app, string $key, string $default = ''): string => $key === ReadEventVisibility::CONFIG_KEY ? $this->readEventGroups : $default
 		);
 
-		$properties = new PropertyRbacHandler(
-			$this->userSession,
-			$this->groupManager,
-			$this->createMock(ConditionMatcher::class),
-			$this->createMock(LoggerInterface::class),
-			self::stateFieldRuleResolver($this->userSession, $this->groupManager)
-		);
+		$properties = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($this->userSession, $this->groupManager), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(ConditionMatcher::class), self::stateFieldRuleResolver($this->userSession, $this->groupManager)), logger: $this->createMock(LoggerInterface::class));
 
 		return AuditTrailControllerFactory::create(
 			'openregister',
@@ -139,17 +136,18 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 			$this->groupManager,
 			$this->createMock(ReadableAuditTrailLister::class),
 			new AuditTrailPageService(
-				$this->createMock(AuditTrailPageQuery::class),
-				$this->logService,
+				new AuditExportSource($this->createMock(AuditTrailPageQuery::class), $this->logService),
 				$this->createMock(IJobList::class)
 			),
 			new ObjectHistoryForReaders(
 				$this->readAccess,
-				$this->auditTrailMapper,
-				new HistoryEntryRedactor($properties),
-				$this->registerMapper,
+				new ObjectHistoryServices(
+					$this->auditTrailMapper,
+					new HistoryEntryRedactor($properties),
+					$this->registerMapper
+				),
 				$this->purposeGuard,
-				new ReadEventVisibility($appConfig, $this->groupManager, $this->userSession)
+				new ReadEventVisibility($appConfig, new CallerContext($this->userSession, $this->groupManager))
 			)
 		);
 	}

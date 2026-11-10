@@ -43,17 +43,7 @@ class RuleCeilingServiceTest extends TestCase {
 	 * @return RuleDescriptor The rule.
 	 */
 	private function rule(?int $maxObjects): RuleDescriptor {
-		return new RuleDescriptor(
-			kind: RuleVocabulary::KIND_CALCULATION,
-			schemaSlug: 'bezwaar',
-			key: 'uiterlijkeDatum',
-			label: 'uiterlijkeDatum',
-			source: 'x-openregister-calculations.uiterlijkeDatum',
-			enabled: true,
-			actions: [RuleVocabulary::ACTION_SET_VALUE],
-			condition: null,
-			maxObjects: $maxObjects
-		);
+		return new RuleDescriptor(origin: new \OCA\OpenRegister\Service\Rules\RuleOrigin(kind: RuleVocabulary::KIND_CALCULATION, schemaSlug: 'bezwaar', key: 'uiterlijkeDatum', source: 'x-openregister-calculations.uiterlijkeDatum'), label: 'uiterlijkeDatum', effect: new \OCA\OpenRegister\Service\Rules\RuleEffect(actions: [RuleVocabulary::ACTION_SET_VALUE], condition: null, maxObjects: $maxObjects), enabled: true);
 
 	}//end rule()
 

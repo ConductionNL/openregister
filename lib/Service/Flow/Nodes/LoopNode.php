@@ -35,13 +35,12 @@ use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use UnexpectedValueException;
 
 /**
  * Batches an item list into slices of a configured size.
  */
-class LoopNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class LoopNode extends ObjectNodeBase implements IFlowNode, LoopNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 	/**
 	 * Constructor.
 	 *
@@ -92,17 +91,6 @@ class LoopNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 	}//end getIcon()
 
 	/**
-	 * Batching grants no privilege.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
-
-	/**
 	 * The config vocabulary of a loop step.
 	 *
 	 * @return array<int, string> The accepted config keys.
@@ -144,11 +132,18 @@ class LoopNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 	 * @return array One item per batch.
 	 */
 	public function execute(array $items, array $config, array $context): array {
-		$size = max(1, (int)($config['batchSize'] ?? 1));
-		if ($items === []) {
-			return [];
-		}
+		return $this->batched(items: $items, size: max(1, (int)($config['batchSize'] ?? 1)));
+	}//end execute()
 
+	/**
+	 * One item per batch of `size` input items, each carrying its batch's records.
+	 *
+	 * @param array   $items The input items.
+	 * @param integer $size  The batch size, at least 1.
+	 *
+	 * @return array One item per batch; none for no input.
+	 */
+	private function batched(array $items, int $size): array {
 		$batches = array_chunk($items, $size);
 		$count = count($batches);
 
@@ -171,29 +166,5 @@ class LoopNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 		}
 
 		return $out;
-	}//end execute()
-
-	/**
-	 * What kind of step this is. Calls the register once per batch.
-	 *
-	 * @return string The BPMN kind.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-semantic-kind-drawn-from-bpmn
-	 */
-	public function getKind(): string {
-		return IFlowNodeTaxonomy::KIND_SERVICE_TASK;
-
-	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_OBJECTS;
-
-	}//end getCategory()
+	}//end batched()
 }//end class

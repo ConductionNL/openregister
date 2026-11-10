@@ -7,7 +7,7 @@
  * clock services as five separate constructor parameters. They are one
  * cohesive concern — the recorded-destruction pipeline — so they travel
  * together as a single readonly bundle. The controller reads them as
- * `$this->deletion->window`, `$this->deletion->scope`, and so on; nothing
+ * `$this->deletion->window`, `$this->deletion->destruction->scope`, and so on; nothing
  * about the individual services changes, and Nextcloud autowires the bundle
  * from its promoted type-hints like any other service.
  *
@@ -41,18 +41,16 @@ class DeletionServiceBundle {
 	 *
 	 * @param DeletionWindowService $window Publishes the recovery window.
 	 * @param DestroyRightService $destroyRight Decides whether the caller may destroy.
-	 * @param DestructionScopeService $scope Previews and carries out the declared scope.
-	 * @param DestructionRecorder $recorder Writes the record that survives the object.
 	 * @param RetentionClockService $clock Reads the AVG and Archiefwet clocks.
+	 * @param DestructionServices $destruction Carries out the declared scope and records it.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		public readonly DeletionWindowService $window,
 		public readonly DestroyRightService $destroyRight,
-		public readonly DestructionScopeService $scope,
-		public readonly DestructionRecorder $recorder,
 		public readonly RetentionClockService $clock,
+		public readonly DestructionServices $destruction,
 	) {
 	}//end __construct()
 }//end class

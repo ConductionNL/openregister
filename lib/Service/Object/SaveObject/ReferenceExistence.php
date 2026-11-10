@@ -23,8 +23,10 @@
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use Exception;
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
+use OCA\OpenRegister\Exception\BrokenReference;
 use OCA\OpenRegister\Exception\CircularReferenceException;
+use OCA\OpenRegister\Exception\ReferenceCycle;
 use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCP\AppFramework\Db\DoesNotExistException;
 
@@ -45,13 +47,13 @@ final class ReferenceExistence {
 	/**
 	 * @param SaveLookups          $lookups   Schema and register lookups.
 	 * @param SaveCallStack        $saveCalls The saves in flight.
-	 * @param MagicMapperInterface $mapper    Reads the referenced object.
+	 * @param MagicObjectFinderInterface $mapper    Reads the referenced object.
 	 * @param ReferenceEvents      $events    Announces the verdicts.
 	 */
 	public function __construct(
 		private readonly SaveLookups $lookups,
 		private readonly SaveCallStack $saveCalls,
-		private readonly MagicMapperInterface $mapper,
+		private readonly MagicObjectFinderInterface $mapper,
 		private readonly ReferenceEvents $events,
 	) {
 	}//end __construct()
@@ -147,9 +149,11 @@ final class ReferenceExistence {
 		$this->events->logger->warning(message: '[SaveObject] Circular reference detected during validation', context: $context);
 
 		throw new CircularReferenceException(
-			referencedUuid: $check->uuid,
-			targetSchemaSlug: $check->schemaRef,
-			cycle: array_map(self::frameTrace(...), $cycle),
+			referenceCycle: new ReferenceCycle(
+				referencedUuid: $check->uuid,
+				targetSchemaSlug: $check->schemaRef,
+				cycle: array_map(self::frameTrace(...), $cycle)
+			),
 			code: 422
 		);
 	}//end refuseCycle()
@@ -187,10 +191,12 @@ final class ReferenceExistence {
 		}
 
 		throw new ReferenceValidationException(
-			propertyName: $check->propertyName,
-			referencedUuid: $check->uuid,
-			targetSchemaSlug: $check->schemaRef,
-			targetRegister: $check->register,
+			reference: new BrokenReference(
+				propertyName: $check->propertyName,
+				referencedUuid: $check->uuid,
+				targetSchemaSlug: $check->schemaRef,
+				targetRegister: $check->register
+			),
 			code: 422
 		);
 	}//end replay()
@@ -317,10 +323,12 @@ final class ReferenceExistence {
 		$this->events->refused(check: $check);
 
 		throw new ReferenceValidationException(
-			propertyName: $check->propertyName,
-			referencedUuid: $check->uuid,
-			targetSchemaSlug: $check->targetSchemaSlug,
-			targetRegister: $check->register,
+			reference: new BrokenReference(
+				propertyName: $check->propertyName,
+				referencedUuid: $check->uuid,
+				targetSchemaSlug: $check->targetSchemaSlug,
+				targetRegister: $check->register
+			),
 			code: 422,
 			previous: $cause
 		);

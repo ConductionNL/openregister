@@ -27,7 +27,6 @@ namespace OCA\OpenRegister\Mcp\Service\Chat;
 use LLPhant\Chat\FunctionInfo\FunctionInfo;
 use LLPhant\Chat\FunctionInfo\Parameter;
 use OCA\OpenRegister\Mcp\Db\Agent;
-use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Service\ToolRegistry;
 use OCA\OpenRegister\Mcp\Tool\ToolInterface;
 use Psr\Log\LoggerInterface;
@@ -48,45 +47,19 @@ use Psr\Log\LoggerInterface;
 class ToolManagementHandler {
 
 	/**
-	 * Agent mapper
-	 *
-	 * @var AgentMapper
-	 */
-	private AgentMapper $agentMapper;
-
-	/**
-	 * Tool registry
-	 *
-	 * @var ToolRegistry
-	 */
-	private ToolRegistry $toolRegistry;
-
-	/**
-	 * Logger
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
-
-	/**
 	 * Constructor
 	 *
-	 * @param AgentMapper $agentMapper Agent mapper.
-	 * @param ToolRegistry $toolRegistry Tool registry.
-	 * @param LoggerInterface $logger Logger.
+	 * @param ToolRegistry    $toolRegistry Tool registry.
+	 * @param LoggerInterface $logger       Logger.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function __construct(
-		AgentMapper $agentMapper,
-		ToolRegistry $toolRegistry,
-		LoggerInterface $logger,
+		private readonly ToolRegistry $toolRegistry,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->agentMapper = $agentMapper;
-		$this->toolRegistry = $toolRegistry;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -103,19 +76,33 @@ class ToolManagementHandler {
 	 * @psalm-return list<ToolInterface>
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) getAgentTools() iterates tool ids, tries multiple
-	 * candidate key formats (raw / prefixed) per id, and logs both found and not-found results — each
-	 * branch is a required backward-compatibility guard for agent records from different schema eras.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Three independent early-returns (null agent, empty
-	 * enabledToolIds, filtered-to-empty selection) plus the two-candidate loop expand the NPath count
-	 * without adding logical complexity.
 	 */
 	public function getAgentTools(?Agent $agent, array $selectedTools = []): array {
 		if ($agent === null) {
 			return [];
 		}
 
+		$tools = [];
+
+		foreach ($this->enabledToolIds(agent: $agent, selectedTools: $selectedTools) as $toolId) {
+			$tool = $this->loadTool(agent: $agent, toolId: $toolId);
+			if ($tool !== null) {
+				$tools[] = $tool;
+			}
+		}
+
+		return $tools;
+	}//end getAgentTools()
+
+	/**
+	 * The agent's enabled tool ids, narrowed to the selection when one is given.
+	 *
+	 * @param Agent $agent         Agent entity.
+	 * @param array $selectedTools Tool UUIDs to use (empty = all agent tools).
+	 *
+	 * @return array Tool ids
+	 */
+	private function enabledToolIds(Agent $agent, array $selectedTools): array {
 		$enabledToolIds = $agent->getTools();
 		if ($enabledToolIds === null || empty($enabledToolIds) === true) {
 			return [];
@@ -136,59 +123,69 @@ class ToolManagementHandler {
 			);
 		}
 
-		$tools = [];
+		return $enabledToolIds;
+	}//end enabledToolIds()
 
-		foreach ($enabledToolIds as $toolId) {
-			// Try three formats in turn so agent records from different
-			// eras keep working:
-			// 1. The raw id as stored ("openbuild", "openregister.register")
-			// 2. The legacy openregister-prefixed form ("openregister.objects"
-			// when the agent stores just "objects")
-			// 3. An "openbuild" -> "openbuild.{x}" fallback handled by
-			// the McpProviderBridge — that bridge exposes every
-			// function under one appId-level registration.
-			$candidates = [$toolId];
-			if (strpos($toolId, '.') === false) {
-				$candidates[] = 'openregister.' . $toolId;
-			}
-
-			$tool = null;
-			$fullToolId = $toolId;
-			foreach ($candidates as $candidate) {
-				$tool = $this->toolRegistry->getTool($candidate);
-				if ($tool !== null) {
-					$fullToolId = $candidate;
-					break;
-				}
-			}
-
+	/**
+	 * Load one tool for the agent, trying the raw and the legacy prefixed id.
+	 *
+	 * @param Agent $agent  Agent entity.
+	 * @param mixed $toolId Tool id as stored on the agent.
+	 *
+	 * @return ToolInterface|null Null when no candidate id is registered
+	 */
+	private function loadTool(Agent $agent, mixed $toolId): ?ToolInterface {
+		foreach ($this->toolIdCandidates(toolId: $toolId) as $candidate) {
+			$tool = $this->toolRegistry->getTool($candidate);
 			if ($tool !== null) {
 				$tool->setAgent($agent);
-				$tools[] = $tool;
 				$this->logger->debug(
 					message: '[ToolManagementHandler] Loaded tool',
 					context: [
 						'file' => __FILE__,
 						'line' => __LINE__,
-						'id' => $fullToolId,
+						'id' => $candidate,
 					]
 				);
+				return $tool;
 			}
+		}
 
-			if ($tool === null) {
-				$this->logger->warning(
-					message: '[ToolManagementHandler] Tool not found',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'id' => $fullToolId,
-					]
-				);
-			}
-		}//end foreach
+		$this->logger->warning(
+			message: '[ToolManagementHandler] Tool not found',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'id' => $toolId,
+			]
+		);
 
-		return $tools;
-	}//end getAgentTools()
+		return null;
+	}//end loadTool()
+
+	/**
+	 * The ids to try for a stored tool id.
+	 *
+	 * Agent records from different eras keep working:
+	 * 1. The raw id as stored ("openbuild", "openregister.register")
+	 * 2. The legacy openregister-prefixed form ("openregister.objects"
+	 * when the agent stores just "objects")
+	 * 3. An "openbuild" -> "openbuild.{x}" fallback handled by
+	 * the McpProviderBridge — that bridge exposes every
+	 * function under one appId-level registration.
+	 *
+	 * @param mixed $toolId Tool id as stored on the agent.
+	 *
+	 * @return array Candidate ids in lookup order
+	 */
+	private function toolIdCandidates(mixed $toolId): array {
+		$candidates = [$toolId];
+		if (strpos($toolId, '.') === false) {
+			$candidates[] = 'openregister.' . $toolId;
+		}
+
+		return $candidates;
+	}//end toolIdCandidates()
 
 	/**
 	 * Convert tools to OpenAI function format
@@ -232,48 +229,80 @@ class ToolManagementHandler {
 	 * @return Parameter
 	 */
 	private function schemaToParameter(string $name, array $def): Parameter {
-		$type = $def['type'] ?? 'string';
-		$description = $def['description'] ?? '';
-		$enum = $def['enum'] ?? [];
-		$format = $def['format'] ?? null;
-		$itemsOrProperties = null;
+		$shape = ['type' => ($def['type'] ?? 'string'), 'description' => ($def['description'] ?? ''), 'itemsOrProperties' => null];
+		if ($shape['type'] === 'object') {
+			$shape = $this->objectShape(shape: $shape, properties: ($def['properties'] ?? []));
+		} elseif ($shape['type'] === 'array') {
+			$shape['itemsOrProperties'] = $this->arrayItems(items: ($def['items'] ?? []));
+		}
 
-		if ($type === 'object') {
-			$properties = $this->propertiesToParameters(properties: ($def['properties'] ?? []));
-			if (count($properties) === 0) {
-				// Free-form object with no declared sub-properties (e.g. a
-				// schema's `properties` map). LLPhant serialises an empty
-				// object schema as "properties": [] (a JSON array), which
-				// Ollama rejects with "Value looks like object, but can't find
-				// closing '}'". Represent it as a JSON string the model fills.
-				$type = 'string';
-				$description = $this->freeFormObjectDescription(description: $description);
-			} else {
-				$itemsOrProperties = $properties;
-			}
-		} elseif ($type === 'array') {
-			$items = $def['items'] ?? [];
-			$itemType = 'string';
-			if (is_array($items) === true && isset($items['type']) === true) {
-				$itemType = (string)$items['type'];
-			}
-
-			if ($itemType === 'object') {
-				$properties = $this->propertiesToParameters(properties: ($items['properties'] ?? []));
-				// Same empty-object guard for arrays of free-form objects.
-				if (count($properties) === 0) {
-					$itemsOrProperties = 'string';
-				} else {
-					$itemsOrProperties = $properties;
-				}
-			} else {
-				// A scalar element type is passed as a plain string.
-				$itemsOrProperties = $itemType;
-			}
-		}//end if
-
-		return new Parameter($name, $type, $description, $enum, $format, $itemsOrProperties);
+		$enum = ($def['enum'] ?? []);
+		$format = ($def['format'] ?? null);
+		return new Parameter($name, $shape['type'], $shape['description'], $enum, $format, $shape['itemsOrProperties']);
 	}//end schemaToParameter()
+
+	/**
+	 * The type, description and properties of an object property.
+	 *
+	 * A free-form object with no declared sub-properties (e.g. a schema's
+	 * `properties` map) becomes a JSON string the model fills: LLPhant
+	 * serialises an empty object schema as "properties": [] (a JSON array),
+	 * which Ollama rejects with "Value looks like object, but can't find
+	 * closing '}'".
+	 *
+	 * @param array{type: mixed, description: mixed, itemsOrProperties: null} $shape      The property's shape so far.
+	 * @param array<string,mixed>                                             $properties The declared sub-properties.
+	 *
+	 * @return array{type: mixed, description: mixed, itemsOrProperties: Parameter[]|null}
+	 */
+	private function objectShape(array $shape, array $properties): array {
+		$parameters = $this->propertiesToParameters(properties: $properties);
+		if (count($parameters) === 0) {
+			$description = $this->freeFormObjectDescription(description: $shape['description']);
+			return ['type' => 'string', 'description' => $description, 'itemsOrProperties' => null];
+		}
+
+		$shape['itemsOrProperties'] = $parameters;
+		return $shape;
+	}//end objectShape()
+
+	/**
+	 * The element of an array property: its scalar type as a string, or the properties of its objects.
+	 *
+	 * An array of free-form objects gets the same empty-object guard: its elements are strings.
+	 *
+	 * @param mixed $items The JSON-schema `items` fragment.
+	 *
+	 * @return string|Parameter[] The element type, or the element's properties.
+	 */
+	private function arrayItems(mixed $items): string|array {
+		$itemType = $this->itemType(items: $items);
+		if ($itemType !== 'object') {
+			return $itemType;
+		}
+
+		$parameters = $this->propertiesToParameters(properties: ($items['properties'] ?? []));
+		if (count($parameters) === 0) {
+			return 'string';
+		}
+
+		return $parameters;
+	}//end arrayItems()
+
+	/**
+	 * The element type an `items` fragment declares; `string` when it declares none.
+	 *
+	 * @param mixed $items The JSON-schema `items` fragment.
+	 *
+	 * @return string The element type.
+	 */
+	private function itemType(mixed $items): string {
+		if (is_array($items) === true && isset($items['type']) === true) {
+			return (string)$items['type'];
+		}
+
+		return 'string';
+	}//end itemType()
 
 	/**
 	 * Build the description used when a free-form object (no declared
@@ -301,19 +330,27 @@ class ToolManagementHandler {
 	private function propertiesToParameters(array $properties): array {
 		$out = [];
 		foreach ($properties as $propName => $propDef) {
-			$propDefArray = [];
-			if (is_array($propDef) === true) {
-				$propDefArray = $propDef;
-			}
-
-			$out[] = $this->schemaToParameter(
-				name: (string)$propName,
-				def: $propDefArray
-			);
+			$out[] = $this->parameterFor(name: $propName, def: $propDef);
 		}
 
 		return $out;
 	}//end propertiesToParameters()
+
+	/**
+	 * One property as a Parameter; a definition that is not an array counts as an empty one.
+	 *
+	 * @param string|int $name The property name.
+	 * @param mixed      $def  The JSON-schema fragment for the property.
+	 *
+	 * @return Parameter
+	 */
+	private function parameterFor(string|int $name, mixed $def): Parameter {
+		if (is_array($def) === false) {
+			$def = [];
+		}
+
+		return $this->schemaToParameter(name: (string)$name, def: $def);
+	}//end parameterFor()
 
 	/**
 	 * Convert array-based function definitions to FunctionInfo objects
@@ -330,72 +367,93 @@ class ToolManagementHandler {
 	 * @psalm-return list<FunctionInfo>
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Function conversion requires handling multiple parameter types
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Function conversion requires handling multiple parameter types
 	 */
 	public function convertFunctionsToFunctionInfo(array $functions, array $tools): array {
 		$functionInfoObjects = [];
-
 		foreach ($functions as $func) {
-			// Create parameters array.
-			$parameters = [];
-			$required = [];
-
-			if (($func['parameters']['properties'] ?? null) !== null) {
-				foreach ($func['parameters']['properties'] as $paramName => $paramDef) {
-					$paramDefArray = [];
-					if (is_array($paramDef) === true) {
-						$paramDefArray = $paramDef;
-					}
-
-					$parameters[] = $this->schemaToParameter(
-						name: (string)$paramName,
-						def: $paramDefArray
-					);
-				}//end foreach
-			}//end if
-
-			if (($func['parameters']['required'] ?? null) !== null) {
-				$required = $func['parameters']['required'];
-			}
-
-			// LLPhant's FunctionInfo expects requiredParameters as Parameter
-			// OBJECTS, not name strings (ToolFormatter reads $param->name). Map
-			// the required names back to the Parameter objects built above.
-			$requiredParameters = [];
-			foreach ($parameters as $parameterObject) {
-				if (in_array($parameterObject->name, $required, true) === true) {
-					$requiredParameters[] = $parameterObject;
-				}
-			}
-
-			// Find the tool instance that has this function.
-			$toolInstance = null;
-			foreach ($tools as $tool) {
-				$toolFunctions = $tool->getFunctions();
-				foreach ($toolFunctions as $toolFunc) {
-					if ($toolFunc['name'] === $func['name']) {
-						$toolInstance = $tool;
-						break 2;
-					}
-				}
-			}
-
-			// Create FunctionInfo object with the tool instance.
-			// LLPhant will call $toolInstance->{$func['name']}(...$args).
-			$functionInfo = new FunctionInfo(
-				$func['name'],
-				$toolInstance,
-				// Pass the tool instance.
-				$func['description'] ?? '',
-				$parameters,
-				$requiredParameters
-			);
-
-			$functionInfoObjects[] = $functionInfo;
-		}//end foreach
+			$functionInfoObjects[] = $this->functionInfo(func: $func, tools: $tools);
+		}
 
 		return $functionInfoObjects;
 	}//end convertFunctionsToFunctionInfo()
+
+	/**
+	 * One function definition as a FunctionInfo, with the tool instance that has the function.
+	 *
+	 * LLPhant will call $toolInstance->{$func['name']}(...$args).
+	 *
+	 * @param array $func  The function definition.
+	 * @param array $tools Tool instances that have the methods.
+	 *
+	 * @return FunctionInfo
+	 */
+	private function functionInfo(array $func, array $tools): FunctionInfo {
+		$parameters = $this->functionParameters(func: $func);
+		$required = $this->requiredParameters(parameters: $parameters, required: ($func['parameters']['required'] ?? []));
+		$toolInstance = $this->toolWithFunction(tools: $tools, name: $func['name']);
+		return new FunctionInfo($func['name'], $toolInstance, ($func['description'] ?? ''), $parameters, $required);
+	}//end functionInfo()
+
+	/**
+	 * The Parameters of a function definition's `parameters.properties`; none when it is absent.
+	 *
+	 * @param array $func The function definition.
+	 *
+	 * @return Parameter[]
+	 */
+	private function functionParameters(array $func): array {
+		$properties = ($func['parameters']['properties'] ?? null);
+		if ($properties === null) {
+			return [];
+		}
+
+		$parameters = [];
+		foreach ($properties as $paramName => $paramDef) {
+			$parameters[] = $this->parameterFor(name: $paramName, def: $paramDef);
+		}
+
+		return $parameters;
+	}//end functionParameters()
+
+	/**
+	 * The Parameter objects whose names are required.
+	 *
+	 * LLPhant's FunctionInfo expects requiredParameters as Parameter OBJECTS,
+	 * not name strings (ToolFormatter reads $param->name).
+	 *
+	 * @param Parameter[] $parameters The function's parameters.
+	 * @param array       $required   The required parameter names.
+	 *
+	 * @return Parameter[]
+	 */
+	private function requiredParameters(array $parameters, array $required): array {
+		$requiredParameters = [];
+		foreach ($parameters as $parameterObject) {
+			if (in_array($parameterObject->name, $required, true) === true) {
+				$requiredParameters[] = $parameterObject;
+			}
+		}
+
+		return $requiredParameters;
+	}//end requiredParameters()
+
+	/**
+	 * The first tool instance with a function of the given name.
+	 *
+	 * @param array $tools Tool instances.
+	 * @param mixed $name  The function name.
+	 *
+	 * @return ToolInterface|null The tool, or null when none has the function.
+	 */
+	private function toolWithFunction(array $tools, mixed $name): ?ToolInterface {
+		foreach ($tools as $tool) {
+			foreach ($tool->getFunctions() as $toolFunc) {
+				if ($toolFunc['name'] === $name) {
+					return $tool;
+				}
+			}
+		}
+
+		return null;
+	}//end toolWithFunction()
 }//end class

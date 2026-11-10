@@ -21,8 +21,10 @@ namespace Unit\Service\Notification;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
+use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\IGroupManager;
 use OCP\IServerContainer;
 use OCP\IUserManager;
@@ -58,9 +60,9 @@ class NotificationRecipientResolverWatchersTest extends TestCase {
 	/**
 	 * The RBAC evaluator, mocked.
 	 *
-	 * @var PermissionHandler
+	 * @var PermissionHandlerInterface
 	 */
-	private PermissionHandler $permissions;
+	private PermissionHandlerInterface $permissions;
 
 	/**
 	 * Build the fixtures.
@@ -72,7 +74,7 @@ class NotificationRecipientResolverWatchersTest extends TestCase {
 		$this->object->method('getUuid')->willReturn('uuid-case-1');
 
 		$this->watchers = $this->createMock(originalClassName: WatcherService::class);
-		$this->permissions = $this->createMock(originalClassName: PermissionHandler::class);
+		$this->permissions = $this->createMock(originalClassName: PermissionHandlerInterface::class);
 	}//end setUp()
 
 	/**
@@ -84,11 +86,11 @@ class NotificationRecipientResolverWatchersTest extends TestCase {
 		$container = $this->createMock(originalClassName: IServerContainer::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id) {
-				if ($id === WatcherService::class) {
+				if ($id === WatcherServiceInterface::class) {
 					return $this->watchers;
 				}
 
-				if ($id === PermissionHandler::class) {
+				if ($id === PermissionHandlerInterface::class) {
 					return $this->permissions;
 				}
 
@@ -116,7 +118,7 @@ class NotificationRecipientResolverWatchersTest extends TestCase {
 		$this->watchers->method('watcherUids')->willReturn(['teamlead', 'clerk']);
 		$this->permissions->method('getReadableByUsers')->willReturn(['teamlead', 'clerk', 'owner']);
 
-		$uids = $this->makeResolver()->resolve([['watchers' => true]], [], $this->object);
+		$uids = $this->makeResolver()->resolve([['watchers' => true]], new RecipientSource([], $this->object, [], []));
 
 		$this->assertEqualsCanonicalizing(expected: ['teamlead', 'clerk'], actual: $uids);
 	}//end testWatchersAreResolvedToUids()
@@ -135,8 +137,7 @@ class NotificationRecipientResolverWatchersTest extends TestCase {
 				['kind' => 'users', 'users' => ['teamlead']],
 				['watchers' => true],
 			],
-			[],
-			$this->object
+			new RecipientSource([], $this->object, [], [])
 		);
 
 		$this->assertSame(expected: ['teamlead'], actual: $uids);
@@ -155,7 +156,7 @@ class NotificationRecipientResolverWatchersTest extends TestCase {
 			->method('dropWatchers')
 			->with('uuid-case-1', ['moved-on']);
 
-		$uids = $this->makeResolver()->resolve([['watchers' => true]], [], $this->object);
+		$uids = $this->makeResolver()->resolve([['watchers' => true]], new RecipientSource([], $this->object, [], []));
 
 		$this->assertSame(expected: ['teamlead'], actual: $uids);
 	}//end testAWatcherWhoLostReadIsSkippedAndDropped()
@@ -172,7 +173,7 @@ class NotificationRecipientResolverWatchersTest extends TestCase {
 
 		$this->watchers->expects($this->never())->method('dropWatchers');
 
-		$uids = $this->makeResolver()->resolve([['watchers' => true]], [], $this->object);
+		$uids = $this->makeResolver()->resolve([['watchers' => true]], new RecipientSource([], $this->object, [], []));
 
 		$this->assertEqualsCanonicalizing(expected: ['teamlead', 'clerk'], actual: $uids);
 	}//end testAnOpenReadRuleDropsNobody()
@@ -185,7 +186,7 @@ class NotificationRecipientResolverWatchersTest extends TestCase {
 	public function testAnUnwatchedObjectAddressesNobody(): void {
 		$this->watchers->method('watcherUids')->willReturn([]);
 
-		$uids = $this->makeResolver()->resolve([['watchers' => true]], [], $this->object);
+		$uids = $this->makeResolver()->resolve([['watchers' => true]], new RecipientSource([], $this->object, [], []));
 
 		$this->assertSame(expected: [], actual: $uids);
 	}//end testAnUnwatchedObjectAddressesNobody()
@@ -199,7 +200,7 @@ class NotificationRecipientResolverWatchersTest extends TestCase {
 	public function testNoObjectMeansNoRecipients(): void {
 		$this->watchers->method('watcherUids')->willReturn(['teamlead']);
 
-		$uids = $this->makeResolver()->resolve([['watchers' => true]], []);
+		$uids = $this->makeResolver()->resolve([['watchers' => true]], new RecipientSource([], null, [], []));
 
 		$this->assertSame(expected: [], actual: $uids);
 	}//end testNoObjectMeansNoRecipients()
@@ -212,7 +213,7 @@ class NotificationRecipientResolverWatchersTest extends TestCase {
 	public function testAFailingLookupFailsClosed(): void {
 		$this->watchers->method('watcherUids')->willThrowException(new \RuntimeException('db down'));
 
-		$uids = $this->makeResolver()->resolve([['watchers' => true]], [], $this->object);
+		$uids = $this->makeResolver()->resolve([['watchers' => true]], new RecipientSource([], $this->object, [], []));
 
 		$this->assertSame(expected: [], actual: $uids);
 	}//end testAFailingLookupFailsClosed()

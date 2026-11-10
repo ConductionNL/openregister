@@ -82,13 +82,6 @@ final class ObjectSaveCall {
 	public ?string $uuid = null;
 
 	/**
-	 * The folder id to set on the object.
-	 *
-	 * @var integer|null
-	 */
-	public ?int $folderId = null;
-
-	/**
 	 * How the save runs: rights, tenancy, persistence and ownership.
 	 *
 	 * @var ObjectSaveFlags|null

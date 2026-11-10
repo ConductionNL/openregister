@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\TalkLink;
-use OCA\OpenRegister\Db\TalkLinkMapper;
+use OCA\OpenRegister\Db\TalkLinkMapperInterface;
 use OCA\OpenRegister\Service\Party\PartyService;
 use Psr\Container\ContainerInterface;
 use Throwable;
@@ -51,6 +51,11 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	 * The conversation fields a fragment may set.
 	 */
 	public const FIELDS = ['object', 'name', 'owner', 'participants', 'call'];
+
+	/**
+	 * The fields a conversation needs, with what each holds.
+	 */
+	private const REQUIRED = ['object' => 'the object it is on', 'name' => 'a name', 'owner' => 'an owner'];
 
 	/**
 	 * Constructor.
@@ -97,33 +102,32 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
 	 */
 	public function refusal(array $data, array $users): string {
-		$unknown = array_diff(array_keys($data), self::FIELDS);
-		if ($unknown !== []) {
-			return 'field "'.implode('", "', $unknown).'" is not a talk conversation field a set may write';
-		}
-
-		foreach (['object' => 'the object it is on', 'name' => 'a name', 'owner' => 'an owner'] as $field => $what) {
-			if (is_string($data[$field] ?? null) === false || trim($data[$field]) === '') {
-				return 'a talk conversation needs '.$what.' ('.$field.')';
-			}
-		}
-
-		$people = array_merge([(string) $data['owner']], array_map('strval', (array) ($data['participants'] ?? [])));
-		foreach ($people as $uid) {
-			if (in_array($uid, $users, true) === false) {
-				return '"'.$uid.'" is not an account the set creates or adopts';
-			}
-		}
-
-		return $this->callRefusal(call: ($data['call'] ?? null));
+		$rules = new ExampleSetFieldRules();
+		return $rules->firstRefusal(
+			checks: [
+				fn (): string => $rules->unknownRefusal(data: $data, shape: new ExampleSetRowShape(row: 'a talk conversation', fields: self::FIELDS)),
+				fn (): string => $rules->missingRefusal(data: $data, shape: new ExampleSetRowShape(row: 'a talk conversation', required: self::REQUIRED)),
+				fn (): string => $rules->strangerRefusal(people: $this->people(data: $data), users: $users),
+				fn (): string => $this->callRefusal(call: ($data['call'] ?? null)),
+			]
+		);
 	}//end refusal()
+
+	/**
+	 * The owner and the participants a row names, the owner first.
+	 *
+	 * @param array<string, mixed> $data The row's fields.
+	 *
+	 * @return array<int, string>
+	 */
+	private function people(array $data): array {
+		return array_merge([(string) $data['owner']], array_map('strval', (array) ($data['participants'] ?? [])));
+	}//end people()
 
 	/**
 	 * Write one conversation, its held call and its link to the object.
 	 *
-	 * @param string               $app  The fragment's app.
-	 * @param string               $key  The row key.
-	 * @param array<string, mixed> $data The row's fields, placeholders filled.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{
 	 *     error: string,
@@ -132,47 +136,91 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
 	 */
-	public function write(string $app, string $key, array $data): array {
-		$store = $this->store();
-		if ($store->available() === false) {
-			return ['error' => 'Talk is not installed', 'entry' => null];
+	public function write(ExampleSetRow $row): array {
+		$app = $row->app;
+		$data = $row->data;
+		$found = $this->target(data: $data);
+		if ($found['error'] !== '') {
+			return ['error' => $found['error'], 'entry' => null];
 		}
 
-		$object = $this->container->get(PartyService::class)->findUnscoped(uuid: (string) $data['object']);
-		if ($object === null) {
-			return ['error' => 'no object "'.(string) $data['object'].'" to put the conversation on', 'entry' => null];
-		}
-
-		$owner  = (string) $data['owner'];
-		$people = array_values(array_unique(array_merge([$owner], array_map('strval', (array) ($data['participants'] ?? [])))));
 		try {
-			$room = $store->room(owner: $owner, name: (string) $data['name'], participants: $people);
-			if ($room['created'] === true && is_array($data['call'] ?? null) === true) {
-				$store->heldCall(
-					token: $room['token'],
-					owner: $owner,
-					start: new DateTime((string) $data['call']['start']),
-					end: new DateTime((string) $data['call']['end']),
-					joined: $people
-				);
-			}
-
-			$link = $this->link(app: $app, object: $object, room: $room, data: $data, people: $people);
+			$entry = $this->writeOn(object: $found['object'], conversation: ['app' => $app, 'data' => $data]);
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];
 		}
 
-		return [
-			'error' => '',
-			'entry' => [
-				'token'       => $room['token'],
-				'room'        => $room['id'],
-				'createdRoom' => $room['created'],
-				'object'      => (string) $data['object'],
-				'link'        => $link,
-			],
-		];
+		return ['error' => '', 'entry' => $entry];
 	}//end write()
+
+	/**
+	 * The object a row puts its conversation on, or why there is none to write on.
+	 *
+	 * @param array<string, mixed> $data The row's fields, placeholders filled.
+	 *
+	 * @return array{error: string, object: ObjectEntity|null}
+	 */
+	private function target(array $data): array {
+		if ($this->store()->available() === false) {
+			return ['error' => 'Talk is not installed', 'object' => null];
+		}
+
+		$object = $this->container->get(PartyService::class)->findUnscoped(uuid: (string) $data['object']);
+		if ($object === null) {
+			return ['error' => 'no object "'.(string) $data['object'].'" to put the conversation on', 'object' => null];
+		}
+
+		return ['error' => '', 'object' => $object];
+	}//end target()
+
+	/**
+	 * Write the conversation, its held call and its link on the object.
+	 *
+	 * @param ObjectEntity                                    $object       The object.
+	 * @param array{app: string, data: array<string, mixed>} $conversation The fragment's app and the row's fields.
+	 *
+	 * @return array{token: string, room: int, createdRoom: bool, object: string, link: int} The record entry.
+	 */
+	private function writeOn(ObjectEntity $object, array $conversation): array {
+		$data                   = $conversation['data'];
+		$conversation['people'] = array_values(array_unique($this->people(data: $data)));
+		$conversation['room']   = $this->store()->openRoom(
+			room: new ExampleSetTalkRoom(owner: (string) $data['owner'], name: (string) $data['name'], participants: $conversation['people'])
+		);
+		$this->holdCall(conversation: $conversation);
+		$link = $this->link(object: $object, conversation: $conversation);
+
+		return [
+			'token'       => $conversation['room']['token'],
+			'room'        => $conversation['room']['id'],
+			'createdRoom' => $conversation['room']['created'],
+			'object'      => (string) $data['object'],
+			'link'        => $link,
+		];
+	}//end writeOn()
+
+	/**
+	 * Hold the declared call in a conversation the set created.
+	 *
+	 * @param array<string, mixed> $conversation The row's `data`, the `room` and the `people` in it.
+	 *
+	 * @return void
+	 */
+	private function holdCall(array $conversation): void {
+		$data = $conversation['data'];
+		if ($conversation['room']['created'] !== true || is_array($data['call'] ?? null) === false) {
+			return;
+		}
+
+		$this->store()->heldCall(
+			held: new HeldTalkCall(
+				token: $conversation['room']['token'],
+				owner: (string) $data['owner'],
+				call: $data['call'],
+				joined: $conversation['people']
+			)
+		);
+	}//end holdCall()
 
 	/**
 	 * Whether a written conversation is gone.
@@ -202,7 +250,10 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	 */
 	public function revert(array $entry): string {
 		try {
-			$this->container->get(TalkLinkMapper::class)->deleteByObjectAndRoom(objectUuid: (string) $entry['object'], roomToken: (string) $entry['token']);
+			$this->container->get(TalkLinkMapperInterface::class)->deleteByObjectAndRoom(
+				objectUuid: (string) $entry['object'],
+				roomToken: (string) $entry['token']
+			);
 			if (($entry['createdRoom'] ?? false) === true && $this->store()->roomExists(token: (string) $entry['token']) === true) {
 				$this->store()->deleteRoom(token: (string) $entry['token']);
 			}
@@ -216,36 +267,60 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	/**
 	 * Link the conversation to the object, as a linked conversation is.
 	 *
-	 * @param string                                       $app    The fragment's app.
-	 * @param ObjectEntity                                 $object The object.
-	 * @param array{token: string, id: int, created: bool} $room   The conversation.
-	 * @param array<string, mixed>                         $data   The row's fields.
-	 * @param array<int, string>                           $people Everybody in the conversation.
+	 * @param ObjectEntity         $object       The object.
+	 * @param array<string, mixed> $conversation The fragment's `app`, the row's `data`, the `room` and the `people` in it.
 	 *
 	 * @return int The link id.
 	 */
-	private function link(string $app, ObjectEntity $object, array $room, array $data, array $people): int {
-		$mapper   = $this->container->get(TalkLinkMapper::class);
-		$existing = $mapper->findByObjectAndRoom((string) $data['object'], $room['token']);
+	private function link(ObjectEntity $object, array $conversation): int {
+		$mapper   = $this->container->get(TalkLinkMapperInterface::class);
+		$existing = $mapper->findByObjectAndRoom((string) $conversation['data']['object'], $conversation['room']['token']);
 		if ($existing !== null) {
 			return (int) $existing->getId();
 		}
 
-		$link = new TalkLink();
-		$link->setObjectUuid((string) $data['object']);
-		$link->setRegisterId((int) $object->getRegister());
-		$link->setSchemaId((int) $object->getSchema());
-		$link->setRoomToken($room['token']);
-		$link->setRoomId($room['id']);
-		$link->setRoomName((string) $data['name']);
-		$link->setRoomType(2);
-		$link->setParticipantCount(count($people));
-		$link->setLastActivity($this->lastActivity(data: $data));
-		$link->setLinkedBy($app);
-		$link->setLinkedAt(new DateTime());
+		$link = $this->withRoom(link: $this->newLink(object: $object, conversation: $conversation), conversation: $conversation);
 
 		return (int) $mapper->insert($link)->getId();
 	}//end link()
+
+	/**
+	 * A new link on the object, by the fragment's app, made now.
+	 *
+	 * @param ObjectEntity         $object       The object.
+	 * @param array<string, mixed> $conversation The fragment's `app` and the row's `data`.
+	 *
+	 * @return TalkLink
+	 */
+	private function newLink(ObjectEntity $object, array $conversation): TalkLink {
+		$link = new TalkLink();
+		$link->setObjectUuid((string) $conversation['data']['object']);
+		$link->setRegisterId((int) $object->getRegister());
+		$link->setSchemaId((int) $object->getSchema());
+		$link->setLinkedBy($conversation['app']);
+		$link->setLinkedAt(new DateTime());
+
+		return $link;
+	}//end newLink()
+
+	/**
+	 * A link with the conversation's room on it.
+	 *
+	 * @param TalkLink             $link         The link.
+	 * @param array<string, mixed> $conversation The row's `data`, the `room` and the `people` in it.
+	 *
+	 * @return TalkLink
+	 */
+	private function withRoom(TalkLink $link, array $conversation): TalkLink {
+		$link->setRoomToken($conversation['room']['token']);
+		$link->setRoomId($conversation['room']['id']);
+		$link->setRoomName((string) $conversation['data']['name']);
+		$link->setRoomType(2);
+		$link->setParticipantCount(count($conversation['people']));
+		$link->setLastActivity($this->lastActivity(data: $conversation['data']));
+
+		return $link;
+	}//end withRoom()
 
 	/**
 	 * When the conversation was last active: the end of its held call, or now.
@@ -278,6 +353,17 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 			return 'a held call needs a start and an end (call.start, call.end)';
 		}
 
+		return $this->callTimesRefusal(call: $call);
+	}//end callRefusal()
+
+	/**
+	 * Why a held call's start and end cannot be written, '' when they can.
+	 *
+	 * @param array<string, mixed> $call The declared call, with a start and an end.
+	 *
+	 * @return string
+	 */
+	private function callTimesRefusal(array $call): string {
 		try {
 			$start = new DateTime((string) $call['start']);
 			$end   = new DateTime((string) $call['end']);
@@ -290,7 +376,7 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 		}
 
 		return '';
-	}//end callRefusal()
+	}//end callTimesRefusal()
 
 	/**
 	 * The Talk store.

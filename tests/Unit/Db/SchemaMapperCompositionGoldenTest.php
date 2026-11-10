@@ -47,6 +47,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks
  * @uses \OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoopCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoops
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals
@@ -309,10 +311,10 @@ class SchemaMapperCompositionGoldenTest extends TestCase {
 		];
 		$actual = [];
 		foreach ($cases as $name => $properties) {
-			$actual[$name] = $this->makeMapper()->hasReferenceToSchema($properties, ...$target);
+			$actual[$name] = $this->makeMapper()->hasReferenceToSchema($properties, Schema::fromRow(['id' => (int)$target[0], 'uuid' => $target[1], 'slug' => $target[2]]));
 		}
 
-		$actual['empty slug and uuid'] = $this->makeMapper()->hasReferenceToSchema(['a' => ['$ref' => 'schemas/anything']], '12', '', '');
+		$actual['empty slug and uuid'] = $this->makeMapper()->hasReferenceToSchema(['a' => ['$ref' => 'schemas/anything']], Schema::fromRow(['id' => 12, 'uuid' => '', 'slug' => '']));
 		$this->assertGolden($actual, 'schema-mapper-reference-search-golden.json');
 	}//end testReferenceSearchMatchesGolden()
 

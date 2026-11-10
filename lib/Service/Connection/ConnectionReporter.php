@@ -38,7 +38,7 @@ use Throwable;
  *
  * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
  */
-class ConnectionReporter {
+class ConnectionReporter implements ConnectionReporterInterface {
 
 	/**
 	 * The app id integriq keys the rows by.
@@ -132,9 +132,8 @@ class ConnectionReporter {
 	/**
 	 * Report a connection's status to integriq.
 	 *
-	 * Never throws: this runs beside a test or a save whose own answer is what
-	 * the caller returns. Without integriq nothing is sent and nothing is
-	 * logged, because a missing optional app is not a fault.
+	 * Keeps the shape its callers use; builds the report and delegates to
+	 * {@see self::reportStatus()} (ADR-011 Rule 5).
 	 *
 	 * @param string $key     One of {@see self::KEYS}.
 	 * @param string $status  One of {@see self::STATUSES}.
@@ -145,6 +144,26 @@ class ConnectionReporter {
 	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
 	 */
 	public function report(string $key, string $status, string $message = ''): bool {
+		return $this->reportStatus(report: new ConnectionStatusReport(key: $key, status: $status, message: $message));
+	}//end report()
+
+	/**
+	 * Report a connection's status to integriq.
+	 *
+	 * Never throws: this runs beside a test or a save whose own answer is what
+	 * the caller returns. Without integriq nothing is sent and nothing is
+	 * logged, because a missing optional app is not a fault.
+	 *
+	 * @param ConnectionStatusReport $report The connection, its status and what was observed.
+	 *
+	 * @return bool True when the report was sent.
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 */
+	public function reportStatus(ConnectionStatusReport $report): bool {
+		$key = $report->key;
+		$status = $report->status;
+		$message = $report->message;
 		if (in_array($key, self::KEYS, true) === false) {
 			$this->logger->warning(
 				message: '[ConnectionReporter] Refusing to report an unknown connection key',
@@ -175,7 +194,7 @@ class ConnectionReporter {
 				message: $message,
 			)
 		);
-	}//end report()
+	}//end reportStatus()
 
 	/**
 	 * Report which LLM providers a settings save left chosen.

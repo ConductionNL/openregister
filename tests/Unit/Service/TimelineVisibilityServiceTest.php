@@ -32,12 +32,14 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Notifications\Service\TimelineVisibilityPlatform;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Notifications\Service\NoteVisibilityMove;
 
 /**
  * TimelineVisibilityServiceTest.
@@ -97,11 +99,9 @@ class TimelineVisibilityServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new TimelineVisibilityService(
-			$this->schemaMapper,
+			new TimelineVisibilityPlatform($this->schemaMapper, $this->userSession, $this->logger),
 			$this->permissionHandler,
-			$this->auditTrailMapper,
-			$this->userSession,
-			$this->logger
+			$this->auditTrailMapper
 		);
 	}
 
@@ -253,14 +253,14 @@ class TimelineVisibilityServiceTest extends TestCase {
 				['noteId' => 42, 'from' => 'internal', 'to' => 'public']
 			);
 
-		$this->assertTrue($this->service->auditVisibilityChange($object, 42, 'internal', 'public'));
+		$this->assertTrue($this->service->auditNoteMove(object: $object, move: new NoteVisibilityMove(noteId: 42, from: 'internal', to: 'public')));
 	}
 
 	public function testAFlagThatDidNotMoveWritesNothing(): void {
 		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
 
 		$this->assertFalse(
-			$this->service->auditVisibilityChange($this->object(), 42, 'internal', 'internal')
+			$this->service->auditNoteMove(object: $this->object(), move: new NoteVisibilityMove(noteId: 42, from: 'internal', to: 'internal'))
 		);
 	}
 
@@ -270,7 +270,7 @@ class TimelineVisibilityServiceTest extends TestCase {
 		$this->logger->expects($this->once())->method('error');
 
 		$this->assertFalse(
-			$this->service->auditVisibilityChange($this->object(), 42, 'internal', 'public')
+			$this->service->auditNoteMove(object: $this->object(), move: new NoteVisibilityMove(noteId: 42, from: 'internal', to: 'public'))
 		);
 	}
 }

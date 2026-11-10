@@ -40,15 +40,19 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
-use OCA\OpenRegister\Db\ProcessingLogMapper;
+use OCA\OpenRegister\Controller\Support\ProcessingLogControllerServices;
+use OCA\OpenRegister\Controller\Support\GdprRequestParams;
+use OCA\OpenRegister\Controller\Support\ProcessingLogAccess;
+use OCA\OpenRegister\Controller\Support\ProcessingLogPolicy;
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Db\ProcessingLogReadScope;
+use OCA\OpenRegister\Db\ProcessingLog\ProcessingLogSubject;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IAppConfig;
-use OCP\IGroupManager;
+use OCP\AppFramework\Http;
 use OCP\IRequest;
-use OCP\IUserSession;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 
 /**
  * REST endpoints for querying and exporting the AVG processing log.
@@ -60,69 +64,53 @@ use OCP\IUserSession;
 class ProcessingLogController extends Controller {
 
 	/**
-	 * App identifier for IAppConfig reads.
+	 * The FG group setting and the maximum extract range.
 	 *
-	 * @var string
+	 * @var ProcessingLogPolicy
 	 */
-	private const APP_ID = 'openregister';
+	private readonly ProcessingLogPolicy $policy;
 
 	/**
-	 * App-config key naming the privacy-officer (FG) delegation group.
+	 * Who may query the log, and over which organisation.
 	 *
-	 * @var string
+	 * @var ProcessingLogAccess
 	 */
-	private const FG_GROUP_KEY = 'processing_log_fg_group';
+	private readonly ProcessingLogAccess $access;
 
 	/**
-	 * Default privacy-officer group name.
+	 * The optional query parameters.
 	 *
-	 * @var string
+	 * @var GdprRequestParams
 	 */
-	private const FG_GROUP_DEFAULT = 'privacy-officer';
+	private readonly GdprRequestParams $params;
 
 	/**
-	 * Maximum per-subject extract range in days (configurable).
+	 * The processing log store and the app config the policy reads.
 	 *
-	 * @var string
+	 * @var ProcessingLogControllerServices
 	 */
-	private const MAX_RANGE_KEY = 'processing_export_max_range_days';
-
-	/**
-	 * The user session.
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * The group manager.
-	 *
-	 * @var IGroupManager
-	 */
-	private readonly IGroupManager $groupManager;
+	private readonly ProcessingLogControllerServices $services;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App identifier.
-	 * @param IRequest $request Active request.
-	 * @param ProcessingLogMapper $logMapper Append-only log mapper.
-	 * @param ControllerSession $session Session, group manager and logger.
-	 * @param IAppConfig $appConfig App-config reader.
+	 * @param IRequest                     $request             Active request.
+	 * @param ProcessingLogControllerServices $services Processing log store and the app config the policy reads.
+	 * @param ControllerSession            $session             Session, group manager and logger.
 	 * @param OrganisationServiceInterface $organisationService Org-scoping helper.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly ProcessingLogMapper $logMapper,
-		ControllerSession $session,
-		private readonly IAppConfig $appConfig,
-		private readonly OrganisationServiceInterface $organisationService,
+		ProcessingLogControllerServices $services,
+		private readonly ControllerSession $session,
+		OrganisationServiceInterface $organisationService,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
-		$this->userSession = $session->userSession;
-		$this->groupManager = $session->groupManager;
+		$this->services = $services;
+		$this->policy = new ProcessingLogPolicy(appConfig: $services->appConfig);
+		$this->access = new ProcessingLogAccess(session: $this->session, policy: $this->policy, organisationService: $organisationService);
+		$this->params = new GdprRequestParams(request: $request);
 	}//end __construct()
 
 	/**
@@ -141,30 +129,14 @@ class ProcessingLogController extends Controller {
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
 	public function index(): JSONResponse {
-		$access = $this->resolveAccess();
+		$access = $this->access->resolve();
 		if ($access instanceof JSONResponse) {
 			return $access;
 		}
 
 		[$isFg, $organisationId] = $access;
 
-		$entries = $this->logMapper->findFiltered(
-			filters: [
-				'register_id' => $this->optionalStringParam(key: 'register'),
-				'schema_id' => $this->optionalStringParam(key: 'schema'),
-				'activity_id' => $this->optionalStringParam(key: 'activity'),
-				'actor' => $this->optionalStringParam(key: 'actor'),
-				'action' => $this->optionalStringParam(key: 'action'),
-				'subject_id_type' => $this->optionalStringParam(key: 'subjectIdType'),
-				'subject_id_value' => $this->optionalStringParam(key: 'subjectIdValue'),
-			],
-			from: $this->optionalDateParam(key: 'from'),
-			to: $this->optionalDateParam(key: 'to'),
-			organisationId: $organisationId,
-			includeConfidential: $isFg,
-			limit: $this->intParam(key: 'limit', default: 100, max: 1000),
-			offset: $this->intParam(key: 'offset', default: 0, max: 1000000)
-		);
+		$entries = $this->filtered(organisationId: $organisationId, includeConfidential: $isFg);
 
 		return new JSONResponse(data: ['count' => count($entries), 'results' => $entries]);
 	}//end index()
@@ -183,164 +155,135 @@ class ProcessingLogController extends Controller {
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
 	public function involvedParty(): JSONResponse {
-		$access = $this->resolveAccess();
+		$access = $this->access->resolve();
 		if ($access instanceof JSONResponse) {
 			return $access;
 		}
 
 		[$isFg, $organisationId] = $access;
 
-		$idType = $this->optionalStringParam(key: 'subjectIdType');
-		$idValue = $this->optionalStringParam(key: 'subjectIdValue');
-		if ($idType === null || $idValue === null) {
+		$subject = $this->subject();
+		if ($subject === null) {
 			return new JSONResponse(
 				data: ['error' => 'subjectIdType and subjectIdValue are required'],
 				statusCode: Http::STATUS_BAD_REQUEST
 			);
 		}
 
-		$from = $this->optionalDateParam(key: 'from');
-		$to = $this->optionalDateParam(key: 'to');
+		return $this->extract(subject: $subject, scope: ['organisationId' => $organisationId, 'includeConfidential' => $isFg]);
+	}//end involvedParty()
 
-		$rangeError = $this->validateRange(from: $from, to: $to);
+	/**
+	 * The subject identifiers of an extract, or null when either is missing.
+	 *
+	 * @return array{idType: string, idValue: string}|null The identifiers.
+	 *
+	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
+	 */
+	private function subject(): ?array {
+		$idType = $this->params->nonEmpty(key: 'subjectIdType');
+		$idValue = $this->params->nonEmpty(key: 'subjectIdValue');
+		if ($idType === null || $idValue === null) {
+			return null;
+		}
+
+		return ['idType' => $idType, 'idValue' => $idValue];
+	}//end subject()
+
+	/**
+	 * The filtered inquiry, paged from the request.
+	 *
+	 * @param string|null $organisationId      The organisation scope, null for none.
+	 * @param bool        $includeConfidential Whether confidential entries are included.
+	 *
+	 * @return array<int, mixed> The entries.
+	 *
+	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
+	 */
+	private function filtered(?string $organisationId, bool $includeConfidential): array {
+		return $this->services->logMapper->findListed(
+			query: new ListQuery(
+				limit: $this->params->boundedInt(key: 'limit', default: 100, max: 1000),
+				offset: $this->params->boundedInt(key: 'offset', default: 0, max: 1000000),
+				filters: $this->filters()
+			),
+			scope: new ProcessingLogReadScope(
+				from: $this->dateParam(key: 'from'),
+				to: $this->dateParam(key: 'to'),
+				organisationId: $organisationId,
+				includeConfidential: $includeConfidential
+			)
+		);
+	}//end filtered()
+
+	/**
+	 * The column filters of the inquiry, from the request.
+	 *
+	 * @return array<string, string|null> Column to value, null when not filtered.
+	 *
+	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
+	 */
+	private function filters(): array {
+		return [
+			'register_id' => $this->params->nonEmpty(key: 'register'),
+			'schema_id' => $this->params->nonEmpty(key: 'schema'),
+			'activity_id' => $this->params->nonEmpty(key: 'activity'),
+			'actor' => $this->params->nonEmpty(key: 'actor'),
+			'action' => $this->params->nonEmpty(key: 'action'),
+			'subject_id_type' => $this->params->nonEmpty(key: 'subjectIdType'),
+			'subject_id_value' => $this->params->nonEmpty(key: 'subjectIdValue'),
+		];
+	}//end filters()
+
+	/**
+	 * The per-subject extract over the requested period, or the range refusal.
+	 *
+	 * @param array{idType: string, idValue: string}                       $subject The subject identifiers.
+	 * @param array{organisationId: ?string, includeConfidential: bool} $scope   The organisation scope, and whether
+	 *                                                                           confidential entries are included.
+	 *
+	 * @return JSONResponse The extract envelope, or HTTP 422.
+	 *
+	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
+	 */
+	private function extract(array $subject, array $scope): JSONResponse {
+		$from = $this->dateParam(key: 'from');
+		$to = $this->dateParam(key: 'to');
+
+		$rangeError = $this->policy->rangeRefusal(from: $from, to: $to);
 		if ($rangeError instanceof JSONResponse) {
 			return $rangeError;
 		}
 
-		$entries = $this->logMapper->findBySubject(
-			idType: $idType,
-			idValue: $idValue,
-			from: $from,
-			to: $to,
-			organisationId: $organisationId,
-			includeConfidential: $isFg
+		$entries = $this->services->logMapper->findForSubject(
+			subject: new ProcessingLogSubject(type: $subject['idType'], value: $subject['idValue']),
+			scope: new ProcessingLogReadScope(
+				from: $from, to: $to,
+				organisationId: $scope['organisationId'], includeConfidential: $scope['includeConfidential']
+			)
 		);
 
-		return new JSONResponse(
-			data: [
-				'subject' => ['idType' => $idType, 'idValue' => $idValue],
-				'period' => ['from' => $from?->format('c'), 'to' => $to?->format('c')],
-				'count' => count($entries),
-				'reads' => $entries,
-			]
-		);
-
-	}//end involvedParty()
+		return new JSONResponse(data: $this->extractBody(subject: $subject, read: ['from' => $from, 'to' => $to, 'entries' => $entries]));
+	}//end extract()
 
 	/**
-	 * Resolve the caller's access posture, or a denial response.
+	 * The extract envelope.
 	 *
-	 * @return JSONResponse|array{0: bool, 1: string|null} [isFg, organisationId] or a 401/403.
+	 * @param array{idType: string, idValue: string}                             $subject The subject identifiers.
+	 * @param array{from: ?DateTime, to: ?DateTime, entries: array<int, mixed>} $read    The lower and upper bound, and the reads.
+	 *
+	 * @return array<string, mixed> The response body.
+	 *
+	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
-	private function resolveAccess() {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(
-				data: ['error' => 'Authentication required'],
-				statusCode: Http::STATUS_UNAUTHORIZED
-			);
-		}
-
-		$groups = $this->groupManager->getUserGroupIds($user);
-		$isAdmin = in_array('admin', $groups, true);
-		$isFg = in_array($this->fgGroup(), $groups, true);
-
-		if ($isAdmin === false && $isFg === false) {
-			// Fail closed: neither admin nor privacy officer.
-			return new JSONResponse(
-				data: ['error' => 'Privacy-officer or admin privileges required'],
-				statusCode: Http::STATUS_FORBIDDEN
-			);
-		}
-
-		// Admins query unscoped; FG-only callers are tenant-scoped to
-		// their own organisation so they can never read another
-		// tenant's log (no cross-tenant IDOR).
-		$organisationId = null;
-		if ($isAdmin === false) {
-			$organisationId = $this->callerOrganisationId();
-			if ($organisationId === null) {
-				return new JSONResponse(data: ['count' => 0, 'results' => []]);
-			}
-		}
-
-		return [$isFg || $isAdmin, $organisationId];
-	}//end resolveAccess()
-
-	/**
-	 * Active organisation uuid for a non-admin caller, or null.
-	 *
-	 * @return string|null
-	 */
-	private function callerOrganisationId(): ?string {
-		$organisations = $this->organisationService->getUserOrganisations();
-		foreach ($organisations as $organisation) {
-			$uuid = (string)$organisation->getUuid();
-			if ($uuid !== '') {
-				return $uuid;
-			}
-		}
-
-		return null;
-	}//end callerOrganisationId()
-
-	/**
-	 * Configured privacy-officer (FG) group name.
-	 *
-	 * @return string
-	 */
-	private function fgGroup(): string {
-		$value = $this->appConfig->getValueString(self::APP_ID, self::FG_GROUP_KEY, self::FG_GROUP_DEFAULT);
-		if ($value === '') {
-			return self::FG_GROUP_DEFAULT;
-		}
-
-		return $value;
-	}//end fgGroup()
-
-	/**
-	 * Validate the requested period against the configured maximum range.
-	 *
-	 * @param DateTime|null $from Lower bound.
-	 * @param DateTime|null $to Upper bound.
-	 *
-	 * @return JSONResponse|null 422 when the range is too wide, else null.
-	 */
-	private function validateRange(?DateTime $from, ?DateTime $to): ?JSONResponse {
-		if ($from === null || $to === null) {
-			return null;
-		}
-
-		$maxDays = (int)$this->appConfig->getValueInt(self::APP_ID, self::MAX_RANGE_KEY, 366);
-		$spanDays = (int)floor(($to->getTimestamp() - $from->getTimestamp()) / 86400);
-		if ($spanDays > $maxDays) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Requested period exceeds the maximum extract range',
-					'maxDays' => $maxDays,
-				],
-				statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
-			);
-		}
-
-		return null;
-	}//end validateRange()
-
-	/**
-	 * Read a request parameter as a non-empty string, or null.
-	 *
-	 * @param string $key Parameter name.
-	 *
-	 * @return string|null
-	 */
-	private function optionalStringParam(string $key): ?string {
-		$value = $this->request->getParam(key: $key);
-		if ($value === null || $value === '') {
-			return null;
-		}
-
-		return (string)$value;
-	}//end optionalStringParam()
+	private function extractBody(array $subject, array $read): array {
+		return [
+			'subject' => $subject,
+			'period' => ['from' => $read['from']?->format('c'), 'to' => $read['to']?->format('c')],
+			'count' => count($read['entries']),
+			'reads' => $read['entries'],
+		];
+	}//end extractBody()
 
 	/**
 	 * Read a request parameter as an ISO-8601 DateTime, or null.
@@ -348,41 +291,10 @@ class ProcessingLogController extends Controller {
 	 * @param string $key Parameter name.
 	 *
 	 * @return DateTime|null
-	 */
-	private function optionalDateParam(string $key): ?DateTime {
-		$value = $this->optionalStringParam(key: $key);
-		if ($value === null) {
-			return null;
-		}
-
-		try {
-			return new DateTime($value);
-		} catch (\Throwable $e) {
-			return null;
-		}
-
-	}//end optionalDateParam()
-
-	/**
-	 * Read a bounded integer request parameter.
 	 *
-	 * @param string $key Parameter name.
-	 * @param int $default Fallback value.
-	 * @param int $max Upper clamp.
-	 *
-	 * @return int
+	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
-	private function intParam(string $key, int $default, int $max): int {
-		$value = $this->request->getParam(key: $key);
-		if ($value === null || is_numeric($value) === false) {
-			return $default;
-		}
-
-		$int = (int)$value;
-		if ($int < 0) {
-			return $default;
-		}
-
-		return min($int, $max);
-	}//end intParam()
+	private function dateParam(string $key): ?DateTime {
+		return $this->params->date(value: $this->params->nonEmpty(key: $key));
+	}//end dateParam()
 }//end class

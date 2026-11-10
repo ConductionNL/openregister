@@ -73,24 +73,9 @@ class FlowRunMarkingStore implements MarkingStoreInterface {
 	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
 	 */
 	public function getMarking(object $subject): Marking {
-		$places = ($this->run->getMarking() ?? []);
-		if (is_array($places) === false || $places === []) {
-			return new Marking();
-		}
-
 		// Stored as `place => tokens`. A list of place names is also accepted,
 		// because that is the shape a hand-authored fixture tends to take.
-		$normalised = [];
-		foreach ($places as $key => $value) {
-			if (is_int($key) === true) {
-				$normalised[(string)$value] = 1;
-				continue;
-			}
-
-			$normalised[(string)$key] = max(1, (int)$value);
-		}
-
-		return new Marking($normalised);
+		return new Marking(FlowRunCommit::normaliseMarking(places: ($this->run->getMarking() ?? [])));
 	}//end getMarking()
 
 	/**
@@ -117,25 +102,51 @@ class FlowRunMarkingStore implements MarkingStoreInterface {
 		// not wrapped: leaving it reachable leaves the lost update reachable.
 		$current = $this->normalise(places: ($this->run->getMarking() ?? []));
 		$next = $this->normalise(places: $marking->getPlaces());
+
+		$this->run->setMarking($this->applied(current: $current, next: $next));
+	}//end setMarking()
+
+	/**
+	 * The current marking with the delta towards `$next` applied, recording that delta.
+	 *
+	 * @param array<string, int> $current The marking the run holds.
+	 * @param array<string, int> $next    The marking Symfony computed.
+	 *
+	 * @return array<string, int> The marking to store.
+	 */
+	private function applied(array $current, array $next): array {
 		$this->lastDelta = ['consumed' => [], 'produced' => []];
 
 		foreach (array_unique(array_merge(array_keys($current), array_keys($next))) as $place) {
 			$diff = (($next[$place] ?? 0) - ($current[$place] ?? 0));
-			if ($diff < 0) {
-				$this->lastDelta['consumed'][] = (string)$place;
-				$current[$place] = (($current[$place] ?? 0) + $diff);
-				if ($current[$place] <= 0) {
-					unset($current[$place]);
-				}
-			} elseif ($diff > 0) {
-				$this->lastDelta['produced'][] = (string)$place;
-				$current[$place] = (($current[$place] ?? 0) + $diff);
+			if (($diff < 0) === false && ($diff > 0) === false) {
+				continue;
+			}
+
+			$this->lastDelta[$this->deltaSide(diff: $diff)][] = (string)$place;
+			$current[$place] = (($current[$place] ?? 0) + $diff);
+			if ($diff < 0 && $current[$place] <= 0) {
+				unset($current[$place]);
 			}
 		}
 
-		$this->run->setMarking($current);
+		return $current;
+	}//end applied()
 
-	}//end setMarking()
+	/**
+	 * Which side of the delta a non-zero difference lands on.
+	 *
+	 * @param integer|float $diff The token difference for one place.
+	 *
+	 * @return string `consumed` for a loss, `produced` for a gain.
+	 */
+	private function deltaSide(int|float $diff): string {
+		if ($diff < 0) {
+			return 'consumed';
+		}
+
+		return 'produced';
+	}//end deltaSide()
 
 	/**
 	 * The delta the last `setMarking()` applied: the places it took a token
@@ -172,20 +183,6 @@ class FlowRunMarkingStore implements MarkingStoreInterface {
 	 * @return array<string, int> The normalised marking.
 	 */
 	private function normalise(mixed $places): array {
-		if (is_array($places) === false) {
-			return [];
-		}
-
-		$normalised = [];
-		foreach ($places as $key => $value) {
-			if (is_int($key) === true) {
-				$normalised[(string)$value] = 1;
-				continue;
-			}
-
-			$normalised[(string)$key] = max(1, (int)$value);
-		}
-
-		return $normalised;
+		return FlowRunCommit::normaliseMarking(places: $places);
 	}//end normalise()
 }//end class

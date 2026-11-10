@@ -42,17 +42,16 @@ class RecordTemplateInputTest extends TestCase {
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
 	public function testAFullWriteNeedsItsThreeFieldsAndAPatchDoesNot(): void {
-		$input = new RecordTemplateInput();
-		$none = static fn (mixed $shares): array => [];
+		$input = new RecordTemplateInput(shareFindings: static fn (mixed $shares): array => []);
 
 		try {
-			$input->validated(data: ['description' => 'x'], partial: false, shareFindings: $none);
+			$input->validated(data: ['description' => 'x'], partial: false);
 			self::fail('A full write without its required fields must be refused.');
 		} catch (RecordTemplateRefused $e) {
 			self::assertSame(['name.required', 'register.required', 'schema.required'], array_column($e->getFindings(), 'code'));
 		}
 
-		self::assertSame(['description' => 'x'], $input->validated(data: ['description' => 'x', 'owner' => 'me'], partial: true, shareFindings: $none));
+		self::assertSame(['description' => 'x'], $input->validated(data: ['description' => 'x', 'owner' => 'me'], partial: true));
 	}//end testAFullWriteNeedsItsThreeFieldsAndAPatchDoesNot()
 
 	/**
@@ -63,14 +62,12 @@ class RecordTemplateInputTest extends TestCase {
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
 	public function testShapeFindings(): void {
-		$input = new RecordTemplateInput();
-		$share = static fn (mixed $shares): array => [['code' => 'share.unknown-group', 'message' => 'no']];
+		$input = new RecordTemplateInput(shareFindings: static fn (mixed $shares): array => [['code' => 'share.unknown-group', 'message' => 'no']]);
 
 		try {
 			$input->validated(
 				data: ['name' => str_repeat('a', 256), 'register' => 1, 'schema' => 's', 'values' => [1, 2], 'isPublic' => 1, 'sharedWith' => [['group' => 'x']]],
-				partial: false,
-				shareFindings: $share
+				partial: false
 			);
 			self::fail('Bad shapes must be refused.');
 		} catch (RecordTemplateRefused $e) {
@@ -78,7 +75,7 @@ class RecordTemplateInputTest extends TestCase {
 			self::assertSame(['name.too-long', 'values.not-an-object', 'isPublic.not-a-boolean', 'share.unknown-group'], array_column($e->getFindings(), 'code'));
 		}
 
-		$ok = $input->validated(data: ['name' => ' Kort ', 'register' => 1, 'schema' => 's', 'values' => []], partial: false, shareFindings: static fn (mixed $s): array => []);
+		$ok = $input->validated(data: ['name' => ' Kort ', 'register' => 1, 'schema' => 's', 'values' => []], partial: false);
 		self::assertSame(['name' => 'Kort', 'register' => '1', 'schema' => 's', 'values' => []], $ok);
 	}//end testShapeFindings()
 
@@ -94,7 +91,7 @@ class RecordTemplateInputTest extends TestCase {
 		$template->setName('Oud');
 		$template->setValues(['a' => 1]);
 
-		(new RecordTemplateInput())->apply(template: $template, fields: ['description' => ' Nieuw ', 'isPublic' => true]);
+		(new RecordTemplateInput(shareFindings: static fn (mixed $shares): array => []))->apply(template: $template, fields: ['description' => ' Nieuw ', 'isPublic' => true]);
 
 		self::assertSame('Oud', $template->getName());
 		self::assertSame(['a' => 1], $template->getValues());

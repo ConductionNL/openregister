@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\BackgroundJob\FileTextExtractionJob;
+use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
@@ -47,6 +47,8 @@ use Psr\Log\LoggerInterface;
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @template-implements IEventListener<NodeCreatedEvent|NodeWrittenEvent>
+ *
+ * @spec openspec/specs/event-driven-architecture/spec.md
  */
 class FileChangeListener implements IEventListener {
 
@@ -118,61 +120,99 @@ class FileChangeListener implements IEventListener {
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	public function handle(Event $event): void {
-		// Only handle NodeCreatedEvent and NodeWrittenEvent.
-		if (($event instanceof NodeCreatedEvent) === false
-			&& ($event instanceof NodeWrittenEvent) === false
-		) {
+		$file = self::changedFile(event: $event);
+		if ($file === null || $this->shouldExtract(file: $file) === false) {
 			return;
+		}
+
+		$this->logDetected(event: $event, file: $file);
+
+		try {
+			$this->dispatchByMode(fileId: $file->getId(), fileName: $file->getName());
+		} catch (\Exception $e) {
+			$this->logModeError(fileId: $file->getId(), error: $e);
+		}
+	}//end handle()
+
+	/**
+	 * Log that the extraction mode could not be determined or applied for a file.
+	 *
+	 * @param int|null   $fileId The file id
+	 * @param \Exception $error  What went wrong
+	 *
+	 * @return void
+	 */
+	private function logModeError(?int $fileId, \Exception $error): void {
+		$this->logger->error(
+			message: '[FileChangeListener] Error determining extraction mode',
+			context: self::context(
+				line: __LINE__,
+				fields: ['file_id' => $fileId, 'error' => $error->getMessage(), 'trace' => $error->getTraceAsString()]
+			)
+		);
+	}//end logModeError()
+
+	/**
+	 * The file a created or written event is about; null for folders and any other event.
+	 *
+	 * @param Event $event File event
+	 *
+	 * @return File|null
+	 */
+	private static function changedFile(Event $event): ?File {
+		if (($event instanceof NodeCreatedEvent) === false && ($event instanceof NodeWrittenEvent) === false) {
+			return null;
 		}
 
 		$node = $event->getNode();
-
-		// Only process files, not folders.
 		if (($node instanceof File) === false) {
-			return;
+			return null;
 		}
 
-		$filePath = $node->getPath();
-		if ($this->isInExtractionScope(filePath: $filePath) === false) {
-			return;
-		}
+		return $node;
+	}//end changedFile()
 
-		$fileId = $node->getId();
-		$fileName = $node->getName();
+	/**
+	 * Whether a file is in the extraction scope and not an anonymized copy.
+	 *
+	 * The scope is checked first: it loads the extraction settings once per request.
+	 *
+	 * @param File $file The changed file
+	 *
+	 * @return bool
+	 */
+	private function shouldExtract(File $file): bool {
+		if ($this->isInExtractionScope(filePath: $file->getPath()) === false) {
+			return false;
+		}
 
 		// Skip anonymized files.
-		if (strpos($fileName, '_anonymized') !== false) {
-			return;
-		}
+		return strpos($file->getName(), '_anonymized') === false;
+	}//end shouldExtract()
 
+	/**
+	 * Log that a file event will be processed.
+	 *
+	 * @param Event $event File event
+	 * @param File  $file  The changed file
+	 *
+	 * @return void
+	 */
+	private function logDetected(Event $event, File $file): void {
 		$this->logger->debug(
 			message: '[FileChangeListener] File event detected - processing',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'event_type' => get_class($event),
-				'file_id' => $fileId,
-				'file_name' => $fileName,
-				'file_path' => $filePath,
-				'extraction_scope' => self::$cachedExtractScope,
-			]
-		);
-
-		try {
-			$this->dispatchByMode(fileId: $fileId, fileName: $fileName);
-		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[FileChangeListener] Error determining extraction mode',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'file_id' => $fileId,
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
+			context: self::context(
+				line: __LINE__,
+				fields: [
+					'event_type' => get_class($event),
+					'file_id' => $file->getId(),
+					'file_name' => $file->getName(),
+					'file_path' => $file->getPath(),
+					'extraction_scope' => self::$cachedExtractScope,
 				]
-			);
-		}
-	}//end handle()
+			)
+		);
+	}//end logDetected()
 
 	/**
 	 * Whether the extraction scope covers a file path.
@@ -232,62 +272,65 @@ class FileChangeListener implements IEventListener {
 		if (isset(self::QUEUE_MESSAGES[$extractionMode]) === true) {
 			$this->logger->debug(
 				message: self::QUEUE_MESSAGES[$extractionMode]['start'],
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'file_id' => $fileId,
-					'file_name' => $fileName,
-				]
+				context: self::context(line: __LINE__, fields: ['file_id' => $fileId, 'file_name' => $fileName])
 			);
-			$this->queueExtractionJob(fileId: $fileId, mode: $extractionMode);
+			$this->queueExtractionJob(fileId: $fileId, messages: self::QUEUE_MESSAGES[$extractionMode]);
 			return;
 		}
 
 		if (isset(self::SKIP_MESSAGES[$extractionMode]) === true) {
-			$this->logger->debug(
-				message: self::SKIP_MESSAGES[$extractionMode],
-				context: ['file' => __FILE__, 'line' => __LINE__, 'file_id' => $fileId]
-			);
+			$this->logger->debug(message: self::SKIP_MESSAGES[$extractionMode], context: self::context(line: __LINE__, fields: ['file_id' => $fileId]));
 			return;
 		}
 
-		$this->logger->warning(
-			message: '[FileChangeListener] Unknown extraction mode, defaulting to background',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'file_id' => $fileId,
-				'extraction_mode' => $extractionMode,
-			]
-		);
-		$this->jobList->add(job: FileTextExtractionJob::class, argument: ['file_id' => $fileId]);
+		$this->queueForUnknownMode(fileId: $fileId, mode: $extractionMode);
 	}//end dispatchByMode()
 
 	/**
 	 * Queue the extraction job for one file, logging the outcome with the mode's messages.
 	 *
-	 * @param int|null $fileId The file id
-	 * @param string   $mode   A key of QUEUE_MESSAGES
+	 * @param int|null              $fileId   The file id
+	 * @param array<string, string> $messages The mode's entry of QUEUE_MESSAGES
 	 *
 	 * @return void
 	 */
-	private function queueExtractionJob(?int $fileId, string $mode): void {
+	private function queueExtractionJob(?int $fileId, array $messages): void {
 		try {
-			$this->jobList->add(job: FileTextExtractionJob::class, argument: ['file_id' => $fileId]);
-			$this->logger->debug(
-				message: self::QUEUE_MESSAGES[$mode]['queued'],
-				context: ['file' => __FILE__, 'line' => __LINE__, 'file_id' => $fileId]
-			);
+			$this->jobList->add(job: JobHandles::FILE_TEXT_EXTRACTION, argument: ['file_id' => $fileId]);
+			$this->logger->debug(message: $messages['queued'], context: self::context(line: __LINE__, fields: ['file_id' => $fileId]));
 		} catch (\Exception $e) {
 			$this->logger->error(
-				message: self::QUEUE_MESSAGES[$mode]['failed'],
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'file_id' => $fileId,
-					'error' => $e->getMessage(),
-				]
+				message: $messages['failed'],
+				context: self::context(line: __LINE__, fields: ['file_id' => $fileId, 'error' => $e->getMessage()])
 			);
 		}
 	}//end queueExtractionJob()
+
+	/**
+	 * Warn about an unknown extraction mode and queue the job as background mode would.
+	 *
+	 * @param int|null $fileId The file id
+	 * @param string   $mode   The unknown mode
+	 *
+	 * @return void
+	 */
+	private function queueForUnknownMode(?int $fileId, string $mode): void {
+		$this->logger->warning(
+			message: '[FileChangeListener] Unknown extraction mode, defaulting to background',
+			context: self::context(line: __LINE__, fields: ['file_id' => $fileId, 'extraction_mode' => $mode])
+		);
+		$this->jobList->add(job: JobHandles::FILE_TEXT_EXTRACTION, argument: ['file_id' => $fileId]);
+	}//end queueForUnknownMode()
+
+	/**
+	 * A log context: this file, the logging line, then the given fields.
+	 *
+	 * @param int                  $line   The line that logs
+	 * @param array<string, mixed> $fields The fields that follow
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function context(int $line, array $fields): array {
+		return ['file' => __FILE__, 'line' => $line] + $fields;
+	}//end context()
 }//end class

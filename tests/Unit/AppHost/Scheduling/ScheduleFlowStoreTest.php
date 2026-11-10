@@ -18,6 +18,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\AppHost\Scheduling;
 
 use OCA\OpenRegister\AppHost\Scheduling\CompiledScheduleFlow;
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleCadence;
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleCall;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleDescriptor;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleRelease;
@@ -70,7 +72,7 @@ class ScheduleFlowStoreTest extends TestCase {
 
 		return new CompiledScheduleFlow(
 			new ScheduleRelease($application, [], 'pieter'),
-			new ScheduleDescriptor('nightly', null, '0 3 * * *', 'a'),
+			new ScheduleDescriptor('nightly', new ScheduleCadence(null, '0 3 * * *'), new ScheduleCall('a')),
 			'0 3 * * *',
 			['type' => 'x', 'config' => []]
 		);

@@ -28,8 +28,13 @@ namespace OCA\OpenRegister\Mcp\Controller;
 use BadMethodCallException;
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Mcp\Controller\Support\JsonRpcCall;
+use OCA\OpenRegister\Mcp\Controller\Support\JsonRpcError;
 use OCA\OpenRegister\Mcp\Controller\Support\McpServerControllerServices;
 use OCA\OpenRegister\Service\Mcp\McpAgentScope;
+use OCA\OpenRegister\Service\Mcp\McpSessionCaller;
+use OCA\OpenRegister\Service\Mcp\ToolCall;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpProtocolService;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpResourcesService;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
@@ -147,16 +152,14 @@ class McpServerController extends Controller {
 	/**
 	 * McpServerController constructor
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request Request object
 	 * @param McpServerControllerServices $services The mcp server controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		McpServerControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->protocolService = $services->domain->protocolService;
 		$this->toolsService = $services->domain->toolsService;
 		$this->resourcesService = $services->domain->resourcesService;
@@ -185,60 +188,80 @@ class McpServerController extends Controller {
 	 * @spec openspec/specs/mcp-discovery/spec.md
 	 */
 	public function handle(): Response {
-		// Read and parse JSON body.
-		$body = file_get_contents('php://input');
-		$request = json_decode(json: $body, associative: true);
+		$request = json_decode(json: file_get_contents('php://input'), associative: true);
 
-		// Refuse a caller Nextcloud did not authenticate before anything else
-		// runs, with a 401 an MCP client can act on.
 		$userId = $this->currentUserId();
 		if ($userId === null) {
 			return $this->unauthorized(request: $request);
 		}
 
+		$envelopeError = $this->envelopeError(request: $request);
+		if ($envelopeError !== null) {
+			return $envelopeError;
+		}
+
+		return $this->route(request: $request, userId: $userId);
+	}//end handle()
+
+	/**
+	 * The JSON-RPC error for a body that did not parse or is not a JSON-RPC 2.0 request, if any
+	 *
+	 * @param mixed $request The decoded request body, or null when it did not parse
+	 *
+	 * @return JSONResponse|null The error to answer with, or null when the envelope is valid
+	 */
+	private function envelopeError(mixed $request): ?JSONResponse {
 		if ($request === null) {
-			return $this->jsonRpcError(
-				id: null,
-				code: self::ERR_PARSE,
-				message: 'Parse error: invalid JSON'
-			);
+			return (new JsonRpcError(code: self::ERR_PARSE, message: 'Parse error: invalid JSON'))->responseFor(id: null);
 		}
 
-		// Validate JSON-RPC envelope.
-		if (isset($request['jsonrpc']) === false || $request['jsonrpc'] !== '2.0'
-			|| isset($request['method']) === false
-		) {
-			return $this->jsonRpcError(
-				id: $request['id'] ?? null,
-				code: self::ERR_INVALID_REQUEST,
-				message: 'Invalid JSON-RPC 2.0 request'
-			);
+		if (($request['jsonrpc'] ?? null) !== '2.0' || isset($request['method']) === false) {
+			return (new JsonRpcError(code: self::ERR_INVALID_REQUEST, message: 'Invalid JSON-RPC 2.0 request'))->responseFor(id: $request['id'] ?? null);
 		}
 
-		$method = $request['method'];
-		$params = $request['params'] ?? [];
-		$id = $request['id'] ?? null;
+		return null;
+	}//end envelopeError()
 
-		// Notifications (no id) — return 202 Accepted.
-		if ($id === null) {
-			return $this->handleNotification(method: $method);
+	/**
+	 * Route a valid envelope: a notification, an initialize, or a call inside a session
+	 *
+	 * Notifications (no id) are answered 202 Accepted, initialize needs no
+	 * session, and every other method requires a valid one.
+	 *
+	 * @param array  $request The decoded JSON-RPC envelope
+	 * @param string $userId  The authenticated caller
+	 *
+	 * @return Response JSON-RPC response or HTTP 202 for notifications
+	 */
+	private function route(array $request, string $userId): Response {
+		if (isset($request['id']) === false) {
+			return $this->handleNotification(method: $request['method']);
 		}
 
-		// For initialize, no session required.
-		if ($method === 'initialize') {
-			return $this->handleInitialize(id: $id, params: $params, userId: $userId);
+		if ($request['method'] === 'initialize') {
+			return $this->handleInitialize(call: new JsonRpcCall(request: $request, userId: $userId));
 		}
 
-		// All other methods require a valid session.
-		$sessionId = $this->request->getHeader('Mcp-Session-Id');
-		$sessionError = $this->sessionError(id: $id, sessionId: $sessionId);
+		return $this->dispatchInSession(request: $request, userId: $userId);
+	}//end route()
+
+	/**
+	 * Check the request's MCP session, then dispatch the call
+	 *
+	 * @param array  $request The decoded JSON-RPC envelope, which carries an id
+	 * @param string $userId  The authenticated caller
+	 *
+	 * @return JSONResponse JSON-RPC response
+	 */
+	private function dispatchInSession(array $request, string $userId): JSONResponse {
+		$sessionId    = $this->request->getHeader('Mcp-Session-Id');
+		$sessionError = $this->sessionError(id: $request['id'], sessionId: $sessionId);
 		if ($sessionError !== null) {
 			return $sessionError;
 		}
 
-		// Dispatch to method handler.
-		return $this->dispatch(id: $id, method: $method, params: $params, sessionId: $sessionId, userId: $userId);
-	}//end handle()
+		return $this->dispatch(call: new JsonRpcCall(request: $request, userId: $userId), sessionId: $sessionId);
+	}//end dispatchInSession()
 
 	/**
 	 * The uid of the caller Nextcloud authenticated for this request
@@ -264,19 +287,17 @@ class McpServerController extends Controller {
 	 */
 	private function sessionError(mixed $id, string $sessionId): ?JSONResponse {
 		if ($sessionId === '') {
-			return $this->jsonRpcError(
-				id: $id,
+			return (new JsonRpcError(
 				code: self::ERR_SESSION_REQUIRED,
 				message: 'Mcp-Session-Id header required'
-			);
+			))->responseFor(id: $id);
 		}
 
 		if ($this->protocolService->validateSession(sessionId: $sessionId) === null) {
-			return $this->jsonRpcError(
-				id: $id,
+			return (new JsonRpcError(
 				code: self::ERR_SESSION_REQUIRED,
 				message: 'Invalid or expired session'
-			);
+			))->responseFor(id: $id);
 		}
 
 		return null;
@@ -300,11 +321,10 @@ class McpServerController extends Controller {
 			$id = $request['id'];
 		}
 
-		$response = $this->jsonRpcError(
-			id: $id,
+		$response = (new JsonRpcError(
 			code: self::ERR_UNAUTHORIZED,
 			message: 'Authentication required: send Nextcloud credentials (an app password over basic auth, or a bearer token)'
-		);
+		))->responseFor(id: $id);
 		$response->setStatus(Http::STATUS_UNAUTHORIZED);
 		$response->addHeader('WWW-Authenticate', 'Basic realm="Nextcloud", charset="UTF-8"');
 
@@ -332,43 +352,76 @@ class McpServerController extends Controller {
 	/**
 	 * Handle MCP initialize request
 	 *
-	 * @param mixed $id JSON-RPC request ID
-	 * @param array $params Initialize parameters
-	 * @param string $userId The authenticated caller
+	 * An agent the client declares is checked BEFORE a session exists, so a
+	 * refused agent never yields a session with the user's full rights.
+	 *
+	 * @param JsonRpcCall $call The initialize call
 	 *
 	 * @return JSONResponse JSON-RPC response with session ID header
 	 */
-	private function handleInitialize(mixed $id, array $params, string $userId): JSONResponse {
-		// An agent the client declares is checked BEFORE a session exists, so a
-		// refused agent never yields a session with the user's full rights.
-		// A client names it as the `agent` initialize parameter or, for clients
-		// that can only add headers, as `X-OpenRegister-Agent`.
+	private function handleInitialize(JsonRpcCall $call): JSONResponse {
+		$agentUuid = $this->declaredAgent(params: $call->params);
+		if ($agentUuid !== null) {
+			$refusal = $this->agentRefusal(call: $call, agentUuid: $agentUuid);
+			if ($refusal !== null) {
+				return $refusal;
+			}
+		}
+
+		return $this->initializeSession(call: $call, agentUuid: $agentUuid);
+	}//end handleInitialize()
+
+	/**
+	 * The agent a client declares: the `agent` initialize parameter or, for
+	 * clients that can only add headers, `X-OpenRegister-Agent`
+	 *
+	 * @param array $params Initialize parameters
+	 *
+	 * @return mixed The declared agent, not yet validated, or null when none is declared
+	 */
+	private function declaredAgent(array $params): mixed {
 		$agentUuid = $params['agent'] ?? null;
 		if ($agentUuid === null && $this->request->getHeader('X-OpenRegister-Agent') !== '') {
 			$agentUuid = $this->request->getHeader('X-OpenRegister-Agent');
 		}
-		if ($agentUuid !== null) {
-			try {
-				if (is_string($agentUuid) === false || $agentUuid === '') {
-					throw new InvalidArgumentException(message: 'The agent parameter must be an agent uuid');
-				}
 
-				$this->agentScope->assertUsable(agentUuid: $agentUuid, userId: $userId);
-			} catch (InvalidArgumentException $e) {
-				return $this->jsonRpcError(id: $id, code: self::ERR_INVALID_PARAMS, message: $e->getMessage());
+		return $agentUuid;
+	}//end declaredAgent()
+
+	/**
+	 * The JSON-RPC error for a declared agent that is no uuid or that the caller may not use, if any
+	 *
+	 * @param JsonRpcCall $call      The initialize call
+	 * @param mixed       $agentUuid The declared agent
+	 *
+	 * @return JSONResponse|null The error to answer with, or null when the agent is usable
+	 */
+	private function agentRefusal(JsonRpcCall $call, mixed $agentUuid): ?JSONResponse {
+		try {
+			if (is_string($agentUuid) === false || $agentUuid === '') {
+				throw new InvalidArgumentException(message: 'The agent parameter must be an agent uuid');
 			}
+
+			$this->agentScope->assertUsable(agentUuid: $agentUuid, userId: $call->userId);
+		} catch (InvalidArgumentException $e) {
+			return (new JsonRpcError(code: self::ERR_INVALID_PARAMS, message: $e->getMessage()))->responseFor(id: $call->id);
 		}
 
-		try {
-			$result = $this->protocolService->initialize(
-				params: $params,
-				userId: $userId
-			);
+		return null;
+	}//end agentRefusal()
 
-			$response = $this->jsonRpcSuccess(
-				id: $id,
-				result: $result['result']
-			);
+	/**
+	 * Open the MCP session and bind the declared agent to it
+	 *
+	 * @param JsonRpcCall $call      The initialize call
+	 * @param mixed       $agentUuid The declared agent, already found usable, or null
+	 *
+	 * @return JSONResponse JSON-RPC response with session ID header
+	 */
+	private function initializeSession(JsonRpcCall $call, mixed $agentUuid): JSONResponse {
+		try {
+			$result   = $this->protocolService->initialize(params: $call->params, userId: $call->userId);
+			$response = $this->jsonRpcSuccess(id: $call->id, result: $result['result']);
 			$response->addHeader('Mcp-Session-Id', $result['sessionId']);
 			if (is_string($agentUuid) === true) {
 				$this->agentScope->bind(sessionId: $result['sessionId'], agentUuid: $agentUuid);
@@ -376,104 +429,79 @@ class McpServerController extends Controller {
 
 			return $response;
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[MCP] Initialize failed',
-				context: ['error' => $e->getMessage()]
-			);
-
-			return $this->jsonRpcError(
-				id: $id,
-				code: self::ERR_INTERNAL,
-				message: 'Initialize failed: ' . $e->getMessage()
-			);
+			$this->logger->error(message: '[MCP] Initialize failed', context: ['error' => $e->getMessage()]);
+			return (new JsonRpcError(code: self::ERR_INTERNAL, message: 'Initialize failed: ' . $e->getMessage()))->responseFor(id: $call->id);
 		}//end try
-	}//end handleInitialize()
+	}//end initializeSession()
 
 	/**
 	 * Dispatch a JSON-RPC method to the appropriate handler
 	 *
-	 * @param mixed $id JSON-RPC request ID
-	 * @param string $method Method name
-	 * @param array $params Method parameters
-	 * @param string $sessionId The validated MCP session
-	 * @param string $userId The authenticated caller
+	 * @param JsonRpcCall $call      The call
+	 * @param string      $sessionId The validated MCP session
 	 *
 	 * @return JSONResponse JSON-RPC response
 	 */
-	private function dispatch(mixed $id, string $method, array $params, string $sessionId, string $userId): JSONResponse {
+	private function dispatch(JsonRpcCall $call, string $sessionId): JSONResponse {
 		try {
-			$result = match ($method) {
-				'ping' => $this->protocolService->ping(),
-				'tools/list' => $this->agentScope->filterListing(
-					sessionId: $sessionId,
-					userId: $userId,
-					listing: $this->toolsService->listTools()
-				),
-				'tools/call' => $this->handleToolCall(params: $params, sessionId: $sessionId, userId: $userId),
-				'resources/list' => $this->resourcesService->listResources(),
-				'resources/read' => $this->handleResourceRead(params: $params),
-				'resources/templates/list' => $this->resourcesService->listTemplates(),
-				default => throw new BadMethodCallException(
-					message: 'Method not found: ' . $method
-				),
-			};
-
-			return $this->jsonRpcSuccess(id: $id, result: $result);
+			return $this->jsonRpcSuccess(id: $call->id, result: $this->methodResult(call: $call, sessionId: $sessionId));
 		} catch (BadMethodCallException $e) {
-			return $this->jsonRpcError(
-				id: $id,
-				code: self::ERR_METHOD_NOT_FOUND,
-				message: $e->getMessage()
-			);
+			return (new JsonRpcError(code: self::ERR_METHOD_NOT_FOUND, message: $e->getMessage()))->responseFor(id: $call->id);
 		} catch (InvalidArgumentException $e) {
-			return $this->jsonRpcError(
-				id: $id,
-				code: self::ERR_INVALID_PARAMS,
-				message: $e->getMessage()
-			);
+			return (new JsonRpcError(code: self::ERR_INVALID_PARAMS, message: $e->getMessage()))->responseFor(id: $call->id);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[MCP] Method dispatch failed',
-				context: ['method' => $method, 'error' => $e->getMessage()]
-			);
-
-			return $this->jsonRpcError(
-				id: $id,
-				code: self::ERR_INTERNAL,
-				message: $e->getMessage()
-			);
+			$this->logger->error(message: '[MCP] Method dispatch failed', context: ['method' => $call->method, 'error' => $e->getMessage()]);
+			return (new JsonRpcError(code: self::ERR_INTERNAL, message: $e->getMessage()))->responseFor(id: $call->id);
 		}//end try
 	}//end dispatch()
 
 	/**
+	 * The result of the method a call names
+	 *
+	 * @param JsonRpcCall $call      The call
+	 * @param string      $sessionId The validated MCP session
+	 *
+	 * @return mixed The method's result
+	 *
+	 * @throws BadMethodCallException If the method is unknown
+	 */
+	private function methodResult(JsonRpcCall $call, string $sessionId): mixed {
+		return match ($call->method) {
+			'ping' => $this->protocolService->ping(),
+			'tools/list' => $this->agentScope->filterListing(
+				caller: new McpSessionCaller(sessionId: $sessionId, userId: $call->userId),
+				listing: $this->toolsService->listTools()
+			),
+			'tools/call' => $this->handleToolCall(call: $call, sessionId: $sessionId),
+			'resources/list' => $this->resourcesService->listResources(),
+			'resources/read' => $this->handleResourceRead(params: $call->params),
+			'resources/templates/list' => $this->resourcesService->listTemplates(),
+			default => throw new BadMethodCallException(message: 'Method not found: ' . $call->method),
+		};
+	}//end methodResult()
+
+	/**
 	 * Handle tools/call request
 	 *
-	 * @param array $params Must contain name and arguments
-	 * @param string $sessionId The validated MCP session
-	 * @param string $userId The authenticated caller
+	 * @param JsonRpcCall $call      The call; its params must contain name and arguments
+	 * @param string      $sessionId The validated MCP session
 	 *
 	 * @return array Tool execution result
 	 *
 	 * @throws InvalidArgumentException If name is missing, or the session agent's grant does not cover the call
 	 */
-	private function handleToolCall(array $params, string $sessionId, string $userId): array {
+	private function handleToolCall(JsonRpcCall $call, string $sessionId): array {
+		$params = $call->params;
 		if (isset($params['name']) === false) {
-			throw new InvalidArgumentException(
-				message: 'Missing required parameter: name'
-			);
+			throw new InvalidArgumentException(message: 'Missing required parameter: name');
 		}
 
 		$this->agentScope->assertMayCall(
-			sessionId: $sessionId,
-			userId: $userId,
-			name: (string) $params['name'],
-			arguments: (array) ($params['arguments'] ?? [])
+			caller: new McpSessionCaller(sessionId: $sessionId, userId: $call->userId),
+			call: new ToolCall(name: (string) $params['name'], arguments: (array) ($params['arguments'] ?? []))
 		);
 
-		return $this->toolsService->callTool(
-			name: $params['name'],
-			arguments: $params['arguments'] ?? []
-		);
+		return $this->toolsService->callTool(name: $params['name'], arguments: $params['arguments'] ?? []);
 	}//end handleToolCall()
 
 	/**
@@ -513,27 +541,4 @@ class McpServerController extends Controller {
 			statusCode: Http::STATUS_OK
 		);
 	}//end jsonRpcSuccess()
-
-	/**
-	 * Build a JSON-RPC 2.0 error response
-	 *
-	 * @param mixed $id Request ID (null for parse errors)
-	 * @param int $code JSON-RPC error code
-	 * @param string $message Error message
-	 *
-	 * @return JSONResponse JSON-RPC error response
-	 */
-	private function jsonRpcError(mixed $id, int $code, string $message): JSONResponse {
-		return new JSONResponse(
-			data: [
-				'jsonrpc' => '2.0',
-				'id' => $id,
-				'error' => [
-					'code' => $code,
-					'message' => $message,
-				],
-			],
-			statusCode: Http::STATUS_OK
-		);
-	}//end jsonRpcError()
 }//end class

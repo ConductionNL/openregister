@@ -22,7 +22,7 @@ use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\LinkedEntityEnricher;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -41,10 +41,12 @@ use RuntimeException;
  * Inverse properties hold only the objects the caller may read.
  *
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
+ * @uses \OCA\OpenRegister\Service\Object\RecordAnnotations
  * @uses \OCA\OpenRegister\Service\Object\RecurrenceOccurrences
  * @uses \OCA\OpenRegister\Service\Object\VirtualCalculations
  * @uses \OCA\OpenRegister\Service\Object\InverseBatch
  * @uses \OCA\OpenRegister\Service\Object\InverseLookup
+ * @uses \OCA\OpenRegister\Service\Object\ExtendTargetReads
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationCache
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationPreload
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationRender
@@ -73,13 +75,13 @@ class RenderObjectInverseReadCheckTest extends TestCase {
 	/** @var MagicMapper&MockObject */
 	private MagicMapper $mapper;
 
-	/** @var PermissionHandler&MockObject */
-	private PermissionHandler $permissions;
+	/** @var PermissionHandlerInterface&MockObject */
+	private PermissionHandlerInterface $permissions;
 
 	protected function setUp(): void {
 		parent::setUp();
 		$this->mapper = $this->createMock(MagicMapper::class);
-		$this->permissions = $this->createMock(PermissionHandler::class);
+		$this->permissions = $this->createMock(PermissionHandlerInterface::class);
 		$this->permissions->method('hasPermission')->willReturnCallback(
 			static function (Schema $schema, string $action, ?string $userId, ?string $owner, bool $rbac, ?ObjectEntity $object): bool {
 				return $rbac === false || ($action === 'read' && $object?->getUuid() !== self::CLOSED);
@@ -155,7 +157,7 @@ class RenderObjectInverseReadCheckTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id): object {
-				if ($id === PermissionHandler::class) {
+				if ($id === PermissionHandlerInterface::class) {
 					return $this->permissions;
 				}
 
@@ -167,25 +169,40 @@ class RenderObjectInverseReadCheckTest extends TestCase {
 		$translations->method('resolveTranslationsForRender')->willReturnArgument(0);
 
 		return new RenderObject(
-			fileMapper: $this->createMock(FileMapper::class),
-			objectEntityMapper: $this->mapper,
-			registerMapper: $this->createMock(RegisterMapper::class),
-			schemaMapper: $schemas,
-			systemTagManager: $this->createMock(ISystemTagManager::class),
-			systemTagMapper: $this->createMock(ISystemTagObjectMapper::class),
-			objectCacheService: $this->createMock(CacheHandler::class),
-			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class),
-			logger: new NullLogger(),
-			fileService: $this->createMock(FileService::class),
-			computedFieldHandler: $this->createMock(ComputedFieldHandler::class),
-			translationHandler: $translations,
-			linkedEntityEnricher: $this->createMock(LinkedEntityEnricher::class),
-			calculationEvaluator: $this->createMock(CalculationEvaluator::class),
-			urnService: $this->createMock(UrnService::class),
-			translationStatusService: $this->createMock(TranslationStatusService::class),
-			translationMapper: $this->createMock(TranslationMapper::class),
-			languageService: $this->createMock(LanguageService::class),
-			container: $container,
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					objectEntityMapper: $this->mapper,
+					registerMapper: $this->createMock(RegisterMapper::class),
+					schemaMapper: $schemas,
+					objectCacheService: $this->createMock(CacheHandler::class)
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $this->createMock(FileMapper::class),
+					fileService: $this->createMock(FileService::class),
+					systemTagManager: $this->createMock(ISystemTagManager::class),
+					systemTagMapper: $this->createMock(ISystemTagObjectMapper::class)
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $translations,
+					translationStatusService: $this->createMock(TranslationStatusService::class),
+					translationMapper: $this->createMock(TranslationMapper::class),
+					languageService: $this->createMock(LanguageService::class)
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $this->createMock(ComputedFieldHandler::class),
+					calculationEvaluator: $this->createMock(CalculationEvaluator::class),
+					linkedEntityEnricher: $this->createMock(LinkedEntityEnricher::class),
+					urnService: $this->createMock(UrnService::class)
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: new NullLogger(),
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(),
+				container: $container
+			),
+			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class)
 		);
 	}
 
@@ -288,7 +305,7 @@ class RenderObjectInverseReadCheckTest extends TestCase {
 	}
 
 	public function testAFailedCheckLeavesTheObjectOut(): void {
-		$this->permissions = $this->createMock(PermissionHandler::class);
+		$this->permissions = $this->createMock(PermissionHandlerInterface::class);
 		$this->permissions->method('hasPermission')->willThrowException(new RuntimeException('no session'));
 		$this->mapper->method('findByRelationBatchInSchema')->willReturn($this->children());
 

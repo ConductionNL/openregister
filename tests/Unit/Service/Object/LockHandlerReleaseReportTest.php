@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -41,7 +42,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\AdvisoryLockStore;
+use OCA\OpenRegister\Service\Object\LockAuthorization;
 use OCA\OpenRegister\Service\Object\LockHandler;
+use OCA\OpenRegister\Service\Object\LockStores;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -88,14 +91,14 @@ final class LockHandlerReleaseReportTest extends TestCase {
 	 */
 	private function handler(): LockHandler {
 		return new LockHandler(
-			$this->magic,
-			$this->createMock(AuditTrailMapper::class),
+			new LockStores(
+				magicMapper: $this->magic,
+				auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+				advisory: $this->createMock(AdvisoryLockStore::class),
+				runLocks: $this->createMock(RunLockRegistry::class)
+			),
 			$this->createMock(LoggerInterface::class),
-			$this->session,
-			$this->createMock(IGroupManager::class),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(AdvisoryLockStore::class),
-			$this->createMock(RunLockRegistry::class)
+			new LockAuthorization($this->session, $this->createMock(IGroupManager::class), $this->createMock(SchemaMapper::class))
 		);
 	}
 
@@ -153,7 +156,7 @@ final class LockHandlerReleaseReportTest extends TestCase {
 		self::assertTrue($object->isLocked(), 'the fixture really is locked');
 		$this->resolvesTo($object);
 
-		self::assertTrue($this->handler()->unlock(identifier: self::OBJ));
+		self::assertTrue($this->handler()->unlock(request: new UnlockRequest(identifier: self::OBJ, advisory: false, runUuid: null, break: false)));
 
 		// 🔑 THE CLEARING ITSELF IS NOT ASSERTED HERE, ON PURPOSE. The handler
 		// hands the release to `MagicMapper::unlockObject()`, which is a mock,
@@ -178,7 +181,7 @@ final class LockHandlerReleaseReportTest extends TestCase {
 		// returns rather than throwing. An unlock that raised here would break
 		// every defensive release in the engine.
 		self::assertFalse(
-			$this->handler()->unlock(identifier: self::OBJ),
+			$this->handler()->unlock(request: new UnlockRequest(identifier: self::OBJ, advisory: false, runUuid: null, break: false)),
 			'"there was nothing to release" is not the same answer as "I released it"'
 		);
 	}
@@ -198,12 +201,12 @@ final class LockHandlerReleaseReportTest extends TestCase {
 		$held->setUp();
 		$heldObject = $held->object(locked: true);
 		$held->resolvesTo($heldObject);
-		$releasedAnswer = $held->handler()->unlock(identifier: self::OBJ);
+		$releasedAnswer = $held->handler()->unlock(request: new UnlockRequest(identifier: self::OBJ, advisory: false, runUuid: null, break: false));
 
 		$none = new self('none');
 		$none->setUp();
 		$none->resolvesTo($none->object(locked: false));
-		$noOpAnswer = $none->handler()->unlock(identifier: self::OBJ);
+		$noOpAnswer = $none->handler()->unlock(request: new UnlockRequest(identifier: self::OBJ, advisory: false, runUuid: null, break: false));
 
 		self::assertNotSame($releasedAnswer, $noOpAnswer);
 	}

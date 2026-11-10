@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
+use OCA\OpenRegister\Service\ShippedRegister;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Service\Configuration\AppImportJobRecorder;
@@ -101,9 +102,8 @@ class ExampleSetRegisters {
 	 */
 	public function import(string $slug): array {
 		return $this->recordedImport(
-			import: fn (RegisterDescriptorService $descriptors): array => $descriptors->reimport(
-				appId: self::APP,
-				slug: $slug,
+			import: fn (RegisterDescriptorService $descriptors): array => $descriptors->reimportShipped(
+				register: new ShippedRegister(appId: self::APP, slug: $slug),
 				via: 'example set install'
 			)
 		);
@@ -141,7 +141,7 @@ class ExampleSetRegisters {
 	 */
 	public function isBehind(string $slug, bool $mock): bool {
 		try {
-			return $this->container->get(RegisterDescriptorService::class)->isBehind(appId: self::APP, slug: $slug, mock: $mock);
+			return $this->container->get(RegisterDescriptorService::class)->isShippedBehind(register: new ShippedRegister(appId: self::APP, slug: $slug), mock: $mock);
 		} catch (Throwable) {
 			return false;
 		}
@@ -163,18 +163,28 @@ class ExampleSetRegisters {
 			return ['error' => $e->getMessage(), 'jobs' => []];
 		}
 
-		$jobs = [];
-		if (is_string($result['importJobId'] ?? null) === true && $result['importJobId'] !== '') {
-			$jobs[] = ['appId' => (string) ($result['importAppId'] ?? self::APP), 'jobId' => $result['importJobId']];
-		}
-
 		$error = '';
 		if (($result['outcome'] ?? '') === 'failed') {
 			$error = (string) ($result['reason'] ?? 'the import failed');
 		}
 
-		return ['error' => $error, 'jobs' => $jobs];
+		return ['error' => $error, 'jobs' => $this->jobsOf(result: $result)];
 	}//end recordedImport()
+
+	/**
+	 * The import job an import result names, as the record keeps it; none when it names none.
+	 *
+	 * @param array<string, mixed> $result The import result.
+	 *
+	 * @return array<int, array{appId: string, jobId: string}>
+	 */
+	private function jobsOf(array $result): array {
+		if (is_string($result['importJobId'] ?? null) === true && $result['importJobId'] !== '') {
+			return [['appId' => (string) ($result['importAppId'] ?? self::APP), 'jobId' => $result['importJobId']]];
+		}
+
+		return [];
+	}//end jobsOf()
 
 	/**
 	 * Soft-delete the objects one import job created, and forget the job when that went cleanly.

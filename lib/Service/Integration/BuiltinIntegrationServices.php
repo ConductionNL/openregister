@@ -28,8 +28,9 @@ use Psr\Container\ContainerInterface;
  * Builds the integration providers and link services that the app wires by hand.
  *
  * Each entry maps a service class to its named constructor arguments. An
- * argument is a container id, or one of the markers below. Arguments are
- * resolved in the listed order.
+ * argument is a container id, one of the markers below, or a dependency
+ * bundle: a list of the bundle class and its own named arguments. Arguments
+ * are resolved in the listed order.
  *
  * @spec openspec/specs/integration-registry/spec.md
  */
@@ -53,22 +54,9 @@ final class BuiltinIntegrationServices {
 	private const OWN_APP_ID = 'openregister';
 
 	/**
-	 * The arguments every link service takes after its own link mapper.
-	 *
-	 * @var array<string, string>
-	 */
-	private const LINK_SERVICE_ARGUMENTS = [
-		'container'    => self::CONTAINER,
-		'appManager'   => \OCP\App\IAppManager::class,
-		'userSession'  => \OCP\IUserSession::class,
-		'urlGenerator' => \OCP\IURLGenerator::class,
-		'logger'       => \Psr\Log\LoggerInterface::class,
-	];
-
-	/**
 	 * Named constructor arguments per service class.
 	 *
-	 * @var array<class-string, array<string, string>>
+	 * @var array<class-string, array<string, string|array{0: class-string, 1: array<string, string>}>>
 	 */
 	public const FACTORIES = [
 		\OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider::class => [
@@ -77,15 +65,20 @@ final class BuiltinIntegrationServices {
 			'l10n'        => \OCP\IL10N::class,
 		],
 		\OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider::class => [
-			'noteService' => \OCA\OpenRegister\Files\Service\NoteService::class,
+			'noteService' => \OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface::class,
 			'l10n'        => \OCP\IL10N::class,
 		],
 		\OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider::class => [
-			'taskService'    => \OCA\OpenRegister\Service\TaskService::class,
-			'registerMapper' => \OCA\OpenRegister\Db\RegisterMapper::class,
-			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapper::class,
-			'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
-			'l10n'           => \OCP\IL10N::class,
+			'services' => [
+				\OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProviderServices::class,
+				[
+					'taskService'    => \OCA\OpenRegister\Service\TaskService::class,
+					'registerMapper' => \OCA\OpenRegister\Db\RegisterMapperInterface::class,
+					'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
+					'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
+				],
+			],
+			'l10n'     => \OCP\IL10N::class,
 		],
 		\OCA\OpenRegister\Service\Integration\BuiltinProviders\TagsProvider::class => [
 			'tagManager'   => \OCP\SystemTag\ISystemTagManager::class,
@@ -98,75 +91,111 @@ final class BuiltinIntegrationServices {
 		],
 		// @spec openspec/specs/integration-xwiki/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\XwikiProvider::class => [
-			'router'          => \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class,
-			'appManager'      => \OCP\App\IAppManager::class,
-			'l10n'            => \OCP\IL10N::class,
-			'xwikiLinkMapper' => \OCA\OpenRegister\Db\XwikiLinkMapper::class,
+			'routing' => [
+				\OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting::class,
+				[
+					'router'     => \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class,
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+				],
+			],
+			'xwikiLinkMapper' => \OCA\OpenRegister\Db\XwikiLinkMapperInterface::class,
 		],
 		// @spec openspec/specs/integration-xwiki/spec.md
 		\OCA\OpenRegister\Service\XwikiLinkService::class => [
-			'xwikiLinkMapper' => \OCA\OpenRegister\Db\XwikiLinkMapper::class,
+			'xwikiLinkMapper' => \OCA\OpenRegister\Db\XwikiLinkMapperInterface::class,
 			'container'       => self::CONTAINER,
-			'appManager'      => \OCP\App\IAppManager::class,
-			'userSession'     => \OCP\IUserSession::class,
-			'logger'          => \Psr\Log\LoggerInterface::class,
+			'runtime'         => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
 		],
 		// @spec openspec/specs/integration-registry/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\KvkProvider::class => [
-			'router'     => \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class,
-			'appManager' => \OCP\App\IAppManager::class,
-			'l10n'       => \OCP\IL10N::class,
-			'logger'     => \Psr\Log\LoggerInterface::class,
+			'routing' => [
+				\OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting::class,
+				[
+					'router'     => \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class,
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+				],
+			],
+			'logger'  => \Psr\Log\LoggerInterface::class,
 		],
 		// @spec openspec/specs/integration-registry/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider::class => [
-			'router'     => \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class,
-			'appManager' => \OCP\App\IAppManager::class,
-			'l10n'       => \OCP\IL10N::class,
-			'logger'     => \Psr\Log\LoggerInterface::class,
+			'routing' => [
+				\OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting::class,
+				[
+					'router'     => \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class,
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+				],
+			],
+			'logger'  => \Psr\Log\LoggerInterface::class,
 		],
 		// @spec openspec/specs/integration-registry/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider::class => [
-			'router'     => \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class,
+			'routing' => [
+				\OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting::class,
+				[
+					'router'     => \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class,
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+				],
+			],
+			'logger'  => \Psr\Log\LoggerInterface::class,
+		],
+		// @spec openspec/specs/integration-openproject/spec.md
+		\OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider::class => [
+			'routing'    => [
+				\OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting::class,
+				[
+					'router'     => \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class,
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+				],
+			],
+			'linkMapper' => \OCA\OpenRegister\Db\OpenProjectLinkMapperInterface::class,
+		],
+		// @spec openspec/specs/integration-openproject/spec.md
+		\OCA\OpenRegister\Service\OpenProjectLinkService::class => [
+			'openProjectLinkMapper' => \OCA\OpenRegister\Db\OpenProjectLinkMapperInterface::class,
+			'provider'              => \OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider::class,
+			'router'                => \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class,
+			'runtime'               => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
+		],
+		// @spec openspec/specs/integration-calendar/spec.md
+		\OCA\OpenRegister\Service\Integration\Providers\CalendarProvider::class => [
+			'calendar'   => [
+				\OCA\OpenRegister\Service\Integration\Providers\CalendarProviderServices::class,
+				[
+					'calendarEventService' => \OCA\OpenRegister\Service\CalendarEventService::class,
+					'calendarLinkService'  => \OCA\OpenRegister\Service\CalendarLinkService::class,
+				],
+			],
 			'appManager' => \OCP\App\IAppManager::class,
 			'l10n'       => \OCP\IL10N::class,
 			'logger'     => \Psr\Log\LoggerInterface::class,
 		],
-		// @spec openspec/specs/integration-openproject/spec.md
-		\OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider::class => [
-			'router'     => \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class,
-			'appManager' => \OCP\App\IAppManager::class,
-			'l10n'       => \OCP\IL10N::class,
-			'linkMapper' => \OCA\OpenRegister\Db\OpenProjectLinkMapper::class,
-		],
-		// @spec openspec/specs/integration-openproject/spec.md
-		\OCA\OpenRegister\Service\OpenProjectLinkService::class => [
-			'openProjectLinkMapper' => \OCA\OpenRegister\Db\OpenProjectLinkMapper::class,
-			'provider'              => \OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider::class,
-			'router'                => \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class,
-			'appManager'            => \OCP\App\IAppManager::class,
-			'userSession'           => \OCP\IUserSession::class,
-			'logger'                => \Psr\Log\LoggerInterface::class,
-		],
-		// @spec openspec/specs/integration-calendar/spec.md
-		\OCA\OpenRegister\Service\Integration\Providers\CalendarProvider::class => [
-			'calendarEventService' => \OCA\OpenRegister\Service\CalendarEventService::class,
-			'calendarLinkService'  => \OCA\OpenRegister\Service\CalendarLinkService::class,
-			'appManager'           => \OCP\App\IAppManager::class,
-			'l10n'                 => \OCP\IL10N::class,
-			'logger'               => \Psr\Log\LoggerInterface::class,
-		],
 		// @spec openspec/specs/integration-contacts/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\ContactsProvider::class => [
+			'description'    => [
+				\OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription::class,
+				[
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+				],
+			],
 			'contactService' => \OCA\OpenRegister\Service\ContactService::class,
-			'appManager'     => \OCP\App\IAppManager::class,
-			'l10n'           => \OCP\IL10N::class,
 		],
 		// @spec openspec/specs/integration-deck/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\DeckProvider::class => [
+			'description'     => [
+				\OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription::class,
+				[
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+				],
+			],
 			'deckLinkService' => \OCA\OpenRegister\Service\DeckLinkService::class,
-			'appManager'      => \OCP\App\IAppManager::class,
-			'l10n'            => \OCP\IL10N::class,
 		],
 		// @spec openspec/specs/integration-email/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\EmailProvider::class => [
@@ -177,24 +206,32 @@ final class BuiltinIntegrationServices {
 		],
 		// @spec openspec/specs/integration-activity/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\ActivityProvider::class => [
-			'db'         => \OCP\IDBConnection::class,
-			'appManager' => \OCP\App\IAppManager::class,
-			'l10n'       => \OCP\IL10N::class,
-			'logger'     => \Psr\Log\LoggerInterface::class,
+			'leaf' => [
+				\OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning::class,
+				[
+					'db'         => \OCP\IDBConnection::class,
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+					'logger'     => \Psr\Log\LoggerInterface::class,
+				],
+			],
 		],
 		// @spec openspec/specs/integration-forms/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\FormsProvider::class => [
-			'db'             => \OCP\IDBConnection::class,
-			'appManager'     => \OCP\App\IAppManager::class,
-			'l10n'           => \OCP\IL10N::class,
-			'formLinkMapper' => \OCA\OpenRegister\Db\FormLinkMapper::class,
-			'logger'         => \Psr\Log\LoggerInterface::class,
+			'leaf'           => [
+				\OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning::class,
+				[
+					'db'         => \OCP\IDBConnection::class,
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+					'logger'     => \Psr\Log\LoggerInterface::class,
+				],
+			],
+			'formLinkMapper' => \OCA\OpenRegister\Db\FormLinkMapperInterface::class,
 		],
 		// @spec openspec/specs/integration-shares/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\SharesProvider::class => [
-			'db'         => \OCP\IDBConnection::class,
-			'appManager' => \OCP\App\IAppManager::class,
-			'l10n'       => \OCP\IL10N::class,
+			'l10n' => \OCP\IL10N::class,
 		],
 		// @spec openspec/specs/integration-shares/spec.md
 		\OCA\OpenRegister\Service\ShareLinkService::class => [
@@ -202,197 +239,258 @@ final class BuiltinIntegrationServices {
 		],
 		// @spec openspec/specs/integration-leaf-foundation/spec.md
 		\OCA\OpenRegister\Service\CaseTokenService::class => [
-			'mapper'       => \OCA\OpenRegister\Db\CaseTokenMapper::class,
-			'secureRandom' => \OCP\Security\ISecureRandom::class,
-			'userSession'  => \OCP\IUserSession::class,
-			'urlGenerator' => \OCP\IURLGenerator::class,
-			'logger'       => \Psr\Log\LoggerInterface::class,
-			'container'    => self::CONTAINER,
-		],
-		\OCA\OpenRegister\Controller\CaseTokenController::class => [
-			'appName'      => self::APP_NAME,
-			'request'      => \OCP\IRequest::class,
-			'tokenService' => \OCA\OpenRegister\Service\CaseTokenService::class,
-			'throttler'    => \OCP\Security\Bruteforce\IThrottler::class,
-			'logger'       => \Psr\Log\LoggerInterface::class,
+			'issuance'    => [
+				\OCA\OpenRegister\Service\CaseTokenIssuance::class,
+				[
+					'mapper'       => \OCA\OpenRegister\Db\CaseTokenMapperInterface::class,
+					'secureRandom' => \OCP\Security\ISecureRandom::class,
+					'urlGenerator' => \OCP\IURLGenerator::class,
+				],
+			],
+			'userSession' => \OCP\IUserSession::class,
+			'logger'      => \Psr\Log\LoggerInterface::class,
+			'container'   => self::CONTAINER,
 		],
 		// @spec openspec/specs/integration-leaf-foundation/spec.md
 		\OCA\OpenRegister\Service\AnalyticsSeriesService::class => [
-			'mapper'       => \OCA\OpenRegister\Db\AnalyticsSeriesMapper::class,
+			'mapper'       => \OCA\OpenRegister\Db\AnalyticsSeriesMapperInterface::class,
 			'registry'     => \OCA\OpenRegister\Service\Integration\IntegrationRegistry::class,
 			'userSession'  => \OCP\IUserSession::class,
 			'groupManager' => \OCP\IGroupManager::class,
 		],
-		\OCA\OpenRegister\Controller\AnalyticsSeriesController::class => [
-			'appName'       => self::APP_NAME,
-			'request'       => \OCP\IRequest::class,
-			'seriesService' => \OCA\OpenRegister\Service\AnalyticsSeriesService::class,
-		],
 		// @spec openspec/specs/integration-bookmarks/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider::class => [
-			'bookmarkLinkMapper' => \OCA\OpenRegister\Db\BookmarkLinkMapper::class,
-			'appManager'         => \OCP\App\IAppManager::class,
-			'l10n'               => \OCP\IL10N::class,
+			'description'        => [
+				\OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription::class,
+				[
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+				],
+			],
+			'bookmarkLinkMapper' => \OCA\OpenRegister\Db\BookmarkLinkMapperInterface::class,
 		],
 		// @spec openspec/specs/integration-talk/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\TalkProvider::class => [
 			'container'      => self::CONTAINER,
-			'appManager'     => \OCP\App\IAppManager::class,
+			'description'    => [
+				\OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription::class,
+				[
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+				],
+			],
 			'userSession'    => \OCP\IUserSession::class,
-			'l10n'           => \OCP\IL10N::class,
-			'talkLinkMapper' => \OCA\OpenRegister\Db\TalkLinkMapper::class,
+			'talkLinkMapper' => \OCA\OpenRegister\Db\TalkLinkMapperInterface::class,
 		],
 		// @spec openspec/specs/integration-talk/spec.md
 		\OCA\OpenRegister\Service\TalkLinkService::class => [
-			'talkLinkMapper' => \OCA\OpenRegister\Db\TalkLinkMapper::class,
+			'talkLinkMapper' => \OCA\OpenRegister\Db\TalkLinkMapperInterface::class,
 			'container'      => self::CONTAINER,
-			'appManager'     => \OCP\App\IAppManager::class,
-			'userSession'    => \OCP\IUserSession::class,
 			'l10n'           => \OCP\IL10N::class,
-			'logger'         => \Psr\Log\LoggerInterface::class,
-			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapper::class,
+			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
+			'runtime'        => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
 		],
 		// @spec openspec/specs/integration-polls/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\PollsProvider::class => [
-			'pollLinkMapper' => \OCA\OpenRegister\Db\PollLinkMapper::class,
-			'db'             => \OCP\IDBConnection::class,
-			'appManager'     => \OCP\App\IAppManager::class,
-			'userSession'    => \OCP\IUserSession::class,
-			'l10n'           => \OCP\IL10N::class,
+			'platform'       => [
+				\OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform::class,
+				[
+					'db'         => \OCP\IDBConnection::class,
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+				],
+			],
+			'pollLinkMapper' => \OCA\OpenRegister\Db\PollLinkMapperInterface::class,
 		],
 		// @spec openspec/specs/integration-flow/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\FlowProvider::class => [
-			'flowLinkMapper' => \OCA\OpenRegister\Db\FlowLinkMapper::class,
-			'db'             => \OCP\IDBConnection::class,
-			'appManager'     => \OCP\App\IAppManager::class,
-			'l10n'           => \OCP\IL10N::class,
+			'platform'       => [
+				\OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform::class,
+				[
+					'db'         => \OCP\IDBConnection::class,
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+				],
+			],
+			'flowLinkMapper' => \OCA\OpenRegister\Db\FlowLinkMapperInterface::class,
 		],
 		// @spec openspec/specs/integration-activity/spec.md
 		\OCA\OpenRegister\Service\ActivityFilterService::class => [
-			'db'         => \OCP\IDBConnection::class,
-			'appManager' => \OCP\App\IAppManager::class,
-			'logger'     => \Psr\Log\LoggerInterface::class,
+			'db'      => \OCP\IDBConnection::class,
+			'runtime' => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
 		],
 		// @spec openspec/specs/integration-flow/spec.md
 		\OCA\OpenRegister\Service\FlowLinkService::class => [
-			'flowLinkMapper' => \OCA\OpenRegister\Db\FlowLinkMapper::class,
-			'db'             => \OCP\IDBConnection::class,
-			'appManager'     => \OCP\App\IAppManager::class,
-			'userSession'    => \OCP\IUserSession::class,
-			'groupManager'   => \OCP\IGroupManager::class,
-			'logger'         => \Psr\Log\LoggerInterface::class,
+			'platform'     => [
+				\OCA\OpenRegister\Service\FlowLinkPlatform::class,
+				[
+					'flowLinkMapper' => \OCA\OpenRegister\Db\FlowLinkMapperInterface::class,
+					'db'             => \OCP\IDBConnection::class,
+					'appManager'     => \OCP\App\IAppManager::class,
+				],
+			],
+			'userSession'  => \OCP\IUserSession::class,
+			'groupManager' => \OCP\IGroupManager::class,
+			'logger'       => \Psr\Log\LoggerInterface::class,
 		],
 		// @spec openspec/specs/integration-maps/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\MapsProvider::class => [
-			'db'            => \OCP\IDBConnection::class,
-			'appManager'    => \OCP\App\IAppManager::class,
-			'l10n'          => \OCP\IL10N::class,
-			'mapLinkMapper' => \OCA\OpenRegister\Db\MapLinkMapper::class,
-			'logger'        => \Psr\Log\LoggerInterface::class,
+			'leaf'          => [
+				\OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning::class,
+				[
+					'db'         => \OCP\IDBConnection::class,
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+					'logger'     => \Psr\Log\LoggerInterface::class,
+				],
+			],
+			'mapLinkMapper' => \OCA\OpenRegister\Db\MapLinkMapperInterface::class,
 		],
 		// @spec openspec/specs/integration-maps/spec.md
 		\OCA\OpenRegister\Service\MapLinkService::class => [
-			'mapLinkMapper' => \OCA\OpenRegister\Db\MapLinkMapper::class,
-		] + self::LINK_SERVICE_ARGUMENTS,
+			'mapLinkMapper' => \OCA\OpenRegister\Db\MapLinkMapperInterface::class,
+			'container'     => self::CONTAINER,
+			'urlGenerator'  => \OCP\IURLGenerator::class,
+			'runtime'       => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
+		],
 		// @spec openspec/specs/integration-photos/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\PhotosProvider::class => [
-			'db'              => \OCP\IDBConnection::class,
-			'appManager'      => \OCP\App\IAppManager::class,
-			'l10n'            => \OCP\IL10N::class,
-			'photoLinkMapper' => \OCA\OpenRegister\Db\PhotoLinkMapper::class,
-			'logger'          => \Psr\Log\LoggerInterface::class,
+			'leaf'            => [
+				\OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning::class,
+				[
+					'db'         => \OCP\IDBConnection::class,
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+					'logger'     => \Psr\Log\LoggerInterface::class,
+				],
+			],
+			'photoLinkMapper' => \OCA\OpenRegister\Db\PhotoLinkMapperInterface::class,
 		],
 		// @spec openspec/specs/integration-photos/spec.md
 		\OCA\OpenRegister\Service\PhotoLinkService::class => [
-			'photoLinkMapper' => \OCA\OpenRegister\Db\PhotoLinkMapper::class,
-		] + self::LINK_SERVICE_ARGUMENTS,
+			'photoLinkMapper' => \OCA\OpenRegister\Db\PhotoLinkMapperInterface::class,
+			'container'       => self::CONTAINER,
+			'urlGenerator'    => \OCP\IURLGenerator::class,
+			'runtime'         => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
+		],
 		// @spec openspec/specs/integration-collectives/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider::class => [
-			'db'                   => \OCP\IDBConnection::class,
-			'appManager'           => \OCP\App\IAppManager::class,
-			'l10n'                 => \OCP\IL10N::class,
-			'collectiveLinkMapper' => \OCA\OpenRegister\Db\CollectiveLinkMapper::class,
-			'logger'               => \Psr\Log\LoggerInterface::class,
+			'leaf'                 => [
+				\OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning::class,
+				[
+					'db'         => \OCP\IDBConnection::class,
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+					'logger'     => \Psr\Log\LoggerInterface::class,
+				],
+			],
+			'collectiveLinkMapper' => \OCA\OpenRegister\Db\CollectiveLinkMapperInterface::class,
 		],
 		// @spec openspec/specs/integration-analytics/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider::class => [
-			'db'                  => \OCP\IDBConnection::class,
-			'appManager'          => \OCP\App\IAppManager::class,
-			'l10n'                => \OCP\IL10N::class,
-			'analyticsLinkMapper' => \OCA\OpenRegister\Db\AnalyticsLinkMapper::class,
-			'logger'              => \Psr\Log\LoggerInterface::class,
+			'leaf'                => [
+				\OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning::class,
+				[
+					'db'         => \OCP\IDBConnection::class,
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+					'logger'     => \Psr\Log\LoggerInterface::class,
+				],
+			],
+			'analyticsLinkMapper' => \OCA\OpenRegister\Db\AnalyticsLinkMapperInterface::class,
 		],
 		// @spec openspec/specs/integration-cospend/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\CospendProvider::class => [
-			'db'                => \OCP\IDBConnection::class,
-			'appManager'        => \OCP\App\IAppManager::class,
-			'l10n'              => \OCP\IL10N::class,
-			'cospendLinkMapper' => \OCA\OpenRegister\Db\CospendLinkMapper::class,
+			'platform'          => [
+				\OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform::class,
+				[
+					'db'         => \OCP\IDBConnection::class,
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+				],
+			],
+			'cospendLinkMapper' => \OCA\OpenRegister\Db\CospendLinkMapperInterface::class,
 		],
 		// @spec openspec/specs/integration-cospend/spec.md
 		\OCA\OpenRegister\Service\CospendLinkService::class => [
-			'cospendLinkMapper' => \OCA\OpenRegister\Db\CospendLinkMapper::class,
+			'cospendLinkMapper' => \OCA\OpenRegister\Db\CospendLinkMapperInterface::class,
 			'container'         => self::CONTAINER,
-			'appManager'        => \OCP\App\IAppManager::class,
-			'userSession'       => \OCP\IUserSession::class,
+			'runtime'           => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
 			'db'                => \OCP\IDBConnection::class,
-			'logger'            => \Psr\Log\LoggerInterface::class,
 		],
 		// @spec openspec/specs/integration-collectives/spec.md
 		\OCA\OpenRegister\Service\CollectiveLinkService::class => [
-			'collectiveLinkMapper' => \OCA\OpenRegister\Db\CollectiveLinkMapper::class,
-		] + self::LINK_SERVICE_ARGUMENTS,
+			'collectiveLinkMapper' => \OCA\OpenRegister\Db\CollectiveLinkMapperInterface::class,
+			'container'            => self::CONTAINER,
+			'runtime'              => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
+			'urlGenerator'         => \OCP\IURLGenerator::class,
+		],
 		// @spec openspec/specs/integration-analytics/spec.md
 		\OCA\OpenRegister\Service\AnalyticsLinkService::class => [
-			'analyticsLinkMapper' => \OCA\OpenRegister\Db\AnalyticsLinkMapper::class,
-			'appManager'          => \OCP\App\IAppManager::class,
-			'userSession'         => \OCP\IUserSession::class,
-			'logger'              => \Psr\Log\LoggerInterface::class,
+			'analyticsLinkMapper' => \OCA\OpenRegister\Db\AnalyticsLinkMapperInterface::class,
+			'runtime'             => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
 			'container'           => self::CONTAINER,
 		],
 		// @spec openspec/specs/integration-time-tracker/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\TimeProvider::class => [
-			'db'         => \OCP\IDBConnection::class,
-			'appManager' => \OCP\App\IAppManager::class,
-			'l10n'       => \OCP\IL10N::class,
-			'linkMapper' => \OCA\OpenRegister\Db\TimeTrackerLinkMapper::class,
+			'leaf'       => [
+				\OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning::class,
+				[
+					'db'         => \OCP\IDBConnection::class,
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+					'logger'     => \Psr\Log\LoggerInterface::class,
+				],
+			],
+			'linkMapper' => \OCA\OpenRegister\Db\TimeTrackerLinkMapperInterface::class,
 			'config'     => \OCP\IConfig::class,
-			'logger'     => \Psr\Log\LoggerInterface::class,
 		],
 		// @spec openspec/specs/integration-time-tracker/spec.md
 		\OCA\OpenRegister\Service\TimeTrackerLinkService::class => [
-			'timeTrackerLinkMapper' => \OCA\OpenRegister\Db\TimeTrackerLinkMapper::class,
+			'timeTrackerLinkMapper' => \OCA\OpenRegister\Db\TimeTrackerLinkMapperInterface::class,
 			'db'                    => \OCP\IDBConnection::class,
 			'container'             => self::CONTAINER,
-			'appManager'            => \OCP\App\IAppManager::class,
-			'userSession'           => \OCP\IUserSession::class,
-			'logger'                => \Psr\Log\LoggerInterface::class,
+			'runtime'               => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
 		],
 		\OCA\OpenRegister\Service\Schema\SchemaDiffService::class => [],
 		\OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class => [],
 		\OCA\OpenRegister\Service\Schema\SchemaVersioningService::class => [
-			'diffService'     => \OCA\OpenRegister\Service\Schema\SchemaDiffService::class,
-			'changelogMapper' => \OCA\OpenRegister\Db\SchemaChangelogMapper::class,
-			'runMapper'       => \OCA\OpenRegister\Db\SchemaRunMapper::class,
-			'runEntryMapper'  => \OCA\OpenRegister\Db\SchemaRunEntryMapper::class,
+			'changelogMapper' => \OCA\OpenRegister\Db\SchemaChangelogMapperInterface::class,
+			'runs'            => [
+				\OCA\OpenRegister\Service\Schema\SchemaPopulationRuns::class,
+				[
+					'runMapper'      => \OCA\OpenRegister\Db\SchemaRunMapperInterface::class,
+					'runEntryMapper' => \OCA\OpenRegister\Db\SchemaRunEntryMapperInterface::class,
+					'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
+					'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
+				],
+			],
 			'userSession'     => \OCP\IUserSession::class,
 			'logger'          => \Psr\Log\LoggerInterface::class,
 		],
 		\OCA\OpenRegister\Service\Schema\SchemaRevalidationService::class => [
-			'runMapper'      => \OCA\OpenRegister\Db\SchemaRunMapper::class,
-			'runEntryMapper' => \OCA\OpenRegister\Db\SchemaRunEntryMapper::class,
-			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapper::class,
-			'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
+			'runs'           => [
+				\OCA\OpenRegister\Service\Schema\SchemaPopulationRuns::class,
+				[
+					'runMapper'      => \OCA\OpenRegister\Db\SchemaRunMapperInterface::class,
+					'runEntryMapper' => \OCA\OpenRegister\Db\SchemaRunEntryMapperInterface::class,
+					'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
+					'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
+				],
+			],
 			'validateObject' => \OCA\OpenRegister\Service\Object\ValidateObject::class,
-			'logger'         => \Psr\Log\LoggerInterface::class,
 		],
 		\OCA\OpenRegister\Service\Schema\SchemaMigrationService::class => [
-			'planner'        => \OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class,
-			'runMapper'      => \OCA\OpenRegister\Db\SchemaRunMapper::class,
-			'runEntryMapper' => \OCA\OpenRegister\Db\SchemaRunEntryMapper::class,
-			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapper::class,
-			'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
-			'logger'         => \Psr\Log\LoggerInterface::class,
+			'planner' => \OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class,
+			'runs'    => [
+				\OCA\OpenRegister\Service\Schema\SchemaPopulationRuns::class,
+				[
+					'runMapper'      => \OCA\OpenRegister\Db\SchemaRunMapperInterface::class,
+					'runEntryMapper' => \OCA\OpenRegister\Db\SchemaRunEntryMapperInterface::class,
+					'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
+					'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
+				],
+			],
 		],
 	];
 
@@ -407,25 +505,46 @@ final class BuiltinIntegrationServices {
 	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	public static function build(ContainerInterface $container, string $class): object {
+		return new $class(...self::arguments(container: $container, sources: self::FACTORIES[$class]));
+	}//end build()
+
+	/**
+	 * Resolve a list of named constructor arguments, in the listed order.
+	 *
+	 * @param ContainerInterface    $container The app container.
+	 * @param array<string, string|array{0: class-string, 1: array<string, string>}> $sources Argument name to source.
+	 *
+	 * @return array<string, mixed> Argument name to value.
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
+	 */
+	private static function arguments(ContainerInterface $container, array $sources): array {
 		$arguments = [];
-		foreach (self::FACTORIES[$class] as $name => $source) {
+		foreach ($sources as $name => $source) {
 			$arguments[$name] = self::resolve(container: $container, source: $source);
 		}
 
-		return new $class(...$arguments);
-	}//end build()
+		return $arguments;
+	}//end arguments()
 
 	/**
 	 * Resolve one constructor argument.
 	 *
+	 * A list source is a dependency bundle: its class, then its own named
+	 * arguments, resolved the same way.
+	 *
 	 * @param ContainerInterface $container The app container.
-	 * @param string             $source    A container id or an argument marker.
+	 * @param string|array{0: class-string, 1: array<string, string>} $source A container id, an argument marker or a bundle.
 	 *
 	 * @return mixed The argument value.
 	 *
 	 * @spec openspec/specs/integration-registry/spec.md
 	 */
-	private static function resolve(ContainerInterface $container, string $source): mixed {
+	private static function resolve(ContainerInterface $container, string|array $source): mixed {
+		if (is_array($source) === true) {
+			return new $source[0](...self::arguments(container: $container, sources: $source[1]));
+		}
+
 		return match ($source) {
 			self::CONTAINER => $container,
 			self::APP_NAME  => self::OWN_APP_ID,

@@ -38,6 +38,24 @@ use OCA\OpenRegister\Db\FlowRun;
  */
 class FlowRunRow {
 	/**
+	 * Name whose rights the run uses and which graph it is pinned to.
+	 *
+	 * Built per dispatch by queue(), once the attribution is resolved and the
+	 * version is known; both are settled before the row is written.
+	 *
+	 * @param array        $attribution The resolved user/organisation/declaredBy.
+	 * @param integer|null $version     The published version this run is pinned to,
+	 *                                  or null for an interactive test run of a draft.
+	 *
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
+	 */
+	public function __construct(
+		private readonly array $attribution,
+		private readonly ?int $version,
+	) {
+	}//end __construct()
+
+	/**
 	 * Build the queued row for a dispatch that has already cleared every guard.
 	 *
 	 * Split out of queue() only because that method reached the length limit;
@@ -45,44 +63,71 @@ class FlowRunRow {
 	 * dead-end, attribution, delegation — runs BEFORE this, so this method
 	 * deliberately performs no checks and assumes an attributed dispatch.
 	 *
-	 * @param string  $flowId      The flow being dispatched.
-	 * @param array   $subject     The subject object, when the trigger names one.
-	 * @param string  $trigger     What caused the dispatch.
-	 * @param array   $context     The starting context.
-	 * @param array   $attribution The resolved user/organisation/declaredBy.
-	 * @param integer|null $version The published version this run is pinned to,
-	 *                              or null for an interactive test run of a draft.
+	 * @param string              $flowId  The flow being dispatched.
+	 * @param FlowRunQueueOptions $options The subject (when the trigger names one), what caused the dispatch and the
+	 *                                     starting context; its user is not read here.
 	 *
 	 * @return FlowRun The unsaved run.
 	 *
 	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
-	public function build(
-		string $flowId,
-		array $subject,
-		string $trigger,
-		array $context,
-		array $attribution,
-		?int $version,
-	): FlowRun {
+	public function build(string $flowId, FlowRunQueueOptions $options): FlowRun {
+		$run = $this->queued(flowId: $flowId, trigger: $options->trigger);
+		$run->setContext($options->context);
+		$this->placeSubject(run: $run, subject: $options->subject);
+
+		return $this->attributedAndPinned(run: $run);
+	}//end build()
+
+	/**
+	 * A fresh queued run row for this flow and trigger, with an empty log.
+	 *
+	 * @param string $flowId  The flow being run.
+	 * @param string $trigger What caused the run.
+	 *
+	 * @return FlowRun The row.
+	 */
+	private function queued(string $flowId, string $trigger): FlowRun {
 		$run = new FlowRun();
 		$run->setUuid($this->newUuid());
 		$run->setFlowId($flowId);
 		$run->setStatus(FlowRun::STATUS_QUEUED);
 		$run->setTrigger($trigger);
-		$run->setContext($context);
 		$run->setLog([]);
+
+		return $run;
+	}//end queued()
+
+	/**
+	 * Record the object the run is about, when there is one.
+	 *
+	 * @param FlowRun              $run     The row.
+	 * @param array<string, mixed> $subject The subject's uuid, register and schema.
+	 *
+	 * @return void
+	 */
+	private function placeSubject(FlowRun $run, array $subject): void {
 		$run->setSubjectUuid(($subject['uuid'] ?? null));
 		$run->setSubjectRegister(($subject['register'] ?? null));
 		$run->setSubjectSchema(($subject['schema'] ?? null));
+	}//end placeSubject()
+
+	/**
+	 * Stamp who caused and who runs the run, its organisation, its times and its pinned version.
+	 *
+	 * @param FlowRun $run The row.
+	 *
+	 * @return FlowRun The row.
+	 */
+	private function attributedAndPinned(FlowRun $run): FlowRun {
 		// Both, deliberately. `triggeredBy` is PROVENANCE and keeps recording who
 		// caused the run; `runAs` is AUTHORIZATION and is what every access
 		// decision reads from here on. They are equal at this point for a
 		// caller-driven dispatch and differ for a scheduled one, where the cause
 		// is a schedule and the acting identity is the user its trigger names.
-		$run->setTriggeredBy($attribution['user']);
-		$run->setRunAs($attribution['user']);
-		$run->setOrganisation($attribution['organisation']);
+		$run->setTriggeredBy($this->attribution['user']);
+		$run->setRunAs($this->attribution['user']);
+		$run->setOrganisation($this->attribution['organisation']);
 		$run->setCreated(new DateTime());
 		$run->setUpdated(new DateTime());
 
@@ -92,11 +137,10 @@ class FlowRunRow {
 		// author drafts and publishes new versions. Authorization is NOT
 		// pinned — see FlowDefinitionPin — because a revoked grant must stop
 		// mattering immediately, while the graph must not move at all.
-		$run->setFlowVersion($version);
+		$run->setFlowVersion($this->version);
 
 		return $run;
-
-	}//end build()
+	}//end attributedAndPinned()
 
 	/**
 	 * A v4 UUID for a new run.

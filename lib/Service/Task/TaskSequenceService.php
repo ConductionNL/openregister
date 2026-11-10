@@ -35,12 +35,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Task;
 
 use OCA\OpenRegister\Db\Task;
-use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Db\TaskSequence;
-use OCA\OpenRegister\Db\TaskSequenceMapper;
 use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
 use OCA\OpenRegister\Event\TaskSequenceUndecidedEvent;
-use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
@@ -53,7 +50,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4() is the codebase's uuid
  * idiom and TaskState is the published, stateless state vocabulary.
  */
-class TaskSequenceService {
+class TaskSequenceService implements TaskSequenceServiceInterface {
 
 	/**
 	 * The system actor prefix a sequence writes into task audits.
@@ -65,18 +62,13 @@ class TaskSequenceService {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskSequenceMapper $sequences The sequence rows.
-	 * @param TaskMapper $taskReader Reads a sequence's positions. Read-only
-	 *                               here; every write goes through the verbs.
-	 * @param TaskServiceInterface $tasks The authorized task lifecycle.
-	 * @param IEventDispatcher $dispatcher Announces sequence completion.
+	 * @param TaskSequenceServices $services The sequence rows, the read-only
+	 *                                       position reader, the authorized
+	 *                                       task lifecycle and the dispatcher.
 	 * @param LoggerInterface $logger Diagnostics.
 	 */
 	public function __construct(
-		private readonly TaskSequenceMapper $sequences,
-		private readonly TaskMapper $taskReader,
-		private readonly TaskServiceInterface $tasks,
-		private readonly IEventDispatcher $dispatcher,
+		private readonly TaskSequenceServices $services,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -90,102 +82,234 @@ class TaskSequenceService {
 	 * schema edit or an amount edit cannot re-shape or re-route an approval
 	 * that is already running (design D-3).
 	 *
-	 * @param array<string, mixed> $template The compiled template
-	 *                                       ({@see \OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller::compile()}).
-	 * @param string $anchorObjectUuid The object the approval is about.
-	 * @param string|null $requesterId Who attempted the gated transition.
-	 * @param array<int, array<string, mixed>>|null $tierPositions The resolved
-	 *                                                             amount tier, or
-	 *                                                             null for every
-	 *                                                             declared position.
-	 * @param int|null $registerId The anchor's register.
-	 * @param string|null $runUuid Optional flow-run provenance.
-	 * @param string|null $nodeId Optional node provenance.
+	 * @param ResolvedChain  $chain  The compiled template
+	 *                               ({@see \OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller::compile()})
+	 *                               and the resolved amount tier, or null for every declared position.
+	 * @param SequenceAnchor $anchor The object the approval is about, who asked, its register, and optional flow provenance.
 	 *
 	 * @return TaskSequence The provisioned, running sequence.
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
-	public function provision(
-		array $template,
-		string $anchorObjectUuid,
-		?string $requesterId,
-		?array $tierPositions = null,
-		?int $registerId = null,
-		?string $runUuid = null,
-		?string $nodeId = null,
-	): TaskSequence {
-		$positions = ($tierPositions ?? (array)($template['positions'] ?? []));
+	public function provision(ResolvedChain $chain, SequenceAnchor $anchor): TaskSequence {
+		$sequence = self::newSequence(chain: $chain);
+		self::anchor(sequence: $sequence, anchor: $anchor);
+		self::open(sequence: $sequence, provenance: $anchor->provenance);
 
+		return $this->insertWithPositions(sequence: $sequence, chain: $chain);
+	}//end provision()
+
+	/**
+	 * The approval chain a sequence walks: a compiled template and its resolved tier.
+	 *
+	 * Built here, so callers outside this component never name the chain class.
+	 *
+	 * @param array<string, mixed>                  $template      The compiled template.
+	 * @param array<int, array<string, mixed>>|null $tierPositions The resolved amount tier, or null for every declared position.
+	 *
+	 * @return ResolvedChain The chain, to hand to {@see provision()}.
+	 *
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+	 */
+	public function chain(array $template, ?array $tierPositions = null): ResolvedChain {
+		return new ResolvedChain(template: $template, tierPositions: $tierPositions);
+	}//end chain()
+
+	/**
+	 * What a sequence is about: the object, the requester and the register.
+	 *
+	 * Built here, so callers outside this component never name the anchor class.
+	 *
+	 * @param string      $objectUuid  The object the approval is about.
+	 * @param string|null $requesterId Who attempted the gated transition.
+	 * @param int|null    $registerId  The anchor's register.
+	 *
+	 * @return SequenceAnchor The anchor, to hand to {@see provision()}.
+	 *
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+	 */
+	public function anchorOf(string $objectUuid, ?string $requesterId, ?int $registerId = null): SequenceAnchor {
+		return new SequenceAnchor(objectUuid: $objectUuid, requesterId: $requesterId, registerId: $registerId);
+	}//end anchorOf()
+
+	/**
+	 * A new sequence row carrying the frozen template and, when given, the resolved tier.
+	 *
+	 * @param ResolvedChain $chain The compiled template, its positions and the resolved tier, or null.
+	 *
+	 * @return TaskSequence The unsaved row.
+	 */
+	private static function newSequence(ResolvedChain $chain): TaskSequence {
+		$template = $chain->template;
 		$sequence = new TaskSequence();
 		$sequence->setUuid(Uuid::v4()->toRfc4122());
 		$sequence->setTemplateId((string)($template['templateId'] ?? ''));
 		$sequence->setTemplateVersion((int)($template['templateVersion'] ?? 1));
 		$sequence->setTemplateSnapshot($template);
-		$sequence->setAnchorObjectUuid($anchorObjectUuid);
-		$sequence->setRegisterId($registerId);
-		$schemaId = ($template['schemaId'] ?? null);
-		if ($schemaId !== null) {
-			$schemaId = (int)$schemaId;
-		}
-
-		$sequence->setSchemaId($schemaId);
+		$sequence->setSchemaId(self::schemaIdOf(template: $template));
 		$sequence->setChainKey((string)($template['name'] ?? ''));
-		$sequence->setRequesterId($requesterId);
-		if ($tierPositions !== null) {
-			$sequence->setResolvedTier(['positions' => $tierPositions]);
+		if ($chain->tierPositions !== null) {
+			$sequence->setResolvedTier(['positions' => $chain->tierPositions]);
 		}
 
-		$sequence->setPositionCursor((int)(($positions[0]['order'] ?? 1)));
-		$sequence->setRunUuid($runUuid);
-		$sequence->setNodeId($nodeId);
-		$sequence->openNow();
-		$sequence = $this->sequences->insert($sequence);
+		$sequence->setPositionCursor((int)(($chain->positions()[0]['order'] ?? 1)));
 
-		$creator = ($requesterId ?? self::ACTOR_PREFIX . (string)$sequence->getUuid());
-		$count = count($positions);
+		return $sequence;
+	}//end newSequence()
+
+	/**
+	 * The schema id a template declares, as an int, or null.
+	 *
+	 * @param array<string, mixed> $template The compiled template.
+	 *
+	 * @return int|null The schema id.
+	 */
+	private static function schemaIdOf(array $template): ?int {
+		$schemaId = ($template['schemaId'] ?? null);
+		if ($schemaId === null) {
+			return null;
+		}
+
+		return (int)$schemaId;
+	}//end schemaIdOf()
+
+	/**
+	 * Record what the approval is about and who asked for it.
+	 *
+	 * @param TaskSequence   $sequence The unsaved row.
+	 * @param SequenceAnchor $anchor   The object the approval is about, who asked, and its register.
+	 *
+	 * @return void
+	 */
+	private static function anchor(TaskSequence $sequence, SequenceAnchor $anchor): void {
+		$sequence->setAnchorObjectUuid($anchor->objectUuid);
+		$sequence->setRegisterId($anchor->registerId);
+		$sequence->setRequesterId($anchor->requesterId);
+	}//end anchor()
+
+	/**
+	 * Record the flow provenance and open the sequence now.
+	 *
+	 * @param TaskSequence            $sequence   The unsaved row.
+	 * @param SequenceProvenance|null $provenance Optional flow-run and node provenance.
+	 *
+	 * @return void
+	 */
+	private static function open(TaskSequence $sequence, ?SequenceProvenance $provenance): void {
+		$sequence->setRunUuid($provenance?->runUuid);
+		$sequence->setNodeId($provenance?->nodeId);
+		$sequence->openNow();
+	}//end open()
+
+	/**
+	 * Insert the sequence, then import one task per position, the first enabled.
+	 *
+	 * @param TaskSequence  $sequence The unsaved row.
+	 * @param ResolvedChain $chain    The compiled template and the positions to provision.
+	 *
+	 * @return TaskSequence The inserted sequence.
+	 */
+	private function insertWithPositions(TaskSequence $sequence, ResolvedChain $chain): TaskSequence {
+		$positions = $chain->positions();
+		$sequence = $this->services->sequences->insert($sequence);
+		$creator = ($sequence->getRequesterId() ?? self::ACTOR_PREFIX . (string)$sequence->getUuid());
 		$index = 0;
 		foreach ($positions as $position) {
 			$index++;
-			$order = (int)($position['order'] ?? $index);
-			$role = trim((string)($position['role'] ?? ''));
-			$state = Task::STATE_AVAILABLE;
-			if ($index === 1) {
-				$state = Task::STATE_ENABLED;
-			}
-
-			$this->tasks->import(
-				data: [
-					'title' => sprintf('Approve %s (step %d of %d)', (string)$sequence->getChainKey(), $order, $count),
-					'description' => sprintf(
-						'Approval step %d of %d for %s on object %s.',
-						$order,
-						$count,
-						(string)$sequence->getChainKey(),
-						$anchorObjectUuid
-					),
-					'state' => $state,
-					'performerType' => Task::PERFORMER_GROUP,
-					'candidateGroups' => [$role],
-					'routingStrategy' => 'single-role',
-					'requester' => $requesterId,
-					'objectUuid' => $anchorObjectUuid,
-					'registerId' => $registerId,
-					'schemaId' => $sequence->getSchemaId(),
-					'templateId' => $sequence->getTemplateId(),
-					'templateVersion' => $sequence->getTemplateVersion(),
-					'templateSnapshot' => $this->positionSnapshot(position: $position, template: $template),
-					'sequenceUuid' => $sequence->getUuid(),
-					'sequencePosition' => $order,
-					'runUuid' => $runUuid,
-					'nodeId' => $nodeId,
-				],
+			$snapshot = $this->positionSnapshot(position: $position, template: $chain->template);
+			$this->services->tasks->import(
+				data: self::positionTaskData(sequence: $sequence, position: new ChainPosition(snapshot: $snapshot, index: $index, count: count($positions))),
 				actor: $creator
 			);
-		}//end foreach
+		}
 
 		return $sequence;
-	}//end provision()
+	}//end insertWithPositions()
+
+	/**
+	 * The task one position is provisioned as.
+	 *
+	 * @param TaskSequence  $sequence The inserted sequence.
+	 * @param ChainPosition $position The position as frozen onto its task, its 1-based place and the chain's length.
+	 *
+	 * @return array<string, mixed> The task data.
+	 */
+	private static function positionTaskData(TaskSequence $sequence, ChainPosition $position): array {
+		return self::stepText(sequence: $sequence, position: $position)
+			+ self::routing(position: $position)
+			+ self::anchorFields(sequence: $sequence)
+			+ [
+				'templateSnapshot' => $position->snapshot,
+				'sequenceUuid' => $sequence->getUuid(),
+				'sequencePosition' => $position->order(),
+				'runUuid' => $sequence->getRunUuid(),
+				'nodeId' => $sequence->getNodeId(),
+			];
+	}//end positionTaskData()
+
+	/**
+	 * A position task's title and description.
+	 *
+	 * @param TaskSequence  $sequence The sequence.
+	 * @param ChainPosition $position The position: its ordinal and how many positions the sequence has.
+	 *
+	 * @return array{title: string, description: string} The text.
+	 */
+	private static function stepText(TaskSequence $sequence, ChainPosition $position): array {
+		$chainKey = (string)$sequence->getChainKey();
+		$order = $position->order();
+		$count = $position->count;
+
+		return [
+			'title' => sprintf('Approve %s (step %d of %d)', $chainKey, $order, $count),
+			'description' => sprintf(
+				'Approval step %d of %d for %s on object %s.',
+				$order,
+				$count,
+				$chainKey,
+				(string)$sequence->getAnchorObjectUuid()
+			),
+		];
+	}//end stepText()
+
+	/**
+	 * Who a position task is offered to, and whether it starts enabled.
+	 *
+	 * @param ChainPosition $position The position and its 1-based place in the list.
+	 *
+	 * @return array<string, mixed> The state and routing fields.
+	 */
+	private static function routing(ChainPosition $position): array {
+		$state = Task::STATE_AVAILABLE;
+		if ($position->index === 1) {
+			$state = Task::STATE_ENABLED;
+		}
+
+		return [
+			'state' => $state,
+			'performerType' => Task::PERFORMER_GROUP,
+			'candidateGroups' => [trim((string)($position->snapshot['role'] ?? ''))],
+			'routingStrategy' => 'single-role',
+		];
+	}//end routing()
+
+	/**
+	 * The requester, anchor and template identity every position task carries.
+	 *
+	 * @param TaskSequence $sequence The sequence.
+	 *
+	 * @return array<string, mixed> The fields.
+	 */
+	private static function anchorFields(TaskSequence $sequence): array {
+		return [
+			'requester' => $sequence->getRequesterId(),
+			'objectUuid' => $sequence->getAnchorObjectUuid(),
+			'registerId' => $sequence->getRegisterId(),
+			'schemaId' => $sequence->getSchemaId(),
+			'templateId' => $sequence->getTemplateId(),
+			'templateVersion' => $sequence->getTemplateVersion(),
+		];
+	}//end anchorFields()
 
 	/**
 	 * A position as frozen onto its task, carrying the chain's declared
@@ -239,52 +363,74 @@ class TaskSequenceService {
 	 * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
 	 */
 	public function onTaskTerminal(Task $task): void {
-		$sequenceUuid = trim((string)$task->getSequenceUuid());
-		if ($sequenceUuid === '') {
+		$sequence = $this->runningSequenceOf(task: $task);
+		if ($sequence === null) {
 			return;
 		}
 
+		if ((string)$task->getState() !== Task::STATE_COMPLETED) {
+			$this->closeTerminated(sequence: $sequence, task: $task);
+
+			return;
+		}
+
+		$this->decide(sequence: $sequence, task: $task);
+	}//end onTaskTerminal()
+
+	/**
+	 * The still-running sequence a task belongs to, or null.
+	 *
+	 * @param Task $task The task.
+	 *
+	 * @return TaskSequence|null The sequence; null outside any sequence,
+	 *                           for a dangling reference, or once terminal.
+	 */
+	private function runningSequenceOf(Task $task): ?TaskSequence {
+		$sequenceUuid = trim((string)$task->getSequenceUuid());
+		if ($sequenceUuid === '') {
+			return null;
+		}
+
+		$sequence = $this->findSequence(task: $task, sequenceUuid: $sequenceUuid);
+		if ($sequence === null || $sequence->isTerminal() === true) {
+			return null;
+		}
+
+		return $sequence;
+	}//end runningSequenceOf()
+
+	/**
+	 * The sequence a task names, or null (logged) when it does not resolve.
+	 *
+	 * @param Task $task The task naming it.
+	 * @param string $sequenceUuid The sequence uuid.
+	 *
+	 * @return TaskSequence|null The sequence.
+	 */
+	private function findSequence(Task $task, string $sequenceUuid): ?TaskSequence {
 		try {
-			$sequence = $this->sequences->findByUuid(uuid: $sequenceUuid);
+			return $this->services->sequences->findByUuid(uuid: $sequenceUuid);
 		} catch (Throwable $missing) {
 			$this->logger->warning(
 				'[TaskSequenceService] Task ' . (string)$task->getUuid() . ' names sequence '
 				. $sequenceUuid . ', which does not resolve: ' . $missing->getMessage()
 			);
 
-			return;
+			return null;
 		}
+	}//end findSequence()
 
-		if ($sequence->isTerminal() === true) {
-			return;
-		}
-
-		if ((string)$task->getState() !== Task::STATE_COMPLETED) {
-			$this->close(
-				sequence: $sequence,
-				status: TaskSequence::STATUS_TERMINATED,
-				outcome: 'terminated',
-				reason: sprintf(
-					"Position %d ended as '%s' without a decision.",
-					(int)$task->getSequencePosition(),
-					(string)$task->getState()
-				)
-			);
-
-			return;
-		}
-
+	/**
+	 * Act on a completed position: reject, advance, or close as undecided.
+	 *
+	 * @param TaskSequence $sequence The running sequence.
+	 * @param Task $task The completed position.
+	 *
+	 * @return void
+	 */
+	private function decide(TaskSequence $sequence, Task $task): void {
 		if (TaskState::isRejectingOutcome(outcome: $task->getOutcome()) === true) {
-			$this->close(
-				sequence: $sequence,
-				status: TaskSequence::STATUS_REJECTED,
-				outcome: $this->statusOnReject(sequence: $sequence, position: (int)$task->getSequencePosition()),
-				reason: sprintf(
-					'Rejected at position %d by %s.',
-					(int)$task->getSequencePosition(),
-					(string)($task->getCompletedBy() ?? 'an unnamed decider')
-				)
-			);
+			$this->closeRejected(sequence: $sequence, task: $task);
 
 			return;
 		}
@@ -296,7 +442,49 @@ class TaskSequenceService {
 		}
 
 		$this->closeUndecided(sequence: $sequence, task: $task);
-	}//end onTaskTerminal()
+	}//end decide()
+
+	/**
+	 * Close a sequence whose position ended without a decision.
+	 *
+	 * @param TaskSequence $sequence The running sequence.
+	 * @param Task $task The position that ended cancelled, terminated or disabled.
+	 *
+	 * @return void
+	 */
+	private function closeTerminated(TaskSequence $sequence, Task $task): void {
+		$this->close(closure: new SequenceClosure(
+			sequence: $sequence,
+			status: TaskSequence::STATUS_TERMINATED,
+			outcome: 'terminated',
+			reason: sprintf(
+				"Position %d ended as '%s' without a decision.",
+				(int)$task->getSequencePosition(),
+				(string)$task->getState()
+			)
+		));
+	}//end closeTerminated()
+
+	/**
+	 * Close a sequence whose position rejected.
+	 *
+	 * @param TaskSequence $sequence The running sequence.
+	 * @param Task $task The rejecting position.
+	 *
+	 * @return void
+	 */
+	private function closeRejected(TaskSequence $sequence, Task $task): void {
+		$this->close(closure: new SequenceClosure(
+			sequence: $sequence,
+			status: TaskSequence::STATUS_REJECTED,
+			outcome: $this->statusOnReject(sequence: $sequence, position: (int)$task->getSequencePosition()),
+			reason: sprintf(
+				'Rejected at position %d by %s.',
+				(int)$task->getSequencePosition(),
+				(string)($task->getCompletedBy() ?? 'an unnamed decider')
+			)
+		));
+	}//end closeRejected()
 
 	/**
 	 * Enable the next position, or complete the sequence.
@@ -309,33 +497,64 @@ class TaskSequenceService {
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
 	private function advance(TaskSequence $sequence, Task $completed): void {
-		$source = self::ACTOR_PREFIX . (string)$sequence->getUuid();
-		$next = null;
-		foreach ($this->taskReader->findBySequence(sequenceUuid: (string)$sequence->getUuid()) as $candidate) {
-			$later = ((int)$candidate->getSequencePosition() > (int)$completed->getSequencePosition());
-			if ($later === true && $candidate->isInTerminalState() === false) {
-				$next = $candidate;
-				break;
-			}
-		}
-
+		$next = $this->nextPosition(sequence: $sequence, completed: $completed);
 		if ($next !== null) {
-			$this->tasks->enable(
-				uuid: (string)$next->getUuid(),
-				source: $source,
-				reason: sprintf('Position %d approved; position %d is now enabled.', (int)$completed->getSequencePosition(), (int)$next->getSequencePosition())
-			);
-			$sequence->setPositionCursor((int)$next->getSequencePosition());
-			$this->sequences->update($sequence);
+			$this->enableNext(sequence: $sequence, advance: new PositionAdvance(completed: $completed, next: $next));
 
 			return;
 		}
 
+		$this->completeSequence(sequence: $sequence, completed: $completed);
+	}//end advance()
+
+	/**
+	 * The first later position that is not terminal yet, or null.
+	 *
+	 * @param TaskSequence $sequence The running sequence.
+	 * @param Task $completed The position that just completed.
+	 *
+	 * @return Task|null The next position.
+	 */
+	private function nextPosition(TaskSequence $sequence, Task $completed): ?Task {
+		foreach ($this->services->taskReader->findBySequence(sequenceUuid: (string)$sequence->getUuid()) as $candidate) {
+			$later = ((int)$candidate->getSequencePosition() > (int)$completed->getSequencePosition());
+			if ($later === true && $candidate->isInTerminalState() === false) {
+				return $candidate;
+			}
+		}
+
+		return null;
+	}//end nextPosition()
+
+	/**
+	 * Enable the next position and move the cursor onto it.
+	 *
+	 * @param TaskSequence $sequence The running sequence.
+	 * @param PositionAdvance $advance The completed position and the next one.
+	 *
+	 * @return void
+	 */
+	private function enableNext(TaskSequence $sequence, PositionAdvance $advance): void {
+		$source = self::ACTOR_PREFIX . (string)$sequence->getUuid();
+		$this->services->tasks->enable(uuid: (string)$advance->next->getUuid(), trigger: new TaskTrigger(source: $source, reason: $advance->reason()));
+		$sequence->setPositionCursor((int)$advance->next->getSequencePosition());
+		$this->services->sequences->update($sequence);
+	}//end enableNext()
+
+	/**
+	 * Complete the sequence after its last position approved, and announce it.
+	 *
+	 * @param TaskSequence $sequence The running sequence.
+	 * @param Task $completed The final position.
+	 *
+	 * @return void
+	 */
+	private function completeSequence(TaskSequence $sequence, Task $completed): void {
 		$statusOnApprove = $this->statusOnApprove(sequence: $sequence, position: (int)$completed->getSequencePosition());
 		$sequence->closeAs(status: TaskSequence::STATUS_COMPLETED, outcome: $statusOnApprove);
-		$persisted = $this->sequences->update($sequence);
+		$persisted = $this->services->sequences->update($sequence);
 
-		$this->dispatcher->dispatchTyped(
+		$this->services->dispatcher->dispatchTyped(
 			new TaskSequenceCompletedEvent(
 				sequence: $persisted,
 				finalTask: $completed,
@@ -343,7 +562,7 @@ class TaskSequenceService {
 				statusOnApprove: $statusOnApprove
 			)
 		);
-	}//end advance()
+	}//end completeSequence()
 
 	/**
 	 * Close a sequence whose position completed without a decision.
@@ -357,7 +576,7 @@ class TaskSequenceService {
 	 * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
 	 */
 	private function closeUndecided(TaskSequence $sequence, Task $task): void {
-		$this->close(
+		$this->close(closure: new SequenceClosure(
 			sequence: $sequence,
 			status: TaskSequence::STATUS_UNDECIDED,
 			outcome: TaskSequence::STATUS_UNDECIDED,
@@ -366,9 +585,9 @@ class TaskSequenceService {
 				(int)$task->getSequencePosition(),
 				(string)$task->getOutcome()
 			)
-		);
+		));
 
-		$this->dispatcher->dispatchTyped(new TaskSequenceUndecidedEvent(sequence: $sequence, task: $task));
+		$this->services->dispatcher->dispatchTyped(new TaskSequenceUndecidedEvent(sequence: $sequence, task: $task));
 	}//end closeUndecided()
 
 	/**
@@ -392,38 +611,52 @@ class TaskSequenceService {
 	 * closed sequence, its tasks, its decisions and its audit remain
 	 * readable indefinitely: nothing here deletes (design D-5).
 	 *
-	 * @param TaskSequence $sequence The sequence to close.
-	 * @param string $status The terminal status.
-	 * @param string $outcome The recorded outcome.
-	 * @param string $reason Why, written onto every terminated task's audit.
+	 * @param SequenceClosure $closure The sequence to close, its terminal status, the recorded outcome,
+	 *                                 and why (written onto every terminated task's audit).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-rejection-terminates-the-sequence-and-every-task-it-still-owns
 	 */
-	private function close(TaskSequence $sequence, string $status, string $outcome, string $reason): void {
-		$sequence->closeAs(status: $status, outcome: $outcome);
-		$this->sequences->update($sequence);
+	private function close(SequenceClosure $closure): void {
+		$sequence = $closure->sequence;
+		$sequence->closeAs(status: $closure->status, outcome: $closure->outcome);
+		$this->services->sequences->update($sequence);
 
-		$source = self::ACTOR_PREFIX . (string)$sequence->getUuid();
-		foreach ($this->taskReader->findBySequence(sequenceUuid: (string)$sequence->getUuid()) as $sibling) {
-			if ($sibling->isInTerminalState() === true) {
-				continue;
+		foreach ($this->services->taskReader->findBySequence(sequenceUuid: (string)$sequence->getUuid()) as $sibling) {
+			if ($sibling->isInTerminalState() === false) {
+				$this->terminateMoot(closure: $closure, sibling: $sibling);
 			}
-
-			try {
-				$this->tasks->terminateAsMoot(uuid: (string)$sibling->getUuid(), reason: $reason, source: $source);
-			} catch (Throwable $failure) {
-				// Terminating the remainder must not fail the decision that
-				// closed the sequence; the missed task is terminal-by-sweep.
-				$this->logger->error(
-					'[TaskSequenceService] Could not terminate task ' . (string)$sibling->getUuid()
-					. ' of closed sequence ' . (string)$sequence->getUuid() . ': ' . $failure->getMessage(),
-					['exception' => $failure]
-				);
-			}
-		}//end foreach
+		}
 	}//end close()
+
+	/**
+	 * Terminate one remaining task of a closed sequence.
+	 *
+	 * Terminating the remainder must not fail the decision that closed the
+	 * sequence; a missed task is logged and left to the terminal sweep.
+	 *
+	 * @param SequenceClosure $closure The closed sequence, and why (written onto the task's audit).
+	 * @param Task            $sibling The task it still owns.
+	 *
+	 * @return void
+	 */
+	private function terminateMoot(SequenceClosure $closure, Task $sibling): void {
+		$sequence = $closure->sequence;
+		try {
+			$this->services->tasks->terminateAsMoot(
+				uuid: (string)$sibling->getUuid(),
+				reason: $closure->reason,
+				source: self::ACTOR_PREFIX . (string)$sequence->getUuid()
+			);
+		} catch (Throwable $failure) {
+			$this->logger->error(
+				'[TaskSequenceService] Could not terminate task ' . (string)$sibling->getUuid()
+				. ' of closed sequence ' . (string)$sequence->getUuid() . ': ' . $failure->getMessage(),
+				['exception' => $failure]
+			);
+		}
+	}//end terminateMoot()
 
 	/**
 	 * The `statusOnApprove` the frozen declaration resolves for a position.
@@ -436,7 +669,7 @@ class TaskSequenceService {
 	 * @spec openspec/specs/approval-workflow/spec.md#req-010
 	 */
 	private function statusOnApprove(TaskSequence $sequence, int $position): string {
-		return $this->declaredStatus(sequence: $sequence, position: $position, key: 'statusOnApprove', default: 'approved');
+		return (self::firstDeclared(entries: self::declaredAt(sequence: $sequence, position: $position), key: 'statusOnApprove') ?? 'approved');
 	}//end statusOnApprove()
 
 	/**
@@ -450,31 +683,45 @@ class TaskSequenceService {
 	 * @spec openspec/specs/approval-workflow/spec.md#req-007
 	 */
 	private function statusOnReject(TaskSequence $sequence, int $position): string {
-		return $this->declaredStatus(sequence: $sequence, position: $position, key: 'statusOnReject', default: 'rejected');
+		return (self::firstDeclared(entries: self::declaredAt(sequence: $sequence, position: $position), key: 'statusOnReject') ?? 'rejected');
 	}//end statusOnReject()
 
 	/**
-	 * Read a per-position declared status off the FROZEN snapshot.
+	 * The declared entries of one position: the resolved tier's, else the template snapshot's.
 	 *
 	 * @param TaskSequence $sequence The sequence whose snapshot to read.
-	 * @param int $position The position's ordinal.
-	 * @param string $key `statusOnApprove` or `statusOnReject`.
-	 * @param string $default The vocabulary default.
+	 * @param int          $position The position's ordinal.
 	 *
-	 * @return string The declared value, or the default.
+	 * @return array<int, array<string, mixed>> The entries declaring that ordinal, in declared order.
 	 */
-	private function declaredStatus(TaskSequence $sequence, int $position, string $key, string $default): string {
+	private static function declaredAt(TaskSequence $sequence, int $position): array {
 		$snapshot = ($sequence->getTemplateSnapshot() ?? []);
 		$declared = ($sequence->getResolvedTier()['positions'] ?? ($snapshot['positions'] ?? []));
-		foreach ((array)$declared as $entry) {
-			if (is_array($entry) === true && (int)($entry['order'] ?? 0) === $position) {
-				$value = trim((string)($entry[$key] ?? ''));
-				if ($value !== '') {
-					return $value;
-				}
+
+		return array_values(
+			array_filter(
+				(array)$declared,
+				static fn (mixed $entry): bool => is_array($entry) === true && (int)($entry['order'] ?? 0) === $position
+			)
+		);
+	}//end declaredAt()
+
+	/**
+	 * The first non-empty value an entry declares under a key.
+	 *
+	 * @param array<int, array<string, mixed>> $entries The position's declared entries.
+	 * @param string                           $key     `statusOnApprove` or `statusOnReject`.
+	 *
+	 * @return string|null The value, or null when none declares one (the vocabulary default then applies).
+	 */
+	private static function firstDeclared(array $entries, string $key): ?string {
+		foreach ($entries as $entry) {
+			$value = trim((string)($entry[$key] ?? ''));
+			if ($value !== '') {
+				return $value;
 			}
 		}
 
-		return $default;
-	}//end declaredStatus()
+		return null;
+	}//end firstDeclared()
 }//end class

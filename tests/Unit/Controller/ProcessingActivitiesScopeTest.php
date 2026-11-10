@@ -147,12 +147,13 @@ final class ProcessingActivitiesScopeTest extends TestCase {
 		);
 
 		return new VerwerkingsactiviteitenController(
-			'openregister',
 			$request,
-			$mapper,
-			new \OCA\OpenRegister\Controller\Support\ControllerSession($session, $groups, $this->createMock(\Psr\Log\LoggerInterface::class)),
-			$this->createMock(IDBConnection::class),
-			$organisations
+			new \OCA\OpenRegister\Controller\Support\VerwerkingsactiviteitenControllerServices(
+				$mapper,
+				new \OCA\OpenRegister\Controller\Support\ControllerSession($session, $groups, $this->createMock(\Psr\Log\LoggerInterface::class)),
+				$this->createMock(IDBConnection::class),
+				$organisations,
+			)
 		);
 	}//end controller()
 

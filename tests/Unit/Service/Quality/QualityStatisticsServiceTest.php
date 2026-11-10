@@ -27,12 +27,15 @@ declare(strict_types=1);
 
 namespace Unit\Service\Quality;
 
+use OCA\OpenRegister\Service\Quality\QualityListingRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Quality\QualityListingWindow;
+use OCA\OpenRegister\Service\Quality\QualityScopeMappers;
 use OCA\OpenRegister\Service\Quality\QualityScorer;
 use OCA\OpenRegister\Service\Quality\QualityStatisticsService;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -61,8 +64,7 @@ class QualityStatisticsServiceTest extends TestCase {
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->service = new QualityStatisticsService(
 			$this->objectService,
-			$this->schemaMapper,
-			$this->registerMapper,
+			new QualityScopeMappers($this->schemaMapper, $this->registerMapper),
 			new QualityScorer(),
 			$this->createMock(LoggerInterface::class)
 		);
@@ -242,7 +244,7 @@ class QualityStatisticsServiceTest extends TestCase {
 			]
 		);
 
-		$result = $this->service->lowestQuality('reg', 'sch');
+		$result = $this->service->lowestQuality(new QualityListingRequest('reg', 'sch', null, new QualityListingWindow()));
 
 		$scores = array_column($result['items'], 'qualityScore');
 		$this->assertSame([0.2, 0.5, 0.9], $scores);
@@ -260,7 +262,7 @@ class QualityStatisticsServiceTest extends TestCase {
 			]
 		);
 
-		$result = $this->service->lowestQuality('reg', 'sch', qualityStatus: 'poor');
+		$result = $this->service->lowestQuality(new QualityListingRequest('reg', 'sch', 'poor', new QualityListingWindow()));
 
 		$this->assertCount(1, $result['items']);
 		$this->assertSame('poor', $result['items'][0]['qualityStatus']);
@@ -278,8 +280,8 @@ class QualityStatisticsServiceTest extends TestCase {
 			]
 		);
 
-		$page1 = $this->service->lowestQuality('reg', 'sch', limit: 2, offset: 0);
-		$page2 = $this->service->lowestQuality('reg', 'sch', limit: 2, offset: 2);
+		$page1 = $this->service->lowestQuality(new QualityListingRequest('reg', 'sch', null, new QualityListingWindow(limit: 2, offset: 0)));
+		$page2 = $this->service->lowestQuality(new QualityListingRequest('reg', 'sch', null, new QualityListingWindow(limit: 2, offset: 2)));
 
 		$this->assertCount(2, $page1['items']);
 		$this->assertCount(1, $page2['items']);

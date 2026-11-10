@@ -45,7 +45,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
  */
-class TaskAuditMapper extends QBMapper {
+class TaskAuditMapper extends QBMapper implements TaskAuditMapperInterface {
 
 	/**
 	 * Constructor.

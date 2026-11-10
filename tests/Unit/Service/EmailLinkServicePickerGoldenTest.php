@@ -16,6 +16,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCA\OpenRegister\Service\EmailLinkService;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCA\OpenRegister\Tests\Unit\Db\RecordingQueryBuilderTrait;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
@@ -24,6 +25,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\MailboxPage;
 
 /**
  * Pins the queries, results, exceptions and log lines of the account,
@@ -104,6 +106,10 @@ class EmailLinkServicePickerGoldenTest extends TestCase {
 			$outcome = [];
 			try {
 				$call = new \ReflectionMethod(EmailLinkService::class, $method);
+				if ($method === 'getMessagesForMailbox') {
+					$args = [(new MailboxPage($args[0], $args[1]))->startingAfter($args[2], $args[3])];
+				}
+
 				$outcome['result'] = $call->invokeArgs($service, $args);
 			} catch (\Exception $e) {
 				$outcome['thrown'] = get_class($e) . ': ' . $e->getMessage() . ' (' . $e->getCode() . ')';
@@ -156,6 +162,6 @@ class EmailLinkServicePickerGoldenTest extends TestCase {
 				$this->logs[] = $message;
 			}
 		);
-		return new EmailLinkService($this->createMock(EmailLinkMapper::class), $appManager, $db, $session, $logger);
+		return new EmailLinkService($this->createMock(EmailLinkMapper::class), $db, new LinkServiceRuntime($appManager, $session, $logger));
 	}//end makeService()
 }//end class

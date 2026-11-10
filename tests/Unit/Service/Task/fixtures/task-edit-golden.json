@@ -1,0 +1,462 @@
+{
+    "array title": {
+        "no expiry": {
+            "refused": "A text field takes text."
+        },
+        "expiry": {
+            "refused": "A text field takes text."
+        }
+    },
+    "blank title": {
+        "no expiry": {
+            "refused": "Field 'title' may not be emptied."
+        },
+        "expiry": {
+            "refused": "Field 'title' may not be emptied."
+        }
+    },
+    "bool title": {
+        "no expiry": {
+            "refused": "Field 'title' may not be emptied."
+        },
+        "expiry": {
+            "refused": "Field 'title' may not be emptied."
+        }
+    },
+    "description cleared": {
+        "no expiry": {
+            "changed": [
+                "description"
+            ],
+            "title": "Bestaand",
+            "description": null,
+            "priority": "normal",
+            "dueAt": "2026-03-01T12:00:00+00:00"
+        },
+        "expiry": {
+            "changed": [
+                "description"
+            ],
+            "title": "Bestaand",
+            "description": null,
+            "priority": "normal",
+            "dueAt": "2026-03-01T12:00:00+00:00"
+        }
+    },
+    "description null": {
+        "no expiry": {
+            "changed": [
+                "description"
+            ],
+            "title": "Bestaand",
+            "description": null,
+            "priority": "normal",
+            "dueAt": "2026-03-01T12:00:00+00:00"
+        },
+        "expiry": {
+            "changed": [
+                "description"
+            ],
+            "title": "Bestaand",
+            "description": null,
+            "priority": "normal",
+            "dueAt": "2026-03-01T12:00:00+00:00"
+        }
+    },
+    "description object": {
+        "no expiry": {
+            "refused": "A text field takes text."
+        },
+        "expiry": {
+            "refused": "A text field takes text."
+        }
+    },
+    "description same": {
+        "no expiry": {
+            "changed": [],
+            "title": "Bestaand",
+            "description": "Oud",
+            "priority": "normal",
+            "dueAt": "2026-03-01T12:00:00+00:00"
+        },
+        "expiry": {
+            "changed": [],
+            "title": "Bestaand",
+            "description": "Oud",
+            "priority": "normal",
+            "dueAt": "2026-03-01T12:00:00+00:00"
+        }
+    },
+    "due after expiry": {
+        "no expiry": {
+            "changed": [
+                "dueAt"
+            ],
+            "title": "Bestaand",
+            "description": "Oud",
+            "priority": "normal",
+            "dueAt": "2026-07-01T00:00:00+00:00"
+        },
+        "expiry": {
+            "refused": "dueAt '2026-07-01T00:00:00+00:00' lies after expiresAt '2026-06-30T00:00:00+00:00': a task that dies before it is due is a configuration error."
+        }
+    },
+    "due bad date": {
+        "no expiry": {
+            "refused": "Field 'dueAt' does not parse as a date."
+        },
+        "expiry": {
+            "refused": "Field 'dueAt' does not parse as a date."
+        }
+    },
+    "due cleared": {
+        "no expiry": {
+            "changed": [
+                "dueAt"
+            ],
+            "title": "Bestaand",
+            "description": "Oud",
+            "priority": "normal",
+            "dueAt": null
+        },
+        "expiry": {
+            "changed": [
+                "dueAt"
+            ],
+            "title": "Bestaand",
+            "description": "Oud",
+            "priority": "normal",
+            "dueAt": null
+        }
+    },
+    "due date": {
+        "no expiry": {
+            "changed": [
+                "dueAt"
+            ],
+            "title": "Bestaand",
+            "description": "Oud",
+            "priority": "normal",
+            "dueAt": "2026-04-01T00:00:00+00:00"
+        },
+        "expiry": {
+            "changed": [
+                "dueAt"
+            ],
+            "title": "Bestaand",
+            "description": "Oud",
+            "priority": "normal",
+            "dueAt": "2026-04-01T00:00:00+00:00"
+        }
+    },
+    "due garbage after date": {
+        "no expiry": {
+            "refused": "Field 'dueAt' does not parse as a date."
+        },
+        "expiry": {
+            "refused": "Field 'dueAt' does not parse as a date."
+        }
+    },
+    "due null": {
+        "no expiry": {
+            "changed": [
+                "dueAt"
+            ],
+            "title": "Bestaand",
+            "description": "Oud",
+            "priority": "normal",
+            "dueAt": null
+        },
+        "expiry": {
+            "changed": [
+                "dueAt"
+            ],
+            "title": "Bestaand",
+            "description": "Oud",
+            "priority": "normal",
+            "dueAt": null
+        }
+    },
+    "due number": {
+        "no expiry": {
+            "refused": "Field 'dueAt' does not parse as a date."
+        },
+        "expiry": {
+            "refused": "Field 'dueAt' does not parse as a date."
+        }
+    },
+    "due object": {
+        "no expiry": {
+            "refused": "Field 'dueAt' does not parse as a date."
+        },
+        "expiry": {
+            "refused": "Field 'dueAt' does not parse as a date."
+        }
+    },
+    "due on expiry": {
+        "no expiry": {
+            "changed": [
+                "dueAt"
+            ],
+            "title": "Bestaand",
+            "description": "Oud",
+            "priority": "normal",
+            "dueAt": "2026-06-30T00:00:00+00:00"
+        },
+        "expiry": {
+            "changed": [
+                "dueAt"
+            ],
+            "title": "Bestaand",
+            "description": "Oud",
+            "priority": "normal",
+            "dueAt": "2026-06-30T00:00:00+00:00"
+        }
+    },
+    "due same": {
+        "no expiry": {
+            "changed": [],
+            "title": "Bestaand",
+            "description": "Oud",
+            "priority": "normal",
+            "dueAt": "2026-03-01T12:00:00+00:00"
+        },
+        "expiry": {
+            "changed": [],
+            "title": "Bestaand",
+            "description": "Oud",
+            "priority": "normal",
+            "dueAt": "2026-03-01T12:00:00+00:00"
+        }
+    },
+    "due unparseable prefix": {
+        "no expiry": {
+            "refused": "Field 'dueAt' does not parse as a date."
+        },
+        "expiry": {
+            "refused": "Field 'dueAt' does not parse as a date."
+        }
+    },
+    "due with zone": {
+        "no expiry": {
+            "changed": [
+                "dueAt"
+            ],
+            "title": "Bestaand",
+            "description": "Oud",
+            "priority": "normal",
+            "dueAt": "2026-04-01T08:30:00+02:00"
+        },
+        "expiry": {
+            "changed": [
+                "dueAt"
+            ],
+            "title": "Bestaand",
+            "description": "Oud",
+            "priority": "normal",
+            "dueAt": "2026-04-01T08:30:00+02:00"
+        }
+    },
+    "everything": {
+        "no expiry": {
+            "changed": [
+                "title",
+                "description",
+                "priority",
+                "dueAt"
+            ],
+            "title": "Alles",
+            "description": "Nieuwe",
+            "priority": "low",
+            "dueAt": "2026-05-05T00:00:00+00:00"
+        },
+        "expiry": {
+            "changed": [
+                "title",
+                "description",
+                "priority",
+                "dueAt"
+            ],
+            "title": "Alles",
+            "description": "Nieuwe",
+            "priority": "low",
+            "dueAt": "2026-05-05T00:00:00+00:00"
+        }
+    },
+    "first refusal wins": {
+        "no expiry": {
+            "refused": "Field 'title' may not be emptied."
+        },
+        "expiry": {
+            "refused": "Field 'title' may not be emptied."
+        }
+    },
+    "new title": {
+        "no expiry": {
+            "changed": [
+                "title"
+            ],
+            "title": "Nieuw",
+            "description": "Oud",
+            "priority": "normal",
+            "dueAt": "2026-03-01T12:00:00+00:00"
+        },
+        "expiry": {
+            "changed": [
+                "title"
+            ],
+            "title": "Nieuw",
+            "description": "Oud",
+            "priority": "normal",
+            "dueAt": "2026-03-01T12:00:00+00:00"
+        }
+    },
+    "nothing": {
+        "no expiry": {
+            "refused": "An edit changes one or more of title, description, dueAt, priority; refused: nothing to change."
+        },
+        "expiry": {
+            "refused": "An edit changes one or more of title, description, dueAt, priority; refused: nothing to change."
+        }
+    },
+    "null title": {
+        "no expiry": {
+            "refused": "Field 'title' may not be emptied."
+        },
+        "expiry": {
+            "refused": "Field 'title' may not be emptied."
+        }
+    },
+    "number title": {
+        "no expiry": {
+            "changed": [
+                "title"
+            ],
+            "title": "42",
+            "description": "Oud",
+            "priority": "normal",
+            "dueAt": "2026-03-01T12:00:00+00:00"
+        },
+        "expiry": {
+            "changed": [
+                "title"
+            ],
+            "title": "42",
+            "description": "Oud",
+            "priority": "normal",
+            "dueAt": "2026-03-01T12:00:00+00:00"
+        }
+    },
+    "numeric unknown": {
+        "no expiry": {
+            "refused": "An edit changes one or more of title, description, dueAt, priority; refused: 0."
+        },
+        "expiry": {
+            "refused": "An edit changes one or more of title, description, dueAt, priority; refused: 0."
+        }
+    },
+    "priority alias": {
+        "no expiry": {
+            "changed": [
+                "priority"
+            ],
+            "title": "Bestaand",
+            "description": "Oud",
+            "priority": "urgent",
+            "dueAt": "2026-03-01T12:00:00+00:00"
+        },
+        "expiry": {
+            "changed": [
+                "priority"
+            ],
+            "title": "Bestaand",
+            "description": "Oud",
+            "priority": "urgent",
+            "dueAt": "2026-03-01T12:00:00+00:00"
+        }
+    },
+    "priority bad": {
+        "no expiry": {
+            "refused": "Priority 'asap' is on no known scale (low|normal|high|urgent, low|medium|high|critical, or iCal 0-9) and is refused, not coerced."
+        },
+        "expiry": {
+            "refused": "Priority 'asap' is on no known scale (low|normal|high|urgent, low|medium|high|critical, or iCal 0-9) and is refused, not coerced."
+        }
+    },
+    "priority ical": {
+        "no expiry": {
+            "changed": [
+                "priority"
+            ],
+            "title": "Bestaand",
+            "description": "Oud",
+            "priority": "urgent",
+            "dueAt": "2026-03-01T12:00:00+00:00"
+        },
+        "expiry": {
+            "changed": [
+                "priority"
+            ],
+            "title": "Bestaand",
+            "description": "Oud",
+            "priority": "urgent",
+            "dueAt": "2026-03-01T12:00:00+00:00"
+        }
+    },
+    "priority out of range": {
+        "no expiry": {
+            "refused": "Priority '12' is outside the iCal 0-9 range and is refused, not coerced."
+        },
+        "expiry": {
+            "refused": "Priority '12' is outside the iCal 0-9 range and is refused, not coerced."
+        }
+    },
+    "priority same": {
+        "no expiry": {
+            "changed": [],
+            "title": "Bestaand",
+            "description": "Oud",
+            "priority": "normal",
+            "dueAt": "2026-03-01T12:00:00+00:00"
+        },
+        "expiry": {
+            "changed": [],
+            "title": "Bestaand",
+            "description": "Oud",
+            "priority": "normal",
+            "dueAt": "2026-03-01T12:00:00+00:00"
+        }
+    },
+    "same title": {
+        "no expiry": {
+            "changed": [],
+            "title": "Bestaand",
+            "description": "Oud",
+            "priority": "normal",
+            "dueAt": "2026-03-01T12:00:00+00:00"
+        },
+        "expiry": {
+            "changed": [],
+            "title": "Bestaand",
+            "description": "Oud",
+            "priority": "normal",
+            "dueAt": "2026-03-01T12:00:00+00:00"
+        }
+    },
+    "unknown only": {
+        "no expiry": {
+            "refused": "An edit changes one or more of title, description, dueAt, priority; refused: status."
+        },
+        "expiry": {
+            "refused": "An edit changes one or more of title, description, dueAt, priority; refused: status."
+        }
+    },
+    "unknown with known": {
+        "no expiry": {
+            "refused": "An edit changes one or more of title, description, dueAt, priority; refused: owner, status."
+        },
+        "expiry": {
+            "refused": "An edit changes one or more of title, description, dueAt, priority; refused: owner, status."
+        }
+    }
+}

@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\GraphQL;
 
 use GraphQL\Error\Error;
+use OCA\OpenRegister\Service\PropertyWriteCheck;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -29,6 +30,9 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolver;
+use OCA\OpenRegister\Service\GraphQL\GraphQLResolverShaping;
+use OCA\OpenRegister\Service\GraphQL\GraphQLResolverRights;
+use OCA\OpenRegister\Service\GraphQL\GraphQLResolverObjects;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
@@ -118,7 +122,8 @@ class GraphQLResolverMutationGoldenTest extends TestCase {
 
 		$rbac = $this->createMock(PropertyRbacHandler::class);
 		$rbac->method('getUnauthorizedProperties')->willReturnCallback(
-			function (Schema $schema, array $stored, array $input, bool $isCreate): array {
+			function (PropertyWriteCheck $write): array {
+				[$schema, $stored, $input, $isCreate] = [$write->schema, $write->request->object, $write->incoming, $write->request->isCreate];
 				$this->calls[] = ['propertyCheck', ($stored['title'] ?? null), $input, $isCreate];
 				return $this->refused;
 			}
@@ -145,16 +150,22 @@ class GraphQLResolverMutationGoldenTest extends TestCase {
 		$registers->method('findAll')->willReturn([$this->register]);
 
 		return new GraphQLResolver(
-			$getObject,
-			$objects,
-			$permissions,
-			$rbac,
-			$this->createMock(RelationHandler::class),
-			$registers,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(TranslationHandler::class),
-			$this->createMock(AggregationRunner::class),
-			new TimeseriesRequestValidator()
+			new GraphQLResolverObjects(
+				$getObject,
+				$objects,
+				$this->createMock(RelationHandler::class),
+				$registers
+			),
+			new GraphQLResolverRights(
+				$permissions,
+				$rbac
+			),
+			new GraphQLResolverShaping(
+				$this->createMock(TranslationHandler::class),
+				$this->createMock(AggregationRunner::class),
+				new TimeseriesRequestValidator()
+			),
+			$this->createMock(LoggerInterface::class)
 		);
 	}//end resolver()
 

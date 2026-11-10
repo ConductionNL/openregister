@@ -9,7 +9,7 @@
  */
 
 import { translatePlural as n, translate as t } from '@nextcloud/l10n'
-import { createApp, reactive } from 'vue'
+import { createApp, h, reactive } from 'vue'
 import ExtractionTab from './components/files-sidebar/ExtractionTab.vue'
 import RegisterObjectsTab from './components/files-sidebar/RegisterObjectsTab.vue'
 import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
@@ -70,10 +70,11 @@ document.addEventListener('DOMContentLoaded', () => {
 				}
 
 				el._registerObjectsProps = reactive({ fileId: fileInfo.id })
-				el._registerObjectsApp = createApp(
-					RegisterObjectsTab,
-					el._registerObjectsProps,
-				)
+				// Rendered through a root render function: `createApp(Comp, props)`
+				// copies a reactive props object, so `update()` would never reach it.
+				el._registerObjectsApp = createApp({
+					render: () => h(RegisterObjectsTab, el._registerObjectsProps),
+				})
 				// ⚠️ Vue 2's `Vue.mixin()` was GLOBAL, so main.js's single call
 				// reached every instance on the page. Vue 3's `app.mixin()` is
 				// per-app — each entry bundle must install `t`/`n` itself.
@@ -114,7 +115,9 @@ document.addEventListener('DOMContentLoaded', () => {
 				}
 
 				el._extractionProps = reactive({ fileId: fileInfo.id })
-				el._extractionApp = createApp(ExtractionTab, el._extractionProps)
+				el._extractionApp = createApp({
+					render: () => h(ExtractionTab, el._extractionProps),
+				})
 				el._extractionApp.mixin({ methods: { t, n } })
 				el._extractionApp.mount(el)
 			},

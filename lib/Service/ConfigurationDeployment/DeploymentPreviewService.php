@@ -48,7 +48,7 @@ use OCA\OpenRegister\Db\ConfigurationDraftSet;
 /**
  * The diff a deployment would apply.
  */
-class DeploymentPreviewService {
+class DeploymentPreviewService implements DeploymentPreviewServiceInterface {
 
 	/**
 	 * The address is not in the declared vocabulary.
@@ -96,35 +96,59 @@ class DeploymentPreviewService {
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function preview(ConfigurationDraftSet $set): array {
-		$changes = [];
-		$unchanged = [];
-		$refusals = [];
-
+		$groups = ['changes' => [], 'unchanged' => [], 'refusals' => []];
 		foreach ($this->drafts->draftsIn(setUuid: (string)$set->getUuid()) as $draft) {
 			$verdict = $this->judge(draft: $draft);
-
-			match ($verdict['status']) {
-				'refused' => $refusals[] = $verdict,
-				'unchanged' => $unchanged[] = $verdict,
-				default => $changes[] = $verdict,
-			};
+			$groups[self::groupOf(status: $verdict['status'])][] = $verdict;
 		}
 
+		return $this->previewOf(set: $set, groups: $groups);
+
+	}//end preview()
+
+	/**
+	 * The preview group a verdict belongs in.
+	 *
+	 * @param string $status The verdict's status.
+	 *
+	 * @return string `refusals`, `unchanged` or `changes`.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	private static function groupOf(string $status): string {
+		return match ($status) {
+			'refused' => 'refusals',
+			'unchanged' => 'unchanged',
+			default => 'changes',
+		};
+
+	}//end groupOf()
+
+	/**
+	 * The preview of a set: its verdicts by group, their counts, and whether it can deploy.
+	 *
+	 * Whether a second approver is required comes from the draft service.
+	 *
+	 * @param ConfigurationDraftSet                                   $set    The set.
+	 * @param array{changes: array, unchanged: array, refusals: array} $groups The verdicts by group.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	private function previewOf(ConfigurationDraftSet $set, array $groups): array {
+		['changes' => $changes, 'unchanged' => $unchanged, 'refusals' => $refusals] = $groups;
 		return [
 			'set' => $set->jsonSerialize(),
 			'changes' => $changes,
 			'unchanged' => $unchanged,
 			'refusals' => $refusals,
-			'counts' => [
-				'toChange' => count($changes),
-				'unchanged' => count($unchanged),
-				'refused' => count($refusals),
-			],
+			'counts' => ['toChange' => count($changes), 'unchanged' => count($unchanged), 'refused' => count($refusals)],
 			'fourEyesRequired' => $this->drafts->requiresFourEyes(),
 			'deployable' => ($refusals === [] && $changes !== []),
 		];
 
-	}//end preview()
+	}//end previewOf()
 
 	/**
 	 * The refusals a set carries, if any.
@@ -150,88 +174,128 @@ class DeploymentPreviewService {
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	private function judge(ConfigurationDraft $draft): array {
-		$layer = (string)$draft->getLayer();
-		$layerRef = $draft->getLayerRef();
-		$configKey = (string)$draft->getConfigKey();
-		$removes = ($draft->getRemoves() ?? false);
-		$proposed = $draft->readDraftValue();
-
-		$verdict = [
-			'draft' => $draft->getUuid(),
-			'layer' => $layer,
-			'layerRef' => $layerRef,
-			'key' => $configKey,
-			'removes' => $removes,
-			'from' => $draft->readBaseValue(),
-			'to' => match ($removes) {
-				true => null,
-				false => $proposed,
-			},
-		];
-
-		$keyRefusal = $this->registry->refusalFor(layer: $layer, configKey: $configKey);
-		if ($keyRefusal !== null) {
-			return array_merge(
-				$verdict,
-				['status' => 'refused', 'refusal' => self::REFUSAL_UNKNOWN_KEY, 'reason' => $keyRefusal]
-			);
+		$verdict = self::draftVerdict(draft: $draft);
+		$refusal = $this->declarationRefusal(verdict: $verdict);
+		if ($refusal !== null) {
+			return array_merge($verdict, $refusal);
 		}
 
-		if ($removes === false) {
-			$valueRefusal = $this->registry->valueRefusalFor(configKey: $configKey, value: $proposed);
-			if ($valueRefusal !== null) {
-				return array_merge(
-					$verdict,
-					['status' => 'refused', 'refusal' => self::REFUSAL_INVALID_VALUE, 'reason' => $valueRefusal]
-				);
-			}
-		}
-
-		$live = $this->store->read(layer: $layer, layerRef: $layerRef, configKey: $configKey);
+		$live = $this->store->read(layer: $verdict['layer'], layerRef: $verdict['layerRef'], configKey: $verdict['key']);
 		$verdict['from'] = $live->value;
 		$verdict['fromPresent'] = $live->present;
 
 		if ($this->hasMoved(draft: $draft, live: $live) === true) {
-			return array_merge(
-				$verdict,
-				[
-					'status' => 'refused',
-					'refusal' => self::REFUSAL_STALE_DRAFT,
-					'reason' => sprintf(
-						'"%s" has changed since this draft was taken; deploying it would discard that change',
-						$configKey
-					),
-				]
-			);
+			return array_merge($verdict, self::staleRefusal(configKey: $verdict['key']));
+		}
+
+		return array_merge($verdict, ['status' => $this->liveStatus(live: $live, verdict: $verdict)]);
+
+	}//end judge()
+
+	/**
+	 * The verdict fields a pending value carries itself: its address, its base and its proposal.
+	 *
+	 * @param ConfigurationDraft $draft The pending value.
+	 *
+	 * @return array{draft: ?string, layer: string, layerRef: ?string, key: string, removes: bool, from: mixed, to: mixed}
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	private static function draftVerdict(ConfigurationDraft $draft): array {
+		$removes = ($draft->getRemoves() ?? false);
+		return [
+			'draft' => $draft->getUuid(),
+			'layer' => (string)$draft->getLayer(),
+			'layerRef' => $draft->getLayerRef(),
+			'key' => (string)$draft->getConfigKey(),
+			'removes' => $removes,
+			'from' => $draft->readBaseValue(),
+			'to' => match ($removes) {
+				true => null,
+				false => $draft->readDraftValue(),
+			},
+		];
+
+	}//end draftVerdict()
+
+	/**
+	 * The refusal of an undeclared key, or of a value the key does not accept; null when the declaration allows it.
+	 *
+	 * A removal carries no value, so only its key is checked.
+	 *
+	 * @param array<string, mixed> $verdict The pending value's verdict fields.
+	 *
+	 * @return array{status: string, refusal: string, reason: string}|null
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	private function declarationRefusal(array $verdict): ?array {
+		$keyRefusal = $this->registry->refusalFor(layer: $verdict['layer'], configKey: $verdict['key']);
+		if ($keyRefusal !== null) {
+			return ['status' => 'refused', 'refusal' => self::REFUSAL_UNKNOWN_KEY, 'reason' => $keyRefusal];
+		}
+
+		if ($verdict['removes'] === true) {
+			return null;
+		}
+
+		$valueRefusal = $this->registry->valueRefusalFor(configKey: $verdict['key'], value: $verdict['to']);
+		if ($valueRefusal === null) {
+			return null;
+		}
+
+		return ['status' => 'refused', 'refusal' => self::REFUSAL_INVALID_VALUE, 'reason' => $valueRefusal];
+
+	}//end declarationRefusal()
+
+	/**
+	 * The refusal of a draft whose live value moved since it was taken.
+	 *
+	 * @param string $configKey The configuration key.
+	 *
+	 * @return array{status: string, refusal: string, reason: string}
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	private static function staleRefusal(string $configKey): array {
+		return [
+			'status' => 'refused',
+			'refusal' => self::REFUSAL_STALE_DRAFT,
+			'reason' => sprintf('"%s" has changed since this draft was taken; deploying it would discard that change', $configKey),
+		];
+
+	}//end staleRefusal()
+
+	/**
+	 * What an allowed pending value does to the live value: create, change, remove, or nothing.
+	 *
+	 * @param ConfigurationSnapshot $live    The live value now.
+	 * @param array<string, mixed>  $verdict The pending value's verdict fields: `removes` and the proposed `to`.
+	 *
+	 * @return string `create`, `change`, `remove` or `unchanged`.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	private function liveStatus(ConfigurationSnapshot $live, array $verdict): string {
+		$removes = (bool)$verdict['removes'];
+		if ($live->present === false) {
+			return match ($removes) {
+				true => 'unchanged',
+				false => 'create',
+			};
 		}
 
 		if ($removes === true) {
-			return array_merge(
-				$verdict,
-				[
-					'status' => match ($live->present) {
-						true => 'remove',
-						false => 'unchanged',
-					},
-				]
-			);
+			return 'remove';
 		}
 
-		if ($live->present === true && $this->sameValue(left: $live->value, right: $proposed) === true) {
-			return array_merge($verdict, ['status' => 'unchanged']);
+		if ($this->sameValue(left: $live->value, right: $verdict['to']) === true) {
+			return 'unchanged';
 		}
 
-		return array_merge(
-			$verdict,
-			[
-				'status' => match ($live->present) {
-					true => 'change',
-					false => 'create',
-				},
-			]
-		);
+		return 'change';
 
-	}//end judge()
+	}//end liveStatus()
 
 	/**
 	 * Whether the live value moved since the draft recorded its base.

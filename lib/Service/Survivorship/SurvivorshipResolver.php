@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Survivorship;
 
 use DateTimeImmutable;
+use Generator;
 use Throwable;
 
 /**
@@ -49,7 +50,7 @@ use Throwable;
  *   contract across two classes for a step that is intrinsically the last
  *   stage of the same pipeline (ADR-045 #E design.md D1/D2).
  */
-class SurvivorshipResolver {
+class SurvivorshipResolver implements SurvivorshipResolverInterface {
 	/**
 	 * Default ordered tier list (weakest first) when the config omits one.
 	 *
@@ -80,12 +81,10 @@ class SurvivorshipResolver {
 	 * abort the whole resolution. Likewise a malformed override map (or
 	 * malformed override entry) is skipped without throwing.
 	 *
-	 * @param string $entityType Entity type (passed through to the trust lookup; never hardcoded).
 	 * @param array<int, array<string, mixed>> $sourceRecords Linked source records.
 	 * @param array<string, mixed> $config The `x-openregister-survivorship` annotation.
-	 * @param array<int, array<string, mixed>> $trustRows Candidate trust-configuration rows.
-	 * @param TrustTierResolver $trustResolver Pure trust-tier lookup + decay engine.
-	 * @param DateTimeImmutable $asOf Reference instant for effectiveFrom + decay.
+	 * @param SurvivorshipTrustLookup $trust Entity type (never hardcoded), trust rows, trust engine
+	 *                                       and reference instant for effectiveFrom + decay.
 	 * @param mixed $overrides Optional per-object attribute-override map
 	 *                         (`attribute => {value, overriddenBy, rationale?}`
 	 *                         or a bare `attribute => value` shorthand);
@@ -96,43 +95,49 @@ class SurvivorshipResolver {
 	 * @spec openspec/changes/mdm-survivorship-override/tasks.md#1.1
 	 */
 	public function resolveGoldenRecord(
-		string $entityType,
 		array $sourceRecords,
 		array $config,
-		array $trustRows,
-		TrustTierResolver $trustResolver,
-		DateTimeImmutable $asOf,
+		SurvivorshipTrustLookup $trust,
 		mixed $overrides = null,
 	): array {
-		$tierOrder = $this->tierOrder(config: $config);
-		$defaultTier = (string)($config['defaultTier'] ?? self::DEFAULT_TIER);
-		$discardTier = (string)($config['discardTier'] ?? self::DEFAULT_DISCARD_TIER);
-		$anchorField = (string)($config['freshnessAnchorField'] ?? '');
-
-		$candidates = $this->collectCandidates(
-			entityType: $entityType,
-			sourceRecords: $sourceRecords,
-			tierOrder: $tierOrder,
-			defaultTier: $defaultTier,
-			discardTier: $discardTier,
-			anchorField: $anchorField,
-			trustRows: $trustRows,
-			trustResolver: $trustResolver,
-			asOf: $asOf
+		$policy = new SurvivorshipTierPolicy(
+			tierOrder: $this->tierOrder(config: $config),
+			defaultTier: (string)($config['defaultTier'] ?? self::DEFAULT_TIER),
+			discardTier: (string)($config['discardTier'] ?? self::DEFAULT_DISCARD_TIER),
+			anchorField: (string)($config['freshnessAnchorField'] ?? '')
 		);
 
-		$overrideMap = $this->normaliseOverrides(overrides: $overrides);
+		$run = new SurvivorshipRun(policy: $policy, trust: $trust);
 
+		$candidates  = $this->collectCandidates(sourceRecords: $sourceRecords, run: $run);
+		$overrideMap = $this->normaliseOverrides(overrides: $overrides);
+		$result      = $this->tierWinners(candidates: $candidates, run: $run);
+
+		return $this->withOverrides(result: $result, overrideMap: $overrideMap);
+	}//end resolveGoldenRecord()
+
+	/**
+	 * The golden record and provenance the tier selection alone gives.
+	 *
+	 * @param array<string, array<int, array<string, mixed>>> $candidates Attribute => candidate options.
+	 * @param SurvivorshipRun                                 $run        The run's tiers and trust lookup.
+	 *
+	 * @return array{goldenRecord: array<string, mixed>, attributeProvenance: array<string, mixed>}
+	 *
+	 * @spec openspec/changes/mdm-survivorship-engine/tasks.md#2.1
+	 */
+	private function tierWinners(array $candidates, SurvivorshipRun $run): array {
 		$goldenRecord = [];
-		$provenance = [];
+		$provenance   = [];
+
 		foreach ($candidates as $attribute => $options) {
-			$winner = $this->pickWinner(options: $options, tierOrder: $tierOrder, trustResolver: $trustResolver);
+			$winner = $this->pickWinner(options: $options, run: $run);
 			if ($winner === null) {
 				continue;
 			}
 
 			$goldenRecord[$attribute] = $winner['value'];
-			$provenance[$attribute] = [
+			$provenance[$attribute]   = [
 				'value' => $winner['value'],
 				'sourceSystem' => $winner['sourceSystem'],
 				'trustTier' => $winner['trustTier'],
@@ -140,11 +145,29 @@ class SurvivorshipResolver {
 			];
 		}
 
-		// Overrides short-circuit tier selection unconditionally — an override
-		// can also populate an attribute no source supplies at all.
+		return [
+			'goldenRecord' => $goldenRecord,
+			'attributeProvenance' => $provenance,
+		];
+	}//end tierWinners()
+
+	/**
+	 * The result with every override applied over the tier-selected values.
+	 *
+	 * Overrides short-circuit tier selection unconditionally: an override can
+	 * also populate an attribute no source supplies at all.
+	 *
+	 * @param array{goldenRecord: array<string, mixed>, attributeProvenance: array<string, mixed>} $result      The tier selection.
+	 * @param array<string, array{value: mixed, overriddenBy: string, rationale: string|null}>      $overrideMap The normalised overrides.
+	 *
+	 * @return array{goldenRecord: array<string, mixed>, attributeProvenance: array<string, mixed>}
+	 *
+	 * @spec openspec/changes/mdm-survivorship-override/tasks.md#1.1
+	 */
+	private function withOverrides(array $result, array $overrideMap): array {
 		foreach ($overrideMap as $attribute => $override) {
-			$goldenRecord[$attribute] = $override['value'];
-			$provenance[$attribute] = [
+			$result['goldenRecord'][$attribute]        = $override['value'];
+			$result['attributeProvenance'][$attribute] = [
 				'value' => $override['value'],
 				'override' => true,
 				'overriddenBy' => $override['overriddenBy'],
@@ -152,11 +175,8 @@ class SurvivorshipResolver {
 			];
 		}
 
-		return [
-			'goldenRecord' => $goldenRecord,
-			'attributeProvenance' => $provenance,
-		];
-	}//end resolveGoldenRecord()
+		return $result;
+	}//end withOverrides()
 
 	/**
 	 * Normalise a raw override map into `attribute => {value, overriddenBy,
@@ -178,24 +198,38 @@ class SurvivorshipResolver {
 
 		$clean = [];
 		foreach ($overrides as $attribute => $entry) {
-			if (is_string($attribute) === false || $attribute === '') {
-				continue;
-			}
-
-			try {
-				$normalised = $this->normaliseOverrideEntry(entry: $entry);
-			} catch (Throwable) {
-				// A malformed override entry must never abort resolution of the rest.
-				continue;
-			}
-
+			$normalised = $this->overrideFor(attribute: $attribute, entry: $entry);
 			if ($normalised !== null) {
 				$clean[$attribute] = $normalised;
 			}
-		}//end foreach
+		}
 
 		return $clean;
 	}//end normaliseOverrides()
+
+	/**
+	 * One raw override entry, normalised, or null when its key or entry is
+	 * malformed and it is silently dropped.
+	 *
+	 * @param mixed $attribute Raw override key (untrusted).
+	 * @param mixed $entry     Raw override entry (untrusted).
+	 *
+	 * @return array{value: mixed, overriddenBy: string, rationale: string|null}|null
+	 *
+	 * @spec openspec/changes/mdm-survivorship-override/tasks.md#1.1
+	 */
+	private function overrideFor(mixed $attribute, mixed $entry): ?array {
+		if (is_string($attribute) === false || $attribute === '') {
+			return null;
+		}
+
+		try {
+			return $this->normaliseOverrideEntry(entry: $entry);
+		} catch (Throwable) {
+			// A malformed override entry must never abort resolution of the rest.
+			return null;
+		}
+	}//end overrideFor()
 
 	/**
 	 * Normalise a single override entry, accepting either the canonical
@@ -211,20 +245,7 @@ class SurvivorshipResolver {
 	 */
 	private function normaliseOverrideEntry(mixed $entry): ?array {
 		if (is_array($entry) === true) {
-			if (array_key_exists('value', $entry) === false || $this->isPresent(value: $entry['value']) === false) {
-				return null;
-			}
-
-			$rationale = null;
-			if (($entry['rationale'] ?? null) !== null) {
-				$rationale = (string)$entry['rationale'];
-			}
-
-			return [
-				'value' => $entry['value'],
-				'overriddenBy' => (string)($entry['overriddenBy'] ?? ''),
-				'rationale' => $rationale,
-			];
+			return $this->normaliseCanonicalOverride(entry: $entry);
 		}
 
 		if ($this->isPresent(value: $entry) === true) {
@@ -239,139 +260,207 @@ class SurvivorshipResolver {
 	}//end normaliseOverrideEntry()
 
 	/**
+	 * Normalise a canonical `{value, overriddenBy?, rationale?}` override
+	 * entry; null when its value is not present.
+	 *
+	 * @param array<mixed> $entry Raw override entry (untrusted; may be malformed).
+	 *
+	 * @return array{value: mixed, overriddenBy: string, rationale: string|null}|null
+	 *
+	 * @spec openspec/changes/mdm-survivorship-override/tasks.md#1.1
+	 */
+	private function normaliseCanonicalOverride(array $entry): ?array {
+		if (array_key_exists('value', $entry) === false || $this->isPresent(value: $entry['value']) === false) {
+			return null;
+		}
+
+		$rationale = null;
+		if (($entry['rationale'] ?? null) !== null) {
+			$rationale = (string)$entry['rationale'];
+		}
+
+		return [
+			'value' => $entry['value'],
+			'overriddenBy' => (string)($entry['overriddenBy'] ?? ''),
+			'rationale' => $rationale,
+		];
+	}//end normaliseCanonicalOverride()
+
+	/**
 	 * Collect, per attribute, the competing candidate values across all
 	 * non-withdrawn source records with a non-empty value for that attribute.
 	 *
-	 * @param string $entityType Entity type.
 	 * @param array<int, mixed> $sourceRecords Linked source records; entries are
 	 *                                         untrusted external data and are
-	 *                                         re-validated as arrays below.
-	 * @param array<int, string> $tierOrder Ordered tier names, weakest first.
-	 * @param string $defaultTier Fallback tier for an unmatched tuple.
-	 * @param string $discardTier Tier excluded from competing.
-	 * @param string $anchorField Field holding the freshness anchor date.
-	 * @param array<int, array<string, mixed>> $trustRows Candidate trust-configuration rows.
-	 * @param TrustTierResolver $trustResolver Trust lookup + decay engine.
-	 * @param DateTimeImmutable $asOf Reference instant.
+	 *                                         re-validated as arrays.
+	 * @param SurvivorshipRun   $run           The run's tiers and trust lookup.
 	 *
 	 * @return array<string, array<int, array<string, mixed>>> Attribute => list of candidate options.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Sequential per-record/per-attribute guards
-	 *   (withdrawn, malformed, empty value, discard tier) each independently skip a candidate;
-	 *   splitting them further would scatter one linear collection pass across helpers.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Same rationale — flat sequential guards.
+	 * @spec openspec/changes/mdm-survivorship-engine/tasks.md#2.1
 	 */
-	private function collectCandidates(
-		string $entityType,
-		array $sourceRecords,
-		array $tierOrder,
-		string $defaultTier,
-		string $discardTier,
-		string $anchorField,
-		array $trustRows,
-		TrustTierResolver $trustResolver,
-		DateTimeImmutable $asOf,
-	): array {
+	private function collectCandidates(array $sourceRecords, SurvivorshipRun $run): array {
 		$candidates = [];
-
 		foreach ($sourceRecords as $record) {
 			try {
-				if (is_array($record) === false) {
-					continue;
+				foreach ($this->recordCandidates(record: $record, run: $run) as $attribute => $candidate) {
+					$candidates[$attribute][] = $candidate;
 				}
-
-				if (($record['withdrawn'] ?? false) === true) {
-					continue;
-				}
-
-				$values = ($record['values'] ?? $record['mappedAttributes'] ?? null);
-				if (is_array($values) === false) {
-					continue;
-				}
-
-				$sourceSystem = (string)($record['sourceSystem'] ?? '');
-
-				$anchorValue = null;
-				if ($anchorField !== '') {
-					$anchorValue = ($record[$anchorField] ?? null);
-				}
-
-				$anchor = $this->parseDate(value: $anchorValue);
-
-				foreach ($values as $attribute => $value) {
-					if ($this->isPresent(value: $value) === false) {
-						continue;
-					}
-
-					$attribute = (string)$attribute;
-
-					$tier = $trustResolver->resolveTier(
-						entityType: $entityType,
-						attribute: $attribute,
-						sourceSystem: $sourceSystem,
-						trustRows: $trustRows,
-						asOf: $asOf
-					);
-
-					$matched = ($tier !== null);
-					if ($matched === false) {
-						$tier = $defaultTier;
-					}
-
-					$decayDays = null;
-					if ($matched === true) {
-						$decayDays = $this->decayDaysFor(
-							trustRows: $trustRows,
-							entityType: $entityType,
-							attribute: $attribute,
-							sourceSystem: $sourceSystem
-						);
-					}
-
-					$effectiveTier = $trustResolver->applyFreshnessDecay(
-						tier: $tier,
-						tierOrder: $tierOrder,
-						freshnessDecayDays: $decayDays,
-						anchor: $anchor,
-						asOf: $asOf
-					);
-
-					if ($effectiveTier === $discardTier) {
-						continue;
-					}
-
-					$candidates[$attribute][] = [
-						'value' => $value,
-						'sourceSystem' => $sourceSystem,
-						'trustTier' => $effectiveTier,
-						'lastUpdated' => ($anchor?->format(DATE_ATOM) ?? ''),
-					];
-				}//end foreach
 			} catch (Throwable) {
-				// A malformed source record must never abort resolution of the rest.
+				// A malformed source record must never abort resolution of the
+				// rest; what it contributed before failing stays collected.
 				continue;
-			}//end try
-		}//end foreach
+			}
+		}
 
 		return $candidates;
 	}//end collectCandidates()
+
+	/**
+	 * One source record's competing values, yielded one at a time keyed by
+	 * attribute, so what a record yielded before failing stays collected.
+	 *
+	 * @param mixed           $record One source record (untrusted).
+	 * @param SurvivorshipRun $run    The run's tiers and trust lookup.
+	 *
+	 * @return Generator<string, array<string, mixed>> Attribute => candidate option.
+	 *
+	 * @spec openspec/changes/mdm-survivorship-engine/tasks.md#2.1
+	 */
+	private function recordCandidates(mixed $record, SurvivorshipRun $run): Generator {
+		$values = $this->competingValues(record: $record);
+		if ($values === null) {
+			return;
+		}
+
+		$source = new SurvivorshipSource(
+			sourceSystem: (string)($record['sourceSystem'] ?? ''),
+			anchor: $this->recordAnchor(record: $record, anchorField: $run->policy->anchorField)
+		);
+
+		foreach ($values as $attribute => $value) {
+			if ($this->isPresent(value: $value) === false) {
+				continue;
+			}
+
+			$attribute = (string)$attribute;
+			$tier      = $this->effectiveTier(claim: new AttributeClaim(attribute: $attribute, source: $source), run: $run);
+			if ($tier === $run->policy->discardTier) {
+				continue;
+			}
+
+			yield $attribute => [
+				'value' => $value,
+				'sourceSystem' => $source->sourceSystem,
+				'trustTier' => $tier,
+				'lastUpdated' => ($source->anchor?->format(DATE_ATOM) ?? ''),
+			];
+		}
+	}//end recordCandidates()
+
+	/**
+	 * The values a source record competes with, null for a non-array or
+	 * withdrawn record or one without a values map.
+	 *
+	 * @param mixed $record One source record (untrusted).
+	 *
+	 * @return array<mixed>|null The record's `values` (or `mappedAttributes`).
+	 *
+	 * @spec openspec/changes/mdm-survivorship-engine/tasks.md#2.1
+	 */
+	private function competingValues(mixed $record): ?array {
+		if (is_array($record) === false || ($record['withdrawn'] ?? false) === true) {
+			return null;
+		}
+
+		$values = ($record['values'] ?? $record['mappedAttributes'] ?? null);
+		if (is_array($values) === false) {
+			return null;
+		}
+
+		return $values;
+	}//end competingValues()
+
+	/**
+	 * The freshness anchor date of a record, null without an anchor field or a readable date.
+	 *
+	 * @param array<string, mixed> $record      The source record.
+	 * @param string               $anchorField Field holding the freshness anchor date.
+	 *
+	 * @return DateTimeImmutable|null The anchor.
+	 *
+	 * @spec openspec/changes/mdm-survivorship-engine/tasks.md#2.1
+	 */
+	private function recordAnchor(array $record, string $anchorField): ?DateTimeImmutable {
+		$anchorValue = null;
+		if ($anchorField !== '') {
+			$anchorValue = ($record[$anchorField] ?? null);
+		}
+
+		return $this->parseDate(value: $anchorValue);
+	}//end recordAnchor()
+
+	/**
+	 * The tier one source's value of one attribute competes at, after freshness decay.
+	 *
+	 * @param AttributeClaim  $claim The attribute and the source supplying it.
+	 * @param SurvivorshipRun $run   The run's tiers and trust lookup.
+	 *
+	 * @return string The effective tier.
+	 *
+	 * @spec openspec/changes/mdm-survivorship-engine/tasks.md#2.1
+	 */
+	private function effectiveTier(AttributeClaim $claim, SurvivorshipRun $run): string {
+		$trust    = $run->trust;
+		$source   = $claim->source;
+		$tuple    = new TrustTuple(entityType: $trust->entityType, attribute: $claim->attribute, sourceSystem: $source->sourceSystem);
+		$baseline = $this->baselineTier(tuple: $tuple, run: $run);
+
+		return $trust->trustResolver->applyFreshnessDecay(
+			position: new TierPosition(tier: $baseline['tier'], tierOrder: $run->policy->tierOrder),
+			freshness: new SourceFreshness(decayDays: $baseline['decayDays'], anchor: $source->anchor, asOf: $trust->asOf)
+		);
+	}//end effectiveTier()
+
+	/**
+	 * The tier one tuple competes at before freshness decay, and its decay window.
+	 *
+	 * A tuple with no trust row takes the default tier and does not decay.
+	 *
+	 * @param TrustTuple      $tuple The (entityType, attribute, sourceSystem) tuple.
+	 * @param SurvivorshipRun $run   The run's tiers and trust lookup.
+	 *
+	 * @return array{tier: string, decayDays: int|null}
+	 *
+	 * @spec openspec/changes/mdm-survivorship-engine/tasks.md#2.1
+	 */
+	private function baselineTier(TrustTuple $tuple, SurvivorshipRun $run): array {
+		$trust = $run->trust;
+		$tier  = $trust->trustResolver->resolveTier(tuple: $tuple, trustRows: $trust->trustRows, asOf: $trust->asOf);
+
+		if ($tier === null) {
+			return ['tier' => $run->policy->defaultTier, 'decayDays' => null];
+		}
+
+		return ['tier' => $tier, 'decayDays' => $this->decayDaysFor(trustRows: $trust->trustRows, tuple: $tuple)];
+	}//end baselineTier()
 
 	/**
 	 * Pick the winning candidate for one attribute: highest tier rank, then
 	 * (on a tie) the most recently updated source, compared as a parsed date.
 	 *
 	 * @param array<int, array<string, mixed>> $options Candidate options for one attribute.
-	 * @param array<int, string> $tierOrder Ordered tier names, weakest first.
-	 * @param TrustTierResolver $trustResolver Trust lookup + decay engine (for tierRank).
+	 * @param SurvivorshipRun $run The run's tiers and trust engine (for tierRank).
 	 *
 	 * @return array<string, mixed>|null The winning candidate, or null when none are eligible.
 	 *
 	 * @spec openspec/changes/mdm-survivorship-engine/tasks.md#2.1
 	 */
-	private function pickWinner(array $options, array $tierOrder, TrustTierResolver $trustResolver): ?array {
-		$winner = null;
-		$winnerRank = -1;
-		$winnerDate = null;
+	private function pickWinner(array $options, SurvivorshipRun $run): ?array {
+		$trustResolver = $run->trust->trustResolver;
+		$tierOrder     = $run->policy->tierOrder;
+		$winner   = null;
+		$standing = new CandidateStanding(rank: -1, date: null);
 
 		foreach ($options as $option) {
 			$rank = $trustResolver->tierRank(tier: (string)$option['trustTier'], tierOrder: $tierOrder);
@@ -379,23 +468,32 @@ class SurvivorshipResolver {
 				continue;
 			}
 
-			$date = $this->parseDate(value: ($option['lastUpdated'] ?? null));
-
-			if ($winner === null || $rank > $winnerRank) {
-				$winner = $option;
-				$winnerRank = $rank;
-				$winnerDate = $date;
-				continue;
+			$candidate = new CandidateStanding(rank: $rank, date: $this->parseDate(value: ($option['lastUpdated'] ?? null)));
+			if ($this->displaces(candidate: $candidate, winner: $standing) === true) {
+				$winner   = $option;
+				$standing = $candidate;
 			}
-
-			if ($rank === $winnerRank && $this->isMoreRecent(candidate: $date, current: $winnerDate) === true) {
-				$winner = $option;
-				$winnerDate = $date;
-			}
-		}//end foreach
+		}
 
 		return $winner;
 	}//end pickWinner()
+
+	/**
+	 * Whether an eligible candidate displaces the current winner: a higher
+	 * tier rank, or (on a tie) a strictly more recent date. With no winner
+	 * yet the winner rank is -1, which every eligible rank (>= 0) beats.
+	 *
+	 * @param CandidateStanding $candidate The candidate's tier rank (>= 0) and parsed date.
+	 * @param CandidateStanding $winner    The current winner's standing, rank -1 without a winner.
+	 *
+	 * @return bool True when the candidate becomes the winner.
+	 *
+	 * @spec openspec/changes/mdm-survivorship-engine/tasks.md#2.1
+	 */
+	private function displaces(CandidateStanding $candidate, CandidateStanding $winner): bool {
+		return $candidate->rank > $winner->rank
+			|| ($candidate->rank === $winner->rank && $this->isMoreRecent(candidate: $candidate->date, current: $winner->date) === true);
+	}//end displaces()
 
 	/**
 	 * Compare two (possibly absent) parsed dates chronologically. An absent
@@ -430,22 +528,13 @@ class SurvivorshipResolver {
 	 * @param array<int, mixed> $trustRows Candidate trust-configuration rows; entries are
 	 *                                     untrusted external data and are re-validated as
 	 *                                     arrays below.
-	 * @param string $entityType Entity type to match.
-	 * @param string $attribute Attribute to match.
-	 * @param string $sourceSystem Source system to match.
+	 * @param TrustTuple $tuple The (entityType, attribute, sourceSystem) tuple to match.
 	 *
 	 * @return int|null The decay window in days, or null when undeclared/unmatched.
 	 */
-	private function decayDaysFor(array $trustRows, string $entityType, string $attribute, string $sourceSystem): ?int {
+	private function decayDaysFor(array $trustRows, TrustTuple $tuple): ?int {
 		foreach ($trustRows as $row) {
-			if (is_array($row) === false) {
-				continue;
-			}
-
-			if ((string)($row['entityType'] ?? '') !== $entityType
-				|| (string)($row['attribute'] ?? '') !== $attribute
-				|| (string)($row['sourceSystem'] ?? '') !== $sourceSystem
-			) {
+			if ($this->rowMatchesTuple(row: $row, tuple: $tuple) === false) {
 				continue;
 			}
 
@@ -457,6 +546,25 @@ class SurvivorshipResolver {
 
 		return null;
 	}//end decayDaysFor()
+
+	/**
+	 * Whether a trust row is an array matching the tuple on entity type,
+	 * attribute and source system.
+	 *
+	 * @param mixed      $row   Candidate trust row (untrusted).
+	 * @param TrustTuple $tuple The tuple to match.
+	 *
+	 * @return bool True when the row matches.
+	 */
+	private function rowMatchesTuple(mixed $row, TrustTuple $tuple): bool {
+		if (is_array($row) === false) {
+			return false;
+		}
+
+		return (string)($row['entityType'] ?? '') === $tuple->entityType
+			&& (string)($row['attribute'] ?? '') === $tuple->attribute
+			&& (string)($row['sourceSystem'] ?? '') === $tuple->sourceSystem;
+	}//end rowMatchesTuple()
 
 	/**
 	 * Resolve the config's `tierOrder`, falling back to the default when
@@ -472,6 +580,22 @@ class SurvivorshipResolver {
 			return self::DEFAULT_TIER_ORDER;
 		}
 
+		$clean = $this->namedTiers(declared: $declared);
+		if (count($clean) === 0) {
+			return self::DEFAULT_TIER_ORDER;
+		}
+
+		return $clean;
+	}//end tierOrder()
+
+	/**
+	 * The non-empty string entries of a declared tier list, in order.
+	 *
+	 * @param array<mixed> $declared The declared `tierOrder`.
+	 *
+	 * @return array<int, string> The usable tier names.
+	 */
+	private function namedTiers(array $declared): array {
 		$clean = [];
 		foreach ($declared as $tier) {
 			if (is_string($tier) === true && $tier !== '') {
@@ -479,12 +603,8 @@ class SurvivorshipResolver {
 			}
 		}
 
-		if (count($clean) === 0) {
-			return self::DEFAULT_TIER_ORDER;
-		}
-
 		return $clean;
-	}//end tierOrder()
+	}//end namedTiers()
 
 	/**
 	 * Determine whether a value counts as present (non-null, non-empty-string).

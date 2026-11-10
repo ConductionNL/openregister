@@ -44,18 +44,16 @@ final class DictionaryExpansion implements JsonSerializable {
 	/**
 	 * Constructor.
 	 *
-	 * @param string   $term     The term the search actually runs.
-	 * @param string   $original The term as typed.
-	 * @param string[] $added    Synonyms the dictionary added.
-	 * @param string[] $removed  Stopwords the dictionary dropped.
-	 * @param bool     $kept     Whether the original stood because removal would have emptied it.
+	 * @param string              $term      The term the search actually runs.
+	 * @param string              $original  The term as typed.
+	 * @param string[]            $added     Synonyms the dictionary added.
+	 * @param DictionaryStopwords $stopwords Stopwords dropped, and whether the original stood regardless.
 	 */
 	private function __construct(
 		private readonly string $term,
 		private readonly string $original,
 		private readonly array $added,
-		private readonly array $removed,
-		private readonly bool $kept,
+		private readonly DictionaryStopwords $stopwords,
 	) {
 	}//end __construct()
 
@@ -69,7 +67,7 @@ final class DictionaryExpansion implements JsonSerializable {
 	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public static function unchanged(string $term): self {
-		return new self(term: $term, original: $term, added: [], removed: [], kept: false);
+		return new self(term: $term, original: $term, added: [], stopwords: new DictionaryStopwords());
 	}//end unchanged()
 
 	/**
@@ -85,7 +83,7 @@ final class DictionaryExpansion implements JsonSerializable {
 	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public static function expanded(string $term, string $original, array $added, array $removed): self {
-		return new self(term: $term, original: $original, added: $added, removed: $removed, kept: false);
+		return new self(term: $term, original: $original, added: $added, stopwords: new DictionaryStopwords(removed: $removed));
 	}//end expanded()
 
 	/**
@@ -99,7 +97,7 @@ final class DictionaryExpansion implements JsonSerializable {
 	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public static function stopwordsWouldEmptyIt(string $term, array $removed): self {
-		return new self(term: $term, original: $term, added: [], removed: $removed, kept: true);
+		return new self(term: $term, original: $term, added: [], stopwords: new DictionaryStopwords(removed: $removed, kept: true));
 	}//end stopwordsWouldEmptyIt()
 
 	/**
@@ -133,7 +131,7 @@ final class DictionaryExpansion implements JsonSerializable {
 	 * @return bool True when the dictionary did something.
 	 */
 	public function isReportable(): bool {
-		return ($this->changed() === true || $this->removed !== [] || $this->kept === true);
+		return ($this->changed() === true || $this->stopwords->removed !== [] || $this->stopwords->kept === true);
 	}//end isReportable()
 
 	/**
@@ -148,10 +146,10 @@ final class DictionaryExpansion implements JsonSerializable {
 			'original' => $this->original,
 			'searched' => $this->term,
 			'added' => $this->added,
-			'removedStopwords' => $this->removed,
+			'removedStopwords' => $this->stopwords->removed,
 			// Says WHY nothing was removed from a term made only of stopwords,
 			// which otherwise looks like a dictionary that did not load.
-			'keptBecauseRemovalWouldEmptyIt' => $this->kept,
+			'keptBecauseRemovalWouldEmptyIt' => $this->stopwords->kept,
 		];
 	}//end jsonSerialize()
 }//end class

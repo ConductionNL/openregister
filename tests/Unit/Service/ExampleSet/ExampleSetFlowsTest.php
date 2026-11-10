@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlows
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
@@ -57,6 +59,12 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRunCheck
  */
 class ExampleSetFlowsTest extends ExampleSetTestCase {
 	/**
@@ -155,7 +163,7 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 		$report = $this->installer->install(plan: $plan, today: $this->today());
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$flow = array_values($this->flows)[0];
-		$type = $this->store->find(register: 'cases', schema: 'caseType', filters: [])[0];
+		$type = $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'caseType'), filters: [])[0];
 		$this->assertSame(expected: [$flow->getUuid()], actual: $type['startableFlows']);
 	}//end testAChangeQuotesAFlowOfItsFragment()
 

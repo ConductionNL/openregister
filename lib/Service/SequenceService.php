@@ -36,7 +36,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Sequence;
-use OCA\OpenRegister\Db\SequenceMapper;
+use OCA\OpenRegister\Db\SequenceMapperInterface;
 use OCP\DB\Exception as DbException;
 use OCP\IDBConnection;
 use Throwable;
@@ -44,17 +44,17 @@ use Throwable;
 /**
  * Reserves the next running number for a (register, schema, scope) triple.
  */
-class SequenceService {
+class SequenceService implements SequenceServiceInterface {
 	/**
 	 * Wire the sequence mapper and DB connection used for the reservation transaction.
 	 *
-	 * @param SequenceMapper $mapper The sequence mapper.
+	 * @param SequenceMapperInterface $mapper The sequence mapper.
 	 * @param IDBConnection $db DB connection (for the reservation transaction).
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SequenceMapper $mapper,
+		private readonly SequenceMapperInterface $mapper,
 		private readonly IDBConnection $db,
 	) {
 	}//end __construct()
@@ -74,46 +74,69 @@ class SequenceService {
 	 * @throws DbException When the reservation cannot be completed.
 	 */
 	public function reserveNext(int $registerId, int $schemaId, string $scopeKey): int {
+		return $this->reserveNextIn(sequence: new SequenceScope(registerId: $registerId, schemaId: $schemaId, scopeKey: $scopeKey));
+	}//end reserveNext()
+
+	/**
+	 * Atomically reserve and return the next number for the given scope.
+	 *
+	 * @param SequenceScope $sequence The register, schema and scope key of the counter.
+	 *
+	 * @return int The reserved running number (>= 1).
+	 *
+	 * @throws DbException When the reservation cannot be completed.
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
+	 */
+	public function reserveNextIn(SequenceScope $sequence): int {
+		$scope = $sequence->toArray();
 		$this->db->beginTransaction();
 		try {
-			$affected = $this->mapper->incrementScope(
-				registerId: $registerId,
-				schemaId: $schemaId,
-				scopeKey: $scopeKey
-			);
-
-			if ($affected === 0) {
-				// Scope row does not exist yet — seed it reserving value 1 by
-				// storing next_value = 2. A concurrent seeder may win the
-				// unique index; on that violation, fall back to the increment
-				// path so we still reserve a fresh value.
-				$reserved = $this->seedScope(
-					registerId: $registerId,
-					schemaId: $schemaId,
-					scopeKey: $scopeKey
-				);
-
-				$this->db->commit();
-				return $reserved;
-			}
-
-			$row = $this->mapper->findForScope(
-				registerId: $registerId,
-				schemaId: $schemaId,
-				scopeKey: $scopeKey
-			);
-
-			$next = (int)($row?->getNextValue() ?? 1);
+			$reserved = $this->reserveInScope(scope: $scope);
 			$this->db->commit();
-
-			// The next_value column now points at the NEXT hand-out; the value
-			// we just reserved is one below it.
-			return ($next - 1);
+			return $reserved;
 		} catch (Throwable $e) {
 			$this->db->rollBack();
 			throw $e;
-		}//end try
-	}//end reserveNext()
+		}
+	}//end reserveNextIn()
+
+	/**
+	 * Reserve the next number inside the open transaction.
+	 *
+	 * @param array{registerId: int, schemaId: int, scopeKey: string} $scope The sequence scope.
+	 *
+	 * @return int The reserved running number.
+	 *
+	 * @throws DbException When the reservation cannot be completed.
+	 */
+	private function reserveInScope(array $scope): int {
+		if ($this->mapper->incrementScope(new SequenceScope(...$scope)) === 0) {
+			// Scope row does not exist yet — seed it reserving value 1 by
+			// storing next_value = 2. A concurrent seeder may win the
+			// unique index; on that violation, fall back to the increment
+			// path so we still reserve a fresh value.
+			return $this->seedScope(scope: $scope);
+		}
+
+		return $this->lastReserved(scope: $scope);
+	}//end reserveInScope()
+
+	/**
+	 * The value just reserved: the next_value column points at the NEXT
+	 * hand-out, so the reserved value is one below it.
+	 *
+	 * @param array{registerId: int, schemaId: int, scopeKey: string} $scope The sequence scope.
+	 *
+	 * @return int The reserved running number.
+	 *
+	 * @throws DbException When the row cannot be read.
+	 */
+	private function lastReserved(array $scope): int {
+		$row = $this->mapper->findForScope(new SequenceScope(...$scope));
+		$next = (int)($row?->getNextValue() ?? 1);
+		return ($next - 1);
+	}//end lastReserved()
 
 	/**
 	 * Seed a brand-new scope row, reserving value 1.
@@ -122,42 +145,44 @@ class SequenceService {
 	 * insert throws; we then re-run the atomic increment so the caller still
 	 * receives a fresh, unique value.
 	 *
-	 * @param int $registerId The register the sequence is scoped to.
-	 * @param int $schemaId The schema the sequence is scoped to.
-	 * @param string $scopeKey The scope discriminator.
-	 * @param int $nextValue What to store as the NEXT hand-out, so the value reserved is one below it.
+	 * @param array{registerId: int, schemaId: int, scopeKey: string} $scope     The sequence scope.
+	 * @param int                                                     $nextValue The NEXT hand-out to store; the value reserved is one below it.
 	 *
 	 * @return int The reserved running number.
 	 *
 	 * @throws DbException When the fallback increment cannot read the row.
 	 */
-	private function seedScope(int $registerId, int $schemaId, string $scopeKey, int $nextValue = 2): int {
-		$entity = new Sequence();
-		$entity->setRegisterId($registerId);
-		$entity->setSchemaId($schemaId);
-		$entity->setScopeKey($scopeKey);
-		// Storing n+1 means value n has just been reserved.
-		$entity->setNextValue($nextValue);
+	private function seedScope(array $scope, int $nextValue = 2): int {
+		$entity = $this->newScopeRow(scope: $scope, nextValue: $nextValue);
 
 		try {
 			$this->mapper->insert($entity);
 			return ($nextValue - 1);
 		} catch (DbException $e) {
 			// Lost the insert race — the row now exists; increment it instead.
-			$this->mapper->incrementScope(
-				registerId: $registerId,
-				schemaId: $schemaId,
-				scopeKey: $scopeKey
-			);
-			$row = $this->mapper->findForScope(
-				registerId: $registerId,
-				schemaId: $schemaId,
-				scopeKey: $scopeKey
-			);
-			$next = (int)($row?->getNextValue() ?? 1);
-			return ($next - 1);
-		}//end try
+			$this->mapper->incrementScope(new SequenceScope(...$scope));
+			return $this->lastReserved(scope: $scope);
+		}
 	}//end seedScope()
+
+	/**
+	 * A new counter row for a scope.
+	 *
+	 * @param array{registerId: int, schemaId: int, scopeKey: string} $scope     The counter scope.
+	 * @param int                                                    $nextValue The next value to store.
+	 *
+	 * @return Sequence
+	 */
+	private function newScopeRow(array $scope, int $nextValue): Sequence {
+		$entity = new Sequence();
+		$entity->setRegisterId($scope['registerId']);
+		$entity->setSchemaId($scope['schemaId']);
+		$entity->setScopeKey($scope['scopeKey']);
+		// Storing n+1 means value n has just been reserved.
+		$entity->setNextValue($nextValue);
+
+		return $entity;
+	}//end newScopeRow()
 
 	/**
 	 * Push a counter past a number that is already printed on a record.
@@ -182,49 +207,61 @@ class SequenceService {
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
 	 */
 	public function advanceTo(int $registerId, int $schemaId, string $scopeKey, int $reserved): void {
+		$this->advanceScopeTo(sequence: new SequenceScope(registerId: $registerId, schemaId: $schemaId, scopeKey: $scopeKey), reserved: $reserved);
+	}//end advanceTo()
+
+	/**
+	 * Raise the counter of one scope so it never issues a number already issued elsewhere.
+	 *
+	 * @param SequenceScope $sequence The register, schema and scope key of the counter.
+	 * @param int           $reserved The number already issued elsewhere.
+	 *
+	 * @return void
+	 *
+	 * @throws DbException When the counter cannot be read or written.
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
+	 */
+	public function advanceScopeTo(SequenceScope $sequence, int $reserved): void {
 		if ($reserved < 1) {
 			return;
 		}
 
+		$scope = $sequence->toArray();
 		$target = ($reserved + 1);
-
-		$moved = $this->mapper->raiseTo(
-			registerId: $registerId,
-			schemaId: $schemaId,
-			scopeKey: $scopeKey,
-			minNextValue: $target
-		);
-		if ($moved > 0) {
+		if ($this->mapper->raiseTo(new SequenceScope(...$scope), minNextValue: $target) > 0) {
 			return;
 		}
 
 		// Either the counter is already past this number, or it does not exist
 		// yet. Only the second needs anything doing, and the two are told apart
 		// by reading the row rather than by assuming which one it was.
-		$row = $this->mapper->findForScope(
-			registerId: $registerId,
-			schemaId: $schemaId,
-			scopeKey: $scopeKey
-		);
-		if ($row !== null) {
+		if ($this->mapper->findForScope(new SequenceScope(...$scope)) !== null) {
 			return;
 		}
 
+		$this->seedOrRaise(scope: $scope, target: $target);
+	}//end advanceScopeTo()
+
+	/**
+	 * Seed a missing counter at the target; if the seed fails, raise the counter instead.
+	 *
+	 * @param array{registerId: int, schemaId: int, scopeKey: string} $scope  The sequence scope.
+	 * @param int                                                     $target The next_value to store.
+	 *
+	 * @return void
+	 *
+	 * @throws DbException When the counter cannot be written.
+	 */
+	private function seedOrRaise(array $scope, int $target): void {
 		try {
-			$this->seedScope(
-				registerId: $registerId,
-				schemaId: $schemaId,
-				scopeKey: $scopeKey,
-				nextValue: $target
-			);
+			// Insert directly rather than through seedScope(): seedScope() answers a
+			// lost insert race by spending a number, which would leave the counter
+			// below the imported one.
+			$this->mapper->insert($this->newScopeRow(scope: $scope, nextValue: $target));
 		} catch (Throwable $e) {
 			// Lost the seed race. The row exists now, so raise it instead.
-			$this->mapper->raiseTo(
-				registerId: $registerId,
-				schemaId: $schemaId,
-				scopeKey: $scopeKey,
-				minNextValue: $target
-			);
-		}//end try
-	}//end advanceTo()
+			$this->mapper->raiseTo(new SequenceScope(...$scope), minNextValue: $target);
+		}
+	}//end seedOrRaise()
 }//end class

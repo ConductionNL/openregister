@@ -31,7 +31,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\FlowTimer;
-use OCA\OpenRegister\Db\FlowTimerMapper;
+use OCA\OpenRegister\Db\FlowTimerMapperInterface;
+use OCA\OpenRegister\Db\IdCursor;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Migration\IOutput;
@@ -54,12 +55,12 @@ class CheckFlowTimerInvariants implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowTimerMapper $timers The timer table.
+	 * @param FlowTimerMapperInterface $timers The timer table.
 	 * @param TaskMapper $tasks The task table, for subject existence and terminality.
 	 * @param LoggerInterface $logger Diagnostics.
 	 */
 	public function __construct(
-		private readonly FlowTimerMapper $timers,
+		private readonly FlowTimerMapperInterface $timers,
 		private readonly TaskMapper $tasks,
 		private readonly LoggerInterface $logger,
 	) {
@@ -129,7 +130,7 @@ class CheckFlowTimerInvariants implements IRepairStep {
 			$afterId = 0;
 			$more = true;
 			while ($more === true) {
-				$page = $this->timers->findByStatePaged(state: $state, afterId: $afterId, limit: self::PAGE);
+				$page = $this->timers->findByStatePaged(state: $state, cursor: new IdCursor(afterId: $afterId, limit: self::PAGE));
 				foreach ($page as $timer) {
 					$afterId = (int)$timer->getId();
 					$this->inspect(timer: $timer, counts: $counts);
@@ -151,18 +152,51 @@ class CheckFlowTimerInvariants implements IRepairStep {
 	 * @return void
 	 */
 	private function inspect(FlowTimer $timer, array &$counts): void {
-		if ($timer->getState() === FlowTimer::STATE_ARMED && $timer->getFireAt() === null) {
+		if ($this->isArmedWithoutFireAt(timer: $timer) === true) {
 			$counts['armedWithoutFireAt']++;
 		}
 
-		if ($timer->getState() === FlowTimer::STATE_SUSPENDED && ($timer->getFireAt() !== null || $timer->getRunningSince() !== null)) {
+		if ($this->isSuspendedWithClock(timer: $timer) === true) {
 			$counts['suspendedWithClock']++;
 		}
 
-		if ($timer->getSubjectType() === 'task' && $this->taskIsTerminalOrAbsent(uuid: (string)$timer->getSubjectUuid()) === true) {
+		if ($this->isOrphaned(timer: $timer) === true) {
 			$counts['orphaned']++;
 		}
 	}//end inspect()
+
+	/**
+	 * Whether an armed timer has no moment to fire at.
+	 *
+	 * @param FlowTimer $timer The timer.
+	 *
+	 * @return boolean
+	 */
+	private function isArmedWithoutFireAt(FlowTimer $timer): bool {
+		return $timer->getState() === FlowTimer::STATE_ARMED && $timer->getFireAt() === null;
+	}//end isArmedWithoutFireAt()
+
+	/**
+	 * Whether a suspended timer still carries a running clock.
+	 *
+	 * @param FlowTimer $timer The timer.
+	 *
+	 * @return boolean
+	 */
+	private function isSuspendedWithClock(FlowTimer $timer): bool {
+		return $timer->getState() === FlowTimer::STATE_SUSPENDED && ($timer->getFireAt() !== null || $timer->getRunningSince() !== null);
+	}//end isSuspendedWithClock()
+
+	/**
+	 * Whether a timer's task subject is terminal or absent.
+	 *
+	 * @param FlowTimer $timer The timer.
+	 *
+	 * @return boolean
+	 */
+	private function isOrphaned(FlowTimer $timer): bool {
+		return $timer->getSubjectType() === 'task' && $this->taskIsTerminalOrAbsent(uuid: (string)$timer->getSubjectUuid()) === true;
+	}//end isOrphaned()
 
 	/**
 	 * Whether a task subject is terminal or does not exist.

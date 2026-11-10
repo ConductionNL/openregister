@@ -9,10 +9,23 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\ChannelSet;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchGates;
+use OCA\OpenRegister\Notifications\Service\Notification\AppIntegrations;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryLedger;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleAudience;
+use OCA\OpenRegister\Notifications\Service\Notification\MessageRendering;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchThrottle;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryHold;
+use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
 use OCA\OpenRegister\Notifications\Service\Notification\RecipientResolverInterface;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
+use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifierInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\App\IAppManager;
@@ -1182,7 +1195,7 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 				return [['field' => 'supplierRef.contactEmail', 'outcome' => EmailSender::OUTCOME_DISPATCHED]];
 			}
 		);
-		$this->serverServices[ReferencedAddressNotifier::class] = $notifier;
+		$this->serverServices[ReferencedAddressNotifierInterface::class] = $notifier;
 
 		$recipients = [['kind' => 'email', 'field' => 'supplierRef.contactEmail']];
 		$schema = $this->schemaWithNotification(
@@ -1215,7 +1228,7 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 	public function testAnEmailEntryWithoutTheEmailChannelIsNotSent(): void {
 		$notifier = $this->createMock(ReferencedAddressNotifier::class);
 		$notifier->expects($this->never())->method('notify');
-		$this->serverServices[ReferencedAddressNotifier::class] = $notifier;
+		$this->serverServices[ReferencedAddressNotifierInterface::class] = $notifier;
 
 		$schema = $this->schemaWithNotification(
 			[
@@ -1259,28 +1272,53 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 		?IAppManager $appManager = null,
 	): AnnotationNotificationDispatcher {
 		return new AnnotationNotificationDispatcher(
-			$this->schemaMapper,
-			$this->notificationManager,
-			$this->logger,
-			$this->groupManager,
-			$this->userManager,
-			$this->mailer,
-			$this->activityManager,
-			$this->httpClient,
-			$this->serverContainer,
-			null,
-			$config,
-			null,
-			null,
-			null,
-			$dispatchLogMapper,
-			$preferenceService,
-			null,
-			null,
-			null,
-			null,
-			null,
-			$appManager
+			channels: new ChannelSet(
+				ncSender: new NcNotificationSender(
+					notificationManager: $this->notificationManager,
+					logger: $this->logger,
+					userManager: $this->userManager
+				),
+				emailSender: new EmailSender(
+					userManager: $this->userManager,
+					mailer: $this->mailer,
+					logger: $this->logger
+				),
+				talkSender: new TalkSender(
+					httpClient: $this->httpClient,
+					logger: $this->logger,
+					config: ($config ?? $this->serverContainer->get(IConfig::class))
+				),
+				activityManager: $this->activityManager
+			),
+			gates: new DispatchGates(
+				throttle: new DispatchThrottle(),
+				deliveryHold: new DeliveryHold(),
+				preferenceService: $preferenceService
+			),
+			integrations: new AppIntegrations(
+				httpClient: $this->httpClient,
+				serverContainer: $this->serverContainer,
+				appManager: $appManager
+			),
+			ledger: new DeliveryLedger(
+				logger: $this->logger,
+				dispatchLogMapper: $dispatchLogMapper
+			),
+			audience: new RuleAudience(
+				schemaMapper: $this->schemaMapper,
+				recipientResolver: new NotificationRecipientResolver(
+					userManager: $this->userManager,
+					groupManager: $this->groupManager,
+					logger: $this->logger,
+					serverContainer: $this->serverContainer
+				),
+				config: $config
+			),
+			rendering: new MessageRendering(
+				templating: new NotificationTemplating(
+					logger: $this->logger
+				)
+			)
 		);
 	}//end makeDispatcher()
 

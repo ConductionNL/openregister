@@ -76,12 +76,9 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCP\IL10N;
-use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
-use OCP\WorkflowEngine\IManager;
 use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
@@ -89,7 +86,7 @@ use UnexpectedValueException;
 /**
  * Reads objects from a register into the run.
  */
-class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 
 	/**
 	 * The step type.
@@ -126,22 +123,15 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectOperationsInterface $objects Object reads, RBAC-enforcing.
-	 * @param RegisterMapperInterface $registers Resolves the configured register.
-	 * @param SchemaMapperInterface $schemas Resolves the configured schema.
-	 * @param IUserManager $userManager Resolves the run owner.
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
+	 * @param ObjectNodeSources    $sources      Object reads (RBAC-enforcing) and the register and schema mappers.
+	 * @param IUserManager         $userManager  Resolves the run owner.
+	 * @param FlowNodePresentation $presentation Translations and the palette icon.
 	 */
 	public function __construct(
-		private readonly ObjectOperationsInterface $objects,
-		private readonly RegisterMapperInterface $registers,
-		private readonly SchemaMapperInterface $schemas,
+		private readonly ObjectNodeSources $sources,
 		private readonly IUserManager $userManager,
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
+		private readonly FlowNodePresentation $presentation,
 	) {
-
 	}//end __construct()
 
 	/**
@@ -159,7 +149,7 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 	 * @return string The display name.
 	 */
 	public function getDisplayName(): string {
-		return $this->l10n->t('Read objects');
+		return $this->presentation->l10n->t('Read objects');
 	}//end getDisplayName()
 
 	/**
@@ -168,7 +158,7 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 	 * @return string The description.
 	 */
 	public function getDescription(): string {
-		return $this->l10n->t('Find objects in a register and put them on the item.');
+		return $this->presentation->l10n->t('Find objects in a register and put them on the item.');
 	}//end getDescription()
 
 	/**
@@ -177,19 +167,8 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 	 * @return string The icon URL.
 	 */
 	public function getIcon(): string {
-		return $this->urls->imagePath('core', 'actions/search.svg');
+		return $this->presentation->urls->imagePath('core', 'actions/search.svg');
 	}//end getIcon()
-
-	/**
-	 * Available in both scopes — the owner's RBAC is what bounds the read.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * The config vocabulary of an object-read step.
@@ -213,15 +192,15 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 	 */
 	public function validateConfig(array $config): void {
 		if (trim((string)($config['register'] ?? '')) === '') {
-			throw new UnexpectedValueException($this->l10n->t('An object-read step needs a register.'));
+			throw new UnexpectedValueException($this->presentation->l10n->t('An object-read step needs a register.'));
 		}
 
 		if (trim((string)($config['schema'] ?? '')) === '') {
-			throw new UnexpectedValueException($this->l10n->t('An object-read step needs a schema.'));
+			throw new UnexpectedValueException($this->presentation->l10n->t('An object-read step needs a schema.'));
 		}
 
 		if (array_key_exists('filters', $config) === true && is_array($config['filters']) === false) {
-			throw new UnexpectedValueException($this->l10n->t('An object-read step\'s filters must be an object.'));
+			throw new UnexpectedValueException($this->presentation->l10n->t('An object-read step\'s filters must be an object.'));
 		}
 
 	}//end validateConfig()
@@ -244,84 +223,116 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 	 * @throws UnexpectedValueException When the register or schema does not resolve.
 	 */
 	public function execute(array $items, array $config, array $context): array {
+		return $this->readEach(step: new NodeInvocation(items: $items, config: $config, context: $context));
+	}//end execute()
+
+	/**
+	 * Read once per item; see {@see self::execute()}.
+	 *
+	 * @param NodeInvocation $step The items, the step configuration and the run metadata.
+	 *
+	 * @return array The items, each with the read's results added.
+	 *
+	 * @throws RuntimeException When the run has no resolvable owner.
+	 * @throws UnexpectedValueException When the register or schema does not resolve.
+	 */
+	private function readEach(NodeInvocation $step): array {
 		// An empty branch asks nothing. It short-circuits before the owner is
 		// resolved, because there is nothing to attribute — the same contract
 		// `openconnector.source-call` follows.
-		if ($items === []) {
+		if ($step->items === []) {
 			return [];
 		}
 
-		$this->validateConfig(config: $config);
+		$this->validateConfig(config: $step->config);
 
-		$owner = $this->resolveOwner(context: $context);
-		$register = $this->resolveRegister(config: $config);
-		$schema = $this->resolveSchema(config: $config, register: $register);
-		$outKey = trim((string)($config['output'] ?? ''));
-		if ($outKey === '') {
-			$outKey = self::DEFAULT_OUTPUT_KEY;
-		}
-
-		$limit = $this->limitFrom(config: $config);
+		$owner    = $this->resolveOwner(context: $step->context);
+		$register = $this->resolveRegister(config: $step->config);
+		$run      = new ObjectReadRun(
+			step: $step,
+			owner: $owner,
+			register: $register,
+			schema: $this->resolveSchema(config: $step->config, register: $register)
+		);
 
 		$out = [];
-		foreach ($items as $index => $item) {
-			$json = (array)($item[FlowItems::JSON] ?? []);
-			$filters = $this->renderFilters(config: $config, json: $json);
-
-			$records = $this->read(
-				register: $register,
-				schema: $schema,
-				filters: $filters,
-				limit: $limit,
-				owner: $owner
-			);
-
-			$binary = (array)($item[FlowItems::BINARY] ?? []);
-
-			// FAN-OUT: one item per object, rather than one item holding a list.
-			//
-			// This exists because the list form does not COMPOSE. Every other
-			// node in the engine acts per item, and nothing expands a list
-			// inside an item's json back into items — `openregister.loop`
-			// batches the items on the walk, not the entries of a field. So a
-			// read that returns `{objects: [...]}` can be counted and branched
-			// on, and cannot be acted on one row at a time.
-			//
-			// Which is the motivating case. A reaper reads stale locks and then
-			// DELETES each one; with the list form its delete step sees one item
-			// whose `uuid` is not a field, and fails with "the match value for
-			// uuid could not be resolved from the item". Measured while building
-			// it.
-			//
-			// The list stays the DEFAULT because it is the right shape for the
-			// other half of the uses — "how many are there", "is there any" —
-			// where fanning out would turn one decision into N.
-			if (($config['fanOut'] ?? false) === true) {
-				foreach ($records as $record) {
-					$out[] = FlowItems::item(
-						json: array_merge($json, $record),
-						binary: $binary,
-						fromItemIndex: (int)$index
-					);
-				}
-
-				// No matches means no items, which ends the branch — the same
-				// contract `openregister.loop` has for an empty input. It is
-				// not an error: "nothing to reap" is the ordinary case.
-				continue;
-			}
-
-			$json[$outKey] = $records;
-
-			$out[] = FlowItems::item(
-				json: $json,
-				binary: $binary,
-				fromItemIndex: (int)$index
-			);
-		}//end foreach
+		foreach (array_keys($step->items) as $index) {
+			array_push($out, ...$this->itemsFor(run: $run, index: $index));
+		}
 
 		return $out;
-	}//end execute()
+	}//end readEach()
+
+	/**
+	 * One item's read: its results on the item, or one item per object on a fan-out.
+	 *
+	 * @param ObjectReadRun $run   The step's run.
+	 * @param int|string    $index The item's key in the input items.
+	 *
+	 * @return array<int, array> The output items for this input item.
+	 */
+	private function itemsFor(ObjectReadRun $run, int|string $index): array {
+		$item    = $run->step->items[$index];
+		$json    = (array)($item[FlowItems::JSON] ?? []);
+		$binary  = (array)($item[FlowItems::BINARY] ?? []);
+		$query   = new ObjectReadQuery(
+			register: $run->register,
+			schema: $run->schema,
+			filters: $this->renderFilters(config: $run->step->config, json: $json),
+			limit: $this->limitFrom(config: $run->step->config)
+		);
+		$records = $this->read(query: $query, owner: $run->owner);
+
+		// FAN-OUT: one item per object, rather than one item holding a list.
+		//
+		// This exists because the list form does not COMPOSE. Every other
+		// node in the engine acts per item, and nothing expands a list
+		// inside an item's json back into items — `openregister.loop`
+		// batches the items on the walk, not the entries of a field. So a
+		// read that returns `{objects: [...]}` can be counted and branched
+		// on, and cannot be acted on one row at a time.
+		//
+		// Which is the motivating case. A reaper reads stale locks and then
+		// DELETES each one; with the list form its delete step sees one item
+		// whose `uuid` is not a field, and fails with "the match value for
+		// uuid could not be resolved from the item". Measured while building
+		// it.
+		//
+		// The list stays the DEFAULT because it is the right shape for the
+		// other half of the uses — "how many are there", "is there any" —
+		// where fanning out would turn one decision into N.
+		if (($run->step->config['fanOut'] ?? false) === true) {
+			// No matches means no items, which ends the branch — the same
+			// contract `openregister.loop` has for an empty input. It is
+			// not an error: "nothing to reap" is the ordinary case.
+			return array_values(
+				array_map(
+					static fn (array $record): array => FlowItems::item(json: array_merge($json, $record), binary: $binary, fromItemIndex: (int)$index),
+					$records
+				)
+			);
+		}
+
+		$json[$this->outputKey(config: $run->step->config)] = $records;
+
+		return [FlowItems::item(json: $json, binary: $binary, fromItemIndex: (int)$index)];
+	}//end itemsFor()
+
+	/**
+	 * The item key a non-fan-out read lands under: `output`, or the default.
+	 *
+	 * @param array $config The step configuration.
+	 *
+	 * @return string The key.
+	 */
+	private function outputKey(array $config): string {
+		$key = trim((string)($config['output'] ?? ''));
+		if ($key === '') {
+			return self::DEFAULT_OUTPUT_KEY;
+		}
+
+		return $key;
+	}//end outputKey()
 
 	/**
 	 * Render the step's filters, refusing any placeholder that comes out empty.
@@ -369,7 +380,7 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 
 		if ($rendered['unresolved'] !== []) {
 			throw new RuntimeException(
-				$this->l10n->t(
+				$this->presentation->l10n->t(
 					'The object-read step\'s filter could not be rendered: %s resolved to nothing on this item. '
 					. 'A filter that renders empty matches nothing, so the step would report success having read no objects.',
 					[implode(', ', $rendered['unresolved'])]
@@ -388,17 +399,14 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 	 * caller that cannot tell them apart — a reaper, a guard, a count — will
 	 * read the second as the first and quietly do nothing.
 	 *
-	 * @param Register $register The resolved register.
-	 * @param Schema $schema The resolved schema.
-	 * @param array $filters The rendered filters.
-	 * @param int $limit The bounded result cap.
-	 * @param IUser $owner The run owner, whose RBAC applies.
+	 * @param ObjectReadQuery $query The resolved register and schema, the rendered filters and the cap.
+	 * @param IUser           $owner The run owner, whose RBAC applies.
 	 *
 	 * @return array<int, array> The matched objects, as plain records.
 	 *
 	 * @throws RuntimeException When the read itself fails.
 	 */
-	private function read(Register $register, Schema $schema, array $filters, int $limit, IUser $owner): array {
+	private function read(ObjectReadQuery $query, IUser $owner): array {
 		try {
 			// The read runs AS the owner. `$owner` was resolved, declared and
 			// documented as "the subject whose RBAC applies" — and then never
@@ -413,16 +421,16 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 			// its chain, so the subject is set for the duration of the call and
 			// restored afterwards. See ObjectService::runAs() for why that is
 			// the seam rather than threading a user through the query layer.
-			$found = $this->objects->runAs(
+			$found = $this->sources->objects->runAs(
 				$owner,
-				fn (): array => $this->objects
-					->setRegister($register)
-					->setSchema($schema)
-					->findAll(config: ['filters' => $filters, 'limit' => $limit])
+				fn (): array => $this->sources->objects
+					->setRegister($query->register)
+					->setSchema($query->schema)
+					->findAll(config: ['filters' => $query->filters, 'limit' => $query->limit])
 			);
 		} catch (Throwable $e) {
 			throw new RuntimeException(
-				$this->l10n->t('The object-read step could not read from the register: %s', [$e->getMessage()]),
+				$this->presentation->l10n->t('The object-read step could not read from the register: %s', [$e->getMessage()]),
 				0,
 				$e
 			);
@@ -480,14 +488,14 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 		$uid = ($context[FlowRunServiceInterface::RUN_AS_CONTEXT_KEY] ?? null);
 		if (is_string($uid) === false || trim($uid) === '') {
 			throw new RuntimeException(
-				$this->l10n->t('This flow run has no acting identity (runAs); an object read must be attributable.')
+				$this->presentation->l10n->t('This flow run has no acting identity (runAs); an object read must be attributable.')
 			);
 		}
 
 		$user = $this->userManager->get(trim($uid));
 		if ($user === null) {
 			throw new RuntimeException(
-				$this->l10n->t(
+				$this->presentation->l10n->t(
 					'This flow run\'s acting identity "%s" (runAs) is not a user account; an object read must be attributable.',
 					[trim($uid)]
 				)
@@ -503,7 +511,7 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 		// unnoticed for as long as the run lives.
 		if ($user->isEnabled() === false) {
 			throw new RuntimeException(
-				$this->l10n->t(
+				$this->presentation->l10n->t(
 					'This flow run\'s acting identity "%s" (runAs) is a disabled account; an object read is refused rather than performed on their behalf.',
 					[trim($uid)]
 				)
@@ -526,10 +534,10 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 		$identifier = trim((string)($config['register'] ?? ''));
 
 		try {
-			return $this->registers->find(id: $identifier, _rbac: false, _multitenancy: false);
+			return $this->sources->registers->find(id: $identifier, _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			throw new UnexpectedValueException(
-				$this->l10n->t('The register "%s" could not be resolved.', [$identifier]),
+				$this->presentation->l10n->t('The register "%s" could not be resolved.', [$identifier]),
 				0,
 				$e
 			);
@@ -562,7 +570,7 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 		// silently unreachable dataset.
 		if (is_numeric($identifier) === false) {
 			$registerSchemaIds = (array)($register->getSchemas() ?? []);
-			$scoped            = $this->schemas->findBySlugInIds(
+			$scoped            = $this->sources->schemas->findBySlugInIds(
 				slug: $identifier,
 				schemaIds: $registerSchemaIds
 			);
@@ -574,44 +582,20 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 				schemaSlug: $identifier,
 				registerId: $register->getId(),
 				registerSlug: $register->getSlug(),
-				candidatesElsewhere: $this->schemas->countBySlug(slug: $identifier),
+				candidatesElsewhere: $this->sources->schemas->countBySlug(slug: $identifier),
 				registerSchemaCount: count($registerSchemaIds)
 			);
 		}
 
 		try {
-			return $this->schemas->find(id: $identifier, _rbac: false, _multitenancy: false);
+			return $this->sources->schemas->find(id: $identifier, _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			throw new UnexpectedValueException(
-				$this->l10n->t('The schema "%s" could not be resolved.', [$identifier]),
+				$this->presentation->l10n->t('The schema "%s" could not be resolved.', [$identifier]),
 				0,
 				$e
 			);
 		}
 
 	}//end resolveSchema()
-
-	/**
-	 * What kind of step this is. Calls the register to read.
-	 *
-	 * @return string The BPMN kind.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-semantic-kind-drawn-from-bpmn
-	 */
-	public function getKind(): string {
-		return IFlowNodeTaxonomy::KIND_SERVICE_TASK;
-
-	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_OBJECTS;
-
-	}//end getCategory()
 }//end class

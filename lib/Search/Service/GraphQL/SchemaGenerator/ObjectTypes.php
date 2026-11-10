@@ -183,10 +183,8 @@ class ObjectTypes {
 	private function newTypeMapper(): TypeMapperHandler {
 		return new TypeMapperHandler(
 			scalars: $this->scalars,
-			refResolver: $this->resolveRef(...),
-			objectTypeFactory: $this->forSchema(...),
-			fieldNameConverter: $this->names->toFieldName(...),
-			typeNameConverter: $this->names->toTypeName(...),
+			refTypeResolver: $this->refType(...),
+			names: $this->names,
 			propertyRbac: $this->caller->propertyRbac,
 		);
 	}//end newTypeMapper()
@@ -263,6 +261,24 @@ class ObjectTypes {
 
 		return $description;
 	}//end objectDescription()
+
+	/**
+	 * Resolve a $ref to the ObjectType of the schema it names.
+	 *
+	 * @param string $ref The reference string (slug, ID, or URI)
+	 *
+	 * @return ObjectType|null The schema's type, or null when the $ref names no loaded schema
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
+	 */
+	private function refType(string $ref): ?ObjectType {
+		$schema = $this->resolveRef(ref: $ref);
+		if ($schema === null) {
+			return null;
+		}
+
+		return $this->forSchema(schema: $schema);
+	}//end refType()
 
 	/**
 	 * Resolve a $ref to a schema entity.

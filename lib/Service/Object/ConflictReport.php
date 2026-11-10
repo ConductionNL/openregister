@@ -52,10 +52,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use DateTimeInterface;
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 
 /**
  * Build the body of a 409 so it answers the question it raises.
@@ -64,29 +66,7 @@ use OCA\OpenRegister\Service\PropertyRbacHandler;
  *
  * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md
  */
-class ConflictReport {
-
-	/**
-	 * The machine-readable code a client branches on.
-	 *
-	 * 🔴 IT IS `code`, AND `error` KEEPS THE SENTENCE IT ALWAYS HELD. The rest
-	 * of this app puts a slug in `error`, and this endpoint has always put a
-	 * sentence there instead. Correcting that today would break every client
-	 * branching on the substring "Conflict", which is the shape the published
-	 * body invited. So the sentence stays where clients expect it and the code
-	 * arrives beside it, and the outlier is retired when somebody can count the
-	 * clients rather than guess at them.
-	 *
-	 * @var string
-	 */
-	public const CODE = 'version-conflict';
-
-	/**
-	 * The sentence `error` has carried since this endpoint shipped.
-	 *
-	 * @var string
-	 */
-	public const ERROR = 'Conflict: the object was modified since it was read. Re-read and retry.';
+class ConflictReport implements ConflictReportInterface {
 
 	/**
 	 * What a property carries when the caller may not read it.
@@ -102,10 +82,10 @@ class ConflictReport {
 	/**
 	 * Constructor.
 	 *
-	 * @param PropertyRbacHandler $properties Field-level security.
+	 * @param PropertyRbacHandlerInterface $properties Field-level security.
 	 */
 	public function __construct(
-		private readonly PropertyRbacHandler $properties,
+		private readonly PropertyRbacHandlerInterface $properties,
 	) {
 	}//end __construct()
 
@@ -122,95 +102,152 @@ class ConflictReport {
 	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
 	 */
 	public function build(ObjectEntity $stored, Schema $schema, array $sent, array $intervening): array {
-		$current = $stored->getMatchEnvelope();
-		$changedByOthers = $this->changedByOthers(intervening: $intervening);
+		$run = new ConflictRun(
+			schema: $schema,
+			current: $stored->getMatchEnvelope(),
+			sent: $sent,
+			changedByOthers: $this->changedByOthers(intervening: $intervening)
+		);
 
-		$conflicts = [];
-		foreach ($sent as $property => $sentValue) {
+		return $this->body(run: $run, cause: $this->causeOf(entry: ($intervening[0] ?? null)));
+	}//end build()
+
+	/**
+	 * The 409 body of one refused write.
+	 *
+	 * @param ConflictRun                                           $run   The refused write and what others changed.
+	 * @param array{changedBy: string|null, changedAt: string|null} $cause Who made the first intervening write, and when.
+	 *
+	 * @return array<string, mixed> The 409 body.
+	 *
+	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
+	 */
+	private function body(ConflictRun $run, array $cause): array {
+		$conflicts = $this->conflictsOf(run: $run);
+
+		return [
+			'error' => self::ERROR,
+			'code' => self::CODE,
+			'message' => self::messageFor(conflicts: $conflicts),
+			'conflicts' => $conflicts,
+			'changedBy' => $cause['changedBy'],
+			'changedAt' => $cause['changedAt'],
+		];
+	}//end body()
+
+	/**
+	 * The properties the caller changed that somebody else changed too, with their readings.
+	 *
+	 * @param ConflictRun $run The schema, the stored object, what the caller sent, and what others changed.
+	 *
+	 * @return array<string, array> The conflicts
+	 *
+	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md
+	 */
+	private function conflictsOf(ConflictRun $run): array {
+		$current         = $run->current;
+		$changedByOthers = $run->changedByOthers;
+		$conflicts       = [];
+		foreach ($run->sent as $property => $sentValue) {
 			$property = (string)$property;
 
-			// 🔑 BOTH HALVES OF THE INTERSECTION. The caller has to have
-			// CHANGED it (sending the same value back is not a conflict, it is
-			// agreement), and somebody else has to have changed it too.
-			if ($this->same(a: $sentValue, b: ($current[$property] ?? null)) === true) {
+		// 🔑 BOTH HALVES OF THE INTERSECTION. The caller has to have
+		// CHANGED it (sending the same value back is not a conflict, it is
+		// agreement), and somebody else has to have changed it too.
+			if ($this->same(a: $sentValue, b: ($current[$property] ?? null)) === true
+				|| array_key_exists($property, $changedByOthers) === false
+			) {
 				continue;
 			}
 
-			if (array_key_exists($property, $changedByOthers) === false) {
-				continue;
-			}
-
-			$conflicts[$property] = $this->readingsFor(
-				schema: $schema,
-				current: $current,
-				property: $property,
-				sentValue: $sentValue,
-				readValue: $changedByOthers[$property]
-			);
+			$conflicts[$property] = $this->readingsFor(run: $run, property: $property);
 		}
 
-		$cause = ($intervening[0] ?? null);
+		return $conflicts;
+	}//end conflictsOf()
+
+	/**
+	 * The refusal sentence: a plain one without conflicts, else naming field or fields.
+	 *
+	 * @param array $conflicts The conflicts.
+	 *
+	 * @return string The message
+	 *
+	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md
+	 */
+	private static function messageFor(array $conflicts): string {
+		if ($conflicts === []) {
+			return 'This object changed since you read it. Re-read it and try again.';
+		}
 
 		$noun = 'fields';
 		if (count($conflicts) === 1) {
 			$noun = 'field';
 		}
 
-		$message = 'This object changed since you read it, and somebody else wrote the same ' . $noun . '.';
-		if ($conflicts === []) {
-			$message = 'This object changed since you read it. Re-read it and try again.';
-		}
+		return 'This object changed since you read it, and somebody else wrote the same ' . $noun . '.';
+	}//end messageFor()
 
-		$changedBy = null;
-		$changedAt = null;
-		if ($cause !== null) {
-			$changedBy = $this->actorOf(entry: $cause);
-			$changedAt = $cause->getCreated()?->format(DateTimeInterface::ATOM);
+	/**
+	 * Who made the first intervening write, and when; both null without one.
+	 *
+	 * @param AuditTrail|null $entry The first intervening write.
+	 *
+	 * @return array{changedBy: string|null, changedAt: string|null} The cause
+	 *
+	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md
+	 */
+	private function causeOf(?AuditTrail $entry): array {
+		if ($entry === null) {
+			return ['changedBy' => null, 'changedAt' => null];
 		}
 
 		return [
-			'error' => self::ERROR,
-			'code' => self::CODE,
-			'message' => $message,
-			'conflicts' => $conflicts,
-			'changedBy' => $changedBy,
-			'changedAt' => $changedAt,
+			'changedBy' => $this->actorOf(entry: $entry),
+			'changedAt' => $entry->getCreated()?->format(DateTimeInterface::ATOM),
 		];
-	}//end build()
+	}//end causeOf()
 
 	/**
 	 * The three readings of one property, filtered by what the caller may read.
 	 *
-	 * @param Schema               $schema    The schema.
-	 * @param array<string, mixed> $current   The stored object.
-	 * @param string               $property  The property.
-	 * @param mixed                $sentValue What the caller sent.
-	 * @param mixed                $readValue What was there when they read it.
+	 * @param ConflictRun $run      The schema, the stored object, what was sent and what others changed.
+	 * @param string      $property The property.
 	 *
 	 * @return array<string, mixed> The readings, or the withheld marker.
 	 *
 	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-the-conflict-body-discloses-no-more-than-a-read-would-req-cso-002
 	 */
-	private function readingsFor(
-		Schema $schema,
-		array $current,
-		string $property,
-		mixed $sentValue,
-		mixed $readValue,
-	): array {
-		if ($this->properties->canReadProperty(schema: $schema, property: $property, object: $current) === false) {
+	private function readingsFor(ConflictRun $run, string $property): array {
+		if ($this->properties->canReadProperty(property: new SchemaProperty(schema: $run->schema, name: $property), request: new PropertyAccessRequest(object: $run->current)) === false) {
 			// Named, valueless. The caller learns their write collided and
 			// learns nothing they could not have read.
 			return ['status' => self::WITHHELD];
 		}
 
+		return self::readings(run: $run, property: $property);
+	}//end readingsFor()
+
+	/**
+	 * The three readings of one conflicting property: sent, read and stored.
+	 *
+	 * What the caller sent, what was there when they read it, and what is stored now.
+	 *
+	 * @param ConflictRun $run      The refused write and what others changed.
+	 * @param string      $property The conflicting property.
+	 *
+	 * @return array<string, mixed> The readings.
+	 *
+	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
+	 */
+	private static function readings(ConflictRun $run, string $property): array {
 		return [
 			'status' => 'conflict',
-			'sent' => $sentValue,
-			'read' => $readValue,
-			'stored' => ($current[$property] ?? null),
+			'sent' => $run->sent[$property],
+			'read' => $run->changedByOthers[$property],
+			'stored' => ($run->current[$property] ?? null),
 		];
-	}//end readingsFor()
+	}//end readings()
 
 	/**
 	 * Which properties the intervening writes touched, and what each was before.

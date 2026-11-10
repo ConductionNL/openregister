@@ -25,8 +25,10 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Db\AgentMapperPlatform;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -138,7 +140,8 @@ class AgentAndFlowRunMapperGoldenTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('isAdmin')->willReturn(true);
 
-		$mapper = $this->build(class: AgentMapper::class, given: ['db' => $db, 'userSession' => $session, 'groupManager' => $groups]);
+		$platform = new AgentMapperPlatform($db, $this->createMock(IEventDispatcher::class));
+		$mapper = $this->build(class: AgentMapper::class, given: ['platform' => $platform, 'userSession' => $session, 'groupManager' => $groups]);
 		return $this->call(mapper: $mapper, call: [$method, $args]);
 	}//end agent()
 

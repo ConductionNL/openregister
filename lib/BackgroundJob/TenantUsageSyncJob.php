@@ -27,10 +27,13 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
-use OCA\OpenRegister\Db\TenantUsageMapper;
-use OCA\OpenRegister\Service\TenantLifecycleService;
-use OCP\AppFramework\Utility\ITimeFactory;
+use OCA\OpenRegister\Db\TenantUsage\UsageBucket;
+use OCA\OpenRegister\Db\TenantUsageMapperInterface;
+use OCA\OpenRegister\Db\UsageMeasurement;
+use OCA\OpenRegister\Service\TenantLifecycleServiceInterface;
 use OCP\BackgroundJob\TimedJob;
+use OCA\OpenRegister\BackgroundJob\Support\TenantRecords;
+use OCA\OpenRegister\BackgroundJob\Support\ScheduledJobRuntime;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -40,20 +43,37 @@ use Psr\Log\LoggerInterface;
  */
 class TenantUsageSyncJob extends TimedJob {
 	/**
+	 * Organisation mapper
+	 *
+	 * @var OrganisationMapperInterface
+	 */
+	private readonly OrganisationMapperInterface $organisationMapper;
+
+	/**
+	 * Usage mapper
+	 *
+	 * @var TenantUsageMapperInterface
+	 */
+	private readonly TenantUsageMapperInterface $tenantUsageMapper;
+
+	/**
+	 * Logger
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor
 	 *
-	 * @param ITimeFactory $time Time factory
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
-	 * @param TenantUsageMapper $tenantUsageMapper Usage mapper
-	 * @param LoggerInterface $logger Logger
+	 * @param ScheduledJobRuntime $runtime The clock, app config and log the job runs on.
+	 * @param TenantRecords       $tenants The organisations, their usage rows and lifecycle.
 	 */
-	public function __construct(
-		ITimeFactory $time,
-		private readonly OrganisationMapperInterface $organisationMapper,
-		private readonly TenantUsageMapper $tenantUsageMapper,
-		private readonly LoggerInterface $logger,
-	) {
-		parent::__construct(time: $time);
+	public function __construct(ScheduledJobRuntime $runtime, TenantRecords $tenants) {
+		parent::__construct(time: $runtime->time);
+		$this->organisationMapper = $tenants->organisations;
+		$this->tenantUsageMapper = $tenants->usage;
+		$this->logger = $runtime->logger;
 		// Run every 5 minutes.
 		$this->setInterval(seconds: 300);
 	}//end __construct()
@@ -86,7 +106,7 @@ class TenantUsageSyncJob extends TimedJob {
 			// organisation in this table but NOT a tenant of this installation, and
 			// selecting on status alone would sweep it up with the tenants.
 			$organisations = $this->organisationMapper->findLocalTenants(
-				filters: ['status' => TenantLifecycleService::STATUS_ACTIVE]
+				filters: ['status' => TenantLifecycleServiceInterface::STATUS_ACTIVE]
 			);
 		} catch (\Exception $e) {
 			$this->logger->error(
@@ -132,11 +152,8 @@ class TenantUsageSyncJob extends TimedJob {
 
 			try {
 				$this->tenantUsageMapper->upsertUsage(
-					$orgUuid,
-					$period,
-					(int)$requestCount,
-					(int)$bandwidthBytes,
-					0
+					bucket: new UsageBucket(organisationUuid: $orgUuid, period: $period),
+					measurement: new UsageMeasurement(requestCount: $requestCount, bandwidthBytes: $bandwidthBytes, storageBytes: 0)
 				);
 				$syncedCount++;
 			} catch (\Exception $e) {

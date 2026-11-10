@@ -22,9 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\DeepLinkRegistryService;
-use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
-use OCA\OpenRegister\Service\JsonLd\JsonLdSerializer;
+use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
+use OCA\OpenRegister\Service\JsonLd\JsonLdContextServiceInterface;
+use OCA\OpenRegister\Service\JsonLd\JsonLdSerializerInterface;
 use OCP\IURLGenerator;
 
 /**
@@ -36,17 +36,17 @@ final class LinkedDataServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ?JsonLdSerializer        $jsonLdSerializer     The JSON-LD serializer.
-	 * @param ?JsonLdContextService    $jsonLdContextService The JSON-LD context service.
-	 * @param ?DeepLinkRegistryService $deepLinkRegistry     The relation resourceUrl resolver.
-	 * @param ?IURLGenerator           $relationUrlGenerator The relation fallback URL generator.
+	 * @param ?JsonLdSerializerInterface     $jsonLdSerializer     The JSON-LD serializer.
+	 * @param ?JsonLdContextServiceInterface $jsonLdContextService The JSON-LD context service.
+	 * @param ?DeepLinkRegistryServiceInterface       $deepLinkRegistry     The relation resourceUrl resolver.
+	 * @param ?IURLGenerator                 $relationUrlGenerator The relation fallback URL generator.
 	 *
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
 	public function __construct(
-		public readonly ?JsonLdSerializer $jsonLdSerializer = null,
-		public readonly ?JsonLdContextService $jsonLdContextService = null,
-		public readonly ?DeepLinkRegistryService $deepLinkRegistry = null,
+		public readonly ?JsonLdSerializerInterface $jsonLdSerializer = null,
+		public readonly ?JsonLdContextServiceInterface $jsonLdContextService = null,
+		public readonly ?DeepLinkRegistryServiceInterface $deepLinkRegistry = null,
 		public readonly ?IURLGenerator $relationUrlGenerator = null,
 	) {
 	}//end __construct()

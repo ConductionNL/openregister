@@ -25,6 +25,8 @@ use DOMXPath;
 use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
+use OCA\OpenRegister\Files\Service\File\DocumentProcessingPlatform;
+use OCA\OpenRegister\Files\Service\File\DocumentRedactionServices;
 use OCA\OpenRegister\Files\Service\File\OfficeDocumentSanitizer;
 use OCP\Files\File;
 use OCP\Files\Folder;
@@ -88,13 +90,17 @@ class DocumentProcessingHandlerDocxTest extends TestCase {
 		$node->method('getContent')->willReturnCallback(static fn () => file_get_contents($path));
 
 		$handler = new DocumentProcessingHandler(
-			rootFolder: $this->createMock(IRootFolder::class),
-			userSession: $this->createMock(IUserSession::class),
-			logger: $this->createMock(LoggerInterface::class),
-			entityRelationMapper: $this->createMock(EntityRelationMapper::class),
-			sanitizer: $this->createMock(OfficeDocumentSanitizer::class),
-			anonymisationLogMapper: $this->createMock(AnonymisationLogMapper::class),
-			l10n: null
+			platform: new DocumentProcessingPlatform(
+				rootFolder: $this->createMock(IRootFolder::class),
+				userSession: $this->createMock(IUserSession::class),
+				l10n: null
+			),
+			redaction: new DocumentRedactionServices(
+				entityRelationMapper: $this->createMock(EntityRelationMapper::class),
+				sanitizer: $this->createMock(OfficeDocumentSanitizer::class),
+				anonymisationLogMapper: $this->createMock(AnonymisationLogMapper::class)
+			),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 
 		$handler->replaceWords(node: $node, replacements: $replacements);

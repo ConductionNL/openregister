@@ -37,11 +37,10 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use InvalidArgumentException;
-use OCA\OpenRegister\Event\TaskTerminalEvent;
+use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 
 /**
@@ -74,8 +73,8 @@ class TaskMapper extends QBMapper {
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db The database connection.
-	 * @param IEventDispatcher|null $dispatcher Publishes task terminality
-	 *                                          ({@see TaskTerminalEvent}) so
+	 * @param EntityEventsInterface|null $entityEvents Publishes task terminality
+	 *                                                (TaskTerminalEvent) so
 	 *                                          business timers are cancelled in
 	 *                                          the same operation. Nullable so
 	 *                                          the mapper stays constructible
@@ -83,7 +82,7 @@ class TaskMapper extends QBMapper {
 	 */
 	public function __construct(
 		IDBConnection $db,
-		private readonly ?IEventDispatcher $dispatcher = null,
+		private readonly ?EntityEventsInterface $entityEvents = null,
 	) {
 		parent::__construct(db: $db, tableName: 'openregister_tasks', entityClass: Task::class);
 
@@ -149,13 +148,11 @@ class TaskMapper extends QBMapper {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	private function announceTerminality(Task $task): void {
-		if ($this->dispatcher === null || $task->isInTerminalState() === false) {
+		if ($this->entityEvents === null || $task->isInTerminalState() === false) {
 			return;
 		}
 
-		$this->dispatcher->dispatchTyped(
-			new TaskTerminalEvent(task: $task, committed: false)
-		);
+		$this->entityEvents->taskTerminal(task: $task, committed: false);
 	}//end announceTerminality()
 
 	/**
@@ -526,19 +523,18 @@ class TaskMapper extends QBMapper {
 	 * One page of the inbox, filtered, sorted and paginated IN the datastore.
 	 *
 	 * @param TaskInboxCriteria $criteria What to list, for whom.
-	 * @param int $limit Page size.
-	 * @param int $offset Page offset.
+	 * @param ListQuery         $page     The page size and offset (25 from the start when omitted).
 	 *
 	 * @return array<int, Task> The page.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
-	public function findInbox(TaskInboxCriteria $criteria, int $limit = 25, int $offset = 0): array {
+	public function findInbox(TaskInboxCriteria $criteria, ListQuery $page = new ListQuery(limit: 25, offset: 0)): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')->from($this->getTableName());
 		$this->applyInboxPredicates(qb: $qb, criteria: $criteria);
 		$this->applyInboxOrder(qb: $qb, criteria: $criteria);
-		$qb->setMaxResults($limit)->setFirstResult($offset);
+		$qb->setMaxResults($page->limit)->setFirstResult($page->offset ?? 0);
 
 		return $this->findEntities(query: $qb);
 	}//end findInbox()

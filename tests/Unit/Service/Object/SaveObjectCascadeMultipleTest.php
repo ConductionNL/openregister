@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -91,7 +92,7 @@ class SaveObjectCascadeMultipleTest extends TestCase {
 		$parent->setUuid('p-1');
 		$parent->setRegister('10');
 
-		return $reflection->getMethod('cascadeMultipleObjects')->invoke($handler, $parent, $property, $propData);
+		return $reflection->getMethod('cascadeMultipleObjects')->invoke($handler, new NestedObjectTarget(parent: $parent, definition: $property), $propData);
 	}//end cascade()
 
 	public function testPropertyLevelRefInverseAndRegisterReachTheItems(): void {

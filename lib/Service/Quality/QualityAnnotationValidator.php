@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\Quality;
  *
  * @spec openspec/changes/mdm-foundation/tasks.md#task-3
  */
-class QualityAnnotationValidator {
+class QualityAnnotationValidator implements QualityAnnotationValidatorInterface {
 	/**
 	 * Recognised rule types.
 	 *
@@ -61,39 +61,77 @@ class QualityAnnotationValidator {
 		}
 
 		$rules = ($annotation['rules'] ?? null);
-		if (is_array($rules) === false || count($rules) === 0) {
+		if ($this->isNonEmptyArray(value: $rules) === false) {
 			return [['code' => 'quality.no-rules', 'message' => 'x-openregister-quality requires a non-empty "rules" array.']];
 		}
 
+		return array_merge($this->validateRules(rules: $rules), $this->validateThresholds(annotation: $annotation));
+	}//end validate()
+
+	/**
+	 * Whether a value is an array with at least one entry.
+	 *
+	 * @param mixed $value Candidate value.
+	 *
+	 * @return bool
+	 */
+	private function isNonEmptyArray($value): bool {
+		return is_array($value) === true && count($value) > 0;
+	}//end isNonEmptyArray()
+
+	/**
+	 * Validate every rule entry, keeping the rules' order.
+	 *
+	 * @param array<int|string, mixed> $rules Rule definitions.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function validateRules(array $rules): array {
 		$errors = [];
 		foreach ($rules as $index => $rule) {
 			$errors = array_merge($errors, $this->validateRule(rule: $rule, index: (int)$index));
 		}
 
-		$errors = array_merge($errors, $this->validateThresholds(annotation: $annotation));
-
 		return $errors;
-	}//end validate()
+	}//end validateRules()
 
 	/**
 	 * Validate a single rule entry.
+	 *
+	 * A rule that is not an object, has an unknown type or names no field is
+	 * refused with that one error; otherwise its optional fields are checked.
 	 *
 	 * @param mixed $rule Rule definition.
 	 * @param int $index Position in the rules array (for messaging).
 	 *
 	 * @return array<int, array{code: string, message: string}>
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) The branch count tracks the per-rule-type
-	 *   validation matrix (shape, type, field, weight, format/pattern, half-life); each branch
-	 *   emits a distinct, independently-testable error and is clearer kept inline than scattered.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Same rationale — flat per-field guards.
 	 */
 	private function validateRule($rule, int $index): array {
 		if (is_array($rule) === false) {
 			return [['code' => 'quality.rule-not-object', 'message' => sprintf('Rule #%d must be an object.', $index)]];
 		}
 
-		$type = (string)($rule['type'] ?? '');
+		$refusal = $this->typeOrFieldRefusal(rule: $rule, index: $index);
+		if ($refusal !== []) {
+			return $refusal;
+		}
+
+		return array_merge(
+			$this->weightErrors(rule: $rule, index: $index),
+			$this->typeSpecificErrors(rule: $rule, index: $index)
+		);
+	}//end validateRule()
+
+	/**
+	 * The single error for a rule whose type is unknown or whose field is missing.
+	 *
+	 * @param array<string, mixed> $rule Rule definition.
+	 * @param int $index Position in the rules array (for messaging).
+	 *
+	 * @return array<int, array{code: string, message: string}> Empty when type and field are usable.
+	 */
+	private function typeOrFieldRefusal(array $rule, int $index): array {
+		$type = self::typeOf(rule: $rule);
 		if (in_array($type, self::VALID_TYPES, true) === false) {
 			return [
 				[
@@ -108,32 +146,100 @@ class QualityAnnotationValidator {
 			return [['code' => 'quality.missing-field', 'message' => sprintf('Rule #%d (%s) requires a "field".', $index, $type)]];
 		}
 
-		$errors = [];
+		return [];
+	}//end typeOrFieldRefusal()
 
+	/**
+	 * The rule's declared type, '' when absent.
+	 *
+	 * @param array<string, mixed> $rule The rule.
+	 *
+	 * @return string The type token.
+	 */
+	private static function typeOf(array $rule): string {
+		return (string)($rule['type'] ?? '');
+	}//end typeOf()
+
+	/**
+	 * The error for a present but non-numeric weight.
+	 *
+	 * @param array<string, mixed> $rule Rule definition.
+	 * @param int $index Position in the rules array (for messaging).
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function weightErrors(array $rule, int $index): array {
 		if (array_key_exists('weight', $rule) === true && is_numeric($rule['weight']) === false) {
-			$errors[] = ['code' => 'quality.bad-weight', 'message' => sprintf('Rule #%d "weight" must be numeric.', $index)];
+			return [['code' => 'quality.bad-weight', 'message' => sprintf('Rule #%d "weight" must be numeric.', $index)]];
 		}
 
-		if ($type === 'format') {
-			$hasNamed = (isset($rule['format']) === true && (string)$rule['format'] !== '');
-			$hasPattern = (isset($rule['pattern']) === true && (string)$rule['pattern'] !== '');
-			if ($hasNamed === false && $hasPattern === false) {
-				$errors[] = [
-					'code' => 'quality.format-missing-spec',
-					'message' => sprintf('Rule #%d (format) requires "format" or "pattern".', $index),
-				];
-			}
+		return [];
+	}//end weightErrors()
+
+	/**
+	 * The errors for the fields only one rule type reads.
+	 *
+	 * @param array<string, mixed> $rule Rule definition.
+	 * @param int $index Position in the rules array (for messaging).
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function typeSpecificErrors(array $rule, int $index): array {
+		return match (self::typeOf(rule: $rule)) {
+			'format' => $this->formatSpecErrors(rule: $rule, index: $index),
+			'freshness' => $this->halfLifeErrors(rule: $rule, index: $index),
+			default => [],
+		};
+	}//end typeSpecificErrors()
+
+	/**
+	 * The error for a format rule that names neither a format nor a pattern.
+	 *
+	 * @param array<string, mixed> $rule Rule definition.
+	 * @param int $index Position in the rules array (for messaging).
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function formatSpecErrors(array $rule, int $index): array {
+		if ($this->hasText(rule: $rule, key: 'format') === true || $this->hasText(rule: $rule, key: 'pattern') === true) {
+			return [];
 		}
 
-		if ($type === 'freshness'
-			&& array_key_exists('halfLifeDays', $rule) === true
-			&& is_numeric($rule['halfLifeDays']) === false
-		) {
-			$errors[] = ['code' => 'quality.bad-half-life', 'message' => sprintf('Rule #%d "halfLifeDays" must be numeric.', $index)];
+		return [
+			[
+				'code' => 'quality.format-missing-spec',
+				'message' => sprintf('Rule #%d (format) requires "format" or "pattern".', $index),
+			],
+		];
+	}//end formatSpecErrors()
+
+	/**
+	 * Whether a rule carries a non-empty value under a key.
+	 *
+	 * @param array<string, mixed> $rule Rule definition.
+	 * @param string $key Key to read.
+	 *
+	 * @return bool
+	 */
+	private function hasText(array $rule, string $key): bool {
+		return isset($rule[$key]) === true && (string)$rule[$key] !== '';
+	}//end hasText()
+
+	/**
+	 * The error for a freshness rule with a present but non-numeric half-life.
+	 *
+	 * @param array<string, mixed> $rule Rule definition.
+	 * @param int $index Position in the rules array (for messaging).
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function halfLifeErrors(array $rule, int $index): array {
+		if (array_key_exists('halfLifeDays', $rule) === true && is_numeric($rule['halfLifeDays']) === false) {
+			return [['code' => 'quality.bad-half-life', 'message' => sprintf('Rule #%d "halfLifeDays" must be numeric.', $index)]];
 		}
 
-		return $errors;
-	}//end validateRule()
+		return [];
+	}//end halfLifeErrors()
 
 	/**
 	 * Validate the optional thresholds block.
@@ -152,6 +258,17 @@ class QualityAnnotationValidator {
 			return [['code' => 'quality.thresholds-not-object', 'message' => 'x-openregister-quality "thresholds" must be an object.']];
 		}
 
+		return $this->thresholdValueErrors(thresholds: $thresholds);
+	}//end validateThresholds()
+
+	/**
+	 * The errors for present but non-numeric `good` / `fair` cut-offs.
+	 *
+	 * @param array<string, mixed> $thresholds Thresholds block.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function thresholdValueErrors(array $thresholds): array {
 		$errors = [];
 		foreach (['good', 'fair'] as $key) {
 			if (array_key_exists($key, $thresholds) === true && is_numeric($thresholds[$key]) === false) {
@@ -160,5 +277,5 @@ class QualityAnnotationValidator {
 		}
 
 		return $errors;
-	}//end validateThresholds()
+	}//end thresholdValueErrors()
 }//end class

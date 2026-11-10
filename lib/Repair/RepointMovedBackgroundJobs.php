@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\AppInfo\ClassAliasMap;
-use OCA\OpenRegister\Service\Operations\MovedJobState;
+use OCA\OpenRegister\Service\Operations\MovedJobStateInterface;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\IJobList;
 use OCP\Migration\IOutput;
@@ -44,10 +44,10 @@ class RepointMovedBackgroundJobs implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param IJobList        $jobList The Nextcloud job list.
-	 * @param ClassAliasMap   $map     The old => new class map.
-	 * @param LoggerInterface $logger  Logger.
-	 * @param MovedJobState   $state   The schedule and run log kept per job class.
+	 * @param IJobList               $jobList The Nextcloud job list.
+	 * @param ClassAliasMap          $map     The old => new class map.
+	 * @param LoggerInterface        $logger  Logger.
+	 * @param MovedJobStateInterface $state   The schedule and run log kept per job class.
 	 *
 	 * @return void
 	 */
@@ -55,7 +55,7 @@ class RepointMovedBackgroundJobs implements IRepairStep {
 		private readonly IJobList $jobList,
 		private readonly ClassAliasMap $map,
 		private readonly LoggerInterface $logger,
-		private readonly MovedJobState $state,
+		private readonly MovedJobStateInterface $state,
 	) {
 	}//end __construct()
 

@@ -36,6 +36,7 @@ namespace Unit\Service\Flow;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Event\AgentRunRequestedEvent;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskConfig;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskStep;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskPerformers;
 use OCA\OpenRegister\Service\Flow\Principal\IPrincipalResolver;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
@@ -43,6 +44,7 @@ use OCA\OpenRegister\Service\Flow\Principal\RegisterPrincipalResolversEvent;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
+use OCA\OpenRegister\Service\Task\TaskFormSources;
 use OCP\App\IAppManager;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -156,8 +158,7 @@ final class UserTaskPerformersTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 
 		return new TaskFormReader(
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(TransitionEngine::class),
+			new TaskFormSources($this->createMock(SchemaMapper::class), $this->createMock(TransitionEngine::class)),
 			$this->createMock(IAppManager::class),
 			$l10n
 		);
@@ -185,11 +186,7 @@ final class UserTaskPerformersTest extends TestCase {
 			);
 		}
 
-		return new UserTaskPerformers(
-			config: new UserTaskConfig(l10n: $l10n, forms: $this->formReader()),
-			principals: $registry,
-			events: $events
-		);
+		return new UserTaskPerformers(config: new UserTaskConfig(l10n: $l10n, forms: $this->formReader()), hooks: new \OCA\OpenRegister\Service\Flow\Nodes\UserTaskHooks(principals: $registry, events: $events));
 	}//end performers()
 
 	/**
@@ -247,10 +244,14 @@ final class UserTaskPerformersTest extends TestCase {
 	 * @return void
 	 */
 	public function testAPerformerSomebodyHoldsIsAccepted(): void {
-		$this->expectNotToPerformAssertions();
+		$asked = new \ArrayObject();
+		$performers = $this->performers($this->registry([$this->recordingResolver('group', ['alice'], $asked)]));
 
-		$this->performers($this->registry([$this->resolver('group', ['alice'])]))
-			->refuseIfNobodyHoldsThem(['assignee' => ['type' => 'group', 'id' => 'bezwaar']]);
+		$refusal = $this->refusalOf($performers, ['assignee' => ['type' => 'group', 'id' => 'bezwaar']]);
+
+		// Pair: testAStepNobodyCanPerformIsRefusedNamingWhoItAsked, same group held by nobody.
+		$this->assertNull($refusal);
+		$this->assertSame(['bezwaar'], $asked->getArrayCopy(), 'the holder check never asked the resolver');
 	}//end testAPerformerSomebodyHoldsIsAccepted()
 
 	/**
@@ -260,10 +261,14 @@ final class UserTaskPerformersTest extends TestCase {
 	 * @return void
 	 */
 	public function testAStepNamingNobodyAtAllIsNotRefusedHere(): void {
-		$this->expectNotToPerformAssertions();
+		$asked = new \ArrayObject();
+		$performers = $this->performers($this->registry([$this->recordingResolver('group', [], $asked)]));
 
-		$this->performers($this->registry([$this->resolver('group', [])]))
-			->refuseIfNobodyHoldsThem(['title' => 'Approve it']);
+		$refusal = $this->refusalOf($performers, ['title' => 'Approve it']);
+
+		// Pair: testAStepNobodyCanPerformIsRefusedNamingWhoItAsked adds an assignee.
+		$this->assertNull($refusal);
+		$this->assertSame([], $asked->getArrayCopy(), 'an unassigned step was resolved against somebody');
 	}//end testAStepNamingNobodyAtAllIsNotRefusedHere()
 
 	/**
@@ -275,10 +280,10 @@ final class UserTaskPerformersTest extends TestCase {
 	 * @return void
 	 */
 	public function testWithoutARegistryNothingIsRefused(): void {
-		$this->expectNotToPerformAssertions();
+		$refusal = $this->refusalOf($this->performers(null), ['assignee' => ['type' => 'group', 'id' => 'bezwaar']]);
 
-		$this->performers(null)
-			->refuseIfNobodyHoldsThem(['assignee' => ['type' => 'group', 'id' => 'bezwaar']]);
+		// Pair: testAStepNobodyCanPerformIsRefusedNamingWhoItAsked, same step with a registry.
+		$this->assertNull($refusal, 'a step was refused without any basis to resolve it');
 	}//end testWithoutARegistryNothingIsRefused()
 
 	/**
@@ -290,14 +295,101 @@ final class UserTaskPerformersTest extends TestCase {
 	 * @return void
 	 */
 	public function testOneHolderAmongSeveralIsEnough(): void {
-		$this->expectNotToPerformAssertions();
-
 		$registry = $this->registry([$this->resolver('group', []), $this->resolver('user', ['alice'])]);
 
-		$this->performers($registry)->refuseIfNobodyHoldsThem(
+		$refusal = $this->refusalOf(
+			$this->performers($registry),
 			['candidateGroups' => ['bezwaar'], 'candidateUsers' => ['alice']]
 		);
-	}//end testOneHolderAmongSeveralIsEnough()
+
+		// Pair: testSeveralPerformersNoneHeldIsRefused empties the user too.
+		$this->assertNull($refusal);
+	}
+
+	/**
+	 * Refusal pair for testOneHolderAmongSeveralIsEnough: the same step with
+	 * every candidate held by nobody is refused.
+	 *
+	 * @return void
+	 */
+	public function testSeveralPerformersNoneHeldIsRefused(): void {
+		$registry = $this->registry([$this->resolver('group', []), $this->resolver('user', [])]);
+
+		$refusal = $this->refusalOf(
+			$this->performers($registry),
+			['candidateGroups' => ['bezwaar'], 'candidateUsers' => ['alice']]
+		);
+
+		$this->assertInstanceOf(RuntimeException::class, $refusal);
+		$this->assertStringContainsString('bezwaar', $refusal->getMessage());
+	}//end testSeveralPerformersNoneHeldIsRefused()
+
+	/**
+	 * Run the holder check and return its refusal, or null when the step may run.
+	 *
+	 * @param UserTaskPerformers   $performers The subject.
+	 * @param array<string, mixed> $config     The step config.
+	 *
+	 * @return RuntimeException|null The refusal.
+	 */
+	private function refusalOf(UserTaskPerformers $performers, array $config): ?RuntimeException {
+		try {
+			$performers->refuseIfNobodyHoldsThem($config);
+		} catch (RuntimeException $refusal) {
+			return $refusal;
+		}
+
+		return null;
+	}//end refusalOf()
+
+	/**
+	 * A resolver for one type that records every id it is asked about.
+	 *
+	 * @param string             $type    The type it answers for.
+	 * @param array<int, string> $holders Who holds any id of that type.
+	 * @param \ArrayObject       $asked   Receives each id asked.
+	 *
+	 * @return IPrincipalResolver The resolver.
+	 */
+	private function recordingResolver(string $type, array $holders, \ArrayObject $asked): IPrincipalResolver {
+		return new class($type, $holders, $asked) implements IPrincipalResolver {
+
+			/**
+			 * Constructor.
+			 *
+			 * @param string             $type    The type.
+			 * @param array<int, string> $holders The holders.
+			 * @param \ArrayObject       $asked   The log.
+			 */
+			public function __construct(
+				private readonly string $type,
+				private readonly array $holders,
+				private readonly \ArrayObject $asked,
+			) {
+			}
+
+			/**
+			 * The type this resolver answers for.
+			 *
+			 * @return string The type.
+			 */
+			public function type(): string {
+				return $this->type;
+			}
+
+			/**
+			 * Who holds it, recording the question.
+			 *
+			 * @param string $id The reference id.
+			 *
+			 * @return array<int, string> The holders.
+			 */
+			public function resolve(string $id): array {
+				$this->asked->append($id);
+				return $this->holders;
+			}
+		};
+	}//end recordingResolver()//end testOneHolderAmongSeveralIsEnough()
 
 	/**
 	 * 🔴 AN AGENT PERFORMER IS ASKED, WITH A PROMPT IN PLACE OF A FORM.
@@ -311,15 +403,18 @@ final class UserTaskPerformersTest extends TestCase {
 	 */
 	public function testAnAgentIsAskedWithItsPrompt(): void {
 		$this->performers(null)->askAnyAgent(
-			config: [
-				'title' => 'Approve it',
-				'assignee' => ['type' => 'agent', 'id' => 'scribe'],
-				'prompt' => 'Summarise the objection.',
-				'outcomeKey' => 'advice',
-				'requiresApproval' => true,
-			],
-			task: $this->aTask(),
-			context: ['flowName' => 'Bezwaar']
+			step: new UserTaskStep(
+				items: [],
+				config: [
+					'title' => 'Approve it',
+					'assignee' => ['type' => 'agent', 'id' => 'scribe'],
+					'prompt' => 'Summarise the objection.',
+					'outcomeKey' => 'advice',
+					'requiresApproval' => true,
+				],
+				context: ['flowName' => 'Bezwaar']
+			),
+			task: $this->aTask()
 		);
 
 		$events = $this->agentEvents();
@@ -338,9 +433,12 @@ final class UserTaskPerformersTest extends TestCase {
 	 */
 	public function testAnAgentWithNoPromptIsAskedTheTitle(): void {
 		$this->performers(null)->askAnyAgent(
-			config: ['title' => 'Approve it', 'assignee' => ['type' => 'agent', 'id' => 'scribe']],
-			task: $this->aTask(),
-			context: []
+			step: new UserTaskStep(
+				items: [],
+				config: ['title' => 'Approve it', 'assignee' => ['type' => 'agent', 'id' => 'scribe']],
+				context: []
+			),
+			task: $this->aTask()
 		);
 
 		$this->assertSame('Approve it', $this->agentEvents()[0]->getPrompt());
@@ -359,14 +457,20 @@ final class UserTaskPerformersTest extends TestCase {
 		$performers = $this->performers(null);
 
 		$performers->askAnyAgent(
-			config: ['title' => 'Approve it', 'assignee' => 'alice'],
-			task: $this->aTask(),
-			context: []
+			step: new UserTaskStep(
+				items: [],
+				config: ['title' => 'Approve it', 'assignee' => 'alice'],
+				context: []
+			),
+			task: $this->aTask()
 		);
 		$performers->askAnyAgent(
-			config: ['title' => 'Approve it', 'assignee' => ['type' => 'group', 'id' => 'bezwaar']],
-			task: $this->aTask(),
-			context: []
+			step: new UserTaskStep(
+				items: [],
+				config: ['title' => 'Approve it', 'assignee' => ['type' => 'group', 'id' => 'bezwaar']],
+				context: []
+			),
+			task: $this->aTask()
 		);
 
 		$this->assertSame([], $this->agentEvents());
@@ -379,15 +483,18 @@ final class UserTaskPerformersTest extends TestCase {
 	 */
 	public function testAnAgentAmongSeveralPerformersIsFound(): void {
 		$this->performers(null)->askAnyAgent(
-			config: [
-				'title' => 'Approve it',
-				'assignee' => [
-					['type' => 'user', 'id' => 'alice'],
-					['type' => 'agent', 'id' => 'scribe'],
+			step: new UserTaskStep(
+				items: [],
+				config: [
+					'title' => 'Approve it',
+					'assignee' => [
+						['type' => 'user', 'id' => 'alice'],
+						['type' => 'agent', 'id' => 'scribe'],
+					],
 				],
-			],
-			task: $this->aTask(),
-			context: []
+				context: []
+			),
+			task: $this->aTask()
 		);
 
 		$this->assertSame('scribe', $this->agentEvents()[0]->getAgent());
@@ -404,9 +511,12 @@ final class UserTaskPerformersTest extends TestCase {
 	 */
 	public function testWithoutADispatcherNothingIsAskedAndNothingFails(): void {
 		$this->performers(null, withEvents: false)->askAnyAgent(
-			config: ['title' => 'Approve it', 'assignee' => ['type' => 'agent', 'id' => 'scribe']],
-			task: $this->aTask(),
-			context: []
+			step: new UserTaskStep(
+				items: [],
+				config: ['title' => 'Approve it', 'assignee' => ['type' => 'agent', 'id' => 'scribe']],
+				context: []
+			),
+			task: $this->aTask()
 		);
 
 		$this->assertSame([], $this->agentEvents());
@@ -419,16 +529,19 @@ final class UserTaskPerformersTest extends TestCase {
 	 */
 	public function testTheEventCarriesTheStepsOwnFields(): void {
 		$this->performers(null)->askAnyAgent(
-			config: [
-				'title' => 'Approve it',
-				'assignee' => ['type' => 'agent', 'id' => 'scribe'],
-				'subjectRegister' => 'cases',
-				'subjectSchema' => 'case',
-				'mode' => 'chat',
-				'skill' => 'summarise',
-			],
-			task: $this->aTask(),
-			context: ['flowName' => 'Bezwaar']
+			step: new UserTaskStep(
+				items: [],
+				config: [
+					'title' => 'Approve it',
+					'assignee' => ['type' => 'agent', 'id' => 'scribe'],
+					'subjectRegister' => 'cases',
+					'subjectSchema' => 'case',
+					'mode' => 'chat',
+					'skill' => 'summarise',
+				],
+				context: ['flowName' => 'Bezwaar']
+			),
+			task: $this->aTask()
 		);
 
 		$event = $this->agentEvents()[0];

@@ -32,7 +32,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/specs/row-field-level-security/spec.md
  */
-class MetadataConditionFindings {
+class MetadataConditionFindings implements MetadataConditionFindingsInterface {
 
 	/**
 	 * Reads which metadata keys a record carries.
@@ -121,27 +121,52 @@ class MetadataConditionFindings {
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function findings(?array $authorization, string $context, ?array $stored = null): array {
+		return array_map(
+			fn (array $condition): string => $this->findingFor(condition: $condition, context: $context),
+			$this->addedConditions(authorization: $authorization, stored: $stored)
+		);
+	}//end findings()
+
+	/**
+	 * The unknown-metadata conditions of a block that the stored block does not already hold.
+	 *
+	 * @param array|null $authorization The block.
+	 * @param array|null $stored        The block as stored, when saving over one.
+	 *
+	 * @return array<int, array<string, string>> The conditions, in block order.
+	 */
+	private function addedConditions(?array $authorization, ?array $stored): array {
 		$held = array_column($this->unknownConditions(authorization: $stored), 'fingerprint');
 
-		$findings = [];
+		$added = [];
 		foreach ($this->unknownConditions(authorization: $authorization) as $condition) {
-			if (in_array($condition['fingerprint'], $held, true) === true) {
-				continue;
+			if (in_array($condition['fingerprint'], $held, true) === false) {
+				$added[] = $condition;
 			}
-
-			$findings[] = sprintf(
-				'The %s rule for %s in %s has a condition on "%s", which is not metadata records carry,'
-				.' so it can never match. Keys starting with "_" or "@self." name record metadata: %s.',
-				$condition['label'],
-				$condition['principal'],
-				$context,
-				$condition['key'],
-				implode(', ', $this->conditions->fields())
-			);
 		}
 
-		return $findings;
-	}//end findings()
+		return $added;
+	}//end addedConditions()
+
+	/**
+	 * The sentence for one condition that can never match.
+	 *
+	 * @param array<string, string> $condition The condition: its label, principal and key.
+	 * @param string                $context   What the block belongs to, for the message.
+	 *
+	 * @return string The finding.
+	 */
+	private function findingFor(array $condition, string $context): string {
+		return sprintf(
+			'The %s rule for %s in %s has a condition on "%s", which is not metadata records carry,'
+			.' so it can never match. Keys starting with "_" or "@self." name record metadata: %s.',
+			$condition['label'],
+			$condition['principal'],
+			$context,
+			$condition['key'],
+			implode(', ', $this->conditions->fields())
+		);
+	}//end findingFor()
 
 	/**
 	 * The findings of a schema's own block and of every property's rules.
@@ -156,7 +181,7 @@ class MetadataConditionFindings {
 	public function schemaFindings(Schema $schema, ?Schema $stored = null): array {
 		$name = sprintf('schema "%s"', (string)($schema->getSlug() ?? $schema->getTitle() ?? $schema->getId()));
 		$findings = $this->findings(authorization: $schema->getAuthorization(), context: $name, stored: $stored?->getAuthorization());
-		foreach ($this->stored->propertyBlocks(schema: $schema, stored: $stored, name: $name) as $block) {
+		foreach ($this->stored->propertyBlocks(save: new SchemaSave(schema: $schema, stored: $stored), name: $name) as $block) {
 			$findings = array_merge($findings, $this->findings(authorization: $block['authorization'], context: $block['context'], stored: $block['stored']));
 		}
 
@@ -227,27 +252,55 @@ class MetadataConditionFindings {
 	public function ruleLists(?array $authorization): array {
 		$lists = [];
 		foreach (($authorization ?? []) as $action => $rules) {
-			if (is_array($rules) === false) {
-				continue;
-			}
-
-			if ($action === DenyResolver::DENY_KEY) {
-				foreach ($rules as $denied => $entries) {
-					if (is_array($entries) === true) {
-						$lists['deny '.(string)$denied] = $entries;
-					}
-				}
-
-				continue;
-			}
-
-			if (array_is_list($rules) === true) {
-				$lists[(string)$action] = $rules;
+			foreach ($this->listsOf(action: $action, rules: $rules) as $key => $list) {
+				$lists[$key] = $list;
 			}
 		}
 
 		return $lists;
 	}//end ruleLists()
+
+	/**
+	 * The rule lists one key of a block carries: one per denied verb under `deny`, else the key's own list.
+	 *
+	 * @param int|string $action The block key.
+	 * @param mixed      $rules  Its value.
+	 *
+	 * @return array<string, array> Label to rule list; empty when the value is not a rule list.
+	 */
+	private function listsOf(int|string $action, mixed $rules): array {
+		if (is_array($rules) === false) {
+			return [];
+		}
+
+		if ($action === DenyResolverInterface::DENY_KEY) {
+			return $this->denyLists(rules: $rules);
+		}
+
+		if (array_is_list($rules) === true) {
+			return [(string)$action => $rules];
+		}
+
+		return [];
+	}//end listsOf()
+
+	/**
+	 * The entry list of each denied verb, labelled `deny <verb>`.
+	 *
+	 * @param array $rules The `deny` block.
+	 *
+	 * @return array<string, array> Label to entry list.
+	 */
+	private function denyLists(array $rules): array {
+		$lists = [];
+		foreach ($rules as $denied => $entries) {
+			if (is_array($entries) === true) {
+				$lists['deny '.(string)$denied] = $entries;
+			}
+		}
+
+		return $lists;
+	}//end denyLists()
 
 	/**
 	 * Whom a rule names, for the message.

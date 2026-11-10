@@ -9,13 +9,17 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\TranslationEdit;
+use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Service\BulkTranslationService;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
+use OCA\OpenRegister\Service\Translation\LanguagePair;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
+use OCA\OpenRegister\Service\TranslationStores;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -47,7 +51,8 @@ class BulkTranslationServiceTranslateObjectGoldenTest extends TestCase {
 	private function service(array $s): BulkTranslationService {
 		$provider = $this->createMock(TranslationProviderInterface::class);
 		$provider->method('getIdentifier')->willReturn('fake');
-		$provider->method('translate')->willReturnCallback(function (string $text, string $from, string $to) {
+		$provider->method('translate')->willReturnCallback(function (string $text, LanguagePair $pair) {
+			[$from, $to]   = [$pair->fromLong, $pair->toLong];
 			$this->calls[] = ['translate', $text, $from, $to];
 			if ($text === 'boom') {
 				throw new Exception('provider down');
@@ -59,7 +64,8 @@ class BulkTranslationServiceTranslateObjectGoldenTest extends TestCase {
 		});
 
 		$mapper = $this->createMock(TranslationMapper::class);
-		$mapper->method('upsert')->willReturnCallback(function (...$args) {
+		$mapper->method('upsert')->willReturnCallback(function (TranslationSlot $slot, TranslationEdit $edit) {
+			$args = [$slot->objectUuid, $slot->property, $slot->language, $edit->value, $edit->status, $edit->translator, $edit->sourceLanguage];
 			$this->calls[] = ['upsert', $args];
 			if (($args['property'] ?? '') === 'sidecarFails') {
 				throw new Exception('sidecar down');
@@ -83,7 +89,7 @@ class BulkTranslationServiceTranslateObjectGoldenTest extends TestCase {
 			$this->calls[] = ['warning', $message];
 		});
 
-		return new BulkTranslationService($provider, $mapper, $handler, $schemaMapper, $logger);
+		return new BulkTranslationService($provider, new TranslationStores($mapper, $handler), $schemaMapper, $logger);
 	}
 
 	/**

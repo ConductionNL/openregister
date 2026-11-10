@@ -79,19 +79,18 @@ class StoredRuleBlocks {
 	/**
 	 * The authorization blocks of a schema's properties, with what is stored for each.
 	 *
-	 * @param Schema      $schema The schema.
-	 * @param Schema|null $stored The schema as stored, when saving over one.
-	 * @param string      $name   How a message names the schema.
+	 * @param SchemaSave $save The schema and, when saving over one, the schema as stored.
+	 * @param string     $name How a message names the schema.
 	 *
 	 * @return array<int, array{authorization: array, context: string, stored: array|null}> The blocks.
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
-	public function propertyBlocks(Schema $schema, ?Schema $stored, string $name): array {
-		$storedProperties = ($stored?->getProperties() ?? []);
+	public function propertyBlocks(SchemaSave $save, string $name): array {
+		$storedProperties = ($save->stored?->getProperties() ?? []);
 		$blocks = [];
 
-		foreach (($schema->getProperties() ?? []) as $property => $config) {
+		foreach (($save->schema->getProperties() ?? []) as $property => $config) {
 			if (is_array($config) === false || is_array(($config['authorization'] ?? null)) === false) {
 				continue;
 			}

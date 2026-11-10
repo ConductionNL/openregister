@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Oas;
 
+use OCA\OpenRegister\Service\Object\RefLoopGuardParser;
 use Opis\JsonSchema\Errors\ErrorFormatter;
 use Opis\JsonSchema\Errors\ValidationError;
 use Opis\JsonSchema\Validator;
@@ -38,7 +39,7 @@ use Opis\JsonSchema\Validator;
 /**
  * Validates a request body against a JSON-Schema.
  */
-class OasRequestValidator {
+class OasRequestValidator implements OasRequestValidatorInterface {
 	/**
 	 * Validate `$body` against `$schema`. Returns the list of errors —
 	 * empty array on success. Each error is `{ path, message }`.
@@ -65,6 +66,7 @@ class OasRequestValidator {
 		// property the caller never sent. The OAS 3.1 meta-schema does exactly
 		// that with a query parameter's `allowEmptyValue`.
 		$validator = new Validator();
+		$validator->setParser((new RefLoopGuardParser(keyword: '$ref'))->schemaParser());
 		$validator->parser()->setOption('allowDefaults', false);
 		$result = $validator->validate(data: $bodyObj, schema: $schemaObj);
 		if ($result->isValid() === true) {
@@ -182,15 +184,14 @@ class OasRequestValidator {
 	 * @spec openspec/specs/oas-validation/spec.md#requirement-request-validation-against-oas-schema
 	 */
 	private function bindLocalDynamicRefs(array $schema): array {
-		$anchors = [];
-		$nestedIds = 0;
-		$this->collectDynamicAnchors(node: $schema, pointer: '', anchors: $anchors, nestedIds: $nestedIds);
-		if ($nestedIds > 0 || $anchors === []) {
+		$scan = new DynamicAnchorScan();
+		$scan->collect(node: $schema);
+		if ($scan->nestedIds > 0 || $scan->anchors === []) {
 			return $schema;
 		}
 
 		$targets = [];
-		foreach ($anchors as $name => $pointers) {
+		foreach ($scan->anchors as $name => $pointers) {
 			if (count($pointers) === 1) {
 				$targets['#' . $name] = '#' . $pointers[0];
 			}
@@ -198,35 +199,6 @@ class OasRequestValidator {
 
 		return $this->rewriteDynamicRefs(node: $schema, targets: $targets);
 	}//end bindLocalDynamicRefs()
-
-	/**
-	 * Record where each `$dynamicAnchor` is declared, and count nested `$id`s.
-	 *
-	 * @param mixed  $node      The schema node being walked.
-	 * @param string $pointer   The JSON pointer of that node ('' is the root).
-	 * @param array  $anchors   Anchor name => list of JSON pointers (by reference).
-	 * @param int    $nestedIds Number of `$id`s below the root (by reference).
-	 *
-	 * @return void
-	 */
-	private function collectDynamicAnchors(mixed $node, string $pointer, array &$anchors, int &$nestedIds): void {
-		if (is_array($node) === false) {
-			return;
-		}
-
-		if ($pointer !== '' && isset($node['$id']) === true) {
-			$nestedIds++;
-		}
-
-		if (isset($node['$dynamicAnchor']) === true && is_string($node['$dynamicAnchor']) === true) {
-			$anchors[$node['$dynamicAnchor']][] = $pointer;
-		}
-
-		foreach ($node as $key => $child) {
-			$segment = str_replace(['~', '/'], ['~0', '~1'], (string)$key);
-			$this->collectDynamicAnchors(node: $child, pointer: $pointer . '/' . $segment, anchors: $anchors, nestedIds: $nestedIds);
-		}
-	}//end collectDynamicAnchors()
 
 	/**
 	 * Replace `$dynamicRef` values that have a bound target with a plain `$ref`.

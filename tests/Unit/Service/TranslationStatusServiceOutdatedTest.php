@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\TranslationMapper;
+use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\TranslationStatusService;
 use OCP\IUserSession;
@@ -44,7 +45,7 @@ class TranslationStatusServiceOutdatedTest extends TestCase {
 			$this->createMock(IUserSession::class)
 		);
 
-		$count = $service->markDerivedTranslationsOutdated('obj-uuid', 'title', 'nl');
+		$count = $service->markDerivedTranslationsOutdated(new TranslationSlot('obj-uuid', 'title', 'nl'));
 		$this->assertSame(3, $count);
 	}//end testFlipsDerivedRowsAndReturnsCount()
 
@@ -61,8 +62,8 @@ class TranslationStatusServiceOutdatedTest extends TestCase {
 			$this->createMock(IUserSession::class)
 		);
 
-		$this->assertSame(0, $service->markDerivedTranslationsOutdated('', 'title', 'nl'));
-		$this->assertSame(0, $service->markDerivedTranslationsOutdated('uuid', '', 'nl'));
-		$this->assertSame(0, $service->markDerivedTranslationsOutdated('uuid', 'title', ''));
+		$this->assertSame(0, $service->markDerivedTranslationsOutdated(new TranslationSlot('', 'title', 'nl')));
+		$this->assertSame(0, $service->markDerivedTranslationsOutdated(new TranslationSlot('uuid', '', 'nl')));
+		$this->assertSame(0, $service->markDerivedTranslationsOutdated(new TranslationSlot('uuid', 'title', '')));
 	}//end testEmptyArgumentsReturnZero()
 }//end class

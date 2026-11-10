@@ -26,6 +26,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Configuration\SchemaImportOptions;
 
 /**
  * Golden test for ImportService::importFromJson().
@@ -264,8 +265,8 @@ class ImportServiceImportFromJsonGoldenTest extends TestCase {
 			$this->record(method: 'importHandler.importSchema', args: func_get_args());
 			return $this->schema(id: 30 + strlen((string)($data['slug'] ?? '')), slug: (string)($data['slug'] ?? 'none'));
 		});
-		$importHandler->method('importRegister')->willReturnCallback(function () {
-			$this->record(method: 'importHandler.importRegister', args: func_get_args());
+		$importHandler->method('importRegister')->willReturnCallback(function (array $data, SchemaImportOptions $options) {
+			$this->record(method: 'importHandler.importRegister', args: [$data, $options->owner, $options->appId, $options->version, $options->force]);
 			$register = new Register();
 			$register->setId(40);
 			$register->setSlug('reg');
@@ -276,15 +277,10 @@ class ImportServiceImportFromJsonGoldenTest extends TestCase {
 		$container->method('get')->willReturnCallback(static fn (string $id) => $id === ImportHandler::class ? $importHandler : null);
 
 		return new ImportService(
-			$schemaMapper,
-			$objectService,
-			$logger,
-			$this->createMock(IGroupManager::class),
-			$this->createMock(TranslationCsvCodec::class),
-			$audit,
-			$mapping,
-			$validator,
-			$container
+			new \OCA\OpenRegister\Service\Import\ImportServiceStores($schemaMapper, $objectService, $audit, $validator),
+			new \OCA\OpenRegister\Service\Import\ImportServiceCodecs($this->createMock(TranslationCsvCodec::class), $mapping),
+			new \OCA\OpenRegister\Service\Import\ImportServiceRuntime($container, new \OCA\OpenRegister\Listener\NotifyPushBatch(), $logger),
+			$this->createMock(IGroupManager::class)
 		);
 	}//end buildService()
 

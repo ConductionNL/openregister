@@ -1,0 +1,219 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`MigrationPacksIndex table shows every pack with its buttons (admin false) 1`] = `
+[
+  {
+    "headers": [
+      "t:Name",
+      "t:Slug",
+      "t:Source format",
+      "t:Version",
+      "t:Built-in",
+      "t:Updated",
+      "t:Actions",
+    ],
+    "rows": [
+      [
+        "alpha",
+        "alpha",
+        "xlsx",
+        "2",
+        "t:No",
+        "-",
+        "",
+      ],
+      [
+        "Zeta",
+        "zeta",
+        "csv",
+        "1.0",
+        "t:Yes",
+        "-",
+        "",
+      ],
+    ],
+  },
+]
+`;
+
+exports[`MigrationPacksIndex table shows every pack with its buttons (admin false) 2`] = `
+[
+  "{"name":"migration-pack-detail","params":{"id":"1"}}",
+  "{"name":"migration-pack-detail","params":{"id":"2"}}",
+]
+`;
+
+exports[`MigrationPacksIndex table shows every pack with its buttons (admin false) 3`] = `
+[
+  {
+    "aria-label": "t:View {name}{"name":"alpha"}",
+    "variant": "tertiary",
+  },
+  {
+    "aria-label": "t:Export {name}{"name":"alpha"}",
+    "download": "",
+    "href": "/apps/openregister/api/migration-packs/1/export",
+    "variant": "tertiary",
+  },
+  {
+    "aria-label": "t:View {name}{"name":"Zeta"}",
+    "variant": "tertiary",
+  },
+  {
+    "aria-label": "t:Export {name}{"name":"Zeta"}",
+    "download": "",
+    "href": "/apps/openregister/api/migration-packs/2/export",
+    "variant": "tertiary",
+  },
+]
+`;
+
+exports[`MigrationPacksIndex table shows every pack with its buttons (admin true) 1`] = `
+[
+  {
+    "headers": [
+      "t:Name",
+      "t:Slug",
+      "t:Source format",
+      "t:Version",
+      "t:Built-in",
+      "t:Updated",
+      "t:Actions",
+    ],
+    "rows": [
+      [
+        "alpha",
+        "alpha",
+        "xlsx",
+        "2",
+        "t:No",
+        "-",
+        "",
+      ],
+      [
+        "Zeta",
+        "zeta",
+        "csv",
+        "1.0",
+        "t:Yes",
+        "-",
+        "",
+      ],
+    ],
+  },
+]
+`;
+
+exports[`MigrationPacksIndex table shows every pack with its buttons (admin true) 2`] = `
+[
+  "{"name":"migration-pack-detail","params":{"id":"1"}}",
+  "{"name":"migration-pack-detail","params":{"id":"2"}}",
+]
+`;
+
+exports[`MigrationPacksIndex table shows every pack with its buttons (admin true) 3`] = `
+[
+  {
+    "aria-label": "t:Edit {name}{"name":"alpha"}",
+    "variant": "tertiary",
+  },
+  {
+    "aria-label": "t:Export {name}{"name":"alpha"}",
+    "download": "",
+    "href": "/apps/openregister/api/migration-packs/1/export",
+    "variant": "tertiary",
+  },
+  {
+    "aria-label": "t:Delete {name}{"name":"alpha"}",
+    "variant": "tertiary",
+  },
+  {
+    "aria-label": "t:Edit {name}{"name":"Zeta"}",
+    "variant": "tertiary",
+  },
+  {
+    "aria-label": "t:Export {name}{"name":"Zeta"}",
+    "download": "",
+    "href": "/apps/openregister/api/migration-packs/2/export",
+    "variant": "tertiary",
+  },
+  {
+    "aria-label": "t:Delete {name}{"name":"Zeta"}",
+    "variant": "tertiary",
+  },
+]
+`;
+
+exports[`MigrationPacksIndex table shows the empty state without packs 1`] = `"t:No migration packs yet | undefined"`;
+
+exports[`PackPreviewPanel tables asks a sample value per source column and keeps what is typed 1`] = `
+[
+  {
+    "headers": [
+      "t:Source column",
+      "t:Sample value",
+    ],
+    "rows": [
+      [
+        "Naam",
+        "",
+      ],
+      [
+        "Datum",
+        "",
+      ],
+    ],
+  },
+]
+`;
+
+exports[`PackPreviewPanel tables asks a sample value per source column and keeps what is typed 2`] = `
+[
+  "t:Sample value for {column}{"column":"Naam"}",
+  "t:Sample value for {column}{"column":"Datum"}",
+]
+`;
+
+exports[`PackPreviewPanel tables shows the fields the import would write and the row problems 1`] = `
+[
+  {
+    "headers": [
+      "t:Field",
+      "t:Value",
+    ],
+    "rows": [
+      [
+        "naam",
+        ""Jan"",
+      ],
+      [
+        "leeftijd",
+        "4",
+      ],
+      [
+        "adres",
+        "{"stad":"Ede"}",
+      ],
+    ],
+  },
+  {
+    "headers": [
+      "t:Source column",
+      "t:Target field",
+      "t:Problem",
+    ],
+    "rows": [
+      [
+        "Datum",
+        "geboren",
+        "Not a date",
+      ],
+      [
+        "-",
+        "-",
+        "Row is empty",
+      ],
+    ],
+  },
+]
+`;

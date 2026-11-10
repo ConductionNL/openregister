@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service\Vectorization;
 
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector;
 /**
  * Every public method of VectorEmbeddings. Callers depend on this interface, not on the class.
  */
@@ -64,15 +65,13 @@ interface VectorEmbeddingsInterface {
 	/**
 	 * Test embedding generation with custom configuration
 	 *
-	 * @param string $provider Provider name ('openai', 'fireworks', 'ollama')
-	 * @param array $config Provider-specific configuration
-	 * @param string $testText Optional test text to embed
+	 * @param EmbeddingProbe $probe The provider ('openai', 'fireworks', 'ollama'), its configuration and the text to embed.
 	 *
 	 * @return array
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function testEmbedding(string $provider, array $config, string $testText = 'Test.'): array;
+	public function testEmbedding(EmbeddingProbe $probe): array;
 
 	/**
 	 * Generate embeddings for multiple texts in batch
@@ -94,15 +93,7 @@ interface VectorEmbeddingsInterface {
 	/**
 	 * Store vector embedding in the PostgreSQL database
 	 *
-	 * @param string $entityType Entity type ('object' or 'file')
-	 * @param string $entityId Entity UUID
-	 * @param array $embedding Vector embedding (array of floats)
-	 * @param string $model Model used to generate embedding
-	 * @param int $dimensions Number of dimensions
-	 * @param int $chunkIndex Chunk index (0 for objects, N for file chunks)
-	 * @param int $totalChunks Total number of chunks
-	 * @param string|null $chunkText The text that was embedded
-	 * @param array $metadata Additional metadata as associative array
+	 * @param StoredVector $vector The entity, its embedding and its chunk position
 	 *
 	 * @return int The ID of the inserted vector
 	 *
@@ -110,10 +101,7 @@ interface VectorEmbeddingsInterface {
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function storeVector(
-		string $entityType, string $entityId, array $embedding, string $model, int $dimensions, int $chunkIndex = 0, int $totalChunks = 1,
-		?string $chunkText = null, array $metadata = []
-	): int;
+	public function storeVector(StoredVector $vector): int;
 
 	/**
 	 * Perform semantic similarity search
@@ -137,11 +125,8 @@ interface VectorEmbeddingsInterface {
 	 * Caller supplies keyword search results; vector search runs against the database.
 	 * Results are fused using Reciprocal Rank Fusion (RRF).
 	 *
-	 * @param string $query Query text
-	 * @param array $keywordResults Pre-fetched keyword search results to fuse with vector results
-	 * @param int $limit Maximum results
-	 * @param array $weights Weights for each search type ['keyword' => 0.5, 'vector' => 0.5]
-	 * @param string|null $provider Embedding provider
+	 * @param HybridSearchRequest $request The query text, the pre-fetched keyword results to fuse, the maximum
+	 *                                     results and the weight per search type.
 	 *
 	 * @return array Hybrid search results with combined scores and source breakdown
 	 *
@@ -149,10 +134,7 @@ interface VectorEmbeddingsInterface {
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function hybridSearch(
-		string $query, array $keywordResults = [], int $limit = 20, array $weights = ['keyword' => 0.5, 'vector' => 0.5],
-		?string $provider = null
-	): array;
+	public function hybridSearch(HybridSearchRequest $request): array;
 
 	/**
 	 * Get vector statistics from the PostgreSQL database

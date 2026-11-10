@@ -56,7 +56,21 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
  */
-class FormIdempotencyStore {
+class FormIdempotencyStore implements FormIdempotencyStoreInterface {
+	/**
+	 * The app's data store.
+	 *
+	 * @var IAppData
+	 */
+	private readonly IAppData $appData;
+
+	/**
+	 * The clock.
+	 *
+	 * @var ITimeFactory
+	 */
+	private readonly ITimeFactory $time;
+
 
 	use AppDataFolder;
 
@@ -84,19 +98,19 @@ class FormIdempotencyStore {
 	/**
 	 * Constructor.
 	 *
-	 * @param IAppData         $appData The app's data store.
-	 * @param ITimeFactory     $time    The clock.
+	 * @param FormFileStorage  $storage The app's data store and the clock.
 	 * @param ILockingProvider $locks   Reserves a key while its submit runs.
 	 * @param IL10N            $l10n    Translations, for refusals a resident reads.
 	 * @param LoggerInterface|null $logger Says once that reservation is a no-op on this instance.
 	 */
 	public function __construct(
-		private readonly IAppData $appData,
-		private readonly ITimeFactory $time,
+		FormFileStorage $storage,
 		private readonly ILockingProvider $locks,
 		private readonly IL10N $l10n,
 		private readonly ?LoggerInterface $logger = null,
 	) {
+		$this->appData = $storage->appData;
+		$this->time    = $storage->time;
 
 	}//end __construct()
 
@@ -188,11 +202,9 @@ class FormIdempotencyStore {
 	}//end release()
 
 	/**
-	 * The answer remembered under a key, or null when none is live.
+	 * The answer remembered for a request, or null when none is live.
 	 *
-	 * @param string $scope   The form scope (form id, or the caller's own).
-	 * @param string $key     The Idempotency-Key.
-	 * @param string $binding The binding of this request (see bindingFor()).
+	 * @param IdempotentRequest $request The scope, the key and the binding of this request.
 	 *
 	 * @return array<string, mixed>|null The answer.
 	 *
@@ -200,22 +212,13 @@ class FormIdempotencyStore {
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
 	 */
-	public function find(string $scope, string $key, string $binding): ?array {
-		$folder = $this->folder(create: false);
-		$name = $this->name(scope: $scope, key: $key);
-		if ($folder === null || $folder->fileExists($name) === false) {
+	public function answerFor(IdempotentRequest $request): ?array {
+		$entry = $this->liveEntry(scope: $request->scope, key: $request->key);
+		if ($entry === null) {
 			return null;
 		}
 
-		$file = $folder->getFile($name);
-		$entry = $this->read(file: $file);
-		if ($entry === null || $entry['expiresAt'] <= $this->time->getTime()) {
-			$file->delete();
-
-			return null;
-		}
-
-		if (hash_equals($entry['binding'], $binding) === false) {
+		if (hash_equals($entry['binding'], $request->binding) === false) {
 			// The same answer to a different asker would hand over their
 			// reference and confirmation; say only that the key is taken.
 			throw new FormSubmitRefusedException(
@@ -225,24 +228,64 @@ class FormIdempotencyStore {
 		}
 
 		return $entry['response'];
-	}//end find()
+	}//end answerFor()
 
 	/**
-	 * Remember an answer under a key for 24 hours.
+	 * The live entry under a key; an expired or unreadable one is deleted on sight.
 	 *
-	 * @param string               $scope    The form scope.
-	 * @param string               $key      The Idempotency-Key.
+	 * @param string $scope The form scope.
+	 * @param string $key   The Idempotency-Key.
+	 *
+	 * @return array{expiresAt: int, binding: string, response: array<string, mixed>}|null The entry.
+	 */
+	private function liveEntry(string $scope, string $key): ?array {
+		$file = $this->existingFile(scope: $scope, key: $key);
+		if ($file === null) {
+			return null;
+		}
+
+		$entry = $this->read(file: $file);
+		if ($entry === null || $entry['expiresAt'] <= $this->time->getTime()) {
+			$file->delete();
+
+			return null;
+		}
+
+		return $entry;
+	}//end liveEntry()
+
+	/**
+	 * The file an answer under a key is stored in, or null when there is none.
+	 *
+	 * @param string $scope The form scope.
+	 * @param string $key   The Idempotency-Key.
+	 *
+	 * @return ISimpleFile|null The file.
+	 */
+	private function existingFile(string $scope, string $key): ?ISimpleFile {
+		$folder = $this->folder(create: false);
+		$name = $this->name(scope: $scope, key: $key);
+		if ($folder === null || $folder->fileExists($name) === false) {
+			return null;
+		}
+
+		return $folder->getFile($name);
+	}//end existingFile()
+
+	/**
+	 * Remember the answer to a request for 24 hours.
+	 *
+	 * @param IdempotentRequest    $request  The scope, the key and the binding of the request that got it.
 	 * @param array<string, mixed> $response The answer.
-	 * @param string               $binding  The binding of the request that got it (see bindingFor()).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
 	 */
-	public function remember(string $scope, string $key, array $response, string $binding): void {
+	public function keep(IdempotentRequest $request, array $response): void {
 		$folder = $this->folder(create: true);
-		$content = (string)json_encode(['expiresAt' => $this->time->getTime() + self::TTL, 'binding' => $binding, 'response' => $response]);
-		$name = $this->name(scope: $scope, key: $key);
+		$content = (string)json_encode(['expiresAt' => $this->time->getTime() + self::TTL, 'binding' => $request->binding, 'response' => $response]);
+		$name = $this->name(scope: $request->scope, key: $request->key);
 		if ($folder->fileExists($name) === true) {
 			$folder->getFile($name)->putContent($content);
 
@@ -250,7 +293,7 @@ class FormIdempotencyStore {
 		}
 
 		$folder->newFile($name, $content);
-	}//end remember()
+	}//end keep()
 
 	/**
 	 * Delete every expired answer.
@@ -268,17 +311,30 @@ class FormIdempotencyStore {
 		$deleted = 0;
 		$now = $this->time->getTime();
 		foreach ($folder->getDirectoryListing() as $file) {
-			$entry = $this->read(file: $file);
-			if ($entry !== null && $entry['expiresAt'] > $now) {
-				continue;
-			}
-
-			$file->delete();
-			$deleted++;
+			$deleted += $this->purgeIfExpired(file: $file, now: $now);
 		}
 
 		return $deleted;
 	}//end purge()
+
+	/**
+	 * Delete one answer file when it expired or cannot be read.
+	 *
+	 * @param ISimpleFile $file The file.
+	 * @param int         $now  The moment of the purge.
+	 *
+	 * @return int 1 when deleted, else 0.
+	 */
+	private function purgeIfExpired(ISimpleFile $file, int $now): int {
+		$entry = $this->read(file: $file);
+		if ($entry !== null && $entry['expiresAt'] > $now) {
+			return 0;
+		}
+
+		$file->delete();
+
+		return 1;
+	}//end purgeIfExpired()
 
 	/**
 	 * The stored entry of a file, or null when unreadable.

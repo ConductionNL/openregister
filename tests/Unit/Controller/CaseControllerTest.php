@@ -46,6 +46,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\OpenRegister\Service\Case\CaseAdHocRequest;
 
 /**
  * HTTP translation, route contract and structural absences.
@@ -54,6 +55,13 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Controller\Support\CaseControllerServices
  * @uses \OCA\OpenRegister\Db\CaseItem
  * @uses \OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapper
+ * @uses \OCA\OpenRegister\Service\Case\ZaaktypeSkeletonDraft
+ * @uses \OCA\OpenRegister\Service\Case\ZaaktypeStageBuilder
+ * @uses \OCA\OpenRegister\Service\Case\ZaaktypeRoleMapper
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopAdvance
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopRouting
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopPlan
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunStart
  * @uses \OCA\OpenRegister\Service\Flow\FlowHop
  * @uses \OCA\OpenRegister\Service\Flow\FlowWalkHop
  * @uses \OCA\OpenRegister\Service\Flow\FlowWalkPass
@@ -292,9 +300,11 @@ class CaseControllerTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 		$this->request->method('getParams')->willReturn(['authorization' => ['me']]);
 		$this->plans->expects($this->once())->method('attachAdHoc')->with(
-			'o',
-			$this->callback(static fn (array $data): bool => $data['authorization'] === ['me'] && $data['required'] === false && $data['key'] === 'k' && array_key_exists('name', $data) === false),
-			'alice'
+			$this->callback(
+				static fn (CaseAdHocRequest $request): bool => $request->objectUuid === 'o'
+					&& $request->data['authorization'] === ['me'] && $request->data['required'] === false && $request->data['key'] === 'k'
+					&& array_key_exists('name', $request->data) === false && $request->actor === 'alice'
+			)
 		)->willThrowException(new CaseValidationException('An ad-hoc item cannot declare its own authorization'));
 
 		$response = $this->controller()->attach('o', 'k', 'humanTask', null, null, 'intake', null, null, null, null, null, null, null, false);

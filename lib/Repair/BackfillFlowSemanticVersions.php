@@ -39,10 +39,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
-use OCA\OpenRegister\Db\FlowVersionMapper;
-use OCA\OpenRegister\Service\Flow\FlowSemanticVersion;
+use OCA\OpenRegister\Db\FlowVersionMapperInterface;
+use OCA\OpenRegister\Service\Flow\FlowSemanticVersionInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Container\ContainerInterface;
@@ -95,8 +95,10 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 	public function run(IOutput $output): void {
 		try {
 			$flows = $this->everyFlow();
-			$versions = $this->container->get(FlowVersionMapper::class);
-			$semver = $this->container->get(FlowSemanticVersion::class);
+			$numbering = new FlowVersionNumbering(
+				versions: $this->container->get(FlowVersionMapperInterface::class),
+				semver: $this->container->get(FlowSemanticVersionInterface::class)
+			);
 		} catch (Throwable $e) {
 			// The tables may not exist yet on a fresh install. Nothing to
 			// back-fill is not a failure.
@@ -109,11 +111,7 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 
 		foreach ($flows as $flow) {
 			try {
-				$stamped += $this->stampOneFlow(
-					flow: $flow,
-					versions: $versions,
-					semver: $semver
-				);
+				$stamped += $this->stampOneFlow(flow: $flow, numbering: $numbering);
 			} catch (Throwable $e) {
 				// One flow's history being unreadable must not stop the rest,
 				// and must not fail the upgrade.
@@ -153,7 +151,7 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-existing-published-versions-are-stamped-once-and-honestly
 	 */
 	private function everyFlow(): array {
-		$mapper = $this->container->get(FlowMapper::class);
+		$mapper = $this->container->get(FlowMapperInterface::class);
 		$page = 500;
 		$offset = 0;
 		$all = [];
@@ -178,16 +176,15 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 	 * is a stronger fact than anything this step can produce, and overwriting
 	 * one would replace evidence with a guess.
 	 *
-	 * @param Flow               $flow     The flow.
-	 * @param FlowVersionMapper  $versions The version rows.
-	 * @param FlowSemanticVersion $semver  The numbering.
+	 * @param Flow                 $flow      The flow.
+	 * @param FlowVersionNumbering $numbering The version rows and their numbering.
 	 *
 	 * @return int How many rows were stamped.
 	 *
 	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-existing-published-versions-are-stamped-once-and-honestly
 	 */
-	private function stampOneFlow(Flow $flow, FlowVersionMapper $versions, FlowSemanticVersion $semver): int {
-		$rows = $versions->findAllForFlow(flowUuid: (string)$flow->getUuid());
+	private function stampOneFlow(Flow $flow, FlowVersionNumbering $numbering): int {
+		$rows = $numbering->versions->findAllForFlow(flowUuid: (string)$flow->getUuid());
 
 		// Oldest first: the sequence is the flow's own history, and
 		// `findAllForFlow` answers newest first for the UI.
@@ -209,9 +206,9 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 				continue;
 			}
 
-			$row->setSemver($semver->backfilled(ordinalPosition: $position));
-			$row->setSemverSource(FlowSemanticVersion::SOURCE_BACKFILL);
-			$versions->update($row);
+			$row->setSemver($numbering->semver->backfilled(ordinalPosition: $position));
+			$row->setSemverSource(FlowSemanticVersionInterface::SOURCE_BACKFILL);
+			$numbering->versions->update($row);
 			$stamped++;
 		}
 
@@ -256,8 +253,8 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 		}
 
 		$flow->setSemver($live->getSemver());
-		$flow->setSemverSource(FlowSemanticVersion::SOURCE_BACKFILL);
-		$this->container->get(FlowMapper::class)->update($flow);
+		$flow->setSemverSource(FlowSemanticVersionInterface::SOURCE_BACKFILL);
+		$this->container->get(FlowMapperInterface::class)->update($flow);
 
 	}//end mirrorOntoFlow()
 }//end class

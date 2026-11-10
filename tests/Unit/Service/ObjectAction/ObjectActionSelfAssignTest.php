@@ -21,12 +21,15 @@ use OCA\OpenRegister\Db\EmptyPropertyClaim;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\MatrixRowsRequestedEvent;
 use OCA\OpenRegister\Exception\PropertyAlreadySetException;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCP\IDBConnection;
 use ReflectionMethod;
@@ -37,19 +40,26 @@ use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionAudit;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionCatalogue;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationEntries;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionGate;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionInputs;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionFlowEngines;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionFlowRun;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunRecorder;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerChecks;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionSelfAssign;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionStepsFlow;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionWriters;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Flow\MacroActionValidator;
+use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -72,6 +82,8 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AnnotationFaults
+ * @uses \OCA\OpenRegister\Service\Object\RefLoopGuard
+ * @uses \OCA\OpenRegister\Service\Object\RefLoopGuardParser
  */
 class ObjectActionSelfAssignTest extends TestCase {
 
@@ -227,13 +239,13 @@ class ObjectActionSelfAssignTest extends TestCase {
 			}
 		);
 
-		$handler = new PermissionHandler(
+		$handler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$session,
 			$users,
 			$groups,
 			$schemas,
 			$this->createMock(MagicMapper::class),
-			new ConditionMatcher($session, $this->createMock(ContainerInterface::class), new OperatorEvaluator(new NullLogger()), new NullLogger()),
+			new ConditionMatcher(new ConditionUserResolvers($session), $this->createMock(ContainerInterface::class), new OperatorEvaluator(new NullLogger()), new NullLogger()),
 			$config,
 			new NullLogger(),
 			$this->createMock(ContainerInterface::class),
@@ -274,23 +286,24 @@ class ObjectActionSelfAssignTest extends TestCase {
 				return $saved;
 			}
 		);
-		$audit = $this->createMock(ObjectActionAudit::class);
-		$audit->method('record')->willReturnCallback(
-			function (...$args): void {
-				$this->audited[] = $args;
+		// The real ObjectActionAudit writes the entry, so the acting user is
+		// the one its gate reads: record() no longer takes a userId argument.
+		$trail = $this->createMock(AuditTrailMapperInterface::class);
+		$trail->method('createAuditTrailEntry')->willReturnCallback(
+			function (ObjectEntity $object, string $action, array $context, ?string $actorId): AuditTrail {
+				$this->audited[] = [$object, $context['declaredAction'], $context['kind'], $context['run'], $context['inputsDigest'], $context['changes'], $context['outcome'], $actorId];
+				return new AuditTrail();
 			}
 		);
 
+		$checks   = new ObjectActionRunnerChecks(new ObjectActionDefinitions($this->createMock(RegisterMapper::class)), new ObjectActionGate($permissions, $session, $l10n, $this->createMock(ObjectActionElevationEntries::class)), new ObjectActionInputs(new OasRequestValidator()));
+		$recorder = new ObjectActionRunRecorder($checks->inputs, new ObjectActionAudit($trail, new NullLogger(), $checks->gate));
+
 		return new ObjectActionRunner(
-			new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
-			new ObjectActionGate($permissions, $session, $l10n, $this->createMock(ObjectActionElevationEntries::class)),
-			new ObjectActionInputs(new OasRequestValidator()),
-			$this->createMock(ObjectActionStepsFlow::class),
-			$audit,
+			$checks,
 			new ObjectActionWriters($this->createMock(TransitionEngine::class), new ObjectActionSelfAssign($objects, $session)),
-			$this->createMock(FlowService::class),
-			$this->createMock(MacroActionResolver::class),
-			new NullLogger()
+			$recorder,
+			new ObjectActionFlowRun(new ObjectActionFlowEngines($this->createMock(ObjectActionStepsFlow::class), $this->createMock(FlowService::class), $this->createMock(MacroActionResolver::class)), $checks->inputs, $recorder, new NullLogger())
 		);
 	}//end runner()
 
@@ -305,11 +318,9 @@ class ObjectActionSelfAssignTest extends TestCase {
 	 */
 	private function take(Schema $schema, ObjectEntity $object, array $given = []): array {
 		return $this->runner(schema: $schema)->run(
-			object: $object,
-			schema: $schema,
+			target: new ObjectActionTarget(object: $object, schema: $schema, register: '3', schemaRef: '7'),
 			key: self::ACTION,
-			given: $given,
-			subject: ['uuid' => (string)$object->getUuid(), 'register' => '3', 'schema' => '7']
+			given: $given
 		);
 	}//end take()
 
@@ -475,9 +486,8 @@ class ObjectActionSelfAssignTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 		$list = new ObjectActionList(
-			new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
+			new ObjectActionCatalogue(new ObjectActionDefinitions($this->createMock(RegisterMapper::class)), new ObjectActionInputs(new OasRequestValidator())),
 			new ObjectActionGate($permissions, $session, $l10n, $this->createMock(ObjectActionElevationEntries::class)),
-			new ObjectActionInputs(new OasRequestValidator()),
 			$this->createMock(TransitionEngine::class),
 			$l10n
 		);
@@ -590,9 +600,8 @@ class ObjectActionSelfAssignTest extends TestCase {
 			$l10n = $this->createMock(IL10N::class);
 			$l10n->method('t')->willReturnArgument(0);
 			$list = new ObjectActionList(
-				new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
+				new ObjectActionCatalogue(new ObjectActionDefinitions($this->createMock(RegisterMapper::class)), new ObjectActionInputs(new OasRequestValidator())),
 				new ObjectActionGate($permissions, $session, $l10n, $this->createMock(ObjectActionElevationEntries::class)),
-				new ObjectActionInputs(new OasRequestValidator()),
 				$this->createMock(TransitionEngine::class),
 				$l10n
 			);
@@ -801,7 +810,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 			->onlyMethods(['grantedObjectUuids'])
 			->getMock();
 		$this->grants->method('grantedObjectUuids')->willReturn([$uuid => 31]);
-		$this->assertTrue($this->grants->isGranted(userId: 'anna', objectUuid: $uuid, action: 'update'), 'the control: the share carries update');
+		$this->assertTrue($this->grants->isGranted(lookup: new GrantLookup(userId: 'anna', objectUuid: $uuid), action: 'update'), 'the control: the share carries update');
 
 		$object = self::object(assignee: null);
 		$object->setUuid($uuid);
@@ -873,9 +882,8 @@ class ObjectActionSelfAssignTest extends TestCase {
 			$l10n = $this->createMock(IL10N::class);
 			$l10n->method('t')->willReturnArgument(0);
 			$list = new ObjectActionList(
-				new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
+				new ObjectActionCatalogue(new ObjectActionDefinitions($this->createMock(RegisterMapper::class)), new ObjectActionInputs(new OasRequestValidator())),
 				new ObjectActionGate($permissions, $session, $l10n, $this->createMock(ObjectActionElevationEntries::class)),
-				new ObjectActionInputs(new OasRequestValidator()),
 				$this->createMock(TransitionEngine::class),
 				$l10n
 			);

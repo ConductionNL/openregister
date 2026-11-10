@@ -14,6 +14,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterParser;
+use OCA\OpenRegister\Service\Geo\GeocodeOptions;
 use OCA\OpenRegister\Service\Geo\PdokGeocoder;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -245,8 +246,8 @@ class ObjectsControllerGeoRoutesGoldenTest extends TestCase {
 			$this->calls[] = 'isAvailable';
 			return $available;
 		});
-		$geocoder->method('geocodeFree')->willReturnCallback(function (string $query, int $maxItems, bool $bagOnly): array {
-			$this->calls[] = ['geocodeFree' => [$query, $maxItems, $bagOnly]];
+		$geocoder->method('geocodeFree')->willReturnCallback(function (string $query, GeocodeOptions $options): array {
+			$this->calls[] = ['geocodeFree' => [$query, $options->maxItems, $options->bagOnly]];
 			return [['label' => $query]];
 		});
 		$geocoder->method('reverseGeocode')->willReturnCallback(function (float $longitude, float $latitude): array {

@@ -115,7 +115,6 @@ class ChatControllerStatsGoldenTest extends TestCase {
 		$l10n->method('t')->willReturnCallback(fn (string $text) => 'T:' . $text);
 
 		$controller = ChatControllerFactory::create(
-			'openregister',
 			$request,
 			$this->createMock(ChatService::class),
 			$this->createMock(ConversationMapper::class),

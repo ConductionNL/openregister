@@ -32,47 +32,30 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Exception;
 
-use Throwable;
-
 /**
  * Cycle-detection variant of `ValidationException` for the
  * reference-existence path.
  */
 class CircularReferenceException extends ValidationException {
+
 	/**
 	 * Constructor.
 	 *
-	 * @param string $referencedUuid The UUID whose re-entry triggered detection.
-	 * @param string $targetSchemaSlug Slug of the target schema (or raw `$ref`).
-	 * @param array $cycle Chain of (register, schema, uuid) entries that caused the cycle.
-	 * @param string|null $message Optional override for the human-readable message.
-	 * @param int $code HTTP status code (default 422).
-	 * @param Throwable|null $previous Previous exception in the chain.
+	 * @param ReferenceCycle $referenceCycle The UUID whose re-entry triggered detection,
+	 *                                       its target schema and the chain that caused the cycle.
+	 * @param int            $code           HTTP status code (default 422).
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
 	 */
-	public function __construct(
-		private readonly string $referencedUuid,
-		private readonly string $targetSchemaSlug,
-		private readonly array $cycle = [],
-		?string $message = null,
-		int $code = 422,
-		?Throwable $previous = null,
-	) {
-		if ($message === null || $message === '') {
-			$message = sprintf(
-				"Circular reference detected for object '%s' in schema '%s'",
-				$referencedUuid,
-				$targetSchemaSlug
-			);
-		}
-
+	public function __construct(private readonly ReferenceCycle $referenceCycle, int $code=422) {
 		parent::__construct(
-			message: $message,
-			code: $code,
-			previous: $previous
+			message: sprintf(
+				"Circular reference detected for object '%s' in schema '%s'",
+				$referenceCycle->referencedUuid,
+				$referenceCycle->targetSchemaSlug
+			),
+			code: $code
 		);
-
 	}//end __construct()
 
 	/**
@@ -83,7 +66,7 @@ class CircularReferenceException extends ValidationException {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
 	 */
 	public function getReferencedUuid(): string {
-		return $this->referencedUuid;
+		return $this->referenceCycle->referencedUuid;
 	}//end getReferencedUuid()
 
 	/**
@@ -94,7 +77,7 @@ class CircularReferenceException extends ValidationException {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
 	 */
 	public function getTargetSchemaSlug(): string {
-		return $this->targetSchemaSlug;
+		return $this->referenceCycle->targetSchemaSlug;
 	}//end getTargetSchemaSlug()
 
 	/**
@@ -105,7 +88,7 @@ class CircularReferenceException extends ValidationException {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
 	 */
 	public function getCycle(): array {
-		return $this->cycle;
+		return $this->referenceCycle->cycle;
 	}//end getCycle()
 
 	/**
@@ -123,9 +106,9 @@ class CircularReferenceException extends ValidationException {
 	 */
 	public function toArray(): array {
 		return [
-			'referencedUuid' => $this->referencedUuid,
-			'targetSchemaSlug' => $this->targetSchemaSlug,
-			'cycle' => $this->cycle,
+			'referencedUuid' => $this->referenceCycle->referencedUuid,
+			'targetSchemaSlug' => $this->referenceCycle->targetSchemaSlug,
+			'cycle' => $this->referenceCycle->cycle,
 			'message' => $this->getMessage(),
 			'code' => $this->getCode(),
 		];

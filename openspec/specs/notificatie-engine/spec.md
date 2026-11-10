@@ -1278,7 +1278,7 @@ The notification `{{prop}}` interpolation SHALL resolve a UUID-shaped field valu
 
 ### Requirement: Dispatcher resolves action targets to deeplinks
 
-For each declared action, `AnnotationNotificationDispatcher` SHALL resolve the `target` to a concrete deeplink server-side at dispatch time: `object-detail` → the triggering object's detail route; `object-detail` with `{ object: { kind: "relation", field } }` → the related object's register/schema/uuid resolved on the triggering object (the "Open client" mechanism), through OR RBAC so the deeplink is only built for objects the recipient may read; `route` → the originApp frontend route with `{{prop}}` interpolation (HTML-escaped) from object fields; `url` → the absolute URL verbatim.
+For each declared action, `AnnotationNotificationDispatcher` SHALL resolve the `target` to a concrete deeplink server-side at dispatch time: `object-detail` → the triggering object's detail route; `object-detail` with `{ object: { kind: "relation", field } }` → the related object's register/schema/uuid resolved on the triggering object (the "Open client" mechanism), through OR RBAC so the deeplink is only built for objects the recipient may read; `route` → the originApp frontend route with `{{prop}}` interpolation (HTML-escaped) from object fields; `url` → the absolute `http`, `https` or `mailto` URL verbatim.
 
 #### Scenario: object-detail deeplinks to the triggering object
 
@@ -1299,6 +1299,24 @@ For each declared action, `AnnotationNotificationDispatcher` SHALL resolve the `
 
 - **WHEN** an action declares `target: { "kind": "url", "href": "https://EXAMPLE_HOST/path" }`
 - **THEN** the dispatcher uses the absolute URL verbatim
+
+#### Scenario: url target outside the linkable schemes
+
+- **WHEN** an action declares a `url` target whose `href` is not an absolute `http`, `https` or `mailto` URL
+- **THEN** the schema save is refused with `notification-action-bad-href`, naming the rule and the action
+- **AND** a rule stored before this check keeps firing, and the dispatcher drops that one action
+
+#### Scenario: url target outside the linkable schemes in a configuration import
+
+- **WHEN** a configuration import writes a schema with such a `url` target
+- **THEN** the import stores the schema and logs a warning naming the rule and the action, as it does for every other notification fault
+- **AND** a later save of that schema by hand is refused with `notification-action-bad-href`
+
+#### Scenario: a save that keeps a stored unlinkable url action
+
+- **WHEN** a schema already stores such a `url` target and a save leaves its `x-openregister-notifications` block exactly as stored (for example an authorization change or the revocation of an account's grants)
+- **THEN** the save goes through and logs a warning naming the rule and the action
+- **AND** a save that changes the block is refused with `notification-action-bad-href` while the block still holds such a target
 
 ### Requirement: Notifier renders declared actions with the originApp icon
 

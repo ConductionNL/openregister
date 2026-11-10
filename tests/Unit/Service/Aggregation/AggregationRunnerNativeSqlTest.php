@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\NativeAggregationRequest;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -50,7 +51,7 @@ use ReflectionMethod;
 use RuntimeException;
 
 /**
- * Pins tryNativeAggregation() across platforms, query shapes, filter shapes,
+ * Pins tryNativeWithSpec() across platforms, query shapes, filter shapes,
  * organisation scopes, the draft lens and the row predicate.
  *
  * Expected values live in `fixtures/native-aggregation-sql.php`, one entry per case.
@@ -208,19 +209,23 @@ class AggregationRunnerNativeSqlTest extends TestCase {
 		$statements = new \ArrayObject();
 		$runner     = $this->runnerFor(case: $case, statements: $statements);
 
-		$method = new ReflectionMethod(AggregationRunner::class, 'tryNativeAggregation');
+		$method = new ReflectionMethod(AggregationRunner::class, 'tryNativeWithSpec');
 		$result = $method->invoke(
 			$runner,
-			$this->register(),
-			$this->schema(),
-			$case['metric'] ?? 'count',
-			$case['field'] ?? null,
-			$case['filter'] ?? [],
-			$case['groupBy'] ?? null,
-			$case['dateBucket'] ?? null,
-			$case['metrics'] ?? null,
-			$case['cumulative'] ?? false,
-			$case['rowRbac'] ?? true
+			new NativeAggregationRequest(
+				register: $this->register(),
+				schema: $this->schema(),
+				spec: [
+					'metric'     => $case['metric'] ?? 'count',
+					'field'      => $case['field'] ?? null,
+					'filter'     => $case['filter'] ?? [],
+					'groupBy'    => $case['groupBy'] ?? null,
+					'dateBucket' => $case['dateBucket'] ?? null,
+					'metrics'    => $case['metrics'] ?? null,
+					'cumulative' => $case['cumulative'] ?? false,
+					'rowRbac'    => $case['rowRbac'] ?? true,
+				]
+			)
 		);
 
 		return ['statements' => $statements->getArrayCopy(), 'result' => $result];
@@ -278,9 +283,7 @@ class AggregationRunnerNativeSqlTest extends TestCase {
 		$userSession->method('getUser')->willReturn($user);
 
 		return new AggregationRunner(
-			magicMapper: $magicMapper,
-			registerMapper: $this->createMock(RegisterMapper::class),
-			schemaMapper: $this->createMock(SchemaMapper::class),
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $magicMapper),
 			placeholders: new PlaceholderResolver($userSession),
 			db: $db,
 			cache: $this->createMock(AggregationCache::class),

@@ -1,0 +1,1369 @@
+{
+    "available": {
+        "result": true,
+        "calls": []
+    },
+    "link no user": {
+        "result": {
+            "throws": "Exception",
+            "message": "No user logged in",
+            "code": 0
+        },
+        "calls": []
+    },
+    "link duplicate": {
+        "result": {
+            "throws": "Exception",
+            "message": "Card already linked to this object",
+            "code": 409
+        },
+        "calls": [
+            "findByObjectAndCard(obj-1, 7)"
+        ]
+    },
+    "link no card service": {
+        "result": {
+            "throws": "Exception",
+            "message": "Deck is not available",
+            "code": 503
+        },
+        "calls": [
+            "findByObjectAndCard(obj-1, 7)",
+            "container.get(OCA\\Deck\\Service\\CardService)",
+            "debug Deck CardService not resolvable: no OCA\\Deck\\Service\\CardService"
+        ]
+    },
+    "link find throws": {
+        "result": {
+            "throws": "Exception",
+            "message": "Deck card not found",
+            "code": 404
+        },
+        "calls": [
+            "findByObjectAndCard(obj-1, 99)",
+            "container.get(OCA\\Deck\\Service\\CardService)",
+            "CardService.find([99])"
+        ]
+    },
+    "link find null": {
+        "result": {
+            "throws": "Exception",
+            "message": "Deck card not found",
+            "code": 404
+        },
+        "calls": [
+            "findByObjectAndCard(obj-1, 55)",
+            "container.get(OCA\\Deck\\Service\\CardService)",
+            "CardService.find([55])"
+        ]
+    },
+    "link ok widened": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "BoardId": 11,
+            "StackId": 5,
+            "CardId": 7,
+            "CardTitle": "Fix bug",
+            "DueDate": "2026-03-01T10:00:00+00:00",
+            "Labels": "[{\"id\":3,\"title\":\"Urgent\",\"color\":\"red\"},{\"id\":null,\"title\":\"\",\"color\":\"blue\"}]",
+            "Assignees": "[{\"uid\":\"alice\",\"type\":\"user\",\"displayName\":\"Alice A\"},{\"uid\":\"staff\",\"type\":\"group\",\"displayName\":\"staff\"}]",
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "boardId",
+                "stackId",
+                "cardId",
+                "cardTitle",
+                "dueDate",
+                "labels",
+                "assignees",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "findByObjectAndCard(obj-1, 7)",
+            "container.get(OCA\\Deck\\Service\\CardService)",
+            "CardService.find([7])",
+            "container.get(OCA\\Deck\\Db\\CardMapper)",
+            "CardMapper.findBoardId([7])",
+            "card7.getStackId([])",
+            "card7.getTitle([])",
+            "card7.getDuedate([])",
+            "card7.getLabels([])",
+            "label.getId([])",
+            "label.getTitle([])",
+            "label.getColor([])",
+            "badlabel.getId([])",
+            "badlabel.getTitle([])",
+            "badlabel.getColor([])",
+            "card7.getAssignedUsers([])",
+            "assign.getParticipant([])",
+            "assign.getTypeString([])",
+            "assign.getParticipant([])",
+            "assign.getTypeString([])",
+            "card7.getRelatedBoard([])",
+            "board.getTitle([])",
+            "card7.getRelatedStack([])",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"BoardId\":11,\"StackId\":5,\"CardId\":7,\"CardTitle\":\"Fix bug\",\"DueDate\":\"2026-03-01T10:00:00+00:00\",\"Labels\":\"[{\\\"id\\\":3,\\\"title\\\":\\\"Urgent\\\",\\\"color\\\":\\\"red\\\"},{\\\"id\\\":null,\\\"title\\\":\\\"\\\",\\\"color\\\":\\\"blue\\\"}]\",\"Assignees\":\"[{\\\"uid\\\":\\\"alice\\\",\\\"type\\\":\\\"user\\\",\\\"displayName\\\":\\\"Alice A\\\"},{\\\"uid\\\":\\\"staff\\\",\\\"type\\\":\\\"group\\\",\\\"displayName\\\":\\\"staff\\\"}]\",\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"boardId\",\"stackId\",\"cardId\",\"cardTitle\",\"dueDate\",\"labels\",\"assignees\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "link ok broken getters": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "BoardId": 0,
+            "StackId": 0,
+            "CardId": 8,
+            "CardTitle": "",
+            "DueDate": null,
+            "Labels": null,
+            "Assignees": null,
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "boardId",
+                "stackId",
+                "cardId",
+                "cardTitle",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "findByObjectAndCard(obj-1, 8)",
+            "container.get(OCA\\Deck\\Service\\CardService)",
+            "CardService.find([8])",
+            "container.get(OCA\\Deck\\Db\\CardMapper)",
+            "debug Deck CardMapper::findBoardId(8) failed: no OCA\\Deck\\Db\\CardMapper",
+            "card8.getStackId([])",
+            "card8.getTitle([])",
+            "card8.getDuedate([])",
+            "card8.getLabels([])",
+            "card8.getAssignedUsers([])",
+            "debug [DeckLinkService] Card assignees not readable: no users",
+            "card8.getRelatedBoard([])",
+            "debug [DeckLinkService] Card relation title not readable via getRelatedBoard: no board",
+            "card8.getRelatedStack([])",
+            "stack.getTitle([])",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"BoardId\":0,\"StackId\":0,\"CardId\":8,\"CardTitle\":\"\",\"DueDate\":null,\"Labels\":null,\"Assignees\":null,\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"boardId\",\"stackId\",\"cardId\",\"cardTitle\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "link ok bare": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "BoardId": 0,
+            "StackId": 2,
+            "CardId": 9,
+            "CardTitle": "Bare",
+            "DueDate": null,
+            "Labels": null,
+            "Assignees": null,
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "boardId",
+                "stackId",
+                "cardId",
+                "cardTitle",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "findByObjectAndCard(obj-1, 9)",
+            "container.get(OCA\\Deck\\Service\\CardService)",
+            "CardService.find([9])",
+            "container.get(OCA\\Deck\\Db\\CardMapper)",
+            "CardMapper.findBoardId([9])",
+            "debug Deck CardMapper::findBoardId(9) failed: mapper down",
+            "card9.getStackId([])",
+            "card9.getTitle([])",
+            "card9.getDuedate([])",
+            "card9.getLabels([])",
+            "card9.getAssignedUsers([])",
+            "card9.getRelatedBoard([])",
+            "debug [DeckLinkService] Card relation title not readable via getRelatedBoard: Call to undefined method getRelatedBoard",
+            "card9.getRelatedStack([])",
+            "debug [DeckLinkService] Card relation title not readable via getRelatedStack: Call to undefined method getRelatedStack",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"BoardId\":0,\"StackId\":2,\"CardId\":9,\"CardTitle\":\"Bare\",\"DueDate\":null,\"Labels\":null,\"Assignees\":null,\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"boardId\",\"stackId\",\"cardId\",\"cardTitle\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "unlink ok": {
+        "result": null,
+        "calls": [
+            "deleteByObjectAndCard(obj-1, 7)"
+        ]
+    },
+    "unlink missing": {
+        "result": {
+            "throws": "Exception",
+            "message": "Deck link not found",
+            "code": 404
+        },
+        "calls": [
+            "deleteByObjectAndCard(obj-1, 7)"
+        ]
+    },
+    "linked rows": {
+        "result": [
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "boardId": 11,
+                "stackId": null,
+                "cardId": 7,
+                "cardTitle": "cached 7",
+                "dueDate": "2026-03-01T10:00:00+00:00",
+                "labels": [
+                    {
+                        "id": 3,
+                        "title": "Urgent",
+                        "color": "red"
+                    },
+                    {
+                        "id": null,
+                        "title": "",
+                        "color": "blue"
+                    }
+                ],
+                "assignees": [
+                    {
+                        "uid": "alice",
+                        "type": "user",
+                        "displayName": "Alice A"
+                    },
+                    {
+                        "uid": "staff",
+                        "type": "group",
+                        "displayName": "staff"
+                    }
+                ],
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "boardTitle": "Board A",
+                "stackTitle": ""
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "boardId": 0,
+                "stackId": null,
+                "cardId": 8,
+                "cardTitle": "cached 8",
+                "dueDate": null,
+                "labels": [],
+                "assignees": [],
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "boardTitle": "",
+                "stackTitle": "Doing"
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "boardId": 11,
+                "stackId": null,
+                "cardId": 99,
+                "cardTitle": "gone",
+                "dueDate": null,
+                "labels": [],
+                "assignees": [],
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00"
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "boardId": null,
+                "stackId": null,
+                "cardId": 10,
+                "cardTitle": "weird",
+                "dueDate": null,
+                "labels": [],
+                "assignees": [],
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00"
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "boardId": 11,
+                "stackId": null,
+                "cardId": 0,
+                "cardTitle": "zero",
+                "dueDate": null,
+                "labels": [],
+                "assignees": [],
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00"
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "boardId": 11,
+                "stackId": null,
+                "cardId": null,
+                "cardTitle": "null card",
+                "dueDate": null,
+                "labels": [],
+                "assignees": [],
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00"
+            }
+        ],
+        "calls": [
+            "findByObjectUuid(obj-1)",
+            "container.get(OCA\\Deck\\Service\\CardService)",
+            "CardService.find([7])",
+            "card7.getDuedate([])",
+            "card7.getLabels([])",
+            "label.getId([])",
+            "label.getTitle([])",
+            "label.getColor([])",
+            "badlabel.getId([])",
+            "badlabel.getTitle([])",
+            "badlabel.getColor([])",
+            "card7.getAssignedUsers([])",
+            "assign.getParticipant([])",
+            "assign.getTypeString([])",
+            "assign.getParticipant([])",
+            "assign.getTypeString([])",
+            "card7.getRelatedBoard([])",
+            "board.getTitle([])",
+            "card7.getRelatedStack([])",
+            "CardService.find([8])",
+            "card8.getDuedate([])",
+            "card8.getLabels([])",
+            "card8.getAssignedUsers([])",
+            "debug [DeckLinkService] Card assignees not readable: no users",
+            "card8.getRelatedBoard([])",
+            "debug [DeckLinkService] Card relation title not readable via getRelatedBoard: no board",
+            "card8.getRelatedStack([])",
+            "stack.getTitle([])",
+            "CardService.find([99])",
+            "debug Stale deck link for card 99: card 99 gone",
+            "CardService.find([10])",
+            "CardService.find([0])",
+            "CardService.find([null])"
+        ]
+    },
+    "linked no card service": {
+        "result": [
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "boardId": 11,
+                "stackId": null,
+                "cardId": 7,
+                "cardTitle": "cached 7",
+                "dueDate": null,
+                "labels": [],
+                "assignees": [],
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00"
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "boardId": 0,
+                "stackId": null,
+                "cardId": 8,
+                "cardTitle": "cached 8",
+                "dueDate": null,
+                "labels": [],
+                "assignees": [],
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00"
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "boardId": 11,
+                "stackId": null,
+                "cardId": 99,
+                "cardTitle": "gone",
+                "dueDate": null,
+                "labels": [],
+                "assignees": [],
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00"
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "boardId": null,
+                "stackId": null,
+                "cardId": 10,
+                "cardTitle": "weird",
+                "dueDate": null,
+                "labels": [],
+                "assignees": [],
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00"
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "boardId": 11,
+                "stackId": null,
+                "cardId": 0,
+                "cardTitle": "zero",
+                "dueDate": null,
+                "labels": [],
+                "assignees": [],
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00"
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "boardId": 11,
+                "stackId": null,
+                "cardId": null,
+                "cardTitle": "null card",
+                "dueDate": null,
+                "labels": [],
+                "assignees": [],
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00"
+            }
+        ],
+        "calls": [
+            "findByObjectUuid(obj-1)",
+            "container.get(OCA\\Deck\\Service\\CardService)",
+            "debug Deck CardService not resolvable: no OCA\\Deck\\Service\\CardService"
+        ]
+    },
+    "create no user": {
+        "result": {
+            "throws": "Exception",
+            "message": "No user logged in",
+            "code": 0
+        },
+        "calls": []
+    },
+    "create no service": {
+        "result": {
+            "throws": "Exception",
+            "message": "Deck is not available",
+            "code": 503
+        },
+        "calls": [
+            "container.get(OCA\\Deck\\Service\\CardService)",
+            "debug Deck CardService not resolvable: no OCA\\Deck\\Service\\CardService"
+        ]
+    },
+    "create fails": {
+        "result": {
+            "throws": "Exception",
+            "message": "Failed to create Deck card: deck refused",
+            "code": 500
+        },
+        "calls": [
+            "container.get(OCA\\Deck\\Service\\CardService)",
+            "CardService.create([\"New card\",5,\"plain\",0,\"alice\"])",
+            "warning Failed to create Deck card: deck refused"
+        ]
+    },
+    "create ok": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "BoardId": 12,
+            "StackId": 5,
+            "CardId": 21,
+            "CardTitle": "New card",
+            "DueDate": "2026-04-01T00:00:00+00:00",
+            "Labels": null,
+            "Assignees": null,
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "boardId",
+                "stackId",
+                "cardId",
+                "cardTitle",
+                "dueDate",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "container.get(OCA\\Deck\\Service\\CardService)",
+            "CardService.create([\"New card\",5,\"plain\",0,\"alice\"])",
+            "created.getId([])",
+            "CardService.update([21,\"New card\",5,\"plain\",\"alice\",\"Body\\n\\n[Object: obj-1](\\/apps\\/openregister\\/objects\\/obj-1)\",0,\"2026-04-01T00:00:00+00:00\"])",
+            "created.getId([])",
+            "container.get(OCA\\Deck\\Db\\CardMapper)",
+            "CardMapper.findBoardId([21])",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"BoardId\":12,\"StackId\":5,\"CardId\":21,\"CardTitle\":\"New card\",\"DueDate\":\"2026-04-01T00:00:00+00:00\",\"Labels\":null,\"Assignees\":null,\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"boardId\",\"stackId\",\"cardId\",\"cardTitle\",\"dueDate\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "create ok board fallback": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "BoardId": 11,
+            "StackId": 5,
+            "CardId": 22,
+            "CardTitle": "New card",
+            "DueDate": "2026-04-01T00:00:00+00:00",
+            "Labels": null,
+            "Assignees": null,
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "boardId",
+                "stackId",
+                "cardId",
+                "cardTitle",
+                "dueDate",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "container.get(OCA\\Deck\\Service\\CardService)",
+            "CardService.create([\"New card\",5,\"plain\",0,\"alice\"])",
+            "created.getId([])",
+            "CardService.update([22,\"New card\",5,\"plain\",\"alice\",\"Body\\n\\n[Object: obj-1](\\/apps\\/openregister\\/objects\\/obj-1)\",0,\"2026-04-01T00:00:00+00:00\"])",
+            "created.getId([])",
+            "container.get(OCA\\Deck\\Db\\CardMapper)",
+            "CardMapper.findBoardId([22])",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"BoardId\":11,\"StackId\":5,\"CardId\":22,\"CardTitle\":\"New card\",\"DueDate\":\"2026-04-01T00:00:00+00:00\",\"Labels\":null,\"Assignees\":null,\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"boardId\",\"stackId\",\"cardId\",\"cardTitle\",\"dueDate\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "boards no service": {
+        "result": [],
+        "calls": [
+            "container.get(OCA\\Deck\\Service\\BoardService)",
+            "debug Deck BoardService not resolvable: no OCA\\Deck\\Service\\BoardService"
+        ]
+    },
+    "boards no user": {
+        "result": [],
+        "calls": [
+            "container.get(OCA\\Deck\\Service\\BoardService)"
+        ]
+    },
+    "boards throws": {
+        "result": [],
+        "calls": [
+            "container.get(OCA\\Deck\\Service\\BoardService)",
+            "BoardService.findAll([])",
+            "debug Deck BoardService->findAll failed: boards down"
+        ]
+    },
+    "boards not array": {
+        "result": [],
+        "calls": [
+            "container.get(OCA\\Deck\\Service\\BoardService)",
+            "BoardService.findAll([])"
+        ]
+    },
+    "boards": {
+        "result": [
+            {
+                "id": 11,
+                "title": "Board A"
+            },
+            {
+                "id": 12,
+                "title": ""
+            }
+        ],
+        "calls": [
+            "container.get(OCA\\Deck\\Service\\BoardService)",
+            "BoardService.findAll([])",
+            "b1.getId([])",
+            "b1.getTitle([])",
+            "b2.getId([])",
+            "b3.getId([])",
+            "b3.getTitle([])",
+            "b4.getId([])",
+            "b4.getTitle([])"
+        ]
+    },
+    "stacks no service": {
+        "result": [],
+        "calls": [
+            "container.get(OCA\\Deck\\Service\\StackService)",
+            "debug Deck StackService not resolvable: no OCA\\Deck\\Service\\StackService"
+        ]
+    },
+    "stacks throws": {
+        "result": [],
+        "calls": [
+            "container.get(OCA\\Deck\\Service\\StackService)",
+            "StackService.findAll([11])",
+            "debug Deck StackService->findAll(11) failed: stacks down"
+        ]
+    },
+    "stacks not array": {
+        "result": [],
+        "calls": [
+            "container.get(OCA\\Deck\\Service\\StackService)",
+            "StackService.findAll([11])"
+        ]
+    },
+    "stacks": {
+        "result": [
+            {
+                "id": 5,
+                "title": "Todo",
+                "boardId": 11
+            },
+            {
+                "id": 6,
+                "title": "",
+                "boardId": 11
+            }
+        ],
+        "calls": [
+            "container.get(OCA\\Deck\\Service\\StackService)",
+            "StackService.findAll([11])",
+            "s1.getId([])",
+            "s1.getTitle([])",
+            "s2.getId([])",
+            "s2.getTitle([])",
+            "s3.getId([])",
+            "s4.getId([])",
+            "s4.getTitle([])"
+        ]
+    },
+    "cards for object": {
+        "result": {
+            "results": [
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "boardId": 11,
+                    "stackId": null,
+                    "cardId": 7,
+                    "cardTitle": "cached 7",
+                    "dueDate": null,
+                    "labels": [],
+                    "assignees": [],
+                    "linkedBy": null,
+                    "linkedAt": "2023-11-14T22:13:20+00:00",
+                    "url": "/index.php/apps/deck/board/11/card/7"
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "boardId": 0,
+                    "stackId": null,
+                    "cardId": 8,
+                    "cardTitle": "cached 8",
+                    "dueDate": null,
+                    "labels": [],
+                    "assignees": [],
+                    "linkedBy": null,
+                    "linkedAt": "2023-11-14T22:13:20+00:00"
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "boardId": 11,
+                    "stackId": null,
+                    "cardId": 99,
+                    "cardTitle": "gone",
+                    "dueDate": null,
+                    "labels": [],
+                    "assignees": [],
+                    "linkedBy": null,
+                    "linkedAt": "2023-11-14T22:13:20+00:00",
+                    "url": "/index.php/apps/deck/board/11/card/99"
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "boardId": null,
+                    "stackId": null,
+                    "cardId": 10,
+                    "cardTitle": "weird",
+                    "dueDate": null,
+                    "labels": [],
+                    "assignees": [],
+                    "linkedBy": null,
+                    "linkedAt": "2023-11-14T22:13:20+00:00"
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "boardId": 11,
+                    "stackId": null,
+                    "cardId": 0,
+                    "cardTitle": "zero",
+                    "dueDate": null,
+                    "labels": [],
+                    "assignees": [],
+                    "linkedBy": null,
+                    "linkedAt": "2023-11-14T22:13:20+00:00"
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "boardId": 11,
+                    "stackId": null,
+                    "cardId": null,
+                    "cardTitle": "null card",
+                    "dueDate": null,
+                    "labels": [],
+                    "assignees": [],
+                    "linkedBy": null,
+                    "linkedAt": "2023-11-14T22:13:20+00:00"
+                }
+            ],
+            "total": 6
+        },
+        "calls": [
+            "findByObjectUuid(obj-1)",
+            "container.get(OCA\\Deck\\Service\\CardService)",
+            "CardService.find([7])",
+            "card7.getDuedate([])",
+            "card7.getLabels([])",
+            "label.getId([])",
+            "label.getTitle([])",
+            "label.getColor([])",
+            "badlabel.getId([])",
+            "badlabel.getTitle([])",
+            "badlabel.getColor([])",
+            "card7.getAssignedUsers([])",
+            "assign.getParticipant([])",
+            "assign.getTypeString([])",
+            "assign.getParticipant([])",
+            "assign.getTypeString([])",
+            "linkToRoute(deck.page.index)",
+            "CardService.find([8])",
+            "card8.getDuedate([])",
+            "card8.getLabels([])",
+            "card8.getAssignedUsers([])",
+            "debug [DeckCardService] Card assignees not readable: no users",
+            "CardService.find([99])",
+            "linkToRoute(deck.page.index)",
+            "CardService.find([10])"
+        ]
+    },
+    "cards for object route throws": {
+        "result": {
+            "results": [
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "boardId": 11,
+                    "stackId": null,
+                    "cardId": 7,
+                    "cardTitle": "cached 7",
+                    "dueDate": null,
+                    "labels": [],
+                    "assignees": [],
+                    "linkedBy": null,
+                    "linkedAt": "2023-11-14T22:13:20+00:00"
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "boardId": 0,
+                    "stackId": null,
+                    "cardId": 8,
+                    "cardTitle": "cached 8",
+                    "dueDate": null,
+                    "labels": [],
+                    "assignees": [],
+                    "linkedBy": null,
+                    "linkedAt": "2023-11-14T22:13:20+00:00"
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "boardId": 11,
+                    "stackId": null,
+                    "cardId": 99,
+                    "cardTitle": "gone",
+                    "dueDate": null,
+                    "labels": [],
+                    "assignees": [],
+                    "linkedBy": null,
+                    "linkedAt": "2023-11-14T22:13:20+00:00"
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "boardId": null,
+                    "stackId": null,
+                    "cardId": 10,
+                    "cardTitle": "weird",
+                    "dueDate": null,
+                    "labels": [],
+                    "assignees": [],
+                    "linkedBy": null,
+                    "linkedAt": "2023-11-14T22:13:20+00:00"
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "boardId": 11,
+                    "stackId": null,
+                    "cardId": 0,
+                    "cardTitle": "zero",
+                    "dueDate": null,
+                    "labels": [],
+                    "assignees": [],
+                    "linkedBy": null,
+                    "linkedAt": "2023-11-14T22:13:20+00:00"
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "boardId": 11,
+                    "stackId": null,
+                    "cardId": null,
+                    "cardTitle": "null card",
+                    "dueDate": null,
+                    "labels": [],
+                    "assignees": [],
+                    "linkedBy": null,
+                    "linkedAt": "2023-11-14T22:13:20+00:00"
+                }
+            ],
+            "total": 6
+        },
+        "calls": [
+            "findByObjectUuid(obj-1)",
+            "container.get(OCA\\Deck\\Service\\CardService)",
+            "CardService.find([7])",
+            "card7.getDuedate([])",
+            "card7.getLabels([])",
+            "label.getId([])",
+            "label.getTitle([])",
+            "label.getColor([])",
+            "badlabel.getId([])",
+            "badlabel.getTitle([])",
+            "badlabel.getColor([])",
+            "card7.getAssignedUsers([])",
+            "assign.getParticipant([])",
+            "assign.getTypeString([])",
+            "assign.getParticipant([])",
+            "assign.getTypeString([])",
+            "linkToRoute(deck.page.index)",
+            "CardService.find([8])",
+            "card8.getDuedate([])",
+            "card8.getLabels([])",
+            "card8.getAssignedUsers([])",
+            "debug [DeckCardService] Card assignees not readable: no users",
+            "CardService.find([99])",
+            "linkToRoute(deck.page.index)",
+            "CardService.find([10])"
+        ]
+    },
+    "cards for object no service": {
+        "result": {
+            "results": [
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "boardId": 11,
+                    "stackId": null,
+                    "cardId": 7,
+                    "cardTitle": "cached 7",
+                    "dueDate": null,
+                    "labels": [],
+                    "assignees": [],
+                    "linkedBy": null,
+                    "linkedAt": "2023-11-14T22:13:20+00:00",
+                    "url": "/index.php/apps/deck/board/11/card/7"
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "boardId": 0,
+                    "stackId": null,
+                    "cardId": 8,
+                    "cardTitle": "cached 8",
+                    "dueDate": null,
+                    "labels": [],
+                    "assignees": [],
+                    "linkedBy": null,
+                    "linkedAt": "2023-11-14T22:13:20+00:00"
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "boardId": 11,
+                    "stackId": null,
+                    "cardId": 99,
+                    "cardTitle": "gone",
+                    "dueDate": null,
+                    "labels": [],
+                    "assignees": [],
+                    "linkedBy": null,
+                    "linkedAt": "2023-11-14T22:13:20+00:00",
+                    "url": "/index.php/apps/deck/board/11/card/99"
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "boardId": null,
+                    "stackId": null,
+                    "cardId": 10,
+                    "cardTitle": "weird",
+                    "dueDate": null,
+                    "labels": [],
+                    "assignees": [],
+                    "linkedBy": null,
+                    "linkedAt": "2023-11-14T22:13:20+00:00"
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "boardId": 11,
+                    "stackId": null,
+                    "cardId": 0,
+                    "cardTitle": "zero",
+                    "dueDate": null,
+                    "labels": [],
+                    "assignees": [],
+                    "linkedBy": null,
+                    "linkedAt": "2023-11-14T22:13:20+00:00"
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "boardId": 11,
+                    "stackId": null,
+                    "cardId": null,
+                    "cardTitle": "null card",
+                    "dueDate": null,
+                    "labels": [],
+                    "assignees": [],
+                    "linkedBy": null,
+                    "linkedAt": "2023-11-14T22:13:20+00:00"
+                }
+            ],
+            "total": 6
+        },
+        "calls": [
+            "findByObjectUuid(obj-1)",
+            "container.get(OCA\\Deck\\Service\\CardService)",
+            "debug Deck CardService not resolvable: no OCA\\Deck\\Service\\CardService",
+            "linkToRoute(deck.page.index)",
+            "linkToRoute(deck.page.index)"
+        ]
+    },
+    "loc no user": {
+        "result": {
+            "throws": "Exception",
+            "message": "No user logged in",
+            "code": 0
+        },
+        "calls": []
+    },
+    "loc nothing": {
+        "result": {
+            "throws": "Exception",
+            "message": "Either cardId or boardId+stackId is required",
+            "code": 0
+        },
+        "calls": []
+    },
+    "loc nothing at all": {
+        "result": {
+            "throws": "Exception",
+            "message": "Either cardId or boardId+stackId is required",
+            "code": 0
+        },
+        "calls": []
+    },
+    "loc card ok": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": null,
+            "BoardId": 11,
+            "StackId": 5,
+            "CardId": 7,
+            "CardTitle": "Fix bug",
+            "DueDate": null,
+            "Labels": null,
+            "Assignees": null,
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "objectUuid",
+                "registerId",
+                "boardId",
+                "stackId",
+                "cardId",
+                "cardTitle",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "container.get(OCA\\Deck\\Service\\CardService)",
+            "CardService.find([7])",
+            "container.get(OCA\\Deck\\Db\\CardMapper)",
+            "CardMapper.findBoardId([7])",
+            "card7.getTitle([])",
+            "card7.getStackId([])",
+            "findByObjectAndCard(obj-1, 7)",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":null,\"BoardId\":11,\"StackId\":5,\"CardId\":7,\"CardTitle\":\"Fix bug\",\"DueDate\":null,\"Labels\":null,\"Assignees\":null,\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"objectUuid\",\"registerId\",\"boardId\",\"stackId\",\"cardId\",\"cardTitle\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "loc card no mapper": {
+        "result": {
+            "throws": "Exception",
+            "message": "Deck card not found",
+            "code": 404
+        },
+        "calls": [
+            "container.get(OCA\\Deck\\Service\\CardService)",
+            "CardService.find([9])",
+            "container.get(OCA\\Deck\\Db\\CardMapper)",
+            "debug Deck CardService not available, card lookup skipped: no OCA\\Deck\\Db\\CardMapper"
+        ]
+    },
+    "loc card missing": {
+        "result": {
+            "throws": "Exception",
+            "message": "Deck card not found",
+            "code": 404
+        },
+        "calls": [
+            "container.get(OCA\\Deck\\Service\\CardService)",
+            "CardService.find([99])",
+            "debug Deck CardService not available, card lookup skipped: card 99 gone"
+        ]
+    },
+    "loc card no service": {
+        "result": {
+            "throws": "Exception",
+            "message": "Deck card not found",
+            "code": 404
+        },
+        "calls": [
+            "container.get(OCA\\Deck\\Service\\CardService)",
+            "debug Deck CardService not available, card lookup skipped: no OCA\\Deck\\Service\\CardService"
+        ]
+    },
+    "loc card duplicate": {
+        "result": {
+            "throws": "Exception",
+            "message": "Card already linked to this object",
+            "code": 409
+        },
+        "calls": [
+            "container.get(OCA\\Deck\\Service\\CardService)",
+            "CardService.find([7])",
+            "container.get(OCA\\Deck\\Db\\CardMapper)",
+            "CardMapper.findBoardId([7])",
+            "card7.getTitle([])",
+            "card7.getStackId([])",
+            "findByObjectAndCard(obj-1, 7)"
+        ]
+    },
+    "loc create ok": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": null,
+            "BoardId": 11,
+            "StackId": 5,
+            "CardId": 21,
+            "CardTitle": "T",
+            "DueDate": null,
+            "Labels": null,
+            "Assignees": null,
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "objectUuid",
+                "registerId",
+                "boardId",
+                "stackId",
+                "cardId",
+                "cardTitle",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "container.get(OCA\\Deck\\Service\\CardService)",
+            "CardService.create([\"T\",5,\"plain\",0,\"alice\"])",
+            "created.getId([])",
+            "CardService.update([21,\"T\",5,\"plain\",\"alice\",\"D\\n\\n[Object: obj-1](\\/apps\\/openregister\\/objects\\/obj-1)\",0])",
+            "created.getId([])",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":null,\"BoardId\":11,\"StackId\":5,\"CardId\":21,\"CardTitle\":\"T\",\"DueDate\":null,\"Labels\":null,\"Assignees\":null,\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"objectUuid\",\"registerId\",\"boardId\",\"stackId\",\"cardId\",\"cardTitle\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "loc create defaults": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": null,
+            "BoardId": 11,
+            "StackId": 5,
+            "CardId": 21,
+            "CardTitle": "Untitled",
+            "DueDate": null,
+            "Labels": null,
+            "Assignees": null,
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "objectUuid",
+                "registerId",
+                "boardId",
+                "stackId",
+                "cardId",
+                "cardTitle",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "container.get(OCA\\Deck\\Service\\CardService)",
+            "CardService.create([\"Untitled\",5,\"plain\",0,\"alice\"])",
+            "created.getId([])",
+            "CardService.update([21,\"Untitled\",5,\"plain\",\"alice\",\"[Object: obj-1](\\/apps\\/openregister\\/objects\\/obj-1)\",0])",
+            "created.getId([])",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":null,\"BoardId\":11,\"StackId\":5,\"CardId\":21,\"CardTitle\":\"Untitled\",\"DueDate\":null,\"Labels\":null,\"Assignees\":null,\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"objectUuid\",\"registerId\",\"boardId\",\"stackId\",\"cardId\",\"cardTitle\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "loc create fails": {
+        "result": {
+            "throws": "Exception",
+            "message": "Failed to create Deck card",
+            "code": 0
+        },
+        "calls": [
+            "container.get(OCA\\Deck\\Service\\CardService)",
+            "CardService.create([\"Untitled\",5,\"plain\",0,\"alice\"])",
+            "warning Failed to create Deck card: deck refused"
+        ]
+    },
+    "loc create no service": {
+        "result": {
+            "throws": "Exception",
+            "message": "Failed to create Deck card",
+            "code": 0
+        },
+        "calls": [
+            "container.get(OCA\\Deck\\Service\\CardService)",
+            "warning Failed to create Deck card: no OCA\\Deck\\Service\\CardService"
+        ]
+    },
+    "card unlink ok": {
+        "result": null,
+        "calls": [
+            "find(4)",
+            "delete({\"ObjectUuid\":null,\"RegisterId\":null,\"SchemaId\":null,\"BoardId\":11,\"StackId\":null,\"CardId\":7,\"CardTitle\":\"x\",\"DueDate\":null,\"Labels\":null,\"Assignees\":null,\"LinkedBy\":null,\"LinkedAt\":\"2023-11-14T22:13:20+00:00\",\"updated\":[]})"
+        ]
+    },
+    "card unlink missing": {
+        "result": {
+            "throws": "Exception",
+            "message": "Deck link not found",
+            "code": 404
+        },
+        "calls": [
+            "find(4)"
+        ]
+    },
+    "board objects": {
+        "result": [
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "boardId": 11,
+                "stackId": null,
+                "cardId": 7,
+                "cardTitle": "cached 7",
+                "dueDate": null,
+                "labels": [],
+                "assignees": [],
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00"
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "boardId": 0,
+                "stackId": null,
+                "cardId": 8,
+                "cardTitle": "cached 8",
+                "dueDate": null,
+                "labels": [],
+                "assignees": [],
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00"
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "boardId": 11,
+                "stackId": null,
+                "cardId": 99,
+                "cardTitle": "gone",
+                "dueDate": null,
+                "labels": [],
+                "assignees": [],
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00"
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "boardId": null,
+                "stackId": null,
+                "cardId": 10,
+                "cardTitle": "weird",
+                "dueDate": null,
+                "labels": [],
+                "assignees": [],
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00"
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "boardId": 11,
+                "stackId": null,
+                "cardId": 0,
+                "cardTitle": "zero",
+                "dueDate": null,
+                "labels": [],
+                "assignees": [],
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00"
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "boardId": 11,
+                "stackId": null,
+                "cardId": null,
+                "cardTitle": "null card",
+                "dueDate": null,
+                "labels": [],
+                "assignees": [],
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00"
+            }
+        ],
+        "calls": [
+            "container.get(OCA\\Deck\\Service\\BoardService)",
+            "BoardService.find([11])",
+            "findByBoardId(11)"
+        ]
+    },
+    "board objects refused": {
+        "result": [],
+        "calls": [
+            "container.get(OCA\\Deck\\Service\\BoardService)",
+            "BoardService.find([11])"
+        ]
+    },
+    "delete for object": {
+        "result": 3,
+        "calls": [
+            "deleteByObjectUuid(obj-1)"
+        ]
+    }
+}

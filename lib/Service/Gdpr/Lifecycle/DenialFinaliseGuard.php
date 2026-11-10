@@ -92,6 +92,20 @@ final class DenialFinaliseGuard implements LifecycleGuardInterface {
 			return GuardResult::allow();
 		}
 
+		return $this->finaliseVerdict(object: $object, userId: $userId);
+	}//end check()
+
+	/**
+	 * The verdict on finalising a denial: an identified caller and a regulator reference.
+	 *
+	 * @param array<string, mixed> $object The loaded case payload at its current state.
+	 * @param string               $userId The uid of the caller ('' when no session user).
+	 *
+	 * @return GuardResult Allow, or deny with the missing precondition named.
+	 *
+	 * @spec openspec/specs/dsar-denial-guard/spec.md
+	 */
+	private function finaliseVerdict(array $object, string $userId): GuardResult {
 		// Fail closed on an UNIDENTIFIED caller. LifecycleValidationListener
 		// resolves the uid as `$this->userSession->getUser()?->getUID() ?? ''`,
 		// so the empty string IS the "no session user" signal — it is not a
@@ -117,5 +131,5 @@ final class DenialFinaliseGuard implements LifecycleGuardInterface {
 			message: 'A regulatorReference is required before a denial can be finalised.'
 		);
 
-	}//end check()
+	}//end finaliseVerdict()
 }//end class

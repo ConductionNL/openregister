@@ -37,6 +37,104 @@ exports[`ExploreSchema analysis results shows the behaviour switches of a select
 </div>"
 `;
 
+exports[`ExploreSchema analysis results shows the configuration fields of a selected number property 1`] = `
+"<div class="config-fields">
+<x-nctextfield modelvalue="title" label="t:Property Title" placeholder="title"></x-nctextfield>
+<x-nctextfield label="t:Technical Description" placeholder="t:Technical description for developers and administrators"></x-nctextfield>
+<x-ncselect modelvalue="number" options="[{&quot;label&quot;:&quot;String&quot;,&quot;value&quot;:&quot;string&quot;,&quot;key&quot;:&quot;string&quot;},{&quot;label&quot;:&quot;Integer&quot;,&quot;value&quot;:&quot;integer&quot;,&quot;key&quot;:&quot;integer&quot;},{&quot;label&quot;:&quot;Number&quot;,&quot;value&quot;:&quot;number&quot;,&quot;key&quot;:&quot;number&quot;},{&quot;label&quot;:&quot;Boolean&quot;,&quot;value&quot;:&quot;boolean&quot;,&quot;key&quot;:&quot;boolean&quot;},{&quot;label&quot;:&quot;Array&quot;,&quot;value&quot;:&quot;array&quot;,&quot;key&quot;:&quot;array&quot;},{&quot;label&quot;:&quot;Object&quot;,&quot;value&quot;:&quot;object&quot;,&quot;key&quot;:&quot;object&quot;}]" inputlabel="t:Property Type" labeloutside="true"></x-ncselect>
+<div class="constraints-section">
+<h5>t:Number Constraints</h5>
+<x-nctextfield modelvalue="null" label="t:Minimum" type="number"></x-nctextfield>
+<x-nctextfield modelvalue="null" label="t:Maximum" type="number"></x-nctextfield>
+<x-nctextfield modelvalue="null" label="t:Multiple Of" type="number"></x-nctextfield>
+<x-nccheckboxradioswitch modelvalue="false">t:Exclusive Minimum</x-nccheckboxradioswitch>
+<x-nccheckboxradioswitch modelvalue="false">t:Exclusive Maximum</x-nccheckboxradioswitch>
+</div>
+<div class="behaviors-section">
+<h5>t:Property Behaviors</h5>
+<div class="behaviors-grid">
+<div class="behavior-column">
+<div class="behavior-item">
+<x-nccheckboxradioswitch modelvalue="false">t:Required field</x-nccheckboxradioswitch>
+</div>
+<div class="behavior-item">
+<x-nccheckboxradioswitch modelvalue="false">t:Immutable</x-nccheckboxradioswitch>
+</div>
+<div class="behavior-item">
+<x-nccheckboxradioswitch modelvalue="false">t:Deprecated</x-nccheckboxradioswitch>
+</div>
+<div class="behavior-item">
+<x-nccheckboxradioswitch modelvalue="true">t:Visible to users</x-nccheckboxradioswitch>
+</div>
+</div>
+<div class="behavior-column">
+<div class="behavior-item">
+<x-nccheckboxradioswitch modelvalue="false">t:Hide in list view</x-nccheckboxradioswitch>
+</div>
+<div class="behavior-item">
+<x-nccheckboxradioswitch modelvalue="false">t:Hide in forms</x-nccheckboxradioswitch>
+</div>
+<div class="behavior-item">
+<x-nccheckboxradioswitch modelvalue="false">t:Enable faceting</x-nccheckboxradioswitch>
+</div>
+</div>
+</div>
+</div>
+<x-nctextfield modelvalue="title" label="t:Title" placeholder="title"></x-nctextfield>
+<x-nctextarea label="t:User Description" placeholder="t:User-friendly description shown in forms and help text"></x-nctextarea>
+<x-nctextfield modelvalue="" label="t:Example Value" placeholder="t:Example value for this property"></x-nctextfield>
+<x-nctextfield modelvalue="0" label="t:Order" type="number" placeholder="0"></x-nctextfield>
+</div>"
+`;
+
+exports[`ExploreSchema analysis results shows the configuration fields of a selected string property 1`] = `
+"<div class="config-fields">
+<x-nctextfield modelvalue="title" label="t:Property Title" placeholder="title"></x-nctextfield>
+<x-nctextfield label="t:Technical Description" placeholder="t:Technical description for developers and administrators"></x-nctextfield>
+<x-ncselect modelvalue="string" options="[{&quot;label&quot;:&quot;String&quot;,&quot;value&quot;:&quot;string&quot;,&quot;key&quot;:&quot;string&quot;},{&quot;label&quot;:&quot;Integer&quot;,&quot;value&quot;:&quot;integer&quot;,&quot;key&quot;:&quot;integer&quot;},{&quot;label&quot;:&quot;Number&quot;,&quot;value&quot;:&quot;number&quot;,&quot;key&quot;:&quot;number&quot;},{&quot;label&quot;:&quot;Boolean&quot;,&quot;value&quot;:&quot;boolean&quot;,&quot;key&quot;:&quot;boolean&quot;},{&quot;label&quot;:&quot;Array&quot;,&quot;value&quot;:&quot;array&quot;,&quot;key&quot;:&quot;array&quot;},{&quot;label&quot;:&quot;Object&quot;,&quot;value&quot;:&quot;object&quot;,&quot;key&quot;:&quot;object&quot;}]" inputlabel="t:Property Type" labeloutside="true"></x-ncselect>
+<div class="constraints-section">
+<h5>t:String Constraints</h5>
+<x-nctextfield modelvalue="null" label="t:Max Length" type="number" placeholder=""></x-nctextfield>
+<x-nctextfield modelvalue="null" label="t:Min Length" type="number" placeholder=""></x-nctextfield>
+<x-nctextfield modelvalue="" label="t:Pattern (regex)" placeholder="^[A-Za-z]+$"></x-nctextfield>
+</div>
+<div class="behaviors-section">
+<h5>t:Property Behaviors</h5>
+<div class="behaviors-grid">
+<div class="behavior-column">
+<div class="behavior-item">
+<x-nccheckboxradioswitch modelvalue="false">t:Required field</x-nccheckboxradioswitch>
+</div>
+<div class="behavior-item">
+<x-nccheckboxradioswitch modelvalue="false">t:Immutable</x-nccheckboxradioswitch>
+</div>
+<div class="behavior-item">
+<x-nccheckboxradioswitch modelvalue="false">t:Deprecated</x-nccheckboxradioswitch>
+</div>
+<div class="behavior-item">
+<x-nccheckboxradioswitch modelvalue="true">t:Visible to users</x-nccheckboxradioswitch>
+</div>
+</div>
+<div class="behavior-column">
+<div class="behavior-item">
+<x-nccheckboxradioswitch modelvalue="false">t:Hide in list view</x-nccheckboxradioswitch>
+</div>
+<div class="behavior-item">
+<x-nccheckboxradioswitch modelvalue="false">t:Hide in forms</x-nccheckboxradioswitch>
+</div>
+<div class="behavior-item">
+<x-nccheckboxradioswitch modelvalue="false">t:Enable faceting</x-nccheckboxradioswitch>
+</div>
+</div>
+</div>
+</div>
+<x-nctextfield modelvalue="title" label="t:Title" placeholder="title"></x-nctextfield>
+<x-nctextarea label="t:User Description" placeholder="t:User-friendly description shown in forms and help text"></x-nctextarea>
+<x-nctextfield modelvalue="" label="t:Example Value" placeholder="t:Example value for this property"></x-nctextfield>
+<x-nctextfield modelvalue="0" label="t:Order" type="number" placeholder="0"></x-nctextfield>
+</div>"
+`;
+
 exports[`ExploreSchema analysis results shows the summary cards 1`] = `"12t:Objects Analyzed4t:New Properties2t:Existing Improvements0t:Selectedt:Analysis completed:"`;
 
 exports[`ExploreSchema analysis results writes each behaviour switch to the property configuration 1`] = `
@@ -70,4 +168,62 @@ exports[`ExploreSchema analysis results writes each behaviour switch to the prop
     "on6",
   ],
 ]
+`;
+
+exports[`ExploreSchema analysis results writes each number configuration field to the property configuration 1`] = `
+{
+  "deprecated": false,
+  "description": "A title",
+  "displayTitle": "v5",
+  "example": "v6",
+  "exclusiveMax": false,
+  "exclusiveMin": false,
+  "facetable": false,
+  "format": "",
+  "hideOnCollection": false,
+  "hideOnForm": false,
+  "immutable": false,
+  "maxLength": null,
+  "maximum": "v3",
+  "minLength": null,
+  "minimum": "v2",
+  "multipleOf": "v4",
+  "order": "v7",
+  "pattern": "",
+  "required": false,
+  "technicalDescription": "v1",
+  "title": "v0",
+  "type": "v8",
+  "userDescription": "v9",
+  "visible": true,
+}
+`;
+
+exports[`ExploreSchema analysis results writes each string configuration field to the property configuration 1`] = `
+{
+  "deprecated": false,
+  "description": "A title",
+  "displayTitle": "v5",
+  "example": "v6",
+  "exclusiveMax": false,
+  "exclusiveMin": false,
+  "facetable": false,
+  "format": "",
+  "hideOnCollection": false,
+  "hideOnForm": false,
+  "immutable": false,
+  "maxLength": "v2",
+  "maximum": null,
+  "minLength": "v3",
+  "minimum": null,
+  "multipleOf": null,
+  "order": "v7",
+  "pattern": "v4",
+  "required": false,
+  "technicalDescription": "v1",
+  "title": "v0",
+  "type": "v8",
+  "userDescription": "v9",
+  "visible": true,
+}
 `;

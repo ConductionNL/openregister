@@ -63,37 +63,30 @@ class AnonymisationService {
 	/**
 	 * Apply a profile to a payload.
 	 *
-	 * @param array<string, mixed>                $payload The record's properties.
-	 * @param array<string, array<string, mixed>> $profile Property name to its rule.
-	 * @param string                              $salt    Instance salt for the pseudonym.
+	 * @param array<string, mixed> $payload The record's properties.
+	 * @param SaltedProfile        $profile The rules, property name to its rule, and the salt for the pseudonym.
 	 *
 	 * @return array<string, mixed> The anonymised payload.
 	 *
 	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
-	public function apply(array $payload, array $profile, string $salt): array {
-		$result = $payload;
+	public function apply(array $payload, SaltedProfile $profile): array {
+		$pass = new AnonymisationPass(profile: $profile, payload: $payload);
 
-		foreach ($profile as $property => $rule) {
-			if (array_key_exists($property, $result) === false) {
+		foreach ($profile->rules as $property => $rule) {
+			if (array_key_exists($property, $pass->payload) === false) {
 				continue;
 			}
 
-			$treatment = ($rule['treatment'] ?? null);
-			if ($treatment === AnonymisationProfile::REMOVE) {
-				unset($result[$property]);
+			if (($rule['treatment'] ?? null) === AnonymisationProfile::REMOVE) {
+				unset($pass->payload[$property]);
 				continue;
 			}
 
-			$result[$property] = $this->treat(
-				treatment: (string)$treatment,
-				value: $result[$property],
-				rule: $rule,
-				salt: $salt
-			);
+			$pass->payload[$property] = $this->treat(pass: $pass, property: (string)$property);
 		}
 
-		return $result;
+		return $pass->payload;
 	}//end apply()
 
 	/**
@@ -104,33 +97,17 @@ class AnonymisationService {
 	 * re-identification comes from: a date of birth, a postcode and a case
 	 * number identify most people without a name anywhere in sight.
 	 *
-	 * @param array<string, mixed> $before  The payload as it was.
-	 * @param array<string, mixed> $after   The payload as it is now.
-	 * @param string               $profileName What the profile was called.
+	 * @param PayloadChange $change      The payload as it was and as it is now.
+	 * @param string        $profileName What the profile was called.
 	 *
 	 * @return array<string, mixed> The report.
 	 *
 	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
-	public function report(array $before, array $after, string $profileName = ''): array {
-		$changed = [];
-		$kept = [];
-
-		foreach ($before as $property => $value) {
-			$name = (string)$property;
-			if (array_key_exists($name, $after) === false) {
-				$changed[$name] = self::REMOVED;
-				continue;
-			}
-
-			if ($after[$name] !== $value) {
-				$changed[$name] = $after[$name];
-				continue;
-			}
-
-			$kept[] = $name;
-		}
-
+	public function report(PayloadChange $change, string $profileName = ''): array {
+		$split = $this->split(change: $change);
+		$changed = $split['changed'];
+		$kept = $split['kept'];
 		ksort($changed);
 		sort($kept);
 
@@ -142,6 +119,46 @@ class AnonymisationService {
 			'keptCount' => count($kept),
 		];
 	}//end report()
+
+	/**
+	 * Split the properties a payload had into those that changed and those that were kept.
+	 *
+	 * @param PayloadChange $change The payload as it was and as it is now.
+	 *
+	 * @return array{changed: array<string, mixed>, kept: string[]} Both, unsorted.
+	 */
+	private function split(PayloadChange $change): array {
+		$split = ['changed' => [], 'kept' => []];
+		foreach (array_keys($change->before) as $property) {
+			$name = (string)$property;
+			$outcome = $this->outcomeOf(change: $change, property: $property);
+			if ($outcome['changed'] === true) {
+				$split['changed'][$name] = $outcome['value'];
+				continue;
+			}
+
+			$split['kept'][] = $name;
+		}
+
+		return $split;
+	}//end split()
+
+	/**
+	 * Whether one property changed, and what the report says it became.
+	 *
+	 * @param PayloadChange $change   The payload as it was and as it is now.
+	 * @param int|string    $property The property, as a key of the payload before.
+	 *
+	 * @return array{changed: bool, value: mixed} The outcome; a removed property reads as REMOVED.
+	 */
+	private function outcomeOf(PayloadChange $change, int|string $property): array {
+		$name = (string)$property;
+		if (array_key_exists($name, $change->after) === false) {
+			return ['changed' => true, 'value' => self::REMOVED];
+		}
+
+		return ['changed' => ($change->after[$name] !== $change->before[$property]), 'value' => $change->after[$name]];
+	}//end outcomeOf()
 
 	/**
 	 * A stable pseudonym for one value.
@@ -168,25 +185,21 @@ class AnonymisationService {
 	/**
 	 * One treatment on one value.
 	 *
-	 * @param string               $treatment The treatment name.
-	 * @param mixed                $value     The current value.
-	 * @param array<string, mixed> $rule      The declared rule.
-	 * @param string               $salt      The instance salt.
+	 * @param AnonymisationPass $pass     The pass: its rules, salt and the payload so far.
+	 * @param string            $property The property to treat, present in the payload.
 	 *
 	 * @return mixed The treated value.
 	 */
-	private function treat(string $treatment, mixed $value, array $rule, string $salt): mixed {
+	private function treat(AnonymisationPass $pass, string $property): mixed {
+		$rule = $pass->profile->rules[$property];
+		$treatment = (string)($rule['treatment'] ?? null);
+		$value = $pass->payload[$property];
 		if ($treatment === AnonymisationProfile::FIXED) {
 			return ($rule['value'] ?? null);
 		}
 
 		if ($treatment === AnonymisationProfile::PSEUDONYM) {
-			$text = '';
-			if (is_scalar($value) === true) {
-				$text = (string)$value;
-			}
-
-			return $this->pseudonymFor(value: $text, salt: $salt);
+			return $this->pseudonymFor(value: $this->scalarText(value: $value), salt: $pass->profile->salt);
 		}
 
 		if ($treatment === AnonymisationProfile::GENERALISE) {
@@ -195,6 +208,21 @@ class AnonymisationService {
 
 		return $value;
 	}//end treat()
+
+	/**
+	 * A scalar value as text, and anything else as the empty string.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return string The text.
+	 */
+	private function scalarText(mixed $value): string {
+		if (is_scalar($value) === true) {
+			return (string)$value;
+		}
+
+		return '';
+	}//end scalarText()
 
 	/**
 	 * Coarsen one value to the declared grain.
@@ -210,11 +238,7 @@ class AnonymisationService {
 	 * @return string|null The coarser value, or null.
 	 */
 	private function generalise(mixed $value, string $grain): ?string {
-		if (is_scalar($value) === false) {
-			return null;
-		}
-
-		$text = trim((string)$value);
+		$text = trim($this->scalarText(value: $value));
 		if ($text === '') {
 			return null;
 		}
@@ -224,6 +248,18 @@ class AnonymisationService {
 			return ($matches[0] ?? null);
 		}
 
+		return $this->coarseDate(text: $text, grain: $grain);
+	}//end generalise()
+
+	/**
+	 * A date coarsened to its year, or to its month for the month grain.
+	 *
+	 * @param string $text  The trimmed value.
+	 * @param string $grain The declared grain.
+	 *
+	 * @return string|null The coarser date, or null when the value is not a date.
+	 */
+	private function coarseDate(string $text, string $grain): string|null {
 		$timestamp = strtotime($text);
 		if ($timestamp === false) {
 			return null;
@@ -235,5 +271,5 @@ class AnonymisationService {
 		}
 
 		return date($format, $timestamp);
-	}//end generalise()
+	}//end coarseDate()
 }//end class

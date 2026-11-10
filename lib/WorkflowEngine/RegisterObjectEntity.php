@@ -42,13 +42,12 @@ use OCP\EventDispatcher\Event;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\GenericEntityEvent;
-use OCP\WorkflowEngine\IEntity;
 use OCP\WorkflowEngine\IRuleMatcher;
 
 /**
  * Exposes OpenRegister objects to the native Nextcloud Flow rule engine.
  */
-class RegisterObjectEntity implements IEntity {
+class RegisterObjectEntity implements RegisterObjectEntityInterface {
 
 	/**
 	 * The object carried by the event currently being matched.
@@ -112,12 +111,10 @@ class RegisterObjectEntity implements IEntity {
 	 */
 	public function prepareRuleMatcher(IRuleMatcher $ruleMatcher, string $eventName, Event $event): void {
 		$object = $this->objectFromEvent(event: $event);
-		if ($object === null) {
-			return;
+		if ($object !== null) {
+			$this->object = $object;
+			$ruleMatcher->setEntitySubject($this, $object);
 		}
-
-		$this->object = $object;
-		$ruleMatcher->setEntitySubject($this, $object);
 	}//end prepareRuleMatcher()
 
 	/**

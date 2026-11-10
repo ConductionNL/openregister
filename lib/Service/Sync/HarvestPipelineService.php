@@ -28,12 +28,11 @@
 namespace OCA\OpenRegister\Service\Sync;
 
 use OCA\OpenRegister\Db\Mapping;
-use OCA\OpenRegister\Db\MappingMapper;
+use OCA\OpenRegister\Db\MappingMapperInterface;
 use OCA\OpenRegister\Db\Source;
-use OCA\OpenRegister\Db\SyncExecution;
-use OCA\OpenRegister\Db\SyncFailure;
 use OCA\OpenRegister\Db\SyncRecord;
-use OCA\OpenRegister\Db\SyncRecordMapper;
+use OCA\OpenRegister\Db\SyncRecordInputs;
+use OCA\OpenRegister\Db\SyncRecordMapperInterface;
 use OCA\OpenRegister\Service\MappingService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
@@ -47,7 +46,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class HarvestPipelineService {
+class HarvestPipelineService implements HarvestPipelineServiceInterface {
 
 	/**
 	 * Default batch size when a source does not configure one.
@@ -55,21 +54,35 @@ class HarvestPipelineService {
 	public const DEFAULT_BATCH_SIZE = 50;
 
 	/**
+	 * The record status each no-write conflict decision settles on.
+	 *
+	 * @var array<string, string>
+	 */
+	private const STATUS_BY_DECISION = [
+		SyncConflictResolver::KEEP_LOCAL => SyncRecordStatus::UNCHANGED,
+		SyncConflictResolver::DEFER => SyncRecordStatus::CONFLICT,
+	];
+
+	/**
+	 * The import-summary counter each settled status increments.
+	 *
+	 * @var array<string, string>
+	 */
+	private const SUMMARY_KEY_BY_STATUS = [
+		SyncRecordStatus::UNCHANGED => 'unchanged',
+		SyncRecordStatus::CONFLICT => 'conflicts',
+	];
+
+	/**
 	 * Constructor.
 	 *
-	 * @param SyncRecordMapper $syncRecordMapper Per-record tracking persistence
-	 * @param MappingMapper $mappingMapper Resolves the configured Mapping entity
-	 * @param MappingService $mappingService Applies Twig field transformation
-	 * @param ObjectOperationsInterface $objectService Validates + persists target objects
-	 * @param SyncConflictResolver $conflictResolver Decides source/local conflicts
+	 * @param SyncRecordMapperInterface $syncRecordMapper Per-record tracking persistence
+	 * @param HarvestImportServices $importServices Mapping, persistence and conflict resolution for the import stage
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
-		private readonly SyncRecordMapper $syncRecordMapper,
-		private readonly MappingMapper $mappingMapper,
-		private readonly MappingService $mappingService,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly SyncConflictResolver $conflictResolver,
+		private readonly SyncRecordMapperInterface $syncRecordMapper,
+		private readonly HarvestImportServices $importServices,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -77,48 +90,33 @@ class HarvestPipelineService {
 	/**
 	 * Run the full pipeline for a source.
 	 *
-	 * @param Source $source The source to harvest
-	 * @param SourceFetcherInterface $fetcher Transport for gather/fetch
-	 * @param string $executionId Unique id for this run
-	 * @param string|null $since Incremental checkpoint (null = full)
+	 * @param HarvestRun $harvest The source to harvest, its transport, the execution id and the
+	 *                            incremental checkpoint (null = full)
 	 *
 	 * @return array<string, int|string> Execution summary (counts + status)
 	 *
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */
-	public function run(
-		Source $source,
-		SourceFetcherInterface $fetcher,
-		string $executionId,
-		?string $since = null,
-	): array {
-		$gathered = $this->gather(source: $source, fetcher: $fetcher, executionId: $executionId, since: $since);
-		$fetched = $this->fetchAll(source: $source, fetcher: $fetcher, records: $gathered);
+	public function run(HarvestRun $harvest): array {
+		$gathered = $this->gather(harvest: $harvest);
+		$fetched  = $this->fetchAll(harvest: $harvest, records: $gathered);
 
-		return $this->import(source: $source, records: $fetched, executionId: $executionId);
+		return $this->import(harvest: $harvest, records: $fetched);
 	}//end run()
 
 	/**
 	 * Gather stage: identify records and create pending tracking rows.
 	 *
-	 * @param Source $source The source
-	 * @param SourceFetcherInterface $fetcher Transport
-	 * @param string $executionId Execution id
-	 * @param string|null $since Incremental checkpoint
+	 * @param HarvestRun $harvest The run: source, transport, execution id and checkpoint
 	 *
 	 * @return SyncRecord[] The created pending tracking rows
 	 *
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */
-	public function gather(
-		Source $source,
-		SourceFetcherInterface $fetcher,
-		string $executionId,
-		?string $since = null,
-	): array {
-		$externalIds = $fetcher->gather(source: $source, since: $since);
+	public function gather(HarvestRun $harvest): array {
+		$externalIds = $harvest->fetcher->gather(source: $harvest->source, since: $harvest->since);
 
-		$execution = new SyncExecution(source: $source, executionId: $executionId);
+		$execution = SyncRecordInputs::execution(source: $harvest->source, executionId: $harvest->executionId);
 		$records   = [];
 		foreach ($externalIds as $externalId) {
 			$records[] = $this->syncRecordMapper->createPending(execution: $execution, externalId: (string)$externalId);
@@ -126,7 +124,7 @@ class HarvestPipelineService {
 
 		$this->logger->info(
 			message: sprintf('[HarvestPipeline] Gather complete: %d records identified', count($records)),
-			context: ['source' => $source->getUuid(), 'execution' => $executionId]
+			context: ['source' => $harvest->source->getUuid(), 'execution' => $harvest->executionId]
 		);
 
 		return $records;
@@ -138,19 +136,18 @@ class HarvestPipelineService {
 	 * Individual fetch failures are isolated: the record is marked
 	 * fetch_error and the pipeline continues (partial-failure support).
 	 *
-	 * @param Source $source The source
-	 * @param SourceFetcherInterface $fetcher Transport
+	 * @param HarvestRun   $harvest The run: source and transport
 	 * @param SyncRecord[] $records Pending records to fetch
 	 *
 	 * @return SyncRecord[] Records that fetched successfully
 	 *
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */
-	public function fetchAll(Source $source, SourceFetcherInterface $fetcher, array $records): array {
+	public function fetchAll(HarvestRun $harvest, array $records): array {
 		$fetched = [];
 		foreach ($records as $record) {
 			try {
-				$raw = $fetcher->fetch(source: $source, externalId: (string)$record->getExternalId());
+				$raw = $harvest->fetcher->fetch(source: $harvest->source, externalId: (string)$record->getExternalId());
 				$record->setRawData($raw);
 				$record->setAttempts((int)$record->getAttempts() + 1);
 				$this->syncRecordMapper->transitionStatus(record: $record, newStatus: SyncRecordStatus::FETCHED);
@@ -159,7 +156,7 @@ class HarvestPipelineService {
 				$record->setAttempts((int)$record->getAttempts() + 1);
 				$this->syncRecordMapper->recordFailure(
 					record: $record,
-					failure: new SyncFailure(status: SyncRecordStatus::FETCH_ERROR, message: $e->getMessage())
+					failure: SyncRecordInputs::failure(status: SyncRecordStatus::FETCH_ERROR, message: $e->getMessage())
 				);
 				$this->logger->warning(
 					message: sprintf('[HarvestPipeline] Fetch failed for %s: %s', $record->getExternalId(), $e->getMessage())
@@ -173,17 +170,16 @@ class HarvestPipelineService {
 	/**
 	 * Import stage: map, validate, resolve conflicts and persist.
 	 *
-	 * @param Source $source The source
+	 * @param HarvestRun   $harvest The run: source and execution id
 	 * @param SyncRecord[] $records Fetched records to import
-	 * @param string $executionId Execution id
 	 *
 	 * @return array<string, int|string> Summary counts + overall status
 	 *
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */
-	public function import(Source $source, array $records, string $executionId): array {
+	public function import(HarvestRun $harvest, array $records): array {
 		$summary = [
-			'executionId' => $executionId,
+			'executionId' => $harvest->executionId,
 			'gathered' => count($records),
 			'created' => 0,
 			'updated' => 0,
@@ -192,16 +188,16 @@ class HarvestPipelineService {
 			'errors' => 0,
 		];
 
-		$mapping = $this->resolveMapping(source: $source);
+		$target = new SourceMapping(source: $harvest->source, mapping: $this->resolveMapping(source: $harvest->source));
 
 		foreach ($records as $record) {
 			try {
-				$this->importRecord(source: $source, record: $record, mapping: $mapping, summary: $summary);
+				$summary[$this->importRecord(target: $target, record: $record)]++;
 			} catch (Throwable $e) {
 				$summary['errors']++;
 				$this->syncRecordMapper->recordFailure(
 					record: $record,
-					failure: new SyncFailure(status: SyncRecordStatus::IMPORT_ERROR, message: $e->getMessage())
+					failure: SyncRecordInputs::failure(status: SyncRecordStatus::IMPORT_ERROR, message: $e->getMessage())
 				);
 				$this->logger->warning(
 					message: sprintf('[HarvestPipeline] Import failed for %s: %s', $record->getExternalId(), $e->getMessage())
@@ -220,110 +216,190 @@ class HarvestPipelineService {
 				$summary['conflicts'],
 				$summary['errors']
 			),
-			context: ['source' => $source->getUuid(), 'execution' => $executionId]
+			context: ['source' => $harvest->source->getUuid(), 'execution' => $harvest->executionId]
 		);
 
 		return $summary;
 	}//end import()
 
 	/**
-	 * Import a single fetched record, updating the summary in place.
+	 * Import a single fetched record and name the summary counter it increments.
 	 *
-	 * @param Source $source The source
-	 * @param SyncRecord $record The fetched record
-	 * @param Mapping|null $mapping The configured mapping (or null for pass-through)
-	 * @param array $summary Running summary (by reference)
+	 * @param SourceMapping $target The source and the mapping its records go through
+	 * @param SyncRecord    $record The fetched record
 	 *
-	 * The precise shape lives in @phpstan-param below rather than inline: every
-	 * counter is an int, which is what stops `$summary['created']++` reading as
-	 * a string increment. It does not fit on one @param line under the 150-char
-	 * limit, and wrapping a @param breaks the parameter-name sniff.
-	 *
-	 * @phpstan-param array{executionId: string, gathered: int, created: int,
-	 *     updated: int, unchanged: int, conflicts: int, errors: int} $summary
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/data-sync-harvesting/spec.md
+	 * @return string The summary counter: created, updated, unchanged or conflicts
 	 */
-	private function importRecord(Source $source, SyncRecord $record, ?Mapping $mapping, array &$summary): void {
-		$raw = ($record->getRawData() ?? []);
-		$mapped = $this->applyMapping(mapping: $mapping, raw: $raw);
-		$hash = $this->contentHash(data: $mapped);
+	private function importRecord(SourceMapping $target, SyncRecord $record): string {
+		$item = $this->harvested(target: $target, record: $record);
+
+		// Unchanged, kept local or deferred: no write.
+		$settled = $this->settledStatus(source: $target->source, item: $item);
+		if ($settled !== null) {
+			$this->settleUnwritten(item: $item, status: $settled);
+			return self::SUMMARY_KEY_BY_STATUS[$settled];
+		}
+
+		// Persist via ObjectService (validates against the target schema).
+		$savedUuid = $this->writeObject(source: $target->source, item: $item);
+		$this->settleImported(item: $item, objectUuid: $savedUuid);
+		if ($item->trackedUuid() !== null) {
+			return 'updated';
+		}
+
+		return 'created';
+	}//end importRecord()
+
+	/**
+	 * Map a fetched record and find the earlier tracking row for its external id.
+	 *
+	 * @param SourceMapping $target The source and the mapping its records go through
+	 * @param SyncRecord    $record The fetched record
+	 *
+	 * @return HarvestedRecord The record with its mapped content, hash and earlier row
+	 */
+	private function harvested(SourceMapping $target, SyncRecord $record): HarvestedRecord {
+		$mapped = $this->applyMapping(mapping: $target->mapping, raw: ($record->getRawData() ?? []));
 
 		// Change detection against the previous synced version.
 		$previous = $this->syncRecordMapper->findByExternalId(
-			sourceId: (int)$source->getId(),
+			sourceId: (int)$target->source->getId(),
 			externalId: (string)$record->getExternalId()
 		);
 
-		// Find an existing local object via prior tracking (carries objectUuid).
-		$existingUuid = null;
+		return new HarvestedRecord(
+			record: $record,
+			mapped: $mapped,
+			hash: $this->contentHash(data: $mapped),
+			tracked: $this->trackedPrevious(previous: $previous, record: $record)
+		);
+	}//end harvested()
+
+	/**
+	 * The previous sync record when it is another row than this one, else null.
+	 *
+	 * @param SyncRecord|null $previous The previous record for the external id.
+	 * @param SyncRecord      $record   The record being imported.
+	 *
+	 * @return SyncRecord|null
+	 */
+	private function trackedPrevious(?SyncRecord $previous, SyncRecord $record): ?SyncRecord {
 		if ($previous !== null && $previous->getId() !== $record->getId()) {
-			$existingUuid = $previous->getObjectUuid();
-			if ($previous->getContentHash() === $hash) {
-				// Unchanged: skip the write.
-				$record->setContentHash($hash);
-				$record->setObjectUuid($existingUuid);
-				$this->syncRecordMapper->transitionStatus(record: $record, newStatus: SyncRecordStatus::UNCHANGED);
-				$summary['unchanged']++;
-				return;
-			}
+			return $previous;
+		}
+
+		return null;
+	}//end trackedPrevious()
+
+	/**
+	 * The status a tracked record settles on without a write, or null when the
+	 * source version must be written.
+	 *
+	 * Unchanged content settles as UNCHANGED; otherwise, when a local object is
+	 * tracked, the conflict decision may keep it (UNCHANGED) or defer (CONFLICT).
+	 *
+	 * @param Source          $source The source.
+	 * @param HarvestedRecord $item   The record being imported.
+	 *
+	 * @return string|null
+	 */
+	private function settledStatus(Source $source, HarvestedRecord $item): ?string {
+		$previous = $item->tracked;
+		if ($previous === null) {
+			return null;
+		}
+
+		if ($previous->getContentHash() === $item->hash) {
+			return SyncRecordStatus::UNCHANGED;
+		}
+
+		if ($previous->getObjectUuid() === null) {
+			return null;
 		}
 
 		// Conflict resolution when an existing local object changed too.
-		if ($existingUuid !== null) {
-			$decision = $this->conflictResolver->resolve(
-				strategy: (string)($source->getConflictStrategy() ?? SyncConflictResolver::SOURCE_WINS),
-				localChanged: $this->localChangedSinceSync(source: $source, objectUuid: $existingUuid, previous: $previous)
-			);
+		$decision = $this->importServices->conflictResolver->resolve(
+			strategy: (string)($source->getConflictStrategy() ?? SyncConflictResolver::SOURCE_WINS),
+			conflict: new SyncConflict(localChanged: $this->localChangedSinceSync(source: $source, previous: $previous))
+		);
 
-			if ($decision === SyncConflictResolver::KEEP_LOCAL) {
-				$record->setContentHash($hash);
-				$record->setObjectUuid($existingUuid);
-				$this->syncRecordMapper->transitionStatus(record: $record, newStatus: SyncRecordStatus::UNCHANGED);
-				$summary['unchanged']++;
-				return;
-			}
+		return (self::STATUS_BY_DECISION[$decision] ?? null);
+	}//end settledStatus()
 
-			if ($decision === SyncConflictResolver::DEFER) {
-				$record->setContentHash($hash);
-				$record->setObjectUuid($existingUuid);
-				$this->syncRecordMapper->transitionStatus(record: $record, newStatus: SyncRecordStatus::CONFLICT);
-				$summary['conflicts']++;
-				return;
-			}
-		}//end if
+	/**
+	 * Settle a record that was not written: it keeps the tracked object uuid.
+	 *
+	 * @param HarvestedRecord $item   The record being imported.
+	 * @param string          $status The new status.
+	 *
+	 * @return void
+	 */
+	private function settleUnwritten(HarvestedRecord $item, string $status): void {
+		$item->record->setContentHash($item->hash);
+		$item->record->setObjectUuid($item->trackedUuid());
+		$this->syncRecordMapper->transitionStatus(record: $item->record, newStatus: $status);
+	}//end settleUnwritten()
 
-		// Persist via ObjectService (validates against the target schema).
-		$isUpdate = ($existingUuid !== null);
-		$saved = $this->objectService->saveObject(
-			object: $mapped,
+	/**
+	 * Settle a record that was written: it carries the saved object uuid.
+	 *
+	 * @param HarvestedRecord $item       The record being imported.
+	 * @param string|null     $objectUuid The saved local object uuid.
+	 *
+	 * @return void
+	 */
+	private function settleImported(HarvestedRecord $item, ?string $objectUuid): void {
+		$item->record->setContentHash($item->hash);
+		$item->record->setObjectUuid($objectUuid);
+		$this->syncRecordMapper->transitionStatus(record: $item->record, newStatus: SyncRecordStatus::IMPORTED);
+	}//end settleImported()
+
+	/**
+	 * Save the mapped object and return its uuid, falling back to the existing one.
+	 *
+	 * @param Source          $source The source (target register and schema).
+	 * @param HarvestedRecord $item   The record: its mapped data and tracked object uuid (null to create).
+	 *
+	 * @return string|null
+	 */
+	private function writeObject(Source $source, HarvestedRecord $item): ?string {
+		$existingUuid = $item->trackedUuid();
+		$saved        = $this->importServices->objectService->saveObject(
+			object: $item->mapped,
 			register: $source->getTargetRegister(),
 			schema: $source->getTargetSchema(),
 			uuid: $existingUuid
 		);
 
-		$savedUuid = $existingUuid;
+		$savedUuid = $this->savedUuidOf(saved: $saved);
+		if ($savedUuid === '') {
+			return $existingUuid;
+		}
+
+		return $savedUuid;
+	}//end writeObject()
+
+	/**
+	 * The uuid a saved entity reports, or '' when it reports none (or cannot).
+	 *
+	 * @param mixed $saved The saved entity.
+	 *
+	 * @return string
+	 */
+	private function savedUuidOf($saved): string {
 		try {
 			$candidate = $saved->getUuid();
-			if (is_string($candidate) === true && $candidate !== '') {
-				$savedUuid = $candidate;
-			}
 		} catch (Throwable $e) {
 			// Fall back to the existing uuid when the entity cannot report one.
+			return '';
 		}
 
-		$record->setContentHash($hash);
-		$record->setObjectUuid($savedUuid);
-		$this->syncRecordMapper->transitionStatus(record: $record, newStatus: SyncRecordStatus::IMPORTED);
-
-		if ($isUpdate === true) {
-			$summary['updated']++;
-		} else {
-			$summary['created']++;
+		if (is_string($candidate) === true) {
+			return $candidate;
 		}
-	}//end importRecord()
+
+		return '';
+	}//end savedUuidOf()
 
 	/**
 	 * Apply the configured mapping to a raw record (pass-through when none).
@@ -340,7 +416,7 @@ class HarvestPipelineService {
 			return $raw;
 		}
 
-		return $this->mappingService->executeMapping(mapping: $mapping, input: $raw);
+		return $this->importServices->mappingService->executeMapping(mapping: $mapping, input: $raw);
 	}//end applyMapping()
 
 	/**
@@ -400,7 +476,7 @@ class HarvestPipelineService {
 		}
 
 		try {
-			return $this->mappingMapper->find($mappingId);
+			return $this->importServices->mappingMapper->find($mappingId);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: sprintf('[HarvestPipeline] Mapping %d not resolvable: %s', $mappingId, $e->getMessage())
@@ -416,23 +492,22 @@ class HarvestPipelineService {
 	 * on the previous sync record. Absence of a previous hash is treated as
 	 * "not changed" so a first-time match does not spuriously conflict.
 	 *
-	 * @param Source $source The source
-	 * @param string $objectUuid The local object uuid
-	 * @param SyncRecord|null $previous The previous tracking record
+	 * @param Source     $source   The source
+	 * @param SyncRecord $previous The previous tracking record (carries the local object uuid)
 	 *
 	 * @return bool True when the local object diverged from the last sync
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
-	private function localChangedSinceSync(Source $source, string $objectUuid, ?SyncRecord $previous): bool {
-		if ($previous === null || $previous->getContentHash() === null) {
+	private function localChangedSinceSync(Source $source, SyncRecord $previous): bool {
+		if ($previous->getContentHash() === null) {
 			return false;
 		}
 
 		try {
-			$local = WriteCause::asLookup(fn () => $this->objectService->find(
-				id: $objectUuid,
+			$local = WriteCause::asLookup(fn () => $this->importServices->objectService->find(
+				id: (string)$previous->getObjectUuid(),
 				register: $source->getTargetRegister(),
 				schema: $source->getTargetSchema()
 			));

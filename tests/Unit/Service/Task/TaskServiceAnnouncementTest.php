@@ -24,10 +24,15 @@ use OCA\OpenRegister\Db\TaskCandidateMapper;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Db\TaskRelationMapper;
 use OCA\OpenRegister\Event\TaskTransitionedEvent;
+use OCA\OpenRegister\Service\Task\TaskAnswer;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
+use OCA\OpenRegister\Service\Task\TaskCommit;
+use OCA\OpenRegister\Service\Task\TaskIntake;
+use OCA\OpenRegister\Service\Task\TaskLifecycleServices;
 use OCA\OpenRegister\Service\Task\TaskPerformerResolver;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskTables;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -64,16 +69,24 @@ class TaskServiceAnnouncementTest extends TestCase {
 
 	private function service(): TaskService {
 		return new TaskService(
-			tasks: $this->tasks,
-			candidates: $this->createMock(TaskCandidateMapper::class),
-			relations: $this->createMock(TaskRelationMapper::class),
-			audits: $this->createMock(TaskAuditMapper::class),
 			authorization: $this->createMock(TaskAuthorizationService::class),
-			resolver: $this->createMock(TaskPerformerResolver::class),
-			db: $this->db,
-			logger: new NullLogger(),
-			builder: new TaskBuilder(),
-			dispatcher: $this->events
+			services: new TaskLifecycleServices(
+				tables: new TaskTables(
+					tasks: $this->tasks,
+					candidates: $this->createMock(TaskCandidateMapper::class),
+					relations: $this->createMock(TaskRelationMapper::class),
+					audits: $this->createMock(TaskAuditMapper::class)
+				),
+				commit: new TaskCommit(
+					db: $this->db,
+					logger: new NullLogger(),
+					dispatcher: $this->events
+				),
+				intake: new TaskIntake(
+					builder: new TaskBuilder()
+				),
+				resolver: $this->createMock(TaskPerformerResolver::class)
+			)
 		);
 	}
 
@@ -119,7 +132,7 @@ class TaskServiceAnnouncementTest extends TestCase {
 		$this->tasks->method('update')->willReturnArgument(0);
 		$this->events->method('dispatchTyped')->willThrowException(new \RuntimeException('calendar backend fails every write'));
 
-		$task = $this->service()->complete(uuid: 't-1', outcome: 'approved', resultText: null, comment: null, actor: 'former');
+		$task = $this->service()->completeWithAnswer(uuid: 't-1', answer: new TaskAnswer(outcome: 'approved'), actor: 'former');
 
 		$this->assertSame(Task::STATE_COMPLETED, $task->getState());
 		$this->assertSame(['commit'], $this->order, 'committed, and never rolled back by the listener');
@@ -131,7 +144,7 @@ class TaskServiceAnnouncementTest extends TestCase {
 		$this->events->expects($this->never())->method('dispatchTyped');
 
 		try {
-			$this->service()->complete(uuid: 't-1', outcome: 'approved', resultText: null, comment: null, actor: 'former');
+			$this->service()->completeWithAnswer(uuid: 't-1', answer: new TaskAnswer(outcome: 'approved'), actor: 'former');
 			$this->fail('expected the write failure to surface');
 		} catch (\RuntimeException $failure) {
 			$this->assertSame(['rollback'], $this->order);
@@ -144,15 +157,23 @@ class TaskServiceAnnouncementTest extends TestCase {
 		$this->tasks->method('update')->willReturnArgument(0);
 
 		$service = new TaskService(
-			tasks: $this->tasks,
-			candidates: $this->createMock(TaskCandidateMapper::class),
-			relations: $this->createMock(TaskRelationMapper::class),
-			audits: $this->createMock(TaskAuditMapper::class),
 			authorization: $this->createMock(TaskAuthorizationService::class),
-			resolver: $this->createMock(TaskPerformerResolver::class),
-			db: $this->db,
-			logger: new NullLogger(),
-			builder: new TaskBuilder()
+			services: new TaskLifecycleServices(
+				tables: new TaskTables(
+					tasks: $this->tasks,
+					candidates: $this->createMock(TaskCandidateMapper::class),
+					relations: $this->createMock(TaskRelationMapper::class),
+					audits: $this->createMock(TaskAuditMapper::class)
+				),
+				commit: new TaskCommit(
+					db: $this->db,
+					logger: new NullLogger()
+				),
+				intake: new TaskIntake(
+					builder: new TaskBuilder()
+				),
+				resolver: $this->createMock(TaskPerformerResolver::class)
+			)
 		);
 
 		$this->assertSame(Task::STATE_TERMINATED, $service->cancel(uuid: 't-1', reason: null, actor: 'former')->getState());

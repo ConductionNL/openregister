@@ -27,8 +27,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Edepot;
 
-use OCA\OpenRegister\Db\ObjectEntity;
-
 /**
  * The primitives every archival read shares.
  *
@@ -71,27 +69,25 @@ class MdtoValueReader {
 	 * fact declarable once instead of on every object; the caller supplies it,
 	 * because deriving it needs the schema and this class reads values only.
 	 *
-	 * @param ObjectEntity $object The source object.
-	 * @param string $abstractKey The English key, used on the retention block and the annotation.
-	 * @param string $tmloKey The Dutch key on the TMLO block.
-	 * @param array $annotation The object's evaluated archival annotation, empty when it has none.
+	 * @param ArchivalSource  $source The object and its evaluated archival annotation.
+	 * @param ArchivalFactKey $fact   The fact's English and TMLO keys.
 	 *
 	 * @return mixed The declared value, or null when no layer carries one.
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-emit-mdto-aggregatieniveau-beperkinggebruik-and-dekkingintijd-from-their-declared-sources
 	 */
-	public function declared(ObjectEntity $object, string $abstractKey, string $tmloKey, array $annotation = []): mixed {
-		$retention = ($object->getRetention() ?? []);
-		if (is_array($retention) === true && isset($retention[$abstractKey]) === true) {
-			return $retention[$abstractKey];
+	public function declared(ArchivalSource $source, ArchivalFactKey $fact): mixed {
+		$retention = ($source->object->getRetention() ?? []);
+		if (is_array($retention) === true && isset($retention[$fact->abstractKey]) === true) {
+			return $retention[$fact->abstractKey];
 		}
 
-		$fromTmlo = $this->valueAt(value: $object->getTmlo(), key: $tmloKey);
+		$fromTmlo = $this->valueAt(value: $source->object->getTmlo(), key: $fact->tmloKey);
 		if ($fromTmlo !== null) {
 			return $fromTmlo;
 		}
 
-		return $this->valueAt(value: $annotation, key: $abstractKey);
+		return $this->valueAt(value: $source->annotation, key: $fact->abstractKey);
 	}//end declared()
 
 	/**

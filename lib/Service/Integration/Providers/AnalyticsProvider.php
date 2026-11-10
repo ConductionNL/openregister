@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing
 
 use OCA\OpenRegister\Db\AnalyticsLink;
-use OCA\OpenRegister\Db\AnalyticsLinkMapper;
+use OCA\OpenRegister\Db\AnalyticsLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
@@ -67,21 +67,47 @@ class AnalyticsProvider extends AbstractIntegrationProvider {
 	];
 
 	/**
+	 * NC DB connection.
+	 *
+	 * @var IDBConnection
+	 */
+	private IDBConnection $db;
+
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
+	 * Logger for the degraded marker-scan path.
+	 *
+	 * @var LoggerInterface
+	 */
+	private LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection $db NC DB connection.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IL10N $l10n Localisation.
-	 * @param AnalyticsLinkMapper $analyticsLinkMapper Analytics-link mapper (Tier-2 link table).
-	 * @param LoggerInterface $logger Logger for the degraded marker-scan path.
+	 * @param LeafMarkerScanning           $leaf                The DB connection, app manager, localisation and marker-scan logger.
+	 * @param AnalyticsLinkMapperInterface $analyticsLinkMapper Analytics-link mapper (Tier-2 link table).
 	 */
 	public function __construct(
-		private IDBConnection $db,
-		private IAppManager $appManager,
-		private IL10N $l10n,
-		private AnalyticsLinkMapper $analyticsLinkMapper,
-		private LoggerInterface $logger,
+		LeafMarkerScanning $leaf,
+		private AnalyticsLinkMapperInterface $analyticsLinkMapper,
 	) {
+		$this->db = $leaf->db;
+		$this->appManager = $leaf->appManager;
+		$this->l10n = $leaf->l10n;
+		$this->logger = $leaf->logger;
 	}//end __construct()
 
 	public function getId(): string {
@@ -103,9 +129,9 @@ class AnalyticsProvider extends AbstractIntegrationProvider {
 	/**
 	 * The link mapper this provider reads first.
 	 *
-	 * @return AnalyticsLinkMapper
+	 * @return AnalyticsLinkMapperInterface
 	 */
-	protected function linkMapper(): AnalyticsLinkMapper {
+	protected function linkMapper(): AnalyticsLinkMapperInterface {
 		return $this->analyticsLinkMapper;
 	}//end linkMapper()
 

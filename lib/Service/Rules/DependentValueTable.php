@@ -46,7 +46,7 @@ namespace OCA\OpenRegister\Service\Rules;
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
-final class DependentValueTable {
+final class DependentValueTable implements DependentValueTableInterface {
 
 	/**
 	 * The property annotation this class reads.
@@ -54,13 +54,6 @@ final class DependentValueTable {
 	 * @var string
 	 */
 	public const ANNOTATION = 'x-openregister-dependent-values';
-
-	/**
-	 * The refusal code an object save carries when a value is outside the table.
-	 *
-	 * @var string
-	 */
-	public const CODE_VALUE_NOT_ALLOWED = 'dependent-value-not-allowed';
 
 	/**
 	 * Every declared table, keyed by the property it constrains.
@@ -77,17 +70,11 @@ final class DependentValueTable {
 	 */
 	public function tablesOf(array $properties): array {
 		$tables = [];
-		foreach ($properties as $name => $property) {
-			if (is_array($property) === false || isset($property[self::ANNOTATION]) === false) {
-				continue;
+		foreach ((new AnnotatedProperties())->annotations(properties: $properties, annotation: self::ANNOTATION) as $name => $declaration) {
+			$table = $this->tableOf(declaration: $declaration);
+			if ($table !== null) {
+				$tables[(string)$name] = $table;
 			}
-
-			$table = $this->tableOf(declaration: $property[self::ANNOTATION]);
-			if ($table === null) {
-				continue;
-			}
-
-			$tables[(string)$name] = $table;
 		}
 
 		return $tables;
@@ -108,16 +95,42 @@ final class DependentValueTable {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function tableOf(mixed $declaration): ?array {
-		if (is_array($declaration) === false) {
+		$controlledBy = $this->controlledByOf(declaration: $declaration);
+		if ($controlledBy === null || is_array(($declaration['allowed'] ?? null)) === false) {
 			return null;
 		}
 
-		$controlledBy = ($declaration['controlledBy'] ?? null);
-		$allowed = ($declaration['allowed'] ?? null);
-		if (is_string($controlledBy) === false || $controlledBy === '' || is_array($allowed) === false) {
-			return null;
+		return ['controlledBy' => $controlledBy, 'allowed' => $this->pairsOf(allowed: $declaration['allowed'])];
+	}//end tableOf()
+
+	/**
+	 * The property a declaration names as controlling, when it names one.
+	 *
+	 * @param mixed $declaration The raw annotation value.
+	 *
+	 * @return string|null The controlling property, or null when the declaration names none.
+	 */
+	private function controlledByOf(mixed $declaration): ?string {
+		$controlledBy = null;
+		if (is_array($declaration) === true) {
+			$controlledBy = ($declaration['controlledBy'] ?? null);
 		}
 
+		if (is_string($controlledBy) === true && $controlledBy !== '') {
+			return $controlledBy;
+		}
+
+		return null;
+	}//end controlledByOf()
+
+	/**
+	 * The pairs of a table, with every listed value as a string.
+	 *
+	 * @param array<mixed, mixed> $allowed The raw pairs.
+	 *
+	 * @return array<string, array<int, string>> Controlling value => allowed values; a pair that is not a list is skipped.
+	 */
+	private function pairsOf(array $allowed): array {
 		$pairs = [];
 		foreach ($allowed as $controllingValue => $values) {
 			if (is_array($values) === true) {
@@ -125,8 +138,8 @@ final class DependentValueTable {
 			}
 		}
 
-		return ['controlledBy' => $controlledBy, 'allowed' => $pairs];
-	}//end tableOf()
+		return $pairs;
+	}//end pairsOf()
 
 	/**
 	 * The properties whose tables the object being saved breaks.
@@ -137,61 +150,84 @@ final class DependentValueTable {
 	 * object actually has.
 	 *
 	 * @param array<string, mixed> $properties The schema's properties block.
-	 * @param array<string, mixed> $data The object as it would be saved.
-	 * @param array<string, mixed> $stored The object as currently stored, or an empty array on create.
+	 * @param DependentValueWrite $write The object as it would be saved, and as currently stored.
 	 *
 	 * @return array<int, array{property: string, controlledBy: string, value: string, controllingValue: string, message: string}> The violations.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function violations(array $properties, array $data, array $stored = []): array {
+	public function violations(array $properties, DependentValueWrite $write): array {
 		$violations = [];
 		foreach ($this->tablesOf(properties: $properties) as $name => $table) {
-			$value = ($data[$name] ?? null);
-			if ($value === null || $value === '' || is_scalar($value) === false) {
-				// Nothing was proposed for the dependent property, so the table
-				// has nothing to say. Whether the property may be empty at all
-				// is `required`'s question, not this one's.
-				continue;
+			$violation = $this->violationOf(table: ['property' => $name] + $table, write: $write);
+			if ($violation !== null) {
+				$violations[] = $violation;
 			}
-
-			$controllingValue = $this->controllingValue(
-				name: $table['controlledBy'],
-				data: $data,
-				stored: $stored
-			);
-			if ($controllingValue === null) {
-				continue;
-			}
-
-			if (array_key_exists($controllingValue, $table['allowed']) === false) {
-				// An unlisted controlling value constrains nothing. See the
-				// class docblock: that is what makes a partial table usable.
-				continue;
-			}
-
-			if (in_array((string)$value, $table['allowed'][$controllingValue], true) === true) {
-				continue;
-			}
-
-			$violations[] = [
-				'property' => $name,
-				'controlledBy' => $table['controlledBy'],
-				'value' => (string)$value,
-				'controllingValue' => $controllingValue,
-				'message' => sprintf(
-					'"%s" cannot be "%s" while "%s" is "%s". Allowed: %s.',
-					$name,
-					(string)$value,
-					$table['controlledBy'],
-					$controllingValue,
-					implode(', ', $table['allowed'][$controllingValue])
-				),
-			];
-		}//end foreach
+		}
 
 		return $violations;
 	}//end violations()
+
+	/**
+	 * The violation one table finds in a write, or null when the write keeps to it.
+	 *
+	 * @param array{property: string|int, controlledBy: string, allowed: array<string, array<int, string>>} $table The table,
+	 *   with the property it constrains.
+	 * @param DependentValueWrite $write The save being judged.
+	 *
+	 * @return array{property: string, controlledBy: string, value: string, controllingValue: string, message: string}|null The violation.
+	 */
+	private function violationOf(array $table, DependentValueWrite $write): ?array {
+		$value = $write->proposed(name: $table['property']);
+		$controllingValue = $write->controllingValue(name: $table['controlledBy']);
+		if ($value === null || $controllingValue === null) {
+			return null;
+		}
+
+		// An unlisted controlling value constrains nothing, so it allows the
+		// value proposed. See the class docblock: that is what makes a partial
+		// table usable.
+		if (in_array($value, ($table['allowed'][$controllingValue] ?? [$value]), true) === true) {
+			return null;
+		}
+
+		return $this->violation(found: ['value' => $value, 'controllingValue' => $controllingValue] + $table);
+	}//end violationOf()
+
+	/**
+	 * Shape one violation, with the sentence that names both properties.
+	 *
+	 * @param array<string, mixed> $found The property, controlledBy, value, controllingValue and the table's allowed pairs.
+	 *
+	 * @return array{property: string, controlledBy: string, value: string, controllingValue: string, message: string} The violation.
+	 */
+	private function violation(array $found): array {
+		return [
+			'property' => $found['property'],
+			'controlledBy' => $found['controlledBy'],
+			'value' => $found['value'],
+			'controllingValue' => $found['controllingValue'],
+			'message' => $this->message(found: $found),
+		];
+	}//end violation()
+
+	/**
+	 * The sentence a violation carries: both properties, both values, and what is allowed.
+	 *
+	 * @param array<string, mixed> $found The property, controlledBy, value, controllingValue and the table's allowed pairs.
+	 *
+	 * @return string The sentence.
+	 */
+	private function message(array $found): string {
+		return sprintf(
+			'"%s" cannot be "%s" while "%s" is "%s". Allowed: %s.',
+			$found['property'],
+			$found['value'],
+			$found['controlledBy'],
+			$found['controllingValue'],
+			implode(', ', $found['allowed'][$found['controllingValue']])
+		);
+	}//end message()
 
 	/**
 	 * Whether any property of this schema declares a table at all.
@@ -207,34 +243,6 @@ final class DependentValueTable {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function declaresAny(array $properties): bool {
-		foreach ($properties as $property) {
-			if (is_array($property) === true && isset($property[self::ANNOTATION]) === true) {
-				return true;
-			}
-		}
-
-		return false;
+		return (new AnnotatedProperties())->declares(properties: $properties, annotation: self::ANNOTATION);
 	}//end declaresAny()
-
-	/**
-	 * The controlling property's value, from the payload or from the store.
-	 *
-	 * @param string $name The controlling property's name.
-	 * @param array<string, mixed> $data The object as it would be saved.
-	 * @param array<string, mixed> $stored The object as currently stored.
-	 *
-	 * @return string|null The value as a string, or null when there is none to read.
-	 */
-	private function controllingValue(string $name, array $data, array $stored): ?string {
-		$value = ($data[$name] ?? null);
-		if ($value === null) {
-			$value = ($stored[$name] ?? null);
-		}
-
-		if ($value === null || is_scalar($value) === false) {
-			return null;
-		}
-
-		return (string)$value;
-	}//end controllingValue()
 }//end class

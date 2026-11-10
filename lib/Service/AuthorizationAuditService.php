@@ -26,8 +26,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * Audit service for authorization configuration changes
@@ -48,14 +46,12 @@ class AuthorizationAuditService {
 	/**
 	 * Constructor.
 	 *
-	 * @param IUserSession $userSession User session for current user context.
+	 * @param LinkSessionRuntime      $runtime        The user session (for the actor) and the logger.
 	 * @param RegisterMapperInterface $registerMapper Register mapper for cascade count.
-	 * @param LoggerInterface $logger Logger for structured audit entries.
 	 */
 	public function __construct(
-		private readonly IUserSession $userSession,
+		private readonly LinkSessionRuntime $runtime,
 		private readonly RegisterMapperInterface $registerMapper,
-		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
@@ -69,59 +65,98 @@ class AuthorizationAuditService {
 	 *
 	 * @return void
 	 *
-	 * @spec exclude Facade plumbing: emits one structured audit log line; sibling of logRegisterAuthorizationChange
+	 * @spec exclude Facade plumbing: emits one structured audit log line; sibling of recordRegisterChange
 	 *              (rbac-scopes REQ-002), no distinct behavioral contract.
 	 */
-	public function logSchemaAuthorizationChange(
-		int $schemaId,
-		string $schemaTitle,
-		?array $oldAuthorization,
-		?array $newAuthorization,
-	): void {
-		$user = $this->userSession->getUser();
-		$userName = 'System';
-		$userId = 'system';
-		if ($user !== null) {
-			$userName = $user->getDisplayName();
-			$userId = $user->getUID();
-		}
-
-		$this->logger->info(
-			message: '[AuthorizationAudit] Schema authorization changed',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'event_type' => self::EVENT_TYPE,
-				'entity_type' => 'schema',
-				'entity_id' => $schemaId,
-				'entity_title' => $schemaTitle,
-				'changed_by_user' => $userId,
-				'changed_by_name' => $userName,
-				'old_authorization' => json_encode($oldAuthorization),
-				'new_authorization' => json_encode($newAuthorization),
-			]
-		);
+	public function logSchemaAuthorizationChange(int $schemaId, string $schemaTitle, ?array $oldAuthorization, ?array $newAuthorization): void {
+		$change = new AuthorizationChange(entityId: $schemaId, entityTitle: $schemaTitle, before: $oldAuthorization, after: $newAuthorization);
+		$this->recordSchemaChange(change: $change);
 	}//end logSchemaAuthorizationChange()
 
 	/**
-	 * Log a register authorization change.
+	 * Record a change to a schema's authorization.
 	 *
-	 * @param int $registerId The register ID.
-	 * @param string $registerTitle The register title.
-	 * @param array|null $oldAuthorization The previous authorization value.
-	 * @param array|null $newAuthorization The new authorization value.
+	 * @param AuthorizationChange $change The schema and its old and new authorization.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Facade plumbing: the value-object form of logSchemaAuthorizationChange.
+	 */
+	public function recordSchemaChange(AuthorizationChange $change): void {
+		$this->logChange(
+			message: '[AuthorizationAudit] Schema authorization changed',
+			fields: $this->entityFields(type: 'schema', change: $change)
+				+ $this->stateFields(name: 'authorization', change: $change)
+		);
+	}//end recordSchemaChange()
+
+	/**
+	 * Record a change to a register's authorization, with the count of schemas the cascade affects.
+	 *
+	 * @param AuthorizationChange $change The register and its old and new authorization.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-level-authorization-cascade
 	 */
-	public function logRegisterAuthorizationChange(
-		int $registerId,
-		string $registerTitle,
-		?array $oldAuthorization,
-		?array $newAuthorization,
-	): void {
-		$user = $this->userSession->getUser();
+	public function recordRegisterChange(AuthorizationChange $change): void {
+		$this->logChange(
+			message: '[AuthorizationAudit] Register authorization changed',
+			fields: $this->entityFields(type: 'register', change: $change)
+				+ $this->stateFields(name: 'authorization', change: $change)
+				+ ['affected_schema_count' => $this->affectedSchemaCount(registerId: $change->entityId)]
+		);
+	}//end recordRegisterChange()
+
+	/**
+	 * Record a change to a register's role definitions.
+	 *
+	 * @param AuthorizationChange $change The register and its old and new role definitions.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Facade plumbing: a role-definition change on a register.
+	 */
+	public function recordRoleChange(AuthorizationChange $change): void {
+		$this->logChange(
+			message: '[AuthorizationAudit] Role definitions changed',
+			fields: $this->entityFields(type: 'register_roles', change: $change)
+				+ $this->stateFields(name: 'roles', change: $change)
+		);
+	}//end recordRoleChange()
+
+	/**
+	 * The entity a change is about, followed by who made it.
+	 *
+	 * @param string              $type   The entity type the entry names.
+	 * @param AuthorizationChange $change The change.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function entityFields(string $type, AuthorizationChange $change): array {
+		return ['entity_type' => $type, 'entity_id' => $change->entityId, 'entity_title' => $change->entityTitle]
+			+ $this->changedBy();
+	}//end entityFields()
+
+	/**
+	 * The JSON-encoded old and new values of a change, as `old_<name>` and `new_<name>`.
+	 *
+	 * @param string              $name   The name of the changed setting.
+	 * @param AuthorizationChange $change The change.
+	 *
+	 * @return array<string, string|false>
+	 */
+	private function stateFields(string $name, AuthorizationChange $change): array {
+		return ['old_'.$name => json_encode($change->before), 'new_'.$name => json_encode($change->after)];
+	}//end stateFields()
+
+	/**
+	 * Who made the change: the session user, or the system.
+	 *
+	 * @return array{changed_by_user: string, changed_by_name: string}
+	 */
+	private function changedBy(): array {
+		$user = $this->runtime->userSession->getUser();
 		$userName = 'System';
 		$userId = 'system';
 		if ($user !== null) {
@@ -129,8 +164,20 @@ class AuthorizationAuditService {
 			$userId = $user->getUID();
 		}
 
-		// Count schemas that will inherit this change.
-		// This is approximate -- we don't load each schema to check whether it has its own authorization.
+		return ['changed_by_user' => $userId, 'changed_by_name' => $userName];
+	}//end changedBy()
+
+	/**
+	 * How many schemas a register change cascades to.
+	 *
+	 * This is approximate -- we don't load each schema to check whether it has
+	 * its own authorization. Zero when the register cannot be read.
+	 *
+	 * @param int $registerId The register ID.
+	 *
+	 * @return int The number of schemas on the register.
+	 */
+	private function affectedSchemaCount(int $registerId): int {
 		$affectedSchemaCount = 0;
 		try {
 			$register = $this->registerMapper->find($registerId);
@@ -139,67 +186,35 @@ class AuthorizationAuditService {
 				$affectedSchemaCount = count($schemas);
 			}
 		} catch (\Throwable $e) {
-			// Could not count affected schemas.
+			// The count is informational; an unreadable register reports zero.
+			$this->runtime->logger->debug(
+				message: '[AuthorizationAuditService] Could not count the schemas of a register',
+				context: [
+					'registerId' => $registerId,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
-		$this->logger->info(
-			message: '[AuthorizationAudit] Register authorization changed',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'event_type' => self::EVENT_TYPE,
-				'entity_type' => 'register',
-				'entity_id' => $registerId,
-				'entity_title' => $registerTitle,
-				'changed_by_user' => $userId,
-				'changed_by_name' => $userName,
-				'old_authorization' => json_encode($oldAuthorization),
-				'new_authorization' => json_encode($newAuthorization),
-				'affected_schema_count' => $affectedSchemaCount,
-			]
-		);
-	}//end logRegisterAuthorizationChange()
+		return $affectedSchemaCount;
+	}//end affectedSchemaCount()
 
 	/**
-	 * Log a role definition change on a register.
+	 * Write one structured audit entry.
 	 *
-	 * @param int $registerId The register ID.
-	 * @param string $registerTitle The register title.
-	 * @param array|null $oldRoles The previous roles configuration.
-	 * @param array|null $newRoles The new roles configuration.
+	 * @param string              $message The log message.
+	 * @param array<string,mixed> $fields  The entry's fields after file, line and event type.
 	 *
 	 * @return void
-	 *
-	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-authorization-cache
 	 */
-	public function logRoleDefinitionChange(
-		int $registerId,
-		string $registerTitle,
-		?array $oldRoles,
-		?array $newRoles,
-	): void {
-		$user = $this->userSession->getUser();
-		$userName = 'System';
-		$userId = 'system';
-		if ($user !== null) {
-			$userName = $user->getDisplayName();
-			$userId = $user->getUID();
-		}
-
-		$this->logger->info(
-			message: '[AuthorizationAudit] Role definitions changed',
+	private function logChange(string $message, array $fields): void {
+		$this->runtime->logger->info(
+			message: $message,
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'event_type' => self::EVENT_TYPE,
-				'entity_type' => 'register_roles',
-				'entity_id' => $registerId,
-				'entity_title' => $registerTitle,
-				'changed_by_user' => $userId,
-				'changed_by_name' => $userName,
-				'old_roles' => json_encode($oldRoles),
-				'new_roles' => json_encode($newRoles),
-			]
+			] + $fields
 		);
-	}//end logRoleDefinitionChange()
+	}//end logChange()
 }//end class

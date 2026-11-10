@@ -22,10 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
+use OCA\OpenRegister\Service\Rbac\ObjectOwnershipServiceInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * The services of the object ownership API.
@@ -36,18 +36,18 @@ final class ObjectOwnershipControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ObjectOperationsInterface          $objectService  Resolves a record through the RBAC boundary.
-	 * @param RegisterMapperInterface         $registerMapper Resolves the register entity.
-	 * @param SchemaMapperInterface           $schemaMapper   Resolves the schema entity.
-	 * @param ObjectOwnershipService $ownership      Performs the checked writes.
+	 * @param ObjectOperationsInterface       $objectService Resolves an object through the RBAC boundary.
+	 * @param SchemaCatalogInterface          $catalog       Resolves the register and schema entities.
+	 * @param ObjectOwnershipServiceInterface $ownership     Performs the checked writes.
+	 * @param LoggerInterface                 $logger        Records unexpected failures.
 	 *
 	 * @spec openspec/specs/object-ownership/spec.md
 	 */
 	public function __construct(
 		public readonly ObjectOperationsInterface $objectService,
-		public readonly RegisterMapperInterface $registerMapper,
-		public readonly SchemaMapperInterface $schemaMapper,
-		public readonly ObjectOwnershipService $ownership,
+		public readonly SchemaCatalogInterface $catalog,
+		public readonly ObjectOwnershipServiceInterface $ownership,
+		public readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 }//end class

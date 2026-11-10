@@ -33,16 +33,19 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use DateTime;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowStream;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
+use OCA\OpenRegister\Service\Flow\FlowEngineServices;
 use OCA\OpenRegister\Service\Flow\FlowFiring;
 use OCA\OpenRegister\Service\Flow\FlowFiringResult;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowOversightRegistry;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowRunMarkingStore;
+use OCA\OpenRegister\Service\Flow\FlowRunStart;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Service\Flow\FlowStop;
@@ -55,6 +58,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use RuntimeException;
 use stdClass;
+use OCA\OpenRegister\Service\Flow\PlacesPruning;
+use OCA\OpenRegister\Service\Flow\FlowRunFrame;
 
 /**
  * A dispatcher whose behaviour per step id is configured by the case.
@@ -116,6 +121,10 @@ class GoldenWalkLogger extends AbstractLogger {
  * The golden master.
  *
  * @covers \OCA\OpenRegister\Service\Flow\FlowEngine
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopAdvance
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopRouting
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopPlan
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunStart
  * @covers \OCA\OpenRegister\Service\Flow\FlowStreamHop
  * @covers \OCA\OpenRegister\Service\Flow\FlowStreamPass
  * @uses   \OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder
@@ -137,6 +146,8 @@ class GoldenWalkLogger extends AbstractLogger {
  * @covers \OCA\OpenRegister\Service\Flow\FlowWalkPass
  * @uses \OCA\OpenRegister\Service\Flow\FlowFiring
  * @uses \OCA\OpenRegister\Service\Flow\FlowStreamHalt
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeDeclarations
+ * @uses \OCA\OpenRegister\Service\Flow\LoweredFlow
  */
 class FlowEngineWalkGoldenTest extends TestCase {
 
@@ -346,10 +357,10 @@ class FlowEngineWalkGoldenTest extends TestCase {
 			new FlowDefinitionBuilder(),
 			new GoldenWalkLogger(trace: $trace),
 			$this->oversight(refuseFrom: ($case['oversight'] ?? null), trace: $trace),
-			null,
-			null,
-			$this->runContext(trace: $trace),
-			$this->mootness(trace: $trace)
+			services: new FlowEngineServices(
+				runContext: $this->runContext(trace: $trace),
+				mootness: $this->mootness(trace: $trace)
+			)
 		);
 
 		$streams = null;
@@ -358,14 +369,11 @@ class FlowEngineWalkGoldenTest extends TestCase {
 		}
 
 		$result = $engine->run(
-			flow: $flow,
-			store: new FlowRunMarkingStore(run: $this->run),
-			subject: new stdClass(),
-			dispatcher: new GoldenWalkDispatcher(behaviour: ($case['behaviour'] ?? []), trace: $trace),
-			context: $context,
-			items: [FlowItems::item(json: ['n' => ($case['seed'] ?? 1)])],
-			startAt: ($case['startAt'] ?? null),
-			streams: $streams
+			start: (new FlowRunStart(flow: $flow, store: new FlowRunMarkingStore(run: $this->run), subject: new stdClass(), dispatcher: new GoldenWalkDispatcher(behaviour: ($case['behaviour'] ?? []), trace: $trace)))->withContext(context: $context)->withStreams(streams: $streams),
+			origin: new FlowRunOrigin(
+				items: [FlowItems::item(json: ['n' => ($case['seed'] ?? 1)])],
+				startAt: ($case['startAt'] ?? null)
+			)
 		);
 
 		$result['log'] = self::clip(lines: $result['log']);
@@ -454,8 +462,8 @@ class FlowEngineWalkGoldenTest extends TestCase {
 
 	private function runContext(\Closure $trace): FlowRunContext {
 		$context = $this->createMock(FlowRunContext::class);
-		$context->method('push')->willReturnCallback(function (?string $runUuid, string $nodeId, int $sequence) use ($trace): void {
-			$trace(['push', $runUuid, $nodeId, $sequence]);
+		$context->method('push')->willReturnCallback(function (FlowRunFrame $frame) use ($trace): void {
+			$trace(['push', $frame->runUuid, $frame->nodeId, $frame->sequence]);
 		});
 		$context->method('pop')->willReturnCallback(function () use ($trace): void {
 			$trace(['pop']);
@@ -466,8 +474,8 @@ class FlowEngineWalkGoldenTest extends TestCase {
 
 	private function mootness(\Closure $trace): FlowTaskMootness {
 		$mootness = $this->createMock(FlowTaskMootness::class);
-		$mootness->method('placesPruned')->willReturnCallback(function (array $context, array $places, string $byTransition) use ($trace): int {
-			$trace(['pruned', $places, $byTransition]);
+		$mootness->method('placesPruned')->willReturnCallback(function (array $context, PlacesPruning $pruning) use ($trace): int {
+			$trace(['pruned', $pruning->places, $pruning->byTransition]);
 			return 0;
 		});
 

@@ -47,7 +47,7 @@ namespace OCA\OpenRegister\Service\Object;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Match expression unavoidable for typed dispatch
  */
-class SchemaTypeConverter {
+class SchemaTypeConverter implements SchemaTypeConverterInterface {
 	/**
 	 * Convert a database column value to the type declared in the JSON Schema.
 	 *
@@ -88,8 +88,8 @@ class SchemaTypeConverter {
 			// `_occurrences` enrichment is materialised by the render layer
 			// (RenderObject), not here, since it is a sibling virtual field on the
 			// parent object rather than a transform of the value itself.
-			'color', 'recurrence' => $this->convertString(value: $value, schemaType: $schemaType),
-			default => $this->convertString(value: $value, schemaType: $schemaType),
+			'color', 'recurrence' => $this->convertString(value: $value),
+			default => $this->convertString(value: $value),
 		};
 	}//end convertValue()
 
@@ -107,30 +107,14 @@ class SchemaTypeConverter {
 	 * change fixes.
 	 *
 	 * @param mixed $value The value to convert.
-	 * @param string $schemaType The declared schema type (kept for symmetry; unused).
 	 *
 	 * @return mixed Converted value.
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-13
 	 */
-	private function convertString(mixed $value, string $schemaType): mixed {
+	private function convertString(mixed $value): mixed {
 		if (is_string($value) === true) {
-			$trimmed = trim($value);
-			$startsWithArrObj = (
-				str_starts_with($trimmed, '[') === true
-				|| str_starts_with($trimmed, '{') === true
-			);
-
-			if ($startsWithArrObj === true) {
-				$decoded = json_decode($value, true);
-				if (json_last_error() === JSON_ERROR_NONE && ($decoded !== null || $value === 'null')) {
-					return $decoded;
-				}
-			}
-
-			return $value;
+			return $this->decodedJsonContainer(value: $value);
 		}
 
 		// Schema expects string but database returned numeric - cast to string.
@@ -140,6 +124,29 @@ class SchemaTypeConverter {
 
 		return $value;
 	}//end convertString()
+
+	/**
+	 * The array a JSON array or object string decodes to, else the string itself.
+	 *
+	 * @param string $value The string.
+	 *
+	 * @return mixed The decoded container or the string.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-13
+	 */
+	private function decodedJsonContainer(string $value): mixed {
+		$trimmed = trim($value);
+		if (str_starts_with($trimmed, '[') === false && str_starts_with($trimmed, '{') === false) {
+			return $value;
+		}
+
+		$decoded = json_decode($value, true);
+		if (json_last_error() === JSON_ERROR_NONE && $decoded !== null) {
+			return $decoded;
+		}
+
+		return $value;
+	}//end decodedJsonContainer()
 
 	/**
 	 * Re-encode the string-typed properties that the read path decoded.
@@ -189,43 +196,60 @@ class SchemaTypeConverter {
 	 */
 	public function restoreStringTypedValues(array $data, array $properties, array $suppliedKeys=[]): array {
 		foreach ($data as $key => $value) {
-			if (is_array($value) === false) {
-				continue;
+			if (in_array($key, $suppliedKeys, true) === false) {
+				$data[$key] = $this->restoredValue(value: $value, property: ($properties[$key] ?? null));
 			}
-
-			if (in_array($key, $suppliedKeys, true) === true) {
-				continue;
-			}
-
-			if (array_key_exists($key, $properties) === false || is_array($properties[$key]) === false) {
-				continue;
-			}
-
-			// A translatable property is stored as a locale map ({"nl": "..."}),
-			// so the array IS its stored form. Encoding it turned an untouched
-			// title into the string '{"nl":"..."}', which the save then wrapped
-			// in a locale map again, one level deeper on every PATCH.
-			if (($properties[$key]['translatable'] ?? false) === true) {
-				continue;
-			}
-
-			if ($this->isStringTyped(declaredType: ($properties[$key]['type'] ?? 'string')) === false) {
-				continue;
-			}
-
-			// Flags chosen to match what wrote these values in the first place:
-			// JavaScript's JSON.stringify escapes neither slashes nor non-ASCII,
-			// and consuming apps store `JSON.stringify(...)` into these columns.
-			$encoded = json_encode($value, (JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
-			if ($encoded === false) {
-				continue;
-			}
-
-			$data[$key] = $encoded;
-		}//end foreach
+		}
 
 		return $data;
 	}//end restoreStringTypedValues()
+
+	/**
+	 * A decoded array back in its stored string form, else the value as it is.
+	 *
+	 * The flags match what wrote these values in the first place: JavaScript's JSON.stringify
+	 * escapes neither slashes nor non-ASCII, and consuming apps store its output in these columns.
+	 *
+	 * @param mixed $value    The value.
+	 * @param mixed $property The property's definition, when it has one.
+	 *
+	 * @return mixed The value to save.
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function restoredValue(mixed $value, mixed $property): mixed {
+		if (is_array($value) === false || $this->isStoredAsString(property: $property) === false) {
+			return $value;
+		}
+
+		$encoded = json_encode($value, (JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+		if ($encoded === false) {
+			return $value;
+		}
+
+		return $encoded;
+	}//end restoredValue()
+
+	/**
+	 * Whether a property's stored form is a string.
+	 *
+	 * A translatable property is stored as a locale map ({"nl": "..."}), so the array IS its
+	 * stored form. Encoding it turned an untouched title into the string '{"nl":"..."}', which
+	 * the save then wrapped in a locale map again, one level deeper on every PATCH.
+	 *
+	 * @param mixed $property The property's definition, when it has one.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function isStoredAsString(mixed $property): bool {
+		if (is_array($property) === false || ($property['translatable'] ?? false) === true) {
+			return false;
+		}
+
+		return $this->isStringTyped(declaredType: ($property['type'] ?? 'string'));
+	}//end isStoredAsString()
 
 	/**
 	 * Whether a declared schema type is one `convertValue()` routes to `convertString()`.
@@ -248,26 +272,9 @@ class SchemaTypeConverter {
 			$types = [$types];
 		}
 
-		$named = [];
-		foreach ($types as $type) {
-			if (is_string($type) === false || strtolower($type) === 'null') {
-				continue;
-			}
+		$named = array_diff(array_map('strtolower', array_filter($types, 'is_string')), ['null']);
 
-			$named[] = strtolower($type);
-		}
-
-		if ($named === []) {
-			return false;
-		}
-
-		foreach ($named as $type) {
-			if (in_array($type, ['array', 'object', 'number', 'integer', 'boolean'], true) === true) {
-				return false;
-			}
-		}
-
-		return true;
+		return $named !== [] && array_intersect($named, ['array', 'object', 'number', 'integer', 'boolean']) === [];
 	}//end isStringTyped()
 
 	/**

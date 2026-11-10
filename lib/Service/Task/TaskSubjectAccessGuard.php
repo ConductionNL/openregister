@@ -47,6 +47,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Task;
 
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\TaskSubjectNotFoundException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
@@ -113,11 +114,7 @@ class TaskSubjectAccessGuard {
 		}
 
 		foreach ($subjects as $subject) {
-			$this->assertOne(
-				uuid: $subject['uuid'],
-				register: $subject['register'],
-				schema: $subject['schema']
-			);
+			$this->assertOne(subject: $subject);
 		}
 
 	}//end assertReadable()
@@ -128,47 +125,70 @@ class TaskSubjectAccessGuard {
 	 * @param array<string, mixed> $data The creation payload.
 	 *
 	 * @return array<int, array{uuid: string, register: int|null, schema: int|null}>
-	 *         One entry per named object, deduplicated on the uuid.
+	 *         One entry per named object, deduplicated on the uuid; the
+	 *         anchor first, then the relations in their order.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
 	 */
 	private function subjectsIn(array $data): array {
 		$subjects = [];
-
-		$anchor = trim((string)($data['objectUuid'] ?? ''));
-		if ($anchor !== '') {
-			$subjects[$anchor] = [
-				'uuid' => $anchor,
-				'register' => $this->intOrNull(value: ($data['registerId'] ?? null)),
-				'schema' => $this->intOrNull(value: ($data['schemaId'] ?? null)),
-			];
-		}
-
-		$relations = ($data['relations'] ?? null);
-		if (is_array($relations) === false) {
-			return array_values($subjects);
-		}
-
-		foreach ($relations as $relation) {
-			if (is_array($relation) === false) {
-				continue;
+		foreach ($this->entriesIn(data: $data) as $entry) {
+			$subject = $this->subjectOf(entry: $entry);
+			if ($subject !== null && array_key_exists($subject['uuid'], $subjects) === false) {
+				$subjects[$subject['uuid']] = $subject;
 			}
-
-			$uuid = trim((string)($relation['objectUuid'] ?? ''));
-			if ($uuid === '' || array_key_exists($uuid, $subjects) === true) {
-				continue;
-			}
-
-			$subjects[$uuid] = [
-				'uuid' => $uuid,
-				'register' => $this->intOrNull(value: ($relation['registerId'] ?? null)),
-				'schema' => $this->intOrNull(value: ($relation['schemaId'] ?? null)),
-			];
 		}
 
 		return array_values($subjects);
 
 	}//end subjectsIn()
+
+	/**
+	 * The payload itself (it carries the anchor under the same keys a
+	 * relation does), followed by every relation when `relations` is a list.
+	 *
+	 * @param array<string, mixed> $data The creation payload.
+	 *
+	 * @return array<int, mixed> The entries that may name an object.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
+	 */
+	private function entriesIn(array $data): array {
+		$relations = ($data['relations'] ?? null);
+		if (is_array($relations) === false) {
+			return [$data];
+		}
+
+		return array_merge([$data], array_values($relations));
+
+	}//end entriesIn()
+
+	/**
+	 * The object one entry names, or null when it names none.
+	 *
+	 * @param mixed $entry The anchor payload or one relation.
+	 *
+	 * @return array{uuid: string, register: int|null, schema: int|null}|null The subject.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
+	 */
+	private function subjectOf(mixed $entry): ?array {
+		if (is_array($entry) === false) {
+			return null;
+		}
+
+		$uuid = trim((string)($entry['objectUuid'] ?? ''));
+		if ($uuid === '') {
+			return null;
+		}
+
+		return [
+			'uuid' => $uuid,
+			'register' => $this->intOrNull(value: ($entry['registerId'] ?? null)),
+			'schema' => $this->intOrNull(value: ($entry['schemaId'] ?? null)),
+		];
+
+	}//end subjectOf()
 
 	/**
 	 * Assert that one object is readable by the caller.
@@ -177,9 +197,7 @@ class TaskSubjectAccessGuard {
 	 * lookup stays scoped to one magic table; omitted, the read resolves the
 	 * uuid across tables the way every other uuid-addressed read does.
 	 *
-	 * @param string $uuid The object uuid.
-	 * @param integer|null $register The register the payload named, if any.
-	 * @param integer|null $schema The schema the payload named, if any.
+	 * @param array{uuid: string, register: int|null, schema: int|null} $subject The object named.
 	 *
 	 * @return void
 	 *
@@ -187,44 +205,70 @@ class TaskSubjectAccessGuard {
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
 	 */
-	private function assertOne(string $uuid, ?int $register, ?int $schema): void {
-		$found = null;
-
-		if ($this->objects !== null) {
-			try {
-				$found = $this->objects->find(
-					id: $uuid,
-					files: false,
-					register: $register,
-					schema: $schema,
-					_rbac: true,
-					_multitenancy: true,
-					_render: false,
-					_audit: false
-				);
-			} catch (Throwable $failure) {
-				// A refusal arrives here as DoesNotExistException, which is
-				// the answer; anything else is breakage, and breakage that
-				// cannot be told apart from a refusal must land on the
-				// refusing side. It is recorded so it is not invisible.
-				$this->logger?->debug(
-					'[TaskSubjectAccessGuard] Subject read did not answer: ' . $failure->getMessage(),
-					['uuid' => $uuid, 'exception' => $failure]
-				);
-				$found = null;
-			}//end try
-		}
-
-		if ($found === null) {
+	private function assertOne(array $subject): void {
+		if ($this->objects === null || $this->read(objects: $this->objects, subject: $subject) === null) {
 			// The same words `ObjectsController::show()` answers this
 			// principal, so the two refusals are indistinguishable and
 			// creating a task tells nobody whether an object exists.
 			throw new TaskSubjectNotFoundException(
-				message: sprintf('Object with id %s not found', $uuid)
+				message: sprintf('Object with id %s not found', $subject['uuid'])
 			);
 		}
 
 	}//end assertOne()
+
+	/**
+	 * Read one object through the canonical, RBAC- and tenancy-scoped path.
+	 *
+	 * A refusal arrives as DoesNotExistException, which is the answer;
+	 * anything else is breakage, and breakage that cannot be told apart from
+	 * a refusal must land on the refusing side. It is recorded so it is not
+	 * invisible.
+	 *
+	 * @param ObjectOperationsInterface                                $objects The read path.
+	 * @param array{uuid: string, register: int|null, schema: int|null} $subject The object named.
+	 *
+	 * @return ObjectEntity|null The object, or null when absent, refused or broken.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
+	 */
+	private function read(ObjectOperationsInterface $objects, array $subject): ?ObjectEntity {
+		try {
+			return $this->find(objects: $objects, subject: $subject);
+		} catch (Throwable $failure) {
+			$this->logger?->debug(
+				'[TaskSubjectAccessGuard] Subject read did not answer: ' . $failure->getMessage(),
+				['uuid' => $subject['uuid'], 'exception' => $failure]
+			);
+			return null;
+		}
+
+	}//end read()
+
+	/**
+	 * The read itself: `_rbac: true, _multitenancy: true`, exactly what the
+	 * object endpoint asks for this principal; no render, no audit entry.
+	 *
+	 * @param ObjectOperationsInterface                                $objects The read path.
+	 * @param array{uuid: string, register: int|null, schema: int|null} $subject The object named.
+	 *
+	 * @return ObjectEntity|null The object, or null.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
+	 */
+	private function find(ObjectOperationsInterface $objects, array $subject): ?ObjectEntity {
+		return $objects->find(
+			id: $subject['uuid'],
+			files: false,
+			register: $subject['register'],
+			schema: $subject['schema'],
+			_rbac: true,
+			_multitenancy: true,
+			_render: false,
+			_audit: false
+		);
+
+	}//end find()
 
 	/**
 	 * An integer, or null for anything that is not one.

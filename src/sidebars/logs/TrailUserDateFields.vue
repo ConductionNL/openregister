@@ -1,20 +1,12 @@
 <template>
-	<div class="filterGroup">
-		<label for="userSelect">{{ t('openregister', 'Users') }}</label>
-		<NcSelect
-			id="userSelect"
-			:modelValue="users"
-			:options="userOptions"
-			:placeholder="t('openregister', 'All users')"
-			:inputLabel="t('openregister', 'Users')"
-			:multiple="true"
-			:clearable="true"
-			@update:modelValue="update('users', $event)">
-			<template #option="{ label }">
-				{{ label }}
-			</template>
-		</NcSelect>
-	</div>
+	<SidebarFilterSelect
+		id="userSelect"
+		:modelValue="users"
+		:options="userOptions"
+		:placeholder="t('openregister', 'All users')"
+		:label="t('openregister', 'Users')"
+		multiple
+		@update:modelValue="update('users', $event)" />
 	<div class="filterGroup">
 		<label>{{ t('openregister', 'Date Range') }}</label>
 		<NcDateTimePickerNative
@@ -32,7 +24,8 @@
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
-import { NcDateTimePickerNative, NcSelect } from '@nextcloud/vue'
+import { NcDateTimePickerNative } from '@nextcloud/vue'
+import SidebarFilterSelect from '../SidebarFilterSelect.vue'
 
 /**
  * The user and date range filters the audit and search trail sidebars share.
@@ -43,7 +36,7 @@ export default {
 	name: 'TrailUserDateFields',
 	components: {
 		NcDateTimePickerNative,
-		NcSelect,
+		SidebarFilterSelect,
 	},
 
 	props: {

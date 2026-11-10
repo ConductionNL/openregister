@@ -27,12 +27,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\ContextsControllerServices;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
-use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
+use OCA\OpenRegister\Service\JsonLd\JsonLdContextServiceInterface;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -49,22 +51,32 @@ use OCP\IRequest;
  */
 class ContextsController extends Controller {
 	/**
+	 * The register and schema mappers.
+	 *
+	 * @var SchemaCatalogInterface
+	 */
+	private readonly SchemaCatalogInterface $catalog;
+
+	/**
+	 * The JSON-LD context service.
+	 *
+	 * @var JsonLdContextServiceInterface
+	 */
+	private readonly JsonLdContextServiceInterface $contextService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The application name.
-	 * @param IRequest $request The current request.
-	 * @param RegisterMapperInterface $registerMapper The register mapper.
-	 * @param SchemaMapperInterface $schemaMapper The schema mapper.
-	 * @param JsonLdContextService $contextService The JSON-LD context service.
+	 * @param IRequest                      $request        The current request.
+	 * @param ContextsControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly JsonLdContextService $contextService,
+		ContextsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->catalog = $services->catalog;
+		$this->contextService = $services->contextService;
 	}//end __construct()
 
 	/**
@@ -85,7 +97,7 @@ class ContextsController extends Controller {
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function register(string $register): DataResponse {
 		try {
-			$registerEntity = $this->registerMapper->find($register);
+			$registerEntity = $this->catalog->registers()->find($register);
 		} catch (DoesNotExistException|\Exception $e) {
 			return new DataResponse(['error' => 'Register not found'], Http::STATUS_NOT_FOUND);
 		}
@@ -116,7 +128,7 @@ class ContextsController extends Controller {
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function schema(string $register, string $schema): DataResponse {
 		try {
-			$registerEntity = $this->registerMapper->find($register);
+			$registerEntity = $this->catalog->registers()->find($register);
 		} catch (DoesNotExistException|\Exception $e) {
 			return new DataResponse(['error' => 'Register not found'], Http::STATUS_NOT_FOUND);
 		}
@@ -131,9 +143,9 @@ class ContextsController extends Controller {
 		// `$register->getSchemas()`. This is the same boundary, applied to the
 		// single-schema variant.
 		try {
-			$schemaEntity = (new RegisterScopedSchemaResolver(
-				registerMapper: $this->registerMapper,
-				schemaMapper: $this->schemaMapper
+			$schemaEntity = (RegisterScopedSchemaResolvers::over(
+				registerMapper: $this->catalog->registers(),
+				schemaMapper: $this->catalog->schemas()
 			))->resolveSchemaWithin(register: $registerEntity, schemaRef: $schema);
 		} catch (DoesNotExistException|\Exception $e) {
 			return new DataResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
@@ -157,7 +169,7 @@ class ContextsController extends Controller {
 		$schemas = [];
 		foreach ($register->getSchemas() as $schemaId) {
 			try {
-				$schemas[] = $this->schemaMapper->find($schemaId);
+				$schemas[] = $this->catalog->schemas()->find($schemaId);
 			} catch (\Throwable $e) {
 				// Skip unresolvable schema references; the context document
 				// covers the schemas that actually exist.
@@ -201,7 +213,7 @@ class ContextsController extends Controller {
 			$parts[] = ((string)$schema->getId()) . '-' . $schemaStamp;
 		}
 
-		return '"' . md5(implode(':', $parts)) . '"';
+		return '"' . hash(algo: 'xxh128', data: implode(':', $parts)) . '"';
 	}//end buildEtag()
 
 	/**

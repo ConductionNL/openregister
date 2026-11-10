@@ -45,14 +45,7 @@ use Psr\Log\LoggerInterface;
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  */
-class FileOwnershipHandler {
-	/**
-	 * Application user name.
-	 *
-	 * @var string
-	 */
-	public const APP_USER = 'openregister';
-
+class FileOwnershipHandler implements FileOwnershipHandlerInterface {
 	/**
 	 * Application group name.
 	 *
@@ -156,7 +149,7 @@ class FileOwnershipHandler {
 	 * During integration, either inject FileSharingHandler or call through FileService facade.
 	 *
 	 * @param File $file The file to potentially transfer ownership for.
-	 * @param FileSharingHandler|null $fileSharingHandler Optional sharing handler for creating shares.
+	 * @param FileSharingHandlerInterface|null $fileSharingHandler Optional sharing handler for creating shares.
 	 *
 	 * @return void
 	 *
@@ -167,7 +160,7 @@ class FileOwnershipHandler {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function transferFileOwnershipIfNeeded(File $file, ?FileSharingHandler $fileSharingHandler = null): void {
+	public function transferFileOwnershipIfNeeded(File $file, ?FileSharingHandlerInterface $fileSharingHandler = null): void {
 		try {
 			// If the current user already has write rights on the file, leave ownership
 			// as-is. Files uploaded into the OpenRegister folder are already owned by the
@@ -225,7 +218,7 @@ class FileOwnershipHandler {
 
 				// Create a share with the current user to maintain access.
 				if ($fileSharingHandler !== null) {
-					$fileSharingHandler->shareFileWithUser(file: $file, userId: $currentUserId);
+					$fileSharingHandler->shareFileWithUser(grant: new UserShareGrant(node: $file, userId: $currentUserId));
 				}
 
 				$this->logger->info(
@@ -253,7 +246,7 @@ class FileOwnershipHandler {
 	 * During integration, either inject FileSharingHandler or call through FileService facade.
 	 *
 	 * @param Node $folder The folder to potentially transfer ownership for.
-	 * @param FileSharingHandler|null $fileSharingHandler Optional sharing handler for creating shares.
+	 * @param FileSharingHandlerInterface|null $fileSharingHandler Optional sharing handler for creating shares.
 	 *
 	 * @return void
 	 *
@@ -264,7 +257,7 @@ class FileOwnershipHandler {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function transferFolderOwnershipIfNeeded(Node $folder, ?FileSharingHandler $fileSharingHandler = null): void {
+	public function transferFolderOwnershipIfNeeded(Node $folder, ?FileSharingHandlerInterface $fileSharingHandler = null): void {
 		try {
 			// Get current user.
 			$currentUser = $this->getCurrentUser();
@@ -311,7 +304,7 @@ class FileOwnershipHandler {
 
 				// Create a share with the current user to maintain access.
 				if ($fileSharingHandler !== null) {
-					$fileSharingHandler->shareFolderWithUser(folder: $folder, userId: $currentUserId);
+					$fileSharingHandler->shareFolderWithUser(grant: new UserShareGrant(node: $folder, userId: $currentUserId));
 				}
 
 				$this->logger->info(

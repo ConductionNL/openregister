@@ -35,18 +35,6 @@ namespace OCA\OpenRegister\Service\Party;
 class PartyAnnotationValidator {
 
 	/**
-	 * The fields naming a property of the schema.
-	 *
-	 * @var array<int, string>
-	 */
-	private const PROPERTY_FIELDS = [
-		'nameProperty',
-		'addressesProperty',
-		'indicatorsProperty',
-		'parentProperty',
-	];
-
-	/**
 	 * Validate the annotation in a schema shape.
 	 *
 	 * @param array<string, mixed> $schema Shape with `properties` and `x-openregister-party`.
@@ -76,7 +64,7 @@ class PartyAnnotationValidator {
 		}
 
 		$errors = $this->validateKind(annotation: $annotation);
-		$errors = array_merge($errors, $this->validatePropertyFields(annotation: $annotation, declared: $declared));
+		$errors = array_merge($errors, (new PartyPropertyFields(declared: $declared))->errors(annotation: $annotation));
 		$errors = array_merge($errors, $this->validateMaxDepth(annotation: $annotation));
 
 		return $errors;
@@ -108,53 +96,6 @@ class PartyAnnotationValidator {
 
 		return [];
 	}//end validateKind()
-
-	/**
-	 * Every property field must be a string, and must name a property the
-	 * schema declares. A field pointing at a property that is not there is
-	 * the phantom-annotation case: it reads fine and finds nothing.
-	 *
-	 * @param array<string, mixed> $annotation The annotation.
-	 * @param array<int, string> $declared The schema's declared property names.
-	 *
-	 * @return array<int, array{code: string, message: string}> Errors.
-	 */
-	private function validatePropertyFields(array $annotation, array $declared): array {
-		$errors = [];
-		foreach (self::PROPERTY_FIELDS as $field) {
-			if (array_key_exists($field, $annotation) === false) {
-				continue;
-			}
-
-			$value = $annotation[$field];
-			if (is_string($value) === false || trim($value) === '') {
-				$errors[] = [
-					'code' => 'party.field-not-string',
-					'message' => sprintf('x-openregister-party "%s" must be a non-empty string.', $field),
-				];
-				continue;
-			}
-
-			// Skipped when the schema declares no properties at all: an
-			// entity built in isolation has nothing to check against, and
-			// failing there would reject a valid declaration for the wrong
-			// reason.
-			if ($declared === [] || in_array(trim($value), $declared, true) === true) {
-				continue;
-			}
-
-			$errors[] = [
-				'code' => 'party.unknown-property',
-				'message' => sprintf(
-					'x-openregister-party "%s" names "%s", which is not a declared property of this schema.',
-					$field,
-					trim($value)
-				),
-			];
-		}//end foreach
-
-		return $errors;
-	}//end validatePropertyFields()
 
 	/**
 	 * The depth bound must be a positive integer.

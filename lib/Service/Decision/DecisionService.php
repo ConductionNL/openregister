@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Service\Decision;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Decision;
-use OCA\OpenRegister\Db\DecisionMapper;
+use OCA\OpenRegister\Db\DecisionMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -47,22 +47,21 @@ class DecisionService {
 	/**
 	 * Constructor.
 	 *
-	 * @param DecisionMapper $decisionMapper Stores decisions.
+	 * @param DecisionMapperInterface $decisionMapper Stores decisions.
 	 */
 	public function __construct(
-		private readonly DecisionMapper $decisionMapper,
+		private readonly DecisionMapperInterface $decisionMapper,
 	) {
 	}//end __construct()
 
 	/**
 	 * Record a new decision on a subject.
 	 *
-	 * @param string      $subjectType What kind of thing was decided on.
-	 * @param string      $subjectId   Its id within that kind.
-	 * @param string      $verdict     The verdict.
-	 * @param string      $decidedBy   The user who decided.
-	 * @param string|null $note        The decider's note.
-	 * @param string|null $supersedes  The uuid of the decision this one replaces.
+	 * The caller names the decision: its subject type and id, verdict,
+	 * decider, and optionally a note and the uuid of the decision it replaces.
+	 * The store gives it its uuid and moment.
+	 *
+	 * @param Decision $decision The unsaved decision.
 	 *
 	 * @return Decision The stored decision, with its uuid and moment.
 	 *
@@ -70,31 +69,23 @@ class DecisionService {
 	 *
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-a-decision-is-its-own-object-req-dec-001
 	 */
-	public function record(
-		string $subjectType,
-		string $subjectId,
-		string $verdict,
-		string $decidedBy,
-		?string $note=null,
-		?string $supersedes=null,
-	): Decision {
-		foreach (['subjectType' => $subjectType, 'subjectId' => $subjectId, 'verdict' => $verdict, 'decidedBy' => $decidedBy] as $field => $value) {
-			if (trim($value) === '') {
+	public function record(Decision $decision): Decision {
+		$required = [
+			'subjectType' => $decision->getSubjectType(),
+			'subjectId' => $decision->getSubjectId(),
+			'verdict' => $decision->getVerdict(),
+			'decidedBy' => $decision->getDecidedBy(),
+		];
+		foreach ($required as $field => $value) {
+			if (trim((string)$value) === '') {
 				throw new InvalidArgumentException('A decision needs '.$field.'.');
 			}
 		}
 
+		$note = $decision->getNote();
 		if ($note !== null && mb_strlen($note) > self::MAX_NOTE) {
 			throw new InvalidArgumentException('A decision note is at most '.self::MAX_NOTE.' characters.');
 		}
-
-		$decision = new Decision();
-		$decision->setSubjectType($subjectType);
-		$decision->setSubjectId($subjectId);
-		$decision->setVerdict($verdict);
-		$decision->setDecidedBy($decidedBy);
-		$decision->setNote($note);
-		$decision->setSupersedes($supersedes);
 
 		return $this->decisionMapper->insert(entity: $decision);
 	}//end record()

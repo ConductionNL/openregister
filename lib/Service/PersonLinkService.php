@@ -21,7 +21,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ContactLink;
-use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use Throwable;
 
@@ -37,19 +37,17 @@ use Throwable;
  *
  * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md
  */
-class PersonLinkService {
+class PersonLinkService implements PersonLinkServiceInterface {
 
 	/**
-	 * @param ContactLinkMapper $links The link rows.
-	 * @param ContactService $contacts The CardDAV side of a contact link.
-	 * @param UserLinkWriter $userLinks The account side of a user link.
+	 * @param ContactLinkMapperInterface $links The link rows.
+	 * @param PersonLinkTargets $targets The CardDAV side of a contact link and the account side of a user link.
 	 * @param SchemaMapperInterface $schemas The schemas, for the role vocabulary.
 	 * @param PersonLinkEvents $events Announces what happened to a link.
 	 */
 	public function __construct(
-		private readonly ContactLinkMapper $links,
-		private readonly ContactService $contacts,
-		private readonly UserLinkWriter $userLinks,
+		private readonly ContactLinkMapperInterface $links,
+		private readonly PersonLinkTargets $targets,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly PersonLinkEvents $events,
 	) {
@@ -66,9 +64,26 @@ class PersonLinkService {
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-schema-declares-the-roles-its-objects-carry
 	 */
 	public function listForObject(string $objectUuid, ?int $schemaId): array {
-		$listing = $this->contacts->getContactsForObject($objectUuid);
+		$listing = $this->targets->contacts->getContactsForObject($objectUuid);
+
+		return [
+			'results' => $listing['results'],
+			'total' => $listing['total'],
+			'byRole' => $this->groupByRole(rows: $listing['results']),
+			'roles' => $this->roleVocabulary(schemaId: $schemaId),
+		];
+	}//end listForObject()
+
+	/**
+	 * Group link rows by role; a row without one goes under `other`.
+	 *
+	 * @param array<int, array<string, mixed>> $rows The link rows.
+	 *
+	 * @return array<string, array<int, array<string, mixed>>> The rows per role.
+	 */
+	private function groupByRole(array $rows): array {
 		$byRole = [];
-		foreach ($listing['results'] as $row) {
+		foreach ($rows as $row) {
 			$role = (string)($row['role'] ?? '');
 			if ($role === '') {
 				$role = 'other';
@@ -77,13 +92,8 @@ class PersonLinkService {
 			$byRole[$role][] = $row;
 		}
 
-		return [
-			'results' => $listing['results'],
-			'total' => $listing['total'],
-			'byRole' => $byRole,
-			'roles' => $this->roleVocabulary(schemaId: $schemaId),
-		];
-	}//end listForObject()
+		return $byRole;
+	}//end groupByRole()
 
 	/**
 	 * The roles a person can hold on an object of the schema, [] when it declares none.
@@ -113,9 +123,7 @@ class PersonLinkService {
 	 *
 	 * The same person in the same role updates the row; in another role adds one.
 	 *
-	 * @param string $objectUuid The object uuid.
-	 * @param int $registerId The register id.
-	 * @param int|null $schemaId The schema id, for the vocabulary.
+	 * @param PersonLinkTarget     $target  The object: its uuid, register and schema.
 	 * @param array<string, mixed> $payload `userId` or `addressbookId`+`contactUri`, with `role`, `validFrom`, `validUntil`, `note`.
 	 *
 	 * @return ContactLink The link as stored.
@@ -124,27 +132,22 @@ class PersonLinkService {
 	 *
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
 	 */
-	public function link(string $objectUuid, int $registerId, ?int $schemaId, array $payload): ContactLink {
+	public function linkPerson(PersonLinkTarget $target, array $payload): ContactLink {
 		$role = $this->roleOf(payload: $payload);
-		$this->assertRoleAllowed(schemaId: $schemaId, role: $role);
+		$this->assertRoleAllowed(schemaId: $target->schemaId, role: $role);
 
-		$userId = trim((string)($payload['userId'] ?? ''));
-		$link = $this->linkContact(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, payload: $payload, role: $role, userId: $userId);
+		$link = $this->linkContact(placement: new PersonLinkPlacement(target: $target, role: $role), payload: $payload);
 
 		$link = $this->applyPeriodAndNote(link: $link, payload: $payload);
 		$this->events->linked(link: $link);
 
 		return $link;
-	}//end link()
+	}//end linkPerson()
 
 	/**
 	 * Change the role, validity or note of a person's link on an object.
 	 *
-	 * @param string $objectUuid The object uuid.
-	 * @param string $contactUid The person: the vCard uid, or `user:<uid>`.
-	 * @param int|null $schemaId The schema id, for the vocabulary.
-	 * @param array<string, mixed> $changes `role`, `validFrom`, `validUntil`, `note`; a key absent is left alone, null clears.
-	 * @param string|null $currentRole Which of the person's links, when they hold several.
+	 * @param PersonLinkChange $change The link (object, person, current role), the schema and the changes.
 	 *
 	 * @return ContactLink The link as stored.
 	 *
@@ -152,26 +155,24 @@ class PersonLinkService {
 	 *
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-can-be-updated-and-removed-per-role
 	 */
-	public function update(string $objectUuid, string $contactUid, ?int $schemaId, array $changes, ?string $currentRole = null): ContactLink {
-		$link = $this->findLink(objectUuid: $objectUuid, contactUid: $contactUid, role: $currentRole);
-		if (array_key_exists('role', $changes) === true) {
-			$role = $this->roleOf(payload: $changes);
-			$this->assertRoleAllowed(schemaId: $schemaId, role: $role);
+	public function changeLink(PersonLinkChange $change): ContactLink {
+		$link = $this->findLink(ref: $change->ref);
+		if (array_key_exists('role', $change->changes) === true) {
+			$role = $this->roleOf(payload: $change->changes);
+			$this->assertRoleAllowed(schemaId: $change->schemaId, role: $role);
 			$link = $this->applyRole(link: $link, role: $role);
 		}
 
-		$link = $this->applyPeriodAndNote(link: $link, payload: $changes);
+		$link = $this->applyPeriodAndNote(link: $link, payload: $change->changes);
 		$this->events->updated(link: $link);
 
 		return $link;
-	}//end update()
+	}//end changeLink()
 
 	/**
 	 * Remove a person from an object: every role, or the one named.
 	 *
-	 * @param string $objectUuid The object uuid.
-	 * @param string $contactUid The person: the vCard uid, or `user:<uid>`.
-	 * @param string|null $role Only this role, or null for all.
+	 * @param PersonLinkRef $ref The object, the person, and only this role or null for all.
 	 *
 	 * @return int How many links went.
 	 *
@@ -179,68 +180,100 @@ class PersonLinkService {
 	 *
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-can-be-updated-and-removed-per-role
 	 */
-	public function unlink(string $objectUuid, string $contactUid, ?string $role = null): int {
-		$targets = [];
-		if ($role !== null) {
-			$targets[] = $this->findLink(objectUuid: $objectUuid, contactUid: $contactUid, role: $role);
-		}
-
-		if ($role === null) {
-			$targets = array_values(
-				array_filter(
-					$this->links->findByObjectUuid($objectUuid),
-					static fn (ContactLink $link): bool => $link->getContactUid() === $contactUid
-				)
-			);
-		}
-
+	public function removeLinks(PersonLinkRef $ref): int {
+		$targets = $this->unlinkTargets(ref: $ref);
 		if ($targets === []) {
 			throw new Exception('Contact link not found', 404);
 		}
 
 		foreach ($targets as $link) {
-			$this->contacts->unlinkContact(linkId: (int)$link->getId());
+			$this->targets->contacts->unlinkContact(linkId: (int)$link->getId());
 			$this->events->unlinked(link: $link);
 		}
 
 		return count($targets);
-	}//end unlink()
+	}//end removeLinks()
+
+	/**
+	 * The links an unlink removes: the one in the named role, else all of the person's on the object.
+	 *
+	 * @param PersonLinkRef $ref The object, the person, and only this role or null for all.
+	 *
+	 * @return array<int, ContactLink> The links.
+	 *
+	 * @throws Exception 404 when the named role's link does not exist.
+	 */
+	private function unlinkTargets(PersonLinkRef $ref): array {
+		if ($ref->role !== null) {
+			return [$this->findLink(ref: $ref)];
+		}
+
+		$contactUid = $ref->contactUid;
+
+		return array_values(
+			array_filter(
+				$this->links->findByObjectUuid($ref->objectUuid),
+				static fn (ContactLink $link): bool => $link->getContactUid() === $contactUid
+			)
+		);
+	}//end unlinkTargets()
 
 	/**
 	 * Write the link: a user link when a user id is given, else a contact link
 	 * through ContactService, which keeps the vCard in step.
 	 *
-	 * @param string $objectUuid The object uuid.
-	 * @param int $registerId The register id.
-	 * @param int|null $schemaId The schema id.
-	 * @param array<string, mixed> $payload `addressbookId` and `contactUri`.
-	 * @param string|null $role The role.
-	 * @param string $userId The account of a user link, '' for a contact link.
+	 * @param PersonLinkPlacement  $placement The object linked to, and the role.
+	 * @param array<string, mixed> $payload   `userId`, or `addressbookId` and `contactUri`.
 	 *
 	 * @return ContactLink The link.
 	 *
 	 * @throws Exception 400 when the payload names no contact.
 	 */
-	private function linkContact(string $objectUuid, int $registerId, ?int $schemaId, array $payload, ?string $role, string $userId = ''): ContactLink {
+	private function linkContact(PersonLinkPlacement $placement, array $payload): ContactLink {
+		$target = $placement->target;
+		$role   = $placement->role;
+		$userId = trim((string)($payload['userId'] ?? ''));
 		if ($userId !== '') {
-			return $this->userLinks->write(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, userId: $userId, role: $role);
+			return $this->targets->userLinks->write(
+				request: new UserLinkRequest(objectUuid: $target->objectUuid, registerId: $target->registerId, schemaId: $target->schemaId, userId: $userId),
+				role: $role
+			);
 		}
 
-		$addressbookId = (int)($payload['addressbookId'] ?? 0);
-		$contactUri = trim((string)($payload['contactUri'] ?? ''));
-		if ($addressbookId <= 0 || $contactUri === '') {
+		$contact = [(int)($payload['addressbookId'] ?? 0), trim((string)($payload['contactUri'] ?? ''))];
+
+		return $this->linkAddressbookContact(placement: $placement, contact: $contact);
+	}//end linkContact()
+
+	/**
+	 * Write a contact link through ContactService, which keeps the vCard in step.
+	 *
+	 * @param PersonLinkPlacement      $placement The object linked to, and the role.
+	 * @param array{0: int, 1: string} $contact   The addressbook id and the trimmed contact uri.
+	 *
+	 * @return ContactLink The link.
+	 *
+	 * @throws Exception 400 when the payload names no contact.
+	 */
+	private function linkAddressbookContact(PersonLinkPlacement $placement, array $contact): ContactLink {
+		if ($contact[0] <= 0 || $contact[1] === '') {
 			throw new Exception('Either userId or addressbookId+contactUri is required', 400);
 		}
 
-		return $this->contacts->linkContact(
-			$objectUuid,
-			$registerId,
-			$addressbookId,
-			$contactUri,
-			$role,
-			$schemaId
+		$target = $placement->target;
+
+		$contacts = $this->targets->contacts;
+
+		return $contacts->linkCard(
+			card: new ContactCardRef(addressbookId: $contact[0], contactUri: $contact[1]),
+			placement: new ContactPlacement(
+				objectUuid: $target->objectUuid,
+				registerId: $target->registerId,
+				schemaId: $target->schemaId,
+				role: $placement->role
+			)
 		);
-	}//end linkContact()
+	}//end linkAddressbookContact()
 
 	/**
 	 * Set validity and note from a payload; a key absent is left alone, null or '' clears.
@@ -251,32 +284,56 @@ class PersonLinkService {
 	 * @return ContactLink The stored link, unchanged when the payload carried none of the keys.
 	 */
 	private function applyPeriodAndNote(ContactLink $link, array $payload): ContactLink {
-		$touched = false;
-		foreach (['validFrom' => 'setValidFrom', 'validUntil' => 'setValidUntil'] as $key => $setter) {
-			if (array_key_exists($key, $payload) === false) {
-				continue;
-			}
-
-			$link->{$setter}(self::dateOrNull(value: $payload[$key]));
-			$touched = true;
-		}
-
-		if (array_key_exists('note', $payload) === true) {
-			$note = trim((string)($payload['note'] ?? ''));
-			$link->setNote(null);
-			if ($note !== '') {
-				$link->setNote($note);
-			}
-
-			$touched = true;
-		}
-
-		if ($touched === false) {
+		$periodSet = $this->applyPeriod(link: $link, payload: $payload);
+		$noteSet   = $this->applyNote(link: $link, payload: $payload);
+		if ($periodSet === false && $noteSet === false) {
 			return $link;
 		}
 
 		return $this->links->update($link);
 	}//end applyPeriodAndNote()
+
+	/**
+	 * Set the validity dates a payload carries; null or '' clears one.
+	 *
+	 * @param ContactLink $link The link.
+	 * @param array<string, mixed> $payload The payload.
+	 *
+	 * @return bool Whether the payload carried either date.
+	 */
+	private function applyPeriod(ContactLink $link, array $payload): bool {
+		$touched = false;
+		foreach (['validFrom' => 'setValidFrom', 'validUntil' => 'setValidUntil'] as $key => $setter) {
+			if (array_key_exists($key, $payload) === true) {
+				$link->{$setter}(self::dateOrNull(value: $payload[$key]));
+				$touched = true;
+			}
+		}
+
+		return $touched;
+	}//end applyPeriod()
+
+	/**
+	 * Set the note a payload carries, trimmed; null or '' clears it.
+	 *
+	 * @param ContactLink $link The link.
+	 * @param array<string, mixed> $payload The payload.
+	 *
+	 * @return bool Whether the payload carried a note.
+	 */
+	private function applyNote(ContactLink $link, array $payload): bool {
+		if (array_key_exists('note', $payload) === false) {
+			return false;
+		}
+
+		$note = trim((string)($payload['note'] ?? ''));
+		$link->setNote(null);
+		if ($note !== '') {
+			$link->setNote($note);
+		}
+
+		return true;
+	}//end applyNote()
 
 	/**
 	 * Move a link to another role; a contact link's vCard follows.
@@ -288,7 +345,7 @@ class PersonLinkService {
 	 */
 	private function applyRole(ContactLink $link, ?string $role): ContactLink {
 		if ($link->isUserLink() === false && $role !== null) {
-			return $this->contacts->updateRole(linkId: (int)$link->getId(), role: $role);
+			return $this->targets->contacts->updateRole(linkId: (int)$link->getId(), role: $role);
 		}
 
 		$link->setRole($role);
@@ -299,16 +356,17 @@ class PersonLinkService {
 	/**
 	 * One link of a person on an object: the role's when named, else the first.
 	 *
-	 * @param string $objectUuid The object uuid.
-	 * @param string $contactUid The person.
-	 * @param string|null $role The role, or null for the first link found.
+	 * @param PersonLinkRef $ref The object, the person, and the role or null for the first link found.
 	 *
 	 * @return ContactLink The link.
 	 *
 	 * @throws Exception 404 when there is none.
 	 */
-	private function findLink(string $objectUuid, string $contactUid, ?string $role): ContactLink {
-		$link = null;
+	private function findLink(PersonLinkRef $ref): ContactLink {
+		$objectUuid = $ref->objectUuid;
+		$contactUid = $ref->contactUid;
+		$role       = $ref->role;
+		$link       = null;
 		if ($role !== null) {
 			$link = $this->links->findByObjectContactAndRole(objectUuid: $objectUuid, contactUid: $contactUid, role: $role);
 		}
@@ -354,7 +412,25 @@ class PersonLinkService {
 	 */
 	private function assertRoleAllowed(?int $schemaId, ?string $role): void {
 		$vocabulary = $this->roleVocabulary(schemaId: $schemaId);
-		if ($vocabulary === [] || $role === null) {
+		if ($role === null) {
+			return;
+		}
+
+		$this->assertRoleInVocabulary(vocabulary: $vocabulary, role: $role);
+	}//end assertRoleAllowed()
+
+	/**
+	 * Refuse a role a non-empty vocabulary does not name.
+	 *
+	 * @param array<int, array{key: string, label: string, description?: string}> $vocabulary The schema's roles.
+	 * @param string $role The role.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception 400 naming the allowed keys.
+	 */
+	private function assertRoleInVocabulary(array $vocabulary, string $role): void {
+		if ($vocabulary === []) {
 			return;
 		}
 
@@ -364,7 +440,7 @@ class PersonLinkService {
 		}
 
 		throw new Exception('Role "' . $role . '" is not one of: ' . implode(', ', $keys), 400);
-	}//end assertRoleAllowed()
+	}//end assertRoleInVocabulary()
 
 	/**
 	 * A date from a payload value, null when empty or unreadable.

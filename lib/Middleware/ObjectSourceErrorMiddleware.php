@@ -73,56 +73,59 @@ class ObjectSourceErrorMiddleware extends Middleware {
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
 	public function afterException(Controller $controller, string $methodName, Exception $exception): Response {
+		return $this->renderOrRethrow(exception: $exception, where: $controller::class . '::' . $methodName);
+	}//end afterException()
+
+	/**
+	 * Render an external-database failure; rethrow anything else.
+	 *
+	 * @param Exception $exception The exception that was thrown.
+	 * @param string    $where     The controller and method that were executing, as `Class::method`.
+	 *
+	 * @return JSONResponse The 4xx/5xx response for external-database failures.
+	 *
+	 * @throws Exception Rethrows every exception that is not an external-database failure.
+	 */
+	private function renderOrRethrow(Exception $exception, string $where): JSONResponse {
 		// Sanitized write failures (constraint violations etc., dbal-virtual-
 		// registers-crud): render the carried 4xx/5xx status; log the wrapped
 		// driver exception server-side.
 		if ($exception instanceof DbalWriteException === true) {
-			$this->logger->warning(
-				sprintf(
-					'[ObjectSourceErrorMiddleware] external database write failed (%d) in %s::%s: %s',
-					$exception->getStatusCode(),
-					$controller::class,
-					$methodName,
-					$exception->getMessage()
-				),
-				[
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'exception' => $exception,
-				]
-			);
-
-			return new JSONResponse(
-				data: ['error' => $exception->getMessage()],
-				statusCode: $exception->getStatusCode()
-			);
-		}//end if
+			return $this->render(exception: $exception, where: $where);
+		}
 
 		if ($exception instanceof DbalObjectSourceException === false) {
 			throw $exception;
 		}
 
-		$this->logger->warning(
-			sprintf(
-				'[ObjectSourceErrorMiddleware] external database read failed (%d) in %s::%s: %s',
-				$exception->getStatusCode(),
-				$controller::class,
-				$methodName,
-				$exception->getMessage()
-			),
-			[
-				'file' => __FILE__,
-				'line' => __LINE__,
-				// The underlying DBAL error (never sent to the client) — without
-				// it the server log carries only the sanitized message and the
-				// actual SQL failure is undiagnosable.
-				'exception' => $exception,
-			]
-		);
+		return $this->render(exception: $exception, where: $where);
+	}//end renderOrRethrow()
 
-		return new JSONResponse(
-			data: ['error' => $exception->getMessage()],
-			statusCode: $exception->getStatusCode()
-		);
-	}//end afterException()
+	/**
+	 * Log an external-database failure and render its sanitized message with its status.
+	 *
+	 * @param DbalWriteException|DbalObjectSourceException $exception The failure: a write or a read.
+	 * @param string $where The controller and method that were executing, as `Class::method`.
+	 *
+	 * @return JSONResponse The error, with the failure's status.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function render(DbalWriteException|DbalObjectSourceException $exception, string $where): JSONResponse {
+		$operation = 'read';
+		if ($exception instanceof DbalWriteException === true) {
+			$operation = 'write';
+		}
+
+		$status = $exception->getStatusCode();
+		$format = '[ObjectSourceErrorMiddleware] external database %s failed (%d) in %s: %s';
+		$message = sprintf($format, $operation, $status, $where, $exception->getMessage());
+
+		// The underlying DBAL error (never sent to the client) — without it the
+		// server log carries only the sanitized message and the actual SQL
+		// failure is undiagnosable.
+		$this->logger->warning($message, ['file' => __FILE__, 'line' => __LINE__, 'exception' => $exception]);
+
+		return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: $status);
+	}//end render()
 }//end class

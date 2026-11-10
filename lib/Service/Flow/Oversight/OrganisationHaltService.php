@@ -49,7 +49,7 @@ use Throwable;
  *
  * @spec openspec/changes/organisation-capability-halt/specs/flow-engine/spec.md
  */
-class OrganisationHaltService {
+class OrganisationHaltService implements OrganisationHaltServiceInterface {
 
 	public const CONFIG_KEY = 'organisation_halts';
 
@@ -60,15 +60,13 @@ class OrganisationHaltService {
 	/**
 	 * Constructor.
 	 *
-	 * @param IAppConfig         $appConfig     Where the active halts are kept.
-	 * @param AuditTrailMapperInterface   $audit         Where their history goes.
-	 * @param IUserSession       $session       Who is acting.
+	 * @param OrganisationHaltRecords     $records       The app config holding the active halts and the audit trail holding their history.
+	 * @param IUserSession                $session       Who is acting.
 	 * @param OrganisationMapperInterface $organisations To refuse an organisation that does not exist.
-	 * @param LoggerInterface    $logger        The logger.
+	 * @param LoggerInterface             $logger        The logger.
 	 */
 	public function __construct(
-		private readonly IAppConfig $appConfig,
-		private readonly AuditTrailMapperInterface $audit,
+		private readonly OrganisationHaltRecords $records,
 		private readonly IUserSession $session,
 		private readonly OrganisationMapperInterface $organisations,
 		private readonly LoggerInterface $logger,
@@ -82,10 +80,7 @@ class OrganisationHaltService {
 	 * administrator; an app may let an organisation's owner); this method only
 	 * refuses what it could not record properly.
 	 *
-	 * @param string      $organisation   The organisation uuid.
-	 * @param string      $app            The app whose work stops.
-	 * @param string      $reason         Why, in words a person reads later.
-	 * @param string|null $nodeTypePrefix The node types it stops; null or '' means "<app>.".
+	 * @param HaltRequest $request The organisation, app, reason and node-type prefix ('' means "<app>."); trimmed before use.
 	 *
 	 * @return array<string, string> The halt.
 	 *
@@ -93,35 +88,26 @@ class OrganisationHaltService {
 	 *
 	 * @spec openspec/changes/organisation-capability-halt/specs/flow-engine/spec.md
 	 */
-	public function engage(string $organisation, string $app, string $reason, ?string $nodeTypePrefix=null): array {
+	public function engage(HaltRequest $request): array {
+		$request = $request->trimmed();
 		$user = $this->session->getUser();
 		if ($user === null) {
 			throw new InvalidArgumentException('A halt needs an actor, and there is no session.');
 		}
 
-		$organisation = trim($organisation);
-		$app = trim($app);
-		$reason = trim($reason);
-		$prefix = trim((string) $nodeTypePrefix);
-		if ($prefix === '') {
-			$prefix = $app . '.';
-		}
-
-		$this->assertEngageable(organisation: $organisation, app: $app, reason: $reason, prefix: $prefix);
+		$this->assertEngageable(request: $request);
 
 		$halt = [
 			'id' => Uuid::v4()->toRfc4122(),
-			'organisation' => $organisation,
-			'app' => $app,
-			'nodeTypePrefix' => $prefix,
-			'reason' => $reason,
+			'organisation' => $request->organisation,
+			'app' => $request->app,
+			'nodeTypePrefix' => $request->prefix(),
+			'reason' => $request->reason,
 			'engagedBy' => $user->getUID(),
 			'engagedAt' => (new DateTime())->format(DateTimeInterface::ATOM),
 		];
 
-		$halts = $this->list();
-		$halts[] = $halt;
-		$this->store(halts: $halts);
+		$this->store(halts: array_merge($this->list(), [$halt]));
 		$this->record(action: self::ACTION_ENGAGED, changed: $halt);
 
 		return $halt;
@@ -174,7 +160,7 @@ class OrganisationHaltService {
 	 * @spec openspec/changes/organisation-capability-halt/specs/flow-engine/spec.md
 	 */
 	public function list(?string $organisation=null): array {
-		$raw = $this->appConfig->getValueString('openregister', self::CONFIG_KEY, '[]');
+		$raw = $this->records->appConfig->getValueString('openregister', self::CONFIG_KEY, '[]');
 		$decoded = json_decode($raw, true);
 		if (is_array($decoded) === false) {
 			return [];
@@ -199,21 +185,19 @@ class OrganisationHaltService {
 	/**
 	 * The halt that stops this organisation's work in this app, or null: the read an app asks.
 	 *
-	 * @param string      $organisation The organisation uuid.
-	 * @param string      $app          The app.
-	 * @param string|null $nodeType     The node type about to run, to match the prefix; null matches any halt of the app.
+	 * @param HaltLookup $lookup The organisation, the app and, optionally, the node type about to run.
 	 *
 	 * @return array<string, string>|null The halt, or null.
 	 *
 	 * @spec openspec/changes/organisation-capability-halt/specs/flow-engine/spec.md
 	 */
-	public function haltFor(string $organisation, string $app, ?string $nodeType=null): ?array {
-		foreach ($this->list(organisation: $organisation) as $halt) {
-			if ($halt['app'] !== $app) {
+	public function haltFor(HaltLookup $lookup): ?array {
+		foreach ($this->list(organisation: $lookup->organisation) as $halt) {
+			if ($halt['app'] !== $lookup->app) {
 				continue;
 			}
 
-			if ($nodeType !== null && str_starts_with($nodeType, $halt['nodeTypePrefix']) === false) {
+			if ($lookup->nodeType !== null && str_starts_with($lookup->nodeType, $halt['nodeTypePrefix']) === false) {
 				continue;
 			}
 
@@ -244,36 +228,46 @@ class OrganisationHaltService {
 	/**
 	 * Refuse what could not be recorded properly.
 	 *
-	 * @param string $organisation The organisation uuid.
-	 * @param string $app          The app.
-	 * @param string $reason       The reason.
-	 * @param string $prefix       The node-type prefix.
+	 * @param HaltRequest $request The organisation, app, reason and prefix.
 	 *
 	 * @return void
 	 *
 	 * @throws InvalidArgumentException When something is missing or already engaged.
 	 */
-	private function assertEngageable(string $organisation, string $app, string $reason, string $prefix): void {
-		if ($app === '') {
+	private function assertEngageable(HaltRequest $request): void {
+		if ($request->app === '') {
 			throw new InvalidArgumentException('A halt names the app whose work stops.');
 		}
 
-		if ($reason === '') {
+		if ($request->reason === '') {
 			throw new InvalidArgumentException('A halt carries a reason.');
 		}
 
 		try {
-			$this->organisations->findByUuid($organisation);
+			$this->organisations->findByUuid($request->organisation);
 		} catch (Throwable $e) {
-			throw new InvalidArgumentException('No organisation "' . $organisation . '" exists to halt.');
+			throw new InvalidArgumentException('No organisation "' . $request->organisation . '" exists to halt.');
 		}
 
-		foreach ($this->list(organisation: $organisation) as $halt) {
-			if ($halt['app'] === $app && $halt['nodeTypePrefix'] === $prefix) {
+		$this->assertNotEngaged(request: $request);
+	}//end assertEngageable()
+
+	/**
+	 * Refuse a halt the organisation already has for the same app and prefix.
+	 *
+	 * @param HaltRequest $request The organisation, app and prefix.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When it is already engaged.
+	 */
+	private function assertNotEngaged(HaltRequest $request): void {
+		foreach ($this->list(organisation: $request->organisation) as $halt) {
+			if ($halt['app'] === $request->app && $halt['nodeTypePrefix'] === $request->prefix()) {
 				throw new InvalidArgumentException('This halt is already engaged (id ' . $halt['id'] . ').');
 			}
 		}
-	}//end assertEngageable()
+	}//end assertNotEngaged()
 
 	/**
 	 * Write the active list.
@@ -283,7 +277,7 @@ class OrganisationHaltService {
 	 * @return void
 	 */
 	private function store(array $halts): void {
-		$this->appConfig->setValueString('openregister', self::CONFIG_KEY, (string) json_encode(array_values($halts)));
+		$this->records->appConfig->setValueString('openregister', self::CONFIG_KEY, (string) json_encode(array_values($halts)));
 	}//end store()
 
 	/**
@@ -306,7 +300,7 @@ class OrganisationHaltService {
 			$row->setChanged($changed);
 			$row->setCreated(new DateTime());
 
-			$this->audit->insertAuditTrails(entries: [$row]);
+			$this->records->audit->insertAuditTrails(entries: [$row]);
 		} catch (Throwable $e) {
 			$this->logger->error('[OrganisationHalt] the act happened but was not recorded: ' . $e->getMessage());
 		}

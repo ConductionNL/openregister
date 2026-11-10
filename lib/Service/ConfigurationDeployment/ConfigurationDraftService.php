@@ -33,9 +33,9 @@ namespace OCA\OpenRegister\Service\ConfigurationDeployment;
 
 use DateTime;
 use OCA\OpenRegister\Db\ConfigurationDraft;
-use OCA\OpenRegister\Db\ConfigurationDraftMapper;
+use OCA\OpenRegister\Db\ConfigurationDraftMapperInterface;
 use OCA\OpenRegister\Db\ConfigurationDraftSet;
-use OCA\OpenRegister\Db\ConfigurationDraftSetMapper;
+use OCA\OpenRegister\Db\ConfigurationDraftSetMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\IAppConfig;
@@ -51,7 +51,7 @@ use OCP\IUserSession;
  * app config, plus the entity types it returns. Splitting it would put the
  * "a draft never writes a live value" rule in two places.
  */
-class ConfigurationDraftService {
+class ConfigurationDraftService implements ConfigurationDraftsInterface {
 
 	/**
 	 * The app config key holding the four-eyes requirement.
@@ -63,8 +63,8 @@ class ConfigurationDraftService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConfigurationDraftSetMapper $sets      The draft sets.
-	 * @param ConfigurationDraftMapper    $drafts    The pending values.
+	 * @param ConfigurationDraftSetMapperInterface $sets      The draft sets.
+	 * @param ConfigurationDraftMapperInterface    $drafts    The pending values.
 	 * @param ConfigurationValueStore     $store     The live values.
 	 * @param ConfigurationKeyRegistry    $registry  The declared vocabulary.
 	 * @param IUserSession                $session   The current session.
@@ -72,8 +72,8 @@ class ConfigurationDraftService {
 	 * @param string                      $appName   The app the instance keys live under.
 	 */
 	public function __construct(
-		private readonly ConfigurationDraftSetMapper $sets,
-		private readonly ConfigurationDraftMapper $drafts,
+		private readonly ConfigurationDraftSetMapperInterface $sets,
+		private readonly ConfigurationDraftMapperInterface $drafts,
 		private readonly ConfigurationValueStore $store,
 		private readonly ConfigurationKeyRegistry $registry,
 		private readonly IUserSession $session,
@@ -161,11 +161,8 @@ class ConfigurationDraftService {
 	 * adding a second one: D-1 is one pending value against one live value,
 	 * and two rows for one address would make the deployment order-dependent.
 	 *
-	 * @param string      $setUuid   The set to draft into.
-	 * @param string      $layer     The layer.
-	 * @param string|null $layerRef  The layer reference, null at instance level.
-	 * @param string      $configKey The configuration key.
-	 * @param mixed       $value     The pending value.
+	 * @param ConfigurationDraftTarget $target The set to draft into and the address of the value.
+	 * @param mixed                    $value  The pending value.
 	 *
 	 * @return ConfigurationDraft The pending value.
 	 *
@@ -173,21 +170,8 @@ class ConfigurationDraftService {
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	public function draftValue(
-		string $setUuid,
-		string $layer,
-		?string $layerRef,
-		string $configKey,
-		mixed $value
-	): ConfigurationDraft {
-		return $this->stage(
-			setUuid: $setUuid,
-			layer: $layer,
-			layerRef: $layerRef,
-			configKey: $configKey,
-			value: $value,
-			removes: false
-		);
+	public function draftValue(ConfigurationDraftTarget $target, mixed $value): ConfigurationDraft {
+		return $this->stage(setUuid: $target->setUuid, change: new ConfigurationDraftChange(address: $target->address, value: $value, removes: false));
 
 	}//end draftValue()
 
@@ -200,10 +184,7 @@ class ConfigurationDraftService {
 	 * restore the difference. A caller that has to pass `null, true` to say
 	 * "unset" is a caller that will one day pass `null, false` by mistake.
 	 *
-	 * @param string      $setUuid   The set to draft into.
-	 * @param string      $layer     The layer.
-	 * @param string|null $layerRef  The layer reference, null at instance level.
-	 * @param string      $configKey The configuration key.
+	 * @param ConfigurationDraftTarget $target The set to draft into and the address of the value.
 	 *
 	 * @return ConfigurationDraft The pending removal.
 	 *
@@ -211,32 +192,16 @@ class ConfigurationDraftService {
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	public function draftRemoval(
-		string $setUuid,
-		string $layer,
-		?string $layerRef,
-		string $configKey
-	): ConfigurationDraft {
-		return $this->stage(
-			setUuid: $setUuid,
-			layer: $layer,
-			layerRef: $layerRef,
-			configKey: $configKey,
-			value: null,
-			removes: true
-		);
+	public function draftRemoval(ConfigurationDraftTarget $target): ConfigurationDraft {
+		return $this->stage(setUuid: $target->setUuid, change: new ConfigurationDraftChange(address: $target->address, value: null, removes: true));
 
 	}//end draftRemoval()
 
 	/**
 	 * Write one pending value into a set, against the live value it replaces.
 	 *
-	 * @param string      $setUuid   The set to draft into.
-	 * @param string      $layer     The layer.
-	 * @param string|null $layerRef  The layer reference, null at instance level.
-	 * @param string      $configKey The configuration key.
-	 * @param mixed       $value     The pending value.
-	 * @param boolean     $removes   Whether the draft removes the value.
+	 * @param string                   $setUuid The set to draft into.
+	 * @param ConfigurationDraftChange $change  The address, the pending value and whether it removes.
 	 *
 	 * @return ConfigurationDraft The pending value.
 	 *
@@ -244,30 +209,21 @@ class ConfigurationDraftService {
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	private function stage(
-		string $setUuid,
-		string $layer,
-		?string $layerRef,
-		string $configKey,
-		mixed $value,
-		bool $removes
-	): ConfigurationDraft {
+	private function stage(string $setUuid, ConfigurationDraftChange $change): ConfigurationDraft {
+		$address = $change->address;
+		$value = $change->value;
+		$removes = $change->removes;
+
 		$set = $this->loadSet(uuid: $setUuid);
 		$this->requireEditable(set: $set);
-		$this->requireDraftableAddress(
-			layer: $layer,
-			layerRef: $layerRef,
-			configKey: $configKey,
-			value: $value,
-			checkValue: ($removes === false)
-		);
+		$this->requireDraftableAddress(change: $change);
 
-		$live = $this->store->read(layer: $layer, layerRef: $layerRef, configKey: $configKey);
+		$live = $this->store->read(layer: $address->layer, layerRef: $address->layerRef, configKey: $address->configKey);
 		$existing = $this->drafts->findAtAddress(
 			setUuid: $setUuid,
-			layer: $layer,
-			layerRef: $layerRef,
-			configKey: $configKey
+			layer: $address->layer,
+			layerRef: $address->layerRef,
+			configKey: $address->configKey
 		);
 
 		if ($existing !== null) {
@@ -282,9 +238,9 @@ class ConfigurationDraftService {
 		return $this->drafts->createFromArray(
 			[
 				'setUuid' => $setUuid,
-				'layer' => $layer,
-				'layerRef' => $layerRef,
-				'configKey' => $configKey,
+				'layer' => $address->layer,
+				'layerRef' => $address->layerRef,
+				'configKey' => $address->configKey,
 				'baseValue' => ['value' => $live->value],
 				'basePresent' => $live->present,
 				'draftValue' => ['value' => $value],
@@ -429,14 +385,10 @@ class ConfigurationDraftService {
 	/**
 	 * Refuse an address the vocabulary does not allow.
 	 *
-	 * @param string      $layer      The layer.
-	 * @param string|null $layerRef   The layer reference.
-	 * @param string      $configKey  The configuration key.
-	 * @param mixed       $value      The proposed value.
-	 * @param boolean     $checkValue Whether the value has a shape to check. A
-	 *                                removal has no value, so type-checking one
-	 *                                would refuse every removal of a key that
-	 *                                declares a shape.
+	 * @param ConfigurationDraftChange $change The address and proposed value. A removal
+	 *                                         has no value, so its value is not shape-checked:
+	 *                                         type-checking one would refuse every removal of
+	 *                                         a key that declares a shape.
 	 *
 	 * @return void
 	 *
@@ -444,34 +396,21 @@ class ConfigurationDraftService {
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	private function requireDraftableAddress(
-		string $layer,
-		?string $layerRef,
-		string $configKey,
-		mixed $value,
-		bool $checkValue
-	): void {
-		$refusal = $this->registry->refusalFor(layer: $layer, configKey: $configKey);
-		if ($refusal === null && ConfigurationLayer::requiresReference($layer) === true && $layerRef === null) {
-			$refusal = sprintf('the %s layer addresses one subject and needs a reference', $layer);
-		}
-
-		if ($refusal === null && $checkValue === true) {
-			$refusal = $this->registry->valueRefusalFor(configKey: $configKey, value: $value);
-		}
-
+	private function requireDraftableAddress(ConfigurationDraftChange $change): void {
+		$refusal = $this->refusalFor(change: $change);
 		if ($refusal === null) {
 			return;
 		}
 
+		$address = $change->address;
 		throw new DeploymentRefusedException(
 			reason: DeploymentRefusedException::REASON_INVALID,
 			message: $refusal,
 			refusals: [
 				[
-					'layer' => $layer,
-					'layerRef' => $layerRef,
-					'key' => $configKey,
+					'layer' => $address->layer,
+					'layerRef' => $address->layerRef,
+					'key' => $address->configKey,
 					'reason' => $refusal,
 				],
 			],
@@ -479,6 +418,28 @@ class ConfigurationDraftService {
 		);
 
 	}//end requireDraftableAddress()
+
+	/**
+	 * Why a change may not be drafted, or null when it may.
+	 *
+	 * @param ConfigurationDraftChange $change The address and proposed value.
+	 *
+	 * @return string|null The refusal: the key at that layer, a missing reference, or the value's shape.
+	 */
+	private function refusalFor(ConfigurationDraftChange $change): ?string {
+		$address = $change->address;
+		$refusal = $this->registry->refusalFor(layer: $address->layer, configKey: $address->configKey);
+		if ($refusal === null && ConfigurationLayer::requiresReference($address->layer) === true && $address->layerRef === null) {
+			$refusal = sprintf('the %s layer addresses one subject and needs a reference', $address->layer);
+		}
+
+		if ($refusal === null && $change->removes === false) {
+			$refusal = $this->registry->valueRefusalFor(configKey: $address->configKey, value: $change->value);
+		}
+
+		return $refusal;
+
+	}//end refusalFor()
 
 	/**
 	 * The current user id, or null when there is no session.

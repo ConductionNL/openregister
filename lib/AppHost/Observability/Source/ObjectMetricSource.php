@@ -29,13 +29,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\AppHost\Observability\Source;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\AppHost\SchemaScopeLookups;
 use OCA\OpenRegister\AppHost\Observability\MetricDescriptor;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
 use OCA\OpenRegister\AppHost\Observability\MetricSourceInterface;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -44,19 +42,29 @@ use Throwable;
  * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.2
  */
 class ObjectMetricSource implements MetricSourceInterface {
+
+	/**
+	 * Operators that replace the field's constraint with `{<key>: value}`.
+	 *
+	 * @var array<string, string>
+	 */
+	private const WRAPPED_OPERATORS = ['neq' => 'ne', 'like' => 'like'];
+
+	/**
+	 * Operators that add `{<operator>: value}` to the field's range constraint.
+	 *
+	 * @var string[]
+	 */
+	private const RANGE_OPERATORS = ['lt', 'lte', 'gt', 'gte'];
 	/**
 	 * Constructor.
 	 *
 	 * @param ObjectOperationsInterface $objectService OR object service (aggregation).
-	 * @param RegisterMapperInterface $registerMapper Slug → register id.
-	 * @param SchemaMapperInterface $schemaMapper Slug → schema id.
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param SchemaScopeLookups        $lookups       Slug → register/schema id, and the PSR logger.
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objectService,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly LoggerInterface $logger,
+		private readonly SchemaScopeLookups $lookups,
 	) {
 	}//end __construct()
 
@@ -95,7 +103,7 @@ class ObjectMetricSource implements MetricSourceInterface {
 				$appId,
 				$e->getMessage()
 			);
-			$this->logger->warning(
+			$this->lookups->logger->warning(
 				message: $logMessage,
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
@@ -109,7 +117,8 @@ class ObjectMetricSource implements MetricSourceInterface {
 		}
 
 		if (is_array($groupBy) === true && $groupBy !== []) {
-			$samples = $this->collectGrouped(baseQuery: $baseQuery, groupBy: array_values($groupBy), field: $field);
+			$buckets = $this->bucketsFor(baseQuery: $baseQuery, groupBy: array_values($groupBy));
+			$samples = $this->groupedSamples(buckets: $buckets, field: $field);
 		} else {
 			$samples = [['labels' => [], 'value' => $this->aggregate(query: $baseQuery, field: $field)]];
 		}
@@ -127,11 +136,11 @@ class ObjectMetricSource implements MetricSourceInterface {
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException When the schema slug is unknown.
 	 */
 	private function buildBaseQuery(array $source): array {
-		$schemaId = $this->schemaMapper->find($source['schema'], _rbac: false, _multitenancy: false)->getId();
+		$schemaId = $this->lookups->schemaMapper->find($source['schema'], _rbac: false, _multitenancy: false)->getId();
 
 		$self = ['schema' => $schemaId];
 		if (isset($source['register']) === true && $source['register'] !== '') {
-			$registerId = $this->registerMapper->find($source['register'], _rbac: false, _multitenancy: false)->getId();
+			$registerId = $this->lookups->registerMapper->find($source['register'], _rbac: false, _multitenancy: false)->getId();
 			$self['register'] = $registerId;
 		}
 
@@ -139,7 +148,8 @@ class ObjectMetricSource implements MetricSourceInterface {
 
 		foreach (($source['filter'] ?? []) as $fieldName => $ops) {
 			foreach ($ops as $operator => $value) {
-				$this->applyFilter(query: $query, field: (string)$fieldName, operator: (string)$operator, value: $value);
+				$filter = new ObjectMetricFilter(field: (string)$fieldName, operator: (string)$operator, value: $value);
+				$query  = $this->applyFilter(query: $query, filter: $filter);
 			}
 		}
 
@@ -148,36 +158,31 @@ class ObjectMetricSource implements MetricSourceInterface {
 
 	/**
 	 * Apply one filter operator into the MagicMapper query shape, resolving
-	 * `now`/`today` date tokens server-side.
+	 * `now`/`today` date tokens server-side. An unknown operator adds nothing.
 	 *
-	 * @param array<string, mixed> $query Query (by reference).
-	 * @param string $field Object field name.
-	 * @param string $operator eq|neq|lt|lte|gt|gte|like.
-	 * @param mixed $value Raw value (may be a date token).
+	 * @param array<string, mixed> $query  The query so far.
+	 * @param ObjectMetricFilter   $filter The field, operator (eq|neq|lt|lte|gt|gte|like) and raw value.
 	 *
-	 * @return void
+	 * @return array<string, mixed> The query with the filter applied.
 	 */
-	private function applyFilter(array &$query, string $field, string $operator, mixed $value): void {
-		$resolved = $this->resolveValue(value: $value);
-
-		switch ($operator) {
-			case 'eq':
-				$query[$field] = $resolved;
-				break;
-			case 'neq':
-				$query[$field] = ['ne' => $resolved];
-				break;
-			case 'lt':
-			case 'lte':
-			case 'gt':
-			case 'gte':
-				$query[$field] = ($query[$field] ?? []);
-				$query[$field][$operator] = $resolved;
-				break;
-			case 'like':
-				$query[$field] = ['like' => $resolved];
-				break;
+	private function applyFilter(array $query, ObjectMetricFilter $filter): array {
+		$field    = $filter->field;
+		$operator = $filter->operator;
+		$resolved = $this->resolveValue(value: $filter->value);
+		if ($operator === 'eq') {
+			$query[$field] = $resolved;
 		}
+
+		if (isset(self::WRAPPED_OPERATORS[$operator]) === true) {
+			$query[$field] = [self::WRAPPED_OPERATORS[$operator] => $resolved];
+		}
+
+		if (in_array($operator, self::RANGE_OPERATORS, true) === true) {
+			$query[$field] = ($query[$field] ?? []);
+			$query[$field][$operator] = $resolved;
+		}
+
+		return $query;
 	}//end applyFilter()
 
 	/**
@@ -251,55 +256,66 @@ class ObjectMetricSource implements MetricSourceInterface {
 	}//end extractObjectData()
 
 	/**
-	 * Collect grouped samples by faceting over the groupBy fields.
+	 * Expand group-by fields into labelled buckets. For each field we facet
+	 * every bucket so far to discover its distinct values, and split it into
+	 * one bucket per value, pinned as an equality filter. Buckets keep the
+	 * depth-first order of the fields and values. Pure OR aggregation: no
+	 * JSON SQL here.
 	 *
 	 * @param array<string, mixed> $baseQuery Base query.
-	 * @param string[] $groupBy Group-by JSON fields.
-	 * @param string|null $field Numeric field for objectSum.
+	 * @param string[]             $groupBy   Group-by JSON fields.
 	 *
-	 * @return array<int, array{labels: array<string,string>, value: float|int}>
+	 * @return array<int, array{query: array<string, mixed>, labels: array<string, string>}>
 	 */
-	private function collectGrouped(array $baseQuery, array $groupBy, ?string $field): array {
-		return $this->expandGroups(query: $baseQuery, remaining: $groupBy, labels: [], field: $field);
-	}//end collectGrouped()
-
-	/**
-	 * Recursively expand group-by fields into labelled samples. For each field
-	 * we facet to discover its distinct values, then descend with each value
-	 * pinned as an equality filter. Pure OR aggregation — no JSON SQL here.
-	 *
-	 * @param array<string, mixed> $query Current query.
-	 * @param string[] $remaining Remaining group-by fields.
-	 * @param array<string,string> $labels Accumulated labels.
-	 * @param string|null $field Numeric field for objectSum.
-	 *
-	 * @return array<int, array{labels: array<string,string>, value: float|int}>
-	 */
-	private function expandGroups(array $query, array $remaining, array $labels, ?string $field): array {
-		if ($remaining === []) {
-			$value = $this->aggregate(query: $query, field: $field);
-			if ($value === 0 || $value === 0.0) {
-				return [];
-			}
-
-			return [['labels' => $labels, 'value' => $value]];
+	private function bucketsFor(array $baseQuery, array $groupBy): array {
+		$buckets = [['query' => $baseQuery, 'labels' => []]];
+		foreach ($groupBy as $groupField) {
+			$buckets = $this->split(buckets: $buckets, groupField: $groupField);
 		}
 
-		$groupField = array_shift($remaining);
-		$buckets = $this->facetValues(query: $query, field: $groupField);
+		return $buckets;
+	}//end bucketsFor()
 
+	/**
+	 * Split every bucket into one bucket per distinct value of a field.
+	 *
+	 * @param array<int, array{query: array<string, mixed>, labels: array<string, string>}> $buckets    The buckets so far.
+	 * @param string                                                                          $groupField The field to split on.
+	 *
+	 * @return array<int, array{query: array<string, mixed>, labels: array<string, string>}>
+	 */
+	private function split(array $buckets, string $groupField): array {
+		$children = [];
+		foreach ($buckets as $bucket) {
+			foreach ($this->facetValues(query: $bucket['query'], field: $groupField) as $bucketValue) {
+				$scoped = $bucket['query'];
+				$scoped[$groupField] = $bucketValue;
+				$children[] = ['query' => $scoped, 'labels' => ($bucket['labels'] + [$groupField => (string)$bucketValue])];
+			}
+		}
+
+		return $children;
+	}//end split()
+
+	/**
+	 * The labelled samples of the buckets, dropping the ones that aggregate to zero.
+	 *
+	 * @param array<int, array{query: array<string, mixed>, labels: array<string, string>}> $buckets The fully split buckets.
+	 * @param string|null                                                                     $field   Numeric field for objectSum.
+	 *
+	 * @return array<int, array{labels: array<string,string>, value: float|int}>
+	 */
+	private function groupedSamples(array $buckets, ?string $field): array {
 		$samples = [];
-		foreach ($buckets as $bucketValue) {
-			$scoped = $query;
-			$scoped[$groupField] = $bucketValue;
-			$childLabels = ($labels + [$groupField => (string)$bucketValue]);
-			foreach ($this->expandGroups(query: $scoped, remaining: $remaining, labels: $childLabels, field: $field) as $sample) {
-				$samples[] = $sample;
+		foreach ($buckets as $bucket) {
+			$value = $this->aggregate(query: $bucket['query'], field: $field);
+			if ($value !== 0 && $value !== 0.0) {
+				$samples[] = ['labels' => $bucket['labels'], 'value' => $value];
 			}
 		}
 
 		return $samples;
-	}//end expandGroups()
+	}//end groupedSamples()
 
 	/**
 	 * Discover the distinct values of a field via OR's facet layer.

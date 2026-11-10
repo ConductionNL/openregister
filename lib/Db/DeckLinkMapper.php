@@ -30,7 +30,7 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<DeckLink>
  * @method list<DeckLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
-class DeckLinkMapper extends QBMapper {
+class DeckLinkMapper extends QBMapper implements DeckLinkMapperInterface {
 
 	use ObjectKeyLinkTrait;
 	use FindLinksByObjectUuidTrait;

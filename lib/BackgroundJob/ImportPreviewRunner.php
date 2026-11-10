@@ -30,8 +30,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Db\ImportPreviewMapper;
-use OCA\OpenRegister\Service\Import\ImportPreviewService;
+use OCA\OpenRegister\Db\ImportPreview;
+use OCA\OpenRegister\Db\ImportPreviewFinderInterface;
+use OCA\OpenRegister\Service\Import\ImportPreviewServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
@@ -62,15 +63,15 @@ class ImportPreviewRunner extends QueuedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Time factory.
-	 * @param ImportPreviewMapper $previewMapper Preview persistence.
-	 * @param ImportPreviewService $service The preview lifecycle.
-	 * @param LoggerInterface $logger Logger.
+	 * @param ITimeFactory                  $time          Time factory.
+	 * @param ImportPreviewFinderInterface  $previewMapper Preview persistence.
+	 * @param ImportPreviewServiceInterface $service       The preview lifecycle.
+	 * @param LoggerInterface               $logger        Logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly ImportPreviewMapper $previewMapper,
-		private readonly ImportPreviewService $service,
+		private readonly ImportPreviewFinderInterface $previewMapper,
+		private readonly ImportPreviewServiceInterface $service,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
@@ -89,45 +90,83 @@ class ImportPreviewRunner extends QueuedJob {
 	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
 	 */
 	protected function run($argument): void {
-		$previewId = ($argument['preview_id'] ?? null);
+		$preview = $this->loadPreview(argument: $argument);
+		if ($preview === null) {
+			return;
+		}
 
+		try {
+			$this->runPhase(preview: $preview, argument: $argument);
+		} catch (Throwable $exception) {
+			$this->logFailure(argument: $argument, exception: $exception);
+		}
+	}//end run()
+
+	/**
+	 * The preview named by the job argument, or null when it is missing or gone.
+	 *
+	 * @param mixed $argument The job argument.
+	 *
+	 * @return ImportPreview|null
+	 */
+	private function loadPreview(mixed $argument): ?ImportPreview {
+		$previewId = ($argument['preview_id'] ?? null);
 		if ($previewId === null) {
 			$this->logger->error(message: '[ImportPreviewRunner] Missing preview_id argument');
-
-			return;
+			return null;
 		}
 
 		try {
-			$preview = $this->previewMapper->find((int)$previewId);
+			return $this->previewMapper->find((int)$previewId);
 		} catch (DoesNotExistException $exception) {
-			$this->logger->warning(
-				message: '[ImportPreviewRunner] Preview '.(string)$previewId.' no longer exists'
-			);
+			$this->logger->warning(message: '[ImportPreviewRunner] Preview '.(string)$previewId.' no longer exists');
+			return null;
+		}
+	}//end loadPreview()
 
+	/**
+	 * The phase named by the job argument; preview by default.
+	 *
+	 * @param mixed $argument The job argument.
+	 *
+	 * @return string
+	 */
+	private function phase(mixed $argument): string {
+		return (string)($argument['phase'] ?? self::PHASE_PREVIEW);
+	}//end phase()
+
+	/**
+	 * Commit the preview when the phase is commit; otherwise run the preview.
+	 *
+	 * @param ImportPreview $preview  The preview.
+	 * @param mixed         $argument The job argument.
+	 *
+	 * @return void
+	 */
+	private function runPhase(ImportPreview $preview, mixed $argument): void {
+		if ($this->phase(argument: $argument) === self::PHASE_COMMIT) {
+			$this->service->commit(preview: $preview, sourceHash: ($argument['source_hash'] ?? null));
 			return;
 		}
 
-		$phase = (string)($argument['phase'] ?? self::PHASE_PREVIEW);
+		$this->service->runPreview(preview: $preview);
+	}//end runPhase()
 
-		try {
-			if ($phase === self::PHASE_COMMIT) {
-				$this->service->commit(
-					preview: $preview,
-					sourceHash: ($argument['source_hash'] ?? null)
-				);
-
-				return;
-			}
-
-			$this->service->runPreview(preview: $preview);
-		} catch (Throwable $exception) {
-			// The service already moved the preview to failed and recorded the
-			// reason on the record, which is where the operator reads it. The
-			// log line is for the administrator watching cron.
-			$this->logger->error(
-				message: '[ImportPreviewRunner] Preview '.(string)$previewId.' failed: '.$exception->getMessage(),
-				context: ['phase' => $phase]
-			);
-		}//end try
-	}//end run()
+	/**
+	 * Log a failed phase for the administrator watching cron.
+	 *
+	 * The service already moved the preview to failed and recorded the reason
+	 * on the record, which is where the operator reads it.
+	 *
+	 * @param mixed     $argument  The job argument.
+	 * @param Throwable $exception The failure.
+	 *
+	 * @return void
+	 */
+	private function logFailure(mixed $argument, Throwable $exception): void {
+		$this->logger->error(
+			message: '[ImportPreviewRunner] Preview '.(string)$argument['preview_id'].' failed: '.$exception->getMessage(),
+			context: ['phase' => $this->phase(argument: $argument)]
+		);
+	}//end logFailure()
 }//end class

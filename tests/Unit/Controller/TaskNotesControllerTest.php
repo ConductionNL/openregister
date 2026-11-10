@@ -51,6 +51,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\TaskNotesControllerFactory;
 
 /**
  * Authorization and HTTP translation for /api/flow-tasks/{uuid}/notes.
@@ -108,8 +109,7 @@ class TaskNotesControllerTest extends TestCase {
 		$request = $this->createMock(originalClassName: IRequest::class);
 		$request->method('getParams')->willReturn($params);
 
-		return new TaskNotesController(
-			appName: 'openregister',
+		return TaskNotesControllerFactory::create(
 			request: $request,
 			tasks: $this->tasks,
 			authorization: $this->authorization,

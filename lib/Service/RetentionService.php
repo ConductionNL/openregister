@@ -39,25 +39,26 @@ namespace OCA\OpenRegister\Service;
 use DateInterval;
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\Archival\HoldStamp;
 use OCA\OpenRegister\Service\Archival\LegalHoldLedger;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Archival\Appraisal;
 use OCA\OpenRegister\Service\Archival\ActionDateFollower;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
+use OCA\OpenRegister\Service\Archival\CategoryDeclaration;
 use OCA\OpenRegister\Service\Archival\ClassificationOverride;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Archival\HoldAction;
 
 /**
  * Service for managing retention lifecycle of register objects.
@@ -75,7 +76,7 @@ use Psr\Log\LoggerInterface;
 class RetentionService implements RetentionServiceInterface {
 
 	/**
-	 * Why a destruction rule refused an object (destructionRefusal()).
+	 * Why a destruction rule refused an object (destructionRefusalIn()).
 	 */
 	public const REFUSAL_NOT_NOMINATED = 'not_nominated_for_destruction';
 	public const REFUSAL_NOT_LIVE = 'record_not_live';
@@ -112,16 +113,10 @@ class RetentionService implements RetentionServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapperInterface $objectMapper Object mapper for queries
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper for lookups
-	 * @param RegisterMapperInterface $registerMapper Register mapper for lookups
-	 * @param AuditTrailMapperInterface $auditMapper Audit trail mapper
-	 * @param ObjectRetentionHandler $settingsHandler Retention settings handler
+	 * @param RetentionStores $stores The object, schema, register and audit trail mappers.
+	 * @param RetentionRules $rules Archival settings, row scanner, action date calculator and selectielijst resolver.
 	 * @param IUserSession $userSession Current user session
 	 * @param LoggerInterface $logger Logger
-	 * @param RetentionRowScanner $rowScanner Walks every table a retention decision can live in
-	 * @param ArchiveActionDateCalculator $actionDateCalculator Calculates the archiefactiedatum
-	 * @param SelectielijstResolver $listResolver Decides which revision of a category applies
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A DI constructor for an aggregate service.
 	 *              Every parameter is a distinct collaborator this class genuinely uses, and the tenth
@@ -129,16 +124,10 @@ class RetentionService implements RetentionServiceInterface {
 	 *              behind a parameter object would hide the dependency graph without reducing it.
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $objectMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly AuditTrailMapperInterface $auditMapper,
-		private readonly ObjectRetentionHandler $settingsHandler,
+		private readonly RetentionStores $stores,
+		private readonly RetentionRules $rules,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
-		private readonly RetentionRowScanner $rowScanner,
-		private readonly ArchiveActionDateCalculator $actionDateCalculator,
-		private readonly SelectielijstResolver $listResolver,
 	) {
 	}//end __construct()
 
@@ -174,18 +163,41 @@ class RetentionService implements RetentionServiceInterface {
 		// The schema's category, unless this record names its own through the
 		// property the schema declares for that (DECISIONS row 48).
 		$classification = (new ClassificationOverride())->effective(
-			archive: $archiveConfig,
+			declaration: new CategoryDeclaration(archive: $archiveConfig),
 			data: ($object->getObject() ?? [])
 		);
 
 		$applied = $this->resolveArchivalDefaults(archiveConfig: $archiveConfig, classification: $classification);
 		$retentionPeriod = $applied['bewaartermijn'];
 
+		$retention = $this->withArchivalDefaults(retention: $retention, applied: $applied);
+
+		// Calculate archiefactiedatum if bewaartermijn is set.
+		if ($retentionPeriod !== null) {
+			$retention['archiefactiedatum'] = $this->calculateArchiveActionDate(
+				clock: new RetentionClock(object: $object, schema: $schema, retentionPeriod: $retentionPeriod)
+			);
+		}
+
+		$object->setRetention($retention);
+
+		return $object;
+	}//end applyArchivalMetadata()
+
+	/**
+	 * Write the decided nominatie, period, source and provenance into a retention block.
+	 *
+	 * @param array $retention The record's retention block
+	 * @param array $applied   The decision from resolveArchivalDefaults(), naming the effective category
+	 *
+	 * @return array The retention block with the archival metadata set
+	 */
+	private function withArchivalDefaults(array $retention, array $applied): array {
 		// Build archival metadata.
 		$retention['archiefnominatie'] = $applied['archiefnominatie'];
 		$retention['archiefstatus'] = RecordState::ACTIVE;
-		$retention['classification'] = $classification;
-		$retention['bewaartermijn'] = $retentionPeriod;
+		$retention['classification'] = $applied['classification'];
+		$retention['bewaartermijn'] = $applied['bewaartermijn'];
 		$retention['selectielijstBron'] = $applied['selectielijstBron'];
 
 		// GAP B1. WHICH list is not WHICH VERSION OF THAT LIST. The same
@@ -199,19 +211,8 @@ class RetentionService implements RetentionServiceInterface {
 			$retention[$key] = $value;
 		}
 
-		// Calculate archiefactiedatum if bewaartermijn is set.
-		if ($retentionPeriod !== null) {
-			$retention['archiefactiedatum'] = $this->calculateArchiveActionDate(
-				object: $object,
-				schema: $schema,
-				retentionPeriod: $retentionPeriod
-			);
-		}
-
-		$object->setRetention($retention);
-
-		return $object;
-	}//end applyArchivalMetadata()
+		return $retention;
+	}//end withArchivalDefaults()
 
 	/**
 	 * Decide the nominatie, the retention period and where they came from.
@@ -224,7 +225,7 @@ class RetentionService implements RetentionServiceInterface {
 	 * @param array       $archiveConfig  The schema's archive block
 	 * @param string|null $classification The record's effective category
 	 *
-	 * @return array{archiefnominatie: string, bewaartermijn: string|null, selectielijstBron: string|null, provenance: array<string, string>}
+	 * @return array{archiefnominatie: string, bewaartermijn: string|null, selectielijstBron: string|null, provenance: array<string, string>, classification: string|null}
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
@@ -234,11 +235,12 @@ class RetentionService implements RetentionServiceInterface {
 			'bewaartermijn' => ($archiveConfig['defaultBewaartermijn'] ?? null),
 			'selectielijstBron' => null,
 			'provenance' => [],
+			'classification' => $classification,
 		];
 
 		$entry = null;
 		if ($classification !== null) {
-			$entry = $this->listResolver->entryFor(category: $classification);
+			$entry = $this->rules->listResolver->entryFor(category: $classification);
 		}
 
 		if ($entry !== null) {
@@ -246,7 +248,7 @@ class RetentionService implements RetentionServiceInterface {
 			$applied['archiefnominatie'] = ($data['archiefnominatie'] ?? 'nog_niet_bepaald');
 			$applied['bewaartermijn'] = ($data['bewaartermijn'] ?? null);
 			$applied['selectielijstBron'] = ($data['bron'] ?? null);
-			$applied['provenance'] = $this->listResolver->provenanceOf(entry: $entry);
+			$applied['provenance'] = $this->rules->listResolver->provenanceOf(entry: $entry);
 		}
 
 		if (empty($archiveConfig['bewaartermijnOverride']) === false) {
@@ -255,12 +257,6 @@ class RetentionService implements RetentionServiceInterface {
 
 		return $applied;
 	}//end resolveArchivalDefaults()
-
-
-
-
-
-
 
 	/**
 	 * Refuse a record whose category override names no selectielijst row.
@@ -279,12 +275,12 @@ class RetentionService implements RetentionServiceInterface {
 		$override->guard(
 			property: $override->propertyOf(archive: ($schema->getArchive() ?? []), configuration: ($schema->getConfiguration() ?? [])),
 			data: $data,
-			resolver: $this->listResolver
+			resolver: $this->rules->listResolver
 		);
 	}//end guardClassificationOverride()
 
 	/**
-	 * Follow a changed category override on an update.
+	 * Follow a changed category override on one update of a record.
 	 *
 	 * A record that is still active is re-derived from its new category. A
 	 * record already nominated at its terminal state keeps that decision:
@@ -295,9 +291,7 @@ class RetentionService implements RetentionServiceInterface {
 	 * alone never re-derives or refuses, even when the schema's own category
 	 * has moved since the record was created.
 	 *
-	 * @param ObjectEntity         $object       The record, with its updated data
-	 * @param Schema               $schema       Its schema
-	 * @param array<string, mixed> $previousData The record's data before this update
+	 * @param RecordUpdate $update The record, its schema and its data before the update
 	 *
 	 * @return ObjectEntity The record, re-derived when its category changed
 	 *
@@ -305,26 +299,61 @@ class RetentionService implements RetentionServiceInterface {
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function applyClassificationOnUpdate(ObjectEntity $object, Schema $schema, array $previousData): ObjectEntity {
-		$archive  = ($schema->getArchive() ?? []);
+	public function applyClassification(RecordUpdate $update): ObjectEntity {
+		$object   = $update->object;
+		$archive  = ($update->schema->getArchive() ?? []);
 		$override = new ClassificationOverride();
-		$property = $override->propertyOf(archive: $archive, configuration: ($schema->getConfiguration() ?? []));
+		$property = $override->propertyOf(archive: $archive, configuration: ($update->schema->getConfiguration() ?? []));
 		if (($archive['enabled'] ?? false) !== true || $property === null) {
 			return $object;
 		}
 
-		$data      = ($object->getObject() ?? []);
-		$retention = ($object->getRetention() ?? []);
-		$effective = $override->effective(archive: $archive, data: $data, configuration: ($schema->getConfiguration() ?? []));
-		if ($override->requested(property: $property, data: $data) === $override->requested(property: $property, data: $previousData)) {
+		$data = ($object->getObject() ?? []);
+		if ($override->requested(property: $property, data: $data) === $override->requested(property: $property, data: $update->previousData)) {
 			return $object;
 		}
 
-		$this->guardClassificationOverride(schema: $schema, data: $data);
+		$this->guardClassificationOverride(schema: $update->schema, data: $data);
+
+		$declaration = new CategoryDeclaration(archive: $archive, configuration: ($update->schema->getConfiguration() ?? []));
+		return $this->rederiveCategory(update: $update, effective: $override->effective(declaration: $declaration, data: $data));
+	}//end applyClassification()
+
+	/**
+	 * Re-derive a record's archival metadata from its new effective category.
+	 *
+	 * @param RecordUpdate $update    The record, its schema and its data before the update
+	 * @param string|null  $effective The record's new effective category
+	 *
+	 * @return ObjectEntity The record, re-derived when its category changed
+	 *
+	 * @throws ObjectStateWriteException When a nominated record's category changes
+	 */
+	private function rederiveCategory(RecordUpdate $update, ?string $effective): ObjectEntity {
+		$retention = ($update->object->getRetention() ?? []);
 		if ($effective === ($retention['classification'] ?? null)) {
-			return $object;
+			return $update->object;
 		}
 
+		$this->assertCategoryMayChange(retention: $retention, effective: $effective);
+
+		unset($retention['archiefnominatie'], $retention['archiefactiedatum'], $retention['selectielijstBron']);
+		$update->object->setRetention($retention);
+
+		return $this->applyArchivalMetadata(object: $update->object, schema: $update->schema);
+	}//end rederiveCategory()
+
+	/**
+	 * Refuse a category change on a record already nominated at its terminal state.
+	 *
+	 * @param array       $retention The record's retention block
+	 * @param string|null $effective The record's new effective category
+	 *
+	 * @return void
+	 *
+	 * @throws ObjectStateWriteException When the record is not live or already carries a nomination
+	 */
+	private function assertCategoryMayChange(array $retention, ?string $effective): void {
 		$live = in_array(($retention['archiefstatus'] ?? RecordState::ACTIVE), RecordState::ACTIVE_ALIASES, true);
 		if ($live === false || isset($retention['nomination']) === true) {
 			throw new ObjectStateWriteException(
@@ -333,12 +362,7 @@ class RetentionService implements RetentionServiceInterface {
 					. '". Recompute its nomination instead.'
 			);
 		}
-
-		unset($retention['archiefnominatie'], $retention['archiefactiedatum'], $retention['selectielijstBron']);
-		$object->setRetention($retention);
-
-		return $this->applyArchivalMetadata(object: $object, schema: $schema);
-	}//end applyClassificationOnUpdate()
+	}//end assertCategoryMayChange()
 
 	/**
 	 * Calculate archiefactiedatum based on the schema's afleidingswijze.
@@ -348,68 +372,53 @@ class RetentionService implements RetentionServiceInterface {
 	 * when it cannot be answered. Kept here because callers and the spec both
 	 * name this method.
 	 *
-	 * @param ObjectEntity $object The object to calculate for
-	 * @param Schema $schema The schema with afleidingswijze config
-	 * @param string $retentionPeriod ISO 8601 duration (e.g., P5Y, P20Y)
+	 * @param RetentionClock $clock The object, its schema (with the afleidingswijze config) and the ISO 8601 retention period
 	 *
 	 * @return string|null ISO 8601 date string or null if calculation not possible
 	 *
 	 * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-calculate-archiefactiedatum-using-configurable-afleidingswijzen
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
-	public function calculateArchiveActionDate(
-		ObjectEntity $object,
-		Schema $schema,
-		string $retentionPeriod,
-	): ?string {
-		return $this->actionDateCalculator->calculate(
-			object: $object,
-			schema: $schema,
-			retentionPeriod: $retentionPeriod
+	public function calculateArchiveActionDate(RetentionClock $clock): ?string {
+		return $this->rules->actionDateCalculator->calculate(
+			object: $clock->object,
+			schema: $clock->schema,
+			retentionPeriod: $clock->retentionPeriod
 		);
 	}//end calculateArchiveActionDate()
 
 	/**
-	 * Recalculate archiefactiedatum when a source property changes.
+	 * Recalculate archiefactiedatum when one update changed the source property.
 	 *
 	 * The source is the property the schema's derivation method reads: the
 	 * `sourceDateProperty` under `ander_datumkenmerk`, the reference under the
 	 * relation methods, `bronEigenschap` under `eigenschap` and the closure
 	 * field under `afgehandeld` and `termijn`.
 	 *
-	 * @param ObjectEntity $object The object being updated
-	 * @param Schema $schema The schema
-	 * @param array $oldObject The previous object data
+	 * @param RecordUpdate $update The record, its schema and its data before the update
 	 *
 	 * @return ObjectEntity The object with recalculated dates
 	 *
-	 * @spec openspec/specs/retention-management/spec.md
 	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
 	 */
-	public function recalculateArchiveActionDate(
-		ObjectEntity $object,
-		Schema $schema,
-		array $oldObject,
-	): ObjectEntity {
-		$archiveConfig = $schema->getArchive();
+	public function recalculateActionDate(RecordUpdate $update): ObjectEntity {
+		$object = $update->object;
+		$archiveConfig = $update->schema->getArchive();
 		if (empty($archiveConfig) === true || ($archiveConfig['enabled'] ?? false) === false) {
 			return $object;
 		}
 
-		$property = $this->actionDateCalculator->sourcePropertyOf(archiveConfig: $archiveConfig);
+		$property = $this->rules->actionDateCalculator->sourcePropertyOf(archiveConfig: $archiveConfig);
 		if ($property === null) {
 			return $object;
 		}
 
-		$newData = ($object->getObject() ?? []);
-		if (($oldObject[$property] ?? null) === ($newData[$property] ?? null)) {
-			return $object;
+		if (($update->previousData[$property] ?? null) !== (($object->getObject() ?? [])[$property] ?? null)) {
+			$this->followSourceDate(object: $object, schema: $update->schema);
 		}
 
-		$this->followSourceDate(object: $object, schema: $schema);
-
 		return $object;
-	}//end recalculateArchiveActionDate()
+	}//end recalculateActionDate()
 
 	/**
 	 * Recalculate a record's archiefactiedatum from its current source date.
@@ -444,7 +453,7 @@ class RetentionService implements RetentionServiceInterface {
 			return (($object->getRetention() ?? [])['archiefactiedatum'] ?? null) !== ($retention['archiefactiedatum'] ?? null);
 		}
 
-		$follower = new ActionDateFollower(calculator: $this->actionDateCalculator, auditMapper: $this->auditMapper, logger: $this->logger);
+		$follower = new ActionDateFollower(calculator: $this->rules->actionDateCalculator, auditMapper: $this->stores->auditMapper, logger: $this->logger);
 
 		return $follower->follow(object: $object, schema: $schema);
 	}//end followSourceDate()
@@ -465,9 +474,8 @@ class RetentionService implements RetentionServiceInterface {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function lookupSelectielijstEntry(string $category): ?array {
-		return $this->listResolver->lookupSelectielijstEntry(category: $category);
+		return $this->rules->listResolver->lookupSelectielijstEntry(category: $category);
 	}//end lookupSelectielijstEntry()
-
 
 	/**
 	 * Validate that an object is not in an immutable archival status.
@@ -510,25 +518,30 @@ class RetentionService implements RetentionServiceInterface {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function placeLegalHold(ObjectEntity $object, string $reason, ?string $ownerKey = null): ObjectEntity {
-		$user = $this->userSession->getUser();
-		$userId = 'system';
-		if ($user !== null) {
-			$userId = $user->getUID();
-		}
+		return $this->placeHold(object: $object, order: new HoldOrder(reason: $reason, ownerKey: $ownerKey));
+	}//end placeLegalHold()
 
+	/**
+	 * Place a legal hold on an object, as ordered.
+	 *
+	 * @param ObjectEntity $object The object to place the hold on
+	 * @param HoldOrder    $order  Why, and for which matter
+	 *
+	 * @return ObjectEntity The object with legal hold applied
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function placeHold(ObjectEntity $object, HoldOrder $order): ObjectEntity {
 		// One hold per matter, the same ledger LegalHoldService writes (#4172).
 		$object->setRetention(
-			(new LegalHoldLedger())->place(
+			(new LegalHoldLedger())->placeAction(
 				retention: ($object->getRetention() ?? []),
-				reason: $reason,
-				ownerKey: $ownerKey,
-				userId: $userId,
-				now: (new DateTime())->format('c')
+				action: new HoldAction(ownerKey: $order->ownerKey, reason: $order->reason, stamp: $this->holdStamp())
 			)
 		);
 
 		return $object;
-	}//end placeLegalHold()
+	}//end placeHold()
 
 	/**
 	 * Release a legal hold on an object.
@@ -542,30 +555,44 @@ class RetentionService implements RetentionServiceInterface {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function releaseLegalHold(ObjectEntity $object, string $reason, ?string $ownerKey = null): ObjectEntity {
+		return $this->releaseHold(object: $object, order: new HoldOrder(reason: $reason, ownerKey: $ownerKey));
+	}//end releaseLegalHold()
+
+	/**
+	 * Release a legal hold on an object, as ordered.
+	 *
+	 * @param ObjectEntity $object The object to release the hold from
+	 * @param HoldOrder    $order  Why, and for which matter; no matter releases every hold
+	 *
+	 * @return ObjectEntity The object with legal hold released
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function releaseHold(ObjectEntity $object, HoldOrder $order): ObjectEntity {
 		$retention = $object->getRetention() ?? [];
 		$ledger = new LegalHoldLedger();
 		if ($ledger->activeHolds(retention: $retention) === []) {
 			return $object;
 		}
 
-		$user = $this->userSession->getUser();
-		$userId = 'system';
-		if ($user !== null) {
-			$userId = $user->getUID();
-		}
-
 		$object->setRetention(
-			$ledger->release(
+			$ledger->releaseAction(
 				retention: $retention,
-				ownerKey: $ownerKey,
-				releaseReason: $reason,
-				userId: $userId,
-				now: (new DateTime())->format('c')
+				action: new HoldAction(ownerKey: $order->ownerKey, reason: $order->reason, stamp: $this->holdStamp())
 			)
 		);
 
 		return $object;
-	}//end releaseLegalHold()
+	}//end releaseHold()
+
+	/**
+	 * Who places or releases a hold, and when: the current user, or 'system'.
+	 *
+	 * @return HoldStamp The stamp
+	 */
+	private function holdStamp(): HoldStamp {
+		return new HoldStamp(userId: $this->currentUserIdOrSystem(), now: (new DateTime())->format('c'));
+	}//end holdStamp()
 
 	/**
 	 * Check if an object has an active legal hold.
@@ -602,20 +629,12 @@ class RetentionService implements RetentionServiceInterface {
 		}
 
 		if ($extensionPeriod === null) {
-			$settings = $this->settingsHandler->getArchivalSettingsOnly();
+			$settings = $this->rules->settingsHandler->getArchivalSettingsOnly();
 			$extensionPeriod = $settings['defaultExtensionPeriod'] ?? 'P1Y';
 		}
 
 		try {
-			$date = new DateTime($retention['archiefactiedatum']);
-			$date->add(new DateInterval($extensionPeriod));
-			$retention['archiefactiedatum'] = $date->format('Y-m-d');
-
-			// Store original date if not already stored.
-			if (empty($retention['originalArchiefactiedatum']) === true) {
-				$retention['originalArchiefactiedatum'] = $retention['archiefactiedatum'];
-			}
-
+			$retention = $this->withExtendedActionDate(retention: $retention, extensionPeriod: $extensionPeriod);
 			$object->setRetention($retention);
 		} catch (Exception $e) {
 			$this->logger->warning(
@@ -625,6 +644,29 @@ class RetentionService implements RetentionServiceInterface {
 
 		return $object;
 	}//end extendArchiveActionDate()
+
+	/**
+	 * Move the archiefactiedatum on by a period, remembering the original once.
+	 *
+	 * @param array $retention       The record's retention block, with an archiefactiedatum
+	 * @param mixed $extensionPeriod ISO 8601 duration
+	 *
+	 * @return array The retention block with the extended date
+	 *
+	 * @throws Exception When the date or the period cannot be parsed
+	 */
+	private function withExtendedActionDate(array $retention, mixed $extensionPeriod): array {
+		$date = new DateTime($retention['archiefactiedatum']);
+		$date->add(new DateInterval($extensionPeriod));
+		$retention['archiefactiedatum'] = $date->format('Y-m-d');
+
+		// Store original date if not already stored.
+		if (empty($retention['originalArchiefactiedatum']) === true) {
+			$retention['originalArchiefactiedatum'] = $retention['archiefactiedatum'];
+		}
+
+		return $retention;
+	}//end withExtendedActionDate()
 
 	/**
 	 * Visit every object carrying a retention decision, wherever it lives.
@@ -646,7 +688,7 @@ class RetentionService implements RetentionServiceInterface {
 	 * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-generate-destruction-lists-via-a-background-job
 	 */
 	public function scanObjectsWithRetention(callable $accept, ?int $maxMatches = null): array {
-		return $this->rowScanner->scan(accept: $accept, maxMatches: $maxMatches);
+		return $this->rules->rowScanner->scan(accept: $accept, maxMatches: $maxMatches);
 	}//end scanObjectsWithRetention()
 
 	/**
@@ -663,14 +705,10 @@ class RetentionService implements RetentionServiceInterface {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function findEligibleForDestruction(array $excludeUuids = []): array {
-		$today = (new DateTime())->format('Y-m-d');
+		$sweep = new DisposalSweep(today: (new DateTime())->format('Y-m-d'), excludeUuids: $excludeUuids);
 
 		$scan = $this->scanObjectsWithRetention(
-			accept: fn (ObjectEntity $object): bool => $this->isEligibleForDestruction(
-				object: $object,
-				today: $today,
-				excludeUuids: $excludeUuids
-			)
+			accept: fn (ObjectEntity $object): bool => $this->isEligibleForDestruction(object: $object, sweep: $sweep)
 		);
 
 		return $scan['objects'];
@@ -679,37 +717,44 @@ class RetentionService implements RetentionServiceInterface {
 	/**
 	 * Decide whether one object is eligible for destruction today.
 	 *
-	 * @param ObjectEntity $object       The object to judge.
-	 * @param string       $today        Today, as Y-m-d.
-	 * @param array        $excludeUuids UUIDs already on a pending destruction list.
+	 * @param ObjectEntity  $object The object to judge.
+	 * @param DisposalSweep $sweep  Today, and the UUIDs already on a pending destruction list.
 	 *
 	 * @return bool True when every destruction rule is satisfied.
 	 */
-	private function isEligibleForDestruction(ObjectEntity $object, string $today, array $excludeUuids): bool {
-		return $this->destructionRefusal(object: $object, today: $today, excludeUuids: $excludeUuids) === null;
+	private function isEligibleForDestruction(ObjectEntity $object, DisposalSweep $sweep): bool {
+		return $this->destructionRefusalIn(object: $object, sweep: $sweep) === null;
 	}//end isEligibleForDestruction()
 
 	/**
-	 * The first destruction rule that refuses one object, or null when none does.
+	 * The first destruction rule that refuses one object in a sweep, or null when none does.
 	 *
 	 * The one rule, read by the daily sweep (through isEligibleForDestruction())
 	 * and by an app that asks for a list of its own (DestructionListCreator),
 	 * so the two cannot drift apart.
 	 *
-	 * @param ObjectEntity $object       The object to judge.
-	 * @param string       $today        Today, as Y-m-d.
-	 * @param array        $excludeUuids UUIDs already on a pending destruction list.
+	 * @param ObjectEntity  $object The object to judge.
+	 * @param DisposalSweep $sweep  Today, and the UUIDs already on a pending destruction list.
 	 *
 	 * @return string|null One of the REFUSAL_* reasons, or null when the object may be destroyed.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One rule per branch; collapsing
-	 *              them would hide which rule rejected an object.
-	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function destructionRefusal(ObjectEntity $object, string $today, array $excludeUuids): ?string {
-		$retention = ($object->getRetention() ?? []);
+	public function destructionRefusalIn(ObjectEntity $object, DisposalSweep $sweep): ?string {
+		// The retention rules first, then the rules about this object, in that order.
+		return ($this->retentionDestructionRefusal(retention: ($object->getRetention() ?? []), today: $sweep->today)
+			?? $this->objectDestructionRefusal(object: $object, excludeUuids: $sweep->excludeUuids));
+	}//end destructionRefusalIn()
 
+	/**
+	 * The first rule on the retention decision itself that refuses destruction.
+	 *
+	 * @param array  $retention The object's retention block.
+	 * @param string $today     Today, as Y-m-d.
+	 *
+	 * @return string|null REFUSAL_NOT_NOMINATED, REFUSAL_NOT_LIVE, REFUSAL_NOT_DUE, or null.
+	 */
+	private function retentionDestructionRefusal(array $retention, string $today): ?string {
 		// Every spelling that means destroy. Matching only the English one
 		// would make every pre-existing record invisible to this sweep, which
 		// is the direction that keeps personal data past its lawful term.
@@ -721,11 +766,22 @@ class RetentionService implements RetentionServiceInterface {
 			return self::REFUSAL_NOT_LIVE;
 		}
 
-		$actiedatum = ($retention['archiefactiedatum'] ?? null);
-		if ($actiedatum === null || $actiedatum > $today) {
+		if ($this->actionDateHasPassed(retention: $retention, today: $today) === false) {
 			return self::REFUSAL_NOT_DUE;
 		}
 
+		return null;
+	}//end retentionDestructionRefusal()
+
+	/**
+	 * The first rule on the object's state that refuses destruction.
+	 *
+	 * @param ObjectEntity $object       The object to judge.
+	 * @param array        $excludeUuids UUIDs already on a pending destruction list.
+	 *
+	 * @return string|null REFUSAL_FROZEN, REFUSAL_LEGAL_HOLD, REFUSAL_ALREADY_LISTED, or null.
+	 */
+	private function objectDestructionRefusal(ObjectEntity $object, array $excludeUuids): ?string {
 		// Skip objects in an immutable archival status (destroyed, transferred).
 		//
 		// ⚠️ THIS IS A BELT OVER BRACES AND NO TEST CAN REDDEN ON IT ALONE: every
@@ -739,7 +795,7 @@ class RetentionService implements RetentionServiceInterface {
 			return self::REFUSAL_FROZEN;
 		}
 
-		if ((($retention['legalHold'] ?? [])['active'] ?? false) === true) {
+		if (((($object->getRetention() ?? [])['legalHold'] ?? [])['active'] ?? false) === true) {
 			return self::REFUSAL_LEGAL_HOLD;
 		}
 
@@ -748,7 +804,7 @@ class RetentionService implements RetentionServiceInterface {
 		}
 
 		return null;
-	}//end destructionRefusal()
+	}//end objectDestructionRefusal()
 
 	/**
 	 * Is this record still live, for the purposes of a disposal sweep?
@@ -805,14 +861,10 @@ class RetentionService implements RetentionServiceInterface {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-transfer-list-management
 	 */
 	public function findEligibleForTransfer(array $excludeUuids = []): array {
-		$today = (new DateTime())->format('Y-m-d');
+		$sweep = new DisposalSweep(today: (new DateTime())->format('Y-m-d'), excludeUuids: $excludeUuids);
 
 		$scan = $this->scanObjectsWithRetention(
-			accept: fn (ObjectEntity $object): bool => $this->isEligibleForTransfer(
-				object: $object,
-				today: $today,
-				excludeUuids: $excludeUuids
-			)
+			accept: fn (ObjectEntity $object): bool => $this->isEligibleForTransfer(object: $object, sweep: $sweep)
 		);
 
 		return $scan['objects'];
@@ -826,13 +878,12 @@ class RetentionService implements RetentionServiceInterface {
 	 * by requiring the state to be live: a semi-static record is exactly the one
 	 * an archivist expects to see on a transfer list.
 	 *
-	 * @param ObjectEntity $object       The object to judge.
-	 * @param string       $today        Today, as Y-m-d.
-	 * @param array        $excludeUuids UUIDs already on an active transfer list.
+	 * @param ObjectEntity  $object The object to judge.
+	 * @param DisposalSweep $sweep  Today, and the UUIDs already on an active transfer list.
 	 *
 	 * @return bool True when every transfer rule is satisfied.
 	 */
-	private function isEligibleForTransfer(ObjectEntity $object, string $today, array $excludeUuids): bool {
+	private function isEligibleForTransfer(ObjectEntity $object, DisposalSweep $sweep): bool {
 		$retention = ($object->getRetention() ?? []);
 
 		// Every spelling that means keep forever: `bewaren` from a ZGW
@@ -849,17 +900,41 @@ class RetentionService implements RetentionServiceInterface {
 			return false;
 		}
 
-		$actiedatum = ($retention['archiefactiedatum'] ?? null);
-		if ($actiedatum === null || $actiedatum > $today) {
+		if ($this->isDueAndNotHeld(retention: $retention, today: $sweep->today) === false) {
 			return false;
 		}
 
-		if ((($retention['legalHold'] ?? [])['active'] ?? false) === true) {
-			return false;
-		}
-
-		return (in_array($object->getUuid(), $excludeUuids, true) === false);
+		return (in_array($object->getUuid(), $sweep->excludeUuids, true) === false);
 	}//end isEligibleForTransfer()
+
+	/**
+	 * Whether the action date has passed and no legal hold is active.
+	 *
+	 * @param array  $retention The object's retention block.
+	 * @param string $today     Today, as Y-m-d.
+	 *
+	 * @return bool True when due and not held.
+	 */
+	private function isDueAndNotHeld(array $retention, string $today): bool {
+		if ($this->actionDateHasPassed(retention: $retention, today: $today) === false) {
+			return false;
+		}
+
+		return ((($retention['legalHold'] ?? [])['active'] ?? false) === true) === false;
+	}//end isDueAndNotHeld()
+
+	/**
+	 * Whether the archiefactiedatum is set and not after today.
+	 *
+	 * @param array  $retention The object's retention block.
+	 * @param string $today     Today, as Y-m-d.
+	 *
+	 * @return bool True when the action date has been reached.
+	 */
+	private function actionDateHasPassed(array $retention, string $today): bool {
+		$actiedatum = ($retention['archiefactiedatum'] ?? null);
+		return ($actiedatum === null || $actiedatum > $today) === false;
+	}//end actionDateHasPassed()
 
 	/**
 	 * Get UUIDs of objects already on pending destruction lists.
@@ -869,7 +944,7 @@ class RetentionService implements RetentionServiceInterface {
 	 * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-generate-destruction-lists-via-a-background-job
 	 */
 	public function getObjectsOnPendingDestructionLists(): array {
-		$settings = $this->settingsHandler->getArchivalSettingsOnly();
+		$settings = $this->rules->settingsHandler->getArchivalSettingsOnly();
 
 		$registerId = $settings['destructionListRegister'] ?? null;
 		$schemaId = $settings['destructionListSchema'] ?? null;
@@ -879,8 +954,8 @@ class RetentionService implements RetentionServiceInterface {
 		}
 
 		try {
-			$register = $this->registerMapper->find((int)$registerId);
-			$schema = $this->schemaMapper->find((int)$schemaId);
+			$register = $this->stores->registerMapper->find((int)$registerId);
+			$schema = $this->stores->schemaMapper->find((int)$schemaId);
 
 			// `status`, NOT `object->status`. MagicSearchHandler compares the
 			// filter key against the schema's OWN property names, and anything
@@ -889,27 +964,14 @@ class RetentionService implements RetentionServiceInterface {
 			// feeds is "objects already on a pending destruction list", which
 			// means every sweep re-listed objects that were already awaiting
 			// approval, and nothing said so.
-			$pendingLists = $this->objectMapper->findAll(
-				filters: [
-					'status' => ['in_review', 'approved', 'awaiting_second_approval'],
-				],
-				register: $register,
-				schema: $schema
+			$pendingLists = $this->stores->objectMapper->findAllListed(
+				request: new MagicListRequest(
+					table: new RegisterSchema(register: $register, schema: $schema),
+					query: ListQuery::unbounded(filters: ['status' => ['in_review', 'approved', 'awaiting_second_approval']])
+				)
 			);
 
-			$uuids = [];
-			foreach ($pendingLists as $list) {
-				$listData = $list->getObject();
-				$objects = $listData['objects'] ?? [];
-				foreach ($objects as $obj) {
-					$uuid = $obj['uuid'] ?? null;
-					if ($uuid !== null) {
-						$uuids[] = $uuid;
-					}
-				}
-			}
-
-			return array_unique($uuids);
+			return array_unique($this->listedObjectUuids(lists: $pendingLists));
 		} catch (Exception $e) {
 			$this->logger->warning(
 				'[RetentionService] Failed to get pending destruction list objects: ' . $e->getMessage()
@@ -917,6 +979,29 @@ class RetentionService implements RetentionServiceInterface {
 			return [];
 		}//end try
 	}//end getObjectsOnPendingDestructionLists()
+
+	/**
+	 * The UUIDs of every object entry on the given destruction lists, in list order.
+	 *
+	 * @param ObjectEntity[] $lists The destruction lists
+	 *
+	 * @return string[] The UUIDs, duplicates included
+	 */
+	private function listedObjectUuids(array $lists): array {
+		$uuids = [];
+		foreach ($lists as $list) {
+			$listData = $list->getObject();
+			$objects = $listData['objects'] ?? [];
+			foreach ($objects as $obj) {
+				$uuid = $obj['uuid'] ?? null;
+				if ($uuid !== null) {
+					$uuids[] = $uuid;
+				}
+			}
+		}
+
+		return $uuids;
+	}//end listedObjectUuids()
 
 	/**
 	 * Create a destruction list as a register object.
@@ -928,7 +1013,7 @@ class RetentionService implements RetentionServiceInterface {
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
 	public function createDestructionList(array $objects): ?array {
-		$settings = $this->settingsHandler->getArchivalSettingsOnly();
+		$settings = $this->rules->settingsHandler->getArchivalSettingsOnly();
 
 		$registerId = $settings['destructionListRegister'] ?? null;
 		$schemaId = $settings['destructionListSchema'] ?? null;
@@ -940,41 +1025,11 @@ class RetentionService implements RetentionServiceInterface {
 			return null;
 		}
 
-		$user = $this->userSession->getUser();
-		$userId = 'system';
-		if ($user !== null) {
-			$userId = $user->getUID();
-		}
+		$userId = $this->currentUserIdOrSystem();
 
 		$objectEntries = [];
 		foreach ($objects as $object) {
-			$retention = $object->getRetention() ?? [];
-			// Detect WOO-published status from object data or metadata.
-			$objectData = $object->getObject() ?? [];
-			$isWooPublished = ($objectData['woo_gepubliceerd'] ?? false) === true
-				|| ($objectData['publicatiestatus'] ?? null) === 'gepubliceerd'
-				|| ($retention['wooPublished'] ?? false) === true;
-
-			$objectEntries[] = [
-				'uuid' => $object->getUuid(),
-				// 🔴 NOT `getTitle()`. `ObjectEntity` HAS NO `title` PROPERTY,
-				// so Entity's magic accessor threw "title is not a valid
-				// attribute" here, uncaught, and took the whole
-				// DestructionCheckJob run down with it. Every sweep that got
-				// this far therefore failed at list creation, which is a second
-				// reason no destruction list was ever produced. `name` is the
-				// property that exists.
-				'title' => $object->getName() ?? $object->getUuid(),
-				'schema' => $object->getSchema(),
-				'register' => $object->getRegister(),
-				'archiefactiedatum' => $retention['archiefactiedatum'] ?? null,
-				'classification' => $retention['classification'] ?? null,
-				'softDeleted' => $object->isSoftDeleted(),
-				'wooGepubliceerd' => $isWooPublished,
-				// Unassigned, said out loud, so a consumer reading a fresh
-				// list can see that nobody is accountable for this entry yet.
-				'reviewer' => null,
-			];
+			$objectEntries[] = $this->destructionListEntry(object: $object);
 		}
 
 		return [
@@ -991,24 +1046,89 @@ class RetentionService implements RetentionServiceInterface {
 	}//end createDestructionList()
 
 	/**
-	 * Generate a destruction certificate after execution.
+	 * The current user's ID, or 'system' when no user is logged in.
 	 *
-	 * @param array $destructionList The destruction list data
-	 * @param int $destroyedCount Number of objects destroyed
-	 * @param string $executedAt ISO 8601 timestamp of execution
+	 * @return string The user ID
+	 */
+	private function currentUserIdOrSystem(): string {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return 'system';
+		}
+
+		return $user->getUID();
+	}//end currentUserIdOrSystem()
+
+	/**
+	 * One object's entry on a new destruction list.
+	 *
+	 * @param ObjectEntity $object The object to list
+	 *
+	 * @return array The entry
+	 */
+	private function destructionListEntry(ObjectEntity $object): array {
+		$retention = $object->getRetention() ?? [];
+		// Detect WOO-published status from object data or metadata.
+		$objectData = $object->getObject() ?? [];
+		$isWooPublished = ($objectData['woo_gepubliceerd'] ?? false) === true
+			|| ($objectData['publicatiestatus'] ?? null) === 'gepubliceerd'
+			|| ($retention['wooPublished'] ?? false) === true;
+
+		return [
+			'uuid' => $object->getUuid(),
+			// 🔴 NOT `getTitle()`. `ObjectEntity` HAS NO `title` PROPERTY,
+			// so Entity's magic accessor threw "title is not a valid
+			// attribute" here, uncaught, and took the whole
+			// DestructionCheckJob run down with it. Every sweep that got
+			// this far therefore failed at list creation, which is a second
+			// reason no destruction list was ever produced. `name` is the
+			// property that exists.
+			'title' => $object->getName() ?? $object->getUuid(),
+			'schema' => $object->getSchema(),
+			'register' => $object->getRegister(),
+			'archiefactiedatum' => $retention['archiefactiedatum'] ?? null,
+			'classification' => $retention['classification'] ?? null,
+			'softDeleted' => $object->isSoftDeleted(),
+			'wooGepubliceerd' => $isWooPublished,
+			// Unassigned, said out loud, so a consumer reading a fresh
+			// list can see that nobody is accountable for this entry yet.
+			'reviewer' => null,
+		];
+	}//end destructionListEntry()
+
+	/**
+	 * The destruction certificate for a destruction that was carried out.
+	 *
+	 * @param ExecutedDestruction $execution The list, how many were destroyed, and when
 	 *
 	 * @return array The destruction certificate data
 	 *
-	 * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-generate-destruction-lists-via-a-background-job
-	 * @spec openspec/specs/retention-management/spec.md
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function generateDestructionCertificate(
-		array $destructionList,
-		int $destroyedCount,
-		string $executedAt,
-	): array {
-		// Group destroyed objects by schema and classificatie.
+	public function certify(ExecutedDestruction $execution): array {
+		$destructionList = $execution->destructionList;
+
+		return [
+			'type' => 'verklaring_van_vernietiging',
+			'destructionDate' => $execution->executedAt,
+			'approvedBy' => array_column($destructionList['approvals'] ?? [], 'userId'),
+			'destructionListUuid' => $destructionList['uuid'] ?? null,
+			'totalDestroyed' => $execution->destroyedCount,
+			'groupedBySchema' => $this->groupDestroyedBySchema(destructionList: $destructionList),
+			'selectielijstBron' => $this->extractSelectionListSource(destructionList: $destructionList),
+			'complianceStatement' => 'Vernietiging conform Archiefwet 1995 en Archiefbesluit 1995',
+			'immutable' => true,
+		];
+	}//end certify()
+
+	/**
+	 * The destroyed objects counted per schema and classificatie.
+	 *
+	 * @param array $destructionList The destruction list data
+	 *
+	 * @return array<int, array{schema: mixed, classification: mixed, count: int}> One group per schema and classificatie
+	 */
+	private function groupDestroyedBySchema(array $destructionList): array {
 		$grouped = [];
 		foreach ($destructionList['objects'] ?? [] as $obj) {
 			$key = ($obj['schema'] ?? 'unknown') . '/' . ($obj['classification'] ?? 'unknown');
@@ -1023,18 +1143,8 @@ class RetentionService implements RetentionServiceInterface {
 			$grouped[$key]['count']++;
 		}
 
-		return [
-			'type' => 'verklaring_van_vernietiging',
-			'destructionDate' => $executedAt,
-			'approvedBy' => array_column($destructionList['approvals'] ?? [], 'userId'),
-			'destructionListUuid' => $destructionList['uuid'] ?? null,
-			'totalDestroyed' => $destroyedCount,
-			'groupedBySchema' => array_values($grouped),
-			'selectielijstBron' => $this->extractSelectionListSource(destructionList: $destructionList),
-			'complianceStatement' => 'Vernietiging conform Archiefwet 1995 en Archiefbesluit 1995',
-			'immutable' => true,
-		];
-	}//end generateDestructionCertificate()
+		return array_values($grouped);
+	}//end groupDestroyedBySchema()
 
 	/**
 	 * Extract selectielijst bron references from a destruction list.

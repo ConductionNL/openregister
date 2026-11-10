@@ -36,6 +36,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Db\SchemaMapper
+ * @uses   \OCA\OpenRegister\Db\SchemaMapper\SchemaLookup
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
  * @uses   \OCA\OpenRegister\Db\MultiTenancyTrait

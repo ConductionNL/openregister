@@ -36,7 +36,6 @@ class AgentsControllerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->controller = AgentsControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->agentMapper,
 			$this->organisationService,
@@ -217,7 +216,6 @@ class AgentsControllerTest extends TestCase {
 
 	public function testDestroyNotAuthenticated(): void {
 		$controller = AgentsControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->agentMapper,
 			$this->organisationService,

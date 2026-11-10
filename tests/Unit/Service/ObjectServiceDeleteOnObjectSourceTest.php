@@ -73,6 +73,7 @@ use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
+use OCA\OpenRegister\Service\ObjectSource\OrganisationActingUser;
 use OCA\OpenRegister\Service\ObjectSource\OrganisationObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -135,9 +136,8 @@ class ObjectServiceDeleteOnObjectSourceTest extends TestCase {
 			objectEntityMapper: $this->objectMapper,
 			cacheHandler: $this->createMock(CacheHandler::class),
 			userSession: $this->createMock(IUserSession::class),
-			auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+			audit: new \OCA\OpenRegister\Service\Object\AuditRecording(trail: $this->createMock(AuditTrailMapper::class), logger: $this->createMock(LoggerInterface::class)),
 			settingsService: $this->createMock(SettingsService::class),
-			logger: $this->createMock(LoggerInterface::class),
 			integrityService: $this->createMock(ReferentialIntegrityService::class),
 			db: $this->createMock(IDBConnection::class),
 			organisationMapper: $this->organisationMapper,
@@ -289,8 +289,7 @@ class ObjectServiceDeleteOnObjectSourceTest extends TestCase {
 		$this->registry->addProvider(
 			new OrganisationObjectSourceProvider(
 				$this->organisationMapper,
-				$this->createMock(IUserSession::class),
-				$this->createMock(IGroupManager::class),
+				new OrganisationActingUser(userSession: $this->createMock(IUserSession::class), groupManager: $this->createMock(IGroupManager::class)),
 				$this->createMock(LoggerInterface::class),
 				$this->createMock(OrganisationService::class)
 			)

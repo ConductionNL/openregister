@@ -31,6 +31,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\CorrectionRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\CorrectionService;
+use OCA\OpenRegister\Service\Object\CorrectionTarget;
+use OCA\OpenRegister\Service\Object\CorrectionTargets;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -85,10 +88,12 @@ final class CorrectionsControllerTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		return new CorrectionsController(
-			appName: 'openregister',
 			request: $this->request,
-			corrections: $this->corrections,
-			userSession: $session
+			services: new \OCA\OpenRegister\Controller\Support\CorrectionsControllerServices(
+				corrections: $this->corrections,
+				targets: new CorrectionTargets(),
+				userSession: $session
+			)
 		);
 	}//end controller()
 
@@ -213,4 +218,72 @@ final class CorrectionsControllerTest extends TestCase {
 
 		$this->assertSame(400, $response->getStatus());
 	}//end testAMissingValuesBodyIsRefusedWithFourHundred()
+
+	/**
+	 * The route's register, schema and id reach the service as one target, with the body's values and reason.
+	 *
+	 * @return void
+	 */
+	public function testTheRouteReachesTheServiceAsItsTarget(): void {
+		$this->body(values: ['bsn' => '123456782'], reason: 'Overgetypt');
+
+		$entity = new ObjectEntity();
+		$entity->setUuid(self::OBJ);
+
+		$this->corrections->expects($this->once())
+			->method('correct')
+			->with(
+				$this->callback(
+					fn (CorrectionTarget $target): bool => [$target->register, $target->schema, $target->id] === [self::REGISTER, self::SCHEMA, self::OBJ]
+				),
+				['bsn' => '123456782'],
+				'Overgetypt'
+			)
+			->willReturn(['object' => $entity, 'audit' => null]);
+
+		$response = $this->controller()->correct(register: self::REGISTER, schema: self::SCHEMA, id: self::OBJ);
+
+		$this->assertSame(200, $response->getStatus());
+	}//end testTheRouteReachesTheServiceAsItsTarget()
+	/**
+	 * A record that does not exist answers 404 with a fixed message.
+	 *
+	 * @return void
+	 */
+	public function testAMissingRecordIsFourHundredAndFour(): void {
+		$this->body(values: ['bsn' => '123456782'], reason: 'Overgetypt');
+		$this->corrections->method('correct')->willThrowException(new DoesNotExistException('row 7 is gone'));
+
+		$response = $this->controller()->correct(register: self::REGISTER, schema: self::SCHEMA, id: self::OBJ);
+
+		$this->assertSame([404, ['error' => 'Object not found']], [$response->getStatus(), $response->getData()]);
+	}//end testAMissingRecordIsFourHundredAndFour()
+
+	/**
+	 * An unexpected failure answers 500 and never echoes its detail.
+	 *
+	 * @return void
+	 */
+	public function testAnUnexpectedFailureIsAnOpaqueFiveHundred(): void {
+		$this->body(values: ['bsn' => '123456782'], reason: 'Overgetypt');
+		$this->corrections->method('correct')->willThrowException(new \TypeError('internal detail /var/www'));
+
+		$response = $this->controller()->correct(register: self::REGISTER, schema: self::SCHEMA, id: self::OBJ);
+
+		$this->assertSame([500, ['error' => 'Internal server error']], [$response->getStatus(), $response->getData()]);
+	}//end testAnUnexpectedFailureIsAnOpaqueFiveHundred()
+
+	/**
+	 * A refused correction answers 400 with the refusal's own message.
+	 *
+	 * @return void
+	 */
+	public function testARefusedCorrectionCarriesItsMessage(): void {
+		$this->body(values: ['bsn' => '123456782'], reason: 'Overgetypt');
+		$this->corrections->method('correct')->willThrowException(new CorrectionRefusedException('bsn is not correctable'));
+
+		$response = $this->controller()->correct(register: self::REGISTER, schema: self::SCHEMA, id: self::OBJ);
+
+		$this->assertSame([400, ['error' => 'bsn is not correctable']], [$response->getStatus(), $response->getData()]);
+	}//end testARefusedCorrectionCarriesItsMessage()
 }//end class

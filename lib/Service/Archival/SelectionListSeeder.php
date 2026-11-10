@@ -21,12 +21,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Object\SaveObjectInterface;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Db\RegisterSchema;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -66,21 +64,20 @@ class SelectionListSeeder {
 	private const WRITTEN_FIELDS = ['categorie', 'archiefnominatie', 'bewaartermijn', 'omschrijving', 'organisatie', 'bron'];
 
 	/**
+	 * A seed result before anything was written.
+	 *
+	 * @var array{created: int, updated: int, unchanged: int, kept: int, failed: array<int, array{category: string, reason: string}>}
+	 */
+	private const NOTHING_SEEDED = ['created' => 0, 'updated' => 0, 'unchanged' => 0, 'kept' => 0, 'failed' => []];
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectRetentionHandler $settingsHandler Names the selectielijst register and schema.
-	 * @param RegisterMapperInterface         $registerMapper  Resolves the register.
-	 * @param SchemaMapperInterface           $schemaMapper    Resolves the schema.
-	 * @param MagicMapperInterface            $objectMapper    Reads the rows already stored.
-	 * @param SaveObjectInterface             $saveObject      Writes a row.
-	 * @param LoggerInterface        $logger          Reports a row that could not be stored.
+	 * @param SelectielijstStorage $storage Names the selectielijst register and schema, reads its rows and writes a row.
+	 * @param LoggerInterface      $logger  Reports a row that could not be stored.
 	 */
 	public function __construct(
-		private readonly ObjectRetentionHandler $settingsHandler,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapperInterface $objectMapper,
-		private readonly SaveObjectInterface $saveObject,
+		private readonly SelectielijstStorage $storage,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -99,83 +96,141 @@ class SelectionListSeeder {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function seed(array $entries, ?string $appId = null): array {
-		$result = ['created' => 0, 'updated' => 0, 'unchanged' => 0, 'kept' => 0, 'failed' => []];
-
 		$target = $this->target();
 		if ($target === null) {
+			$result = self::NOTHING_SEEDED;
 			$result['failed'] = $this->unconfigured(entries: $entries);
 			return $result;
 		}
 
-		[$register, $schema] = $target;
-		$stored = $this->storedRows(register: $register, schema: $schema);
-
-		foreach ($entries as $key => $entry) {
-			$row = $this->rowFor(entry: $this->withKeyAsCategory(entry: $entry, key: $key), appId: $appId);
-			if (is_string($row) === true) {
-				$result['failed'][] = ['category' => $this->categoryOf(entry: $entry), 'reason' => $row];
-				continue;
-			}
-
-			$key = $this->keyOf(row: $row);
-			$existing = ($stored[$key] ?? null);
-			$outcome = $this->write(register: $register, schema: $schema, row: $row, existing: $existing);
-			if ($outcome === 'failed') {
-				$result['failed'][] = ['category' => $row['categorie'], 'reason' => 'The row could not be stored; see the log.'];
-				continue;
-			}
-
-			$result[$outcome]++;
-			if ($outcome === 'created') {
-				$stored[$key] = new ObjectEntity();
-				$stored[$key]->setObject($row);
-			}
-		}//end foreach
-
-		return $result;
+		return $this->seedRows(run: new SeedRun(table: $target, appId: $appId), entries: $entries);
 	}//end seed()
 
 	/**
-	 * Store one row, or leave it: created, updated, unchanged, kept or failed.
+	 * Write every entry into the configured register, tallying each outcome.
 	 *
-	 * @param mixed                $register The selectielijst register.
-	 * @param mixed                $schema   The selectielijst schema.
-	 * @param array<string, mixed> $row      The row to write.
-	 * @param ObjectEntity|null    $existing The stored row with the same key.
+	 * @param SeedRun                  $run     The register and schema, the app shipping the entries, and the tally.
+	 * @param array<int|string, mixed> $entries The shipped entries.
 	 *
-	 * @return string The outcome.
+	 * @return array{created: int, updated: int, unchanged: int, kept: int, failed: array<int, array{category: string, reason: string}>}
 	 */
-	private function write(mixed $register, mixed $schema, array $row, ?ObjectEntity $existing): string {
-		$uuid = null;
-		$data = [];
-		if ($existing !== null) {
-			$data = ($existing->getObject() ?? []);
-			if (($data['bron'] ?? null) !== $row['bron']) {
-				return 'kept';
+	private function seedRows(SeedRun $run, array $entries): array {
+		$run->stored = $this->storedRows(table: $run->table);
+		foreach ($entries as $key => $entry) {
+			$row = $this->rowFor(entry: $this->withKeyAsCategory(entry: $entry, key: $key), appId: $run->appId);
+			if (is_string($row) === true) {
+				$run->result['failed'][] = ['category' => $this->categoryOf(entry: $entry), 'reason' => $row];
+				continue;
 			}
 
-			if ($this->sameValues(stored: $data, row: $row) === true) {
-				return 'unchanged';
-			}
-
-			$uuid = $existing->getUuid();
+			$seeded = new SeededRow(row: $row, outcome: $this->write(run: $run, row: $row));
+			$this->remember(run: $run, seeded: $seeded);
+			$this->tally(run: $run, seeded: $seeded);
 		}
 
+		return $run->result;
+	}//end seedRows()
+
+	/**
+	 * Remember a row this run created, so a later duplicate entry is compared with it rather than created twice.
+	 *
+	 * @param SeedRun   $run    The run, whose stored rows are extended.
+	 * @param SeededRow $seeded The row and its outcome.
+	 *
+	 * @return void
+	 */
+	private function remember(SeedRun $run, SeededRow $seeded): void {
+		if ($seeded->outcome === 'created') {
+			$created = new ObjectEntity();
+			$created->setObject($seeded->row);
+			$run->stored[$this->keyOf(row: $seeded->row)] = $created;
+		}
+	}//end remember()
+
+	/**
+	 * Count one outcome; a failed write is listed with a pointer to the log.
+	 *
+	 * @param SeedRun   $run    The run, whose tally is updated.
+	 * @param SeededRow $seeded The row and its outcome.
+	 *
+	 * @return void
+	 */
+	private function tally(SeedRun $run, SeededRow $seeded): void {
+		if ($seeded->outcome === 'failed') {
+			$run->result['failed'][] = ['category' => $seeded->row['categorie'], 'reason' => 'The row could not be stored; see the log.'];
+			return;
+		}
+
+		$run->result[$seeded->outcome]++;
+	}//end tally()
+
+	/**
+	 * Create a new row, or update the stored one when this app owns it and it changed.
+	 *
+	 * @param SeedRun              $run The register and schema, and the stored rows.
+	 * @param array<string, mixed> $row The row to write.
+	 *
+	 * @return string created, updated, unchanged, kept or failed.
+	 */
+	private function write(SeedRun $run, array $row): string {
+		$existing = ($run->stored[$this->keyOf(row: $row)] ?? null);
+		if ($existing === null) {
+			return $this->saveRow(table: $run->table, write: new RowWrite(data: $row, uuid: null));
+		}
+
+		$stored = ($existing->getObject() ?? []);
+		$unwritten = $this->unwritten(stored: $stored, row: $row);
+		if ($unwritten !== null) {
+			return $unwritten;
+		}
+
+		return $this->saveRow(table: $run->table, write: new RowWrite(data: array_merge($stored, $row), uuid: $existing->getUuid()));
+	}//end write()
+
+	/**
+	 * Why a stored row is left alone: another source wrote it, or it already holds these values.
+	 *
+	 * @param array<string, mixed> $stored The stored row.
+	 * @param array<string, mixed> $row    The row the entry becomes.
+	 *
+	 * @return string|null `kept`, `unchanged`, or null when the row is to be written.
+	 */
+	private function unwritten(array $stored, array $row): ?string {
+		if (($stored['bron'] ?? null) !== $row['bron']) {
+			return 'kept';
+		}
+
+		if ($this->sameValues(stored: $stored, row: $row) === true) {
+			return 'unchanged';
+		}
+
+		return null;
+	}//end unwritten()
+
+	/**
+	 * Store one row.
+	 *
+	 * @param RegisterSchema $table The selectielijst register and schema.
+	 * @param RowWrite       $write The row's data, and the uuid of the row it replaces.
+	 *
+	 * @return string created, updated or failed.
+	 */
+	private function saveRow(RegisterSchema $table, RowWrite $write): string {
 		try {
-			$this->saveObject->saveObject($register, $schema, array_merge($data, $row), $uuid);
+			$this->storage->writer->saveObject($table->register, $table->schema, $write->data, $write->uuid);
 		} catch (Throwable $e) {
 			$this->logger->warning(
-				'[SelectionListSeeder] Could not store category ' . $row['categorie'] . ': ' . $e->getMessage()
+				'[SelectionListSeeder] Could not store category ' . $write->data['categorie'] . ': ' . $e->getMessage()
 			);
 			return 'failed';
 		}
 
-		if ($uuid === null) {
+		if ($write->uuid === null) {
 			return 'created';
 		}
 
 		return 'updated';
-	}//end write()
+	}//end saveRow()
 
 	/**
 	 * The row an entry becomes, or the reason it cannot become one.
@@ -186,48 +241,124 @@ class SelectionListSeeder {
 	 * @return array<string, mixed>|string The row, or why the entry is refused.
 	 */
 	private function rowFor(mixed $entry, ?string $appId): array|string {
-		if (is_array($entry) === false) {
-			return 'An entry is an object with a category, an action and retentionYears.';
+		$refusal = $this->refusalOf(entry: $entry);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
-		$category = $this->categoryOf(entry: $entry);
-		if ($category === '') {
-			return 'An entry needs a category.';
+		return $this->rowOf(entry: $entry, appId: $appId);
+	}//end rowFor()
+
+	/**
+	 * Why an entry cannot become a row, or null when it can.
+	 *
+	 * @param mixed $entry The shipped entry.
+	 *
+	 * @return string|null The refusal.
+	 */
+	private function refusalOf(mixed $entry): ?string {
+		$shape = $this->shapeRefusal(entry: $entry);
+		if ($shape !== null) {
+			return $shape;
 		}
 
-		$action = trim((string)($entry['action'] ?? ''));
+		$action = $this->actionOf(entry: $entry);
 		if (in_array($action, Appraisal::ALL_ALIASES, true) === false) {
 			return 'The action must be one of: ' . implode(', ', Appraisal::ALL_ALIASES) . '.';
 		}
 
-		$period = $this->periodOf(years: ($entry['retentionYears'] ?? null));
-		if ($period === false
-			|| ($period === null && in_array($action, Appraisal::RETAIN_PERMANENTLY_ALIASES, true) === false)
-		) {
+		if ($this->periodRefused(entry: $entry, action: $action) === true) {
 			return 'retentionYears must be a whole number of 0 or more (it may be left out only when the record is kept permanently).';
 		}
 
-		$appSource = null;
-		if ($appId !== null) {
-			$appSource = 'app:' . $appId;
+		return null;
+	}//end refusalOf()
+
+	/**
+	 * Why an entry is not an object with a category, or null when it is.
+	 *
+	 * @param mixed $entry The shipped entry.
+	 *
+	 * @return string|null The refusal.
+	 */
+	private function shapeRefusal(mixed $entry): ?string {
+		if (is_array($entry) === false) {
+			return 'An entry is an object with a category, an action and retentionYears.';
 		}
 
+		if ($this->categoryOf(entry: $entry) === '') {
+			return 'An entry needs a category.';
+		}
+
+		return null;
+	}//end shapeRefusal()
+
+	/**
+	 * Whether the entry's retentionYears is unusable: not whole years, or missing for a record not kept permanently.
+	 *
+	 * @param array<string, mixed> $entry  The shipped entry.
+	 * @param string               $action Its action.
+	 *
+	 * @return bool True when the period refuses the entry.
+	 */
+	private function periodRefused(array $entry, string $action): bool {
+		$period = $this->periodOf(years: ($entry['retentionYears'] ?? null));
+
+		return $period === false
+			|| ($period === null && in_array($action, Appraisal::RETAIN_PERMANENTLY_ALIASES, true) === false);
+	}//end periodRefused()
+
+	/**
+	 * The row an entry that passed refusalOf() becomes.
+	 *
+	 * @param array<string, mixed> $entry The shipped entry.
+	 * @param string|null          $appId The app shipping it.
+	 *
+	 * @return array<string, mixed> The row.
+	 */
+	private function rowOf(array $entry, ?string $appId): array {
 		$row = [
-			'categorie' => $category,
-			'archiefnominatie' => $action,
-			'bewaartermijn' => $period,
-			'omschrijving' => $this->textOrNull(value: ($entry['description'] ?? null)),
-			'organisatie' => $this->textOrNull(value: ($entry['organisation'] ?? null)),
-			'bron' => ($this->textOrNull(value: ($entry['source'] ?? null)) ?? $appSource),
+			'categorie' => $this->categoryOf(entry: $entry),
+			'archiefnominatie' => $this->actionOf(entry: $entry),
+			'bewaartermijn' => $this->periodOf(years: ($entry['retentionYears'] ?? null)),
+			'omschrijving' => ArchivalText::fromScalar(value: ($entry['description'] ?? null)),
+			'organisatie' => ArchivalText::fromScalar(value: ($entry['organisation'] ?? null)),
+			'bron' => (ArchivalText::fromScalar(value: ($entry['source'] ?? null)) ?? $this->appSource(appId: $appId)),
 		];
 
-		$version = $this->textOrNull(value: ($entry['version'] ?? null));
+		$version = ArchivalText::fromScalar(value: ($entry['version'] ?? null));
 		if ($version !== null) {
 			$row[SelectielijstImportService::VERSION_KEY] = $version;
 		}
 
 		return $row;
-	}//end rowFor()
+	}//end rowOf()
+
+	/**
+	 * An entry's action, trimmed.
+	 *
+	 * @param array<string, mixed> $entry The shipped entry.
+	 *
+	 * @return string The action.
+	 */
+	private function actionOf(array $entry): string {
+		return trim((string)($entry['action'] ?? ''));
+	}//end actionOf()
+
+	/**
+	 * The source a row an app ships is recorded under, when no source is given.
+	 *
+	 * @param string|null $appId The app shipping it.
+	 *
+	 * @return string|null `app:<id>`, or null when no app is named.
+	 */
+	private function appSource(?string $appId): ?string {
+		if ($appId === null) {
+			return null;
+		}
+
+		return 'app:' . $appId;
+	}//end appSource()
 
 	/**
 	 * Every entry refused because there is no selectielijst register to write to.
@@ -310,30 +441,39 @@ class SelectionListSeeder {
 	 * recognise becomes `1 = 0`, and a miss would re-create every row on every
 	 * import.
 	 *
-	 * @param mixed $register The selectielijst register.
-	 * @param mixed $schema   The selectielijst schema.
+	 * @param RegisterSchema $table The selectielijst register and schema.
 	 *
 	 * @return array<string, ObjectEntity> The rows.
 	 */
-	private function storedRows(mixed $register, mixed $schema): array {
+	private function storedRows(RegisterSchema $table): array {
 		try {
-			$objects = $this->objectMapper->findAll(limit: self::MAX_ROWS, register: $register, schema: $schema);
+			$request = new MagicListRequest(table: $table, query: new ListQuery(limit: self::MAX_ROWS));
+			$objects = $this->storage->catalog->tables()->findAllListed(request: $request);
 		} catch (Throwable $e) {
 			$this->logger->warning('[SelectionListSeeder] Could not read the selectielijst: ' . $e->getMessage());
 			return [];
 		}
 
+		return $this->keyedRows(objects: $objects);
+	}//end storedRows()
+
+	/**
+	 * The stored objects that are rows, keyed on category, organisation and version.
+	 *
+	 * @param iterable<mixed> $objects What the mapper returned.
+	 *
+	 * @return array<string, ObjectEntity> The rows.
+	 */
+	private function keyedRows(iterable $objects): array {
 		$rows = [];
 		foreach ($objects as $object) {
-			if (($object instanceof ObjectEntity) === false || is_array($object->getObject()) === false) {
-				continue;
+			if (($object instanceof ObjectEntity) === true && is_array($object->getObject()) === true) {
+				$rows[$this->keyOf(row: $object->getObject())] = $object;
 			}
-
-			$rows[$this->keyOf(row: $object->getObject())] = $object;
 		}
 
 		return $rows;
-	}//end storedRows()
+	}//end keyedRows()
 
 	/**
 	 * The match key of a row.
@@ -369,32 +509,12 @@ class SelectionListSeeder {
 	}//end categoryOf()
 
 	/**
-	 * A trimmed string, or null when blank or not text.
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return string|null The text.
-	 */
-	private function textOrNull(mixed $value): ?string {
-		if (is_scalar($value) === false) {
-			return null;
-		}
-
-		$text = trim((string)$value);
-		if ($text === '') {
-			return null;
-		}
-
-		return $text;
-	}//end textOrNull()
-
-	/**
 	 * The selectielijst register and schema, or null when none is configured.
 	 *
-	 * @return array{0: mixed, 1: mixed}|null The pair.
+	 * @return RegisterSchema|null The register and schema, or null when none is configured or either is gone.
 	 */
-	private function target(): ?array {
-		$settings = $this->settingsHandler->getArchivalSettingsOnly();
+	private function target(): ?RegisterSchema {
+		$settings = $this->storage->settings->getArchivalSettingsOnly();
 		$registerId = ($settings['selectielijstRegister'] ?? null);
 		$schemaId = ($settings['selectielijstSchema'] ?? null);
 		if (empty($registerId) === true || empty($schemaId) === true) {
@@ -402,7 +522,8 @@ class SelectionListSeeder {
 		}
 
 		try {
-			return [$this->registerMapper->find((int)$registerId), $this->schemaMapper->find((int)$schemaId)];
+			$catalog = $this->storage->catalog;
+			return new RegisterSchema(register: $catalog->registers()->find((int)$registerId), schema: $catalog->schemas()->find((int)$schemaId));
 		} catch (Throwable $e) {
 			$this->logger->warning('[SelectionListSeeder] The selectielijst register or schema is gone: ' . $e->getMessage());
 			return null;

@@ -56,6 +56,9 @@ class TaskObjectAdapter extends ObjectEntity {
 	 *                                    may address (previousAssignee, the
 	 *                                    write-back actor and reason).
 	 *
+	 * Entity::fromRow() constructs bare; nothing hydrates an adapter from a
+	 * row, so a bare adapter carries an empty payload.
+	 *
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-task-lifecycle-delivery-is-automatic-and-declarative
 	 */
 	public function __construct(?Task $task = null, array $row = [], array $extra = []) {
@@ -63,31 +66,141 @@ class TaskObjectAdapter extends ObjectEntity {
 
 		$this->schema = TaskNotificationRules::SLUG;
 		$this->register = null;
-		if ($task === null) {
-			// Entity::fromRow() constructs bare; nothing hydrates an adapter
-			// from a row, so a bare adapter carries an empty payload.
-			return;
+		if ($task !== null) {
+			$this->present(task: $task, options: new TaskPayloadOptions(row: $row, extra: $extra));
 		}
+	}//end __construct()
 
+	/**
+	 * Take the task's uuid, title and payload.
+	 *
+	 * @param Task               $task    The task row.
+	 * @param TaskPayloadOptions $options The inbox row and the event-scoped fields.
+	 *
+	 * @return void
+	 */
+	private function present(Task $task, TaskPayloadOptions $options): void {
 		$this->uuid = (string)$task->getUuid();
 
-		$payload = self::payload(task: $task, row: $row, extra: $extra);
+		$payload = self::payload(task: $task, options: $options);
 		$this->name = (string)$payload['title'];
 		$this->object = $payload;
-	}//end __construct()
+	}//end present()
 
 	/**
 	 * The flat payload a rule's recipients, filters and templates read.
 	 *
-	 * @param Task $task The task row.
-	 * @param array<string, mixed> $row The inbox row (display title, subject, derived fields).
-	 * @param array<string, mixed> $extra Event-scoped fields.
+	 * @param Task                    $task    The task row.
+	 * @param TaskPayloadOptions|null $options The inbox row (display title, subject, derived fields)
+	 *                                         and the event-scoped fields; null for neither.
 	 *
 	 * @return array<string, mixed> The payload, keyed by TaskNotificationRules::payloadProperties().
 	 *
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-task-lifecycle-delivery-is-automatic-and-declarative
 	 */
-	public static function payload(Task $task, array $row = [], array $extra = []): array {
+	public static function payload(Task $task, ?TaskPayloadOptions $options = null): array {
+		$row = ($options->row ?? []);
+		$payload = array_merge(
+			self::stateFields(task: $task, row: $row),
+			self::peopleFields(task: $task),
+			self::timeFields(task: $task, row: $row),
+			self::originFields(task: $task, row: $row)
+		);
+
+		return self::withExtra(payload: $payload, extra: ($options->extra ?? []));
+	}//end payload()
+
+	/**
+	 * The task's identity, title and lifecycle state.
+	 *
+	 * @param Task                 $task The task row.
+	 * @param array<string, mixed> $row  The inbox row.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function stateFields(Task $task, array $row): array {
+		return [
+			'taskUuid' => (string)$task->getUuid(),
+			'title' => self::title(task: $task, row: $row),
+			'description' => $task->getDescription(),
+			'state' => $task->getState(),
+			'isTerminal' => (bool)$task->getIsTerminal(),
+			'lastAction' => $task->getLastAction(),
+			'outcome' => $task->getOutcome(),
+			'priority' => $task->getPriority(),
+		];
+	}//end stateFields()
+
+	/**
+	 * Who performs, may claim, asked for and watches the task.
+	 *
+	 * @param Task $task The task row.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function peopleFields(Task $task): array {
+		return [
+			'performerType' => $task->getPerformerType(),
+			'assignee' => $task->getAssignee(),
+			'previousAssignee' => null,
+			'candidateUsers' => ($task->getCandidateUsers() ?? []),
+			'candidateGroups' => ($task->getCandidateGroups() ?? []),
+			'candidateRole' => $task->getCandidateRole(),
+			'requester' => $task->getRequester(),
+			'watchers' => ($task->getWatchers() ?? []),
+		];
+	}//end peopleFields()
+
+	/**
+	 * The task's dates, and the derived temporal fields from the inbox row.
+	 *
+	 * @param Task                 $task The task row.
+	 * @param array<string, mixed> $row  The inbox row.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function timeFields(Task $task, array $row): array {
+		return [
+			'startAt' => $task->getStartAt()?->format('c'),
+			'dueAt' => $task->getDueAt()?->format('c'),
+			'expiresAt' => $task->getExpiresAt()?->format('c'),
+			'overdue' => (bool)($row['overdue'] ?? false),
+			'daysUntilDue' => ($row['daysUntilDue'] ?? null),
+			'daysOverdue' => ($row['daysOverdue'] ?? null),
+		];
+	}//end timeFields()
+
+	/**
+	 * Where the task comes from: its object, app, run and completion.
+	 *
+	 * @param Task                 $task The task row.
+	 * @param array<string, mixed> $row  The inbox row.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function originFields(Task $task, array $row): array {
+		return [
+			'objectUuid' => $task->getObjectUuid(),
+			'registerId' => $task->getRegisterId(),
+			'schemaId' => $task->getSchemaId(),
+			'subjectTitle' => self::subjectTitle(row: $row),
+			'appId' => $task->getAppId(),
+			'runUuid' => $task->getRunUuid(),
+			'completedBy' => $task->getCompletedBy(),
+			'writeBackActor' => null,
+			'writeBackReason' => null,
+		];
+	}//end originFields()
+
+	/**
+	 * The row's display title, else the task title, else the task uuid.
+	 *
+	 * @param Task                 $task The task row.
+	 * @param array<string, mixed> $row  The inbox row.
+	 *
+	 * @return string
+	 */
+	private static function title(Task $task, array $row): string {
 		$title = trim((string)($row['displayTitle'] ?? ''));
 		if ($title === '') {
 			$title = trim((string)$task->getTitle());
@@ -97,46 +210,34 @@ class TaskObjectAdapter extends ObjectEntity {
 			$title = (string)$task->getUuid();
 		}
 
+		return $title;
+	}//end title()
+
+	/**
+	 * The title of the row's subject, or null.
+	 *
+	 * @param array<string, mixed> $row The inbox row.
+	 *
+	 * @return mixed
+	 */
+	private static function subjectTitle(array $row): mixed {
 		$subject = ($row['subject'] ?? null);
-		$subjectTitle = null;
 		if (is_array($subject) === true) {
-			$subjectTitle = ($subject['title'] ?? null);
+			return ($subject['title'] ?? null);
 		}
 
-		$payload = [
-			'taskUuid' => (string)$task->getUuid(),
-			'title' => $title,
-			'description' => $task->getDescription(),
-			'state' => $task->getState(),
-			'isTerminal' => (bool)$task->getIsTerminal(),
-			'lastAction' => $task->getLastAction(),
-			'outcome' => $task->getOutcome(),
-			'priority' => $task->getPriority(),
-			'performerType' => $task->getPerformerType(),
-			'assignee' => $task->getAssignee(),
-			'previousAssignee' => null,
-			'candidateUsers' => ($task->getCandidateUsers() ?? []),
-			'candidateGroups' => ($task->getCandidateGroups() ?? []),
-			'candidateRole' => $task->getCandidateRole(),
-			'requester' => $task->getRequester(),
-			'watchers' => ($task->getWatchers() ?? []),
-			'startAt' => $task->getStartAt()?->format('c'),
-			'dueAt' => $task->getDueAt()?->format('c'),
-			'expiresAt' => $task->getExpiresAt()?->format('c'),
-			'overdue' => (bool)($row['overdue'] ?? false),
-			'daysUntilDue' => ($row['daysUntilDue'] ?? null),
-			'daysOverdue' => ($row['daysOverdue'] ?? null),
-			'objectUuid' => $task->getObjectUuid(),
-			'registerId' => $task->getRegisterId(),
-			'schemaId' => $task->getSchemaId(),
-			'subjectTitle' => $subjectTitle,
-			'appId' => $task->getAppId(),
-			'runUuid' => $task->getRunUuid(),
-			'completedBy' => $task->getCompletedBy(),
-			'writeBackActor' => null,
-			'writeBackReason' => null,
-		];
+		return null;
+	}//end subjectTitle()
 
+	/**
+	 * Overlay the event-scoped fields; only keys the payload declares are kept.
+	 *
+	 * @param array<string, mixed> $payload The payload.
+	 * @param array<mixed>         $extra   Event-scoped fields.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function withExtra(array $payload, array $extra): array {
 		foreach ($extra as $key => $value) {
 			if (is_string($key) === true && array_key_exists($key, $payload) === true) {
 				$payload[$key] = $value;
@@ -144,5 +245,5 @@ class TaskObjectAdapter extends ObjectEntity {
 		}
 
 		return $payload;
-	}//end payload()
+	}//end withExtra()
 }//end class

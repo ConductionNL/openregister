@@ -50,7 +50,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\Listener;
 
 use DateTime;
-use OCA\OpenRegister\ContextChat\ContentProvider;
+use OCA\OpenRegister\ContextChat\ContentProviderInterface;
+use OCA\OpenRegister\ContextChat\Listener\ContextChatSubmissionListenerInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -58,7 +59,7 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\ContextChat\ContentItem;
 use OCP\ContextChat\IContentManager;
 use OCP\EventDispatcher\Event;
@@ -73,7 +74,7 @@ use Throwable;
  *
  * @spec openspec/specs/context-chat-provider/spec.md
  */
-class ContextChatSubmissionListener implements IEventListener {
+class ContextChatSubmissionListener implements IEventListener, ContextChatSubmissionListenerInterface {
 
 	/**
 	 * Request-scoped cache of "seen" (logged in at least once) user ids,
@@ -83,6 +84,34 @@ class ContextChatSubmissionListener implements IEventListener {
 	 * @var string[]|null
 	 */
 	private ?array $seenUserIdsCache = null;
+
+	/**
+	 * Container, for the lazy IContentManager resolve.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * Schema lookup mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * User manager, for the broadcast-audience fallback.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * PSR logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
 
 	/**
 	 * Wire collaborators.
@@ -108,23 +137,21 @@ class ContextChatSubmissionListener implements IEventListener {
 	 * Reproduced under a probe that maps OCP\ContextChat\* to nothing, exactly
 	 * as those servers do; see the fleet note in ContextChatReindexCommand.
 	 *
-	 * @param ContainerInterface $container Container, for the lazy IContentManager resolve.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param PermissionHandler $permissionHandler RBAC evaluator, used for the publication predicate + audience.
-	 * @param IUserManager $userManager User manager, for the broadcast-audience fallback.
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param ContextChatSubmissionServices $services          Container, schema lookup, user manager and logger.
+	 * @param PermissionHandlerInterface    $permissionHandler RBAC evaluator, used for the publication predicate + audience.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/context-chat-provider/spec.md
 	 */
 	public function __construct(
-		private readonly ContainerInterface $container,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly PermissionHandler $permissionHandler,
-		private readonly IUserManager $userManager,
-		private readonly LoggerInterface $logger,
+		ContextChatSubmissionServices $services,
+		private readonly PermissionHandlerInterface $permissionHandler,
 	) {
+		$this->container = $services->container;
+		$this->schemaMapper = $services->schemaMapper;
+		$this->userManager = $services->userManager;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
@@ -224,7 +251,10 @@ class ContextChatSubmissionListener implements IEventListener {
 			return false;
 		}
 
-		$this->submitContentItem(object: $object, schema: $schema, audience: $audience);
+		$this->submitContentItem(
+			candidate: new ContextChatCandidate(object: $object, schema: $schema),
+			audience: $audience
+		);
 		return true;
 	}//end submitIfEligible()
 
@@ -360,15 +390,15 @@ class ContextChatSubmissionListener implements IEventListener {
 	/**
 	 * Build and submit a `ContentItem` for an object.
 	 *
-	 * @param ObjectEntity $object The object to submit.
-	 * @param Schema $schema The object's schema.
-	 * @param string[] $audience Non-empty list of user ids granted access.
+	 * @param ContextChatCandidate $candidate The object to submit and its schema.
+	 * @param string[]             $audience  Non-empty list of user ids granted access.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/context-chat-provider/spec.md#requirement-only-opted-in-published-objects-are-submitted-to-context-chat
 	 */
-	private function submitContentItem(ObjectEntity $object, Schema $schema, array $audience): void {
+	private function submitContentItem(ContextChatCandidate $candidate, array $audience): void {
+		$object = $candidate->object;
 		$uuid = $object->getUuid();
 		if ($uuid === null || $uuid === '') {
 			return;
@@ -378,7 +408,7 @@ class ContextChatSubmissionListener implements IEventListener {
 
 		// Resolve BEFORE touching ContentItem or ContentProvider below: both
 		// are unloadable on NC < 32 (ContentItem is OCP\ContextChat\*, and
-		// reading ContentProvider::PROVIDER_ID loads a class whose header
+		// reading ContentProviderInterface::PROVIDER_ID loads a class whose header
 		// implements the missing IContentProvider).
 		$contentManager = $this->contentManager();
 		if ($contentManager === null) {
@@ -387,16 +417,16 @@ class ContextChatSubmissionListener implements IEventListener {
 
 		$item = new ContentItem(
 			itemId: $uuid,
-			providerId: ContentProvider::PROVIDER_ID,
+			providerId: ContentProviderInterface::PROVIDER_ID,
 			title: $this->resolveTitle(object: $object),
-			content: $this->renderContent(object: $object, schema: $schema),
+			content: $this->renderContent(candidate: $candidate),
 			documentType: 'text/plain',
 			lastModified: $lastModified,
 			users: $audience
 		);
 
 		$contentManager->submitContent(
-			ContentProvider::APP_ID,
+			ContentProviderInterface::APP_ID,
 			[$item]
 		);
 	}//end submitContentItem()
@@ -424,8 +454,8 @@ class ContextChatSubmissionListener implements IEventListener {
 		}
 
 		$contentManager->deleteContent(
-			ContentProvider::APP_ID,
-			ContentProvider::PROVIDER_ID,
+			ContentProviderInterface::APP_ID,
+			ContentProviderInterface::PROVIDER_ID,
 			[$uuid]
 		);
 	}//end removeContentItem()
@@ -459,16 +489,15 @@ class ContextChatSubmissionListener implements IEventListener {
 	 * `content`. Richer per-field control is deferred (see design.md Open
 	 * Questions).
 	 *
-	 * @param ObjectEntity $object The object.
-	 * @param Schema $schema The object's schema (for the writeOnly property allow-list).
+	 * @param ContextChatCandidate $candidate The object and its schema (for the writeOnly property allow-list).
 	 *
 	 * @return string The rendered content.
 	 *
 	 * @spec openspec/specs/context-chat-provider/spec.md
 	 */
-	private function renderContent(ObjectEntity $object, Schema $schema): string {
-		$data = ($object->getObject() ?? []);
-		$writeOnly = $schema->getWriteOnlyProperties();
+	private function renderContent(ContextChatCandidate $candidate): string {
+		$data = ($candidate->object->getObject() ?? []);
+		$writeOnly = $candidate->schema->getWriteOnlyProperties();
 		$lines = [];
 
 		foreach ($data as $key => $value) {

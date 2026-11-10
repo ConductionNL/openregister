@@ -22,10 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Export\ExportGate;
+use OCA\OpenRegister\Service\Export\ExportGateInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Relation\ObjectRelationService;
-use OCA\OpenRegister\Service\Relation\RelationGraphService;
+use OCA\OpenRegister\Service\Relation\ObjectRelationServiceInterface;
+use OCA\OpenRegister\Service\Relation\RelationGraphServiceInterface;
 
 /**
  * The domain services of the object relations API.
@@ -36,18 +36,18 @@ final class ObjectRelationsGraph {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ObjectRelationService $relations     The relation row service.
-	 * @param RelationGraphService  $graphs        The bounded graph walk.
-	 * @param ObjectOperationsInterface         $objectService Reads and writes objects, with RBAC.
-	 * @param ExportGate            $exportGate    The export verb, checked before the graph leaves.
+	 * @param ObjectRelationServiceInterface $relations     The relation row service.
+	 * @param RelationGraphServiceInterface  $graphs        The bounded graph walk.
+	 * @param ObjectOperationsInterface      $objectService Reads and writes objects, with RBAC.
+	 * @param ExportGateInterface                     $exportGate    The export verb, checked before the graph leaves.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function __construct(
-		public readonly ObjectRelationService $relations,
-		public readonly RelationGraphService $graphs,
+		public readonly ObjectRelationServiceInterface $relations,
+		public readonly RelationGraphServiceInterface $graphs,
 		public readonly ObjectOperationsInterface $objectService,
-		public readonly ExportGate $exportGate,
+		public readonly ExportGateInterface $exportGate,
 	) {
 	}//end __construct()
 }//end class

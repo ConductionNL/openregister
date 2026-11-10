@@ -47,28 +47,10 @@ use Throwable;
  *   2. `string` trimmed and empty   → `null`
  *   3. `DateTimeInterface` instance → `DateTimeImmutable` of the same instant
  *   4. parse failure / unsupported type → `null` (with debug log)
+ *
+ * DATABASE_FORMAT and DATABASE_TIMEZONE are declared on the interface.
  */
-class DateTimeNormalizer {
-
-	/**
-	 * MySQL/MariaDB datetime format.
-	 *
-	 * @var string
-	 */
-	public const DATABASE_FORMAT = 'Y-m-d H:i:s';
-
-	/**
-	 * Timezone the offset-less database datetime columns are expressed in.
-	 *
-	 * A `date`/`date-time` schema property is backed by a DATETIME column
-	 * (`timestamp without time zone` on PostgreSQL), which stores a clock time
-	 * and no offset. Both directions of the round-trip therefore have to agree
-	 * on one timezone for that clock time, and that timezone is UTC — never the
-	 * server's `date.timezone`, which differs per deployment.
-	 *
-	 * @var string
-	 */
-	public const DATABASE_TIMEZONE = 'UTC';
+class DateTimeNormalizer implements DateTimeNormalizerInterface {
 
 	/**
 	 * Constructor.
@@ -98,6 +80,21 @@ class DateTimeNormalizer {
 	 * @spec openspec/specs/datetime-input-handling/spec.md
 	 */
 	public function normalize(mixed $value, ?DateTimeZone $assumeTimezone = null): ?DateTimeImmutable {
+		if (is_string($value) === true) {
+			return $this->parseString(value: trim($value), assumeTimezone: $assumeTimezone);
+		}
+
+		return $this->fromNonString(value: $value);
+	}//end normalize()
+
+	/**
+	 * Normalise a value that is not a string: null stays null, a DateTime becomes immutable, anything else is rejected.
+	 *
+	 * @param mixed $value Any non-string value.
+	 *
+	 * @return DateTimeImmutable|null
+	 */
+	private function fromNonString(mixed $value): ?DateTimeImmutable {
 		if ($value === null) {
 			return null;
 		}
@@ -110,16 +107,23 @@ class DateTimeNormalizer {
 			return DateTimeImmutable::createFromInterface($value);
 		}
 
-		if (is_string($value) === false) {
-			$this->logger->debug(
-				message: '[DateTimeNormalizer] Non-string, non-DateTime input rejected',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'type' => get_debug_type($value)]
-			);
-			return null;
-		}
+		$this->logger->debug(
+			message: '[DateTimeNormalizer] Non-string, non-DateTime input rejected',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'type' => get_debug_type($value)]
+		);
+		return null;
+	}//end fromNonString()
 
-		$trimmed = trim($value);
-		if ($trimmed === '') {
+	/**
+	 * Parse a trimmed datetime string; '' and unparseable strings are null (the latter logged).
+	 *
+	 * @param string            $value          The trimmed string.
+	 * @param DateTimeZone|null $assumeTimezone Timezone for strings without one.
+	 *
+	 * @return DateTimeImmutable|null
+	 */
+	private function parseString(string $value, ?DateTimeZone $assumeTimezone): ?DateTimeImmutable {
+		if ($value === '') {
 			return null;
 		}
 
@@ -127,20 +131,20 @@ class DateTimeNormalizer {
 			// `DateTimeImmutable` applies the second argument ONLY when the string
 			// itself carries no offset or timezone name, which is exactly the
 			// "naive database column value" case the callers need it for.
-			return new DateTimeImmutable($trimmed, $assumeTimezone);
+			return new DateTimeImmutable($value, $assumeTimezone);
 		} catch (Throwable $e) {
 			$this->logger->debug(
 				message: '[DateTimeNormalizer] Unparseable datetime string',
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'value' => $trimmed,
+					'value' => $value,
 					'error' => $e->getMessage(),
 				]
 			);
 			return null;
 		}
-	}//end normalize()
+	}//end parseString()
 
 	/**
 	 * Format user-supplied input as a database datetime string.

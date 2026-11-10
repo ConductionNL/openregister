@@ -71,6 +71,18 @@ class AuditTrailPayloadHelper {
 			return json_encode($value);
 		}
 
+		return $this->toScalarDatabaseValue(value: $value, type: $type);
+	}//end toDatabaseValue()
+
+	/**
+	 * A non-null, non-json value in its database form: datetimes formatted, booleans as int.
+	 *
+	 * @param mixed  $value The property value.
+	 * @param string $type  The declared entity field type.
+	 *
+	 * @return mixed The database-ready value.
+	 */
+	private function toScalarDatabaseValue(mixed $value, string $type): mixed {
 		if ($type === 'datetime' && $value instanceof \DateTimeInterface) {
 			return $value->format('Y-m-d H:i:s');
 		}
@@ -80,7 +92,7 @@ class AuditTrailPayloadHelper {
 		}
 
 		return $value;
-	}//end toDatabaseValue()
+	}//end toScalarDatabaseValue()
 
 	/**
 	 * Check if a string is a semantic version
@@ -119,9 +131,7 @@ class AuditTrailPayloadHelper {
 
 		$data = ($object->getObject() ?? []);
 		foreach ($changes as $field => $change) {
-			if ($field === '@self' || $field === 'id' || is_array($change) === false
-				|| array_key_exists('old', $change) === false
-			) {
+			if ($this->isRevertible(field: $field, change: $change) === false) {
 				continue;
 			}
 
@@ -135,6 +145,19 @@ class AuditTrailPayloadHelper {
 
 		$object->setObject($data);
 	}//end revertChanges()
+
+	/**
+	 * Whether one change-set entry is a data property with a recorded old value.
+	 *
+	 * @param int|string $field  The changed property.
+	 * @param mixed      $change The change entry.
+	 *
+	 * @return bool True when the entry can be reverted.
+	 */
+	private function isRevertible(int|string $field, mixed $change): bool {
+		return $field !== '@self' && $field !== 'id' && is_array($change) === true
+			&& array_key_exists('old', $change) === true;
+	}//end isRevertible()
 
 	/**
 	 * Bound what a single audit entry's `changed` payload may hold.
@@ -163,6 +186,17 @@ class AuditTrailPayloadHelper {
 			return null;
 		}
 
+		return $this->elideOversizedValues(changed: $changed);
+	}//end capChangedPayload()
+
+	/**
+	 * Replace each property value whose JSON is over the ceiling by a descriptor.
+	 *
+	 * @param array $changed The changed-properties map.
+	 *
+	 * @return array The map with oversized values replaced.
+	 */
+	private function elideOversizedValues(array $changed): array {
 		foreach ($changed as $property => $value) {
 			$encoded = json_encode($value);
 			if ($encoded === false || strlen($encoded) <= self::MAX_CHANGED_VALUE_BYTES) {
@@ -178,6 +212,6 @@ class AuditTrailPayloadHelper {
 		}
 
 		return $changed;
-	}//end capChangedPayload()
+	}//end elideOversizedValues()
 
 }//end class

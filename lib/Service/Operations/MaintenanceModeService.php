@@ -41,7 +41,7 @@ use OCP\IConfig;
  *
  * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
  */
-class MaintenanceModeService {
+class MaintenanceModeService implements MaintenanceModeServiceInterface, MaintenanceModeHoldInterface {
 
 	/**
 	 * The app the mode belongs to.
@@ -190,10 +190,7 @@ class MaintenanceModeService {
 		$this->config->setAppValue(self::APP_ID, self::SETTING_ACTOR, $actor);
 
 		$this->recorder->recordAct(
-			jobClass: self::ACT_ENTER,
-			actor: $actor,
-			details: ['message' => $this->message()],
-			message: 'Entered maintenance mode.'
+			act: new OperatorAct(jobClass: self::ACT_ENTER, actor: $actor, details: ['message' => $this->message()], message: 'Entered maintenance mode.')
 		);
 
 		return $this->state();
@@ -215,10 +212,7 @@ class MaintenanceModeService {
 		$this->config->deleteAppValue(self::APP_ID, self::SETTING_ACTOR);
 
 		$this->recorder->recordAct(
-			jobClass: self::ACT_LEAVE,
-			actor: $actor,
-			details: [],
-			message: 'Left maintenance mode.'
+			act: new OperatorAct(jobClass: self::ACT_LEAVE, actor: $actor, details: [], message: 'Left maintenance mode.')
 		);
 
 		return $this->state();

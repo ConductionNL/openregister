@@ -31,7 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
-use OCA\OpenRegister\Service\SchemaApplicationMigrator;
+use OCA\OpenRegister\Service\SchemaApplicationMigratorInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -45,11 +45,11 @@ class MigrateSchemaApplicationCommand extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaApplicationMigrator $migrator The migration service.
+	 * @param SchemaApplicationMigratorInterface $migrator The migration service.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function __construct(private readonly SchemaApplicationMigrator $migrator) {
+	public function __construct(private readonly SchemaApplicationMigratorInterface $migrator) {
 		parent::__construct();
 
 	}//end __construct()
@@ -110,13 +110,13 @@ class MigrateSchemaApplicationCommand extends Command {
 		}
 
 		if ((bool)$input->getOption('dry-run') === true) {
-			return $this->dryRun(output: $output, from: $from, to: $to, schemas: $schemas, registers: $registers);
+			return $this->dryRun(input: $input, output: $output);
 		}
 
 		$result = $this->migrator->migrate(from: $from, to: $to);
 
 		if ($result['ok'] === false) {
-			$this->reportRefusal(output: $output, collisions: $result['collisions'], wouldRefuse: false);
+			$output->writeln(self::refusalLines(lead: 'Refusing:', collisions: $result['collisions']));
 			return 1;
 		}
 
@@ -143,28 +143,31 @@ class MigrateSchemaApplicationCommand extends Command {
 	 * what it "would move" without checking whether the real run would refuse
 	 * is worse than no dry run, because it reads as a green light.
 	 *
-	 * @param OutputInterface $output    The console output.
-	 * @param string          $from      The current application id.
-	 * @param string          $to        The new application id.
-	 * @param int             $schemas   Schemas owned by `from`.
-	 * @param int             $registers Registers owned by `from`.
+	 * The counts it reports are read from the migrator here, so the dry run
+	 * reports exactly what it checked.
+	 *
+	 * @param InputInterface  $input  The console input naming the current and the new application id.
+	 * @param OutputInterface $output The console output.
 	 *
 	 * @return int 0 when the real run would proceed, 1 when it would refuse.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function dryRun(OutputInterface $output, string $from, string $to, int $schemas, int $registers): int {
+	private function dryRun(InputInterface $input, OutputInterface $output): int {
+		$from = (string)$input->getArgument('from');
+		$to   = (string)$input->getArgument('to');
+
 		$collisions = $this->migrator->collidingSlugs(from: $from, to: $to);
 		if (empty($collisions) === false) {
-			$this->reportRefusal(output: $output, collisions: $collisions, wouldRefuse: true);
+			$output->writeln(self::refusalLines(lead: 'Would refuse:', collisions: $collisions));
 			return 1;
 		}
 
 		$output->writeln(
 			sprintf(
 				'<comment>Dry run: would move %d schema(s) and %d register(s) from "%s" to "%s".</comment>',
-				$schemas,
-				$registers,
+				$this->migrator->countFor(table: 'openregister_schemas', application: $from),
+				$this->migrator->countFor(table: 'openregister_registers', application: $from),
 				$from,
 				$to
 			)
@@ -176,32 +179,26 @@ class MigrateSchemaApplicationCommand extends Command {
 
 
 	/**
-	 * Print the refusal and the slugs that caused it.
+	 * The refusal and the slugs that caused it.
 	 *
-	 * @param OutputInterface $output      The console output.
-	 * @param string[]        $collisions  The colliding slugs.
-	 * @param bool            $wouldRefuse True when reporting a dry run.
+	 * @param string   $lead       `Refusing:`, or `Would refuse:` on a dry run.
+	 * @param string[] $collisions The colliding slugs.
 	 *
-	 * @return void
+	 * @return array<int, string> The lines to print.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function reportRefusal(OutputInterface $output, array $collisions, bool $wouldRefuse): void {
-		$lead = 'Refusing:';
-		if ($wouldRefuse === true) {
-			$lead = 'Would refuse:';
-		}
-
-		$output->writeln('<error>' . $lead . ' these slugs already exist under the target application id.</error>');
+	private static function refusalLines(string $lead, array $collisions): array {
+		$lines = ['<error>' . $lead . ' these slugs already exist under the target application id.</error>'];
 		foreach ($collisions as $slug) {
-			$output->writeln('  - ' . $slug);
+			$lines[] = '  - ' . $slug;
 		}
 
-		$output->writeln(
-			'An import has already forked these schemas. Resolve the duplicates first (see openregister:schemas:dedup).'
-		);
+		$lines[] = 'An import has already forked these schemas. Resolve the duplicates first (see openregister:schemas:dedup).';
 
-	}//end reportRefusal()
+		return $lines;
+
+	}//end refusalLines()
 
 
 }//end class

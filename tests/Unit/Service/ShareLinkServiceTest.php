@@ -49,9 +49,10 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\GrantChangeAuditor;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
 use OCA\OpenRegister\Service\ShareLinkService;
 use OCA\OpenRegister\Service\ShareDraft;
 use OCP\Files\FileInfo;
@@ -182,7 +183,7 @@ class ShareLinkServiceTest extends TestCase {
 	 * @return ContainerInterface
 	 */
 	private function buildContainer(array $services): ContainerInterface {
-		$services += [FileRestrictionGuard::class => $this->buildGuard(unreadable: [])];
+		$services += [FileRestrictionGuardInterface::class => $this->buildGuard(unreadable: [])];
 		return new class($services) implements ContainerInterface {
 			public function __construct(
 				private array $services,
@@ -315,7 +316,7 @@ class ShareLinkServiceTest extends TestCase {
 
 		$schemas = $this->createMock(SchemaMapper::class);
 		$schemas->method('find')->willReturn(new Schema());
-		$permissions = $this->createMock(PermissionHandler::class);
+		$permissions = $this->createMock(PermissionHandlerInterface::class);
 		$permissions->method('hasPermission')->willReturnCallback(
 			function (Schema $schema, string $action) use ($mayUpdate): bool {
 				$this->assertSame('update', $action);
@@ -328,7 +329,7 @@ class ShareLinkServiceTest extends TestCase {
 			'OCA\\OpenRegister\\Service\\FileService' => $files,
 			'OCA\\OpenRegister\\Db\\MagicMapper' => $mapper,
 			'OCA\\OpenRegister\\Db\\SchemaMapper' => $schemas,
-			'OCA\\OpenRegister\\Service\\Object\\PermissionHandler' => $permissions,
+			'OCA\\OpenRegister\\Service\\Object\\PermissionHandlerInterface' => $permissions,
 			'OCA\\OpenRegister\\Service\\Rbac\\GrantChangeAuditor' => $this->auditor,
 		];
 	}//end managedShareServices()
@@ -350,6 +351,26 @@ class ShareLinkServiceTest extends TestCase {
 		$this->expectExceptionCode(403);
 		$service->createShare('uuid-1', (new ShareDraft(10, IShare::TYPE_USER))->withRecipient('bob', 1));
 	}//end testCreateShareNeedsTheObjectUpdateRight()
+
+	public function testCreateShareIsRefusedWhenTheSchemaMapperIsUnreachable(): void {
+		$node = $this->buildNode(10, 'doc.txt');
+		$manager = $this->createMock(IManager::class);
+		$manager->expects($this->never())->method('createShare');
+
+		$services = $this->managedShareServices(folder: $this->buildFolder([$node]), mayUpdate: true);
+		unset($services['OCA\\OpenRegister\\Db\\SchemaMapper']);
+		$container = $this->buildContainer(
+			[
+				'OCP\\Share\\IManager' => $manager,
+				'OCP\\IUserSession' => $this->buildUserSession('alice'),
+			] + $services
+		);
+
+		$service = new ShareLinkService($this->buildLogger(), $container);
+
+		$this->expectExceptionCode(403);
+		$service->createShare('uuid-1', (new ShareDraft(10, IShare::TYPE_USER))->withRecipient('bob', 1));
+	}//end testCreateShareIsRefusedWhenTheSchemaMapperIsUnreachable()
 
 	public function testCreateShareIsOnTheAuditTrail(): void {
 		$node = $this->buildNode(10, 'doc.txt');
@@ -558,7 +579,7 @@ class ShareLinkServiceTest extends TestCase {
 				'OCP\\IUserSession' => $this->buildUserSession('carol'),
 				'OCA\\OpenRegister\\Service\\FileService' => $this->buildFolderHandler($folder),
 				'OCA\\OpenRegister\\Db\\MagicMapper' => $this->buildObjectMapper(),
-				FileRestrictionGuard::class => $this->buildGuard(unreadable: [11]),
+				FileRestrictionGuardInterface::class => $this->buildGuard(unreadable: [11]),
 			]
 		);
 

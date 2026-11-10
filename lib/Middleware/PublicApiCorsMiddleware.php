@@ -35,12 +35,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Middleware;
 
-use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
+use OCA\OpenRegister\Service\Hardening\AllowedOriginsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Middleware;
-use OCP\AppFramework\Utility\IControllerMethodReflector;
-use OCP\IRequest;
 use Throwable;
 
 /**
@@ -55,14 +53,12 @@ class PublicApiCorsMiddleware extends Middleware {
 	/**
 	 * Constructor.
 	 *
-	 * @param IRequest $request The current request
-	 * @param IControllerMethodReflector $reflector Reflector for controller annotations
-	 * @param HardeningPolicy $policy Reads the administered origin allowlist
+	 * @param InboundCall             $call   The request and the annotations of the route it reaches
+	 * @param AllowedOriginsInterface $policy Reads the administered origin allowlist
 	 */
 	public function __construct(
-		private readonly IRequest $request,
-		private readonly IControllerMethodReflector $reflector,
-		private readonly HardeningPolicy $policy,
+		private readonly InboundCall $call,
+		private readonly AllowedOriginsInterface $policy,
 	) {
 	}//end __construct()
 
@@ -101,48 +97,67 @@ class PublicApiCorsMiddleware extends Middleware {
 	 * @param Response $response The outgoing response
 	 *
 	 * @return Response The response, with reflect-Origin CORS headers when public
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) IControllerMethodReflector::reflect() consumes
-	 * both $controller and $methodName via the interface; PHPMD misclassifies $controller as unused.
 	 */
 	public function afterController(Controller $controller, string $methodName, Response $response): Response {
+		return $this->withCorsHeaders(method: new DispatchedMethod(controller: $controller, methodName: $methodName), response: $response);
+	}//end afterController()
+
+	/**
+	 * Add the reflect-Origin CORS headers when the method is public and the origin allowed; fails open.
+	 *
+	 * @param DispatchedMethod $method   The controller method being dispatched
+	 * @param Response         $response The outgoing response
+	 *
+	 * @return Response The response, with reflect-Origin CORS headers when allowed
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
+	 */
+	private function withCorsHeaders(DispatchedMethod $method, Response $response): Response {
 		try {
-			$origin = $this->request->getHeader('Origin');
-			if ($origin === '') {
-				return $response;
+			$origin = $this->call->request->getHeader('Origin');
+			if ($origin !== '' && $this->mayReflect(method: $method, origin: $origin) === true) {
+				// Never combine a reflected Origin with credentials — that pairing is
+				// the CSRF-read footgun the platform guards against elsewhere.
+				$response->addHeader('Access-Control-Allow-Origin', $origin);
+				$response->addHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+				$response->addHeader('Access-Control-Allow-Headers', 'Content-Type');
 			}
-
-			// INHERITED: `reflect()` is not on IControllerMethodReflector, only on
-			// the concrete reflector the container injects. Calling it unguarded
-			// works in production and throws against any double built from the
-			// interface, which sends this whole method down its fail-open path
-			// without a word. Guarded, production is unchanged and the behaviour
-			// becomes testable.
-			if (method_exists($this->reflector, 'reflect') === true) {
-				$this->reflector->reflect($controller, $methodName);
-			}
-
-			if ($this->reflector->hasAnnotation('PublicPage') === false) {
-				return $response;
-			}
-
-			// An origin off the administered allowlist gets no header at all, and
-			// the body is unchanged. The browser refuses the read, and the
-			// response names neither the allowlist nor anything on it.
-			if ($this->allows(origin: $origin) === false) {
-				return $response;
-			}
-
-			// Never combine a reflected Origin with credentials — that pairing is
-			// the CSRF-read footgun the platform guards against elsewhere.
-			$response->addHeader('Access-Control-Allow-Origin', $origin);
-			$response->addHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-			$response->addHeader('Access-Control-Allow-Headers', 'Content-Type');
 		} catch (Throwable $e) {
 			// Fail open: leave the response untouched.
 			return $response;
-		}//end try
+		}
 
 		return $response;
-	}//end afterController()
+	}//end withCorsHeaders()
+
+	/**
+	 * Whether the dispatched method is a public page and the origin may read it.
+	 *
+	 * @param DispatchedMethod $method The controller method being dispatched
+	 * @param string           $origin The Origin header, as sent
+	 *
+	 * @return bool True when the Origin may be reflected
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
+	 */
+	private function mayReflect(DispatchedMethod $method, string $origin): bool {
+		// INHERITED: `reflect()` is not on IControllerMethodReflector, only on
+		// the concrete reflector the container injects. Calling it unguarded
+		// works in production and throws against any double built from the
+		// interface, which sends this whole method down its fail-open path
+		// without a word. Guarded, production is unchanged and the behaviour
+		// becomes testable.
+		if (method_exists($this->call->reflector, 'reflect') === true) {
+			$this->call->reflector->reflect($method->controller, $method->methodName);
+		}
+
+		if ($this->call->reflector->hasAnnotation('PublicPage') === false) {
+			return false;
+		}
+
+		// An origin off the administered allowlist gets no header at all, and
+		// the body is unchanged. The browser refuses the read, and the
+		// response names neither the allowlist nor anything on it.
+		return $this->allows(origin: $origin);
+	}//end mayReflect()
 }//end class

@@ -44,128 +44,114 @@ use OCA\OpenRegister\Exception\ChunkMatcherException;
  */
 class ChunkTextMatcher {
 	/**
-	 * Number of context characters captured on each side of every match.
-	 */
-	private const CONTEXT_WINDOW = 30;
-
-	/**
-	 * Find every occurrence of `$needle` in `$chunks`, deduped by
-	 * absolute position across chunk boundaries.
+	 * Find every occurrence of the searched value in the chunks, deduped by
+	 * absolute position across chunk boundaries, in document order.
 	 *
-	 * Matches are returned in document order. Empty when no match found.
-	 *
-	 * @param Chunk[] $chunks Chunks for the target file, ordered by chunkIndex.
-	 * @param string $needle Operator-supplied value to match.
-	 * @param bool $wholeWord Wrap the needle in `\b...\b` regex boundaries when true.
-	 * @param bool $caseSensitive Use case-sensitive matching when true.
-	 * @param int $chunkOverlap Configured chunk overlap (chars). Needles longer than this
-	 *                          cannot reliably be matched per-chunk and are rejected.
+	 * @param ChunkSearch $search The chunks, the value with its match options and the chunk overlap.
 	 *
 	 * @return array<int, array{chunkId: int, positionStart: int, positionEnd: int, context: string}>
 	 *
-	 * @throws ChunkMatcherException When the needle is longer than `$chunkOverlap` or the
+	 * @throws ChunkMatcherException When the needle is longer than the chunk overlap or the
 	 *                               regex pattern fails to compile.
+	 *
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
-	public function match(
-		array $chunks,
-		string $needle,
-		bool $wholeWord,
-		bool $caseSensitive,
-		int $chunkOverlap,
-	): array {
-		if ($needle === '') {
+	public function search(ChunkSearch $search): array {
+		if ($search->request->value === '') {
 			return [];
 		}
 
+		$this->assertFitsOverlap(needle: $search->request->value, chunkOverlap: $search->chunkOverlap);
+		if (empty($search->chunks) === true) {
+			return [];
+		}
+
+		// Per-chunk regex pass; the run collects every hit and the dedup
+		// pass collapses overlap-region duplicates.
+		$run = new ChunkMatchRun(pattern: $this->buildPattern(request: $search->request), needleLength: strlen($search->request->value));
+		foreach ($search->chunks as $chunk) {
+			$this->collectHits(run: $run, chunk: $chunk);
+		}
+
+		return $this->matchesOf(run: $run);
+	}//end search()
+
+	/**
+	 * Refuse a needle longer than the configured chunk overlap.
+	 *
+	 * A match could straddle a chunk boundary in a way that fits in neither
+	 * chunk's tail nor head; per-chunk regex would miss it. Rejecting is
+	 * safer than silently under-matching.
+	 *
+	 * @param string $needle       The value to match.
+	 * @param int    $chunkOverlap Configured chunk overlap (chars).
+	 *
+	 * @return void
+	 *
+	 * @throws ChunkMatcherException When the needle is longer than the overlap.
+	 */
+	private function assertFitsOverlap(string $needle, int $chunkOverlap): void {
 		$needleLength = strlen($needle);
 		if ($needleLength > $chunkOverlap) {
-			// The needle is longer than the configured chunk overlap.
-			// A match could straddle a chunk boundary in a way that fits
-			// in neither chunk's tail nor head — per-chunk regex would
-			// miss it. Rejecting is safer than silently under-matching.
 			throw new ChunkMatcherException(
 				reason: ChunkMatcherException::REASON_VALUE_TOO_LONG,
-				message: sprintf(
-					'Needle length (%d bytes) exceeds chunk overlap (%d).',
-					$needleLength,
-					$chunkOverlap
-				)
+				message: sprintf('Needle length (%d bytes) exceeds chunk overlap (%d).', $needleLength, $chunkOverlap)
 			);
 		}
+	}//end assertFitsOverlap()
 
-		if (empty($chunks) === true) {
-			return [];
-		}
-
-		$pattern = $this->buildPattern(
-			needle: $needle,
-			wholeWord: $wholeWord,
-			caseSensitive: $caseSensitive
-		);
-
-		// Per-chunk regex pass. Collect (absoluteStart, absoluteEnd, chunkId,
-		// chunkIndex, chunkRelativeStart) for every hit; the dedup pass below
-		// collapses overlap-region duplicates.
-		$hits = [];
-		foreach ($chunks as $chunk) {
-			$this->collectHits(
-				chunk: $chunk,
-				pattern: $pattern,
-				needleLength: $needleLength,
-				hits: $hits
-			);
-		}
-
-		if (empty($hits) === true) {
-			return [];
-		}
-
-		// Dedup by (absoluteStart, absoluteEnd), keeping the entry from
-		// the LOWEST chunkIndex. This is deterministic — re-runs select
-		// the same canonical chunk for each unique absolute position,
-		// so `existsForFileAtPosition` lookups on subsequent calls hit
-		// the same (chunkId, positionStart, positionEnd) tuple.
-		$canonical = $this->dedupByAbsolutePosition(hits: $hits);
-
-		// Sort by absoluteStart for document-order output.
+	/**
+	 * The run's hits as the public output: deduped, in document order.
+	 *
+	 * Dedup by (absoluteStart, absoluteEnd) keeps the entry from the LOWEST
+	 * chunkIndex, so re-runs select the same canonical chunk for each unique
+	 * absolute position and `existsForFileAtPosition` lookups hit the same
+	 * (chunkId, positionStart, positionEnd) tuple.
+	 *
+	 * @param ChunkMatchRun $run The finished run.
+	 *
+	 * @return array<int, array{chunkId: int, positionStart: int, positionEnd: int, context: string}>
+	 */
+	private function matchesOf(ChunkMatchRun $run): array {
+		$canonical = $this->dedupByAbsolutePosition(hits: $run->hits);
 		usort(
 			$canonical,
 			static fn (array $a, array $b): int => ($a['absoluteStart'] <=> $b['absoluteStart'])
 		);
 
-		// Map to the public output shape.
 		$result = [];
 		foreach ($canonical as $hit) {
 			$result[] = [
 				'chunkId' => $hit['chunkId'],
 				'positionStart' => $hit['chunkRelativeStart'],
-				'positionEnd' => ($hit['chunkRelativeStart'] + $needleLength),
+				'positionEnd' => ($hit['chunkRelativeStart'] + $run->needleLength),
 				'context' => $hit['context'],
 			];
 		}
 
 		return $result;
-	}//end match()
+	}//end matchesOf()
 
 	/**
 	 * Build the regex pattern from the needle + match options.
 	 *
-	 * @param string $needle Raw needle.
-	 * @param bool $wholeWord Wrap in `\b...\b` when true.
-	 * @param bool $caseSensitive Use the `i` modifier when false.
+	 * Whole-word matching wraps the needle in `\b...\b`; case-insensitive
+	 * matching adds the `i` modifier.
+	 *
+	 * @param ManualEntityRequest $request The raw needle and its match options.
 	 *
 	 * @return string Compiled pattern ready for preg_match_all.
 	 *
 	 * @throws ChunkMatcherException On regex compile failure (malformed Unicode in needle).
 	 */
-	private function buildPattern(string $needle, bool $wholeWord, bool $caseSensitive): string {
-		$quoted = preg_quote($needle, '/');
-		if ($wholeWord === true) {
+	private function buildPattern(ManualEntityRequest $request): string {
+		$quoted = preg_quote($request->value, '/');
+		if ($request->wholeWord() === true) {
 			$quoted = '\b' . $quoted . '\b';
 		}
 
 		$flags = 'u';
-		if ($caseSensitive === false) {
+		if ($request->caseSensitive() === false) {
 			$flags .= 'i';
 		}
 
@@ -186,23 +172,18 @@ class ChunkTextMatcher {
 	}//end buildPattern()
 
 	/**
-	 * Run preg_match_all against one chunk and accumulate hits.
+	 * Run preg_match_all against one chunk and add its hits to the run.
 	 *
-	 * `$hits` carries entries of shape
-	 * `{absoluteStart: int, absoluteEnd: int, chunkId: int, chunkIndex: int, chunkRelativeStart: int, context: string}`.
-	 *
-	 * @param Chunk $chunk Source chunk.
-	 * @param string $pattern Compiled regex pattern.
-	 * @param int $needleLength Pre-computed needle length in bytes.
-	 * @param array $hits Hits accumulator (mutated by reference).
+	 * @param ChunkMatchRun $run   The run: pattern, needle length and hits so far.
+	 * @param Chunk         $chunk Source chunk.
 	 *
 	 * @return void
 	 */
-	private function collectHits(Chunk $chunk, string $pattern, int $needleLength, array &$hits): void {
+	private function collectHits(ChunkMatchRun $run, Chunk $chunk): void {
 		$text = $chunk->getTextContent();
 		$matches = [];
 		$count = preg_match_all(
-			pattern: $pattern,
+			pattern: $run->pattern,
 			subject: $text,
 			matches: $matches,
 			flags: (PREG_OFFSET_CAPTURE | PREG_SET_ORDER)
@@ -212,29 +193,19 @@ class ChunkTextMatcher {
 			return;
 		}
 
-		$startOffset = $chunk->getStartOffset();
-		$chunkIndex = $chunk->getChunkIndex();
-		$chunkId = (int)$chunk->getId();
-
 		foreach ($matches as $match) {
 			$chunkRelativeStart = (int)$match[0][1];
-			$absoluteStart = ($startOffset + $chunkRelativeStart);
-			$absoluteEnd = ($absoluteStart + $needleLength);
+			$absoluteStart = ($chunk->getStartOffset() + $chunkRelativeStart);
 
-			$hits[] = [
+			$run->hits[] = [
 				'absoluteStart' => $absoluteStart,
-				'absoluteEnd' => $absoluteEnd,
-				'chunkId' => $chunkId,
-				'chunkIndex' => $chunkIndex,
+				'absoluteEnd' => ($absoluteStart + $run->needleLength),
+				'chunkId' => (int)$chunk->getId(),
+				'chunkIndex' => $chunk->getChunkIndex(),
 				'chunkRelativeStart' => $chunkRelativeStart,
-				'context' => $this->extractContext(
-					text: $text,
-					relativeStart: $chunkRelativeStart,
-					needleLength: $needleLength
-				),
+				'context' => $run->contextAround(text: $text, relativeStart: $chunkRelativeStart),
 			];
 		}
-
 	}//end collectHits()
 
 	/**
@@ -265,21 +236,4 @@ class ChunkTextMatcher {
 
 		return array_values($byKey);
 	}//end dedupByAbsolutePosition()
-
-	/**
-	 * Return ~CONTEXT_WINDOW chars on either side of the match.
-	 *
-	 * @param string $text Source chunk text.
-	 * @param int $relativeStart Match start offset within the chunk.
-	 * @param int $needleLength Needle length in bytes.
-	 *
-	 * @return string Snippet with the match in the middle.
-	 */
-	private function extractContext(string $text, int $relativeStart, int $needleLength): string {
-		$start = max(0, ($relativeStart - self::CONTEXT_WINDOW));
-		$end = min(strlen($text), ($relativeStart + $needleLength + self::CONTEXT_WINDOW));
-		$length = ($end - $start);
-
-		return substr($text, $start, $length);
-	}//end extractContext()
 }//end class

@@ -40,7 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\Credential\DoriathCredentialStore;
+use OCA\OpenRegister\Service\Credential\DoriathCredentialKeys;
 use OCA\OpenRegister\Support\FleetAppId;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
@@ -194,7 +194,7 @@ class RegisterOpenRegisterWithDoriath implements IRepairStep {
 	private function isRegistrationLive(): bool {
 		$applicationId = $this->appConfig->getValueString(
 			'openregister',
-			DoriathCredentialStore::APP_CONFIG_APPLICATION_ID,
+			DoriathCredentialKeys::APP_CONFIG_APPLICATION_ID,
 			''
 		);
 		if ($applicationId === '') {
@@ -235,7 +235,7 @@ class RegisterOpenRegisterWithDoriath implements IRepairStep {
 
 		// SYSTEM scope (userId = '') — the CredentialAppTokenService idiom. The
 		// private key exists ONLY here; IAppConfig gets public material only.
-		$this->credentialsManager->store('', DoriathCredentialStore::PRIVATE_KEY_ID, $privatePem);
+		$this->credentialsManager->store('', DoriathCredentialKeys::PRIVATE_KEY_ID, $privatePem);
 
 		$csrPem = $this->generateCsr(keyResource: $keyResource);
 
@@ -260,12 +260,12 @@ class RegisterOpenRegisterWithDoriath implements IRepairStep {
 		$applicationId = (string)$application->getId();
 		$this->appConfig->setValueString(
 			'openregister',
-			DoriathCredentialStore::APP_CONFIG_APPLICATION_ID,
+			DoriathCredentialKeys::APP_CONFIG_APPLICATION_ID,
 			$applicationId
 		);
 		$this->appConfig->setValueString(
 			'openregister',
-			DoriathCredentialStore::APP_CONFIG_PUBLIC_KEY_PEM,
+			DoriathCredentialKeys::APP_CONFIG_PUBLIC_KEY_PEM,
 			$publicPem
 		);
 

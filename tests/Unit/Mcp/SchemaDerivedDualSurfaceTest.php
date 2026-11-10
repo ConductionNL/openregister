@@ -24,12 +24,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Mcp;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\ToolInvocation;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ToolRegistrationEvent;
 use OCA\OpenRegister\Mcp\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolProvider;
+use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Mcp\Service\Mcp\ToolRegistryFacade;
@@ -44,6 +47,8 @@ use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Mcp\Listener\BuiltinDataTools;
+use OCA\OpenRegister\Mcp\Listener\BuiltinPlatformTools;
 
 /**
  * Dual-surface + precedence tests for the schema-derived provider.
@@ -120,9 +125,11 @@ class SchemaDerivedDualSurfaceTest extends TestCase {
 			appId: 'pipelinq',
 			schemaEntries: [['schema' => $this->leadSchema(), 'register' => null]],
 			suppressedIds: $suppressedIds,
-			objectService: $this->objectService,
-			auditTrailMapper: $this->auditTrailMapper,
-			logger: $this->logger
+			services: new SchemaDerivedToolServices(
+				objectService: $this->objectService,
+				auditTrailMapper: $this->auditTrailMapper,
+				logger: $this->logger,
+			),
 		);
 
 	}//end derivedProvider()
@@ -230,13 +237,17 @@ class SchemaDerivedDualSurfaceTest extends TestCase {
 		);
 
 		$listener = new ToolRegistrationListener(
-			registerTool: $this->createMock(RegisterTool::class),
-			schemaTool: $this->createMock(SchemaTool::class),
-			objectsTool: $this->createMock(ObjectsTool::class),
-			applicationTool: $this->createMock(ApplicationTool::class),
-			agentTool: $this->createMock(AgentTool::class),
+			dataTools: new BuiltinDataTools(
+				registerTool: $this->createMock(RegisterTool::class),
+				schemaTool: $this->createMock(SchemaTool::class),
+				objectsTool: $this->createMock(ObjectsTool::class),
+			),
+			platformTools: new BuiltinPlatformTools(
+				applicationTool: $this->createMock(ApplicationTool::class),
+				agentTool: $this->createMock(AgentTool::class),
+			),
 			mcpToolsService: $mcpToolsService,
-			logger: $this->logger
+			logger: $this->logger,
 		);
 
 		$dispatcher = $this->createMock(IEventDispatcher::class);
@@ -356,15 +367,14 @@ class SchemaDerivedDualSurfaceTest extends TestCase {
 		// The facade invocation MUST hit the same audited invokeTool() path
 		// the JSON-RPC surface uses — exactly one audit record.
 		$this->auditTrailMapper->expects($this->once())
-			->method('createToolInvocationEntry')
+			->method('recordToolInvocation')
 			->with(
-				'pipelinq.lead.get',
-				$this->matchesRegularExpression('/^[a-f0-9]{64}$/'),
-				$this->callback(fn ($summary) => $summary['isError'] === false),
-				null,
-				1,
-				null,
-				'uuid-9'
+				$this->callback(
+					fn (ToolInvocation $invocation) => $invocation->toolId === 'pipelinq.lead.get'
+						&& preg_match('/^[a-f0-9]{64}$/', $invocation->paramsDigest) === 1
+						&& $invocation->resultSummary['isError'] === false
+						&& $invocation->about == new AuditedObject(null, 1, null, 'uuid-9')
+				)
 			);
 
 		$facade = $this->buildFacade();

@@ -28,14 +28,18 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\Party;
 
+use OCA\OpenRegister\Service\Party\PartyAddressSelection;
 use OCA\OpenRegister\Db\ContactLink;
-use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\MailAddressee;
+use OCA\OpenRegister\Notifications\Service\Notification\MailContent;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
-use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
-use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Service\Party\PartySendRefusalInterface;
+use OCA\OpenRegister\Service\Party\PartyServiceInterface;
 
 /**
  * Resolves and reaches the parties on an object over their own addresses.
@@ -62,18 +66,16 @@ class PartyNotificationService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ContactLinkMapper $links The link rows, for the parties on an object.
-	 * @param PartyService $parties The party records and their addresses.
-	 * @param PartyIndicatorGuard $indicators The declared effects, which decide who may be reached.
-	 * @param EmailSender $email The email channel.
-	 * @param OptOutAuthority $optOut Asks integriq whether a party's address may be mailed.
+	 * @param ContactLinkMapperInterface     $links   The link rows, for the parties on an object.
+	 * @param PartyServiceInterface $parties The party records and their addresses.
+	 * @param EmailSender           $email   The email channel.
+	 * @param PartyReachGates       $gates   The indicator guard and the opt-out authority.
 	 */
 	public function __construct(
-		private readonly ContactLinkMapper $links,
-		private readonly PartyService $parties,
-		private readonly PartyIndicatorGuard $indicators,
+		private readonly ContactLinkMapperInterface $links,
+		private readonly PartyServiceInterface $parties,
 		private readonly EmailSender $email,
-		private readonly OptOutAuthority $optOut,
+		private readonly PartyReachGates $gates,
 	) {
 	}//end __construct()
 
@@ -133,8 +135,48 @@ class PartyNotificationService {
 		?string $role = null,
 		string $category = OptOutAuthority::DEFAULT_CATEGORY,
 	): array {
-		$recipients = $this->recipientsForObject(objectUuid: $objectUuid, role: $role);
+		return $this->notify(
+			message: ['objectUuid' => $objectUuid, 'subject' => $subject, 'body' => $body, 'category' => $category],
+			role: $role
+		);
+	}//end notifyParties()
 
+	/**
+	 * Ask integriq about every askable recipient in one question, then send or refuse per party.
+	 *
+	 * @param array<string, string> $message The object uuid, subject, body and category.
+	 * @param string|null           $role    Only the parties in this role, or null for all of them.
+	 *
+	 * @return array<int, array{party: string, address: string|null, outcome: string}> What happened per party.
+	 */
+	private function notify(array $message, ?string $role): array {
+		$recipients = $this->recipientsForObject(objectUuid: $message['objectUuid'], role: $role);
+
+		$message['decisions'] = $this->gates->optOut->askQuestion(
+			question: new OptOutQuestion(
+				channel: 'email',
+				category: $message['category'],
+				addresses: $this->askable(recipients: $recipients),
+				correlationId: 'openregister-parties:' . $message['objectUuid']
+			)
+		);
+
+		$sent = [];
+		foreach ($recipients as $recipient) {
+			$sent[] = $this->outcomeFor(recipient: $recipient, message: $message);
+		}
+
+		return $sent;
+	}//end notify()
+
+	/**
+	 * The addresses of the recipients no indicator refuses and that have one.
+	 *
+	 * @param array<int, array<string, string|null>> $recipients The recipients.
+	 *
+	 * @return array<int, string> The addresses to put to integriq.
+	 */
+	private function askable(array $recipients): array {
 		$askable = [];
 		foreach ($recipients as $recipient) {
 			if ($recipient['refusedBy'] === null && $recipient['address'] !== null) {
@@ -142,63 +184,61 @@ class PartyNotificationService {
 			}
 		}
 
-		$decisions = $this->optOut->ask(
-			channel: 'email',
-			category: $category,
-			addresses: $askable,
-			correlationId: 'openregister-parties:' . $objectUuid
-		);
+		return $askable;
+	}//end askable()
 
-		$sent = [];
-		foreach ($recipients as $recipient) {
-			if ($recipient['refusedBy'] !== null) {
-				$sent[] = [
-					'party' => $recipient['party'],
-					'address' => null,
-					'outcome' => 'refused-by-indicator',
-				];
-				continue;
-			}
+	/**
+	 * What happens to one recipient: an indicator refusal first, a missing
+	 * address next, then integriq's decision; only a decision whose `send`
+	 * is boolean true is mailed.
+	 *
+	 * @param array<string, string|null> $recipient The recipient.
+	 * @param array<string, mixed>       $message   The subject, body and integriq's decisions.
+	 *
+	 * @return array{party: string, address: string|null, outcome: string} The outcome.
+	 */
+	private function outcomeFor(array $recipient, array $message): array {
+		if ($recipient['refusedBy'] !== null) {
+			return ['party' => $recipient['party'], 'address' => null, 'outcome' => 'refused-by-indicator'];
+		}
 
-			if ($recipient['address'] === null) {
-				$sent[] = [
-					'party' => $recipient['party'],
-					'address' => null,
-					'outcome' => EmailSender::OUTCOME_NO_ADDRESS,
-				];
-				continue;
-			}
+		if ($recipient['address'] === null) {
+			return ['party' => $recipient['party'], 'address' => null, 'outcome' => EmailSender::OUTCOME_NO_ADDRESS];
+		}
 
-			$decision = $this->optOut->decisionFor(decisions: $decisions, address: (string)$recipient['address']);
-			if ($decision['send'] !== true) {
-				$outcome = self::OUTCOME_REFUSED_OPTED_OUT;
-				if ($decision['code'] === OptOutAuthority::CODE_AUTHORITY_UNAVAILABLE) {
-					$outcome = self::OUTCOME_AUTHORITY_UNAVAILABLE;
-				}
+		$decision = $this->gates->optOut->decisionFor(decisions: $message['decisions'], address: (string)$recipient['address']);
+		if ($decision['send'] !== true) {
+			return ['party' => $recipient['party'], 'address' => null, 'outcome' => $this->refusalOutcome(decision: $decision)];
+		}
 
-				$sent[] = [
-					'party' => $recipient['party'],
-					'address' => null,
-					'outcome' => $outcome,
-				];
-				continue;
-			}
-
-			$sent[] = [
-				'party' => $recipient['party'],
-				'address' => $recipient['address'],
-				'outcome' => $this->email->sendToAddress(
-					address: $recipient['address'],
-					displayName: (string)($recipient['displayName'] ?? ''),
-					subject: $subject,
-					body: $this->optOut->withLink(body: $body, unsubscribe: $decision['unsubscribe']),
+		return [
+			'party' => $recipient['party'],
+			'address' => $recipient['address'],
+			'outcome' => $this->email->sendMailTo(
+				addressee: new MailAddressee(address: $recipient['address'], displayName: (string)($recipient['displayName'] ?? '')),
+				content: new MailContent(
+					subject: $message['subject'],
+					body: $this->gates->optOut->withLink(body: $message['body'], unsubscribe: $decision['unsubscribe']),
 					unsubscribe: $decision['unsubscribe']
-				),
-			];
-		}//end foreach
+				)
+			),
+		];
+	}//end outcomeFor()
 
-		return $sent;
-	}//end notifyParties()
+	/**
+	 * The outcome of a refused decision: an unavailable authority, else an opt-out.
+	 *
+	 * @param array<string, mixed> $decision Integriq's decision.
+	 *
+	 * @return string The outcome.
+	 */
+	private function refusalOutcome(array $decision): string {
+		if ($decision['code'] === OptOutAuthority::CODE_AUTHORITY_UNAVAILABLE) {
+			return self::OUTCOME_AUTHORITY_UNAVAILABLE;
+		}
+
+		return self::OUTCOME_REFUSED_OPTED_OUT;
+	}//end refusalOutcome()
 
 	/**
 	 * One link's recipient, or null when the link names no party.
@@ -225,7 +265,7 @@ class PartyNotificationService {
 			'role' => $link->getRole(),
 			'displayName' => $link->getDisplayName(),
 			'address' => $this->outboundAddress(party: $party, definition: $definition),
-			'refusedBy' => $this->indicators->sendRefusalFor(partyUuid: $partyUuid),
+			'refusedBy' => $this->gates->indicators->sendRefusalFor(partyUuid: $partyUuid),
 		];
 	}//end recipientOf()
 
@@ -240,8 +280,7 @@ class PartyNotificationService {
 	private function outboundAddress(ObjectEntity $party, ?PartyDefinition $definition): ?string {
 		$addresses = $this->parties->addressesOfKind(
 			party: $party,
-			kind: self::OUTBOUND_KIND,
-			definition: $definition
+			selection: new PartyAddressSelection(kind: self::OUTBOUND_KIND, definition: $definition)
 		);
 
 		if ($addresses === []) {

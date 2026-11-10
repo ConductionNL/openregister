@@ -15,6 +15,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -22,6 +23,7 @@ use OCA\OpenRegister\Exception\SlugBackfillWriteException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\ObjectSlugBackfillWriter;
 use OCA\OpenRegister\Service\Object\ObjectSlugBackfillLedger;
+use OCA\OpenRegister\Service\Object\ObjectSlugChangeSet;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -42,7 +44,7 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 	/** @var IDBConnection&MockObject */
 	private IDBConnection $db;
 
-	/** @var list<array> Audit entries as the arguments of createSlugBackfillEntry. */
+	/** @var list<array> Audit entries as the changes and summary passed to recordSlugBackfill. */
 	private array $audits = [];
 
 	private Register $register;
@@ -71,9 +73,9 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 		$this->cacheHandler = $this->createMock(CacheHandler::class);
 		$this->db = $this->createMock(IDBConnection::class);
 		$auditTrail = $this->createMock(AuditTrailMapper::class);
-		$auditTrail->method('createSlugBackfillEntry')->willReturnCallback(
-			function (array $changes, array $summary, ?int $register=null, ?int $schema=null): AuditTrail {
-				$this->audits[] = ['changes' => $changes, 'summary' => $summary];
+		$auditTrail->method('recordSlugBackfill')->willReturnCallback(
+			function (SlugBackfill $backfill): AuditTrail {
+				$this->audits[] = ['changes' => $backfill->changes, 'summary' => $backfill->summary];
 				return new AuditTrail();
 			}
 		);
@@ -93,7 +95,7 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 		$this->writer = new ObjectSlugBackfillWriter(
 			magicMapper: $this->magicMapper,
 			db: $this->db,
-			ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->cacheHandler, auditTrail: $auditTrail, logger: $this->logger),
+			ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->cacheHandler, audit: new \OCA\OpenRegister\Service\Object\AuditRecording(trail: $auditTrail, logger: $this->logger)),
 			logger: $this->logger
 		);
 	}//end setUp()
@@ -133,7 +135,7 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 		$this->cacheHandler->expects($this->once())->method('invalidateForObjectChange');
 
 		try {
-			$this->writer->write($this->plan(600), $this->register, $this->schema, ['assigned' => 600, 'skipped' => 0]);
+			$this->writer->write(new ObjectSlugChangeSet($this->register, $this->schema, $this->plan(600), ['assigned' => 600, 'skipped' => 0]));
 			$this->fail('the failing chunk must reach the caller');
 		} catch (SlugBackfillWriteException $e) {
 			$this->assertSame(500, $e->getApplied());
@@ -159,7 +161,7 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 			}
 		);
 
-		$skipped = $this->writer->write($this->plan(3), $this->register, $this->schema, ['assigned' => 3, 'skipped' => 0]);
+		$skipped = $this->writer->write(new ObjectSlugChangeSet($this->register, $this->schema, $this->plan(3), ['assigned' => 3, 'skipped' => 0]));
 
 		$this->assertSame(1, $skipped);
 		$this->assertSame(['slug-1', 'slug-3'], $written);
@@ -170,7 +172,7 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 		// Review finding r2routes-f6: the entry holds the first 1,000; the log holds all 2,500.
 		$this->magicMapper->method('updateSlugColumn')->willReturn(1);
 
-		$this->writer->write($this->plan(2500), $this->register, $this->schema, ['skipped' => 0]);
+		$this->writer->write(new ObjectSlugChangeSet($this->register, $this->schema, $this->plan(2500), ['skipped' => 0]));
 
 		$this->assertCount(3, $this->infos);
 		$this->assertStringContainsString('part 3 of 3', $this->infos[2]);
@@ -183,7 +185,7 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 		$plan[0]['old'] = "bad-\xB1-slug";
 		$this->magicMapper->method('updateSlugColumn')->willReturn(1);
 
-		$this->writer->write($plan, $this->register, $this->schema, ['skipped' => 0]);
+		$this->writer->write(new ObjectSlugChangeSet($this->register, $this->schema, $plan, ['skipped' => 0]));
 
 		$this->assertCount(2, $this->infos);
 		$this->assertStringContainsString('part 1 of 2', $this->infos[0]);
@@ -193,7 +195,7 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 	public function testASmallRunLogsNoChangeList(): void {
 		$this->magicMapper->method('updateSlugColumn')->willReturn(1);
 
-		$this->writer->write($this->plan(5), $this->register, $this->schema, ['skipped' => 0]);
+		$this->writer->write(new ObjectSlugChangeSet($this->register, $this->schema, $this->plan(5), ['skipped' => 0]));
 
 		$this->assertSame([], $this->infos);
 	}//end testASmallRunLogsNoChangeList()
@@ -203,7 +205,7 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 		$this->cacheHandler->expects($this->never())->method('invalidateForObjectChange');
 
 		try {
-			$this->writer->write($this->plan(3), $this->register, $this->schema, ['skipped' => 0]);
+			$this->writer->write(new ObjectSlugChangeSet($this->register, $this->schema, $this->plan(3), ['skipped' => 0]));
 			$this->fail('the failing chunk must reach the caller');
 		} catch (SlugBackfillWriteException $e) {
 			$this->assertSame(0, $e->getApplied());

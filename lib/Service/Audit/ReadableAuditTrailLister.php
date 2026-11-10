@@ -46,12 +46,13 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
 use Throwable;
 
 /**
  * Lists the audit trail within the reach of one caller.
  */
-class ReadableAuditTrailLister {
+class ReadableAuditTrailLister implements ReadableAuditTrailListerInterface {
 
 	/**
 	 * How many raw rows one request may inspect before it gives up.
@@ -92,20 +93,6 @@ class ReadableAuditTrailLister {
 	public const WITHHELD_FIELDS = ['session', 'request', 'ipAddress'];
 
 	/**
-	 * Whether read entries are given to the caller of this run.
-	 *
-	 * @var bool
-	 */
-	private bool $withReads = false;
-
-	/**
-	 * The free-text term of this run, matched against the redacted entries.
-	 *
-	 * @var string
-	 */
-	private string $search = '';
-
-	/**
 	 * Constructor.
 	 *
 	 * @param AuditTrailMapperInterface        $auditTrailMapper Reads the candidate rows.
@@ -136,8 +123,7 @@ class ReadableAuditTrailLister {
 	 * @param string|null     $userId  The caller, or null when anonymous.
 	 * @param int             $limit   How many readable rows the caller asked for.
 	 * @param int|string|null $cursor  A sealed cursor this list handed out under the same caller, filters and search.
-	 * @param array           $filters Column filters, as `AuditTrailMapper::findAll()` takes them.
-	 * @param string|null     $search  Optional free-text term.
+	 * @param AuditTrailQuery|null $query The filters and search, from {@see query()}; none when null.
 	 *
 	 * @return array{results: array<int, array>, limit: int, cursor: int|string|null, nextCursor: string|null}
 	 *     The page. `nextCursor` is null when the trail was exhausted, and a
@@ -150,8 +136,7 @@ class ReadableAuditTrailLister {
 		?string $userId,
 		int $limit = 20,
 		int|string|null $cursor = null,
-		array $filters = [],
-		?string $search = null,
+		?AuditTrailQuery $query = null,
 	): array {
 		$limit = max(1, min($limit, self::MAX_LIMIT));
 
@@ -159,76 +144,96 @@ class ReadableAuditTrailLister {
 		// for candidates it would then drop is work done to reach the same
 		// answer. Refuse before the query, not after it.
 		if ($userId === null || $userId === '') {
-			return [
-				'results' => [],
-				'limit' => $limit,
-				'cursor' => $cursor,
-				'nextCursor' => null,
-			];
+			return ['results' => [], 'limit' => $limit, 'cursor' => $cursor, 'nextCursor' => null];
 		}
 
+		$request = new ReadableTrailPageRequest(userId: $userId, limit: $limit, cursor: $cursor, query: ($query ?? new AuditTrailQuery()));
+
+		return $this->readablePage(request: $request);
+	}//end page()
+
+	/**
+	 * The query a page is walked under.
+	 *
+	 * @param array       $filters Column filters, as `AuditTrailMapper::findAll()` takes them.
+	 * @param string|null $search  Optional free-text term.
+	 *
+	 * @return AuditTrailQuery The query, to hand to {@see page()}.
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-is-readable-within-a-callers-own-scope
+	 */
+	public function query(array $filters = [], ?string $search = null): AuditTrailQuery {
+		return new AuditTrailQuery(filters: $filters, search: $search);
+	}//end query()
+
+	/**
+	 * One page for a signed-in caller: walk the trail from the sealed cursor and seal where it stopped.
+	 *
+	 * @param ReadableTrailPageRequest $request The caller, the bounded page size, the cursor and the query.
+	 *
+	 * @return array{results: array<int, array>, limit: int, cursor: int|string|null, nextCursor: string|null} The page.
+	 */
+	private function readablePage(ReadableTrailPageRequest $request): array {
 		// Who read an object is shown only to the groups named for it. A search
 		// is matched against what the caller is given, after redaction: matched
 		// in SQL on the stored `changed`, it would tell the caller whether a
 		// hidden property ever held the term.
-		$this->withReads = $this->history->readEvents()->maySeeReadEvents(userId: $userId);
-		$this->search = trim((string)$search);
-		$filters = $this->appliedFilters(filters: $filters);
+		$withReads = $this->history->readEvents()->maySeeReadEvents(userId: $request->userId);
+		$search = trim((string)$request->query->search);
+		$filters = $this->appliedFilters(filters: $request->query->filters);
+		$run = new ReadableTrailRun(filters: $filters, limit: $request->limit, withReads: $withReads, search: $search);
 
-		$results = [];
-		$found = 0;
-		$scanned = 0;
-		$scope = $this->cursors->scope(userId: $userId, query: ['filters' => $filters, 'search' => $this->search]);
-		$rawOffset = $this->cursors->open(cursor: $cursor, scope: $scope);
-		$exhausted = false;
-
-		while ($found < $limit && $scanned < self::SCAN_BUDGET) {
-			$batch = $this->auditTrailMapper->findAll(
-				limit: self::BATCH_SIZE,
-				offset: $rawOffset,
-				filters: $filters,
-				sort: ['created' => 'DESC']
-			);
-
-			$batchSize = count($batch);
-			if ($batchSize === 0) {
-				$exhausted = true;
-				break;
-			}
-
-			$taken = $this->takeReadable(
-				batch: $batch,
-				readable: $this->readerRows(batch: $batch),
-				room: ($limit - $found),
-				results: $results
-			);
-
-			$found += $taken['kept'];
-			$scanned += $taken['consumed'];
-			$rawOffset += $taken['consumed'];
-
-			// A batch shorter than the page size is the end of the trail, but
-			// only once it has been walked to the end: breaking out mid-batch
-			// to fill a page leaves rows behind, and calling that exhausted
-			// would lose them.
-			if ($batchSize < self::BATCH_SIZE && $taken['consumed'] === $batchSize) {
-				$exhausted = true;
-				break;
-			}
-		}//end while
+		$scope = $this->cursors->scope(userId: $request->userId, query: ['filters' => $filters, 'search' => $search]);
+		$run->offset = $this->cursors->open(cursor: $request->cursor, scope: $scope);
 
 		$nextCursor = null;
-		if ($exhausted === false) {
-			$nextCursor = $this->sealedCursor(offset: $rawOffset, scope: $scope);
+		if ($this->walk(run: $run) === false) {
+			$nextCursor = $this->sealedCursor(offset: $run->offset, scope: $scope);
 		}
 
-		return [
-			'results' => $results,
-			'limit' => $limit,
-			'cursor' => $cursor,
-			'nextCursor' => $nextCursor,
-		];
-	}//end page()
+		return ['results' => $run->results, 'limit' => $run->limit, 'cursor' => $request->cursor, 'nextCursor' => $nextCursor];
+	}//end readablePage()
+
+	/**
+	 * Walk the raw trail in batches until the page is full, the trail ends, or the scan budget runs out.
+	 *
+	 * The rows kept and the offset reached are left on the run.
+	 *
+	 * @param ReadableTrailRun $run The walk, starting at its offset.
+	 *
+	 * @return bool Whether the trail ended (exhausted).
+	 */
+	private function walk(ReadableTrailRun $run): bool {
+		$start = $run->offset;
+		while (count($run->results) < $run->limit && ($run->offset - $start) < self::SCAN_BUDGET) {
+			$batch = $this->auditTrailMapper->findAll(limit: self::BATCH_SIZE, offset: $run->offset, filters: $run->filters, sort: ['created' => 'DESC']);
+			$consumed = $this->takeReadable(run: $run, batch: $batch);
+			$run->offset += $consumed;
+
+			if ($this->endsTheTrail(batchSize: count($batch), consumed: $consumed) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end walk()
+
+	/**
+	 * Whether a batch ends the trail.
+	 *
+	 * An empty batch does. A batch shorter than the page size is the end of the
+	 * trail, but only once it has been walked to the end: breaking out
+	 * mid-batch to fill a page leaves rows behind, and calling that exhausted
+	 * would lose them.
+	 *
+	 * @param int $batchSize How many rows the batch held.
+	 * @param int $consumed  How many of them were walked.
+	 *
+	 * @return bool
+	 */
+	private function endsTheTrail(int $batchSize, int $consumed): bool {
+		return $batchSize === 0 || ($batchSize < self::BATCH_SIZE && $consumed === $batchSize);
+	}//end endsTheTrail()
 
 	/**
 	 * The filters the trail query applies and a reader may use.
@@ -272,54 +277,55 @@ class ReadableAuditTrailLister {
 	 * the kept rows would hand the next page the same unreadable rows again,
 	 * for ever.
 	 *
-	 * @param array<AuditTrail>   $batch    The candidate rows, in order.
-	 * @param array<int, array>   $readable The redacted rows the caller may read, by batch index.
-	 * @param int                 $room     How many more rows the page may hold.
-	 * @param array               $results  The page so far, appended to in place.
+	 * @param ReadableTrailRun  $run   The walk, whose page is appended to.
+	 * @param array<AuditTrail> $batch The candidate rows, in order.
 	 *
-	 * @return array{consumed: int, kept: int} How many rows were walked and kept.
+	 * @return int How many rows were walked.
 	 */
-	private function takeReadable(array $batch, array $readable, int $room, array &$results): array {
+	private function takeReadable(ReadableTrailRun $run, array $batch): int {
+		$readable = $this->readerRows(batch: $batch);
+		$room = $run->room();
 		$consumed = 0;
 		$kept = 0;
-
 		foreach ($batch as $index => $entry) {
 			$consumed++;
-
-			if ($this->shows(entry: $entry, row: ($readable[$index] ?? null)) === false) {
-				continue;
+			$row = ($readable[$index] ?? null);
+			if ($row !== null && $this->shows(run: $run, entry: $entry) === true && $this->matches(run: $run, row: $row) === true) {
+				$run->results[] = $row;
+				$kept++;
 			}
-
-			$results[] = $readable[$index];
-			$kept++;
 
 			if ($kept >= $room) {
 				break;
 			}
 		}
 
-		return ['consumed' => $consumed, 'kept' => $kept];
+		return $consumed;
 	}//end takeReadable()
 
 	/**
-	 * Whether one candidate row goes on the page.
+	 * Whether a readable entry goes on the page: a read entry only for a caller who may see read entries.
 	 *
-	 * @param AuditTrail $entry The stored entry.
-	 * @param array|null $row   Its redacted form, or null when the caller may not read its object.
+	 * @param ReadableTrailRun $run   The walk.
+	 * @param AuditTrail       $entry The stored entry.
 	 *
-	 * @return bool True when the row is readable, not a hidden read entry, and matches the search.
+	 * @return bool True when the entry is not a read entry hidden from this caller.
 	 */
-	private function shows(AuditTrail $entry, ?array $row): bool {
-		if ($row === null) {
-			return false;
-		}
-
-		if ($this->withReads === false && $this->history->readEvents()->isReadAction(action: $entry->getAction()) === true) {
-			return false;
-		}
-
-		return $this->search === '' || $this->history->matches(entry: $row, search: $this->search);
+	private function shows(ReadableTrailRun $run, AuditTrail $entry): bool {
+		return $run->withReads === true || $this->history->readEvents()->isReadAction(action: $entry->getAction()) === false;
 	}//end shows()
+
+	/**
+	 * Whether a redacted row matches the walk's search; every row does when there is none.
+	 *
+	 * @param ReadableTrailRun $run The walk.
+	 * @param array            $row The redacted row.
+	 *
+	 * @return bool True when the row matches.
+	 */
+	private function matches(ReadableTrailRun $run, array $row): bool {
+		return $run->search === '' || $this->history->matches(entry: $row, search: $run->search);
+	}//end matches()
 
 	/**
 	 * The rows of this batch the caller may read, redacted, by batch index.
@@ -339,41 +345,58 @@ class ReadableAuditTrailLister {
 			return [];
 		}
 
+		$rows = [];
+		foreach ($this->locate(uuids: array_keys($groups)) as $object) {
+			$indices = ($groups[(string)$object->getUuid()] ?? []);
+			unset($groups[(string)$object->getUuid()]);
+			$rows += $this->objectRows(object: $object, entries: array_intersect_key($batch, array_flip($indices)));
+		}
+
+		return $rows;
+	}//end readerRows()
+
+	/**
+	 * The live objects the batch points at, in one cross-table lookup.
+	 *
+	 * @param array<int, string> $uuids The object uuids.
+	 *
+	 * @return array The located objects; empty when the lookup fails.
+	 */
+	private function locate(array $uuids): array {
 		try {
-			$located = $this->objectMapper->findMultipleAcrossAllMagicTables(
-				uuids: array_keys($groups),
-				includeDeleted: false
-			);
+			return $this->objectMapper->findMultipleAcrossAllMagicTables(uuids: $uuids, includeDeleted: false);
 		} catch (Throwable $e) {
 			// Fail closed: an unresolvable batch means nothing is readable,
 			// which hides rows rather than showing them.
 			return [];
 		}
+	}//end locate()
 
-		$rows = [];
-		foreach ($located as $object) {
-			$indices = ($groups[(string)$object->getUuid()] ?? []);
-			unset($groups[(string)$object->getUuid()]);
-			if ($indices === []) {
-				continue;
-			}
+	/**
+	 * One object's rows of the batch, redacted as its history is, by batch index.
+	 *
+	 * @param ObjectEntity      $object  The located object; anything else is read as unreadable.
+	 * @param array<AuditTrail> $entries Its rows of the batch, keyed by batch index, in order.
+	 *
+	 * @return array<int, array> The redacted rows; empty when the object's rows cannot all be read.
+	 */
+	private function objectRows(mixed $object, array $entries): array {
+		if ($entries === []) {
+			return [];
+		}
 
-			try {
-				$entries = $this->history->readerEntries(
-					located: $object,
-					rows: array_map(static fn (int $index): AuditTrail => $batch[$index], $indices)
-				);
-			} catch (Throwable $e) {
-				$entries = null;
-			}
+		try {
+			$redacted = $this->history->readerEntries(located: $object, rows: array_values($entries));
+		} catch (Throwable $e) {
+			return [];
+		}
 
-			if ($entries !== null && count($entries) === count($indices)) {
-				$rows += array_combine($indices, $entries);
-			}
-		}//end foreach
+		if ($redacted === null || count($redacted) !== count($entries)) {
+			return [];
+		}
 
-		return $rows;
-	}//end readerRows()
+		return array_combine(array_keys($entries), $redacted);
+	}//end objectRows()
 
 	/**
 	 * The batch indices of the rows, grouped by the object uuid they point at.

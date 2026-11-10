@@ -12,6 +12,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ExportService;
@@ -151,9 +152,7 @@ class ObjectsControllerTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			false,
-			[],
-			[],
-			[],
+			new DeletionEffects([], [], []),
 			[['uuid' => 'blocker-1', 'reason' => 'RESTRICT']],
 			[]
 		);
@@ -164,11 +163,6 @@ class ObjectsControllerTest extends TestCase {
 		$result = $this->controller->destroy('uuid-123', 'reg', 'schema', $this->objectService);
 
 		$this->assertSame(409, $result->getStatus());
-	}
-
-	public function testControllerConstructorSetsProperties(): void {
-		// If the controller is constructed without errors, the test passes.
-		$this->assertInstanceOf(ObjectsController::class, $this->controller);
 	}
 
 	public function testDestroyReturns422OnHookStoppedException(): void {
@@ -273,7 +267,77 @@ class ObjectsControllerTest extends TestCase {
 		$this->assertSame(403, $result->getStatus());
 	}
 
+	/**
+	 * Let a merge past its access check: both objects are found and the caller
+	 * may update the target and delete the source (or not, when told so).
+	 *
+	 * @param bool $mayUpdate Whether the caller may update the target.
+	 * @param bool $mayDelete Whether the caller may delete the source.
+	 *
+	 * @return void
+	 */
+	private function allowMerge(bool $mayUpdate = true, bool $mayDelete = true): void {
+		$this->objectService->method('find')->willReturnCallback(
+			static function ($id) {
+				$object = new \OCA\OpenRegister\Db\ObjectEntity();
+				$object->setUuid((string)$id);
+				$object->setOwner('owner-1');
+				return $object;
+			}
+		);
+		$this->schemaMapper->method('find')->willReturn(new \OCA\OpenRegister\Db\Schema());
+		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
+		$permissions->method('hasPermission')->willReturnCallback(
+			static fn ($schema, string $action) => ($action === 'update' && $mayUpdate) || ($action === 'delete' && $mayDelete)
+		);
+		$this->container->method('get')->willReturnCallback(
+			static fn (string $id) => $id === \OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class ? $permissions : null
+		);
+	}
+
+	public function testMergeReturns404WhenTheCallerCannotReadTheObjects(): void {
+		$this->request->method('getParams')->willReturn([
+			'target' => 'uuid-456',
+			'object' => ['title' => 'Merged'],
+		]);
+		$this->objectService->method('find')->willReturn(null);
+		$this->objectService->expects($this->never())->method('mergeObjects');
+
+		$result = $this->controller->merge('uuid-123', 'reg1', 'schema1', $this->objectService);
+
+		$this->assertSame(404, $result->getStatus());
+		$this->assertSame(['error' => 'Object not found'], $result->getData());
+	}
+
+	public function testMergeReturns403WhenTheCallerMayNotUpdateTheTarget(): void {
+		$this->request->method('getParams')->willReturn([
+			'target' => 'uuid-456',
+			'object' => ['title' => 'Merged'],
+		]);
+		$this->allowMerge(mayUpdate: false);
+		$this->objectService->expects($this->never())->method('mergeObjects');
+
+		$result = $this->controller->merge('uuid-123', 'reg1', 'schema1', $this->objectService);
+
+		$this->assertSame(403, $result->getStatus());
+		$this->assertSame(['error' => 'You may not merge these objects.'], $result->getData());
+	}
+
+	public function testMergeReturns403WhenTheCallerMayNotDeleteTheSource(): void {
+		$this->request->method('getParams')->willReturn([
+			'target' => 'uuid-456',
+			'object' => ['title' => 'Merged'],
+		]);
+		$this->allowMerge(mayDelete: false);
+		$this->objectService->expects($this->never())->method('mergeObjects');
+
+		$result = $this->controller->merge('uuid-123', 'reg1', 'schema1', $this->objectService);
+
+		$this->assertSame(403, $result->getStatus());
+	}
+
 	public function testMergeReturnsMergedObject(): void {
+		$this->allowMerge();
 		$this->request->method('getParams')->willReturn([
 			'target' => 'uuid-456',
 			'object' => ['title' => 'Merged'],
@@ -336,6 +400,7 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	public function testMergeReturns400OnInvalidArgument(): void {
+		$this->allowMerge();
 		$this->request->method('getParams')->willReturn([
 			'target' => 'uuid-456',
 			'object' => ['title' => 'Merged'],
@@ -352,6 +417,7 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	public function testMergeReturns500OnGenericException(): void {
+		$this->allowMerge();
 		$this->request->method('getParams')->willReturn([
 			'target' => 'uuid-456',
 			'object' => ['title' => 'Merged'],
@@ -677,7 +743,7 @@ class ObjectsControllerTest extends TestCase {
 		$this->objectService->method('setRegister')->willReturnSelf();
 		$this->objectService->method('find')->willReturn($objectEntity);
 
-		$analysis = new DeletionAnalysis(true, [], [], [], [], []);
+		$analysis = new DeletionAnalysis(true, new DeletionEffects([], [], []), [], []);
 		$deleteHandler = $this->createMock(\OCA\OpenRegister\Service\Object\DeleteObject::class);
 		$deleteHandler->method('canDelete')->willReturn($analysis);
 		$this->objectService->method('getDeleteHandler')->willReturn($deleteHandler);
@@ -921,6 +987,23 @@ class ObjectsControllerTest extends TestCase {
 
 		$this->assertInstanceOf(JSONResponse::class, $result);
 		$this->assertSame(200, $result->getStatus());
+	}
+
+	public function testObjectsAnswersARefusedPurposeWith403(): void {
+		$this->request->method('getParams')->willReturn(['_ids' => 'u1']);
+		$this->objectService->method('buildSearchQuery')->willReturn(['_ids' => ['u1']]);
+		$this->objectService->method('searchObjectsPaginated')->willThrowException(
+			new \OCA\OpenRegister\Service\Audit\PurposeRefusedException(
+				rule: \OCA\OpenRegister\Service\Audit\PurposeRefusedException::RULE_MISSING,
+				reason: 'This read needs a declared purpose.',
+				purpose: null
+			)
+		);
+
+		$result = $this->controller->objects($this->objectService);
+
+		$this->assertSame(403, $result->getStatus());
+		$this->assertSame('PURPOSE_REFUSED', $result->getData()['error']);
 	}
 
 	// --- contracts() propagates exception (no try-catch) ---
@@ -2330,9 +2413,7 @@ class ObjectsControllerTest extends TestCase {
 
 		$analysis = new \OCA\OpenRegister\Dto\DeletionAnalysis(
 			false,
-			[],
-			[],
-			[],
+			new \OCA\OpenRegister\Dto\DeletionEffects([], [], []),
 			[['uuid' => 'blocker', 'reason' => 'RESTRICT']],
 			[]
 		);
@@ -3373,6 +3454,7 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testMergeReturnsFullMergeResult(): void {
+		$this->allowMerge();
 		$this->request->method('getParams')->willReturn([
 			'target' => 'uuid-456',
 			'object' => ['title' => 'Merged', 'description' => 'Combined'],
@@ -3760,9 +3842,7 @@ class ObjectsControllerTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			false,
-			[],
-			[],
-			[],
+			new DeletionEffects([], [], []),
 			[['uuid' => 'blocker-1', 'reason' => 'RESTRICT']],
 			[]
 		);
@@ -5333,7 +5413,7 @@ class ObjectsControllerTest extends TestCase {
 					return $runs;
 				}
 
-				if ($id === \OCA\OpenRegister\Service\Export\ExportAuditRecorder::class) {
+				if ($id === \OCA\OpenRegister\Service\Export\ExportAuditRecorderInterface::class) {
 					return $recorder;
 				}
 
@@ -5395,10 +5475,10 @@ class ObjectsControllerTest extends TestCase {
 			$this->callback(static fn (...$a): bool => true)
 		)->willReturnCallback(
 			function (...$args) {
-				$this->assertSame('api', $args['source'] ?? $args[0]);
-				$this->assertSame('csv', $args['format'] ?? $args[2]);
-				$this->assertSame(1, $args['downloadCount'] ?? null);
-				$this->assertNull($args['retentionSeconds'] ?? 'missing');
+				$this->assertSame('api', $args[0]->source);
+				$this->assertSame('csv', $args[1]->format);
+				$this->assertSame(1, $args[2]->downloadCount);
+				$this->assertNull($args[3]);
 				return new \OCA\OpenRegister\Db\ExportRun();
 			}
 		);
@@ -5490,6 +5570,8 @@ class ObjectsControllerTest extends TestCase {
 		$result = $this->controller->export('1', '2', $this->objectService);
 
 		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertMatchesRegularExpression('/filename=test-reg_test-schema_\d{4}-\d{2}-\d{2}_\d{6}\.xlsx$/', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', $result->getHeaders()['Content-Type']);
 	}
 
 	// =========================================================================
@@ -5536,6 +5618,8 @@ class ObjectsControllerTest extends TestCase {
 		$result = $this->controller->export('1', '2', $this->objectService);
 
 		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertMatchesRegularExpression('/filename=register_schema_\d{4}-\d{2}-\d{2}_\d{6}\.csv$/', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('text/csv', $result->getHeaders()['Content-Type']);
 	}
 
 	// =========================================================================
@@ -5585,6 +5669,8 @@ class ObjectsControllerTest extends TestCase {
 		$result = $this->controller->export('1', '2', $this->objectService);
 
 		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertMatchesRegularExpression('/filename=reg_sch_\d{4}-\d{2}-\d{2}_\d{6}\.csv$/', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('text/csv', $result->getHeaders()['Content-Type']);
 	}
 
 	// =========================================================================
@@ -6130,6 +6216,8 @@ class ObjectsControllerTest extends TestCase {
 		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
 
 		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertMatchesRegularExpression('/filename=test-files\.zip$/', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('application/zip', $result->getHeaders()['Content-Type']);
 
 		// Clean up if file still exists
 		if (file_exists($tempZip)) {
@@ -6160,10 +6248,12 @@ class ObjectsControllerTest extends TestCase {
 		$audit = $this->createMock(\OCA\OpenRegister\Files\Service\File\FileAuditHandler::class);
 		$audit->expects($this->once())->method('logBulkDownload')->with(
 			$objectEntity,
-			[11, 12],
-			['a.txt', 'b.txt'],
-			'test-files.zip',
-			16
+			new \OCA\OpenRegister\Files\Service\File\BulkDownloadArchive(
+				fileIds: [11, 12],
+				fileNames: ['a.txt', 'b.txt'],
+				zipName: 'test-files.zip',
+				totalBytes: 16
+			)
 		);
 		$fileService = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
 		$fileService->method('createObjectFilesZip')->willReturn(
@@ -6203,6 +6293,8 @@ class ObjectsControllerTest extends TestCase {
 		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
 
 		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertMatchesRegularExpression('/filename=test-files\.zip$/', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('application/zip', $result->getHeaders()['Content-Type']);
 	}
 
 	/**
@@ -6214,7 +6306,7 @@ class ObjectsControllerTest extends TestCase {
 		$runs = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Export\ExportRunRecorder::class);
 		$runs->expects($this->once())->method('record')->willReturnCallback(
 			function (...$args) {
-				$this->assertSame('pdf', $args['format'] ?? $args[2]);
+				$this->assertSame('pdf', $args[1]->format);
 				return new \OCA\OpenRegister\Db\ExportRun();
 			}
 		);
@@ -6337,12 +6429,54 @@ class ObjectsControllerTest extends TestCase {
 			$schemas['s'],
 			'alice'
 		)->willReturn(['moved' => $moved]);
-		$this->container->method('get')->willReturn($mover);
+		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
+		$permissions->expects($this->exactly(2))->method('hasPermission')->willReturnCallback(
+			function (...$args) use ($schemas, $object): bool {
+				$this->assertSame(
+					$args[1] === 'update' ? [$schemas['b'], $object] : [$schemas['s'], null],
+					[$args[0], $args[5] ?? null]
+				);
+				return true;
+			}
+		);
+		$this->moveServices(mover: $mover, permissions: $permissions);
 
 		$result = $this->controller->move('a', 'b', 'uuid-123');
 
 		$this->assertSame($expected, $result->getStatus());
 		$this->assertSame(['moved' => $moved], $result->getData());
+	}
+
+	/**
+	 * A caller without the update right on the object or the create right on the target gets 403 and nothing moves.
+	 *
+	 * @return void
+	 */
+	public function testMoveWithoutTheRightsIsRefused(): void {
+		$this->prepareMove(['targetRegister' => 'r', 'targetSchema' => 's']);
+		$this->registerMapper->method('find')->willReturn(new \OCA\OpenRegister\Db\Register());
+		$this->schemaMapper->method('find')->willReturn(new \OCA\OpenRegister\Db\Schema());
+		$mover = $this->createMock(\OCA\OpenRegister\Service\Object\MoveObject::class);
+		$mover->expects($this->never())->method('move');
+		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
+		$permissions->method('hasPermission')->willReturn(false);
+		$this->moveServices(mover: $mover, permissions: $permissions);
+
+		$this->assertSame(403, $this->controller->move('a', 'b', 'uuid-123')->getStatus());
+	}
+
+	/**
+	 * Let the container hand out the mover and the permission handler.
+	 *
+	 * @param object $mover       The mover.
+	 * @param object $permissions The permission handler.
+	 *
+	 * @return void
+	 */
+	private function moveServices(object $mover, object $permissions): void {
+		$this->container->method('get')->willReturnCallback(
+			static fn (string $id) => ($id === \OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class) ? $permissions : $mover
+		);
 	}
 
 	/**
@@ -6578,6 +6712,56 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	/**
+	 * A JSON export is recorded with the format it was asked in.
+	 *
+	 * @return void
+	 */
+	public function testAJsonExportIsRecorded(): void {
+		$this->arrangeRecordedExport(format: 'json');
+		$this->exportService->method('exportToJson')->willReturn('[]');
+
+		$this->assertSame('[]', $this->controller->export('1', '2', $this->objectService)->render());
+	}
+
+	/**
+	 * An Excel export is recorded and answers an xlsx file.
+	 *
+	 * @return void
+	 */
+	public function testAnExcelExportIsRecordedAndNamedXlsx(): void {
+		$this->arrangeRecordedExport(format: 'excel');
+		$this->exportService->method('exportToExcel')->willReturn(new \PhpOffice\PhpSpreadsheet\Spreadsheet());
+
+		$result = $this->controller->export('1', '2', $this->objectService);
+
+		$this->assertStringEndsWith('.xlsx', $result->getHeaders()['Content-Disposition']);
+	}
+
+	/**
+	 * An export of this format, whose run must be recorded once under that format.
+	 *
+	 * @param string $format The format.
+	 *
+	 * @return void
+	 */
+	private function arrangeRecordedExport(string $format): void {
+		$runs = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Export\ExportRunRecorder::class);
+		$runs->expects($this->once())->method('record')->willReturnCallback(
+			function (...$args) use ($format) {
+				$this->assertSame($format, $args[1]->format);
+				return new \OCA\OpenRegister\Db\ExportRun();
+			}
+		);
+		$this->grantExport(true, $runs);
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn(new \OCA\OpenRegister\Db\Register());
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn(new \OCA\OpenRegister\Db\Schema());
+		$this->request->method('getParams')->willReturn([]);
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, $default = null) => ($key === 'format') ? $format : $default
+		);
+	}
+
+	/**
 	 * A JSON export drops the route from its filters and answers a named JSON file.
 	 *
 	 * @return void
@@ -6658,6 +6842,8 @@ class ObjectsControllerTest extends TestCase {
 		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
 
 		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertMatchesRegularExpression('/filename=custom-name\.zip$/', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('application/zip', $result->getHeaders()['Content-Type']);
 
 		if (file_exists($tempZip)) {
 			unlink($tempZip);

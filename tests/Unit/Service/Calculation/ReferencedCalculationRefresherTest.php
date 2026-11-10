@@ -121,7 +121,11 @@ class ReferencedCalculationRefresherTest extends TestCase {
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
 		$container->method('get')->willReturn(value: $service);
 
-		return new ReferencedCalculationRefresher(registers: $registers, schemas: $schemas, rows: $rows, container: $container, logger: new NullLogger());
+		return new ReferencedCalculationRefresher(
+			new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registers, schemas: $schemas, tables: $rows),
+			$container,
+			new NullLogger()
+		);
 	}//end refresher()
 
 	/**

@@ -31,11 +31,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\ProcessingLogMapper;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -43,7 +40,7 @@ use Psr\Log\LoggerInterface;
 /**
  * AVG compliance checks. Phase 1: unregistered-PII detection.
  */
-class AvgComplianceService {
+class AvgComplianceService implements AvgComplianceServiceInterface {
 
 	/**
 	 * Annotation key that satisfies the "processing-activity attached"
@@ -74,21 +71,16 @@ class AvgComplianceService {
 	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection $db DB for the GdprEntity join.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
-	 * @param RegisterMapperInterface $registerMapper Register lookup (annotation
-	 *                                       fallback).
-	 * @param LoggerInterface $logger Logger.
-	 * @param ProcessingLogMapper|null $logMapper Read-log mapper (fallback-gap count).
-	 * @param VerwerkingsactiviteitMapper|null $vrwMapper Activity resolver (fallback uuid).
+	 * @param IDBConnection          $db           DB for the GdprEntity join.
+	 * @param SchemaCatalogInterface $catalog      Register and schema lookup (annotation check).
+	 * @param LoggerInterface        $logger       Logger.
+	 * @param UnclassifiedProcessing $unclassified The fallback-gap count.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly LoggerInterface $logger,
-		private readonly ?ProcessingLogMapper $logMapper = null,
-		private readonly ?VerwerkingsactiviteitMapper $vrwMapper = null,
+		private readonly UnclassifiedProcessing $unclassified,
 	) {
 
 	}//end __construct()
@@ -204,18 +196,8 @@ class AvgComplianceService {
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
 	public function countUnclassifiedProcessing(): int {
-		if ($this->logMapper === null || $this->vrwMapper === null) {
-			return 0;
-		}
-
 		try {
-			$fallback = $this->vrwMapper->findByCode(code: self::FALLBACK_CODE);
-			if ($fallback === null) {
-				return 0;
-			}
-
-			$counts = $this->logMapper->countByActivity();
-			return (int)($counts[(string)$fallback->getUuid()] ?? 0);
+			return $this->unclassified->count();
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[AVG compliance] Failed to count unclassified processing',
@@ -262,7 +244,7 @@ class AvgComplianceService {
 	 */
 	private function registerHasAnnotation(string $registerId): bool {
 		try {
-			$register = $this->registerMapper->find(
+			$register = $this->catalog->registers()->find(
 				$registerId,
 				_rbac: false,
 				_multitenancy: false
@@ -290,7 +272,7 @@ class AvgComplianceService {
 	 */
 	private function schemaHasAnnotation(string $schemaId): bool {
 		try {
-			$schema = $this->schemaMapper->find(
+			$schema = $this->catalog->schemas()->find(
 				$schemaId,
 				_rbac: false,
 				_multitenancy: false
@@ -348,7 +330,7 @@ class AvgComplianceService {
 	 */
 	private function resolveSchemaTitle(string $schemaId): string {
 		try {
-			$schema = $this->schemaMapper->find(
+			$schema = $this->catalog->schemas()->find(
 				$schemaId,
 				_rbac: false,
 				_multitenancy: false

@@ -131,13 +131,25 @@ abstract class ExampleSetEngineRows {
 		}
 
 		foreach ((array) ($context['objects'] ?? []) as $object) {
-			if (is_array($object) === true && in_array($uuid, [($object['id'] ?? null), ($object['uuid'] ?? null)], true) === true) {
+			if ($this->carries(object: $object, uuid: $uuid) === true) {
 				return true;
 			}
 		}
 
 		return false;
 	}//end isObjectOfSet()
+
+	/**
+	 * Whether an object of the set carries the uuid as its id or uuid.
+	 *
+	 * @param mixed  $object The object, a map when it is one.
+	 * @param string $uuid   The uuid.
+	 *
+	 * @return bool
+	 */
+	private function carries(mixed $object, string $uuid): bool {
+		return is_array($object) === true && in_array($uuid, [($object['id'] ?? null), ($object['uuid'] ?? null)], true) === true;
+	}//end carries()
 
 	/**
 	 * Why a date field cannot be used, or '': not a date, or (for an end) before the install day.
@@ -154,20 +166,12 @@ abstract class ExampleSetEngineRows {
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-access-links-on-its-objects
 	 */
 	protected function dateRefusal(string $field, mixed $value, array $context, bool $isEnd): string {
-		if (is_string($value) === false || trim($value) === '') {
-			return $field.' is not a date';
+		$moment = $this->momentOf(value: $value);
+		if ($moment === null) {
+			return $this->notADate(field: $field, value: $value);
 		}
 
-		try {
-			$moment = new DateTimeImmutable($value);
-		} catch (Throwable) {
-			return $field.' "'.$value.'" is not a date';
-		}
-
-		$today = ($context['today'] ?? null);
-		if ($isEnd === true && $today instanceof DateTimeImmutable === true
-			&& $moment->setTimezone($today->getTimezone())->format('Y-m-d') < $today->format('Y-m-d')
-		) {
+		if ($isEnd === true && $this->beforeDay(moment: $moment, today: ($context['today'] ?? null)) === true) {
 			return $field.' "'.$value.'" lies before the install day';
 		}
 
@@ -175,18 +179,75 @@ abstract class ExampleSetEngineRows {
 	}//end dateRefusal()
 
 	/**
+	 * The moment a declared date names, or null when it names none.
+	 *
+	 * @param mixed $value The declared value.
+	 *
+	 * @return DateTimeImmutable|null
+	 */
+	private function momentOf(mixed $value): ?DateTimeImmutable {
+		if ($this->isBlank(value: $value) === true) {
+			return null;
+		}
+
+		try {
+			return new DateTimeImmutable($value);
+		} catch (Throwable) {
+			return null;
+		}
+	}//end momentOf()
+
+	/**
+	 * The refusal for a value that is not a date: blank, or not parseable.
+	 *
+	 * @param string $field The field.
+	 * @param mixed  $value The declared value.
+	 *
+	 * @return string
+	 */
+	private function notADate(string $field, mixed $value): string {
+		if ($this->isBlank(value: $value) === true) {
+			return $field.' is not a date';
+		}
+
+		return $field.' "'.$value.'" is not a date';
+	}//end notADate()
+
+	/**
+	 * Whether a filled value is no text, or only blanks.
+	 *
+	 * @param mixed $value The filled value.
+	 *
+	 * @return bool
+	 */
+	private function isBlank(mixed $value): bool {
+		return is_string($value) === false || trim($value) === '';
+	}//end isBlank()
+
+	/**
+	 * Whether a moment lies on a day before the install day, in the install day's zone; false without an install day.
+	 *
+	 * @param DateTimeImmutable $moment The moment.
+	 * @param mixed             $today  The install day, or null.
+	 *
+	 * @return bool
+	 */
+	private function beforeDay(DateTimeImmutable $moment, mixed $today): bool {
+		return $today instanceof DateTimeImmutable === true
+			&& $moment->setTimezone($today->getTimezone())->format('Y-m-d') < $today->format('Y-m-d');
+	}//end beforeDay()
+
+	/**
 	 * Write one row.
 	 *
-	 * @param string               $app  The app that ships the fragment.
-	 * @param string               $key  The row's key in the fragment.
-	 * @param array<string, mixed> $data The filled fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{uuid: string, runs?: array<string, string>, waitsOn?: array<string, string>}|null}
 	 *         The record entry (a flow's also names its keyed runs), or why the write failed.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
-	abstract public function write(string $app, string $key, array $data): array;
+	abstract public function write(ExampleSetRow $row): array;
 
 	/**
 	 * Whether a written row is no longer there.
@@ -225,9 +286,7 @@ abstract class ExampleSetEngineRows {
 	 * Update a held row where it is; a kind that updatesInPlace() overrides this.
 	 *
 	 * @param array<string, mixed> $entry The record entry of the earlier write.
-	 * @param string               $app   The app that ships the fragment.
-	 * @param string               $key   The row's key in the fragment.
-	 * @param array<string, mixed> $data  The filled fields.
+	 * @param ExampleSetRow        $row   The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array<string, mixed>|null} The record entry, or why the update failed.
 	 *
@@ -236,8 +295,8 @@ abstract class ExampleSetEngineRows {
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-seeded-view-keeps-its-uuid
 	 */
-	public function update(array $entry, string $app, string $key, array $data): array {
-		return $this->write(app: $app, key: $key, data: $data);
+	public function update(array $entry, ExampleSetRow $row): array {
+		return $this->write(row: $row);
 	}//end update()
 
 	/**
@@ -256,25 +315,18 @@ abstract class ExampleSetEngineRows {
 	/**
 	 * Check the rows of one fragment: each fills and passes refusal().
 	 *
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param array<string, mixed> $context  The context placeholders draw on.
-	 * @param array<int, string>   $users    The account ids the set creates or adopts.
-	 * @param ExampleSetValues     $values   Fills placeholders.
+	 * @param array<string, mixed>    $fragment The fragment.
+	 * @param ExampleSetFragmentCheck $check    The context placeholders draw on, the account ids the set creates or
+	 *                                          adopts, and the filler.
 	 *
 	 * @return array<int, string> Refusals.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
-	public function checkFragment(array $fragment, array $context, array $users, ExampleSetValues $values): array {
+	public function checkFragment(array $fragment, ExampleSetFragmentCheck $check): array {
 		$refusals = [];
 		foreach (($fragment[$this->part()] ?? []) as $entry) {
-			$gaps = [];
-			$data = (array) $values->fill(value: $entry['data'], context: $this->fillContext(context: $context), gaps: $gaps);
-			$why  = $this->refusalIn(data: $data, users: $users, context: $context);
-			if ($gaps !== []) {
-				$why = 'cannot resolve '.implode(', ', array_unique($gaps));
-			}
-
+			$why = $this->entryRefusal(entry: $entry, check: $check);
 			if ($why !== '') {
 				$refusals[] = $fragment['file'].': '.$this->noun().' "'.$entry['key'].'": '.$why;
 			}
@@ -284,13 +336,31 @@ abstract class ExampleSetEngineRows {
 	}//end checkFragment()
 
 	/**
+	 * Why one row of a fragment cannot be written, or ''. A placeholder the
+	 * set cannot resolve outranks the row's own refusal.
+	 *
+	 * @param array<string, mixed>    $entry The declared row.
+	 * @param ExampleSetFragmentCheck $check The context, accounts and filler.
+	 *
+	 * @return string
+	 */
+	private function entryRefusal(array $entry, ExampleSetFragmentCheck $check): string {
+		$gaps = [];
+		$data = (array) $check->values->fill(value: $entry['data'], context: $this->fillContext(context: $check->context), gaps: $gaps);
+		$why  = $this->refusalIn(data: $data, users: $check->users, context: $check->context);
+		if ($gaps !== []) {
+			return 'cannot resolve '.implode(', ', array_unique($gaps));
+		}
+
+		return $why;
+	}//end entryRefusal()
+
+	/**
 	 * Write the rows of one fragment that the record does not hold, and let go of the held ones it no longer declares.
 	 *
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param array<string, mixed> $context  The context placeholders draw on.
-	 * @param array<string, mixed> $report   The report; gains the outcomes under part() and `dropped`.
-	 * @param array<string, mixed> $record   The record; gains the rows written under part().
-	 * @param ExampleSetValues     $values   Fills placeholders.
+	 * @param ExampleSetFragmentWrite $write  The fragment, the context placeholders draw on and their filler.
+	 * @param RecordLedger            $ledger The report (gains the outcomes under part() and `dropped`) and the record
+	 *                                        (gains the rows written under part()), held by reference.
 	 *
 	 * @return bool Whether the record changed and is to be written.
 	 *
@@ -299,119 +369,15 @@ abstract class ExampleSetEngineRows {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) ExampleSetRecord::letGoUndeclared() is a pure function of its arguments, shared by every part.
 	 */
-	public function installFragment(array $fragment, array $context, array &$report, array &$record, ExampleSetValues $values): bool {
-		$part    = $this->part();
-		$changed = false;
-		$refresh = (($context['refresh'] ?? false) === true && in_array($part, self::REFRESHED, true) === true);
-		foreach (($fragment[$part] ?? []) as $entry) {
-			$name = $fragment['app'].'/'.$entry['key'];
-			$report[$part][$name] = 'kept';
-			$held    = isset($record[$part][$name]);
-			$earlier = ($record[$part][$name] ?? []);
-			$where   = $fragment['file'].': '.$this->noun().' "'.$entry['key'].'"';
-			$mode    = $this->mode(held: $held, refresh: $refresh, earlier: $earlier, where: $where, report: $report);
-			if ($mode === 'skip') {
-				continue;
-			}
-
-			$gaps = [];
-			$data = (array) $values->fill(value: $entry['data'], context: $this->fillContext(context: $context), gaps: $gaps);
-			$made = ['error' => $this->refusalIn(data: $data, users: array_keys($record['users']), context: $context), 'entry' => null];
-			if ($gaps !== []) {
-				$made['error'] = 'cannot resolve '.implode(', ', array_unique($gaps));
-			}
-
-			if ($made['error'] === '') {
-				$made = $this->writeOrUpdate(mode: $mode, earlier: $earlier, app: $fragment['app'], key: $entry['key'], data: $data);
-			}
-
-			if ($made['entry'] === null) {
-				$report['dropped'][]  = $fragment['file'].': '.$this->noun().' "'.$entry['key'].'": '.$made['error'];
-				$report[$part][$name] = 'failed';
-				continue;
-			}
-
-			$record[$part][$name] = $made['entry'];
-			$report[$part][$name] = ['created', 'refreshed'][(int) $held];
-			$changed = true;
-		}//end foreach
-
-		if (ExampleSetRecord::letGoUndeclared(fragment: $fragment, part: $part, noun: $this->noun(), report: $report, record: $record) === true) {
+	public function installFragment(ExampleSetFragmentWrite $write, RecordLedger $ledger): bool {
+		$fragment = $write->fragment;
+		$install  = new ExampleSetRowInstall(rows: $this, refusal: $this->refusalIn(...), fill: $this->fillContext(...), values: $write->values);
+		$changed  = $install->fragment(fragment: $fragment, context: $write->context, report: $ledger->report, record: $ledger->record);
+		$part     = new ExampleSetRecordPart(part: $this->part(), noun: $this->noun());
+		if (ExampleSetRecord::letGoUndeclared(part: $part, fragment: $fragment, report: $ledger->report, record: $ledger->record) === true) {
 			$changed = true;
 		}
 
 		return $changed;
 	}//end installFragment()
-
-	/**
-	 * What this run does with a row: `write` it, `update` the held one where it is, or `skip` a held one.
-	 *
-	 * @param bool                 $held    Whether the record holds the row.
-	 * @param bool                 $refresh Whether this run refreshes this part.
-	 * @param array<string, mixed> $earlier The record entry of the earlier write.
-	 * @param string               $where   The row, for messages.
-	 * @param array<string, mixed> $report  The report; gains a row that could not be taken away.
-	 *
-	 * @return string
-	 */
-	private function mode(bool $held, bool $refresh, array $earlier, string $where, array &$report): string {
-		if ($held === false) {
-			return 'write';
-		}
-
-		if ($refresh === true && $this->updatesInPlace() === true) {
-			return 'update';
-		}
-
-		if ($this->writesAgain(refresh: $refresh, entry: $earlier, where: $where, report: $report) === true) {
-			return 'write';
-		}
-
-		return 'skip';
-	}//end mode()
-
-	/**
-	 * Write a row, or update the held one where it is.
-	 *
-	 * @param string               $mode    `write` or `update`, from mode().
-	 * @param array<string, mixed> $earlier The record entry of the earlier write.
-	 * @param string               $app     The app that ships the fragment.
-	 * @param string               $key     The row's key in the fragment.
-	 * @param array<string, mixed> $data    The filled fields.
-	 *
-	 * @return array{error: string, entry: array<string, mixed>|null}
-	 */
-	private function writeOrUpdate(string $mode, array $earlier, string $app, string $key, array $data): array {
-		if ($mode === 'update') {
-			return $this->update(entry: $earlier, app: $app, key: $key, data: $data);
-		}
-
-		return $this->write(app: $app, key: $key, data: $data);
-	}//end writeOrUpdate()
-
-	/**
-	 * Whether a row an earlier run wrote is written again: only on `--refresh`, after the old row is taken away; false
-	 * (and named under `dropped`) when it could not be taken away, so the old row stays and is not written twice.
-	 *
-	 * @param bool                 $refresh Whether this run refreshes this part.
-	 * @param array<string, mixed> $entry  The record entry of the row.
-	 * @param string               $where  The fragment file and the row, for the report.
-	 * @param array<string, mixed> $report The report.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
-	 */
-	private function writesAgain(bool $refresh, array $entry, string $where, array &$report): bool {
-		if ($refresh === false) {
-			return false;
-		}
-
-		if ($this->revert(entry: $entry) === 'failed') {
-			$report['dropped'][] = $where.': not refreshed, the earlier one could not be taken away';
-			return false;
-		}
-
-		return true;
-	}//end writesAgain()
 }//end class

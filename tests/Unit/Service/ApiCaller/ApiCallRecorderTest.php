@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ApiCaller;
 
 use DateTime;
 use OCA\OpenRegister\Db\ApiCallRecord;
+use OCA\OpenRegister\Db\ApiCallKey;
 use OCA\OpenRegister\Db\ApiCallRecordMapper;
 use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorder;
 use OCP\IAppConfig;
@@ -32,6 +33,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Service\ApiCaller\ApiCallObservation;
 
 /**
  * @covers \OCA\OpenRegister\Service\ApiCaller\ApiCallRecorder
@@ -130,35 +132,43 @@ class ApiCallRecorderTest extends TestCase {
 		$mapper->expects($this->once())
 			->method('count')
 			->with(
-				$this->equalTo('leverancier'),
-				$this->equalTo('/apps/openregister/api/objects/zaken/melding/{id}'),
-				$this->equalTo('GET'),
-				$this->equalTo('1'),
+				$this->equalTo(new ApiCallKey('leverancier', '/apps/openregister/api/objects/zaken/melding/{id}', 'GET', '1')),
 				$this->isInstanceOf(DateTime::class),
 			)
 			->willReturn(true);
 
-		$recorder->record(
-			principal: 'leverancier',
-			path: '/apps/openregister/api/objects/zaken/melding/3f2504e0-4f89-41d3-9a0c-0305e82c3301',
-			method: 'get',
-			apiVersion: '1',
+		$recorder->recordCall(
+			call: new ApiCallObservation(path: '/apps/openregister/api/objects/zaken/melding/3f2504e0-4f89-41d3-9a0c-0305e82c3301', method: 'get', apiVersion: '1')
 		);
 	}//end testACallIsCountedAgainstItsCaller()
+
+	public function testAnAnonymousCallIsCountedWithAnEmptyCaller(): void {
+		[$recorder, $mapper] = $this->build(uid: null);
+
+		$mapper->expects($this->once())
+			->method('count')
+			->with(
+				$this->equalTo(new ApiCallKey('', '/apps/openregister/api/capabilities', 'POST', '2')),
+				$this->isInstanceOf(DateTime::class),
+			)
+			->willReturn(true);
+
+		$recorder->recordCall(call: new ApiCallObservation(path: '/apps/openregister/api/capabilities', method: 'post', apiVersion: '2'));
+	}//end testAnAnonymousCallIsCountedWithAnEmptyCaller()
 
 	public function testNothingIsRecordedWhenTheRecordIsSwitchedOff(): void {
 		[$recorder, $mapper] = $this->build(enabled: false);
 
 		$mapper->expects($this->never())->method('count');
 
-		$recorder->record(principal: 'leverancier', path: '/apps/openregister/api/x', method: 'GET', apiVersion: '1');
+		$recorder->recordCall(call: new ApiCallObservation(path: '/apps/openregister/api/x', method: 'GET', apiVersion: '1'));
 	}//end testNothingIsRecordedWhenTheRecordIsSwitchedOff()
 
 	public function testAFailedRecordDoesNotFailTheCall(): void {
 		[$recorder, $mapper] = $this->build();
 		$mapper->method('count')->willThrowException(new RuntimeException('deadlock'));
 
-		$recorder->record(principal: 'leverancier', path: '/apps/openregister/api/x', method: 'GET', apiVersion: '1');
+		$recorder->recordCall(call: new ApiCallObservation(path: '/apps/openregister/api/x', method: 'GET', apiVersion: '1'));
 
 		$this->assertTrue(true, 'A gemeente API going down because its usage log deadlocked is an outage caused by an ornament.');
 	}//end testAFailedRecordDoesNotFailTheCall()

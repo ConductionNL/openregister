@@ -18,7 +18,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
+use OCA\OpenRegister\Service\Party\PartyLinkRequest;
 use OCA\OpenRegister\Service\Party\PartyLinkWriter;
+use OCA\OpenRegister\Service\Party\PartyRoleRecords;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Service\PersonLinkEvents;
@@ -124,11 +126,9 @@ class PartyRoleServiceTest extends TestCase {
 		);
 
 		$this->service = new PartyRoleService(
-			$this->links,
-			$this->writer,
+			new PartyRoleRecords($this->links, $this->writer, $this->audit),
 			$this->parties,
 			$this->schemas,
-			$this->audit,
 			new PersonLinkEvents($dispatcher)
 		);
 	}//end setUp()
@@ -160,6 +160,26 @@ class PartyRoleServiceTest extends TestCase {
 		$this->parties->method('find')->willReturn($party);
 		$this->parties->method('definitionFor')->willReturn(new PartyDefinition(kind: $kind));
 	}//end partyOfKind()
+
+	/**
+	 * The object a trusted import puts the party on.
+	 *
+	 * @param string $uuid The object uuid.
+	 * @param int $registerId The register id.
+	 * @param int|string|null $schemaId The object's schema id.
+	 *
+	 * @return ObjectEntity The object.
+	 */
+	private function objectOn(string $uuid, int $registerId, int|string|null $schemaId): ObjectEntity {
+		$object = new ObjectEntity();
+		$object->setUuid($uuid);
+		$object->setRegister((string) $registerId);
+		if ($schemaId !== null) {
+			$object->setSchema((string) $schemaId);
+		}
+
+		return $object;
+	}//end objectOn()
 
 	/**
 	 * A stored party link.
@@ -218,16 +238,14 @@ class PartyRoleServiceTest extends TestCase {
 	public function testImportNamesTheLinkerAndAddDoesNot(): void {
 		$linkers = [];
 		$this->writer->method('write')->willReturnCallback(
-			function (string $objectUuid, int $registerId, ?int $schemaId, string $partyUuid, ?string $role, ?string $linkedBy = null) use (&$linkers): ContactLink {
-				$linkers[] = $linkedBy;
-				return $this->storedLink(partyUuid: $partyUuid, role: (string) $role);
+			function (PartyLinkRequest $request) use (&$linkers): ContactLink {
+				$linkers[] = $request->linkedBy;
+				return $this->storedLink(partyUuid: $request->partyUuid, role: (string) $request->role);
 			}
 		);
 
 		$link = $this->service->importParty(
-			objectUuid: 'case-1',
-			registerId: 3,
-			schemaId: null,
+			object: $this->objectOn(uuid: 'case-1', registerId: 3, schemaId: null),
 			payload: ['partyUuid' => 'party-a', 'role' => 'gemachtigde', 'validUntil' => '2026-12-31', 'note' => 'Awb 2:1'],
 			linkedBy: 'dossiq'
 		);
@@ -256,9 +274,7 @@ class PartyRoleServiceTest extends TestCase {
 		$this->writer->method('write')->willReturn($this->storedLink(partyUuid: 'party-a', role: 'aanvrager'));
 
 		$link = $this->service->importParty(
-			objectUuid: 'case-1',
-			registerId: 1,
-			schemaId: 7,
+			object: $this->objectOn(uuid: 'case-1', registerId: 1, schemaId: 7),
 			payload: ['partyUuid' => 'party-a', 'role' => 'aanvrager'],
 			linkedBy: 'portaliq'
 		);

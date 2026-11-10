@@ -55,13 +55,11 @@ namespace OCA\OpenRegister\Repair;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Service\AuditCanonicalV1;
-use OCA\OpenRegister\Service\AuditHashService;
-use OCP\IAppConfig;
-use OCP\IDBConnection;
+use OCA\OpenRegister\Repair\Support\RepairPlatform;
+use OCA\OpenRegister\Service\AuditRechainInterface;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -100,16 +98,13 @@ class RechainAuditTrailForFlowAttribution implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection    $db     Reads the audit rows to verify.
-	 * @param IAppConfig       $config Stores the verdict and the done-marker.
-	 * @param AuditHashService $hashes Performs the re-seal.
-	 * @param LoggerInterface  $logger Records the verdict in the log as well.
+	 * @param RepairPlatform        $platform Reads the audit rows to verify (db), stores the verdict and
+	 *                                        the done-marker (config) and records the verdict in the log.
+	 * @param AuditRechainInterface $hashes   Performs the re-seal.
 	 */
 	public function __construct(
-		private readonly IDBConnection $db,
-		private readonly IAppConfig $config,
-		private readonly AuditHashService $hashes,
-		private readonly LoggerInterface $logger,
+		private readonly RepairPlatform $platform,
+		private readonly AuditRechainInterface $hashes,
 	) {
 	}//end __construct()
 
@@ -134,7 +129,7 @@ class RechainAuditTrailForFlowAttribution implements IRepairStep {
 	 * @spec openspec/changes/flow-object-attribution/specs/audit-hash-chain/spec.md
 	 */
 	public function run(IOutput $output): void {
-		if ($this->config->getValueString('openregister', self::DONE_KEY, '') !== '') {
+		if ($this->platform->config->getValueString('openregister', self::DONE_KEY, '') !== '') {
 			$output->info('Audit chain already re-sealed under seed v2; nothing to do.');
 			return;
 		}
@@ -158,7 +153,7 @@ class RechainAuditTrailForFlowAttribution implements IRepairStep {
 
 		$result = $this->hashes->rechainAll();
 
-		$this->config->setValueString('openregister', self::DONE_KEY, (new DateTime())->format('c'));
+		$this->platform->config->setValueString('openregister', self::DONE_KEY, (new DateTime())->format('c'));
 
 		$output->info(
 			sprintf(
@@ -242,7 +237,7 @@ class RechainAuditTrailForFlowAttribution implements IRepairStep {
 		$afterId = 0;
 
 		while ($brokenAt === null) {
-			$qb = $this->db->getQueryBuilder();
+			$qb = $this->platform->db->getQueryBuilder();
 			$qb->select('*')
 				->from('openregister_audit_trails')
 				->where($qb->expr()->gt('id', $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
@@ -358,13 +353,13 @@ class RechainAuditTrailForFlowAttribution implements IRepairStep {
 			return false;
 		}
 
-		$this->logger->warning(
+		$this->platform->logger->warning(
 			message: '[RechainAuditTrailForFlowAttribution] Pre-re-chain audit chain verdict: ' . $payload,
 			context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
 		);
 
 		try {
-			$this->config->setValueString('openregister', self::VERDICT_KEY, $payload);
+			$this->platform->config->setValueString('openregister', self::VERDICT_KEY, $payload);
 		} catch (Throwable $e) {
 			$output->warning('Could not store the pre-verification verdict: ' . $e->getMessage());
 			return false;
@@ -372,6 +367,6 @@ class RechainAuditTrailForFlowAttribution implements IRepairStep {
 
 		// Read it back. "The setter did not throw" is not evidence the value is
 		// there, and this is the one fact the whole step exists to preserve.
-		return ($this->config->getValueString('openregister', self::VERDICT_KEY, '') === $payload);
+		return ($this->platform->config->getValueString('openregister', self::VERDICT_KEY, '') === $payload);
 	}//end recordVerdict()
 }//end class

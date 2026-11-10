@@ -28,12 +28,8 @@ namespace OCA\OpenRegister\Service\Export;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ExportProfile;
-use OCA\OpenRegister\Db\ExportProfileMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\ExportService;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
 
@@ -50,31 +46,23 @@ use Throwable;
  *
  * @spec openspec/specs/data-import-export/spec.md
  */
-class ExportProfileService {
+class ExportProfileService implements ExportProfileServiceInterface {
 
 	/**
 	 * Wire the collaborators.
 	 *
-	 * @param ExportProfileMapper  $mapper        Profile persistence.
-	 * @param RegisterMapperInterface       $registerMapper Register lookups.
-	 * @param SchemaMapperInterface         $schemaMapper  Schema lookups.
-	 * @param ExportService        $exportService The selection every export shares.
-	 * @param ExportProfileWriter  $writer        Projection and file writing.
-	 * @param ExportRightService    $rightService  The export verb.
-	 * @param ExportAuditRecorder   $recorder      The audit trail.
-	 * @param ExportProfileValidator $validator    Judges a submitted profile.
+	 * @param ExportProfileStores $stores       Profile, register and schema lookups.
+	 * @param ExportProfileSteps  $steps        Selection, projection and file writing, and profile validation.
+	 * @param ExportRightService  $rightService The export verb.
+	 * @param ExportAuditRecorder $recorder     The audit trail.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ExportProfileMapper $mapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly ExportService $exportService,
-		private readonly ExportProfileWriter $writer,
+		private readonly ExportProfileStores $stores,
+		private readonly ExportProfileSteps $steps,
 		private readonly ExportRightService $rightService,
 		private readonly ExportAuditRecorder $recorder,
-		private readonly ExportProfileValidator $validator,
 	) {
 	}//end __construct()
 
@@ -90,7 +78,7 @@ class ExportProfileService {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function find(int $id): ExportProfile {
-		return $this->mapper->find($id);
+		return $this->stores->mapper->find($id);
 	}//end find()
 
 	/**
@@ -108,10 +96,10 @@ class ExportProfileService {
 	 */
 	public function listFor(string $callerUid, bool $callerIsAdmin): array {
 		if ($callerIsAdmin === true) {
-			return $this->mapper->findAll();
+			return $this->stores->mapper->findAll();
 		}
 
-		return $this->mapper->findByOwner($callerUid);
+		return $this->stores->mapper->findByOwner($callerUid);
 	}//end listFor()
 
 	/**
@@ -130,7 +118,7 @@ class ExportProfileService {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function create(array $data, string $ownerUid): ExportProfile {
-		$this->validator->validate(data: $data, partial: false);
+		$this->steps->validator->validate(data: $data, partial: false);
 
 		$profile = new ExportProfile();
 		$profile->setUuid((string)Uuid::v4());
@@ -139,7 +127,7 @@ class ExportProfileService {
 		$profile->setUpdatedAt(new DateTime());
 		$this->apply(profile: $profile, data: $data);
 
-		return $this->mapper->insert($profile);
+		return $this->stores->mapper->insert($profile);
 	}//end create()
 
 	/**
@@ -155,11 +143,11 @@ class ExportProfileService {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function update(ExportProfile $profile, array $data): ExportProfile {
-		$this->validator->validate(data: $data, partial: true);
+		$this->steps->validator->validate(data: $data, partial: true);
 		$this->apply(profile: $profile, data: $data);
 		$profile->setUpdatedAt(new DateTime());
 
-		return $this->mapper->update($profile);
+		return $this->stores->mapper->update($profile);
 	}//end update()
 
 	/**
@@ -172,27 +160,23 @@ class ExportProfileService {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function delete(ExportProfile $profile): void {
-		$this->mapper->delete($profile);
+		$this->stores->mapper->delete($profile);
 	}//end delete()
 
 	/**
 	 * Refuse a caller who is neither the owner nor an administrator.
 	 *
-	 * @param ExportProfile $profile       The profile.
-	 * @param string        $callerUid     The caller.
-	 * @param bool          $callerIsAdmin Whether the caller is an administrator.
+	 * @param ExportProfile       $profile The profile.
+	 * @param ExportProfileCaller $caller  The caller's uid, and whether they are an administrator.
 	 *
 	 * @return void
 	 *
 	 * @throws ExportRefusedException When the caller may not touch the profile.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The administrator bypass is
-	 *     a property of the caller, not a second code path.
 	 */
-	public function assertOwnerOrAdmin(ExportProfile $profile, string $callerUid, bool $callerIsAdmin): void {
-		if ($callerIsAdmin === true || $profile->getOwner() === $callerUid) {
+	public function assertOwnerOrAdmin(ExportProfile $profile, ExportProfileCaller $caller): void {
+		if ($caller->isAdmin === true || $profile->getOwner() === $caller->uid) {
 			return;
 		}
 
@@ -233,13 +217,11 @@ class ExportProfileService {
 			throw $refusal;
 		}
 
-		$objects = $this->exportService->fetchExportObjects(
-			register: $register,
-			schema: $schema,
-			filters: $profile->getFiltersArray()
+		$objects = $this->steps->exportService->fetchExportObjects(
+			request: new ExportRequest(register: $register, schema: $schema, filters: $profile->getFiltersArray())
 		);
 
-		$written = $this->writer->write(profile: $profile, objects: $objects, schema: $schema);
+		$written = $this->steps->writer->write(projection: new ProfileProjection(profile: $profile, schema: $schema), objects: $objects);
 
 		$this->recorder->recordCompleted(
 			profile: ($profile->getName() ?? ''),
@@ -291,7 +273,7 @@ class ExportProfileService {
 		}
 
 		try {
-			return $this->registerMapper->find($profile->getRegisterId(), _rbac: false, _multitenancy: false);
+			return $this->stores->registerMapper->find($profile->getRegisterId(), _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -312,7 +294,7 @@ class ExportProfileService {
 		}
 
 		try {
-			return $this->schemaMapper->find($profile->getSchemaId(), _rbac: false, _multitenancy: false);
+			return $this->stores->schemaMapper->find($profile->getSchemaId(), _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			return null;
 		}

@@ -56,20 +56,18 @@ class LegalHoldLedger {
 	public const LEGACY_OWNER = 'openregister:manual';
 
 	/**
-	 * Add the hold with this owner key, or update it when the owner already holds the object
+	 * The retention array with one matter's hold added, or restated.
 	 *
-	 * @param array       $retention The object's retention array.
-	 * @param string      $reason    Why the object is held.
-	 * @param string|null $ownerKey  The matter placing the hold; null for a manual hold.
-	 * @param string      $userId    Who places it.
-	 * @param string      $now       The moment, ISO 8601.
+	 * @param array      $retention The object's retention array.
+	 * @param HoldAction $action    The matter placing it, why, and who places it when.
 	 *
 	 * @return array The retention array with the hold in place.
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function place(array $retention, string $reason, ?string $ownerKey, string $userId, string $now): array {
-		$ownerKey = $this->owner(ownerKey: $ownerKey);
+	public function placeAction(array $retention, HoldAction $action): array {
+		[$reason, $stamp] = [$action->reason, $action->stamp];
+		$ownerKey = $this->owner(ownerKey: $action->ownerKey);
 		$holds = $this->holds(legalHold: ($retention['legalHold'] ?? null));
 
 		$index = $this->indexOf(holds: $holds, ownerKey: $ownerKey);
@@ -80,53 +78,40 @@ class LegalHoldLedger {
 		}
 
 		$holds[] = [
-			'id' => Uuid::v4()->toRfc4122(),
-			'ownerKey' => $ownerKey,
-			'reason' => $reason,
-			'placedBy' => $userId,
-			'placedDate' => $now,
+			'id' => Uuid::v4()->toRfc4122(), 'ownerKey' => $ownerKey, 'reason' => $reason, 'placedBy' => $stamp->userId, 'placedDate' => $stamp->now,
 		];
 
 		return $this->write(retention: $retention, holds: $holds);
-	}//end place()
+	}//end placeAction()
 
 	/**
-	 * Lift the hold of one owner, or every hold when no owner is named
+	 * The retention array with one matter's hold, or every hold, moved to history.
 	 *
-	 * @param array       $retention     The object's retention array.
-	 * @param string|null $ownerKey      The matter releasing its hold; null lifts every hold.
-	 * @param string      $releaseReason Why it is released.
-	 * @param string      $userId        Who releases it.
-	 * @param string      $now           The moment, ISO 8601.
+	 * @param array      $retention The object's retention array.
+	 * @param HoldAction $action    The matter releasing its hold (null releases every hold), why, and who releases it when.
 	 *
 	 * @return array The retention array, the released holds moved to history.
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function release(array $retention, ?string $ownerKey, string $releaseReason, string $userId, string $now): array {
-		$holds = $this->holds(legalHold: ($retention['legalHold'] ?? null));
-		$history = ($retention['legalHold']['history'] ?? []);
-		if (is_array($history) === false) {
-			$history = [];
-		}
+	public function releaseAction(array $retention, HoldAction $action): array {
+		[$ownerKey, $stamp] = [$action->ownerKey, $action->stamp];
+		$history = $this->history(retention: $retention);
 
 		$kept = [];
-		foreach ($holds as $hold) {
+		foreach ($this->holds(legalHold: ($retention['legalHold'] ?? null)) as $hold) {
 			if ($ownerKey !== null && $hold['ownerKey'] !== $ownerKey) {
 				$kept[] = $hold;
 				continue;
 			}
 
-			$history[] = array_merge(
-				$hold,
-				['releasedBy' => $userId, 'releasedDate' => $now, 'releaseReason' => $releaseReason]
-			);
+			$history[] = array_merge($hold, ['releasedBy' => $stamp->userId, 'releasedDate' => $stamp->now, 'releaseReason' => $action->reason]);
 		}
 
 		$retention['legalHold'] = ['history' => $history];
 
 		return $this->write(retention: $retention, holds: $kept);
-	}//end release()
+	}//end releaseAction()
 
 	/**
 	 * The active holds on a retention array, a stored single slot read as a list of one
@@ -161,14 +146,41 @@ class LegalHoldLedger {
 			return [];
 		}
 
-		return [[
+		return [$this->legacyHold(legalHold: $legalHold)];
+	}//end holds()
+
+	/**
+	 * A stored single-slot hold, read as one hold of the manual owner
+	 *
+	 * @param array<string, mixed> $legalHold The stored `retention.legalHold`.
+	 *
+	 * @return array<string, mixed> The hold.
+	 */
+	private function legacyHold(array $legalHold): array {
+		return [
 			'id' => (string) ($legalHold['id'] ?? 'legacy'),
 			'ownerKey' => self::LEGACY_OWNER,
 			'reason' => ($legalHold['reason'] ?? null),
 			'placedBy' => ($legalHold['placedBy'] ?? null),
 			'placedDate' => ($legalHold['placedDate'] ?? null),
-		]];
-	}//end holds()
+		];
+	}//end legacyHold()
+
+	/**
+	 * The released holds recorded so far
+	 *
+	 * @param array $retention The retention array.
+	 *
+	 * @return array The history, empty when none or unreadable.
+	 */
+	private function history(array $retention): array {
+		$history = ($retention['legalHold']['history'] ?? []);
+		if (is_array($history) === false) {
+			return [];
+		}
+
+		return $history;
+	}//end history()
 
 	/**
 	 * Write the list and the derived single-slot fields back
@@ -179,14 +191,9 @@ class LegalHoldLedger {
 	 * @return array The retention array.
 	 */
 	private function write(array $retention, array $holds): array {
-		$history = ($retention['legalHold']['history'] ?? []);
 		$latest = null;
 		if ($holds !== []) {
 			$latest = $holds[count($holds) - 1];
-		}
-
-		if (is_array($history) === false) {
-			$history = [];
 		}
 
 		$retention['legalHold'] = [
@@ -195,7 +202,7 @@ class LegalHoldLedger {
 			'placedBy' => ($latest['placedBy'] ?? null),
 			'placedDate' => ($latest['placedDate'] ?? null),
 			'holds' => array_values($holds),
-			'history' => $history,
+			'history' => $this->history(retention: $retention),
 		];
 
 		return $retention;

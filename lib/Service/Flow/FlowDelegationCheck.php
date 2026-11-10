@@ -43,8 +43,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use DateTime;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Service\Delegation\DelegationRefused;
+use OCA\OpenRegister\Service\Delegation\DelegationRequest;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
 use OCA\OpenRegister\Service\Delegation\DelegationVerdict;
 use Psr\Container\ContainerInterface;
@@ -98,10 +100,7 @@ class FlowDelegationCheck {
 	 * would teach the requester nothing except that their flow did not run. See
 	 * {@see FlowConsentParking}.
 	 *
-	 * @param string      $flowId     The flow being queued.
-	 * @param string      $trigger    What started the run.
-	 * @param string|null $declaredBy The principal who asserted the delegation.
-	 * @param string      $runAs      The identity the run would execute as.
+	 * @param DelegatedRun $run The flow, trigger, declaring principal and run identity.
 	 *
 	 * @return array{principal: string, actingAs: string, reason: string}|null
 	 *         Park instructions when consent is outstanding; null when the run
@@ -112,58 +111,65 @@ class FlowDelegationCheck {
 	 *
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
-	public function refuseIfRevoked(
-		string $flowId,
-		string $trigger,
-		?string $declaredBy,
-		string $runAs,
-	): ?array {
-		if ($declaredBy === null || $declaredBy === $runAs) {
+	public function verify(DelegatedRun $run): ?array {
+		if ($run->delegates() === false) {
 			return null;
 		}
 
-		$delegation = $this->delegationService(flowId: $flowId, declaredBy: $declaredBy, runAs: $runAs);
-
-		$verdict = $delegation->verdictFor(principal: $declaredBy, actingAs: $runAs);
+		$verdict = $this->delegationService(run: $run)->verdictFor(
+			request: new DelegationRequest(principal: (string)$run->declaredBy, actingAs: $run->runAs, scope: [], now: new DateTime())
+		);
 		if ($verdict->permitted === true) {
 			return null;
 		}
 
 		if ($verdict->reason === DelegationVerdict::REASON_PENDING) {
-			$this->logger->info(
-				message: '[FlowDelegationCheck] Parking a run — its delegation is awaiting an answer',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'flow' => $flowId,
-					'trigger' => $trigger,
-					'declaredBy' => $declaredBy,
-					'runAs' => $runAs,
-				]
-			);
-
-			return ['principal' => $declaredBy, 'actingAs' => $runAs, 'reason' => $verdict->reason];
+			return $this->park(run: $run, verdict: $verdict);
 		}
 
-		$refusal = new DelegationRefused(principal: $declaredBy, actingAs: $runAs, verdict: $verdict);
+		$this->refuse(run: $run, verdict: $verdict);
+	}//end verify()
+
+	/**
+	 * Park instructions for a run whose consent request is unanswered.
+	 *
+	 * @param DelegatedRun      $run     The run.
+	 * @param DelegationVerdict $verdict The pending verdict.
+	 *
+	 * @return array{principal: string, actingAs: string, reason: string} The park instructions.
+	 */
+	private function park(DelegatedRun $run, DelegationVerdict $verdict): array {
+		$this->logger->info(
+			message: '[FlowDelegationCheck] Parking a run — its delegation is awaiting an answer',
+			context: array_merge(['file' => __FILE__, 'line' => __LINE__], $run->logContext())
+		);
+
+		return ['principal' => (string)$run->declaredBy, 'actingAs' => $run->runAs, 'reason' => $verdict->reason];
+	}//end park()
+
+	/**
+	 * Refuse a run whose delegation was answered with anything but yes, and
+	 * make the refusal visible on the flow.
+	 *
+	 * @param DelegatedRun      $run     The run.
+	 * @param DelegationVerdict $verdict The refusing verdict.
+	 *
+	 * @return never
+	 *
+	 * @throws DelegationRefused Always.
+	 */
+	private function refuse(DelegatedRun $run, DelegationVerdict $verdict): never {
+		$refusal = new DelegationRefused(principal: (string)$run->declaredBy, actingAs: $run->runAs, verdict: $verdict);
 
 		$this->logger->warning(
 			message: '[FlowDelegationCheck] Refused a run whose delegation is no longer live',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'flow' => $flowId,
-				'trigger' => $trigger,
-				'declaredBy' => $declaredBy,
-				'runAs' => $runAs,
-				'reason' => $verdict->reason,
-			]
+			context: array_merge(['file' => __FILE__, 'line' => __LINE__], $run->logContext(), ['reason' => $verdict->reason])
 		);
 
-		$this->record(flowId: $flowId, refusal: $refusal);
+		$this->record(flowId: $run->flowId, refusal: $refusal);
 
 		throw $refusal;
-	}//end refuseIfRevoked()
+	}//end refuse()
 
 	/**
 	 * The delegation service, or a refusal when it cannot be reached.
@@ -172,47 +178,47 @@ class FlowDelegationCheck {
 	 * asserting a delegation, so refusing costs exactly the runs whose
 	 * authorization cannot be established — never the ordinary ones.
 	 *
-	 * @param string $flowId     The flow being queued.
-	 * @param string $declaredBy The principal who asserted the delegation.
-	 * @param string $runAs      The identity the run would execute as.
+	 * @param DelegatedRun $run The run asserting the delegation.
 	 *
 	 * @return DelegationService The service.
 	 *
 	 * @throws DelegationRefused When the service cannot be resolved.
 	 */
-	private function delegationService(string $flowId, string $declaredBy, string $runAs): DelegationService {
+	private function delegationService(DelegatedRun $run): DelegationService {
 		try {
 			$resolved = $this->container->get(DelegationService::class);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: '[FlowDelegationCheck] Could not resolve the delegation service; refusing the run: '
 					. $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flowId, 'runAs' => $runAs]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $run->flowId, 'runAs' => $run->runAs]
 			);
 
-			throw new DelegationRefused(
-				principal: $declaredBy,
-				actingAs: $runAs,
-				verdict: DelegationVerdict::refused(
-					reason: DelegationVerdict::REASON_UNREADABLE,
-					detail: 'The delegation store could not be reached, so the delegation is refused.'
-				)
-			);
-		}//end try
+			throw self::unreadable(run: $run, detail: 'The delegation store could not be reached, so the delegation is refused.');
+		}
 
 		if (($resolved instanceof DelegationService) === false) {
-			throw new DelegationRefused(
-				principal: $declaredBy,
-				actingAs: $runAs,
-				verdict: DelegationVerdict::refused(
-					reason: DelegationVerdict::REASON_UNREADABLE,
-					detail: 'The delegation store did not answer, so the delegation is refused.'
-				)
-			);
+			throw self::unreadable(run: $run, detail: 'The delegation store did not answer, so the delegation is refused.');
 		}
 
 		return $resolved;
 	}//end delegationService()
+
+	/**
+	 * The fail-closed refusal for an unreachable delegation store.
+	 *
+	 * @param DelegatedRun $run    The run asserting the delegation.
+	 * @param string       $detail Why the store gave no answer.
+	 *
+	 * @return DelegationRefused The refusal.
+	 */
+	private static function unreadable(DelegatedRun $run, string $detail): DelegationRefused {
+		return new DelegationRefused(
+			principal: (string)$run->declaredBy,
+			actingAs: $run->runAs,
+			verdict: DelegationVerdict::refused(reason: DelegationVerdict::REASON_UNREADABLE, detail: $detail)
+		);
+	}//end unreadable()
 
 	/**
 	 * Make the refusal visible on the flow itself.

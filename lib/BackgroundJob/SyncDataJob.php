@@ -29,15 +29,17 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
 use OCA\OpenRegister\Db\Source;
-use OCA\OpenRegister\Db\SourceMapper;
-use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
-use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
-use OCA\OpenRegister\Service\Sync\SyncScheduleService;
+use OCA\OpenRegister\Db\SourceMapperInterface;
+use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
+use OCA\OpenRegister\Service\Sync\HarvestRun;
+use OCA\OpenRegister\Service\Sync\SourceFetcherLookupInterface;
+use OCA\OpenRegister\Service\Sync\SyncScheduleInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
+use OCA\OpenRegister\BackgroundJob\Support\SyncDataServices;
 
 /**
  * Scheduled harvest driver.
@@ -50,23 +52,49 @@ use Throwable;
  */
 class SyncDataJob extends TimedJob {
 	/**
+	 * Source persistence
+	 *
+	 * @var SourceMapperInterface
+	 */
+	private readonly SourceMapperInterface $sourceMapper;
+
+	/**
+	 * Due-source selection
+	 *
+	 * @var SyncScheduleInterface
+	 */
+	private readonly SyncScheduleInterface $scheduleService;
+
+	/**
+	 * Resolves transport per source type
+	 *
+	 * @var SourceFetcherLookupInterface
+	 */
+	private readonly SourceFetcherLookupInterface $fetcherRegistry;
+
+	/**
+	 * Pipeline orchestrator
+	 *
+	 * @var HarvestPipelineServiceInterface
+	 */
+	private readonly HarvestPipelineServiceInterface $pipeline;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Time factory for scheduling
-	 * @param SourceMapper $sourceMapper Source persistence
-	 * @param SyncScheduleService $scheduleService Due-source selection
-	 * @param SourceFetcherRegistry $fetcherRegistry Resolves transport per source type
-	 * @param HarvestPipelineService $pipeline Pipeline orchestrator
-	 * @param LoggerInterface $logger Logger
+	 * @param ITimeFactory                    $time            Time factory for scheduling
+	 * @param SyncDataServices $services Sources, schedule, fetchers and harvest pipeline.
+	 * @param LoggerInterface                 $logger          Logger
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly SourceMapper $sourceMapper,
-		private readonly SyncScheduleService $scheduleService,
-		private readonly SourceFetcherRegistry $fetcherRegistry,
-		private readonly HarvestPipelineService $pipeline,
+		SyncDataServices $services,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->sourceMapper = $services->sourceMapper;
+		$this->scheduleService = $services->scheduleService;
+		$this->fetcherRegistry = $services->fetcherRegistry;
+		$this->pipeline = $services->pipeline;
 		parent::__construct(time: $time);
 
 		// Run every hour; each source is gated by its own interval.
@@ -138,10 +166,7 @@ class SyncDataJob extends TimedJob {
 			}
 
 			$summary = $this->pipeline->run(
-				source: $source,
-				fetcher: $fetcher,
-				executionId: $executionId,
-				since: $since
+				new HarvestRun(source: $source, fetcher: $fetcher, executionId: $executionId, since: $since)
 			);
 
 			$source->setLastSyncStatus((string)($summary['status'] ?? 'success'));

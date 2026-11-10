@@ -30,10 +30,12 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RelationHandlerStores;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -89,11 +91,13 @@ class RelationHandlerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->handler = new RelationHandler(
-			objectEntityMapper: $this->objectMapper,
-			schemaMapper: $this->schemaMapper,
+			stores: new RelationHandlerStores(
+				objects: $this->objectMapper,
+				schemas: $this->schemaMapper,
+				registers: $this->registerMapper
+			),
 			rbacHandler: $this->rbacHandler,
-			logger: $this->logger,
-			registerMapper: $this->registerMapper
+			logger: $this->logger
 		);
 	}//end setUp()
 
@@ -132,6 +136,26 @@ class RelationHandlerTest extends TestCase {
 		return $schema;
 	}//end makeSchema()
 
+	/**
+	 * Let the cross-table lookup and the per-table read find these objects, for an admin.
+	 *
+	 * @param ObjectEntity[] $entities The related objects, each with a uuid.
+	 *
+	 * @return void
+	 */
+	private function relatedRowsAre(array $entities): void {
+		foreach ($entities as $entity) {
+			$entity->setRegister('1');
+			$entity->setSchema('1');
+		}
+
+		$this->objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn($entities);
+		$this->objectMapper->method('findAllInRegisterSchemaTable')->willReturn($entities);
+		$this->registerMapper->method('find')->willReturn(new Register());
+		$this->schemaMapper->method('find')->willReturn(new Schema());
+		$this->rbacHandler->method('isAdmin')->willReturn(true);
+	}//end relatedRowsAre()
+
 	// =========================================================================
 	// applyInversedByFilter tests
 	// =========================================================================
@@ -160,7 +184,7 @@ class RelationHandlerTest extends TestCase {
 		$ids = array_map(fn ($i) => "id-$i", range(1, 250));
 
 		$this->objectMapper
-			->method('findAll')
+			->method('findMultipleAcrossAllMagicTables')
 			->willReturn([]);
 
 		$this->logger->expects($this->atLeastOnce())->method('warning');
@@ -179,10 +203,7 @@ class RelationHandlerTest extends TestCase {
 	public function testBulkLoadRelationshipsBatchedIndexesByUuidAndId(): void {
 		$entity = $this->makeObjectEntity(42);
 		$entity->setUuid('550e8400-e29b-41d4-a716-446655440000');
-
-		$this->objectMapper
-			->method('findAll')
-			->willReturn([$entity]);
+		$this->relatedRowsAre([$entity]);
 
 		$this->logger->expects($this->atLeastOnce())->method('info');
 		$this->logger->expects($this->atLeastOnce())->method('debug');
@@ -203,7 +224,7 @@ class RelationHandlerTest extends TestCase {
 		$ids = array_map(fn ($i) => "id-$i", range(1, 60));
 
 		$this->objectMapper
-			->method('findAll')
+			->method('findMultipleAcrossAllMagicTables')
 			->willThrowException(new \RuntimeException('DB error'));
 
 		$this->logger->expects($this->atLeastOnce())->method('error');
@@ -225,7 +246,7 @@ class RelationHandlerTest extends TestCase {
 	 * @return void
 	 */
 	public function testLoadRelationshipChunkOptimizedReturnsEmptyForNoIds(): void {
-		$this->objectMapper->expects($this->never())->method('findAll');
+		$this->objectMapper->expects($this->never())->method('findMultipleAcrossAllMagicTables');
 
 		$result = $this->handler->loadRelationshipChunkOptimized([]);
 
@@ -233,18 +254,14 @@ class RelationHandlerTest extends TestCase {
 	}//end testLoadRelationshipChunkOptimizedReturnsEmptyForNoIds()
 
 	/**
-	 * Delegates to objectMapper->findAll and returns its result.
+	 * Returns the related object the lookup finds.
 	 *
 	 * @return void
 	 */
 	public function testLoadRelationshipChunkOptimizedReturnsMapperResult(): void {
 		$entity = $this->makeObjectEntity(7);
-
-		$this->objectMapper
-			->expects($this->once())
-			->method('findAll')
-			->with($this->anything())
-			->willReturn([$entity]);
+		$entity->setUuid('some-uuid');
+		$this->relatedRowsAre([$entity]);
 
 		$result = $this->handler->loadRelationshipChunkOptimized(['some-uuid']);
 
@@ -259,7 +276,7 @@ class RelationHandlerTest extends TestCase {
 	 */
 	public function testLoadRelationshipChunkOptimizedReturnsEmptyOnMapperException(): void {
 		$this->objectMapper
-			->method('findAll')
+			->method('findMultipleAcrossAllMagicTables')
 			->willThrowException(new \RuntimeException('DB error'));
 
 		$this->logger->expects($this->once())->method('error');
@@ -680,11 +697,8 @@ class RelationHandlerTest extends TestCase {
 		$ids = array_map(fn ($i) => "id-$i", range(1, 75));
 
 		$entity1 = $this->makeObjectEntity(1);
-		$entity1->setUuid('aaaaaaaa-bbbb-cccc-dddd-000000000001');
-
-		$this->objectMapper
-			->method('findAll')
-			->willReturn([$entity1]);
+		$entity1->setUuid('id-1');
+		$this->relatedRowsAre([$entity1]);
 
 		$this->logger->expects($this->atLeastOnce())->method('info');
 		$this->logger->expects($this->atLeastOnce())->method('debug');
@@ -692,7 +706,7 @@ class RelationHandlerTest extends TestCase {
 		$result = $this->handler->bulkLoadRelationshipsBatched($ids);
 
 		$this->assertIsArray($result);
-		$this->assertArrayHasKey('aaaaaaaa-bbbb-cccc-dddd-000000000001', $result);
+		$this->assertArrayHasKey('id-1', $result);
 	}//end testBulkLoadRelationshipsBatchedProcessesMultipleBatches()
 
 	/**
@@ -704,7 +718,7 @@ class RelationHandlerTest extends TestCase {
 		$ids = array_map(fn ($i) => "id-$i", range(1, 5));
 
 		$this->objectMapper
-			->method('findAll')
+			->method('findMultipleAcrossAllMagicTables')
 			->willThrowException(new \RuntimeException('DB error'));
 
 		$this->logger->expects($this->atLeastOnce())->method('error');
@@ -723,7 +737,7 @@ class RelationHandlerTest extends TestCase {
 	public function testBulkLoadRelationshipsBatchedExactly200NoCap(): void {
 		$ids = array_map(fn ($i) => "id-$i", range(1, 200));
 
-		$this->objectMapper->method('findAll')->willReturn([]);
+		$this->objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn([]);
 
 		// warning should NOT be called -- exactly 200 is not over the limit.
 		$this->logger->expects($this->never())->method('warning');
@@ -895,7 +909,7 @@ class RelationHandlerTest extends TestCase {
 
 		$callCount = 0;
 		$this->objectMapper
-			->method('findAll')
+			->method('findMultipleAcrossAllMagicTables')
 			->willReturnCallback(function () use (&$callCount) {
 				$callCount++;
 				return [];
@@ -918,11 +932,7 @@ class RelationHandlerTest extends TestCase {
 	public function testBulkLoadRelationshipsBatchedSingleId(): void {
 		$entity = $this->makeObjectEntity(99);
 		$entity->setUuid('11111111-1111-1111-1111-111111111111');
-
-		$this->objectMapper
-			->expects($this->once())
-			->method('findAll')
-			->willReturn([$entity]);
+		$this->relatedRowsAre([$entity]);
 
 		$this->logger->expects($this->atLeastOnce())->method('info');
 		$this->logger->expects($this->atLeastOnce())->method('debug');
@@ -944,7 +954,7 @@ class RelationHandlerTest extends TestCase {
 		$e2 = $this->makeObjectEntity(20);
 		$e2->setUuid('aaaa-2222');
 
-		$this->objectMapper->method('findAll')->willReturn([$e1, $e2]);
+		$this->relatedRowsAre([$e1, $e2]);
 
 		$this->logger->expects($this->atLeastOnce())->method('info');
 		$this->logger->expects($this->atLeastOnce())->method('debug');
@@ -962,25 +972,29 @@ class RelationHandlerTest extends TestCase {
 	// =========================================================================
 
 	/**
-	 * loadRelationshipChunkOptimized passes IDs to findAll correctly.
+	 * loadRelationshipChunkOptimized passes the uuids to the cross-table lookup.
 	 *
 	 * @return void
 	 */
 	public function testLoadRelationshipChunkOptimizedPassesMultipleIds(): void {
 		$e1 = $this->makeObjectEntity(1);
+		$e1->setUuid('uuid-a');
 		$e2 = $this->makeObjectEntity(2);
+		$e2->setUuid('uuid-b');
+		$this->relatedRowsAre([$e1, $e2]);
 
 		$capturedIds = null;
 		$this->objectMapper
 			->expects($this->once())
-			->method('findAll')
-			->willReturnCallback(function () use ($e1, $e2, &$capturedIds) {
-				$capturedIds = func_get_args();
+			->method('findMultipleAcrossAllMagicTables')
+			->willReturnCallback(function (array $uuids) use ($e1, $e2, &$capturedIds) {
+				$capturedIds = $uuids;
 				return [$e1, $e2];
 			});
 
 		$result = $this->handler->loadRelationshipChunkOptimized(['uuid-a', 'uuid-b']);
 
+		$this->assertSame(['uuid-a', 'uuid-b'], $capturedIds);
 		$this->assertCount(2, $result);
 	}//end testLoadRelationshipChunkOptimizedPassesMultipleIds()
 

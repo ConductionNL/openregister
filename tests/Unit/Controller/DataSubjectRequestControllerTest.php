@@ -75,7 +75,6 @@ class DataSubjectRequestControllerTest extends TestCase {
 		$this->service = $this->createMock(DataSubjectRequestService::class);
 
 		$this->controller = new DataSubjectRequestController(
-			'openregister',
 			$this->request,
 			$this->service
 		);
@@ -154,7 +153,7 @@ class DataSubjectRequestControllerTest extends TestCase {
 
 		$this->service->expects($this->once())
 			->method('setRestriction')
-			->with('uuid-1', true, 'dispute')
+			->with('uuid-1', new \OCA\OpenRegister\Service\Gdpr\ProcessingFlag(true, 'dispute'))
 			->willReturn(['object' => 'uuid-1', 'restricted' => true]);
 
 		$response = $this->controller->restrict();
@@ -187,7 +186,7 @@ class DataSubjectRequestControllerTest extends TestCase {
 
 		$this->service->expects($this->once())
 			->method('setObjection')
-			->with('uuid-1', true, 'direct marketing')
+			->with('uuid-1', new \OCA\OpenRegister\Service\Gdpr\ProcessingFlag(true, 'direct marketing'))
 			->willReturn(['object' => 'uuid-1', 'objected' => true]);
 
 		$response = $this->controller->objection();

@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Configuration;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Listener\SchemaFlowImportListener;
+use OCA\OpenRegister\Listener\SchemaFlowImportListenerInterface;
 use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -52,14 +52,14 @@ class SchemaImportInstaller {
 	/**
 	 * Wire the two installers.
 	 *
-	 * @param SchemaFlowImportListener $flows Imports the flows a schema declares.
+	 * @param SchemaFlowImportListenerInterface $flows Imports the flows a schema declares.
 	 * @param NotificationsAnnotationInstaller $notifications Installs the webhooks a schema's notifications declare.
 	 * @param LoggerInterface $logger Logger.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-an-import-of-an-unchanged-schema-still-installs-what-it-declares
 	 */
 	public function __construct(
-		private readonly SchemaFlowImportListener $flows,
+		private readonly SchemaFlowImportListenerInterface $flows,
 		private readonly NotificationsAnnotationInstaller $notifications,
 		private readonly LoggerInterface $logger,
 	) {

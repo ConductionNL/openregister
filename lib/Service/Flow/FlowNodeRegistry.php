@@ -40,7 +40,7 @@ use UnexpectedValueException;
 /**
  * Holds the registered node types and resolves a step's type to one.
  */
-class FlowNodeRegistry {
+class FlowNodeRegistry implements FlowNodeCatalogueInterface {
 
 	/**
 	 * Registered nodes, keyed by their id.
@@ -64,17 +64,7 @@ class FlowNodeRegistry {
 	 *
 	 * @var array<string, string>
 	 */
-	private const RENAMED = [
-		// Renamed because it never looped: it splits items into fixed-size
-		// batches. Sitting next to the real `openregister.iterate`, the old name
-		// was a trap that re-armed for every new reader.
-		'openregister.loop' => 'openregister.batch',
-		// Renamed so one word carries the concept everywhere. The node ended a
-		// path and called itself "Stop", the interface said "terminal" and the
-		// palette badge said "ends" — three names for one idea. It is `end`
-		// now, in the id, the class, the display name and the badge.
-		'openregister.stop' => 'openregister.end',
-	];
+	private const RENAMED = self::RENAMED_TYPES;
 
 	/**
 	 * The rename map, for the one caller that has to REWRITE rather than resolve.
@@ -224,65 +214,7 @@ class FlowNodeRegistry {
 		$palette = [];
 		foreach ($this->all(scope: $scope) as $id => $node) {
 			try {
-				$entry = [
-					'id' => $id,
-					'displayName' => $node->getDisplayName(),
-					'description' => $node->getDescription(),
-					'icon' => $this->iconFor(node: $node, type: $id),
-					// ALWAYS present, and always one of trigger/step/end. An
-					// editor that had to infer this fell back to matching the
-					// id against a naming convention, which mis-labels every
-					// node another app contributes under a name that does not
-					// fit the pattern. The engine knows; it says so.
-					'role' => $this->taxonomy->roleOf(node: $node),
-					// ALWAYS present, both of them, defaulted here rather than
-					// on the interface. 43 of 64 step types on a measured
-					// instance come from other repositories on their own
-					// release cycles, so a required declaration would mean
-					// either breaking those apps or guessing their semantics —
-					// and a guessed `serviceTask` in a BPMN export is a wrong
-					// answer wearing the appearance of a right one. An honest
-					// `other` in the palette is visible and gets fixed.
-					'kind' => $this->taxonomy->kindOf(node: $node),
-					'category' => $this->taxonomy->categoryOf(node: $node),
-					// Ids that used to mean this node. An editor resolving a
-					// STORED flow looks its types up in this catalogue, so
-					// without the aliases a flow saved before a rename shows a
-					// raw type id where its name should be — the engine
-					// resolves it perfectly well through RENAMED and only the
-					// display breaks, which is the sort of half-failure nobody
-					// files. Published rather than duplicated in each editor,
-					// so the map has one home.
-					'aliases' => $this->aliasesFor(type: $id),
-				];
-
-				// The node's config vocabulary, when it declares one. This is
-				// what stops a second, hand-maintained table of accepted keys
-				// from existing somewhere else and drifting: hydra's
-				// `scripts/test-flow-definitions.sh` keeps exactly such a table
-				// today, and a table maintained in another repository is only
-				// ever correct until the next node ships a key.
-				//
-				// ABSENT rather than empty when the node declares nothing, so a
-				// consumer can tell "reads no config" (`[]`, which
-				// openregister.switch really means) from "did not say", which
-				// is every node predating IFlowNodeConfigKeys and must not be
-				// read as a licence to reject its keys.
-				if (($node instanceof IFlowNodeConfigKeys) === true) {
-					$entry['configKeys'] = array_values($node->configKeys());
-				}
-
-				// The node's own form, when it describes one. Absent — not
-				// empty — when it does not, for the same reason `configKeys`
-				// is: the editor must be able to tell "this node described no
-				// form, fall back to raw JSON" from "this node has no fields",
-				// and an empty array would say the second while meaning the
-				// first.
-				if (($node instanceof IFlowNodeConfigForm) === true) {
-					$entry['configForm'] = array_values($node->configForm());
-				}
-
-				$palette[] = $entry;
+				$palette[] = $this->paletteEntry(node: $node, id: $id);
 			} catch (\Throwable $e) {
 				// One node whose metadata throws must not blank the whole
 				// palette — the author would lose every node, not just the bad
@@ -305,6 +237,78 @@ class FlowNodeRegistry {
 
 		return $palette;
 	}//end palette()
+
+	/**
+	 * One palette entry: the node's metadata, role, taxonomy and config surface.
+	 *
+	 * @param IFlowNode  $node The node.
+	 * @param int|string $id   Its type id, as the catalogue keys it.
+	 *
+	 * @return array<string, mixed> The entry.
+	 *
+	 * @throws \Throwable Whatever the node's metadata throws; palette() drops and logs that node.
+	 */
+	private function paletteEntry(IFlowNode $node, int|string $id): array {
+		$entry = [
+			'id' => $id,
+			'displayName' => $node->getDisplayName(),
+			'description' => $node->getDescription(),
+			'icon' => $this->iconFor(node: $node, type: $id),
+			// ALWAYS present, and always one of trigger/step/end. An
+			// editor that had to infer this fell back to matching the
+			// id against a naming convention, which mis-labels every
+			// node another app contributes under a name that does not
+			// fit the pattern. The engine knows; it says so.
+			'role' => $this->taxonomy->roleOf(node: $node),
+			// ALWAYS present, both of them, defaulted here rather than
+			// on the interface. 43 of 64 step types on a measured
+			// instance come from other repositories on their own
+			// release cycles, so a required declaration would mean
+			// either breaking those apps or guessing their semantics —
+			// and a guessed `serviceTask` in a BPMN export is a wrong
+			// answer wearing the appearance of a right one. An honest
+			// `other` in the palette is visible and gets fixed.
+			'kind' => $this->taxonomy->kindOf(node: $node),
+			'category' => $this->taxonomy->categoryOf(node: $node),
+			// Ids that used to mean this node. An editor resolving a
+			// STORED flow looks its types up in this catalogue, so
+			// without the aliases a flow saved before a rename shows a
+			// raw type id where its name should be — the engine
+			// resolves it perfectly well through RENAMED and only the
+			// display breaks, which is the sort of half-failure nobody
+			// files. Published rather than duplicated in each editor,
+			// so the map has one home.
+			'aliases' => $this->aliasesFor(type: $id),
+		];
+
+		// The node's config vocabulary, when it declares one. This is
+		// what stops a second, hand-maintained table of accepted keys
+		// from existing somewhere else and drifting: hydra's
+		// `scripts/test-flow-definitions.sh` keeps exactly such a table
+		// today, and a table maintained in another repository is only
+		// ever correct until the next node ships a key.
+		//
+		// ABSENT rather than empty when the node declares nothing, so a
+		// consumer can tell "reads no config" (`[]`, which
+		// openregister.switch really means) from "did not say", which
+		// is every node predating IFlowNodeConfigKeys and must not be
+		// read as a licence to reject its keys.
+		if (($node instanceof IFlowNodeConfigKeys) === true) {
+			$entry['configKeys'] = array_values($node->configKeys());
+		}
+
+		// The node's own form, when it describes one. Absent — not
+		// empty — when it does not, for the same reason `configKeys`
+		// is: the editor must be able to tell "this node described no
+		// form, fall back to raw JSON" from "this node has no fields",
+		// and an empty array would say the second while meaning the
+		// first.
+		if (($node instanceof IFlowNodeConfigForm) === true) {
+			$entry['configForm'] = array_values($node->configForm());
+		}
+
+		return $entry;
+	}//end paletteEntry()
 
 	/**
 	 * A node's icon, or the app's own when the node's does not resolve.

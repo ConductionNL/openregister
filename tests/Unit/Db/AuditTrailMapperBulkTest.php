@@ -4,7 +4,7 @@
  * AuditTrailMapper bulk insert + cascade-context unit tests.
  *
  * Covers the delete-path performance additions:
- * - buildAuditTrail() folds referential-integrity cascade context into the
+ * - buildEntry() folds referential-integrity cascade context into the
  *   `changed` column at build time (single INSERT, no post-insert UPDATE).
  * - insertAuditTrails() persists many rows with ONE multi-row INSERT, resolves
  *   the assigned ids, and seals every row into the hash chain in id order.
@@ -25,8 +25,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\AuditHashService;
 use OCP\DB\IResult;
@@ -39,7 +41,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * Unit tests for AuditTrailMapper::buildAuditTrail() and ::insertAuditTrails().
+ * Unit tests for AuditTrailMapper::buildEntry() and ::insertAuditTrails().
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
@@ -64,7 +66,7 @@ class AuditTrailMapperBulkTest extends TestCase {
 
 		// The container resolves AuditHashService for chain sealing; every other
 		// lazily-resolved collaborator (VerwerkingsactiviteitMapper, SchemaMapper,
-		// RegisterMapper) throws — buildAuditTrail treats that as "not configured"
+		// RegisterMapper) throws — buildEntry treats that as "not configured"
 		// and fails open, matching a bare unit environment.
 		$this->container->method('get')->willReturnCallback(
 			function (string $id) {
@@ -103,10 +105,7 @@ class AuditTrailMapperBulkTest extends TestCase {
 
 		$this->mapper = new AuditTrailMapper(
 			$this->db,
-			$this->container,
-			$this->createMock(IUserSession::class),
-			$request,
-			$this->createMock(LoggerInterface::class)
+			new AuditTrailMapperServices($this->container, $this->createMock(LoggerInterface::class), $this->createMock(IUserSession::class), $request)
 		);
 	}//end setUp()
 
@@ -129,13 +128,13 @@ class AuditTrailMapperBulkTest extends TestCase {
 	}//end makeObject()
 
 	// -------------------------------------------------------------------------
-	// buildAuditTrail()
+	// buildEntry()
 	// -------------------------------------------------------------------------
 
 	public function testBuildAuditTrailInsideAnOrganisationContextNamesTheOrganisation(): void {
 		$trail = \OCA\OpenRegister\Service\OrganisationContext::run(
 			'org-a',
-			fn (): AuditTrail => $this->mapper->buildAuditTrail(old: $this->makeObject('obj-1'), new: null, action: 'delete')
+			fn (): AuditTrail => $this->mapper->buildEntry(change: new AuditedChange(old: $this->makeObject('obj-1'), new: null, action: 'delete'))
 		);
 
 		$this->assertSame('org-a', ($trail->getResultSummary() ?? [])['organisationContext'] ?? null);
@@ -147,12 +146,12 @@ class AuditTrailMapperBulkTest extends TestCase {
 			resolver: $this->createMock(\OCA\OpenRegister\Service\Audit\TokenResolver::class)
 		);
 		$this->tokenContext->claim(
-			identity: new \OCA\OpenRegister\Service\Audit\TokenIdentity(mechanism: 'bearer', reference: 'tok-1', consumerName: 'portal')
+			identity: new \OCA\OpenRegister\Service\Audit\TokenIdentity(mechanism: 'bearer', token: new \OCA\OpenRegister\Service\Audit\NamedIdentifier(id: 'tok-1'), consumer: new \OCA\OpenRegister\Service\Audit\NamedIdentifier(name: 'portal'))
 		);
 
 		$trail = \OCA\OpenRegister\Service\OrganisationContext::run(
 			'org-a',
-			fn (): AuditTrail => $this->mapper->buildAuditTrail(old: $this->makeObject('obj-1'), new: null, action: 'delete')
+			fn (): AuditTrail => $this->mapper->buildEntry(change: new AuditedChange(old: $this->makeObject('obj-1'), new: null, action: 'delete'))
 		);
 
 		$this->assertSame('portal', $trail->getConsumer());
@@ -161,7 +160,7 @@ class AuditTrailMapperBulkTest extends TestCase {
 	}//end testBuildAuditTrailKeepsTheTokenBesideTheOrganisationContext()
 
 	public function testBuildAuditTrailForDeleteProducesEmptyChangeSet(): void {
-		$trail = $this->mapper->buildAuditTrail(old: $this->makeObject('obj-1'), new: null, action: 'delete');
+		$trail = $this->mapper->buildEntry(change: new AuditedChange(old: $this->makeObject('obj-1'), new: null, action: 'delete'));
 
 		$this->assertSame('delete', $trail->getAction());
 		$this->assertSame('obj-1', $trail->getObjectUuid());
@@ -178,7 +177,7 @@ class AuditTrailMapperBulkTest extends TestCase {
 	}//end testBuildAuditTrailForDeleteProducesEmptyChangeSet()
 
 	public function testBuildAuditTrailFoldsCascadeContextIntoChangedColumn(): void {
-		$trail = $this->mapper->buildAuditTrail(
+		$trail = $this->mapper->buildEntry(change: new AuditedChange(
 			old: $this->makeObject('obj-2'),
 			new: null,
 			action: 'referential_integrity.root_delete',
@@ -188,7 +187,7 @@ class AuditTrailMapperBulkTest extends TestCase {
 				'action_type' => 'referential_integrity.root_delete',
 				'property' => 'children',
 			]
-		);
+		));
 
 		$changed = $trail->getChanged();
 		$this->assertSame('referential_integrity', $changed['triggeredBy']);
@@ -204,12 +203,12 @@ class AuditTrailMapperBulkTest extends TestCase {
 	}//end testBuildAuditTrailFoldsCascadeContextIntoChangedColumn()
 
 	public function testBuildAuditTrailCascadeContextDefaultsMissingKeys(): void {
-		$trail = $this->mapper->buildAuditTrail(
+		$trail = $this->mapper->buildEntry(change: new AuditedChange(
 			old: $this->makeObject('obj-3'),
 			new: null,
 			action: 'delete',
 			cascadeContext: []
-		);
+		));
 
 		$changed = $trail->getChanged();
 		$this->assertSame(
@@ -246,8 +245,8 @@ class AuditTrailMapperBulkTest extends TestCase {
 	}//end testInsertAuditTrailsRejectsRowsWithoutUuid()
 
 	public function testInsertAuditTrailsIssuesOneMultiRowInsertAndSealsInIdOrder(): void {
-		$rowA = $this->mapper->buildAuditTrail(old: $this->makeObject('obj-a'), new: null, action: 'delete');
-		$rowB = $this->mapper->buildAuditTrail(old: $this->makeObject('obj-b'), new: null, action: 'delete');
+		$rowA = $this->mapper->buildEntry(change: new AuditedChange(old: $this->makeObject('obj-a'), new: null, action: 'delete'));
+		$rowB = $this->mapper->buildEntry(change: new AuditedChange(old: $this->makeObject('obj-b'), new: null, action: 'delete'));
 
 		$this->mockQueryBuilderTableName();
 
@@ -303,7 +302,7 @@ class AuditTrailMapperBulkTest extends TestCase {
 	}//end testInsertAuditTrailsIssuesOneMultiRowInsertAndSealsInIdOrder()
 
 	public function testInsertAuditTrailsSurvivesSealFailure(): void {
-		$row = $this->mapper->buildAuditTrail(old: $this->makeObject('obj-c'), new: null, action: 'delete');
+		$row = $this->mapper->buildEntry(change: new AuditedChange(old: $this->makeObject('obj-c'), new: null, action: 'delete'));
 
 		$this->mockQueryBuilderTableName();
 		$this->db->method('executeStatement')->willReturn(1);
@@ -351,11 +350,11 @@ class AuditTrailMapperBulkTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnExplicitUpdateSurvivesWithNoOldEntity(): void {
-		$trail = $this->mapper->buildAuditTrail(
+		$trail = $this->mapper->buildEntry(change: new AuditedChange(
 			old: null,
 			new: $this->makeObject('obj-upd'),
 			action: 'update'
-		);
+		));
 
 		$this->assertSame('update', $trail->getAction());
 	}//end testAnExplicitUpdateSurvivesWithNoOldEntity()
@@ -370,7 +369,7 @@ class AuditTrailMapperBulkTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnOmittedActionStillInfersCreate(): void {
-		$trail = $this->mapper->buildAuditTrail(old: null, new: $this->makeObject('obj-new'));
+		$trail = $this->mapper->buildEntry(change: new AuditedChange(old: null, new: $this->makeObject('obj-new')));
 
 		$this->assertSame('create', $trail->getAction());
 	}//end testAnOmittedActionStillInfersCreate()
@@ -381,7 +380,7 @@ class AuditTrailMapperBulkTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnOmittedActionStillInfersDelete(): void {
-		$trail = $this->mapper->buildAuditTrail(old: $this->makeObject('obj-gone'), new: null);
+		$trail = $this->mapper->buildEntry(change: new AuditedChange(old: $this->makeObject('obj-gone'), new: null));
 
 		$this->assertSame('delete', $trail->getAction());
 	}//end testAnOmittedActionStillInfersDelete()

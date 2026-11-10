@@ -32,9 +32,7 @@ namespace OCA\OpenRegister\Service\Decision;
 use OCA\OpenRegister\Db\Decision;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Event\DecisionVisibilityRequestedEvent;
-use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IGroupManager;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -42,7 +40,7 @@ use Throwable;
  *
  * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-schema-can-hide-one-reviewers-decisions-from-another-req-rod-002
  */
-class DecisionVisibility {
+class DecisionVisibility implements DecisionVisibilityInterface {
 
 	/**
 	 * What a masked relation carries in place of its decision.
@@ -68,15 +66,13 @@ class DecisionVisibility {
 	 * @param ReviewPolicyResolver $resolver        The policy of the relation's subject.
 	 * @param DecisionService      $decisions       The current decision.
 	 * @param IGroupManager        $groupManager    Administrators and supervisors.
-	 * @param IEventDispatcher     $eventDispatcher Asks the app that owns the subject (REQ-DEC-003).
-	 * @param LoggerInterface      $logger          Records a listener that failed.
+	 * @param DecisionVisibilityPlatform $platform The event dispatcher and the logger.
 	 */
 	public function __construct(
 		private readonly ReviewPolicyResolver $resolver,
 		private readonly DecisionService $decisions,
 		private readonly IGroupManager $groupManager,
-		private readonly IEventDispatcher $eventDispatcher,
-		private readonly LoggerInterface $logger,
+		private readonly DecisionVisibilityPlatform $platform,
 	) {
 	}//end __construct()
 
@@ -97,6 +93,18 @@ class DecisionVisibility {
 			return $data;
 		}
 
+		return $this->masked(data: $data);
+	}//end present()
+
+	/**
+	 * A serialised relation with its decision replaced by the hidden marker
+	 * and every decision field it carries emptied.
+	 *
+	 * @param array<string, mixed> $data The serialised relation.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function masked(array $data): array {
 		$data['decision'] = self::HIDDEN;
 		foreach (self::MASKED_FIELDS as $field) {
 			if (array_key_exists($field, $data) === true) {
@@ -105,7 +113,7 @@ class DecisionVisibility {
 		}
 
 		return $data;
-	}//end present()
+	}//end masked()
 
 	/**
 	 * Every relation as the caller may see it.
@@ -166,7 +174,10 @@ class DecisionVisibility {
 			return false;
 		}
 
-		return $this->shownByEvent(decision: $decision, userId: $userId, policy: $policy, subject: $resolved['subject']) === false;
+		return $this->shownByEvent(
+			decision: $decision,
+			question: new DecisionQuestion(actorId: $userId, policy: $policy, subject: $resolved['subject'])
+		) === false;
 	}//end isHidden()
 
 	/**
@@ -174,22 +185,25 @@ class DecisionVisibility {
 	 *
 	 * A listener that throws keeps the decision hidden: the question fails closed.
 	 *
-	 * @param Decision|null        $decision The hidden decision.
-	 * @param string               $userId   The caller.
-	 * @param ReviewPolicy         $policy   The policy.
-	 * @param array<string, mixed> $subject  What the decision is on.
+	 * @param Decision|null    $decision The hidden decision.
+	 * @param DecisionQuestion $question The caller, the policy and what the decision is on.
 	 *
 	 * @return bool True when a listener allowed it.
 	 */
-	private function shownByEvent(?Decision $decision, string $userId, ReviewPolicy $policy, array $subject): bool {
-		$event = new DecisionVisibilityRequestedEvent(decision: $decision, actorId: $userId, policy: $policy, subject: $subject);
+	private function shownByEvent(?Decision $decision, DecisionQuestion $question): bool {
+		$event = new DecisionVisibilityRequestedEvent(
+			decision: $decision,
+			actorId: $question->actorId,
+			policy: $question->policy,
+			subject: $question->subject
+		);
 
 		try {
-			$this->eventDispatcher->dispatchTyped($event);
+			$this->platform->eventDispatcher->dispatchTyped($event);
 		} catch (Throwable $error) {
-			$this->logger->warning(
+			$this->platform->logger->warning(
 				message: '[DecisionVisibility] A listener failed; the decision stays hidden.',
-				context: ['decision' => $decision?->getUuid(), 'actor' => $userId, 'error' => $error->getMessage()]
+				context: ['decision' => $decision?->getUuid(), 'actor' => $question->actorId, 'error' => $error->getMessage()]
 			);
 			return false;
 		}

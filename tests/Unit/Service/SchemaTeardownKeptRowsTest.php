@@ -33,6 +33,7 @@ use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\SchemaDeletionService;
+use OCA\OpenRegister\Service\SchemaDeletionStores;
 use OCA\OpenRegister\Service\SchemaTeardownOverride;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\IResult;
@@ -111,6 +112,8 @@ class SchemaTeardownKeptRowsTest extends TestCase {
 		parent::setUp();
 
 		$this->db = $this->createMock(IDBConnection::class);
+
+		$this->db->method('getDatabaseProvider')->willReturn(IDBConnection::PLATFORM_SQLITE);
 		$this->magicMapper = $this->createMock(MagicMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
@@ -118,10 +121,7 @@ class SchemaTeardownKeptRowsTest extends TestCase {
 
 		$this->service = new SchemaDeletionService(
 			$this->db,
-			$this->magicMapper,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->auditTrailMapper,
+			new SchemaDeletionStores(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper), $this->auditTrailMapper),
 			$this->createMock(LoggerInterface::class)
 		);
 
@@ -214,7 +214,7 @@ class SchemaTeardownKeptRowsTest extends TestCase {
 	 * @return void
 	 */
 	private function expectNothingTouched(): void {
-		$this->db->expects($this->never())->method('beginTransaction');
+		$this->db->expects($this->never())->method('commit');
 		$this->magicMapper->expects($this->never())->method('deleteObjectsBySchema');
 		$this->magicMapper->expects($this->never())->method('dropTable');
 		$this->schemaMapper->expects($this->never())->method('delete');
@@ -256,6 +256,26 @@ class SchemaTeardownKeptRowsTest extends TestCase {
 			)
 		);
 	}//end forcedEntries()
+
+	/**
+	 * A row frozen while the teardown opens its transaction still refuses: the check reads inside it.
+	 *
+	 * @return void
+	 */
+	public function testARowFrozenAsTheTransactionOpensRefusesTheTeardown(): void {
+		$this->givenTheRegisterExists();
+		$this->db->method('beginTransaction')->willReturnCallback(
+			function (): void {
+				$this->otherRow->setFrozen(self::FREEZE);
+			}
+		);
+		$this->db->expects($this->once())->method('rollBack');
+		$this->expectNothingTouched();
+
+		$this->expectException(ObjectStateWriteException::class);
+		$this->service->cascadeDeleteSchema(schema: $this->schema);
+
+	}//end testARowFrozenAsTheTransactionOpensRefusesTheTeardown()
 
 	/**
 	 * A frozen row stops the teardown before anything changes.
@@ -550,10 +570,7 @@ class SchemaTeardownKeptRowsTest extends TestCase {
 
 		$service = new SchemaDeletionService(
 			$this->db,
-			$mapper,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->auditTrailMapper,
+			new SchemaDeletionStores(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $mapper), $this->auditTrailMapper),
 			$this->createMock(LoggerInterface::class)
 		);
 
@@ -578,10 +595,7 @@ class SchemaTeardownKeptRowsTest extends TestCase {
 
 		$service = new SchemaDeletionService(
 			$this->db,
-			$mapper,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->auditTrailMapper,
+			new SchemaDeletionStores(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $mapper), $this->auditTrailMapper),
 			$this->createMock(LoggerInterface::class)
 		);
 

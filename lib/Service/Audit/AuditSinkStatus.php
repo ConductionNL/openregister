@@ -42,7 +42,7 @@ use Throwable;
  *
  * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
-class AuditSinkStatus {
+class AuditSinkStatus implements AuditSinkStatusInterface {
 	/**
 	 * The app the configuration belongs to.
 	 *

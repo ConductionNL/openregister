@@ -32,9 +32,17 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\FormLinksControllerServices;
 use OCA\OpenRegister\Controller\Trait\ResolvesLinkedObjectTrait;
-use OCA\OpenRegister\Service\FormLinkService;
+use OCA\OpenRegister\Db\FormLink;
+use OCA\OpenRegister\Db\FormSubmissionRef;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\FormLinkScope;
+use OCA\OpenRegister\Service\FormLinkServiceInterface;
+use OCA\OpenRegister\Service\NewForm;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -57,9 +65,9 @@ class FormLinksController extends Controller {
 	/**
 	 * Form-link service.
 	 *
-	 * @var FormLinkService
+	 * @var FormLinkServiceInterface
 	 */
-	private readonly FormLinkService $formLinkService;
+	private readonly FormLinkServiceInterface $formLinkService;
 
 	/**
 	 * Object service — used to resolve register/schema/id into an
@@ -86,28 +94,20 @@ class FormLinksController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
 	 * @param IRequest $request HTTP request.
-	 * @param FormLinkService $formLinkService Form-link service.
-	 * @param ObjectOperationsInterface $objectService Object service.
-	 * @param IL10N $l10n Localisation.
-	 * @param LoggerInterface $logger Logger.
+	 * @param FormLinksControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		FormLinkService $formLinkService,
-		ObjectOperationsInterface $objectService,
-		IL10N $l10n,
-		LoggerInterface $logger,
+		FormLinksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
-		$this->formLinkService = $formLinkService;
-		$this->objectService = $objectService;
-		$this->l10n = $l10n;
-		$this->logger = $logger;
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->formLinkService = $services->formLinkService;
+		$this->objectService = $services->objectService;
+		$this->l10n = $services->l10n;
+		$this->logger = $services->logger;
 
 	}//end __construct()
 
@@ -126,21 +126,7 @@ class FormLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => $this->l10n->t('Object not found')], 404);
-			}
-
-			$results = $this->formLinkService->getLinkedForms($object->getUuid());
-
-			return new JSONResponse(['results' => $results, 'total' => count($results)]);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => $this->l10n->t('Object not found')], 404);
-		} catch (Exception $e) {
-			$this->logger->error('Failed to list linked forms: ' . $e->getMessage());
-			return new JSONResponse(['error' => $e->getMessage()], 500);
-		}
+		return $this->listForms(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 
 	}//end index()
 
@@ -160,73 +146,90 @@ class FormLinksController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => $this->l10n->t('Object not found')], 404);
-			}
+		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
 
-			$data = $this->request->getParams();
-			$formId = 0;
-			$submissionId = 0;
-			if (isset($data['formId']) === true) {
-				$formId = (int)$data['formId'];
-			}
-
-			if (isset($data['submissionId']) === true) {
-				$submissionId = (int)$data['submissionId'];
-			}
-
-			if ($formId <= 0) {
-				return new JSONResponse(
-					['error' => $this->l10n->t('formId is required')],
-					400
-				);
-			}
-
-			$registerId = (int)$object->getRegister();
-			$rawSchema = (int)$object->getSchema();
-			$schemaId = null;
-			if ($rawSchema > 0) {
-				$schemaId = $rawSchema;
-			}
-
-			if ($submissionId > 0) {
-				$link = $this->formLinkService->linkFormSubmission(
-					objectUuid: $object->getUuid(),
-					registerId: $registerId,
-					formId: $formId,
-					submissionId: $submissionId,
-					schemaId: $schemaId
-				);
-				return new JSONResponse($link, 201);
-			}
-
-			$link = $this->formLinkService->linkForm(
-				objectUuid: $object->getUuid(),
-				registerId: $registerId,
-				formId: $formId,
-				schemaId: $schemaId
-			);
-
-			return new JSONResponse($link, 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => $this->l10n->t('Object not found')], 404);
-		} catch (Exception $e) {
-			$code = (int)$e->getCode();
-			if ($code === 0) {
-				$code = 400;
-			}
-
-			return new JSONResponse(['error' => $e->getMessage()], $code);
-		}//end try
+		return $this->linking(ref: $ref, action: fn (ObjectEntity $object): JSONResponse => $this->linkedForm(object: $object));
 
 	}//end link()
+
+	/**
+	 * A body field as an int, or 0 when the body does not carry it.
+	 *
+	 * @param array  $data The request body.
+	 * @param string $key  The field.
+	 *
+	 * @return int The value, or 0.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
+	 */
+	private function intParam(array $data, string $key): int {
+		if (isset($data[$key]) === true) {
+			return (int)$data[$key];
+		}
+
+		return 0;
+	}//end intParam()
+
+	/**
+	 * Link the form, or the one submission when the body names it, to the object.
+	 *
+	 * @param ObjectEntity                             $object The object.
+	 * @param array{formId: int, submissionId: int} $ids    The form and, when positive, the submission.
+	 *
+	 * @return FormLink The link written.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
+	 */
+	private function linkToObject(ObjectEntity $object, array $ids): FormLink {
+		$scope = (new FormLinkScope(objectUuid: $object->getUuid(), registerId: (int)$object->getRegister()))
+			->inSchema(schemaId: $this->linkSchemaId(object: $object));
+
+		if ($ids['submissionId'] > 0) {
+			$submission = new FormSubmissionRef(formId: $ids['formId'], submissionId: $ids['submissionId']);
+			return $this->formLinkService->linkSubmissionTo(scope: $scope, submission: $submission);
+		}
+
+		return $this->formLinkService->linkFormTo(scope: $scope, formId: $ids['formId']);
+	}//end linkToObject()
+
+	/**
+	 * The schema id a link records: the object's own, or null when it has none above zero.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return int|null The schema id, or null.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
+	 */
+	private function linkSchemaId(ObjectEntity $object): int|null {
+		$rawSchema = (int)$object->getSchema();
+		if ($rawSchema > 0) {
+			return $rawSchema;
+		}
+
+		return null;
+	}//end linkSchemaId()
+
+	/**
+	 * Answer a failed link write with the exception's code, or 400 when it has none.
+	 *
+	 * @param Exception $exception The failure.
+	 *
+	 * @return JSONResponse The error answer.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
+	 */
+	private function failure(Exception $exception): JSONResponse {
+		$code = (int)$exception->getCode();
+		if ($code === 0) {
+			$code = 400;
+		}
+
+		return new JSONResponse(['error' => $exception->getMessage()], $code);
+	}//end failure()
 
 	/**
 	 * Create a new NC Forms form and link it to the object in one shot.
@@ -247,49 +250,9 @@ class FormLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function create(string $register, string $schema, string $id): JSONResponse {
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => $this->l10n->t('Object not found')], 404);
-			}
+		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
 
-			$data = $this->request->getParams();
-			$title = trim((string)($data['title'] ?? ''));
-			$description = (string)($data['description'] ?? '');
-
-			if ($title === '') {
-				return new JSONResponse(
-					['error' => $this->l10n->t('title is required')],
-					400
-				);
-			}
-
-			$registerId = (int)$object->getRegister();
-			$rawSchema = (int)$object->getSchema();
-			$schemaId = null;
-			if ($rawSchema > 0) {
-				$schemaId = $rawSchema;
-			}
-
-			$link = $this->formLinkService->createAndLinkForm(
-				objectUuid: $object->getUuid(),
-				registerId: $registerId,
-				title: $title,
-				description: $description,
-				schemaId: $schemaId
-			);
-
-			return new JSONResponse($link, 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => $this->l10n->t('Object not found')], 404);
-		} catch (Exception $e) {
-			$code = (int)$e->getCode();
-			if ($code === 0) {
-				$code = 400;
-			}
-
-			return new JSONResponse(['error' => $e->getMessage()], $code);
-		}//end try
+		return $this->linking(ref: $ref, action: fn (ObjectEntity $object): JSONResponse => $this->createdForm(object: $object));
 
 	}//end create()
 
@@ -309,23 +272,9 @@ class FormLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function destroyForm(string $register, string $schema, string $id, string $formId): JSONResponse {
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => $this->l10n->t('Object not found')], 404);
-			}
+		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
 
-			$removed = $this->formLinkService->unlinkForm(
-				objectUuid: $object->getUuid(),
-				formId: (int)$formId
-			);
-
-			return new JSONResponse(['success' => true, 'removed' => $removed]);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => $this->l10n->t('Object not found')], 404);
-		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 400);
-		}
+		return $this->unlinking(ref: $ref, action: fn (ObjectEntity $object): JSONResponse => $this->removedForm(object: $object, formId: (int)$formId));
 
 	}//end destroyForm()
 
@@ -345,33 +294,194 @@ class FormLinksController extends Controller {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
-	public function destroySubmission(
-		string $register,
-		string $schema,
-		string $id,
-		string $formId,
-		string $submissionId,
-	): JSONResponse {
+	public function destroySubmission(string $register, string $schema, string $id, string $formId, string $submissionId): JSONResponse {
+		$submission = new FormSubmissionRef(formId: (int)$formId, submissionId: (int)$submissionId);
+		$action     = fn (ObjectEntity $object): JSONResponse => $this->removedSubmission(object: $object, submission: $submission);
+		return $this->unlinking(ref: new ObjectRef(register: $register, schema: $schema, id: $id), action: $action);
+	}//end destroySubmission()
+
+	/**
+	 * The forms linked to an object: 404 when it does not exist; any other
+	 * failure is logged and answered 500 with its message.
+	 *
+	 * @param ObjectRef $ref The register, schema and object id.
+	 *
+	 * @return JSONResponse The forms and their total.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
+	 */
+	private function listForms(ObjectRef $ref): JSONResponse {
 		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => $this->l10n->t('Object not found')], 404);
-			}
+			return $this->onObject(
+				ref: $ref,
+				action: function (ObjectEntity $object): JSONResponse {
+					$results = $this->formLinkService->getLinkedForms($object->getUuid());
 
-			$removed = $this->formLinkService->unlinkSubmission(
-				objectUuid: $object->getUuid(),
-				formId: (int)$formId,
-				submissionId: (int)$submissionId
+					return new JSONResponse(['results' => $results, 'total' => count($results)]);
+				}
 			);
-
-			return new JSONResponse(['success' => $removed]);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => $this->l10n->t('Object not found')], 404);
+			return $this->objectNotFound();
+		} catch (Exception $e) {
+			$this->logger->error('Failed to list linked forms: ' . $e->getMessage());
+			return new JSONResponse(['error' => $e->getMessage()], 500);
+		}
+	}//end listForms()
+
+	/**
+	 * Run a link write on an object: 404 when it does not exist; any other
+	 * failure gets its own code, or 400 without one.
+	 *
+	 * @param ObjectRef $ref    The register, schema and object id.
+	 * @param callable  $action The write, given the object.
+	 *
+	 * @return JSONResponse The write's response, or the error's.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
+	 */
+	private function linking(ObjectRef $ref, callable $action): JSONResponse {
+		try {
+			return $this->onObject(ref: $ref, action: $action);
+		} catch (DoesNotExistException $e) {
+			return $this->objectNotFound();
+		} catch (Exception $e) {
+			return $this->failure(exception: $e);
+		}
+	}//end linking()
+
+	/**
+	 * Run an unlink on an object: 404 when it does not exist; any other
+	 * failure is a 400 with its message.
+	 *
+	 * @param ObjectRef $ref    The register, schema and object id.
+	 * @param callable  $action The unlink, given the object.
+	 *
+	 * @return JSONResponse The unlink's response, or the error's.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
+	 */
+	private function unlinking(ObjectRef $ref, callable $action): JSONResponse {
+		try {
+			return $this->onObject(ref: $ref, action: $action);
+		} catch (DoesNotExistException $e) {
+			return $this->objectNotFound();
 		} catch (Exception $e) {
 			return new JSONResponse(['error' => $e->getMessage()], 400);
 		}
+	}//end unlinking()
 
-	}//end destroySubmission()
+	/**
+	 * Run an action on the object of a route: 404 when it resolves to nothing.
+	 *
+	 * @param ObjectRef $ref    The register, schema and object id.
+	 * @param callable  $action The action, given the object.
+	 *
+	 * @return JSONResponse The action's response, or the 404.
+	 *
+	 * @throws DoesNotExistException When no such object exists.
+	 * @throws Exception             When loading the object or the action fails.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
+	 */
+	private function onObject(ObjectRef $ref, callable $action): JSONResponse {
+		$object = $this->validateObject(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
+		if ($object === null) {
+			return $this->objectNotFound();
+		}
+
+		return $action($object);
+	}//end onObject()
+
+	/**
+	 * The 404 for an object that does not exist.
+	 *
+	 * @return JSONResponse The 404.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
+	 */
+	private function objectNotFound(): JSONResponse {
+		return new JSONResponse(['error' => $this->l10n->t('Object not found')], 404);
+	}//end objectNotFound()
+
+	/**
+	 * Link the form, or the one submission, the request names to the object.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return JSONResponse The link, 201, or 400 without a formId.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
+	 */
+	private function linkedForm(ObjectEntity $object): JSONResponse {
+		$data = $this->request->getParams();
+		$ids = [
+			'formId' => $this->intParam(data: $data, key: 'formId'),
+			'submissionId' => $this->intParam(data: $data, key: 'submissionId'),
+		];
+		if ($ids['formId'] <= 0) {
+			return new JSONResponse(['error' => $this->l10n->t('formId is required')], 400);
+		}
+
+		return new JSONResponse($this->linkToObject(object: $object, ids: $ids), 201);
+	}//end linkedForm()
+
+	/**
+	 * Create the form the request describes and link it to the object.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return JSONResponse The link, 201, or 400 without a title.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
+	 */
+	private function createdForm(ObjectEntity $object): JSONResponse {
+		$data = $this->request->getParams();
+		$title = trim((string)($data['title'] ?? ''));
+		if ($title === '') {
+			return new JSONResponse(['error' => $this->l10n->t('title is required')], 400);
+		}
+
+		$scope = (new FormLinkScope(objectUuid: $object->getUuid(), registerId: (int)$object->getRegister()))
+			->inSchema(schemaId: $this->linkSchemaId(object: $object));
+		$link  = $this->formLinkService->createAndLinkForm(
+			scope: $scope,
+			form: new NewForm(title: $title, description: (string)($data['description'] ?? ''))
+		);
+
+		return new JSONResponse($link, 201);
+	}//end createdForm()
+
+	/**
+	 * Unlink a form and its submission-level links from the object.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param int          $formId The form id.
+	 *
+	 * @return JSONResponse Success and the number of links removed.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
+	 */
+	private function removedForm(ObjectEntity $object, int $formId): JSONResponse {
+		$removed = $this->formLinkService->unlinkForm(objectUuid: $object->getUuid(), formId: $formId);
+
+		return new JSONResponse(['success' => true, 'removed' => $removed]);
+	}//end removedForm()
+
+	/**
+	 * Unlink one submission from the object.
+	 *
+	 * @param ObjectEntity      $object     The object.
+	 * @param FormSubmissionRef $submission The parent form and the submission.
+	 *
+	 * @return JSONResponse Whether the submission was unlinked.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
+	 */
+	private function removedSubmission(ObjectEntity $object, FormSubmissionRef $submission): JSONResponse {
+		$removed = $this->formLinkService->unlinkSubmission(objectUuid: $object->getUuid(), submission: $submission);
+
+		return new JSONResponse(['success' => $removed]);
+	}//end removedSubmission()
 
 	/**
 	 * Return the user's NC Forms forms for the picker UI.

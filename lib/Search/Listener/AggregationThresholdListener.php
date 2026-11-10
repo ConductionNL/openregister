@@ -46,7 +46,7 @@ use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Search\Service\Aggregation\ThresholdEvaluationService;
-use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
+use OCA\OpenRegister\Service\Deferral\ListenerDeferralInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -72,14 +72,14 @@ class AggregationThresholdListener implements IEventListener {
 	 *
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
 	 * @param ThresholdEvaluationService $evaluator Shared threshold evaluation logic.
-	 * @param ListenerDeferralService $deferral Actor-forwarding deferral service.
+	 * @param ListenerDeferralInterface $deferral Actor-forwarding deferral service.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ThresholdEvaluationService $evaluator,
-		private readonly ListenerDeferralService $deferral,
+		private readonly ListenerDeferralInterface $deferral,
 	) {
 	}//end __construct()
 

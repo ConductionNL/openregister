@@ -64,46 +64,78 @@ class SystemEntityObjectAdapter extends ObjectEntity {
 		$this->register = null;
 
 		// UUID — used for the notification object reference and idempotency keys.
-		// Entity magic getters are dispatched via __call, so method_exists() returns
-		// false; call them directly and catch any BadMethodCallException.
-		try {
-			// @phpstan-ignore-next-line
-			$uuidVal = $entity->getUuid();
-			if ($uuidVal !== null) {
-				$this->uuid = (string)$uuidVal;
-			}
-		} catch (\Throwable) {
-			// GetUuid() not available — uuid stays null.
+		$this->uuid = $this->uuidOf(entity: $entity);
+		$this->name = $this->displayNameOf(entity: $entity);
+		$this->object = $this->payloadOf(entity: $entity);
+	}//end __construct()
+
+	/**
+	 * The entity's uuid as a string, or null.
+	 *
+	 * Entity magic getters are dispatched via __call, so method_exists() returns
+	 * false; the getter is called directly and a missing one reads as null.
+	 *
+	 * @param Entity $entity The system entity.
+	 *
+	 * @return string|null
+	 */
+	private function uuidOf(Entity $entity): ?string {
+		$uuid = $this->read(entity: $entity, getter: 'getUuid');
+		if ($uuid === null) {
+			return $this->uuid;
 		}
 
-		// Display name for subject interpolation (title wins over name).
-		$displayName = null;
-		try {
-			// @phpstan-ignore-next-line
-			$displayName = $entity->getTitle();
-		} catch (\Throwable) {
-			// GetTitle() not available — fall through.
-		}
+		return (string)$uuid;
+	}//end uuidOf()
 
-		if ($displayName === null) {
-			try {
-				// @phpstan-ignore-next-line
-				$displayName = $entity->getName();
-			} catch (\Throwable) {
-				// GetName() not available — displayName stays null.
-			}
-		}
-
+	/**
+	 * Display name for subject interpolation: the title wins over the name,
+	 * and only a non-empty string is used.
+	 *
+	 * @param Entity $entity The system entity.
+	 *
+	 * @return string|null
+	 */
+	private function displayNameOf(Entity $entity): ?string {
+		$displayName = ($this->read(entity: $entity, getter: 'getTitle') ?? $this->read(entity: $entity, getter: 'getName'));
 		if (is_string($displayName) === true && $displayName !== '') {
-			$this->name = $displayName;
+			return $displayName;
 		}
 
-		// Payload array for {{field}} template interpolation in subjects.
+		return $this->name;
+	}//end displayNameOf()
+
+	/**
+	 * Payload array for {{field}} template interpolation in subjects.
+	 *
+	 * @param Entity $entity The system entity.
+	 *
+	 * @return array<mixed>|null
+	 */
+	private function payloadOf(Entity $entity): ?array {
 		if ($entity instanceof \JsonSerializable) {
 			$serialized = $entity->jsonSerialize();
 			if (is_array($serialized) === true) {
-				$this->object = $serialized;
+				return $serialized;
 			}
 		}
-	}//end __construct()
+
+		return $this->object;
+	}//end payloadOf()
+
+	/**
+	 * Call one magic getter, or null when the entity has no such field.
+	 *
+	 * @param Entity $entity The system entity.
+	 * @param string $getter The getter name.
+	 *
+	 * @return mixed
+	 */
+	private function read(Entity $entity, string $getter): mixed {
+		try {
+			return $entity->$getter();
+		} catch (\Throwable) {
+			return null;
+		}
+	}//end read()
 }//end class

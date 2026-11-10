@@ -78,8 +78,21 @@ final class FlowFieldPath {
 
 		$segments = explode('.', $path);
 		$last = array_pop($segments);
-		$cursor = &$json;
+		$cursor = &self::branch(json: $json, segments: $segments);
+		$cursor[$last] = $value;
+		unset($cursor);
+	}//end assign()
 
+	/**
+	 * The array at the given segments, created (or replacing a scalar) where missing.
+	 *
+	 * @param array             $json     The record, modified in place.
+	 * @param array<int,string> $segments The path segments leading to the parent.
+	 *
+	 * @return array A reference to the parent array.
+	 */
+	private static function &branch(array &$json, array $segments): array {
+		$cursor = &$json;
 		foreach ($segments as $segment) {
 			if (isset($cursor[$segment]) === false || is_array($cursor[$segment]) === false) {
 				$cursor[$segment] = [];
@@ -88,8 +101,6 @@ final class FlowFieldPath {
 			$cursor = &$cursor[$segment];
 		}
 
-		$cursor[$last] = $value;
-		unset($cursor);
-
-	}//end assign()
+		return $cursor;
+	}//end branch()
 }//end class

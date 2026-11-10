@@ -37,7 +37,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Class BulkActionRegistry
  */
-class BulkActionRegistry {
+class BulkActionRegistry implements BulkActionRegistryInterface {
 
 	/**
 	 * The registered actions, keyed by their id.

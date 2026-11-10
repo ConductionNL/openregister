@@ -125,35 +125,56 @@ class DecisionTableEvaluator {
 		$declaredInputs = self::normaliseFields(fields: ($decisionTable['inputs'] ?? []));
 		$declaredOutputs = self::normaliseFields(fields: ($decisionTable['outputs'] ?? []));
 		$hitPolicy = strtoupper((string)($decisionTable['hitPolicy'] ?? 'UNIQUE'));
-
-		$rules = [];
-		if (is_array($decisionTable['rules'] ?? null) === true) {
-			$rules = $decisionTable['rules'];
-		}
-
 		if (in_array($hitPolicy, self::IMPLEMENTED_HIT_POLICIES, true) === false) {
 			throw new DecisionEvaluationException(errorCode: 'hit_policy_not_implemented', details: ['hitPolicy' => $hitPolicy]);
 		}
 
 		$coercedInputs = $this->resolveInputs(declaredInputs: $declaredInputs, inputs: $inputs);
+		$matched = $this->matchingRules(decisionTable: $decisionTable, coercedInputs: $coercedInputs);
 
-		$matchedRules = [];
-		foreach ($rules as $index => $rule) {
-			if (is_array($rule) === false) {
-				continue;
-			}
+		return $this->applyHitPolicy(hitPolicy: $hitPolicy, match: new RuleMatch(rules: $matched, declaredOutputs: $declaredOutputs));
+	}//end evaluate()
 
-			if ($this->ruleMatches(rule: $rule, declaredInputs: $declaredInputs, coercedInputs: $coercedInputs, ruleIndex: $index) === true) {
-				$matchedRules[] = $rule;
+	/**
+	 * The rules whose every input entry matches the coerced inputs, in declaration order.
+	 *
+	 * @param array<string, mixed> $decisionTable The decision table definition.
+	 * @param array<string, mixed> $coercedInputs Coerced runtime values, keyed by name.
+	 *
+	 * @return array<int, array<string, mixed>> The matching rules.
+	 *
+	 * @throws DecisionEvaluationException `invalid_expression`/`type_mismatch` with rule context.
+	 */
+	private function matchingRules(array $decisionTable, array $coercedInputs): array {
+		$declaredInputs = self::normaliseFields(fields: ($decisionTable['inputs'] ?? []));
+		$inputs = new ResolvedInputs(declared: $declaredInputs, coerced: $coercedInputs);
+		$matched = [];
+		foreach ($this->rulesOf(decisionTable: $decisionTable) as $index => $rule) {
+			$cells = ['id' => ($rule['id'] ?? $index), 'inputEntries' => ($rule['inputEntries'] ?? null)];
+			if ($this->ruleMatches(cells: $cells, inputs: $inputs) === true) {
+				$matched[] = $rule;
 			}
 		}
 
-		return $this->applyHitPolicy(
-			hitPolicy: $hitPolicy,
-			matchedRules: $matchedRules,
-			declaredOutputs: $declaredOutputs,
-		);
-	}//end evaluate()
+		return $matched;
+	}//end matchingRules()
+
+	/**
+	 * The table's rules that are objects, keyed by their declared position.
+	 *
+	 * The keys are kept: a refusal names a rule without an id by that position.
+	 *
+	 * @param array<string, mixed> $decisionTable The decision table definition.
+	 *
+	 * @return array<int|string, array<string, mixed>> The declared rules; none when `rules` is not a list.
+	 */
+	private function rulesOf(array $decisionTable): array {
+		if (is_array($decisionTable['rules'] ?? null) === true) {
+			return array_filter($decisionTable['rules'], 'is_array');
+		}
+
+		return [];
+	}//end rulesOf()
 
 	/**
 	 * Validate the caller's inputs against the declared inputs and coerce
@@ -191,33 +212,31 @@ class DecisionTableEvaluator {
 	/**
 	 * Check whether every input entry on a rule matches the coerced inputs.
 	 *
-	 * @param array<string, mixed> $rule The rule row.
-	 * @param array<int, array{name: string, type: string}> $declaredInputs Declared inputs, positionally aligned.
-	 * @param array<string, mixed> $coercedInputs Coerced runtime values, keyed by name.
-	 * @param int|string $ruleIndex Rule position (for error context).
+	 * @param array{id: mixed, inputEntries: mixed} $cells  The rule's id (its position when it has none) and input entries.
+	 * @param ResolvedInputs                       $inputs The declared inputs and their coerced runtime values.
 	 *
 	 * @return bool
 	 *
 	 * @throws DecisionEvaluationException `invalid_expression`/`type_mismatch` (re-thrown with rule context).
 	 */
-	private function ruleMatches(array $rule, array $declaredInputs, array $coercedInputs, int|string $ruleIndex): bool {
+	private function ruleMatches(array $cells, ResolvedInputs $inputs): bool {
 		$entries = [];
-		if (is_array($rule['inputEntries'] ?? null) === true) {
-			$entries = $rule['inputEntries'];
+		if (is_array($cells['inputEntries']) === true) {
+			$entries = $cells['inputEntries'];
 		}
 
-		foreach ($declaredInputs as $position => $declared) {
+		foreach ($inputs->declared as $position => $declared) {
 			$expression = (string)($entries[$position] ?? '-');
-			$value = $coercedInputs[$declared['name']];
+			$subject = new UnaryTestValue(value: $inputs->coerced[$declared['name']], type: $declared['type']);
 
 			try {
-				if ($this->evaluator->matches(expression: $expression, value: $value, type: $declared['type']) === false) {
+				if ($this->evaluator->matchesValue(expression: $expression, subject: $subject) === false) {
 					return false;
 				}
 			} catch (DecisionEvaluationException $e) {
 				throw new DecisionEvaluationException(
 					errorCode: $e->getErrorCode(),
-					details: array_merge($e->getDetails(), ['ruleId' => ($rule['id'] ?? $ruleIndex), 'input' => $declared['name']]),
+					details: array_merge($e->getDetails(), ['ruleId' => $cells['id'], 'input' => $declared['name']]),
 				);
 			}
 		}
@@ -228,9 +247,7 @@ class DecisionTableEvaluator {
 	/**
 	 * Refuse an ANY table whose matching rules disagree.
 	 *
-	 * @param array<int, array<string, mixed>> $matchedRules   The matching rules.
-	 * @param array<int, array{name: string, type: string}> $declaredOutputs The declared outputs.
-	 * @param array<int, string> $matchedIds The matching rule ids, for the error.
+	 * @param RuleMatch $match The matching rules (at least one) and the declared outputs.
 	 *
 	 * @return void
 	 *
@@ -238,27 +255,16 @@ class DecisionTableEvaluator {
 	 *
 	 * @spec openspec/changes/shared-decision-table-evaluator/specs/shared-decision-tables/spec.md
 	 */
-	private function assertAllOutputsAgree(array $matchedRules, array $declaredOutputs, array $matchedIds): void {
-		$first = null;
-		foreach ($matchedRules as $rule) {
-			$outputs = [];
-			foreach ($declaredOutputs as $position => $declared) {
-				$outputs[$declared['name']] = ($rule['outputEntries'][$position] ?? null);
-			}
-
-			if ($first === null) {
-				$first = $outputs;
-				continue;
-			}
-
-			if ($outputs !== $first) {
+	private function assertAllOutputsAgree(RuleMatch $match): void {
+		$first = $match->outputsOf(rule: $match->rules[0]);
+		foreach ($match->rules as $rule) {
+			if ($match->outputsOf(rule: $rule) !== $first) {
 				throw new DecisionEvaluationException(
 					errorCode: 'hit_policy_violation',
-					details: ['hitPolicy' => 'ANY', 'matchedRuleIds' => $matchedIds],
+					details: ['hitPolicy' => 'ANY', 'matchedRuleIds' => $match->ids()],
 				);
 			}
 		}
-
 	}//end assertAllOutputsAgree()
 
 	/**
@@ -267,24 +273,22 @@ class DecisionTableEvaluator {
 	 * COLLECT is the one policy whose result is a LIST rather than a value, so
 	 * it is built apart from the single-winner path instead of inside it.
 	 *
-	 * @param array<int, array<string, mixed>> $matchedRules The matching rules.
-	 * @param array<int, array{name: string, type: string}> $declaredOutputs The declared outputs.
+	 * @param RuleMatch $match The matching rules and the declared outputs.
 	 *
 	 * @return array<string, array<int, mixed>> The collected outputs.
 	 *
 	 * @spec openspec/changes/shared-decision-table-evaluator/specs/shared-decision-tables/spec.md
 	 */
-	private function collectOutputs(array $matchedRules, array $declaredOutputs): array {
+	private function collectOutputs(RuleMatch $match): array {
 		$outputs = [];
-		foreach ($declaredOutputs as $position => $declared) {
+		foreach ($match->declaredOutputs as $position => $declared) {
 			$outputs[$declared['name']] = array_map(
 				static fn (array $rule): mixed => ($rule['outputEntries'][$position] ?? null),
-				$matchedRules,
+				$match->rules,
 			);
 		}
 
 		return $outputs;
-
 	}//end collectOutputs()
 
 	/**
@@ -346,58 +350,56 @@ class DecisionTableEvaluator {
 	/**
 	 * Apply the hit policy to the set of matched rules and build the outputs.
 	 *
-	 * @param string $hitPolicy UNIQUE|FIRST|COLLECT.
-	 * @param array<int, array<string, mixed>> $matchedRules Rules that matched, in declaration order.
-	 * @param array<int, array{name: string, type: string}> $declaredOutputs Declared outputs, positionally aligned.
+	 * @param string    $hitPolicy One of {@see IMPLEMENTED_HIT_POLICIES}.
+	 * @param RuleMatch $match     The matching rules and the declared outputs.
 	 *
 	 * @return array{outputs: array<string, mixed>, matchedRuleIds: array<int, string>, hitPolicy: string}
 	 *
 	 * @throws DecisionEvaluationException `no_rule_matched`, `hit_policy_violation`.
 	 */
-	private function applyHitPolicy(string $hitPolicy, array $matchedRules, array $declaredOutputs): array {
-		$matchedIds = [];
-		foreach ($matchedRules as $position => $rule) {
-			$matchedIds[] = (string)($rule['id'] ?? $position);
-		}
-
+	private function applyHitPolicy(string $hitPolicy, RuleMatch $match): array {
 		if ($hitPolicy === 'COLLECT') {
-			return [
-				'outputs' => $this->collectOutputs(matchedRules: $matchedRules, declaredOutputs: $declaredOutputs),
-				'matchedRuleIds' => $matchedIds,
-				'hitPolicy' => $hitPolicy,
-			];
+			return ['outputs' => $this->collectOutputs(match: $match), 'matchedRuleIds' => $match->ids(), 'hitPolicy' => $hitPolicy];
 		}
 
-		if (count($matchedRules) === 0) {
+		$this->assertSingleWinner(hitPolicy: $hitPolicy, match: $match);
+		$winner = $this->selectWinner(hitPolicy: $hitPolicy, matchedRules: $match->rules);
+		$winnerId = (string)($winner['id'] ?? 0);
+
+		return ['outputs' => $match->outputsOf(rule: $winner), 'matchedRuleIds' => [$winnerId], 'hitPolicy' => $hitPolicy];
+	}//end applyHitPolicy()
+
+	/**
+	 * Refuse a single-winner match the hit policy does not allow.
+	 *
+	 * ANY: every matching rule must agree. DMN says a table declaring ANY
+	 * asserts that overlapping rules produce the SAME output, so a
+	 * disagreement is a fault in the table, not a choice to make silently.
+	 * openbuild's evaluator treated `any` as `collect` and returned a list;
+	 * that is a different answer of a different shape, and consolidating it
+	 * unexamined would have been the quiet regression this whole exercise
+	 * exists to avoid.
+	 *
+	 * @param string    $hitPolicy A hit policy other than COLLECT.
+	 * @param RuleMatch $match     The matching rules and the declared outputs.
+	 *
+	 * @return void
+	 *
+	 * @throws DecisionEvaluationException `no_rule_matched`, `hit_policy_violation`.
+	 */
+	private function assertSingleWinner(string $hitPolicy, RuleMatch $match): void {
+		if (count($match->rules) === 0) {
 			throw new DecisionEvaluationException(errorCode: 'no_rule_matched');
 		}
 
-		if ($hitPolicy === 'UNIQUE' && count($matchedRules) > 1) {
-			throw new DecisionEvaluationException(errorCode: 'hit_policy_violation', details: ['matchedRuleIds' => $matchedIds]);
+		if ($hitPolicy === 'UNIQUE' && count($match->rules) > 1) {
+			throw new DecisionEvaluationException(errorCode: 'hit_policy_violation', details: ['matchedRuleIds' => $match->ids()]);
 		}
 
-		// ANY: every matching rule must agree. DMN says a table declaring ANY
-		// asserts that overlapping rules produce the SAME output, so a
-		// disagreement is a fault in the table, not a choice to make silently.
-		// openbuild's evaluator treated `any` as `collect` and returned a list;
-		// that is a different answer of a different shape, and consolidating it
-		// unexamined would have been the quiet regression this whole exercise
-		// exists to avoid.
 		if ($hitPolicy === 'ANY') {
-			$this->assertAllOutputsAgree(matchedRules: $matchedRules, declaredOutputs: $declaredOutputs, matchedIds: $matchedIds);
+			$this->assertAllOutputsAgree(match: $match);
 		}
-
-		$winner = $this->selectWinner(hitPolicy: $hitPolicy, matchedRules: $matchedRules);
-
-		$outputs = [];
-		foreach ($declaredOutputs as $position => $declared) {
-			$outputs[$declared['name']] = ($winner['outputEntries'][$position] ?? null);
-		}
-
-		$winnerId = (string)($winner['id'] ?? 0);
-
-		return ['outputs' => $outputs, 'matchedRuleIds' => [$winnerId], 'hitPolicy' => $hitPolicy];
-	}//end applyHitPolicy()
+	}//end assertSingleWinner()
 
 	/**
 	 * The type a declared column type actually evaluates under.

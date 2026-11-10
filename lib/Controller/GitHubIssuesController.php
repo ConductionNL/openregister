@@ -34,18 +34,20 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\GitHubIssueDraft;
+use OCA\OpenRegister\Controller\Support\GitHubIssueListing;
 use OCA\OpenRegister\Controller\Support\GitHubIssuesControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
-use OCA\OpenRegister\Service\Configuration\GitHubGuards;
-use OCA\OpenRegister\Service\Configuration\GitHubRequestValidator;
-use OCA\OpenRegister\Service\Configuration\RateLimiterService;
+use OCA\OpenRegister\Service\Configuration\GitHubGuardsInterface;
+use OCA\OpenRegister\Service\Configuration\GitHubRequestValidatorInterface;
+use OCA\OpenRegister\Service\Configuration\RateLimiterServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\ICache;
-use OCP\ICacheFactory;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -81,23 +83,23 @@ class GitHubIssuesController extends Controller {
 	/**
 	 * Policy guards (feature flag, repo allowlist, GET rate limit)
 	 *
-	 * @var GitHubGuards
+	 * @var GitHubGuardsInterface
 	 */
-	private readonly GitHubGuards $guards;
+	private readonly GitHubGuardsInterface $guards;
 
 	/**
 	 * Pure-function input validators
 	 *
-	 * @var GitHubRequestValidator
+	 * @var GitHubRequestValidatorInterface
 	 */
-	private readonly GitHubRequestValidator $validator;
+	private readonly GitHubRequestValidatorInterface $validator;
 
 	/**
 	 * Cache-backed rate limiter with fail-closed contract
 	 *
-	 * @var RateLimiterService
+	 * @var RateLimiterServiceInterface
 	 */
-	private readonly RateLimiterService $rateLimiter;
+	private readonly RateLimiterServiceInterface $rateLimiter;
 
 	/**
 	 * The controller's injected services.
@@ -109,25 +111,21 @@ class GitHubIssuesController extends Controller {
 	/**
 	 * GitHubIssuesController constructor.
 	 *
-	 * @param string $appName Nextcloud app name (DI-injected)
 	 * @param IRequest $request Current HTTP request
 	 * @param GitHubIssuesControllerServices $services The git hub issues controller services.
-	 * @param ICacheFactory $cacheFactory Distributed cache factory (read-response cache)
 	 *
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-3
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		GitHubIssuesControllerServices $services,
-		ICacheFactory $cacheFactory,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->services = $services;
 		$this->guards = $services->domain->guards;
 		$this->validator = $services->domain->validator;
 		$this->rateLimiter = $services->domain->rateLimiter;
-		$this->readCache = $cacheFactory->createDistributed('openregister_github_issues');
+		$this->readCache = $services->platform->cacheFactory->createDistributed('openregister_github_issues');
 	}//end __construct()
 
 	/**
@@ -155,29 +153,17 @@ class GitHubIssuesController extends Controller {
 		$state = (string)$this->request->getParam('state', 'open');
 		$sort = (string)$this->request->getParam('sort', 'reactions-+1');
 		$perPage = (int)$this->request->getParam('per_page', 30);
-		$labels = (string)$this->request->getParam('labels', '');
+		$labelArray = $this->labelsParam(labels: (string)$this->request->getParam('labels', ''));
 
-		$labelArray = null;
-		if ($labels !== '') {
-			$labelArray = array_values(array_filter(array_map('trim', explode(',', $labels))));
-		}
-
+		$listing = new GitHubIssueListing(repo: $repo, state: $state, sort: $sort, perPage: $perPage);
 		$guardError = $this->guards->runGuards(
-			$this->readGuardPipeline(repo: $repo, sort: $sort, perPage: $perPage, labels: $labelArray)
+			$this->readGuardPipeline(listing: $listing, labels: $labelArray)
 		);
 		if ($guardError !== null) {
 			return $guardError;
 		}
 
-		[$owner, $repoName] = explode('/', $repo, 2);
-
-		$cacheKey = $this->buildReadCacheKey(
-			repo: $repo,
-			state: $state,
-			sort: $sort,
-			perPage: $perPage,
-			labels: $labelArray
-		);
+		$cacheKey = $this->buildReadCacheKey(listing: $listing, labels: $labelArray);
 
 		$cached = $this->readCache->get($cacheKey);
 		if (is_array($cached) === true) {
@@ -186,20 +172,51 @@ class GitHubIssuesController extends Controller {
 			return $resp;
 		}
 
+		return $this->listFromGitHub(listing: $listing, labels: $labelArray);
+	}//end index()
+
+	/**
+	 * The labels filter: the comma-separated names, trimmed, or null for none.
+	 *
+	 * @param string $labels The `labels` parameter.
+	 *
+	 * @return array|null
+	 */
+	private function labelsParam(string $labels): array|null {
+		if ($labels === '') {
+			return null;
+		}
+
+		return array_values(array_filter(array_map('trim', explode(',', $labels))));
+	}//end labelsParam()
+
+	/**
+	 * Ask GitHub on a cache miss, and cache what it answers.
+	 *
+	 * @param GitHubIssueListing $listing The listing asked for.
+	 * @param array|null         $labels  The labels filter.
+	 *
+	 * @return JSONResponse The issues, the miss rate limit, or the mapped GitHub failure.
+	 */
+	private function listFromGitHub(GitHubIssueListing $listing, array|null $labels): JSONResponse {
+		$cacheKey = $this->buildReadCacheKey(listing: $listing, labels: $labels);
+
 		// Cache-miss rate-limit (task 1.19) — only enforce when we're about to hit GitHub.
 		$missRateLimit = $this->guards->enforceGetRateLimit(cacheKey: $cacheKey);
 		if ($missRateLimit !== null) {
 			return $missRateLimit;
 		}
 
+		[$owner, $repoName] = explode('/', $listing->repo, 2);
+
 		try {
 			$result = $this->services->domain->githubHandler->listIssues(
 				owner: $owner,
 				repo: $repoName,
-				state: $state,
-				sort: $sort,
-				perPage: $perPage,
-				labels: $labelArray
+				state: $listing->state,
+				sort: $listing->sort,
+				perPage: $listing->perPage,
+				labels: $labels
 			);
 		} catch (Exception $e) {
 			return $this->mapHandlerException(exception: $e, isRead: true);
@@ -210,7 +227,7 @@ class GitHubIssuesController extends Controller {
 		$resp = new JSONResponse($result);
 		$resp->addHeader('X-OpenRegister-GitHub-Cache', 'MISS');
 		return $resp;
-	}//end index()
+	}//end listFromGitHub()
 
 	/**
 	 * Submit a GitHub issue on behalf of the authenticated user.
@@ -232,38 +249,62 @@ class GitHubIssuesController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function create(): JSONResponse {
-		$user = $this->services->platform->userSession->getUser();
+		$user = $this->services->platform->session->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(['error' => 'unauthenticated'], Http::STATUS_UNAUTHORIZED);
 		}
 
 		$uid = $user->getUID();
 
-		$repo = (string)$this->request->getParam('repo', '');
-		$title = (string)$this->request->getParam('title', '');
-		$body = (string)$this->request->getParam('body', '');
-		$specRefRaw = $this->request->getParam('specRef');
-		$specRef = null;
-		if ($specRefRaw !== null && $specRefRaw !== '') {
-			$specRef = (string)$specRefRaw;
-		}
+		$draft = new GitHubIssueDraft(
+			repo: (string)$this->request->getParam('repo', ''),
+			title: (string)$this->request->getParam('title', ''),
+			body: (string)$this->request->getParam('body', ''),
+			specRef: $this->specRefParam()
+		);
 
 		$guardError = $this->guards->runGuards(
-			$this->writeGuardPipeline(repo: $repo, title: $title, body: $body, specRef: $specRef, uid: $uid)
+			$this->writeGuardPipeline(draft: $draft, uid: $uid)
 		);
 		if ($guardError !== null) {
 			return $guardError;
 		}
 
-		[$owner, $repoName] = explode('/', $repo, 2);
+		return $this->submitDraft(draft: $draft, uid: $uid);
+	}//end create()
+
+	/**
+	 * The spec reference a submission names, or null for none.
+	 *
+	 * @return string|null
+	 */
+	private function specRefParam(): string|null {
+		$specRefRaw = $this->request->getParam('specRef');
+		if ($specRefRaw !== null && $specRefRaw !== '') {
+			return (string)$specRefRaw;
+		}
+
+		return null;
+	}//end specRefParam()
+
+	/**
+	 * Open the issue on GitHub and mark the caller's submission slot used.
+	 *
+	 * @param GitHubIssueDraft $draft The accepted submission.
+	 * @param string           $uid   The submitting user.
+	 *
+	 * @return JSONResponse 201 with the issue, or the mapped GitHub failure.
+	 */
+	private function submitDraft(GitHubIssueDraft $draft, string $uid): JSONResponse {
+		[$owner, $repoName] = explode('/', $draft->repo, 2);
 
 		try {
 			$result = $this->services->domain->githubHandler->createIssue(
 				owner: $owner,
 				repo: $repoName,
-				title: $title,
-				body: $body,
-				specRef: $specRef,
+				title: $draft->title,
+				body: $draft->body,
+				specRef: $draft->specRef,
 				userId: $uid
 			);
 		} catch (Exception $e) {
@@ -277,28 +318,26 @@ class GitHubIssuesController extends Controller {
 		);
 
 		return new JSONResponse($result, Http::STATUS_CREATED);
-	}//end create()
+	}//end submitDraft()
 
 	/**
 	 * Build the ordered guard pipeline for the GET (read) path. Extracted from `index()` so the
 	 * inline closures do not inflate that method's cyclomatic complexity past PHPMD's threshold.
 	 *
-	 * @param string $repo Caller-supplied `<owner>/<repo>` slug.
-	 * @param string $sort Caller-supplied sort key.
-	 * @param int $perPage Caller-supplied page size.
+	 * @param GitHubIssueListing $listing Caller-supplied repository slug, state, sort key and page size.
 	 * @param array<string>|null $labels Parsed label filter, or null when absent.
 	 *
 	 * @return array<callable(): ?JSONResponse> Ordered guard closures.
 	 *
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-5
 	 */
-	private function readGuardPipeline(string $repo, string $sort, int $perPage, ?array $labels): array {
+	private function readGuardPipeline(GitHubIssueListing $listing, ?array $labels): array {
 		return [
 			fn () => $this->guards->enforceFeatureFlag(),
-			fn () => $this->validator->validateRepoFormat(repo: $repo),
-			fn () => $this->guards->enforceRepoAllowlist(repo: $repo, isRead: true),
-			fn () => $this->validator->validatePerPage(perPage: $perPage),
-			fn () => $this->validator->validateSort(sort: $sort),
+			fn () => $this->validator->validateRepoFormat(repo: $listing->repo),
+			fn () => $this->guards->enforceRepoAllowlist(repo: $listing->repo, isRead: true),
+			fn () => $this->validator->validatePerPage(perPage: $listing->perPage),
+			fn () => $this->validator->validateSort(sort: $listing->sort),
 			fn () => $this->validator->validateLabels(labels: $labels),
 		];
 	}//end readGuardPipeline()
@@ -308,24 +347,21 @@ class GitHubIssuesController extends Controller {
 	 * inline closures do not inflate that method's cyclomatic / NPath complexity past PHPMD's
 	 * thresholds.
 	 *
-	 * @param string $repo Caller-supplied `<owner>/<repo>` slug.
-	 * @param string $title Caller-supplied issue title.
-	 * @param string $body Caller-supplied issue body.
-	 * @param string|null $specRef Caller-supplied capability slug, or null.
+	 * @param GitHubIssueDraft $draft Caller-supplied repository slug, title, body and capability slug.
 	 * @param string $uid Submitting user's UID (for the per-user rate-limit bucket).
 	 *
 	 * @return array<callable(): ?JSONResponse> Ordered guard closures.
 	 *
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-6
 	 */
-	private function writeGuardPipeline(string $repo, string $title, string $body, ?string $specRef, string $uid): array {
+	private function writeGuardPipeline(GitHubIssueDraft $draft, string $uid): array {
 		return [
 			fn () => $this->guards->enforceFeatureFlag(),
-			fn () => $this->validator->validateRepoFormat(repo: $repo),
-			fn () => $this->guards->enforceRepoAllowlist(repo: $repo, isRead: false),
-			fn () => $this->validator->validateTitleLength(title: $title),
-			fn () => $this->validator->validateBodyLength(body: $body),
-			fn () => $this->validator->validateSpecRef(specRef: $specRef),
+			fn () => $this->validator->validateRepoFormat(repo: $draft->repo),
+			fn () => $this->guards->enforceRepoAllowlist(repo: $draft->repo, isRead: false),
+			fn () => $this->validator->validateTitleLength(title: $draft->title),
+			fn () => $this->validator->validateBodyLength(body: $draft->body),
+			fn () => $this->validator->validateSpecRef(specRef: $draft->specRef),
 			fn () => $this->enforceRateLimiterOperational(),
 			fn () => $this->enforceSubmitRateLimit(uid: $uid),
 		];
@@ -382,18 +418,15 @@ class GitHubIssuesController extends Controller {
 	 * combinations do not collide on the same cache slot. The cache namespace is already
 	 * scoped to `openregister_github_issues` by the factory.
 	 *
-	 * @param string $repo Validated `<owner>/<repo>` slug
-	 * @param string $state Issue state filter
-	 * @param string $sort Sort key
-	 * @param int $perPage Page size
+	 * @param GitHubIssueListing $listing Validated repository slug, state filter, sort key and page size
 	 * @param array<string>|null $labels Optional label filter
 	 *
 	 * @return string Cache key (no PII, no token, no user identifier)
 	 *
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-5
 	 */
-	private function buildReadCacheKey(string $repo, string $state, string $sort, int $perPage, ?array $labels): string {
-		$key = 'list:' . $repo . ':' . $state . ':' . $sort . ':' . $perPage;
+	private function buildReadCacheKey(GitHubIssueListing $listing, ?array $labels): string {
+		$key = 'list:' . $listing->repo . ':' . $listing->state . ':' . $listing->sort . ':' . $listing->perPage;
 		if (is_array($labels) === true && count($labels) > 0) {
 			$sorted = $labels;
 			sort($sorted);
@@ -433,7 +466,7 @@ class GitHubIssuesController extends Controller {
 			}
 		}
 
-		$this->services->platform->logger->error(
+		$this->services->platform->session->logger->error(
 			message: '[GitHubIssuesController] GitHub proxy error',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'error_class' => $exception::class]
 		);
@@ -490,10 +523,33 @@ class GitHubIssuesController extends Controller {
 		$remaining = $response->getHeaderLine('X-RateLimit-Remaining');
 		$reset = $response->getHeaderLine('X-RateLimit-Reset');
 
-		if ($status !== 429 && ($status !== 403 || $remaining !== '0')) {
+		if ($this->isGitHubRateLimit(status: $status, remaining: $remaining) === false) {
 			return null;
 		}
 
+		return $this->rateLimitedResponse(reset: $reset);
+	}//end mapGitHubRateLimit()
+
+	/**
+	 * Whether GitHub's answer is its rate limit: a 429, or a 403 with no quota left.
+	 *
+	 * @param int    $status    GitHub's status code.
+	 * @param string $remaining Its X-RateLimit-Remaining header.
+	 *
+	 * @return bool
+	 */
+	private function isGitHubRateLimit(int $status, string $remaining): bool {
+		return $status === 429 || ($status === 403 && $remaining === '0');
+	}//end isGitHubRateLimit()
+
+	/**
+	 * The 429 passed on to the caller, with GitHub's reset moment when it gave one.
+	 *
+	 * @param string $reset GitHub's X-RateLimit-Reset header (epoch seconds), or ''.
+	 *
+	 * @return JSONResponse
+	 */
+	private function rateLimitedResponse(string $reset): JSONResponse {
 		$body = ['error' => 'github_rate_limited'];
 		if ($reset !== '') {
 			$body['reset_at'] = gmdate('c', (int)$reset);
@@ -505,5 +561,5 @@ class GitHubIssuesController extends Controller {
 		}
 
 		return $jsonResp;
-	}//end mapGitHubRateLimit()
+	}//end rateLimitedResponse()
 }//end class

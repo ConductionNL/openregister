@@ -33,7 +33,7 @@ use OCP\IUserSession;
  *
  * @spec openspec/specs/mcp-discovery/spec.md#requirement-a-definition-tool-holds-the-caller-to-the-rights-of-the-rest-routes
  */
-class DefinitionWriteRights {
+class DefinitionWriteRights implements DefinitionWriteRightsInterface {
 
 	/**
 	 * Constructor.

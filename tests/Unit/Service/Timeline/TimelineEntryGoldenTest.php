@@ -20,7 +20,10 @@ declare(strict_types=1);
 
 namespace Unit\Service\Timeline;
 
+use OCA\OpenRegister\Notifications\Service\Timeline\WrittenEntry;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryDerivations;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryRecords;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Notifications\Db\TimelineEntryMapper;
 use OCA\OpenRegister\Notifications\Service\Timeline\EntryMentionService;
@@ -43,6 +46,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Db\ListQuery;
 
 /**
  * Drives the services through the collaborators they build.
@@ -84,8 +88,25 @@ class TimelineEntryGoldenTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 
-		return new TimelineEntryService($mapper, $kinds, $languages, $visibility, $session, $this->createMock(LoggerInterface::class));
+		$records = new TimelineEntryRecords(entryMapper: $mapper, kinds: $kinds, languages: $languages);
+		return new TimelineEntryService($records, $visibility, $session, $this->createMock(LoggerInterface::class));
 	}//end entryService()
+
+	public function testAListPassesTheVisibilityFilterAndThePageToTheRead(): void {
+		$mapper = $this->createMock(TimelineEntryMapper::class);
+		$mapper->expects($this->exactly(2))->method('findForObject')->willReturnCallback(
+			function (string $objectUuid, ?string $visibility, int $limit, int $offset): array {
+				$this->log[] = 'find '.json_encode([$objectUuid, $visibility, $limit, $offset]);
+				return [];
+			}
+		);
+
+		$service = $this->entryService(mapper: $mapper);
+		$service->listForObject($this->object(), new ListQuery(limit: 5, offset: 2, filters: ['visibility' => 'public']));
+		$service->listForObject($this->object());
+
+		$this->assertSame(['find ["object-1","public",5,2]', 'find ["object-1",null,50,0]'], $this->log);
+	}//end testAListPassesTheVisibilityFilterAndThePageToTheRead()
 
 	public function testARecordCarriesEverythingThePayloadOffers(): void {
 		$entry = $this->entryService()->record(
@@ -252,8 +273,8 @@ class TimelineEntryGoldenTest extends TestCase {
 		);
 		$mentions = $this->createMock(EntryMentionService::class);
 		$mentions->method('apply')->willReturnCallback(
-			function (ObjectEntity $object, string $entryUuid, ?string $text, ?string $register, ?string $schema) use ($failing): array {
-				$this->log[] = 'mentions '.json_encode([$object->getUuid(), $entryUuid, $text, $register, $schema]);
+			function (WrittenEntry $written, ?string $register, ?string $schema) use ($failing): array {
+				$this->log[] = 'mentions '.json_encode([$written->object->getUuid(), $written->uuid(), $written->message, $register, $schema]);
 				if ($failing !== null) {
 					$failing();
 				}
@@ -277,7 +298,8 @@ class TimelineEntryGoldenTest extends TestCase {
 			);
 		}
 
-		return new TimelineWriteService($notes, $entries, $references, $mentions, $blocks, $logger);
+		$derived = new TimelineEntryDerivations(references: $references, mentions: $mentions, blocks: $blocks);
+		return new TimelineWriteService($notes, $entries, $derived, $logger);
 	}//end writeService()
 
 	private function recording(?callable $record = null): TimelineEntryService {

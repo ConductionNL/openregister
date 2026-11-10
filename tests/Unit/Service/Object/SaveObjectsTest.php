@@ -14,13 +14,22 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
+use OCA\OpenRegister\Service\Object\BulkSaveOptions;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
+use OCA\OpenRegister\Service\Object\BulkSaveReporting;
+use OCA\OpenRegister\Service\Object\BulkSaveSession;
+use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationRun;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationScanner;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkSchemaAnalysis;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -70,13 +79,10 @@ class SaveObjectsTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->handler = new SaveObjects(
-			$this->objectMapper,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->saveHandler,
-			$this->userSession,
-			$this->organisationService,
-			$this->logger
+			stores: new BulkSaveStores(objectEntityMapper: $this->objectMapper, schemaMapper: $this->schemaMapper, registerMapper: $this->registerMapper, saveHandler: $this->saveHandler),
+			session: new BulkSaveSession(userSession: $this->userSession, organisationService: $this->organisationService),
+			reporting: new BulkSaveReporting(logger: $this->logger),
+			checks: new BulkRowChecks()
 		);
 
 		// Clear static caches between tests.
@@ -175,10 +181,23 @@ class SaveObjectsTest extends TestCase {
 	 * @return mixed
 	 */
 	private function invokePrivate(string $method, array $args = []) {
-		$ref = new ReflectionClass($this->handler);
+		if ($method === 'scanForRelations') {
+			return (new BulkRelationScanner())->scan(data: $args[0], run: new BulkRelationRun(prefix: $args[1], schema: $args[2]));
+		}
+
+		if ($method === 'performComprehensiveSchemaAnalysis') {
+			return (new BulkSchemaAnalysis())->analyse($args[0]);
+		}
+
+		$target = $this->handler;
+		if ($method === 'isRecordableReference') {
+			$target = new BulkRelationScanner();
+		}
+
+		$ref = new ReflectionClass($target);
 		$m = $ref->getMethod($method);
 		$m->setAccessible(true);
-		return $m->invokeArgs($this->handler, $args);
+		return $m->invokeArgs($target, $args);
 	}
 
 	// =========================================================================
@@ -509,7 +528,7 @@ class SaveObjectsTest extends TestCase {
 			['@self' => ['schema' => 1, 'register' => 1], 'id' => 'uuid-1', 'name' => 'Second'],
 		];
 
-		$result = $this->handler->saveObjects($objects, deduplicateIds: true);
+		$result = $this->handler->saveObjects($objects);
 
 		// Should succeed with at least one saved object.
 		$this->assertNotEmpty($result['saved']);
@@ -532,7 +551,7 @@ class SaveObjectsTest extends TestCase {
 			['@self' => ['schema' => 1, 'register' => 1], 'id' => 'uuid-1', 'name' => 'Second'],
 		];
 
-		$result = $this->handler->saveObjects($objects, deduplicateIds: false);
+		$result = $this->handler->saveObjects($objects);
 
 		// Should succeed with objects saved.
 		$this->assertNotEmpty($result['saved']);
@@ -1023,7 +1042,9 @@ class SaveObjectsTest extends TestCase {
 
 		$result = $this->handler->saveObjects(
 			[['name' => 'Test Object', 'field1' => 'value1']],
-			$register, $schema, true, true, false, false, true, true
+			new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true),
+			_rbac: true,
+			_multitenancy: true
 		);
 
 		$this->assertCount(1, $result['saved']);
@@ -1046,7 +1067,7 @@ class SaveObjectsTest extends TestCase {
 		$this->organisationService->method('getOrganisationForNewEntity')->willReturn('org-uuid');
 		$this->setupBulkSaveMock(1);
 
-		$result = $this->handler->saveObjects([['name' => 'Test', 'field' => 'val']], 1, 2);
+		$result = $this->handler->saveObjects([['name' => 'Test', 'field' => 'val']], new BulkSaveOptions(new BulkBatchDefaults(1, 2), validation: false, events: false, audit: true));
 
 		$this->assertCount(1, $result['saved']);
 	}
@@ -1061,7 +1082,7 @@ class SaveObjectsTest extends TestCase {
 		$this->organisationService->method('getOrganisationForNewEntity')->willReturn(null);
 		$this->setupBulkSaveMock(1);
 
-		$result = $this->handler->saveObjects([['name' => 'Test']], $register, $schema);
+		$result = $this->handler->saveObjects([['name' => 'Test']], new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true));
 
 		$this->assertCount(1, $result['saved']);
 	}
@@ -1084,7 +1105,7 @@ class SaveObjectsTest extends TestCase {
 			],
 		];
 
-		$result = $this->handler->saveObjects($objects, $register, $schema);
+		$result = $this->handler->saveObjects($objects, new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true));
 
 		$this->assertCount(1, $result['saved']);
 	}
@@ -1103,7 +1124,7 @@ class SaveObjectsTest extends TestCase {
 			['@self' => [], 'object' => ['field1' => 'value1', 'field2' => 'value2']],
 		];
 
-		$result = $this->handler->saveObjects($objects, $register, $schema);
+		$result = $this->handler->saveObjects($objects, new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true));
 
 		$this->assertCount(1, $result['saved']);
 	}
@@ -1125,7 +1146,7 @@ class SaveObjectsTest extends TestCase {
 			],
 		];
 
-		$result = $this->handler->saveObjects($objects, $register, $schema);
+		$result = $this->handler->saveObjects($objects, new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true));
 
 		$this->assertCount(1, $result['saved']);
 	}
@@ -1144,7 +1165,7 @@ class SaveObjectsTest extends TestCase {
 			['@self' => ['published' => 'not-a-date'], 'name' => 'Bad Date Object'],
 		];
 
-		$result = $this->handler->saveObjects($objects, $register, $schema);
+		$result = $this->handler->saveObjects($objects, new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true));
 
 		$this->assertCount(1, $result['saved']);
 	}
@@ -1159,7 +1180,7 @@ class SaveObjectsTest extends TestCase {
 		$this->organisationService->method('getOrganisationForNewEntity')->willReturn(null);
 		$this->setupBulkSaveMock(1);
 
-		$result = $this->handler->saveObjects([['name' => 'Auto Publish Object']], $register, $schema);
+		$result = $this->handler->saveObjects([['name' => 'Auto Publish Object']], new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true));
 
 		$this->assertCount(1, $result['saved']);
 	}
@@ -1178,7 +1199,7 @@ class SaveObjectsTest extends TestCase {
 			['@self' => ['published' => '2024-06-01T00:00:00+00:00'], 'name' => 'CSV Published Object'],
 		];
 
-		$result = $this->handler->saveObjects($objects, $register, $schema);
+		$result = $this->handler->saveObjects($objects, new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true));
 
 		$this->assertCount(1, $result['saved']);
 	}
@@ -1194,8 +1215,10 @@ class SaveObjectsTest extends TestCase {
 		$this->setupBulkSaveMock(1);
 
 		$result = $this->handler->saveObjects(
-			[['name' => 'Test']], $register, $schema,
-			true, true, false, false, true, false
+			[['name' => 'Test']],
+			new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true),
+			_rbac: true,
+			_multitenancy: true
 		);
 
 		$this->assertCount(1, $result['saved']);
@@ -1541,7 +1564,7 @@ class SaveObjectsTest extends TestCase {
 		$this->setupBulkSaveMock(1);
 
 		$objects = [['@self' => ['depublished' => '2025-12-31T23:59:59+00:00'], 'name' => 'Depublished Object']];
-		$result = $this->handler->saveObjects($objects, $register, $schema);
+		$result = $this->handler->saveObjects($objects, new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true));
 
 		$this->assertCount(1, $result['saved']);
 	}
@@ -1557,7 +1580,7 @@ class SaveObjectsTest extends TestCase {
 		$this->setupBulkSaveMock(1);
 
 		$objects = [['@self' => ['depublished' => 'not-a-valid-date'], 'name' => 'Bad Depub Date Object']];
-		$result = $this->handler->saveObjects($objects, $register, $schema);
+		$result = $this->handler->saveObjects($objects, new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true));
 
 		$this->assertCount(1, $result['saved']);
 	}
@@ -1584,7 +1607,7 @@ class SaveObjectsTest extends TestCase {
 			['name' => 'Object 3', 'field1' => 'value3'],
 		];
 
-		$result = $this->handler->saveObjects($objects, $register, $schema);
+		$result = $this->handler->saveObjects($objects, new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true));
 
 		$this->assertCount(3, $result['saved']);
 		$this->assertSame(3, $result['statistics']['saved']);
@@ -1611,7 +1634,7 @@ class SaveObjectsTest extends TestCase {
 			],
 		];
 
-		$result = $this->handler->saveObjects($objects, $register, $schema);
+		$result = $this->handler->saveObjects($objects, new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true));
 
 		$this->assertCount(1, $result['saved']);
 	}
@@ -1630,7 +1653,7 @@ class SaveObjectsTest extends TestCase {
 			['@self' => [], 'object' => ['relatedItem' => 'https://example.com/api/objects/1', 'title' => 'Test']],
 		];
 
-		$result = $this->handler->saveObjects($objects, $register, $schema);
+		$result = $this->handler->saveObjects($objects, new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true));
 
 		$this->assertCount(1, $result['saved']);
 	}
@@ -1688,7 +1711,7 @@ class SaveObjectsTest extends TestCase {
 			['@self' => ['schema' => 1, 'register' => 1], 'id' => 'same-id', 'name' => 'Second'],
 		];
 
-		$result = $this->handler->saveObjects($objects, deduplicateIds: false);
+		$result = $this->handler->saveObjects($objects);
 
 		$this->assertCount(2, $result['saved']);
 		$this->assertSame(2, $result['statistics']['saved']);
@@ -1704,7 +1727,7 @@ class SaveObjectsTest extends TestCase {
 		$this->organisationService->method('getOrganisationForNewEntity')->willReturn(null);
 		$this->setupBulkSaveMock(1);
 
-		$result = $this->handler->saveObjects([['name' => 'No Auto Publish']], $register, $schema);
+		$result = $this->handler->saveObjects([['name' => 'No Auto Publish']], new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true));
 
 		$this->assertCount(1, $result['saved']);
 	}
@@ -1721,7 +1744,7 @@ class SaveObjectsTest extends TestCase {
 
 		$objects = [['@self' => ['id' => 'my-explicit-id-in-self'], 'name' => 'Self ID Object']];
 
-		$result = $this->handler->saveObjects($objects, $register, $schema);
+		$result = $this->handler->saveObjects($objects, new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true));
 
 		$this->assertCount(1, $result['saved']);
 	}
@@ -1740,7 +1763,7 @@ class SaveObjectsTest extends TestCase {
 
 		$objects = [['field1' => 'value1', 'field2' => 'value2']];
 
-		$result = $this->handler->saveObjects($objects, $register, $schema);
+		$result = $this->handler->saveObjects($objects, new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true));
 
 		$this->assertCount(1, $result['saved']);
 	}
@@ -1765,7 +1788,7 @@ class SaveObjectsTest extends TestCase {
 			],
 		];
 
-		$result = $this->handler->saveObjects($objects, $register, $schema);
+		$result = $this->handler->saveObjects($objects, new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true));
 
 		$this->assertCount(1, $result['saved']);
 	}
@@ -1855,7 +1878,7 @@ class SaveObjectsTest extends TestCase {
 			],
 		];
 
-		$result = $this->handler->saveObjects($objects, $register, $schema);
+		$result = $this->handler->saveObjects($objects, new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true));
 
 		$this->assertCount(1, $result['saved']);
 	}
@@ -1872,7 +1895,7 @@ class SaveObjectsTest extends TestCase {
 
 		$objects = [['id' => '   ', 'name' => 'Whitespace ID Object']];
 
-		$result = $this->handler->saveObjects($objects, $register, $schema);
+		$result = $this->handler->saveObjects($objects, new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true));
 
 		$this->assertCount(1, $result['saved']);
 	}
@@ -1953,7 +1976,7 @@ class SaveObjectsTest extends TestCase {
 		$this->organisationService->method('getOrganisationForNewEntity')->willReturn(null);
 		$this->setupBulkSaveMock(1);
 
-		$result = $this->handler->saveObjects([['name' => 'Test']], 5, $schema);
+		$result = $this->handler->saveObjects([['name' => 'Test']], new BulkSaveOptions(new BulkBatchDefaults(5, $schema), validation: false, events: false, audit: true));
 
 		$this->assertCount(1, $result['saved']);
 	}
@@ -2005,7 +2028,7 @@ class SaveObjectsTest extends TestCase {
 
 		$objects = [['@self' => ['published' => 12345, 'depublished' => 67890], 'name' => 'Non-String Dates']];
 
-		$result = $this->handler->saveObjects($objects, $register, $schema);
+		$result = $this->handler->saveObjects($objects, new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true));
 
 		$this->assertCount(1, $result['saved']);
 	}
@@ -2022,7 +2045,7 @@ class SaveObjectsTest extends TestCase {
 
 		$objects = [['@self' => ['published' => null, 'depublished' => null], 'name' => 'Null Dates']];
 
-		$result = $this->handler->saveObjects($objects, $register, $schema);
+		$result = $this->handler->saveObjects($objects, new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true));
 
 		$this->assertCount(1, $result['saved']);
 	}
@@ -2042,8 +2065,10 @@ class SaveObjectsTest extends TestCase {
 		$this->setupBulkSaveMock(1);
 
 		$result = $this->handler->saveObjects(
-			[['name' => 'Test']], $register, $schema,
-			true, true, true
+			[['name' => 'Test']],
+			new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: true, events: false, audit: true),
+			_rbac: true,
+			_multitenancy: true
 		);
 
 		$this->assertCount(1, $result['saved']);
@@ -2060,8 +2085,10 @@ class SaveObjectsTest extends TestCase {
 		$this->setupBulkSaveMock(1);
 
 		$result = $this->handler->saveObjects(
-			[['name' => 'Test']], $register, $schema,
-			true, true, false, true
+			[['name' => 'Test']],
+			new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: true, audit: true),
+			_rbac: true,
+			_multitenancy: true
 		);
 
 		$this->assertCount(1, $result['saved']);
@@ -2081,7 +2108,7 @@ class SaveObjectsTest extends TestCase {
 		$this->organisationService->method('getOrganisationForNewEntity')->willReturn(null);
 		$this->setupBulkSaveMock(1, 0, 1);
 
-		$result = $this->handler->saveObjects([['name' => 'Test']], $register, $schema);
+		$result = $this->handler->saveObjects([['name' => 'Test']], new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true));
 
 		// The result should have the standard statistics keys.
 		$this->assertArrayHasKey('saved', $result['statistics']);
@@ -2149,7 +2176,7 @@ class SaveObjectsTest extends TestCase {
 		$this->organisationService->method('getOrganisationForNewEntity')->willReturn('org-uuid-123');
 		$this->setupBulkSaveMock(savedCount: 2, updatedCount: 1, unchangedCount: 1);
 
-		return $this->untimed($this->handler->saveObjects($rows, $this->createRegister(1), $schema, ...$flags));
+		return $this->untimed($this->handler->saveObjects($rows, new BulkSaveOptions(new BulkBatchDefaults($this->createRegister(1), $schema), validation: false, events: false, audit: true), ...$flags));
 	}
 
 	/**
@@ -2191,7 +2218,7 @@ class SaveObjectsTest extends TestCase {
 	 */
 	public function testSaveObjectsMixedRunWithAnEmptyBulkAnswerReportsItsMetrics(): void {
 		$this->schemaMapper->method('find')->willReturn($this->createSchema(1));
-		$result = $this->untimed($this->handler->saveObjects([['@self' => ['schema' => 1], 'name' => 'a']], null, null, false));
+		$result = $this->untimed($this->handler->saveObjects([['@self' => ['schema' => 1], 'name' => 'a']], new BulkSaveOptions(new BulkBatchDefaults(null, null), validation: false, events: false, audit: true), _rbac: false));
 
 		$this->assertSame(['totalProcessed' => 1, 'saved' => 0, 'updated' => 0, 'unchanged' => 0, 'invalid' => 0, 'errors' => 0, 'processingTimeMs' => 0], $result['statistics']);
 		$this->assertSame([['chunkIndex' => 0, 'count' => 1, 'saved' => 0, 'updated' => 0, 'unchanged' => 0, 'invalid' => 0, 'processingTime' => 't', 'speed' => 't', 'phaseMs' => 't']], $result['chunkStatistics']);
@@ -2218,9 +2245,9 @@ class SaveObjectsTest extends TestCase {
 			}
 		);
 
-		$this->handler->saveObjects([['name' => 'a']], $this->createRegister(1), $schema, _rbac: false, _audit: false);
-		$this->handler->saveObjects([['name' => 'a']], $this->createRegister(1), $schema, _rbac: false);
-		$this->handler->saveObjects([['name' => 'a']], $this->createRegister(1), $schema, _rbac: false, _events: true, _audit: false);
+		$this->handler->saveObjects([['name' => 'a']], new BulkSaveOptions(new BulkBatchDefaults($this->createRegister(1), $schema), validation: false, events: false, audit: false), _rbac: false);
+		$this->handler->saveObjects([['name' => 'a']], new BulkSaveOptions(new BulkBatchDefaults($this->createRegister(1), $schema), validation: false, events: false, audit: true), _rbac: false);
+		$this->handler->saveObjects([['name' => 'a']], new BulkSaveOptions(new BulkBatchDefaults($this->createRegister(1), $schema), validation: false, events: true, audit: false), _rbac: false);
 
 		$this->assertSame([false, true, true], $asked);
 	}
@@ -2250,15 +2277,10 @@ class SaveObjectsTest extends TestCase {
 		$this->setupBulkSaveMock(savedCount: 1);
 
 		return new SaveObjects(
-			$this->objectMapper,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->saveHandler,
-			$this->userSession,
-			$this->organisationService,
-			$this->logger,
-			groupManager: $groups,
-			permissionHandler: $permissions
+			stores: new BulkSaveStores(objectEntityMapper: $this->objectMapper, schemaMapper: $this->schemaMapper, registerMapper: $this->registerMapper, saveHandler: $this->saveHandler),
+			session: new BulkSaveSession(userSession: $this->userSession, organisationService: $this->organisationService, groupManager: $groups),
+			reporting: new BulkSaveReporting(logger: $this->logger),
+			checks: new BulkRowChecks(permissionHandler: $permissions)
 		);
 	}
 
@@ -2273,7 +2295,7 @@ class SaveObjectsTest extends TestCase {
 		$schema->setConfiguration([]);
 		$rows = [['name' => 'new'], ['@self' => ['uuid' => '11111111-1111-1111-1111-111111111111'], 'name' => 'changed']];
 
-		$result = $this->untimed($this->createRefusingHandler(admin: false)->saveObjects($rows, $this->createRegister(1), $schema));
+		$result = $this->untimed($this->createRefusingHandler(admin: false)->saveObjects($rows, new BulkSaveOptions(new BulkBatchDefaults($this->createRegister(1), $schema), validation: false, events: false, audit: true)));
 
 		$this->assertSame(['BulkSafeguardException', 'PermissionDeniedException'], array_column($result['invalid'], 'type'));
 		$this->assertSame(1, $result['statistics']['totalProcessed']);
@@ -2292,11 +2314,11 @@ class SaveObjectsTest extends TestCase {
 		$schema->setProperties([]);
 		$schema->setConfiguration([]);
 
-		$skipped = $this->untimed($this->createRefusingHandler(admin: true)->saveObjects([['name' => 'new']], $this->createRegister(1), $schema, _rbac: false));
+		$skipped = $this->untimed($this->createRefusingHandler(admin: true)->saveObjects([['name' => 'new']], new BulkSaveOptions(new BulkBatchDefaults($this->createRegister(1), $schema), validation: false, events: false, audit: true), _rbac: false));
 		$this->assertSame([], $skipped['invalid']);
 		$this->assertSame(1, $skipped['statistics']['totalProcessed']);
 
-		$checked = $this->untimed($this->createRefusingHandler(admin: true)->saveObjects([['name' => 'new']], $this->createRegister(1), $schema));
+		$checked = $this->untimed($this->createRefusingHandler(admin: true)->saveObjects([['name' => 'new']], new BulkSaveOptions(new BulkBatchDefaults($this->createRegister(1), $schema), validation: false, events: false, audit: true)));
 		$this->assertCount(1, $checked['invalid']);
 	}
 }

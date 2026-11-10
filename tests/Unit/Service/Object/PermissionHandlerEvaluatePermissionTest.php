@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
@@ -56,6 +57,7 @@ use Stringable;
  * Expected values live in `fixtures/evaluate-permission.php`, one entry per case.
  *
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses   \OCA\OpenRegister\Service\Object\DenialQuestion
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Event\CustomScopeEvaluatedEvent
@@ -289,11 +291,9 @@ class PermissionHandlerEvaluatePermissionTest extends TestCase {
 		$method  = new ReflectionMethod(PermissionHandler::class, 'evaluatePermission');
 		$verdict = $method->invoke(
 			$this->handler(case: $case, logger: $logger),
-			$schema,
-			($case['action'] ?? 'read'),
-			$userId,
-			$object?->getOwner(),
-			$object
+			(new PermissionAsk(schema: $schema, action: ($case['action'] ?? 'read')))
+				->askedBy(userId: $userId, objectOwner: $object?->getOwner())
+				->about(object: $object, register: null)
 		);
 
 		return ['verdict' => $verdict, 'log' => $logger->lines];
@@ -312,7 +312,7 @@ class PermissionHandlerEvaluatePermissionTest extends TestCase {
 		$appConfig->method('getValueBool')->willReturnArgument(2);
 		$appConfig->method('getValueString')->willReturn($case['denyMode'] ?? DenyEnforcementMode::MODE_ENFORCING);
 
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			userSession: $this->userSession(case: $case),
 			userManager: $this->userManager(case: $case),
 			groupManager: $this->groupManager(case: $case),
