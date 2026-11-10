@@ -254,7 +254,7 @@ final class FileInputReader {
 			throw new Exception('Invalid base64 content in data URI');
 		}
 
-		return $this->fileData(content: $content, mimeType: $matches[1], extension: $this->extensionOf(mimeType: $matches[1]));
+		return $this->fileData(content: $content, format: new FileFormat(mimeType: $matches[1], extension: $this->extensionOf(mimeType: $matches[1])));
 	}//end parseDataUri()
 
 	/**
@@ -274,7 +274,7 @@ final class FileInputReader {
 		}
 
 		$mimeType = $this->detectMimeType(content: $content);
-		return $this->fileData(content: $content, mimeType: $mimeType, extension: $this->extensionOf(mimeType: $mimeType));
+		return $this->fileData(content: $content, format: new FileFormat(mimeType: $mimeType, extension: $this->extensionOf(mimeType: $mimeType)));
 	}//end parseBase64()
 
 	/**
@@ -296,17 +296,16 @@ final class FileInputReader {
 	/**
 	 * The parsed file data shape.
 	 *
-	 * @param string $content   The file content.
-	 * @param string $mimeType  The MIME type.
-	 * @param string $extension The extension.
+	 * @param string     $content The file content.
+	 * @param FileFormat $format  The MIME type and the extension.
 	 *
 	 * @return array{content: string, mimeType: string, extension: string, size: int}
 	 */
-	public function fileData(string $content, string $mimeType, string $extension): array {
+	public function fileData(string $content, FileFormat $format): array {
 		return [
 			'content' => $content,
-			'mimeType' => $mimeType,
-			'extension' => $extension,
+			'mimeType' => $format->mimeType,
+			'extension' => $format->extension,
 			'size' => strlen($content),
 		];
 	}//end fileData()
