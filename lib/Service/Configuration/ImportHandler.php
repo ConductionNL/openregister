@@ -3407,7 +3407,7 @@ class ImportHandler {
 	 */
 	private function listedRegister(mixed $rawRegister): ?Register {
 		$register = $this->registersMap[$rawRegister] ?? null;
-		if ($register !== null || is_string($rawRegister) === false || $rawRegister === '') {
+		if ($register !== null || $this->isLookupSlug(raw: $rawRegister) === false) {
 			return $register;
 		}
 
@@ -3432,7 +3432,7 @@ class ImportHandler {
 	 */
 	private function listedSchema(mixed $rawSchema): ?Schema {
 		$schema = $this->schemasMap[$rawSchema] ?? null;
-		if ($schema !== null || is_string($rawSchema) === false || $rawSchema === '') {
+		if ($schema !== null || $this->isLookupSlug(raw: $rawSchema) === false) {
 			return $schema;
 		}
 
@@ -3445,6 +3445,17 @@ class ImportHandler {
 		$this->schemasMap[$rawSchema] = $schema;
 		return $schema;
 	}//end listedSchema()
+
+	/**
+	 * Whether a listed register or schema reference is a slug a mapper lookup can take: a non-empty string.
+	 *
+	 * @param mixed $raw The raw reference.
+	 *
+	 * @return bool True for a non-empty string.
+	 */
+	private function isLookupSlug(mixed $raw): bool {
+		return is_string($raw) === true && $raw !== '';
+	}//end isLookupSlug()
 
 	/**
 	 * The stored object with a listed object's register, schema and slug, or null.
@@ -5060,12 +5071,23 @@ class ImportHandler {
 	 * @return ObjectEntity|null The existing object, or null when the seed is new.
 	 */
 	private function orSuffixedSeed(?ObjectEntity $found, SeedDataObject $object): ?ObjectEntity {
-		if ($found !== null || isset($object->data['uuid']) === true || $object->register === null) {
+		if ($found !== null || $this->mayHaveSuffixedSlug(object: $object) === false) {
 			return $found;
 		}
 
 		return $this->findSuffixedSeed(object: $object, register: $object->register);
 	}//end orSuffixedSeed()
+
+	/**
+	 * Whether a seed may be stored under a suffixed slug: it carries no uuid and has a register.
+	 *
+	 * @param SeedDataObject $object The seed object.
+	 *
+	 * @return bool True when the suffixed-slug lookup applies.
+	 */
+	private function mayHaveSuffixedSlug(SeedDataObject $object): bool {
+		return isset($object->data['uuid']) === false && $object->register !== null;
+	}//end mayHaveSuffixedSlug()
 
 	/**
 	 * Set the slug of a new seed object.
@@ -5713,26 +5735,64 @@ class ImportHandler {
 			return null;
 		}
 
+		return $this->storedSeedObject(seed: $seed, object: $object);
+	}//end findStoredSeedObject()
+
+	/**
+	 * The stored object with a seed's identifier; none when absent, none (and marked ambiguous) when several.
+	 *
+	 * @param SeedImport     $seed   The seed pass.
+	 * @param SeedDataObject $object The seed object, with its register.
+	 *
+	 * @return ObjectEntity|null The stored object, or null.
+	 */
+	private function storedSeedObject(SeedImport $seed, SeedDataObject $object): ?ObjectEntity {
 		try {
-			return $this->routingMapper->find(
-				identifier: $object->identifier,
-				register: $object->register,
-				schema: $object->schema,
-				includeDeleted: false,
-				_rbac: false,
-				_multitenancy: false
-			);
+			return $this->routedSeedObject(object: $object);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return null;
 		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
-			$object->ambiguous = true;
-			$this->logger->warning(
-				message: "[ImportHandler] Multiple seed objects found with identifier '{$object->identifier}' - skipping to avoid duplication",
-				context: ['file' => __FILE__, 'line' => __LINE__, 'schema' => $seed->schemaSlug, 'identifier' => $object->identifier]
-			);
+			$this->markAmbiguousSeed(seed: $seed, object: $object);
 			return null;
 		}
-	}//end findStoredSeedObject()
+	}//end storedSeedObject()
+
+	/**
+	 * Find a seed by its identifier in its register and schema (RBAC/multitenancy bypassed).
+	 *
+	 * @param SeedDataObject $object The seed object, with its register.
+	 *
+	 * @return ObjectEntity The stored object.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException          When none is stored.
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException When several are.
+	 */
+	private function routedSeedObject(SeedDataObject $object): ObjectEntity {
+		return $this->routingMapper->find(
+			identifier: $object->identifier,
+			register: $object->register,
+			schema: $object->schema,
+			includeDeleted: false,
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end routedSeedObject()
+
+	/**
+	 * Mark a seed whose identifier matches several stored objects, so it is skipped rather than duplicated.
+	 *
+	 * @param SeedImport     $seed   The seed pass.
+	 * @param SeedDataObject $object The seed object.
+	 *
+	 * @return void
+	 */
+	private function markAmbiguousSeed(SeedImport $seed, SeedDataObject $object): void {
+		$object->ambiguous = true;
+		$this->logger->warning(
+			message: "[ImportHandler] Multiple seed objects found with identifier '{$object->identifier}' - skipping to avoid duplication",
+			context: ['file' => __FILE__, 'line' => __LINE__, 'schema' => $seed->schemaSlug, 'identifier' => $object->identifier]
+		);
+	}//end markAmbiguousSeed()
 
 	/**
 	 * Insert a new seed object through the routing mapper (else the object entity mapper), then its related items.
