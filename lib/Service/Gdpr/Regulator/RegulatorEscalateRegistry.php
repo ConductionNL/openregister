@@ -36,6 +36,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Gdpr\Regulator;
 
 use OCA\OpenRegister\Service\Gdpr\Seam\ProviderSet;
+use OCA\OpenRegister\Service\Gdpr\Seam\ProviderFallback;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -130,10 +131,12 @@ class RegulatorEscalateRegistry implements RegulatorEscalateRegistryInterface {
 	public function resolve(?string $selectorId): RegulatorEscalateProvider {
 		return $this->providers->resolve(
 			selectorId: $selectorId,
-			default: $this->default,
-			defaultId: $this->default->getProviderId(),
-			fallbackWarning: '[RegulatorEscalateRegistry] regulatorEscalateProvider "%s" is unset or unregistered — '
-				. 'resolving fail-closed default "%s" (escalation NOT performed)'
+			fallback: new ProviderFallback(
+				default: $this->default,
+				defaultId: $this->default->getProviderId(),
+				warning: '[RegulatorEscalateRegistry] regulatorEscalateProvider "%s" is unset or unregistered — '
+					. 'resolving fail-closed default "%s" (escalation NOT performed)'
+			)
 		);
 	}//end resolve()
 

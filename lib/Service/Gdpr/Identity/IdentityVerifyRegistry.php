@@ -36,6 +36,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Gdpr\Identity;
 
 use OCA\OpenRegister\Service\Gdpr\Seam\ProviderSet;
+use OCA\OpenRegister\Service\Gdpr\Seam\ProviderFallback;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -130,10 +131,12 @@ class IdentityVerifyRegistry implements IdentityVerifyRegistryInterface {
 	public function resolve(?string $selectorId): IdentityVerifyProvider {
 		return $this->providers->resolve(
 			selectorId: $selectorId,
-			default: $this->default,
-			defaultId: $this->default->getProviderId(),
-			fallbackWarning: '[IdentityVerifyRegistry] identityVerifyProvider "%s" is unset or unregistered — '
-				. 'resolving fail-closed default "%s" (identity NOT verified)'
+			fallback: new ProviderFallback(
+				default: $this->default,
+				defaultId: $this->default->getProviderId(),
+				warning: '[IdentityVerifyRegistry] identityVerifyProvider "%s" is unset or unregistered — '
+					. 'resolving fail-closed default "%s" (identity NOT verified)'
+			)
 		);
 	}//end resolve()
 
