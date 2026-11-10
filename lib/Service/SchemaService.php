@@ -972,8 +972,8 @@ class SchemaService implements SchemaExplorationInterface {
 	 * @psalm-return array{
 	 *     type: 'associative'|'empty'|'list',
 	 *     keys?: non-empty-list<array-key>,
-	 *     length?: int<1, max>,
-	 *     item_types?: array<string, 0|1|2>,
+	 *     length?: int,
+	 *     item_types?: array<string, int>,
 	 *     sample_item?: mixed|null
 	 * }
 	 */
@@ -1000,7 +1000,7 @@ class SchemaService implements SchemaExplorationInterface {
 	 *
 	 * @param array $list The list.
 	 *
-	 * @return array{type: string, length: int, item_types: array<string, int>, sample_item: mixed}
+	 * @return array{type: 'list', length: int, item_types: array<string, int>, sample_item: mixed}
 	 */
 	private static function listStructure(array $list): array {
 		return [
