@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Command\Support;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicColumnDrift;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -220,8 +221,7 @@ final class SchemaColumnDriftPass {
 			$this->magicMapper->ensureTableForRegisterSchema(register: $drift['register'], schema: $drift['schema']);
 			$this->magicMapper->widenDecimalColumns(
 				tableName: $drift['table'],
-				currentColumns: $drift['current'],
-				requiredColumns: $drift['required']
+				columns: new MagicColumnDrift(current: $drift['current'], required: $drift['required'])
 			);
 			return true;
 		} catch (\Throwable $e) {
