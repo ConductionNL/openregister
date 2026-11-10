@@ -3142,7 +3142,7 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function attributedOwner(bool $_unowned, ?string $_owner): ?string {
+	private function attributedOwner(bool $_unowned, string|null $_owner): string|null {
 		if ($_owner !== null && $_owner !== '') {
 			return $_owner;
 		}
@@ -3596,26 +3596,17 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/specs/object-ownership/spec.md
 	 */
 	private function refuseOwnerClaim(ObjectEntity $objectEntity, array $selfData): void {
-		if (array_key_exists('owner', $selfData) === false) {
-			return;
-		}
-
-		$requested = $selfData['owner'];
-		if (is_string($requested) === false || $requested === '') {
+		$requested = self::requestedOwner(selfData: $selfData);
+		if ($requested === null) {
 			return;
 		}
 
 		$actor = $this->userSession->getUser()?->getUID();
-		if ($actor === null) {
+		if ($actor === null || $requested === $actor) {
 			return;
 		}
 
-		if ($requested === $actor) {
-			return;
-		}
-
-		$stored = $objectEntity->getOwner();
-		if ($stored !== null && $stored !== '' && $requested === $stored) {
+		if (self::isStoredOwner(objectEntity: $objectEntity, requested: $requested) === true) {
 			return;
 		}
 
@@ -3623,6 +3614,44 @@ class SaveObject implements SaveObjectInterface {
 			message: 'An owner cannot be set through a save. Use the ownership endpoint to hand a record over.'
 		);
 	}//end refuseOwnerClaim()
+
+	/**
+	 * The owner a `@self` block asks for: a non-empty string, else null (absent, or an echoed non-string value).
+	 *
+	 * @param array $selfData The caller's `@self` block.
+	 *
+	 * @return string|null The requested owner.
+	 *
+	 * @spec openspec/specs/object-ownership/spec.md
+	 */
+	private static function requestedOwner(array $selfData): string|null {
+		if (array_key_exists('owner', $selfData) === false) {
+			return null;
+		}
+
+		$requested = $selfData['owner'];
+		if (is_string($requested) === false || $requested === '') {
+			return null;
+		}
+
+		return $requested;
+	}//end requestedOwner()
+
+	/**
+	 * Whether the requested owner is the owner already stored (the GET-edit-PUT echo).
+	 *
+	 * @param ObjectEntity $objectEntity The entity being written.
+	 * @param string       $requested    The requested owner.
+	 *
+	 * @return bool True when nothing would move.
+	 *
+	 * @spec openspec/specs/object-ownership/spec.md
+	 */
+	private static function isStoredOwner(ObjectEntity $objectEntity, string $requested): bool {
+		$stored = $objectEntity->getOwner();
+
+		return $stored !== null && $stored !== '' && $requested === $stored;
+	}//end isStoredOwner()
 
 	/**
 	 * Resolve whether the current session user is in the admin group.
@@ -3663,18 +3692,8 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function populateTmloDefaults(ObjectEntity $objectEntity, Schema $schema): void {
-		$registerId = $objectEntity->getRegister();
-		if ($registerId === null) {
-			return;
-		}
-
-		try {
-			$register = $this->getCachedRegister(registerId: (int)$registerId);
-		} catch (Exception $e) {
-			return;
-		}
-
-		if ($this->tmloService->isTmloEnabled($register) === false) {
+		$register = $this->tmloRegisterOf(objectEntity: $objectEntity);
+		if ($register === null) {
 			return;
 		}
 
@@ -3686,16 +3705,76 @@ class SaveObject implements SaveObjectInterface {
 		// On UPDATE, the separate validateTmloOnUpdate() path enforces the transition matrix.
 		// Validate field values before populating (entity may have leftover TMLO from a prior
 		// update path; ensure they are valid before stamping defaults).
-		$currentTmlo = $objectEntity->getTmlo();
-		if (is_array($currentTmlo) === true && empty($currentTmlo) === false) {
-			$errors = $this->tmloService->validateFieldValues($currentTmlo);
-			if (empty($errors) === false) {
-				throw new Exception('TMLO validation failed: ' . implode('; ', $errors));
-			}
-		}
+		$this->assertStoredTmloValid(objectEntity: $objectEntity);
 
 		$this->tmloService->populateDefaults($objectEntity, new RegisterSchema(register: $register, schema: $schema));
 	}//end populateTmloDefaults()
+
+	/**
+	 * The object's register when it has TMLO enabled, else null (no register, or one that does not resolve).
+	 *
+	 * @param ObjectEntity $objectEntity The object entity being created.
+	 *
+	 * @return Register|null The TMLO-enabled register.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function tmloRegisterOf(ObjectEntity $objectEntity): Register|null {
+		$registerId = $objectEntity->getRegister();
+		if ($registerId === null) {
+			return null;
+		}
+
+		try {
+			$register = $this->getCachedRegister(registerId: (int)$registerId);
+		} catch (Exception $e) {
+			return null;
+		}
+
+		if ($this->tmloService->isTmloEnabled($register) === false) {
+			return null;
+		}
+
+		return $register;
+	}//end tmloRegisterOf()
+
+	/**
+	 * Refuse leftover TMLO values on the entity that do not validate, before defaults are stamped.
+	 *
+	 * @param ObjectEntity $objectEntity The object entity being created.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If the stored TMLO values do not validate.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function assertStoredTmloValid(ObjectEntity $objectEntity): void {
+		$currentTmlo = $objectEntity->getTmlo();
+		if (is_array($currentTmlo) === false || empty($currentTmlo) === true) {
+			return;
+		}
+
+		$this->assertTmloFieldValues(tmlo: $currentTmlo);
+	}//end assertStoredTmloValid()
+
+	/**
+	 * Refuse TMLO field values that do not validate.
+	 *
+	 * @param array $tmlo The TMLO values.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If TMLO validation fails.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function assertTmloFieldValues(array $tmlo): void {
+		$errors = $this->tmloService->validateFieldValues($tmlo);
+		if (empty($errors) === false) {
+			throw new Exception('TMLO validation failed: ' . implode('; ', $errors));
+		}
+	}//end assertTmloFieldValues()
 
 	/**
 	 * Validate TMLO metadata on an object update (status transitions and field values).
@@ -3718,28 +3797,42 @@ class SaveObject implements SaveObjectInterface {
 		$newTmlo = $selfData['tmlo'];
 
 		// Validate field values.
-		$fieldErrors = $this->tmloService->validateFieldValues($newTmlo);
-		if (empty($fieldErrors) === false) {
-			throw new Exception('TMLO validation failed: ' . implode('; ', $fieldErrors));
-		}
+		$this->assertTmloFieldValues(tmlo: $newTmlo);
 
 		// Validate status transition if archiefstatus is changing.
+		$this->assertTmloTransition(existingObject: $existingObject, newTmlo: $newTmlo);
+
+		// Update the TMLO field on the entity.
+		$existingObject->setTmlo(array_merge(($existingObject->getTmlo() ?? []), $newTmlo));
+	}//end validateTmloOnUpdate()
+
+	/**
+	 * Refuse an archiefstatus change the transition matrix does not allow.
+	 *
+	 * @param ObjectEntity $existingObject The existing object being updated.
+	 * @param array        $newTmlo        The TMLO values the update sends.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If the status transition is not allowed.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function assertTmloTransition(ObjectEntity $existingObject, array $newTmlo): void {
 		$oldTmlo = $existingObject->getTmlo();
 		$oldStatus = ($oldTmlo['archiefstatus'] ?? TmloService::ARCHIEFSTATUS_ACTIEF);
 		$newStatus = ($newTmlo['archiefstatus'] ?? null);
-
-		if ($newStatus !== null && $newStatus !== $oldStatus) {
-			// Merge old TMLO with new for complete validation context.
-			$mergedTmlo = array_merge(($oldTmlo ?? []), $newTmlo);
-			$transitionErrors = $this->tmloService->validateStatusTransition($mergedTmlo, $oldStatus);
-			if (empty($transitionErrors) === false) {
-				throw new Exception('TMLO status transition failed: ' . implode('; ', $transitionErrors));
-			}
+		if ($newStatus === null || $newStatus === $oldStatus) {
+			return;
 		}
 
-		// Update the TMLO field on the entity.
-		$existingObject->setTmlo(array_merge(($oldTmlo ?? []), $newTmlo));
-	}//end validateTmloOnUpdate()
+		// Merge old TMLO with new for complete validation context.
+		$mergedTmlo = array_merge(($oldTmlo ?? []), $newTmlo);
+		$transitionErrors = $this->tmloService->validateStatusTransition($mergedTmlo, $oldStatus);
+		if (empty($transitionErrors) === false) {
+			throw new Exception('TMLO status transition failed: ' . implode('; ', $transitionErrors));
+		}
+	}//end assertTmloTransition()
 
 	/**
 	 * Validate reference existence for all properties with validateReference: true.
@@ -4154,49 +4247,112 @@ class SaveObject implements SaveObjectInterface {
 		// Temporarily set the object data so hydrateObjectMetadata can extract the name.
 		$objectEntity->setObject($data);
 
-		try {
-			$this->metaHydrationHandler->hydrateObjectMetadata(entity: $objectEntity, schema: $schema);
-		} catch (\Exception $e) {
-			// Non-critical: if hydration fails, cascaded sub-objects will fall back to UUID.
-			$this->logger->debug(
-				message: '[SaveObject] Pre-cache name hydration failed, sub-objects may show UUID names',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'error' => $e->getMessage(),
-				]
-			);
-
+		if ($this->hydratesParentName(objectEntity: $objectEntity, schema: $schema) === false) {
 			return;
 		}
 
-		// SEC-CTRL-2 step 2: pre-cached parent names carry their owning organisation
-		// so the shared name cache can never disclose them across tenants.
-		$parentOrganisation = $objectEntity->getOrganisation();
-
-		$name = $objectEntity->getName();
-		if ($name !== null && trim($name) !== '') {
-			$this->cacheHandler->setObjectName(
-				identifier: $uuid,
-				name: $name,
-				organisation: $parentOrganisation
-			);
-		}
-
-		// Also try the 'naam' field as a fallback (common in Dutch schemas).
-		// This covers cases where objectNameField is not configured but naam exists in data.
-		if (($name === null || trim($name) === '') && isset($data['naam']) === true) {
-			$name = trim((string)$data['naam']);
-			if ($name !== '') {
-				$this->cacheHandler->setObjectName(
-					identifier: $uuid,
-					name: $name,
-					organisation: $parentOrganisation
-				);
-			}
-		}
+		$this->cacheParentName(objectEntity: $objectEntity, data: $data);
 	}//end preCacheParentName()
+
+	/**
+	 * Hydrate the parent's metadata so its name is known; a failure is logged and caches nothing.
+	 *
+	 * @param ObjectEntity $objectEntity The parent, holding the incoming data.
+	 * @param Schema       $schema       The parent object's schema.
+	 *
+	 * @return bool True when hydration succeeded.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function hydratesParentName(ObjectEntity $objectEntity, Schema $schema): bool {
+		try {
+			$this->metaHydrationHandler->hydrateObjectMetadata(entity: $objectEntity, schema: $schema);
+			return true;
+		} catch (\Exception $e) {
+			// Non-critical: if hydration fails, cascaded sub-objects will fall back to UUID.
+			$this->logNameHydrationFailed(uuid: (string)$objectEntity->getUuid(), error: $e);
+			return false;
+		}
+	}//end hydratesParentName()
+
+	/**
+	 * Log a failed name pre-cache.
+	 *
+	 * @param string     $uuid  The parent's uuid.
+	 * @param \Exception $error The failure.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function logNameHydrationFailed(string $uuid, \Exception $error): void {
+		$this->logger->debug(
+			message: '[SaveObject] Pre-cache name hydration failed, sub-objects may show UUID names',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $uuid,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logNameHydrationFailed()
+
+	/**
+	 * Cache the parent's name, with its owning organisation, when it has one.
+	 *
+	 * SEC-CTRL-2 step 2: pre-cached parent names carry their owning organisation
+	 * so the shared name cache can never disclose them across tenants.
+	 *
+	 * @param ObjectEntity $objectEntity The hydrated parent.
+	 * @param array        $data         The incoming data.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function cacheParentName(ObjectEntity $objectEntity, array $data): void {
+		$parentOrganisation = $objectEntity->getOrganisation();
+		$name = self::cacheableParentName(name: $objectEntity->getName(), data: $data);
+		if ($name === null) {
+			return;
+		}
+
+		$this->cacheHandler->setObjectName(
+			identifier: (string)$objectEntity->getUuid(),
+			name: $name,
+			organisation: $parentOrganisation
+		);
+	}//end cacheParentName()
+
+	/**
+	 * The hydrated name when it is not blank, else the trimmed `naam` field, else null.
+	 *
+	 * Also try the 'naam' field as a fallback (common in Dutch schemas).
+	 * This covers cases where objectNameField is not configured but naam exists in data.
+	 *
+	 * @param string|null $name The hydrated name.
+	 * @param array       $data The incoming data.
+	 *
+	 * @return string|null The name to cache.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function cacheableParentName(string|null $name, array $data): string|null {
+		if ($name !== null && trim($name) !== '') {
+			return $name;
+		}
+
+		if (isset($data['naam']) === false) {
+			return null;
+		}
+
+		$naam = trim((string)$data['naam']);
+		if ($naam === '') {
+			return null;
+		}
+
+		return $naam;
+	}//end cacheableParentName()
 
 	/**
 	 * Updates an existing object.
