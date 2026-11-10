@@ -56,6 +56,16 @@ final class LogExportFormatter {
 	private const METADATA_FIELDS = ['session', 'request', 'ipAddress', 'version'];
 
 	/**
+	 * The MIME type of each export file extension.
+	 */
+	private const CONTENT_TYPES = [
+		'csv' => 'text/csv',
+		'json' => 'application/json',
+		'xml' => 'application/xml',
+		'txt' => 'text/plain',
+	];
+
+	/**
 	 * Export rows of (masked) audit entries.
 	 *
 	 * @param array<int, mixed>    $entries Audit entries (AuditTrail entities or arrays).
@@ -94,7 +104,7 @@ final class LogExportFormatter {
 	public function render(string $format, array $rows): array {
 		return match (strtolower($format)) {
 			'csv' => self::toCsv(data: $rows),
-			'json' => self::file(content: json_encode($rows, JSON_PRETTY_PRINT), extension: 'json', contentType: 'application/json'),
+			'json' => self::file(content: json_encode($rows, JSON_PRETTY_PRINT), extension: 'json'),
 			'xml' => self::toXml(data: $rows),
 			'txt' => self::toTxt(data: $rows),
 			default => throw new InvalidArgumentException("Unsupported export format: {$format}"),
@@ -172,17 +182,16 @@ final class LogExportFormatter {
 	/**
 	 * A rendered file, named by the time of export.
 	 *
-	 * @param bool|string $content     The content.
-	 * @param string      $extension   The file extension.
-	 * @param string      $contentType The MIME type.
+	 * @param bool|string $content   The content.
+	 * @param string      $extension The file extension, which names the MIME type.
 	 *
 	 * @return array{content: bool|string, filename: string, contentType: string} The file.
 	 */
-	private static function file(bool|string $content, string $extension, string $contentType): array {
+	private static function file(bool|string $content, string $extension): array {
 		return [
 			'content' => $content,
 			'filename' => 'audit_trails_' . date('Y-m-d_H-i-s') . '.' . $extension,
-			'contentType' => $contentType,
+			'contentType' => self::CONTENT_TYPES[$extension],
 		];
 	}//end file()
 
@@ -199,7 +208,7 @@ final class LogExportFormatter {
 			$content = self::csvOf(data: $data);
 		}
 
-		return self::file(content: $content, extension: 'csv', contentType: 'text/csv');
+		return self::file(content: $content, extension: 'csv');
 	}//end toCsv()
 
 	/**
@@ -236,7 +245,7 @@ final class LogExportFormatter {
 			self::xmlEntry(element: $xml->addChild('auditTrail'), logData: $logData);
 		}
 
-		return self::file(content: $xml->asXML(), extension: 'xml', contentType: 'application/xml');
+		return self::file(content: $xml->asXML(), extension: 'xml');
 	}//end toXml()
 
 	/**
@@ -270,7 +279,7 @@ final class LogExportFormatter {
 			$content .= self::txtEntry(index: (int)$index, logData: $logData);
 		}
 
-		return self::file(content: $content, extension: 'txt', contentType: 'text/plain');
+		return self::file(content: $content, extension: 'txt');
 	}//end toTxt()
 
 	/**
