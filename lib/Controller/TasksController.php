@@ -28,6 +28,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
+use OCA\OpenRegister\Controller\Support\ObjectTask;
 use OCA\OpenRegister\Controller\Support\TasksControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\TaskInboxAudience;
@@ -363,13 +364,10 @@ class TasksController extends Controller {
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		return $this->onObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: fn (ObjectEntity $object): JSONResponse => $this->listing(
-				tasks: $this->taskService->getTasksForObject($object->getUuid())
-			),
-			failure: $this->listFailure(...)
-		);
+		$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+		$action = fn (ObjectEntity $object): JSONResponse => $this->listing(tasks: $this->taskService->getTasksForObject($object->getUuid()));
+
+		return $this->onObject(route: $route, action: $action, failure: $this->listFailure(...));
 	}//end index()
 
 	/**
@@ -387,11 +385,10 @@ class TasksController extends Controller {
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function create(string $register, string $schema, string $id): JSONResponse {
-		return $this->onObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: $this->createFor(...),
-			failure: fn (Exception $e): JSONResponse => $this->failure(e: $e, status: Http::STATUS_BAD_REQUEST)
-		);
+		$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+		$failure = fn (Exception $e): JSONResponse => $this->failure(e: $e, status: Http::STATUS_BAD_REQUEST);
+
+		return $this->onObject(route: $route, action: $this->createFor(...), failure: $failure);
 	}//end create()
 
 	/**
@@ -410,11 +407,10 @@ class TasksController extends Controller {
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function update(string $register, string $schema, string $id, string $taskId): JSONResponse {
-		return $this->onObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: fn (ObjectEntity $object): JSONResponse => $this->updateFor(object: $object, taskId: $taskId),
-			failure: $this->writeFailure(...)
-		);
+		$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+		$action = fn (ObjectEntity $object): JSONResponse => $this->updateFor(object: $object, taskId: $taskId);
+
+		return $this->onObject(route: $route, action: $action, failure: $this->writeFailure(...));
 	}//end update()
 
 	/**
@@ -433,11 +429,10 @@ class TasksController extends Controller {
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function destroy(string $register, string $schema, string $id, string $taskId): JSONResponse {
-		return $this->onObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: fn (ObjectEntity $object): JSONResponse => $this->destroyFor(object: $object, taskId: $taskId),
-			failure: $this->writeFailure(...)
-		);
+		$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+		$action = fn (ObjectEntity $object): JSONResponse => $this->destroyFor(object: $object, taskId: $taskId);
+
+		return $this->onObject(route: $route, action: $action, failure: $this->writeFailure(...));
 	}//end destroy()
 
 	/**
@@ -508,9 +503,7 @@ class TasksController extends Controller {
 		$calendarId = ($data['calendarId'] ?? $this->calendarOf(object: $object, taskId: $taskId));
 
 		return $this->onOwnedTask(
-			object: $object,
-			taskId: $taskId,
-			calendarId: $calendarId,
+			task: new ObjectTask(object: $object, taskId: $taskId, calendarId: $calendarId),
 			operation: fn (): JSONResponse => new JSONResponse(data: $this->taskService->updateTask($calendarId, $taskId, $data))
 		);
 	}//end updateFor()
@@ -527,9 +520,7 @@ class TasksController extends Controller {
 		$calendarId = $this->calendarOf(object: $object, taskId: $taskId);
 
 		return $this->onOwnedTask(
-			object: $object,
-			taskId: $taskId,
-			calendarId: $calendarId,
+			task: new ObjectTask(object: $object, taskId: $taskId, calendarId: $calendarId),
 			operation: function () use ($calendarId, $taskId): JSONResponse {
 				$this->taskService->deleteTask($calendarId, $taskId);
 				return new JSONResponse(data: ['success' => true]);
@@ -540,19 +531,17 @@ class TasksController extends Controller {
 	/**
 	 * Run the operation only once the task is proven to belong to the object.
 	 *
-	 * @param ObjectEntity $object     The object.
-	 * @param string       $taskId     The task URI.
-	 * @param mixed        $calendarId The task's calendar, or null when unknown.
-	 * @param callable     $operation  The write.
+	 * @param ObjectTask $task      The object, the task URI and its calendar (null when unknown).
+	 * @param callable   $operation The write.
 	 *
 	 * @return JSONResponse The write's response, or 404 'Task not found'.
 	 */
-	private function onOwnedTask(ObjectEntity $object, string $taskId, mixed $calendarId, callable $operation): JSONResponse {
-		if ($calendarId === null) {
+	private function onOwnedTask(ObjectTask $task, callable $operation): JSONResponse {
+		if ($task->calendarId === null) {
 			return new JSONResponse(data: ['error' => 'Task not found'], statusCode: Http::STATUS_NOT_FOUND);
 		}
 
-		$this->taskService->requireTaskOf((string)$object->getUuid(), (string)$calendarId, $taskId);
+		$this->taskService->requireTaskOf((string)$task->object->getUuid(), (string)$task->calendarId, $task->taskId);
 
 		return $operation();
 	}//end onOwnedTask()
