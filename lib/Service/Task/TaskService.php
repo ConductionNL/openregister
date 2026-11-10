@@ -736,32 +736,6 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	}//end resolve()
 
 	/**
-	 * Complete, with the answer as separate values.
-	 *
-	 * Kept for the portal completion, which an open change rewrites; it builds
-	 * the answer and delegates to {@see self::completeWithAnswer()}.
-	 *
-	 * @param string                                $uuid       The task uuid.
-	 * @param string                                $outcome    The outcome (`approved`, `done`, `rejected`, ...).
-	 * @param string|null                           $resultText Free-text result.
-	 * @param string|null                           $comment    Completion comment.
-	 * @param string|null                           $actor      The completing identity — must be the assignee.
-	 * @param array<string, mixed>|null             $responses  The submitted answer fields, if any.
-	 * @param array<int, array<string, mixed>>|null $evidence   References to the files ALREADY stored; never bytes.
-	 *
-	 * @return Task The completed task.
-	 *
-	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
-	 */
-	public function complete(
-		string $uuid, string $outcome, ?string $resultText, ?string $comment, ?string $actor, ?array $responses = null, ?array $evidence = null
-	): Task {
-		$payload = new TaskAnswerPayload(responses: $responses, evidence: $evidence);
-		$answer  = new TaskAnswer(outcome: $outcome, resultText: $resultText, comment: $comment, payload: $payload);
-		return $this->completeWithAnswer(uuid: $uuid, answer: $answer, actor: $actor);
-	}//end complete()
-
-	/**
 	 * Complete: the assignee finishes the work with an explicit outcome.
 	 *
 	 * A rejecting or returning outcome REQUIRES a non-empty comment; without

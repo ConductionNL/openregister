@@ -223,26 +223,6 @@ interface TaskServiceInterface {
 	public function resolve(string $uuid, ?string $resultText, ?string $comment, ?string $actor): Task;
 
 	/**
-	 * Complete, with the answer as separate values; builds the answer and delegates to completeWithAnswer().
-	 *
-	 * @param string                                $uuid       The task uuid.
-	 * @param string                                $outcome    The outcome (`approved`, `done`, `rejected`, ...).
-	 * @param string|null                           $resultText Free-text result.
-	 * @param string|null                           $comment    Completion comment.
-	 * @param string|null                           $actor      The completing identity — must be the assignee.
-	 * @param array<string, mixed>|null             $responses  The submitted answer fields, if any.
-	 * @param array<int, array<string, mixed>>|null $evidence   References to the files ALREADY stored; never bytes.
-	 *
-	 * @return Task The completed task.
-	 *
-	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
-	 */
-	public function complete(
-		string $uuid, string $outcome, ?string $resultText, ?string $comment, ?string $actor, ?array $responses = null,
-		?array $evidence = null
-	): Task;
-
-	/**
 	 * Complete: the assignee finishes the work with an explicit outcome.
 	 *
 	 * A rejecting or returning outcome REQUIRES a non-empty comment; without
