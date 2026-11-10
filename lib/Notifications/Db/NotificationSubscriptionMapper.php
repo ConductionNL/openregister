@@ -64,7 +64,9 @@ class NotificationSubscriptionMapper extends QBMapper {
 	}//end __construct()
 
 	/**
-	 * Subscribe a user to (register, schema), idempotently; see subscribe().
+	 * Subscribe a user to (register, schema). Idempotent: returns the existing
+	 * row when a duplicate is attempted (the DB unique index protects against
+	 * races). At least one of registerId / schemaId MUST be set.
 	 *
 	 * @param SubscriptionKey $key The user and the register and/or schema.
 	 *

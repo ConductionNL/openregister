@@ -220,7 +220,8 @@ class NotificationSubscriptionsController extends Controller {
 	 */
 	private function subscribe(?int $registerId, ?int $schemaId): JSONResponse {
 		try {
-			$entity = $this->mapper->subscribeTo(key: new SubscriptionKey(userId: (string)$this->resolveUserId(), registerId: $registerId, schemaId: $schemaId));
+			$key    = new SubscriptionKey(userId: (string)$this->resolveUserId(), registerId: $registerId, schemaId: $schemaId);
+			$entity = $this->mapper->subscribeTo(key: $key);
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
 		}
