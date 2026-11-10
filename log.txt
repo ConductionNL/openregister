@@ -800,3 +800,4 @@
 2026-11-10T00:38:46Z precheck-20261109T215828-dc77055d NORESULT tree 068f7c7ee3 prs 1: php-1.log: no Tests line
 2026-11-10T00:39:08Z precheck-20261109T215756-57e3989d CONFLICT-DEV #8345 9113fec1
 2026-11-10T00:41:24Z integrator-20261109T234320-9cfff978 RED tree bc070fb652 prs 50 front=skip: Tests: 54549, Assertions: 179103, Errors: 7, Failures: 12, Deprecations: 4, PHPUnit Deprec; first failures: OCA\OpenRegister\Tests\Unit\Controller\ObjectIntegrationsControllerTest::testALinkOfAnotherObjectAnswers404Not;OCA\OpenRegister\Tests\Unit\Service\SystemOperationContextBoundaryTest::testTheCallSiteSetIsPinned
+2026-11-10T00:41:58Z integrator-20261109T234320-9cfff978 CONFLICT-DEV #8121 ba825979
