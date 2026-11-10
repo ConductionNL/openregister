@@ -50,22 +50,38 @@ function answerWith(answers) {
 }
 
 /**
- * Run the page's load on a bare component state.
+ * Run the page's load on a bare component state that carries the page's
+ * methods, and return that state without them.
  *
- * @return {Promise<object>} The state after loading
+ * @param {object} state The data before loading
+ * @return {Promise<object>} The data after loading
  */
-async function load() {
-	const page = {
+async function loadInto(state) {
+	const page = { ...state }
+	const methods = Object.keys(FlowRunDetail.methods)
+	for (const name of methods) {
+		page[name] = FlowRunDetail.methods[name].bind(page)
+	}
+	await page.load()
+	for (const name of methods) {
+		delete page[name]
+	}
+	return page
+}
+
+/**
+ * Load a page that showed another tab, an error and a stale run.
+ *
+ * @return {Promise<object>} The data after loading
+ */
+function load() {
+	return loadInto({
 		uuid: UUID,
 		loading: false,
 		actionError: 'old error',
 		activeTab: 'log',
 		run: { stale: true },
-	}
-	page.quietGet = FlowRunDetail.methods.quietGet.bind(page)
-	await FlowRunDetail.methods.load.call(page)
-	delete page.quietGet
-	return page
+	})
 }
 
 describe('FlowRunDetail.load', () => {
@@ -105,14 +121,31 @@ describe('FlowRunDetail.load', () => {
 		expect(axios.get).toHaveBeenCalledTimes(1)
 	})
 
-	it('marks the page loading until the run answers', async () => {
-		let seen
+	it('resets the page, then clears the run and the loading flag in that order', async () => {
+		axios.get.mockRejectedValue(new Error('offline'))
+		const states = []
 		const page = { uuid: UUID, loading: false, actionError: 'x', activeTab: 'log' }
-		axios.get.mockImplementation(() => {
-			seen = { ...page }
-			return Promise.reject(new Error('offline'))
+		const watched = new Proxy(page, {
+			set(target, key, value) {
+				states.push([key, value])
+				target[key] = value
+				return true
+			},
 		})
-		await FlowRunDetail.methods.load.call(page)
-		expect(seen).toEqual({ uuid: UUID, loading: true, actionError: '', activeTab: 'steps' })
+		await FlowRunDetail.methods.load.call(new Proxy(watched, {
+			get(target, key) {
+				return key in FlowRunDetail.methods
+					? FlowRunDetail.methods[key].bind(watched)
+					: target[key]
+			},
+		}))
+		expect(axios.get).toHaveBeenCalledTimes(1)
+		expect(states).toEqual([
+			['loading', true],
+			['actionError', ''],
+			['activeTab', 'steps'],
+			['run', null],
+			['loading', false],
+		])
 	})
 })
