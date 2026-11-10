@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
@@ -34,20 +35,40 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
  */
 final class RetentionStores {
 	/**
+	 * Object mapper.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	public readonly MagicMapperInterface $objectMapper;
+
+	/**
+	 * Schema mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	public readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Register mapper.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	public readonly RegisterMapperInterface $registerMapper;
+
+	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param MagicMapperInterface      $objectMapper   Object mapper.
-	 * @param SchemaMapperInterface     $schemaMapper   Schema mapper.
-	 * @param RegisterMapperInterface   $registerMapper Register mapper.
-	 * @param AuditTrailMapperInterface $auditMapper    Audit trail mapper.
+	 * @param SchemaCatalogInterface    $catalog     Register, schema and magic-table mappers.
+	 * @param AuditTrailMapperInterface $auditMapper Audit trail mapper.
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
 	public function __construct(
-		public readonly MagicMapperInterface $objectMapper,
-		public readonly SchemaMapperInterface $schemaMapper,
-		public readonly RegisterMapperInterface $registerMapper,
+		SchemaCatalogInterface $catalog,
 		public readonly AuditTrailMapperInterface $auditMapper,
 	) {
+		$this->objectMapper   = $catalog->tables();
+		$this->schemaMapper   = $catalog->schemas();
+		$this->registerMapper = $catalog->registers();
 	}//end __construct()
 }//end class

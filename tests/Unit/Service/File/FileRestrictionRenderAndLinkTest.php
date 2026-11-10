@@ -39,6 +39,9 @@ use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
+use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReaderSources;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Sharing\AccessLinkSubjectInterface;
 use OCA\OpenRegister\Service\TranslationStatusService;
 use OCA\OpenRegister\Service\UrnService;
 use OCP\SystemTag\ISystemTagManager;
@@ -227,9 +230,14 @@ class FileRestrictionRenderAndLinkTest extends TestCase {
 		$store = $this->createMock(FileRestrictionStore::class);
 		$store->method('find')->willReturnCallback(static fn (int $id): ?array => $id === self::RESTRICTED ? ['fileId' => $id] : null);
 		$reader = (new \ReflectionClass(AccessLinkReader::class))->newInstanceWithoutConstructor();
-		$property = new \ReflectionProperty(AccessLinkReader::class, 'restrictions');
+		$sources = new AccessLinkReaderSources(
+			objects: $this->createMock(ObjectOperationsInterface::class),
+			subjects: $this->createMock(AccessLinkSubjectInterface::class),
+			restrictions: $store
+		);
+		$property = new \ReflectionProperty(AccessLinkReader::class, 'sources');
 		$property->setAccessible(true);
-		$property->setValue($reader, $store);
+		$property->setValue($reader, $sources);
 
 		$object = new ObjectEntity();
 		$object->setFiles([['id' => (string)self::RESTRICTED], ['id' => (string)self::OPEN]]);

@@ -118,7 +118,6 @@ final class ObjectIntegrationsControllerGuardAddressTest extends TestCase {
 		$registry->addProvider($this->provider());
 
 		return new ObjectIntegrationsController(
-			appName: 'openregister',
 			request: $request,
 			services: new ObjectIntegrationsControllerServices(
 				domain: new ObjectIntegrationsDomain(registry: $registry, objectService: $objects, schemaMapper: $this->createMock(SchemaMapper::class)),

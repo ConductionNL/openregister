@@ -934,19 +934,6 @@ class RenderObjectDeepTest extends TestCase {
 	// ── preloadInverseRelationships tests ────────────────────────────────
 
 	/**
-	 * Test preloadInverseRelationships with empty entities does nothing.
-	 */
-	public function testPreloadInverseRelationshipsEmptyEntities(): void {
-		$this->invokePrivateMethod('preloadInverseRelationships', [
-			[],
-			['prop' => ['type' => 'array', 'items' => ['inversedBy' => 'x', '$ref' => '#/y']]],
-			['prop'],
-		]);
-
-		$this->assertTrue(true);
-	}
-
-	/**
 	 * Test preloadInverseRelationships with no matching extend returns early.
 	 */
 	public function testPreloadInverseRelationshipsNoMatchingExtend(): void {

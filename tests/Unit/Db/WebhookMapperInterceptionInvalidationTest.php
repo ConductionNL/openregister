@@ -175,5 +175,7 @@ class WebhookMapperInterceptionInvalidationTest extends TestCase {
 		$inserted = $mapper->insert($this->makeWebhook());
 
 		$this->assertInstanceOf(Webhook::class, $inserted);
+		$this->assertSame(7, $inserted->getId());
+		$this->assertSame('https://example.com/hook', $inserted->getUrl());
 	}//end testInsertWorksWithoutCacheBackend()
 }//end class

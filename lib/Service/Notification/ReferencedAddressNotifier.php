@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion;
 
 /**
  * Resolves and mails the addresses an `email` recipient entry names.
@@ -124,9 +125,59 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 		string $category,
 		?Schema $schema = null,
 	): array {
-		$origin = new ReferenceOrigin(object: $object, data: $data, schema: $schema);
+		return $this->mail(
+			origin: new ReferenceOrigin(object: $object, data: $data, schema: $schema),
+			request: new MailingRequest(recipients: $recipientsSpec, subject: $subject, body: $body, category: $category)
+		);
+	}//end notify()
+
+	/**
+	 * Mail every `email` entry of a request that resolves to an address.
+	 *
+	 * Every resolved address is put to integriq in one question, under the
+	 * request's category and the triggering object's correlation id. An entry
+	 * that does not resolve, or that integriq refuses, is reported with its
+	 * reason, never dropped in silence.
+	 *
+	 * @param ReferenceOrigin $origin  The triggering object, its data and its schema.
+	 * @param MailingRequest  $request The rule's recipients, subject, body and category.
+	 *
+	 * @return array<int, array{field: string, outcome: string}> One outcome per `email` entry.
+	 *
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-email-recipient-reads-its-address-through-a-reference-req-ero-007
+	 */
+	public function mail(ReferenceOrigin $origin, MailingRequest $request): array {
+		$entries = $this->emailEntries(origin: $origin, recipients: $request->recipients);
+		if ($entries === []) {
+			return [];
+		}
+
+		$decisions = $this->delivery->optOut->askQuestion(
+			question: new OptOutQuestion(
+				channel: 'email',
+				category: $request->category,
+				addresses: $this->askable(entries: $entries),
+				correlationId: 'openregister-email:' . (string)($origin->object->getUuid() ?? '')
+			)
+		);
+
+		return $this->sendAll(
+			entries: $entries,
+			mailing: new ClearedMailing(subject: $request->subject, body: $request->body, decisions: $decisions)
+		);
+	}//end mail()
+
+	/**
+	 * Resolve each `email` entry of a recipients declaration; other entries are skipped.
+	 *
+	 * @param ReferenceOrigin   $origin     The triggering object, its data and its schema.
+	 * @param array<int, mixed> $recipients The rule's `recipients` declaration.
+	 *
+	 * @return array<int, array{field: string, address: string|null, reason: string|null}> One entry per `email` entry.
+	 */
+	private function emailEntries(ReferenceOrigin $origin, array $recipients): array {
 		$entries = [];
-		foreach ($recipientsSpec as $recipient) {
+		foreach ($recipients as $recipient) {
 			if (is_array($recipient) === false || (string)($recipient['kind'] ?? '') !== self::KIND) {
 				continue;
 			}
@@ -135,20 +186,29 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 			$entries[] = ['field' => $path] + $this->resolveAddress(origin: $origin, path: $path);
 		}
 
-		if ($entries === []) {
-			return [];
-		}
+		return $entries;
+	}//end emailEntries()
 
-		$askable = array_values(array_filter(array_column($entries, 'address'), static fn (?string $address): bool => $address !== null));
+	/**
+	 * The resolved addresses of a set of entries, the ones integriq is asked about.
+	 *
+	 * @param array<int, array{field: string, address: string|null, reason: string|null}> $entries The entries.
+	 *
+	 * @return array<int, string>
+	 */
+	private function askable(array $entries): array {
+		return array_values(array_filter(array_column($entries, 'address'), static fn (?string $address): bool => $address !== null));
+	}//end askable()
 
-		$decisions = $this->delivery->optOut->ask(
-			channel: 'email',
-			category: $category,
-			addresses: $askable,
-			correlationId: 'openregister-email:' . (string)($object->getUuid() ?? '')
-		);
-
-		$mailing = new ClearedMailing(subject: $subject, body: $body, decisions: $decisions);
+	/**
+	 * Send every entry, or name why it was not sent.
+	 *
+	 * @param array<int, array{field: string, address: string|null, reason: string|null}> $entries The entries.
+	 * @param ClearedMailing                                                               $mailing The mail and integriq's answers.
+	 *
+	 * @return array<int, array{field: string, outcome: string}> One outcome per entry.
+	 */
+	private function sendAll(array $entries, ClearedMailing $mailing): array {
 		$outcomes = [];
 		foreach ($entries as $entry) {
 			$outcomes[] = [
@@ -158,7 +218,7 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 		}
 
 		return $outcomes;
-	}//end notify()
+	}//end sendAll()
 
 	/**
 	 * The address a path names, or the reason it names none.
@@ -268,12 +328,13 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 			$unsubscribe = $decision['unsubscribe'];
 		}
 
-		return $this->delivery->email->sendToAddress(
-			address: $entry['address'],
-			displayName: '',
-			subject: $mailing->subject,
-			body: $optOut->withLink(body: $mailing->body, unsubscribe: $unsubscribe),
-			unsubscribe: $unsubscribe
+		return $this->delivery->email->sendMailTo(
+			addressee: new \OCA\OpenRegister\Notifications\Service\Notification\MailAddressee(address: $entry['address'], displayName: ''),
+			content: new \OCA\OpenRegister\Notifications\Service\Notification\MailContent(
+				subject: $mailing->subject,
+				body: $optOut->withLink(body: $mailing->body, unsubscribe: $unsubscribe),
+				unsubscribe: $unsubscribe
+			)
 		);
 	}//end sendOne()
 

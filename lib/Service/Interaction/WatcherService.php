@@ -137,10 +137,8 @@ class WatcherService implements WatcherServiceInterface {
 	 * `$notify` is the follow's notification switch: a bool sets it, null
 	 * keeps what is there (and a new follow notifies).
 	 *
-	 * @param ObjectEntity $object The object to follow, already resolved through RBAC.
-	 * @param string|null $register The register as the caller addressed it.
-	 * @param string|null $schema The schema as the caller addressed it.
-	 * @param bool|null $notify The notification switch, or null to keep it.
+	 * @param AddressedObject $target The object to follow, already resolved through RBAC, and how the caller addressed it.
+	 * @param bool|null       $notify The notification switch, or null to keep it.
 	 *
 	 * @throws NotAuthorizedException When the caller is anonymous.
 	 *
@@ -148,22 +146,8 @@ class WatcherService implements WatcherServiceInterface {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
-	public function watch(
-		ObjectEntity $object,
-		?string $register = null,
-		?string $schema = null,
-		?bool $notify = null,
-	): Watcher {
-		$uid = $this->requireCaller();
-		$uuid = $this->requireUuid(object: $object);
-
-		$this->forgetMemos();
-
-		$follow = self::follow(userId: $uid, objectUuid: $uuid);
-		$follow->setRegister($register);
-		$follow->setSchema($schema);
-
-		return $this->store->mapper->subscribe(watcher: $follow, notify: $notify);
+	public function watch(AddressedObject $target, ?bool $notify = null): Watcher {
+		return $this->store->mapper->subscribe(watcher: $this->newFollow(userId: $this->requireCaller(), target: $target), notify: $notify);
 	}//end watch()
 
 	/**
@@ -174,9 +158,7 @@ class WatcherService implements WatcherServiceInterface {
 	 * case you already follow loudly must not mute it, so an existing follow
 	 * is returned untouched.
 	 *
-	 * @param ObjectEntity $object The object, already resolved through RBAC.
-	 * @param string|null $register The register as the caller addressed it.
-	 * @param string|null $schema The schema as the caller addressed it.
+	 * @param AddressedObject $target The object and how the caller addressed it.
 	 *
 	 * @throws NotAuthorizedException When the caller is anonymous.
 	 *
@@ -184,23 +166,16 @@ class WatcherService implements WatcherServiceInterface {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
 	 */
-	public function followQuietly(ObjectEntity $object, ?string $register = null, ?string $schema = null): Watcher {
+	public function followQuietlyAt(AddressedObject $target): Watcher {
 		$uid = $this->requireCaller();
-		$uuid = $this->requireUuid(object: $object);
 
-		$existing = $this->store->mapper->findOne(userId: $uid, objectUuid: $uuid);
+		$existing = $this->store->mapper->findOne(userId: $uid, objectUuid: $this->requireUuid(object: $target->object));
 		if ($existing !== null) {
 			return $existing;
 		}
 
-		$this->forgetMemos();
-
-		$follow = self::follow(userId: $uid, objectUuid: $uuid);
-		$follow->setRegister($register);
-		$follow->setSchema($schema);
-
-		return $this->store->mapper->subscribe(watcher: $follow, notify: false);
-	}//end followQuietly()
+		return $this->store->mapper->subscribe(watcher: $this->newFollow(userId: $uid, target: $target), notify: false);
+	}//end followQuietlyAt()
 
 	/**
 	 * Remove the calling user's own subscription.
@@ -242,10 +217,8 @@ class WatcherService implements WatcherServiceInterface {
 	/**
 	 * Subscribe another user, for a caller with `manage`.
 	 *
-	 * @param ObjectEntity $object The object.
-	 * @param string $userId The user to subscribe.
-	 * @param string|null $register The register as the caller addressed it.
-	 * @param string|null $schema The schema as the caller addressed it.
+	 * @param AddressedObject $target The object and how the caller addressed it.
+	 * @param string          $userId The user to subscribe.
 	 *
 	 * @throws NotAuthorizedException When the caller may not manage the object.
 	 *
@@ -253,16 +226,10 @@ class WatcherService implements WatcherServiceInterface {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
 	 */
-	public function addWatcher(ObjectEntity $object, string $userId, ?string $register = null, ?string $schema = null): Watcher {
-		$this->requireManage(object: $object);
+	public function addWatcher(AddressedObject $target, string $userId): Watcher {
+		$this->requireManage(object: $target->object);
 
-		$this->forgetMemos();
-
-		$follow = self::follow(userId: $userId, objectUuid: $this->requireUuid(object: $object));
-		$follow->setRegister($register);
-		$follow->setSchema($schema);
-
-		return $this->store->mapper->subscribe(watcher: $follow);
+		return $this->store->mapper->subscribe(watcher: $this->newFollow(userId: $userId, target: $target));
 	}//end addWatcher()
 
 	/**
@@ -281,10 +248,8 @@ class WatcherService implements WatcherServiceInterface {
 	 * Idempotent, like every other subscribe: naming somebody twice leaves one
 	 * row and writes nothing on the object.
 	 *
-	 * @param ObjectEntity $object The object the entry hangs on.
-	 * @param string $userId The principal who was named, already checked for read access.
-	 * @param string|null $register The register as the caller addressed it.
-	 * @param string|null $schema The schema as the caller addressed it.
+	 * @param AddressedObject $target The object the entry hangs on, and how the caller addressed it.
+	 * @param string          $userId The principal who was named, already checked for read access.
 	 *
 	 * @return Watcher The subscription.
 	 *
@@ -292,19 +257,8 @@ class WatcherService implements WatcherServiceInterface {
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
-	public function subscribeMentioned(
-		ObjectEntity $object,
-		string $userId,
-		?string $register = null,
-		?string $schema = null,
-	): Watcher {
-		$this->forgetMemos();
-
-		$follow = self::follow(userId: $userId, objectUuid: $this->requireUuid(object: $object));
-		$follow->setRegister($register);
-		$follow->setSchema($schema);
-
-		return $this->store->mapper->subscribe(watcher: $follow);
+	public function subscribeMentioned(AddressedObject $target, string $userId): Watcher {
+		return $this->store->mapper->subscribe(watcher: $this->newFollow(userId: $userId, target: $target));
 	}//end subscribeMentioned()
 
 	/**
@@ -335,13 +289,9 @@ class WatcherService implements WatcherServiceInterface {
 		?string $register = null,
 		?string $schema = null,
 	): Watcher {
-		$this->forgetMemos();
+		$target = new AddressedObject(object: $object, register: $register, schema: $schema);
 
-		$follow = self::follow(userId: $userId, objectUuid: $this->requireUuid(object: $object));
-		$follow->setRegister($register);
-		$follow->setSchema($schema);
-
-		return $this->store->mapper->subscribe(watcher: $follow, notify: true);
+		return $this->store->mapper->subscribe(watcher: $this->newFollow(userId: $userId, target: $target), notify: true);
 	}//end followAssigned()
 
 	/**
@@ -661,6 +611,30 @@ class WatcherService implements WatcherServiceInterface {
 
 		return $uid;
 	}//end requireCaller()
+
+	/**
+	 * An unsaved follow of one user on the addressed object, carrying the
+	 * register and schema as addressed. Drops this request's memos, since a
+	 * subscribe follows.
+	 *
+	 * @param string          $userId The following user.
+	 * @param AddressedObject $target The object and how the caller addressed it.
+	 *
+	 * @throws NotAuthorizedException When the object carries no uuid.
+	 *
+	 * @return Watcher The follow, without a notify switch.
+	 */
+	private function newFollow(string $userId, AddressedObject $target): Watcher {
+		$uuid = $this->requireUuid(object: $target->object);
+
+		$this->forgetMemos();
+
+		$follow = self::follow(userId: $userId, objectUuid: $uuid);
+		$follow->setRegister($target->register);
+		$follow->setSchema($target->schema);
+
+		return $follow;
+	}//end newFollow()
 
 	/**
 	 * An unsaved follow of one user on one object, for the mapper to subscribe.

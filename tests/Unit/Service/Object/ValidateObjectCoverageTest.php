@@ -602,6 +602,9 @@ class ValidateObjectCoverageTest extends TestCase {
 
 		$result = $this->handler->resolveSchema($uri);
 		$this->assertIsString($result);
+		$decoded = json_decode($result, true);
+		$this->assertSame('Test Schema', $decoded['title']);
+		$this->assertSame('object', $decoded['type']);
 	}
 
 	public function testResolveSchemaFileSchemaPath(): void {
@@ -746,6 +749,8 @@ class ValidateObjectCoverageTest extends TestCase {
 		// Array items should be UUID pattern
 		$items = $resultSchema->properties->children->items ?? null;
 		$this->assertNotNull($items);
+		// The self-reference is cut: the items no longer point at the schema itself.
+		$this->assertObjectNotHasProperty('$ref', $items);
 	}
 
 	public function testTransformSchemaForValidationSelfRefArrayItemsWithInversedBy(): void {

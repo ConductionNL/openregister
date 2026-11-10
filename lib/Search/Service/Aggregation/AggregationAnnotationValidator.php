@@ -266,7 +266,7 @@ final class AggregationAnnotationValidator implements AggregationAnnotationValid
 			$this->validateMetricField(entry: $entry, propKeys: $propKeys),
 			$this->validateFilter(entry: $entry, propKeys: $propKeys),
 			$this->validateGroupBy(entry: $entry, propKeys: $propKeys),
-			$this->joinValidator->validate(name: $entry->name, spec: $entry->spec, propKeys: $propKeys)
+			$this->joinValidator->validate(entry: $entry, propKeys: $propKeys)
 		);
 	}//end validateSingleMetricEntry()
 

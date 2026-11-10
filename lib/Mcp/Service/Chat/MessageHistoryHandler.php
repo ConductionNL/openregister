@@ -26,7 +26,6 @@ namespace OCA\OpenRegister\Mcp\Service\Chat;
 
 use DateTime;
 use LLPhant\Chat\Message as LLPhantMessage;
-use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCA\OpenRegister\Notifications\Db\Message;
 use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use Psr\Log\LoggerInterface;
@@ -57,8 +56,7 @@ class MessageHistoryHandler {
 	 * Constructor
 	 *
 	 * @param MessageMapperInterface $messageMapper Message mapper.
-	 * @param ConversationMapper $conversationMapper Conversation mapper.
-	 * @param LoggerInterface $logger Logger.
+	 * @param LoggerInterface        $logger        Logger.
 	 *
 	 * @return void
 	 *
@@ -66,7 +64,6 @@ class MessageHistoryHandler {
 	 */
 	public function __construct(
 		private readonly MessageMapperInterface $messageMapper,
-		private readonly ConversationMapper $conversationMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

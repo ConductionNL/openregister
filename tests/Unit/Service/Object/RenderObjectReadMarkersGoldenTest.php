@@ -24,6 +24,11 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Service\Object\RenderObject;
+use OCA\OpenRegister\Service\Object\RenderContext;
+use OCA\OpenRegister\Service\Object\RenderPath;
+use OCA\OpenRegister\Service\Object\RenderPreloads;
+use OCA\OpenRegister\Service\Object\RenderRun;
+use OCA\OpenRegister\Service\Object\RenderSelection;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use PHPUnit\Framework\TestCase;
@@ -89,10 +94,28 @@ class RenderObjectReadMarkersGoldenTest extends TestCase {
 		$entity->setSchema('7');
 		$entity->setRelations(['secret' => 's', 'name' => 'n']);
 
-		$result = $this->call($handler, 'redactWriteOnlyForRbac', [$entity, ['secret' => 's', 'name' => 'n'], true]);
+		$result = $this->call($handler, 'redactWriteOnlyForRbac', [$this->renderRun($entity, null, ['secret' => 's', 'name' => 'n'])]);
 
 		$this->assertSame(['name' => 'n'], $result);
 		$this->assertSame(['name' => 'n'], $entity->getRelations());
+	}
+
+	/**
+	 * An access-controlled render of one entity, at the given data.
+	 *
+	 * @param ObjectEntity $entity The entity.
+	 * @param Schema|null  $schema The schema the phase reads.
+	 * @param array        $data   The data so far.
+	 *
+	 * @return RenderRun
+	 */
+	private function renderRun(ObjectEntity $entity, ?Schema $schema, array $data): RenderRun {
+		$context = new RenderContext(new RenderSelection([], [], [], []), new RenderPreloads(null, null, null), new RenderPath(0, []), true);
+		$run = new RenderRun($entity, $context);
+		$run->schema = $schema;
+		$run->data = $data;
+
+		return $run;
 	}
 
 	/**
@@ -130,11 +153,11 @@ class RenderObjectReadMarkersGoldenTest extends TestCase {
 		$entity = new ObjectEntity();
 		$schema = $this->ruledSchema();
 
-		$this->call($this->handlerExpectingRuleCalls(1), 'stripUnreadableProperties', [$entity, $schema, ['name' => 'n'], true]);
+		$this->call($this->handlerExpectingRuleCalls(1), 'stripUnreadableProperties', [$this->renderRun($entity, $schema, ['name' => 'n'])]);
 
 		$handler = $this->handlerExpectingRuleCalls(0);
 		SystemOperationContext::run(
-			fn () => $this->call($handler, 'stripUnreadableProperties', [$entity, $schema, ['name' => 'n'], true])
+			fn () => $this->call($handler, 'stripUnreadableProperties', [$this->renderRun($entity, $schema, ['name' => 'n'])])
 		);
 	}
 

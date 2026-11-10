@@ -95,7 +95,7 @@ class BackfillObjectSlugsCommandTest extends TestCase {
 			writer: new ObjectSlugBackfillWriter(
 				magicMapper: $this->magicMapper,
 				db: $this->createMock(IDBConnection::class),
-				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->createMock(CacheHandler::class), auditTrail: $this->auditTrail, logger: $logger),
+				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->createMock(CacheHandler::class), audit: new \OCA\OpenRegister\Service\Object\AuditRecording(trail: $this->auditTrail, logger: $logger)),
 				logger: $logger
 			),
 			logger: $logger
@@ -214,7 +214,7 @@ class BackfillObjectSlugsCommandTest extends TestCase {
 			['rows' => [], 'fetched' => 0, 'lastId' => 1]
 		);
 		$this->magicMapper->expects($this->never())->method('updateSlugColumn');
-		$this->auditTrail->expects($this->never())->method('createSlugBackfillEntry');
+		$this->auditTrail->expects($this->never())->method('recordSlugBackfill');
 
 		$tester = $this->tester();
 		$exit = $tester->execute(['register' => 'woo', 'schema' => 'convenanten', '--dry-run' => true]);

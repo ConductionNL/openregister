@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Files\Controller;
 
 use DateTimeImmutable;
 use Exception;
+use OCA\OpenRegister\Service\File\FileBatchRequest;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Controller\Support\FileAccessCheck;
 use OCA\OpenRegister\Files\Controller\Support\FileActionRefusal;
@@ -46,6 +47,7 @@ use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\OfficeOpenRefusedException;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
+use OCA\OpenRegister\Files\Service\File\OfficeOpenRequest;
 use OCA\OpenRegister\Files\Service\File\OfficeSessionService;
 use OCA\OpenRegister\Files\Service\File\FileMetadataFormHandler;
 use OCA\OpenRegister\Files\Service\File\PreviewSize;
@@ -54,6 +56,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\FileWriteGuardInterface;
 use OCA\OpenRegister\Files\Service\File\AttachNodeHandler;
 use OCA\OpenRegister\Files\Service\Integration\AttachTargetFilter;
+use OCA\OpenRegister\Files\Service\Integration\ChatTranscriptRequest;
 use OCA\OpenRegister\Files\Service\Integration\TalkChatExporter;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
@@ -72,6 +75,10 @@ use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserManager;
 use OCP\IUserSession;
+use OCA\OpenRegister\Service\File\FileMetadataChange;
+use OCA\OpenRegister\Service\File\FileOverwrite;
+use OCA\OpenRegister\Service\File\FileRename;
+use OCA\OpenRegister\Service\File\FileTransfer as AttachedFileTransfer;
 
 /**
  * FilesController handles file operations for objects in registers
@@ -560,12 +567,12 @@ class FilesController extends Controller {
 	 */
 	private function savePostedChat(ObjectEntity $object): JSONResponse {
 		$user = $this->userSession?->getUser();
-		$transcript = (new TalkChatExporter())->export(
+		$transcript = (new TalkChatExporter())->exportTranscript(request: new ChatTranscriptRequest(
 			conversation: (string)$this->request->getParam('conversation', ''),
 			messages: (array)$this->request->getParam('messages', []),
 			savedBy: (string)($user?->getDisplayName() ?? $user?->getUID() ?? ''),
 			savedAt: new DateTimeImmutable()
-		);
+		));
 
 		$file = $this->fileService->addFile(objectEntity: $object, fileName: $transcript['filename'], content: $transcript['content']);
 
@@ -1696,11 +1703,13 @@ class FilesController extends Controller {
 		$data = $this->request->getParams();
 
 		// Content is optional for metadata-only updates.
-		$result = $this->fileService->updateFile(
-			filePath: $fileId,
-			content: $data['content'] ?? null,
-			tags: $data['tags'] ?? [],
-			object: $this->objectService->getObject()
+		$result = $this->fileService->overwriteFile(
+			overwrite: new FileOverwrite(
+				filePath: $fileId,
+				content: $data['content'] ?? null,
+				tags: $data['tags'] ?? [],
+				object: $this->objectService->getObject()
+			)
 		);
 
 		return new JSONResponse(data: $this->fileService->formatFile($result));
@@ -2052,7 +2061,7 @@ class FilesController extends Controller {
 		$data = $this->request->getParams();
 		$newName = $data['name'] ?? '';
 		$names = ['oldName' => $data['oldName'] ?? '', 'newName' => $newName];
-		$file = $this->fileService->renameFile(object: $target->object, fileId: $target->fileId, newName: $newName);
+		$file = $this->fileService->renameAttachedFile(rename: new FileRename(object: $target->object, fileId: $target->fileId, newName: $newName));
 
 		// Audit trail entry (best-effort -- handler swallows failures).
 		$this->fileService->getAuditHandler()->logFileAction(object: $target->object, fileId: $target->fileId, action: 'file.renamed', data: $names);
@@ -2274,7 +2283,9 @@ class FilesController extends Controller {
 	 */
 	private function transferredFile(FileTransfer $transfer): File {
 		if ($transfer->isMove() === true) {
-			return $this->fileService->moveFile(sourceObject: $transfer->source, fileId: $transfer->fileId, targetObject: $transfer->target);
+			return $this->fileService->moveAttachedFile(
+				transfer: new AttachedFileTransfer(source: $transfer->source, fileId: $transfer->fileId, target: $transfer->target)
+			);
 		}
 
 		return $this->fileService->copyFile(sourceObject: $transfer->source, fileId: $transfer->fileId, targetObject: $transfer->target);
@@ -2609,7 +2620,10 @@ class FilesController extends Controller {
 		}
 
 		$handler = $this->fileService->getBatchHandler();
-		$result = $handler->executeBatch(object: $object, action: $data['action'] ?? '', fileIds: $fileIds, params: $data);
+		$result = $handler->runBatch(
+			request: new FileBatchRequest(object: $object, action: $data['action'] ?? '', params: $data),
+			fileIds: $fileIds
+		);
 
 		$statusCode = 200;
 		if ($result['summary']['failed'] > 0) {
@@ -2742,11 +2756,13 @@ class FilesController extends Controller {
 			$labels = (array)$data['labels'];
 		}
 
-		$entity = $this->fileService->updateFileMetadata(
-			fileId: $fileId,
-			description: $this->postedText(data: $data, key: 'description'),
-			category: $this->postedText(data: $data, key: 'category'),
-			labels: $labels
+		$entity = $this->fileService->changeFileMetadata(
+			change: new FileMetadataChange(
+				fileId: $fileId,
+				description: $this->postedText(data: $data, key: 'description'),
+				category: $this->postedText(data: $data, key: 'category'),
+				labels: $labels
+			)
 		);
 
 		return new JSONResponse(data: $entity->jsonSerialize());
@@ -2875,7 +2891,9 @@ class FilesController extends Controller {
 			$labels = [];
 		}
 
-		$file = $this->fileService->updateFile(filePath: $target->fileId, content: null, tags: $labels, object: $target->object);
+		$file = $this->fileService->overwriteFile(
+			overwrite: new FileOverwrite(filePath: $target->fileId, content: null, tags: $labels, object: $target->object)
+		);
 
 		return new JSONResponse(data: $this->fileService->formatFile($file));
 	}//end labelTarget()
@@ -2981,12 +2999,12 @@ class FilesController extends Controller {
 		$object = $this->objectFileAccess->readable(register: $route->register, schema: $route->schema, id: $route->id);
 		$file = $this->officeFile(object: $object, fileId: $fileId);
 
-		return $this->officeSessions()->open(
+		return $this->officeSessions()->openSession(request: new OfficeOpenRequest(
 			file: $file,
 			editorUid: $user->getUID(),
 			displayName: $user->getDisplayName(),
 			canWrite: $this->objectFileAccess->mayChangeFiles(object: $object)
-		);
+		));
 	}//end openOfficeSession()
 
 	/**

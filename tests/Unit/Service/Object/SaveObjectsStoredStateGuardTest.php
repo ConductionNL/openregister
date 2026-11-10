@@ -42,6 +42,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionMethod;
+use OCA\OpenRegister\Service\Flow\FlowRunFrame;
 
 /**
  * Caller `alice` sends one row naming a stored row in a given state. The permission handler
@@ -184,7 +185,7 @@ class SaveObjectsStoredStateGuardTest extends TestCase {
 
 	public function testTheRunHoldingALockPasses(): void {
 		$this->stored->setLocked(self::RUN_LOCK);
-		$this->flow->push(runUuid: self::RUN, nodeId: 'write', sequence: 1);
+		$this->flow->push(frame: new FlowRunFrame(runUuid: self::RUN, nodeId: 'write', sequence: 1));
 
 		$this->assertNull($this->screen());
 	}

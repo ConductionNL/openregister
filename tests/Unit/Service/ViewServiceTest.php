@@ -37,6 +37,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Search\Service\ViewEdit;
 
 /**
  * Unit tests for ViewService.
@@ -359,14 +360,12 @@ class ViewServiceTest extends TestCase {
 			}
 		);
 
-		$result = $this->service->update(
+		$result = $this->service->revise(
 			id: 1,
-			name: 'Updated',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: ['key' => 'val']
+			edit: new ViewEdit(
+				definition: new ViewDefinition(name: 'Updated', description: 'Desc', query: ['key' => 'val']),
+				audience: new ViewAudience(owner: 'user1', isPublic: false, isDefault: false)
+			)
 		);
 
 		$this->assertSame(expected: 'Updated', actual: $result->getName());
@@ -386,15 +385,13 @@ class ViewServiceTest extends TestCase {
 			}
 		);
 
-		$result = $this->service->update(
+		$result = $this->service->revise(
 			id: 1,
-			name: 'View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: [],
-			favoredBy: ['user1', 'user2']
+			edit: new ViewEdit(
+				definition: new ViewDefinition(name: 'View', description: 'Desc', query: []),
+				audience: new ViewAudience(owner: 'user1', isPublic: false, isDefault: false),
+				favoredBy: ['user1', 'user2']
+			)
 		);
 
 		$this->assertSame(expected: ['user1', 'user2'], actual: $result->getFavoredBy());
@@ -420,14 +417,12 @@ class ViewServiceTest extends TestCase {
 			}
 		);
 
-		$result = $this->service->update(
+		$result = $this->service->revise(
 			id: 1,
-			name: 'View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: true,
-			query: []
+			edit: new ViewEdit(
+				definition: new ViewDefinition(name: 'View', description: 'Desc', query: []),
+				audience: new ViewAudience(owner: 'user1', isPublic: false, isDefault: true)
+			)
 		);
 
 		// The existing default should have been cleared (updated to isDefault=false).
@@ -446,14 +441,12 @@ class ViewServiceTest extends TestCase {
 
 		$this->expectException(exception: DoesNotExistException::class);
 
-		$this->service->update(
+		$this->service->revise(
 			id: 1,
-			name: 'View',
-			description: 'Desc',
-			owner: 'user2',
-			isPublic: false,
-			isDefault: false,
-			query: []
+			edit: new ViewEdit(
+				definition: new ViewDefinition(name: 'View', description: 'Desc', query: []),
+				audience: new ViewAudience(owner: 'user2', isPublic: false, isDefault: false)
+			)
 		);
 	}//end testUpdateThrowsForPrivateViewOfOtherUser()
 
@@ -791,15 +784,17 @@ class ViewServiceTest extends TestCase {
 
 		$presentation = ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']];
 
-		$result = $this->service->update(
+		$result = $this->service->revise(
 			id: 1,
-			name: 'View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: ['schemas' => ['status-schema']],
-			presentation: $presentation
+			edit: new ViewEdit(
+				definition: new ViewDefinition(
+					name: 'View',
+					description: 'Desc',
+					query: ['schemas' => ['status-schema']],
+					presentation: $presentation
+				),
+				audience: new ViewAudience(owner: 'user1', isPublic: false, isDefault: false)
+			)
 		);
 
 		$this->assertSame(expected: $presentation, actual: $result->getPresentation());
@@ -820,15 +815,17 @@ class ViewServiceTest extends TestCase {
 
 		$this->expectException(exception: InvalidArgumentException::class);
 
-		$this->service->update(
+		$this->service->revise(
 			id: 1,
-			name: 'View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: ['schemas' => ['some-schema']],
-			presentation: ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']]
+			edit: new ViewEdit(
+				definition: new ViewDefinition(
+					name: 'View',
+					description: 'Desc',
+					query: ['schemas' => ['some-schema']],
+					presentation: ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']]
+				),
+				audience: new ViewAudience(owner: 'user1', isPublic: false, isDefault: false)
+			)
 		);
 	}//end testUpdateRejectsInvalidPresentation()
 
@@ -849,14 +846,12 @@ class ViewServiceTest extends TestCase {
 			}
 		);
 
-		$result = $this->service->update(
+		$result = $this->service->revise(
 			id: 1,
-			name: 'View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: []
+			edit: new ViewEdit(
+				definition: new ViewDefinition(name: 'View', description: 'Desc', query: []),
+				audience: new ViewAudience(owner: 'user1', isPublic: false, isDefault: false)
+			)
 		);
 
 		$this->assertSame(expected: $existingPresentation, actual: $result->getPresentation());

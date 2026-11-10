@@ -396,7 +396,7 @@ class TransitionEngineProviderTest extends TestCase {
 
 		$engine = new TransitionEngine(
 			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($this->objectService, new \OCA\OpenRegister\Db\SchemaCatalog($this->createMock(RegisterMapper::class), $this->schemaMapper, $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
-			new \OCA\OpenRegister\Service\Lifecycle\TransitionDispatch($this->createMock(IEventDispatcher::class), new LifecycleWriteBoundary(new LifecycleActionContext()), new LifecycleActionProviderRegistry($container, $serverContainer, $this->logger)),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionDispatch($this->createMock(IEventDispatcher::class), new LifecycleWriteBoundary(new LifecycleActionContext()), new LifecycleActionProviderRegistry(new \OCA\OpenRegister\Service\Lifecycle\ContainerLookup($container, $serverContainer, $this->logger))),
 			new \OCA\OpenRegister\Service\Lifecycle\TransitionPlatform($this->createMock(IUserSession::class), $appConfig, $this->logger),
 			$permission
 		);

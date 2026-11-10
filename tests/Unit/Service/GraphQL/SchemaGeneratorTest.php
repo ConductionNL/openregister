@@ -144,6 +144,8 @@ class SchemaGeneratorTest extends TestCase {
 
 		$this->assertNotNull($graphqlSchema->getQueryType());
 		$this->assertNotNull($graphqlSchema->getMutationType());
+		$this->assertSame(['melding', 'meldingen', 'register'], array_keys($graphqlSchema->getQueryType()->getFields()));
+		$this->assertSame(['createMelding', 'updateMelding', 'deleteMelding'], array_keys($graphqlSchema->getMutationType()->getFields()));
 	}
 
 	public function testGeneratesConnectionType(): void {
@@ -267,5 +269,7 @@ class SchemaGeneratorTest extends TestCase {
 		$graphqlSchema = $this->generator->generate();
 
 		$this->assertNotNull($graphqlSchema->getQueryType());
+		// Without schemas only the register query remains.
+		$this->assertSame(['register'], array_keys($graphqlSchema->getQueryType()->getFields()));
 	}
 }

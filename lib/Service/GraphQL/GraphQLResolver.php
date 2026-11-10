@@ -24,6 +24,9 @@
 
 namespace OCA\OpenRegister\Service\GraphQL;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\PropertyWriteCheck;
+use OCA\OpenRegister\Service\Object\TranslationScope;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use GraphQL\Deferred;
 use GraphQL\Error\Error;
@@ -80,69 +83,6 @@ class GraphQLResolver {
 	private array $partialErrors = [];
 
 	/**
-	 * Object finder
-	 *
-	 * @var GetObject
-	 */
-	private readonly GetObject $getObject;
-
-	/**
-	 * Object service
-	 *
-	 * @var ObjectOperationsInterface
-	 */
-	private readonly ObjectOperationsInterface $objectService;
-
-	/**
-	 * Relation handler
-	 *
-	 * @var RelationHandler
-	 */
-	private readonly RelationHandler $relationHandler;
-
-	/**
-	 * Register mapper
-	 *
-	 * @var RegisterMapperInterface
-	 */
-	private readonly RegisterMapperInterface $registerMapper;
-
-	/**
-	 * Permission handler
-	 *
-	 * @var PermissionHandlerInterface
-	 */
-	private readonly PermissionHandlerInterface $permissionHandler;
-
-	/**
-	 * Property RBAC handler
-	 *
-	 * @var PropertyRbacHandlerInterface
-	 */
-	private readonly PropertyRbacHandlerInterface $propertyRbac;
-
-	/**
-	 * Translation handler
-	 *
-	 * @var \OCA\OpenRegister\Service\Object\TranslationHandler
-	 */
-	private readonly \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler;
-
-	/**
-	 * Ad-hoc aggregation dispatcher.
-	 *
-	 * @var AggregationRunner
-	 */
-	private readonly AggregationRunner $aggregationRunner;
-
-	/**
-	 * Validator for `groupBy` arg.
-	 *
-	 * @var TimeseriesRequestValidatorInterface
-	 */
-	private readonly TimeseriesRequestValidatorInterface $timeseriesValidator;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param GraphQLResolverObjects $objects The object and register collaborators the GraphQL resolver reads and writes through.
@@ -151,20 +91,11 @@ class GraphQLResolver {
 	 * @param LoggerInterface        $logger  Logger
 	 */
 	public function __construct(
-		GraphQLResolverObjects $objects,
-		GraphQLResolverRights $rights,
-		GraphQLResolverShaping $shaping,
+		private readonly GraphQLResolverObjects $objects,
+		private readonly GraphQLResolverRights $rights,
+		private readonly GraphQLResolverShaping $shaping,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->getObject = $objects->getObject;
-		$this->objectService = $objects->objectService;
-		$this->relationHandler = $objects->relationHandler;
-		$this->registerMapper = $objects->registerMapper;
-		$this->permissionHandler = $rights->permissionHandler;
-		$this->propertyRbac = $rights->propertyRbac;
-		$this->translationHandler = $shaping->translationHandler;
-		$this->aggregationRunner = $shaping->aggregationRunner;
-		$this->timeseriesValidator = $shaping->timeseriesValidator;
 	}//end __construct()
 
 	/**
@@ -189,10 +120,10 @@ class GraphQLResolver {
 			$register = $this->findRegisterForSchema(schema: $schema);
 
 			// Set register/schema context on ObjectService (required for query routing).
-			$this->objectService->setRegister($register);
-			$this->objectService->setSchema($schema);
+			$this->objects->objectService->setRegister($register);
+			$this->objects->objectService->setSchema($schema);
 
-			$object = $this->getObject->find($id, $register, $schema);
+			$object = $this->objects->getObject->find($id, $register, $schema);
 
 			// Apply property-level RBAC filtering.
 			return $this->filterProperties(schema: $schema, item: $object);
@@ -222,7 +153,7 @@ class GraphQLResolver {
 
 		// Multitenancy is handled by the query context (ObjectService checks active org).
 		// RBAC is handled by checkSchemaPermission above.
-		$result = $this->objectService->searchObjectsPaginated(query: $query, _rbac: true, _multitenancy: true);
+		$result = $this->objects->objectService->searchObjectsPaginated(query: $query, _rbac: true, _multitenancy: true);
 
 		// Convert results to arrays and apply property-level RBAC.
 		$filteredResults = [];
@@ -247,12 +178,12 @@ class GraphQLResolver {
 	private function searchQuery(ListRequest $request): array {
 		// Set register/schema context on ObjectService (required for QueryHandler routing).
 		if ($request->register !== null) {
-			$this->objectService->setRegister($request->register);
+			$this->objects->objectService->setRegister($request->register);
 		}
 
-		$this->objectService->setSchema($request->schema);
+		$this->objects->objectService->setSchema($request->schema);
 
-		return $this->objectService->buildSearchQuery(
+		return $this->objects->objectService->buildSearchQuery(
 			requestParams: $request->requestParams(),
 			register: $request->registerId(),
 			schema: $request->schema->getId()
@@ -265,7 +196,7 @@ class GraphQLResolver {
 	 * @return ListAggregations The aggregations.
 	 */
 	private function aggregations(): ListAggregations {
-		return new ListAggregations(runner: $this->aggregationRunner, validator: $this->timeseriesValidator);
+		return new ListAggregations(runner: $this->shaping->aggregationRunner, validator: $this->shaping->timeseriesValidator);
 	}//end aggregations()
 
 	/**
@@ -284,12 +215,14 @@ class GraphQLResolver {
 		$this->checkSchemaPermission(schema: $schema, action: 'create');
 
 		$input = $args['input'];
-		$this->refuseForbiddenFields(fields: $this->propertyRbac->getUnauthorizedProperties($schema, [], $input, true));
+		$this->refuseForbiddenFields(
+			fields: $this->rights->propertyRbac->getUnauthorizedProperties(new PropertyWriteCheck($schema, new PropertyAccessRequest([], true), $input))
+		);
 
 		$register = $this->findRegisterForSchema(schema: $schema);
 
 		try {
-			return $this->objectToArray(object: $this->objectService->saveObject($input, [], $register, $schema));
+			return $this->objectToArray(object: $this->objects->objectService->saveObject($input, [], $register, $schema));
 		} catch (\OCA\OpenRegister\Exception\ValidationException $e) {
 			throw $this->validationError(cause: $e);
 		}
@@ -317,10 +250,14 @@ class GraphQLResolver {
 
 		try {
 			// Check property-level write RBAC against the stored record.
-			$stored = $this->getObject->find(id: $id, register: $register, schema: $schema, _audit: false);
-			$this->refuseForbiddenFields(fields: $this->propertyRbac->getUnauthorizedProperties($schema, $stored->getMatchEnvelope(), $input, false));
+			$stored = $this->objects->getObject->find(id: $id, register: $register, schema: $schema, _audit: false);
+			$this->refuseForbiddenFields(
+				fields: $this->rights->propertyRbac->getUnauthorizedProperties(
+					new PropertyWriteCheck($schema, new PropertyAccessRequest($stored->getMatchEnvelope(), false), $input)
+				)
+			);
 
-			return $this->objectToArray(object: $this->objectService->saveObject($input, [], $register, $schema, $id));
+			return $this->objectToArray(object: $this->objects->objectService->saveObject($input, [], $register, $schema, $id));
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			throw $this->notFoundError(schema: $schema, id: $id);
 		} catch (\OCA\OpenRegister\Exception\ValidationException $e) {
@@ -372,7 +309,7 @@ class GraphQLResolver {
 		$this->checkSchemaPermission(schema: $schema, action: 'delete');
 
 		try {
-			return $this->objectService->deleteObject($args['id']);
+			return $this->objects->objectService->deleteObject($args['id']);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			throw $this->notFoundError(schema: $schema, id: $args['id']);
 		}
@@ -383,14 +320,12 @@ class GraphQLResolver {
 	 * Resolve a relation field using deferred batching (DataLoader pattern).
 	 *
 	 * @param string $uuid The UUID of the related object
-	 * @param Schema $parentSchema The parent schema (for RBAC context)
-	 * @param array $path The field path for error reporting
 	 *
 	 * @return Deferred A deferred value that resolves after batching
 	 *
 	 * @spec openspec/specs/graphql-api/spec.md
 	 */
-	public function resolveRelation(string $uuid, Schema $parentSchema, array $path): Deferred {
+	public function resolveRelation(string $uuid): Deferred {
 		// Add to buffer for batch loading.
 		$this->relationBuffer[$uuid] = true;
 
@@ -417,7 +352,7 @@ class GraphQLResolver {
 	 * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-enforce-schema-level-rbac-via-permissionhandler
 	 */
 	public function resolveUsedBy(string $objectUuid): array {
-		$result = $this->relationHandler->getUsedBy(lookup: new RelationLookup(objectId: $objectUuid));
+		$result = $this->objects->relationHandler->getUsedBy(lookup: new RelationLookup(objectId: $objectUuid));
 		return $result['results'];
 	}//end resolveUsedBy()
 
@@ -437,7 +372,7 @@ class GraphQLResolver {
 		}
 
 		try {
-			$loaded = $this->relationHandler->bulkLoadRelationshipsBatched($uuids);
+			$loaded = $this->objects->relationHandler->bulkLoadRelationshipsBatched($uuids);
 
 			foreach ($loaded as $key => $object) {
 				$this->relationCache[$key] = $this->objectToArray(object: $object);
@@ -490,7 +425,7 @@ class GraphQLResolver {
 	 */
 	private function checkSchemaPermission(Schema $schema, string $action): void {
 		try {
-			$this->permissionHandler->checkPermission($schema, $action);
+			$this->rights->permissionHandler->checkPermission($schema, $action);
 		} catch (NotAuthorizedException $e) {
 			throw new Error(
 				$e->getMessage(),
@@ -518,7 +453,7 @@ class GraphQLResolver {
 	 */
 	private function filterProperties(Schema $schema, ObjectEntity|array $item): array {
 		// Apply property-level RBAC first (drops fields the caller can't read).
-		$readable = fn (array $probe): array => $this->propertyRbac->filterReadableProperties($schema, $probe);
+		$readable = fn (array $probe): array => $this->rights->propertyRbac->filterReadableProperties($schema, $probe);
 		$data = $item;
 		if ($item instanceof ObjectEntity === true) {
 			$data = $item->filterAsRecord(data: $this->objectToArray(object: $item), filter: $readable);
@@ -545,10 +480,9 @@ class GraphQLResolver {
 			);
 		}
 
-		return $this->translationHandler->resolveTranslationsForRender(
+		return $this->shaping->translationHandler->resolveTranslationsForRender(
 			objectData: $data,
-			schema: $schema,
-			register: $register
+			scope: new TranslationScope(schema: $schema, register: $register)
 		);
 	}//end filterProperties()
 
@@ -606,7 +540,7 @@ class GraphQLResolver {
 		try {
 			// Schemas have a register property, but it may be null.
 			// Try to find a register that contains this schema.
-			$registers = $this->registerMapper->findAll();
+			$registers = $this->objects->registerMapper->findAll();
 			foreach ($registers as $register) {
 				$schemaIds = $register->getSchemas() ?? [];
 				if (in_array(needle: $schema->getId(), haystack: $schemaIds) === true) {

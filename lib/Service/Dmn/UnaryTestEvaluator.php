@@ -94,12 +94,29 @@ class UnaryTestEvaluator {
 	 * @spec openspec/changes/shared-decision-table-evaluator/specs/shared-decision-tables/spec.md
 	 */
 	public function matches(string $expression, mixed $value, string $type): bool {
+		return $this->matchesValue(expression: $expression, subject: new UnaryTestValue(value: $value, type: $type));
+	}//end matches()
+
+	/**
+	 * Check whether a rule cell expression matches a value under test.
+	 *
+	 * @param string         $expression The raw cell text (e.g. `'[0..25000]'`, `'-'`, `'in (a,b)'`).
+	 * @param UnaryTestValue $subject    The runtime value, already coerced via {@see coerce()}, and its type.
+	 *
+	 * @return bool True when the expression matches the value.
+	 *
+	 * @throws DecisionEvaluationException `invalid_expression` on malformed grammar,
+	 *                                     `type_mismatch` when a literal in the expression
+	 *                                     cannot be coerced to the subject's type.
+	 *
+	 * @spec openspec/changes/shared-decision-table-evaluator/specs/shared-decision-tables/spec.md
+	 */
+	public function matchesValue(string $expression, UnaryTestValue $subject): bool {
 		$trimmed = trim($expression);
-		$subject = new UnaryTestValue(value: $value, type: $type);
 
 		// A quoted literal bypasses the wildcard, so `"-"` matches the string "-".
 		if ($this->isQuoted(raw: $trimmed) === true) {
-			return $subject->equals(coerced: $this->coerce(value: $this->unquote(raw: $trimmed), type: $type));
+			return $subject->equals(coerced: $this->coerce(value: $this->unquote(raw: $trimmed), type: $subject->type));
 		}
 
 		if ($trimmed === '' || $trimmed === '-') {
@@ -107,7 +124,7 @@ class UnaryTestEvaluator {
 		}
 
 		return $this->matchesForm(trimmed: $trimmed, subject: $subject);
-	}//end matches()
+	}//end matchesValue()
 
 	/**
 	 * Match a non-wildcard, unquoted cell: a set, a range, a comparison or, failing those,

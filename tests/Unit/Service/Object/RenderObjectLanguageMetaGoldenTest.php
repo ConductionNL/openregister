@@ -32,6 +32,11 @@ use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCA\OpenRegister\Service\Object\LinkedEntityEnricher;
 use OCA\OpenRegister\Service\Object\RenderObject;
+use OCA\OpenRegister\Service\Object\RenderContext;
+use OCA\OpenRegister\Service\Object\RenderPath;
+use OCA\OpenRegister\Service\Object\RenderPreloads;
+use OCA\OpenRegister\Service\Object\RenderRun;
+use OCA\OpenRegister\Service\Object\RenderSelection;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -141,7 +146,10 @@ class RenderObjectLanguageMetaGoldenTest extends TestCase {
 	 */
 	private function renderTranslations(ObjectEntity $entity, Schema $schema, array $objectData): array {
 		$method = new ReflectionMethod(RenderObject::class, 'resolveRenderTranslations');
-		return $method->invoke($this->render, $entity, $schema, $objectData);
+		$run = new RenderRun($entity, new RenderContext(new RenderSelection([], [], [], []), new RenderPreloads(null, null, null), new RenderPath(0, []), true));
+		$run->schema = $schema;
+		$run->data = $objectData;
+		return $method->invoke($this->render, $run);
 	}//end renderTranslations()
 
 	/**

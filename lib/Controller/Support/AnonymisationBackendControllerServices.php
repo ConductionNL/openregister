@@ -32,16 +32,30 @@ use OCP\IUserSession;
  */
 final class AnonymisationBackendControllerServices {
 	/**
+	 * Current user session for admin gating.
+	 *
+	 * @var IUserSession
+	 */
+	public readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for admin checks.
+	 *
+	 * @var IGroupManager
+	 */
+	public readonly IGroupManager $groupManager;
+
+	/**
 	 * Bundle the services.
 	 *
-	 * @param IUserSession $userSession Current user session for admin gating.
-	 * @param IGroupManager $groupManager Group manager for admin checks.
+	 * @param SessionPrincipal $principal The session and group manager, kept as userSession and groupManager.
 	 * @param AnonymisationBackendServiceInterface $service Backend state service (single source of truth).
 	 */
 	public function __construct(
-		public readonly IUserSession $userSession,
-		public readonly IGroupManager $groupManager,
+		SessionPrincipal $principal,
 		public readonly AnonymisationBackendServiceInterface $service,
 	) {
+		$this->userSession  = $principal->userSession;
+		$this->groupManager = $principal->groupManager;
 	}//end __construct()
 }//end class

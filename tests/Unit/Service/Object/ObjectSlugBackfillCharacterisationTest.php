@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -122,7 +123,7 @@ class ObjectSlugBackfillCharacterisationTest extends TestCase {
 			writer: new ObjectSlugBackfillWriter(
 				magicMapper: $this->magicMapper,
 				db: $db,
-				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->cacheHandler, auditTrail: $this->auditTrail, logger: $logger),
+				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->cacheHandler, audit: new \OCA\OpenRegister\Service\Object\AuditRecording(trail: $this->auditTrail, logger: $logger)),
 				logger: $logger
 			),
 			logger: $logger
@@ -190,8 +191,9 @@ class ObjectSlugBackfillCharacterisationTest extends TestCase {
 		$this->magicMapper->method('findSlugState')->willReturn(['holders' => ['fresh' => ['u-other']]]);
 		$this->rows([$this->row(1, 'Fresh'), $this->row(2, 'Taken'), $this->row(3, ''), $this->row(4, 'Moved'), $this->row(5, 'Kept')]);
 		$this->writes(untouched: ['u-4']);
-		$this->auditTrail->method('createSlugBackfillEntry')->willReturnCallback(
-			function (...$args): AuditTrail {
+		$this->auditTrail->method('recordSlugBackfill')->willReturnCallback(
+			function (SlugBackfill $backfill): AuditTrail {
+				$args = [$backfill->changes, $backfill->summary, $backfill->target->register, $backfill->target->schema];
 				$this->events[] = 'audit:' . json_encode($args);
 				return new AuditTrail();
 			}
@@ -242,7 +244,7 @@ class ObjectSlugBackfillCharacterisationTest extends TestCase {
 		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
 		$this->magicMapper->method('findAllSlugs')->willReturn(['taken' => ['u-9']]);
 		$this->magicMapper->expects($this->never())->method('updateSlugColumn');
-		$this->auditTrail->expects($this->never())->method('createSlugBackfillEntry');
+		$this->auditTrail->expects($this->never())->method('recordSlugBackfill');
 		$this->rows([$this->row(1, 'Taken'), $this->row(2, 'Free')]);
 
 		$result = $this->service->run($this->register, $this->schema, true);
@@ -259,7 +261,7 @@ class ObjectSlugBackfillCharacterisationTest extends TestCase {
 		$this->magicMapper->method('findSlugState')->willReturn(['holders' => []]);
 		$this->rows([$this->row(1, 'One')]);
 		$this->writes();
-		$this->auditTrail->method('createSlugBackfillEntry')->willThrowException(new RuntimeException('db down'));
+		$this->auditTrail->method('recordSlugBackfill')->willThrowException(new RuntimeException('db down'));
 		$this->cacheHandler = $this->createMock(CacheHandler::class);
 		$this->cacheHandler->method('invalidateForObjectChange')->willThrowException(new RuntimeException('cache down'));
 		$this->rebuildWithCache();
@@ -282,7 +284,7 @@ class ObjectSlugBackfillCharacterisationTest extends TestCase {
 		$this->magicMapper->method('findSlugState')->willReturn(['holders' => []]);
 		$this->rows([$this->row(1, 'One')]);
 		$this->magicMapper->method('updateSlugColumn')->willThrowException(new RuntimeException('write failed'));
-		$this->auditTrail->expects($this->never())->method('createSlugBackfillEntry');
+		$this->auditTrail->expects($this->never())->method('recordSlugBackfill');
 
 		try {
 			$this->service->run($this->register, $this->schema);
@@ -309,7 +311,7 @@ class ObjectSlugBackfillCharacterisationTest extends TestCase {
 			['rows' => array_slice($rows, 1000), 'fetched' => 1, 'lastId' => 1001]
 		);
 		$this->magicMapper->method('updateSlugColumn')->willReturn(1);
-		$this->auditTrail->method('createSlugBackfillEntry')->willReturn(new AuditTrail());
+		$this->auditTrail->method('recordSlugBackfill')->willReturn(new AuditTrail());
 
 		$this->service->run($this->register, $this->schema);
 
@@ -355,7 +357,7 @@ class ObjectSlugBackfillCharacterisationTest extends TestCase {
 			writer: new ObjectSlugBackfillWriter(
 				magicMapper: $this->magicMapper,
 				db: $this->createMock(IDBConnection::class),
-				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->cacheHandler, auditTrail: $this->auditTrail, logger: $logger),
+				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->cacheHandler, audit: new \OCA\OpenRegister\Service\Object\AuditRecording(trail: $this->auditTrail, logger: $logger)),
 				logger: $logger
 			),
 			logger: $logger

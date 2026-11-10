@@ -32,6 +32,7 @@ use DateTime;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Db\EndpointLogMapper;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\RuleRunSummary;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
 use OCP\IDBConnection;
@@ -116,13 +117,13 @@ final class SmallMappersGoldenTest extends TestCase {
 		$paging = ['none' => [null, null], 'limit' => [5, null], 'offset' => [null, 10], 'both' => [0, 0]];
 		foreach ($paging as $name => [$limit, $offset]) {
 			$actual['endpoint logs ' . $name] = $this->recorded(
-				fn () => count((new EndpointLogMapper($this->connection()))->findByEndpoints(['a' => 3, 'b' => 4], $limit, $offset)),
+				fn () => count((new EndpointLogMapper($this->connection()))->findByEndpoints(['a' => 3, 'b' => 4], new ListQuery(limit: $limit ?? ListQuery::UNBOUNDED, offset: $offset))),
 				[[]]
 			);
 		}
 
 		$actual['endpoint logs without endpoints'] = $this->recorded(
-			fn () => (new EndpointLogMapper($this->connection()))->findByEndpoints([], 5, 5),
+			fn () => (new EndpointLogMapper($this->connection()))->findByEndpoints([], new ListQuery(limit: 5, offset: 5)),
 			[]
 		);
 

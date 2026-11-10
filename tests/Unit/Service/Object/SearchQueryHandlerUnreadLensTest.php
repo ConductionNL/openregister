@@ -26,7 +26,6 @@ use OCA\OpenRegister\Service\Object\ViewScopeApplier;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
-use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -75,7 +74,6 @@ class SearchQueryHandlerUnreadLensTest extends TestCase {
 			$schemaMapper,
 			$this->createMock(originalClassName: SettingsService::class),
 			$this->createMock(originalClassName: LoggerInterface::class),
-			$this->createMock(originalClassName: IRequest::class),
 			$this->createMock(originalClassName: SearchTrailService::class),
 			$session
 		);

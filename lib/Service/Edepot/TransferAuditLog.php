@@ -42,19 +42,33 @@ use Psr\Log\LoggerInterface;
 final class TransferAuditLog {
 
 	/**
+	 * The audit trail mapper.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailMapperInterface $auditTrailMapper    The audit trail mapper.
-	 * @param TransferSettings          $settings            The transport settings, for the target archive.
-	 * @param INotificationManager      $notificationManager The notification manager.
-	 * @param LoggerInterface           $logger              Logger.
+	 * @param AuditRecording       $audit               The audit trail mapper and the logger.
+	 * @param TransferSettings     $settings            The transport settings, for the target archive.
+	 * @param INotificationManager $notificationManager The notification manager.
 	 */
 	public function __construct(
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
+		AuditRecording $audit,
 		private readonly TransferSettings $settings,
 		private readonly INotificationManager $notificationManager,
-		private readonly LoggerInterface $logger,
 	) {
+		$this->auditTrailMapper = $audit->auditTrailMapper;
+		$this->logger           = $audit->logger;
 	}//end __construct()
 
 	/**

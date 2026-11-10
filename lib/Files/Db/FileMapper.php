@@ -797,71 +797,134 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 		// Check if a public share already exists for this file.
 		$existingShare = $this->getPublicShare(fileId: $fileId);
 		if ($existingShare !== null) {
-			// Return existing share information.
-			return [
-				'id' => $existingShare['id'],
-				'token' => $existingShare['token'],
-				'accessUrl' => $this->generateShareUrl(token: $existingShare['token']),
-				'downloadUrl' => $this->generateShareUrl(token: $existingShare['token']) . '/download',
-				'published' => (new DateTime())->setTimestamp($existingShare['stime'])->format('c'),
-			];
+			return $this->shareInfo(share: $existingShare);
 		}
 
-		// Generate a unique token for the share.
-		$token = $this->generateShareToken();
-		$currentTime = time();
+		return $this->createPublicShare(
+			request: new PublicShareRequest(fileId: $fileId, sharedBy: $sharedBy, shareOwner: $shareOwner, depublished: $depublished)
+		);
+	}//end publishFile()
 
-		// Insert the new share into the database.
+	/**
+	 * Create the public link share and answer what was created.
+	 *
+	 * @param PublicShareRequest $request The file, the sharer, the owner and the end of the window.
+	 *
+	 * @return array{id: int, token: string, accessUrl: string, downloadUrl: string, published: string}
+	 *
+	 * @throws \Exception If the share creation fails
+	 */
+	private function createPublicShare(PublicShareRequest $request): array {
+		// Generate a unique token for the share, then insert it.
+		$row     = self::shareRow(request: $request, token: $this->generateShareToken());
+		$shareId = $this->insertShare(row: $row);
+
+		return $this->shareInfo(share: ['id' => $shareId, 'token' => $row['token'][0], 'stime' => $row['stime'][0]]);
+	}//end createPublicShare()
+
+	/**
+	 * The share row, column by column, as `[value, parameter type]`, in insert order.
+	 *
+	 * @param PublicShareRequest $request The file, the sharer, the owner and the end of the window.
+	 * @param string             $token   The new share's token.
+	 *
+	 * @return array<string, array{0: mixed, 1: int|string}> The row.
+	 */
+	private static function shareRow(PublicShareRequest $request, string $token): array {
+		return [
+			// 3 = public link.
+			'share_type' => [3, IQueryBuilder::PARAM_INT],
+			'share_with' => [null, IQueryBuilder::PARAM_STR],
+			'password' => [null, IQueryBuilder::PARAM_STR],
+		] + self::shareSourceColumns(request: $request) + self::sharePublicationColumns(request: $request, token: $token);
+	}//end shareRow()
+
+	/**
+	 * Who shares what: the owner, the initiator and the file.
+	 *
+	 * @param PublicShareRequest $request The file, the sharer and the owner.
+	 *
+	 * @return array<string, array{0: mixed, 1: int|string}> The columns.
+	 */
+	private static function shareSourceColumns(PublicShareRequest $request): array {
+		return [
+			'uid_owner' => [$request->shareOwner, IQueryBuilder::PARAM_STR],
+			'uid_initiator' => [$request->sharedBy, IQueryBuilder::PARAM_STR],
+			'parent' => [null, IQueryBuilder::PARAM_STR],
+			'item_type' => ['file', IQueryBuilder::PARAM_STR],
+			'item_source' => [$request->fileId, IQueryBuilder::PARAM_INT],
+			'item_target' => ['/' . $request->fileId, IQueryBuilder::PARAM_STR],
+			'file_source' => [$request->fileId, IQueryBuilder::PARAM_INT],
+			'file_target' => ['/' . $request->fileId, IQueryBuilder::PARAM_STR],
+		];
+	}//end shareSourceColumns()
+
+	/**
+	 * How the link is published: read only, from now, until the end of the window.
+	 *
+	 * @param PublicShareRequest $request The end of the window.
+	 * @param string             $token   The new share's token.
+	 *
+	 * @return array<string, array{0: mixed, 1: int|string}> The columns.
+	 */
+	private static function sharePublicationColumns(PublicShareRequest $request, string $token): array {
+		return [
+			'permissions' => [self::PUBLIC_SHARE_PERMISSIONS, IQueryBuilder::PARAM_INT],
+			'stime' => [time(), IQueryBuilder::PARAM_INT],
+			'accepted' => [0, IQueryBuilder::PARAM_INT],
+			// The share carries the end of the window, so Nextcloud stops
+			// serving the link on the date with nothing having to run.
+			// An OR-side flag alone would leave a public URL that still
+			// works, which is not a depublication.
+			'expiration' => [$request->depublished?->format('Y-m-d H:i:s'), IQueryBuilder::PARAM_STR],
+			'token' => [$token, IQueryBuilder::PARAM_STR],
+			'mail_send' => [0, IQueryBuilder::PARAM_INT],
+			'hide_download' => [0, IQueryBuilder::PARAM_INT],
+		];
+	}//end sharePublicationColumns()
+
+	/**
+	 * Insert one share row.
+	 *
+	 * @param array<string, array{0: mixed, 1: int|string}> $row The row, column by column.
+	 *
+	 * @return int The new share's id.
+	 *
+	 * @throws \Exception If the share creation fails
+	 */
+	private function insertShare(array $row): int {
 		$qb = $this->db->getQueryBuilder();
-		$qb->insert('share')
-			->values(
-				values: [
-					'share_type' => $qb->createNamedParameter(3, IQueryBuilder::PARAM_INT),
-					// 3 = public link.
-					'share_with' => $qb->createNamedParameter(null),
-					'password' => $qb->createNamedParameter(null),
-					'uid_owner' => $qb->createNamedParameter($shareOwner),
-					'uid_initiator' => $qb->createNamedParameter($sharedBy),
-					'parent' => $qb->createNamedParameter(null),
-					'item_type' => $qb->createNamedParameter('file'),
-					'item_source' => $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT),
-					'item_target' => $qb->createNamedParameter('/' . $fileId),
-					'file_source' => $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT),
-					'file_target' => $qb->createNamedParameter('/' . $fileId),
-					'permissions' => $qb->createNamedParameter(self::PUBLIC_SHARE_PERMISSIONS, IQueryBuilder::PARAM_INT),
-					'stime' => $qb->createNamedParameter($currentTime, IQueryBuilder::PARAM_INT),
-					'accepted' => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-					// The share carries the end of the window, so Nextcloud stops
-					// serving the link on the date with nothing having to run.
-					// An OR-side flag alone would leave a public URL that still
-					// works, which is not a depublication.
-					'expiration' => $qb->createNamedParameter(
-						$depublished?->format('Y-m-d H:i:s'),
-						IQueryBuilder::PARAM_STR
-					),
-					'token' => $qb->createNamedParameter($token),
-					'mail_send' => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-					'hide_download' => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-				]
-			);
+		$qb->insert('share');
+		$values = [];
+		foreach ($row as $column => $cell) {
+			$values[$column] = $qb->createNamedParameter($cell[0], $cell[1]);
+		}
 
-		$result = $qb->executeStatement();
-
-		if ($result !== 1) {
+		$qb->values(values: $values);
+		if ($qb->executeStatement() !== 1) {
 			throw new Exception('Failed to create public share in database');
 		}
 
 		// Get the ID of the newly created share.
-		$shareId = $qb->getLastInsertId();
+		return $qb->getLastInsertId();
+	}//end insertShare()
 
+	/**
+	 * What a publication answers: the share id and token, its links and when it was published.
+	 *
+	 * @param array{id: int, token: string, stime: int|string} $share The share row.
+	 *
+	 * @return array{id: int, token: string, accessUrl: string, downloadUrl: string, published: string}
+	 */
+	private function shareInfo(array $share): array {
 		return [
-			'id' => $shareId,
-			'token' => $token,
-			'accessUrl' => $this->generateShareUrl(token: $token),
-			'downloadUrl' => $this->generateShareUrl(token: $token) . '/download',
-			'published' => (new DateTime())->setTimestamp($currentTime)->format('c'),
+			'id' => $share['id'],
+			'token' => $share['token'],
+			'accessUrl' => $this->generateShareUrl(token: $share['token']),
+			'downloadUrl' => $this->generateShareUrl(token: $share['token']) . '/download',
+			'published' => (new DateTime())->setTimestamp($share['stime'])->format('c'),
 		];
-	}//end publishFile()
+	}//end shareInfo()
 
 	/**
 	 * Depublish a file by removing all public shares directly from the database.

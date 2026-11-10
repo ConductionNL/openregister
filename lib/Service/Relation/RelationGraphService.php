@@ -164,9 +164,8 @@ class RelationGraphService implements RelationGraphServiceInterface {
 	 * of wrongness this whole method exists to avoid. The answer always says
 	 * what it is.
 	 *
-	 * @param string $rootUuid The object to walk out from.
-	 * @param int $depth The depth asked for.
-	 * @param string $language The BCP-47 tag to resolve labels in.
+	 * @param string             $rootUuid The object to walk out from.
+	 * @param GraphExportOptions $options  The depth (1 by default) and the language of the labels (Dutch by default).
 	 *
 	 * @return array{root: string, depth: int, requestedDepth: int, maxDepth: int,
 	 *     nodes: array<int, array<string, mixed>>, edges: array<int, array<string, mixed>>,
@@ -175,8 +174,8 @@ class RelationGraphService implements RelationGraphServiceInterface {
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	public function graph(string $rootUuid, int $depth = 1, string $language = 'nl'): array {
-		$walk = $this->newWalk(depth: $depth, language: $language);
+	public function graph(string $rootUuid, GraphExportOptions $options = new GraphExportOptions()): array {
+		$walk = $this->newWalk(depth: $options->depth, language: $options->language);
 		$this->startAt(walk: $walk, rootUuid: $rootUuid);
 		$this->walkLevels(walk: $walk);
 		$this->markDepthTruncation(walk: $walk);
@@ -377,7 +376,10 @@ class RelationGraphService implements RelationGraphServiceInterface {
 		$other = self::otherEnd(edge: $edge);
 
 		if ($this->shapes->isExternal(edge: $edge) === true) {
-			$walk->nodes[$other] = $this->shapes->externalNode(edge: $edge, uuid: $other, distance: ($walk->level + 1));
+			$walk->nodes[$other] = $this->shapes->externalNode(
+				edge: $edge,
+				node: $this->shapes->unresolvedNode(uuid: $other, distance: ($walk->level + 1))
+			);
 			return;
 		}
 
@@ -437,17 +439,17 @@ class RelationGraphService implements RelationGraphServiceInterface {
 	 * The truncation marker rides along as a trailing row rather than a header
 	 * comment, so it survives a paste into a sheet.
 	 *
-	 * @param string $rootUuid The object to walk out from.
-	 * @param int $depth The depth asked for.
-	 * @param string $language The BCP-47 tag.
+	 * @param string                  $rootUuid The object to walk out from.
+	 * @param GraphExportOptions|null $options  The depth and the language; null is depth 1 in Dutch.
 	 *
 	 * @return array{rows: array<int, array<int, string>>, graph: array<string, mixed>}
 	 *     The export rows, header first, and the graph they came from.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	public function export(string $rootUuid, int $depth = 1, string $language = 'nl'): array {
-		$graph = $this->graph(rootUuid: $rootUuid, depth: $depth, language: $language);
+	public function export(string $rootUuid, ?GraphExportOptions $options = null): array {
+		$options ??= new GraphExportOptions();
+		$graph = $this->graph(rootUuid: $rootUuid, options: $options);
 
 		return ['rows' => $this->rowsOf(graph: $graph), 'graph' => $graph];
 	}//end export()

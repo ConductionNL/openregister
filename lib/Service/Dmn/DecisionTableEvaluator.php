@@ -147,9 +147,11 @@ class DecisionTableEvaluator {
 	 */
 	private function matchingRules(array $decisionTable, array $coercedInputs): array {
 		$declaredInputs = self::normaliseFields(fields: ($decisionTable['inputs'] ?? []));
+		$inputs = new ResolvedInputs(declared: $declaredInputs, coerced: $coercedInputs);
 		$matched = [];
 		foreach ($this->rulesOf(decisionTable: $decisionTable) as $index => $rule) {
-			if ($this->ruleMatches(rule: $rule, declaredInputs: $declaredInputs, coercedInputs: $coercedInputs, ruleIndex: $index) === true) {
+			$cells = ['id' => ($rule['id'] ?? $index), 'inputEntries' => ($rule['inputEntries'] ?? null)];
+			if ($this->ruleMatches(cells: $cells, inputs: $inputs) === true) {
 				$matched[] = $rule;
 			}
 		}
@@ -210,33 +212,31 @@ class DecisionTableEvaluator {
 	/**
 	 * Check whether every input entry on a rule matches the coerced inputs.
 	 *
-	 * @param array<string, mixed> $rule The rule row.
-	 * @param array<int, array{name: string, type: string}> $declaredInputs Declared inputs, positionally aligned.
-	 * @param array<string, mixed> $coercedInputs Coerced runtime values, keyed by name.
-	 * @param int|string $ruleIndex Rule position (for error context).
+	 * @param array{id: mixed, inputEntries: mixed} $cells  The rule's id (its position when it has none) and input entries.
+	 * @param ResolvedInputs                       $inputs The declared inputs and their coerced runtime values.
 	 *
 	 * @return bool
 	 *
 	 * @throws DecisionEvaluationException `invalid_expression`/`type_mismatch` (re-thrown with rule context).
 	 */
-	private function ruleMatches(array $rule, array $declaredInputs, array $coercedInputs, int|string $ruleIndex): bool {
+	private function ruleMatches(array $cells, ResolvedInputs $inputs): bool {
 		$entries = [];
-		if (is_array($rule['inputEntries'] ?? null) === true) {
-			$entries = $rule['inputEntries'];
+		if (is_array($cells['inputEntries']) === true) {
+			$entries = $cells['inputEntries'];
 		}
 
-		foreach ($declaredInputs as $position => $declared) {
+		foreach ($inputs->declared as $position => $declared) {
 			$expression = (string)($entries[$position] ?? '-');
-			$value = $coercedInputs[$declared['name']];
+			$subject = new UnaryTestValue(value: $inputs->coerced[$declared['name']], type: $declared['type']);
 
 			try {
-				if ($this->evaluator->matches(expression: $expression, value: $value, type: $declared['type']) === false) {
+				if ($this->evaluator->matchesValue(expression: $expression, subject: $subject) === false) {
 					return false;
 				}
 			} catch (DecisionEvaluationException $e) {
 				throw new DecisionEvaluationException(
 					errorCode: $e->getErrorCode(),
-					details: array_merge($e->getDetails(), ['ruleId' => ($rule['id'] ?? $ruleIndex), 'input' => $declared['name']]),
+					details: array_merge($e->getDetails(), ['ruleId' => $cells['id'], 'input' => $declared['name']]),
 				);
 			}
 		}

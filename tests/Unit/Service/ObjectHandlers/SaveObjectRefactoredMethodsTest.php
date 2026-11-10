@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
@@ -214,10 +215,8 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $this->objectEntityMapper,
-						unifiedObjectMapper: $this->unifiedObjectMapper,
-						schemaMapper: $this->schemaMapper,
-						registerMapper: $this->registerMapper
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectEntityMapper),
+						unifiedObjectMapper: $this->unifiedObjectMapper
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->auditTrailMapper,
@@ -257,6 +256,19 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 
 		// Set up reflection for accessing private methods.
 		$this->reflection = new ReflectionClass(SaveObject::class);
+	}
+
+	/**
+	 * The save call an existing-object lookup reads: the uuid, no register or schema.
+	 *
+	 * @param string $uuid The object uuid.
+	 *
+	 * @return ObjectSaveCall The call.
+	 */
+	private static function lookupCall(string $uuid): ObjectSaveCall {
+		$call = new ObjectSaveCall();
+		$call->uuid = $uuid;
+		return $call;
 	}
 
 	/**
@@ -450,7 +462,7 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 
 		$result = $this->invokePrivateMethod(
 			'findAndValidateExistingObject',
-			['22222222-2222-2222-2222-222222222222', null, null, false, false]
+			[self::lookupCall('22222222-2222-2222-2222-222222222222')]
 		);
 
 		$this->assertNull($result);
@@ -468,7 +480,7 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 
 		$result = $this->invokePrivateMethod(
 			'findAndValidateExistingObject',
-			['9F7A4C1E-2B3D-4E5F-8A9B-0C1D2E3F4A5B', null, null, false, false]
+			[self::lookupCall('9F7A4C1E-2B3D-4E5F-8A9B-0C1D2E3F4A5B')]
 		);
 
 		$this->assertSame($stored, $result);
@@ -493,7 +505,7 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 		// Method signature: findAndValidateExistingObject(string $uuid, ?Register $register, ?Schema $schema, bool $_rbac, bool $_multitenancy)
 		$result = $this->invokePrivateMethod(
 			'findAndValidateExistingObject',
-			[$uuid, null, null, false, false]
+			[self::lookupCall($uuid)]
 		);
 
 		$this->assertSame($existingObject, $result, 'Should return existing object.');
@@ -514,7 +526,7 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 
 		$result = $this->invokePrivateMethod(
 			'findAndValidateExistingObject',
-			[$uuid, null, null, false, false]
+			[self::lookupCall($uuid)]
 		);
 
 		$this->assertNull($result, 'Should return null when object does not exist.');

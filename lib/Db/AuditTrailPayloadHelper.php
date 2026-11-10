@@ -135,7 +135,12 @@ class AuditTrailPayloadHelper {
 				continue;
 			}
 
-			$data = $this->revertField(data: $data, field: $field, old: $change['old']);
+			if ($change['old'] === null) {
+				unset($data[$field]);
+				continue;
+			}
+
+			$data[$field] = $change['old'];
 		}
 
 		$object->setObject($data);
@@ -153,25 +158,6 @@ class AuditTrailPayloadHelper {
 		return $field !== '@self' && $field !== 'id' && is_array($change) === true
 			&& array_key_exists('old', $change) === true;
 	}//end isRevertible()
-
-	/**
-	 * Put one property's old value back; a property the entry added is removed.
-	 *
-	 * @param array<int|string, mixed> $data  The object data.
-	 * @param int|string               $field The property.
-	 * @param mixed                    $old   The recorded old value.
-	 *
-	 * @return array<int|string, mixed> The data.
-	 */
-	private function revertField(array $data, int|string $field, mixed $old): array {
-		if ($old === null) {
-			unset($data[$field]);
-			return $data;
-		}
-
-		$data[$field] = $old;
-		return $data;
-	}//end revertField()
 
 	/**
 	 * Bound what a single audit entry's `changed` payload may hold.

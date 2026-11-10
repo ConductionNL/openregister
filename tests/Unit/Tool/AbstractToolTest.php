@@ -261,8 +261,9 @@ class AbstractToolTest extends TestCase {
 	// ------------------------------------------------------------------
 
 	public function testValidateParametersSuccess(): void {
+		$this->expectNotToPerformAssertions();
+
 		$this->tool->publicValidateParameters(['a' => 1, 'b' => 2], ['a', 'b']);
-		$this->assertTrue(true);
 	}
 
 	public function testValidateParametersMissing(): void {

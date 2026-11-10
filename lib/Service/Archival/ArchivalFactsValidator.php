@@ -180,8 +180,7 @@ final class ArchivalFactsValidator {
 			return ['block' => null, 'errors' => [$this->error(code: $spec['code'] . '-not-object', message: $spec['notObject'])]];
 		}
 
-		$path = 'x-openregister-archival.' . $key;
-		$errors = $this->unknownKeys(block: $block, allowed: $spec['allowed'], path: $path, code: $spec['code'] . '-unknown-key');
+		$errors = $this->unknownKeys(block: $block, key: $key);
 
 		return ['block' => $block, 'errors' => $errors];
 	}//end blockShape()
@@ -250,19 +249,20 @@ final class ArchivalFactsValidator {
 	 * Report every key of a block that is not on its allow-list.
 	 *
 	 * @param array<string, mixed> $block The block to inspect.
-	 * @param array<int, string> $allowed The allowed keys.
-	 * @param string $path The block's path, for the message.
-	 * @param string $code The error code to report.
+	 * @param string               $key   The fact: a key of BLOCKS, naming the allow-list, the path and the code.
 	 *
 	 * @return array<int, array{code: string, message: string}>
 	 *
 	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-a-schema-may-declare-the-archival-facts-mdto-asks-for
 	 */
-	private function unknownKeys(array $block, array $allowed, string $path, string $code): array {
+	private function unknownKeys(array $block, string $key): array {
+		$allowed = self::BLOCKS[$key]['allowed'];
+		$path = 'x-openregister-archival.' . $key;
+		$code = self::BLOCKS[$key]['code'] . '-unknown-key';
 		$errors = [];
-		foreach (array_keys($block) as $key) {
-			if (in_array((string)$key, $allowed, true) === false) {
-				$message = sprintf('%s contains unknown key "%s". Allowed: %s.', $path, (string)$key, implode(', ', $allowed));
+		foreach (array_keys($block) as $blockKey) {
+			if (in_array((string)$blockKey, $allowed, true) === false) {
+				$message = sprintf('%s contains unknown key "%s". Allowed: %s.', $path, (string)$blockKey, implode(', ', $allowed));
 				$errors[] = $this->error(code: $code, message: $message);
 			}
 		}

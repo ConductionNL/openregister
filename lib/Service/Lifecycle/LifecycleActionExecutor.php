@@ -62,9 +62,7 @@ class LifecycleActionExecutor implements LifecycleActionExecutorInterface {
 	 * Run every declared action for a matched transition.
 	 *
 	 * @param array<int, mixed> $actions The transition's declared `actions[]` list.
-	 * @param array<string, mixed> $objectData The object payload after the lifecycle field moved to its target.
-	 * @param array<string, mixed> $previousData The object payload before the transition.
-	 * @param string $transition The matched transition (action) name — for diagnostics.
+	 * @param TransitionPayload $payload The transition name and the object payload after and before it.
 	 *
 	 * @return array<string, mixed> The object payload after all self-mutating actions applied.
 	 *
@@ -72,8 +70,7 @@ class LifecycleActionExecutor implements LifecycleActionExecutorInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function run(array $actions, array $objectData, array $previousData, string $transition): array {
-		$payload = new TransitionPayload(transition: $transition, objectData: $objectData, previousData: $previousData);
+	public function run(array $actions, TransitionPayload $payload): array {
 		return $this->runActions(actions: $actions, payload: $payload)->objectData;
 	}//end run()
 

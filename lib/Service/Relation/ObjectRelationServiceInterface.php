@@ -173,6 +173,18 @@ interface ObjectRelationServiceInterface {
 	public function applyInheritance(ObjectEntity $parent, array $childData, array $inherits): array;
 
 	/**
+	 * What a child takes from its parent at creation, as {@see applyInheritance()} describes.
+	 *
+	 * @param ParentInheritance $inheritance The parent, the child's data so far and the roles inherited.
+	 *
+	 * @return array{data: array<string, mixed>, inherited: array<string, mixed>}
+	 *         The child's data with the inherited values applied, and the record.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	public function inherit(ParentInheritance $inheritance): array;
+
+	/**
 	 * Record a child created under a parent, with what it inherited.
 	 *
 	 * @param ObjectEntity $parent The parent object.
@@ -194,6 +206,17 @@ interface ObjectRelationServiceInterface {
 		?ProvenanceLink $link = null,
 		array $inherited = [],
 	): ObjectRelation;
+
+	/**
+	 * Record a child created under a parent, with what it inherited.
+	 *
+	 * @param Derivation $derivation The parent, the child, the link naming it and what the child inherited.
+	 *
+	 * @return ObjectRelation The row.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	public function recordDerived(Derivation $derivation): ObjectRelation;
 
 	/**
 	 * Record that one object was created out of another.

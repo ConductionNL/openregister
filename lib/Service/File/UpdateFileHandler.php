@@ -100,10 +100,7 @@ class UpdateFileHandler {
 	 * / `setCategoryForFile` / `setLabelsForFile`, each of which is
 	 * lazy-create-on-miss so no pre-existing OR-side row is required.
 	 *
-	 * @param int $fileId The Nextcloud filecache fileid.
-	 * @param string|null $description The new description, empty string to clear, null to skip.
-	 * @param string|null $category The new category, empty string to clear, null to skip.
-	 * @param array<string>|null $labels The new labels, empty array to clear, null to skip.
+	 * @param FileMetadataChange $change The file id and the description, category and labels to write.
 	 *
 	 * @return \OCA\OpenRegister\Files\Db\File The persisted entity reflecting the updated state.
 	 *
@@ -111,15 +108,9 @@ class UpdateFileHandler {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function updateFileMetadata(
-		int $fileId,
-		?string $description = null,
-		?string $category = null,
-		?array $labels = null,
-	): \OCA\OpenRegister\Files\Db\File {
-		$values = ['description' => $description, 'category' => $category, 'labels' => $labels];
-		$entity = $this->writeMetadata(fileId: $fileId, values: $values);
-		$this->logMetadataUpdate(fileId: $fileId, values: $values);
+	public function updateFileMetadata(FileMetadataChange $change): \OCA\OpenRegister\Files\Db\File {
+		$entity = $this->writeMetadata(fileId: $change->fileId, values: $change->values());
+		$this->logMetadataUpdate(fileId: $change->fileId, values: $change->values());
 		return $entity;
 	}//end updateFileMetadata()
 

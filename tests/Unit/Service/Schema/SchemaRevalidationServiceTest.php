@@ -28,6 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Schema;
 
+use OCA\OpenRegister\Service\Schema\RevalidationRequest;
+use OCA\OpenRegister\Service\Schema\SchemaPopulationRuns;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -43,7 +45,6 @@ use Opis\JsonSchema\Errors\ValidationError;
 use Opis\JsonSchema\ValidationResult;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Schema\SchemaRevalidationService
@@ -80,12 +81,8 @@ class SchemaRevalidationServiceTest extends TestCase {
 		$this->validator      = $this->createMock(ValidateObjectInterface::class);
 
 		$this->service = new SchemaRevalidationService(
-			$this->runMapper,
-			$this->runEntryMapper,
-			$this->schemaMapper,
-			$this->objectService,
-			$this->validator,
-			$this->createMock(LoggerInterface::class)
+			new SchemaPopulationRuns($this->runMapper, $this->runEntryMapper, $this->schemaMapper, $this->objectService),
+			$this->validator
 		);
 	}//end setUp()
 
@@ -139,7 +136,7 @@ class SchemaRevalidationServiceTest extends TestCase {
 
 		$this->expectException(SchemaRunConcurrencyException::class);
 		$this->expectExceptionMessage('An active run (#99) already exists for schema 1.');
-		$this->service->start(1, 2);
+		$this->service->startRevalidation(new RevalidationRequest(1, 2));
 	}//end testStartRefusesConcurrentRun()
 
 	/**
@@ -168,7 +165,7 @@ class SchemaRevalidationServiceTest extends TestCase {
 			)
 			->willReturn($created);
 
-		$this->assertSame($created, $this->service->start(1, 2, ['properties' => []], 'alice'));
+		$this->assertSame($created, $this->service->startRevalidation(new RevalidationRequest(1, 2, ['properties' => []]), 'alice'));
 	}//end testStartCreatesTheRunWithThePopulationCount()
 
 	/**
@@ -183,7 +180,7 @@ class SchemaRevalidationServiceTest extends TestCase {
 			->with($this->callback(static fn (array $a): bool => $a['total'] === 0))
 			->willReturn(new SchemaRun());
 
-		$this->service->start(1, 2);
+		$this->service->startRevalidation(new RevalidationRequest(1, 2));
 	}//end testStartCountsZeroWhenCountingFails()
 
 	/**

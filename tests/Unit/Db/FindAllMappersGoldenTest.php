@@ -214,7 +214,8 @@ final class FindAllMappersGoldenTest extends TestCase {
 	 * @return array<int, mixed>
 	 */
 	private function applicationArgs(array $args): array {
-		foreach ([2, 3, 4] as $index) {
+		$args = array_slice($args, 0, 3);
+		foreach ([2] as $index) {
 			if (array_key_exists($index, $args) === true && $args[$index] === null) {
 				$args[$index] = [];
 			}
@@ -333,9 +334,7 @@ final class FindAllMappersGoldenTest extends TestCase {
 			$this->createMock(SchemaMapper::class),
 			$this->createMock(IEventDispatcher::class),
 			$this->createMock(ContainerInterface::class),
-			$organisations,
-			$session,
-			$groups,
+			new TenancyServices($organisations, $session, $groups),
 			$this->createMock(IAppConfig::class),
 			new NullLogger()
 		);

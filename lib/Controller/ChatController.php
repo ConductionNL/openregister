@@ -33,6 +33,7 @@ use OCA\OpenRegister\Controller\Support\ChatControllerServices;
 use OCA\OpenRegister\Controller\Support\ChatFamilyControllerInterface;
 use OCA\OpenRegister\Db\Feedback;
 use OCA\OpenRegister\Db\FeedbackMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface;
@@ -538,8 +539,7 @@ class ChatController extends Controller implements ChatFamilyControllerInterface
 	private function historyPage(int $conversationId): array {
 		$messages = $this->messageMapper->findByConversation(
 			conversationId: $conversationId,
-			limit: (int)($this->request->getParam('limit') ?? 100),
-			offset: (int)($this->request->getParam('offset') ?? 0)
+			page: new ListQuery(limit: (int)($this->request->getParam('limit') ?? 100), offset: (int)($this->request->getParam('offset') ?? 0))
 		);
 
 		return [

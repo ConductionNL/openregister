@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\PropertyWriteCheck;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -559,7 +560,8 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 	private function propertyRbac(array|string $mode): PropertyRbacHandler {
 		$rbac = $this->createMock(originalClassName: PropertyRbacHandler::class);
 		$rbac->method('getUnauthorizedProperties')->willReturnCallback(
-			function (...$args) use ($mode): array {
+			function (PropertyWriteCheck $write) use ($mode): array {
+				$args = [$write->schema, $write->request->object, $write->incoming, $write->request->isCreate];
 				$this->calls[] = 'getUnauthorizedProperties '.json_encode([$args[1], $args[2], ($args[3] ?? false)]);
 				if (is_array($mode) === true) {
 					return $mode;

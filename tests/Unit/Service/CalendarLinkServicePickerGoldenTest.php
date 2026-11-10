@@ -25,6 +25,7 @@ use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Db\CalendarLinkMapper;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\CalendarLinkService;
+use OCA\OpenRegister\Service\CalendarPickerWindow;
 use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -122,7 +123,7 @@ class CalendarLinkServicePickerGoldenTest extends TestCase {
 
 		$afterValue = $after === null ? null : new DateTimeImmutable($after);
 		try {
-			$actual = ['rows' => $service->getEventsForCalendar($uri, $limit, $afterValue)];
+			$actual = ['rows' => $service->getEventsForCalendar($uri, new CalendarPickerWindow($afterValue, $limit))];
 		} catch (Throwable $e) {
 			$actual = ['error' => [get_class($e), $e->getMessage()]];
 		}

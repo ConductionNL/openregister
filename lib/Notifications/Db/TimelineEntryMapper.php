@@ -150,21 +150,6 @@ class TimelineEntryMapper extends QBMapper {
 	 * The scope's object list has three states, see {@see TimelineEntryScope}:
 	 * null does not narrow, an EMPTY list returns nothing.
 	 *
-	 * @param string             $term       The search term.
-	 * @param TimelineEntryScope $scope      The objects, kind and page size (capped at SEARCH_LIMIT).
-	 * @param string|null        $visibility The visibility the caller is entitled to, or null for both.
-	 *
-	 * @return array<int, TimelineEntry> The matching rows, newest first.
-	 *
-	 * @spec openspec/changes/timeline-entries-are-records/specs/unified-search-provider/spec.md
-	 */
-	public function search(string $term, TimelineEntryScope $scope, ?string $visibility = null): array {
-		return $this->searchEntries(search: new TimelineSearch(term: $term, scope: $scope, visibility: $visibility));
-	}//end search()
-
-	/**
-	 * Entries matching a term, across objects; see search().
-	 *
 	 * @param TimelineSearch $search The term, the scope and the visibility the caller is entitled to.
 	 *
 	 * @return array<int, TimelineEntry> The matching rows, newest first.

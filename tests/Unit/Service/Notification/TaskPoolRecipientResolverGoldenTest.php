@@ -30,6 +30,8 @@ use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Notifications\Service\PrincipalDirectory;
+use OCP\IUserSession;
 
 /**
  * Resolves one mixed candidate pool and pins the uids, their order, every
@@ -106,7 +108,7 @@ final class TaskPoolRecipientResolverGoldenTest extends TestCase {
 
 		$object = new ObjectEntity();
 		$object->setObject($payload);
-		return (new TaskPoolRecipientResolver($groupManager, $userManager, $logger))->resolve($object, []);
+		return (new TaskPoolRecipientResolver(new PrincipalDirectory($userManager, $groupManager, $this->createMock(IUserSession::class)), $logger))->resolve($object, []);
 	}//end resolve()
 
 	/**

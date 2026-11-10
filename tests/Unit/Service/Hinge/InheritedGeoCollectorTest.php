@@ -188,4 +188,23 @@ final class InheritedGeoCollectorTest extends TestCase {
 		$this->assertCount(2, $collected['features']);
 		$this->assertSame(['Point', 'ingang'], array_column(array_column($collected['features'], 'properties'), '_purpose'));
 	}
+
+	public function testAnIntegerLikePropertyNameKeepsItsKey(): void {
+		$address = $this->object('uuid-adres', [], [
+			'type' => 'Feature',
+			'geometry' => self::POINT_ADDRESS,
+			'properties' => ['7' => 'zeven'],
+		]);
+		$case = $this->object('uuid-zaak', ['adres' => 'uuid-adres']);
+
+		$collected = $this->collector(['uuid-adres' => $address])->collect(
+			$case,
+			$this->schema([Schema::GEO_INHERITANCE_ANNOTATION => ['from' => ['adres']]])
+		);
+
+		$properties = $collected['features'][0]['properties'];
+		$this->assertSame('zeven', ($properties[7] ?? null));
+		$this->assertArrayNotHasKey(0, $properties);
+		$this->assertSame('inherited', $properties['_source']);
+	}
 }

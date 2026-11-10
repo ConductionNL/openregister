@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Consumer\ConsumerSource;
 use OCA\OpenRegister\Service\Consumer\ResolvedConsumer;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rbac\TokenGrantUse;
 use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
 use OCA\OpenRegister\Service\Rbac\TokenGrantTarget;
 use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
@@ -96,11 +97,10 @@ class AuthorizationServiceConsumerGrantTest extends TestCase {
 		$cacheFactory->method('createDistributed')->willReturn($cache);
 
 		return new AuthorizationService(
-			userManager: $users,
-			userSession: $this->createMock(IUserSession::class),
+			directory: new \OCA\OpenRegister\Service\UserDirectory(session: $this->createMock(IUserSession::class), users: $users, groups: $this->createMock(\OCP\IGroupManager::class)),
 			consumerMapper: $this->createMock(ConsumerMapper::class),
 			tokenGrantSource: $grants,
-			cacheFactory: $cacheFactory,
+			cacheFactory: $cacheFactory
 		);
 	}//end service()
 
@@ -191,8 +191,7 @@ class AuthorizationServiceConsumerGrantTest extends TestCase {
 		return $handler->hasGroupPermission(
 			authorization: $narrower->narrow(
 				authorization: self::BLOCK,
-				grant: $grants->current(),
-				target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken')
+				use: new TokenGrantUse(grant: $grants->current(), target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken'))
 			),
 			groupId: 'leveranciers',
 			action: $action,

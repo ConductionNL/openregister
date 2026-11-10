@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
+use OCA\OpenRegister\Service\Rbac\AuthorizationColumn;
+use OCA\OpenRegister\Service\Rbac\GrantedRows;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use PHPUnit\Framework\TestCase;
 
@@ -73,7 +75,7 @@ class ObjectScopeReachableRowGoldenTest extends TestCase {
 		foreach ([true, false] as $isPostgres) {
 			foreach ([true, false] as $defaultPrivate) {
 				$this->assertSame(
-					$this->resolver->notPrivateSql('t._authorization', $defaultPrivate, $isPostgres),
+					$this->resolver->notPrivateSql(new AuthorizationColumn('t._authorization', $isPostgres), $defaultPrivate),
 					$this->reachable(defaultPrivate: $defaultPrivate, isPostgres: $isPostgres, quotedUuids: [])
 				);
 			}
@@ -90,7 +92,7 @@ class ObjectScopeReachableRowGoldenTest extends TestCase {
 	 */
 	public function testGrantsAreOrEdBesideTheNotPrivateTerm(): void {
 		foreach ([true, false] as $isPostgres) {
-			$notPrivate = $this->resolver->notPrivateSql('t._authorization', true, $isPostgres);
+			$notPrivate = $this->resolver->notPrivateSql(new AuthorizationColumn('t._authorization', $isPostgres), true);
 
 			$this->assertSame(
 				'(' . $notPrivate . " OR t._uuid IN ('u-1'))",
@@ -114,9 +116,8 @@ class ObjectScopeReachableRowGoldenTest extends TestCase {
 	 */
 	private function reachable(bool $defaultPrivate, bool $isPostgres, array $quotedUuids): string {
 		return $this->resolver->notPrivateOrGrantedSql(
-			notPrivateSql: $this->resolver->notPrivateSql(columnName: 't._authorization', defaultPrivate: $defaultPrivate, isPostgres: $isPostgres),
-			uuidColumn: 't._uuid',
-			quotedUuids: $quotedUuids
+			notPrivateSql: $this->resolver->notPrivateSql(column: new AuthorizationColumn(name: 't._authorization', isPostgres: $isPostgres), defaultPrivate: $defaultPrivate),
+			granted: new GrantedRows(uuidColumn: 't._uuid', quotedUuids: $quotedUuids)
 		);
 	}//end reachable()
 }//end class

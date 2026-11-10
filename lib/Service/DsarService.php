@@ -185,14 +185,27 @@ class DsarService implements DsarServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-11
 	 */
 	public function findObjectsForSubject(string $subject, ?string $type = null, string $mode = 'exact'): array {
+		return $this->findObjectsFor(query: new DsarSubjectQuery(subject: $subject, type: $type, mode: $mode));
+	}//end findObjectsForSubject()
+
+	/**
+	 * Find every object that contains personal data for a data subject, as {@see findObjectsForSubject()} describes.
+	 *
+	 * @param DsarSubjectQuery $query The subject identifier, optional GdprEntity type filter and match mode.
+	 *
+	 * @return array<int, array{object: array, gdprEntities: array}>
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-11
+	 */
+	public function findObjectsFor(DsarSubjectQuery $query): array {
 		$this->assertPrivileged();
 
-		$subject = trim($subject);
-		if ($subject === '') {
+		$query = $query->trimmed();
+		if ($query->subject === '') {
 			return [];
 		}
 
-		$hits = $this->matchEntities(subject: $subject, type: $type, mode: $mode);
+		$hits = $this->matchEntities(query: $query);
 		if ($hits === []) {
 			return [];
 		}
@@ -211,7 +224,7 @@ class DsarService implements DsarServiceInterface {
 		}//end foreach
 
 		return $envelopes;
-	}//end findObjectsForSubject()
+	}//end findObjectsFor()
 
 	/**
 	 * Soft-delete every object matching a subject (Art 17 vergetelheid).
@@ -265,24 +278,40 @@ class DsarService implements DsarServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-11
 	 */
 	public function eraseObjectsForSubject(string $subject, ?string $type = null, bool $dryRun = false): array {
+		return $this->eraseObjectsFor(query: new DsarSubjectQuery(subject: $subject, type: $type, mode: 'exact'), dryRun: $dryRun);
+	}//end eraseObjectsForSubject()
+
+	/**
+	 * Erase every object that matches a data subject, as {@see eraseObjectsForSubject()} describes.
+	 *
+	 * @param DsarSubjectQuery $query  The subject identifier and optional GdprEntity type filter (exact match).
+	 * @param bool             $dryRun When true, returns matches without erasing.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-11
+	 */
+	public function eraseObjectsFor(DsarSubjectQuery $query, bool $dryRun): array {
 		$this->assertPrivileged();
 
 		// Dedupe by canonical key: uuid (preferred) or int id (legacy).
 		$entries = array_map(
 			static fn (array $group): array => ['object_id' => $group['object_id'], 'object_uuid' => $group['object_uuid']],
-			$this->groupHitsByObject(hits: $this->matchEntities(subject: $subject, type: $type, mode: 'exact'))
+			$this->groupHitsByObject(hits: $this->matchEntities(query: $query))
 		);
 
 		$summary = [
-			'subject' => $subject,
-			'type' => $type,
+			'subject' => $query->subject,
+			'type' => $query->type,
 			'dryRun' => $dryRun,
 			'matchedCount' => count($entries),
 		];
 
 		$run = new DsarErasureRun();
 		if ($dryRun === false && $entries !== []) {
-			$run = $this->startErasure(subject: $subject);
+			$run = $this->startErasure(subject: $query->subject);
 			foreach ($entries as $entry) {
 				$this->eraseOneEntry(entry: $entry, run: $run);
 			}
@@ -295,7 +324,7 @@ class DsarService implements DsarServiceInterface {
 		// row is still there. The counts stay separate: a failure is retried, a
 		// withheld record is explained.
 		return $summary + $run->outcome();
-	}//end eraseObjectsForSubject()
+	}//end eraseObjectsFor()
 
 	/**
 	 * Erase one matched object, or record why it was not erased.
@@ -561,15 +590,16 @@ class DsarService implements DsarServiceInterface {
 	 * which PII attributes triggered the match alongside the owning
 	 * object — useful for the inzage envelope.
 	 *
-	 * @param string $subject Subject value.
-	 * @param string|null $type Optional GdprEntity type filter.
-	 * @param string $mode `exact` (default, case-insensitive
-	 *                     literal match) or `ilike`
-	 *                     (case-insensitive substring).
+	 * @param DsarSubjectQuery $query The subject value, optional GdprEntity type filter and
+	 *                                `exact` (case-insensitive literal match) or `ilike`
+	 *                                (case-insensitive substring) mode.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
-	private function matchEntities(string $subject, ?string $type, string $mode): array {
+	private function matchEntities(DsarSubjectQuery $query): array {
+		$subject = $query->subject;
+		$type    = $query->type;
+		$mode    = $query->mode;
 		try {
 			$qb = $this->db->getQueryBuilder();
 			$qb->selectDistinct(

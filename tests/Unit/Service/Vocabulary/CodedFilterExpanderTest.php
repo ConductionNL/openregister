@@ -63,10 +63,12 @@ class CodedFilterExpanderTest extends TestCase {
 		$this->schemas = $this->createMock(SchemaMapper::class);
 
 		$this->expander = new CodedFilterExpander(
-			concepts: $concepts,
-			hierarchy: new ConceptHierarchy(lifecycle: $lifecycle),
-			schemas: $this->schemas,
-			declarationFactory: new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory()
+			scheme: new \OCA\OpenRegister\Service\Vocabulary\ConceptSchemeAccess(concepts: $concepts, hierarchy: new ConceptHierarchy(lifecycle: $lifecycle), lifecycle: $lifecycle),
+			tables: new \OCA\OpenRegister\Service\Vocabulary\CodedSchemaTables(
+				schemas: $this->schemas,
+				declarations: new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory(),
+				objects: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)
+			)
 		);
 	}//end setUp()
 

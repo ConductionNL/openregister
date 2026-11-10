@@ -41,14 +41,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Db\FlowRun;
+use OCA\OpenRegister\Service\Flow\FlowExecution;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
-use OCP\IL10N;
-use OCP\IURLGenerator;
 use RuntimeException;
 use stdClass;
 use UnexpectedValueException;
@@ -77,20 +76,29 @@ class SubFlowNode extends LogicNodeBase implements IFlowNode, SubFlowNodeInterfa
 	private const STACK_KEY = 'flowStack';
 
 	/**
+	 * Turns a flow id into a document.
+	 *
+	 * @var FlowLocator
+	 */
+	private readonly FlowLocator $resolvers;
+
+	/**
+	 * Queues and executes the sub-run.
+	 *
+	 * @var FlowRunServiceInterface
+	 */
+	private readonly FlowRunServiceInterface $runs;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowLocator $resolvers Turns a flow id into a document.
-	 * @param FlowRunServiceInterface $runs Queues and executes the sub-run.
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
+	 * @param FlowExecution        $execution    Turns a flow id into a document; queues and executes the sub-run.
+	 * @param FlowNodePresentation $presentation Translations and the palette icon.
 	 */
-	public function __construct(
-		private readonly FlowLocator $resolvers,
-		private readonly FlowRunServiceInterface $runs,
-		IL10N $l10n,
-		IURLGenerator $urls,
-	) {
-		parent::__construct(l10n: $l10n, urls: $urls);
+	public function __construct(FlowExecution $execution, FlowNodePresentation $presentation) {
+		$this->resolvers = $execution->resolvers;
+		$this->runs      = $execution->runner;
+		parent::__construct(l10n: $presentation->l10n, urls: $presentation->urls);
 	}//end __construct()
 
 	/**

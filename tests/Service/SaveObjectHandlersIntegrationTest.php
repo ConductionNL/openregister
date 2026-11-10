@@ -19,6 +19,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
+use OCA\OpenRegister\Service\Object\BulkSaveOptions;
+use OCA\OpenRegister\Service\Object\SaveObject\RelationScan;
 use OCA\OpenRegister\Service\Object\CascadeTarget;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -28,6 +31,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionOptions;
+use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler;
 use OCA\OpenRegister\Service\Object\SaveObjects;
@@ -562,8 +567,7 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 
 		$result = $this->relationCascadeHandler->updateObjectRelations(
 			$object,
-			['title' => 'No relations test'],
-			$this->testSchema
+			new RelationScan(data: ['title' => 'No relations test'], schema: $this->testSchema)
 		);
 		$this->assertInstanceOf(ObjectEntity::class, $result);
 	}
@@ -580,8 +584,7 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 
 		$result = $this->relationCascadeHandler->updateObjectRelations(
 			$object,
-			['relatedItem' => $uuid],
-			$this->testSchema
+			new RelationScan(data: ['relatedItem' => $uuid], schema: $this->testSchema)
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
@@ -792,12 +795,7 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		$uuid = $object->getUuid();
 
 		$result = $this->deleteObject->deleteObject(
-			$this->testRegister,
-			$this->testSchema,
-			$uuid,
-			null,
-			false,
-			false
+			new DeletionRequest(register: $this->testRegister, schema: $this->testSchema, uuid: $uuid), _rbac: false, _multitenancy: false
 		);
 		$this->assertTrue($result);
 
@@ -819,12 +817,7 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 
 		// Pass originalObjectId to indicate cascade sub-deletion.
 		$result = $this->deleteObject->deleteObject(
-			$this->testRegister,
-			$this->testSchema,
-			$uuid,
-			'some-parent-uuid',
-			false,
-			false
+			new DeletionRequest(register: $this->testRegister, schema: $this->testSchema, uuid: $uuid, options: new DeletionOptions(originalObjectId: 'some-parent-uuid')), _rbac: false, _multitenancy: false
 		);
 		$this->assertTrue($result);
 
@@ -1006,10 +999,9 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 	public function testSaveObjectsEmpty(): void {
 		$result = $this->saveObjects->saveObjects(
 			[],
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false
+			new BulkSaveOptions(new BulkBatchDefaults($this->testRegister, $this->testSchema), validation: false, events: false, audit: true),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertIsArray($result);
@@ -1029,14 +1021,9 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 
 		$result = $this->saveObjects->saveObjects(
 			$objects,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			true,
-			true
+			new BulkSaveOptions(new BulkBatchDefaults($this->testRegister, $this->testSchema), validation: false, events: false, audit: true),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertIsArray($result);
@@ -1060,14 +1047,9 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 
 		$result = $this->saveObjects->saveObjects(
 			$objects,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			true,
-			true
+			new BulkSaveOptions(new BulkBatchDefaults($this->testRegister, $this->testSchema), validation: false, events: false, audit: true),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertIsArray($result);
@@ -1087,14 +1069,9 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 
 		$result = $this->saveObjects->saveObjects(
 			$objects,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			true,
-			true
+			new BulkSaveOptions(new BulkBatchDefaults($this->testRegister, $this->testSchema), validation: false, events: false, audit: true),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertIsArray($result);
@@ -1113,14 +1090,9 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 
 		$result = $this->saveObjects->saveObjects(
 			$objects,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			false,
-			true
+			new BulkSaveOptions(new BulkBatchDefaults($this->testRegister, $this->testSchema), validation: false, events: false, audit: true),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertIsArray($result);

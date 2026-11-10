@@ -33,29 +33,47 @@ use Psr\Log\LoggerInterface;
  * Looks a service id up in the app container, then the server container.
  *
  * The trait also owns the using class's constructor, so the three lifecycle
- * registries (guards, actions, providers) declare their identical wiring once:
- * `$container` (OR's app container), `$serverContainer` (the injected
- * IServerContainer, used instead of the static \OC::$server accessor which
- * lib/ bans) and `$logger`.
+ * registries (guards, actions, providers) declare their identical wiring once,
+ * through one ContainerLookup: OR's app container, the injected
+ * IServerContainer (used instead of the static \OC::$server accessor which
+ * lib/ bans) and the logger.
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
 trait ResolvesThroughContainers {
 
 	/**
+	 * OR app container, asked first (covers OR-internal services).
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * NC server container, the fallback for FQCN-tagged services in other apps.
+	 *
+	 * @var IServerContainer
+	 */
+	private readonly IServerContainer $serverContainer;
+
+	/**
+	 * Logger for resolution diagnostics.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ContainerInterface $container OR app container, asked first (covers OR-internal services).
-	 * @param IServerContainer $serverContainer NC server container, the fallback for FQCN-tagged services in other apps.
-	 * @param LoggerInterface $logger Logger for resolution diagnostics.
+	 * @param ContainerLookup $lookup The two containers and the logger.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function __construct(
-		private readonly ContainerInterface $container,
-		private readonly IServerContainer $serverContainer,
-		private readonly LoggerInterface $logger,
-	) {
+	public function __construct(ContainerLookup $lookup) {
+		$this->container = $lookup->container;
+		$this->serverContainer = $lookup->serverContainer;
+		$this->logger = $lookup->logger;
 	}//end __construct()
 
 	/**

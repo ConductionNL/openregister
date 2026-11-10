@@ -872,7 +872,7 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	 * @throws ProviderUnavailableException When bodies are to be withheld and the connector cannot.
 	 */
 	private function assertCanWithholdBodies(mixed $callService, bool $withholdBodies): void {
-		if ($withholdBodies === true && (new CallSignature())->accepts(service: $callService, method: 'call', name: 'withholdBodies') === false) {
+		if ($withholdBodies === true && (new CallSignature(service: $callService, method: 'call'))->accepts(name: 'withholdBodies') === false) {
 			$this->logger->info(
 				'[ExternalIntegrationRouter] The connector CallService cannot withhold bodies; the call is not made.'
 			);

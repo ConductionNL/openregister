@@ -17,6 +17,11 @@ use OCA\OpenRegister\Listener\QualityScoreOnSaveListener;
 use OCA\OpenRegister\Service\Quality\QualityScorer;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Listener\Support\EventSchemaLookup;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * The quality assessment belongs to `@self`, not to the object's data.
@@ -39,9 +44,8 @@ class QualityScoreOnSaveListenerTest extends TestCase {
 		$this->scorer = $this->createMock(QualityScorer::class);
 
 		$this->listener = new QualityScoreOnSaveListener(
-			$this->schemaMapper,
 			$this->scorer,
-			$this->createMock(LoggerInterface::class),
+			$this->eventSchemaLookup($this->schemaMapper, $this->createMock(LoggerInterface::class)),
 		);
 	}
 
@@ -152,5 +156,15 @@ class QualityScoreOnSaveListenerTest extends TestCase {
 
 		$this->assertEmpty($object->getQuality());
 		$this->assertArrayNotHasKey('qualityScore', $object->getObject());
+	}
+
+	/**
+	 * The schema lookup a listener under test resolves through.
+	 */
+	private function eventSchemaLookup(SchemaMapperInterface $schemas, LoggerInterface $logger): EventSchemaLookup {
+		return new EventSchemaLookup(
+			new SchemaCatalog($this->createMock(RegisterMapperInterface::class), $schemas, $this->createMock(MagicMapperInterface::class)),
+			$logger
+		);
 	}
 }

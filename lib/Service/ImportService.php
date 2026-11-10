@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
@@ -56,6 +57,7 @@ use OCA\OpenRegister\Service\Import\ImportValueCaster;
 use OCA\OpenRegister\Service\Import\JsonImportRows;
 use OCA\OpenRegister\Service\Import\MappedSheet;
 use OCA\OpenRegister\Service\Import\MappingErrorRow;
+use OCA\OpenRegister\Service\Import\RowImportTarget;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
 use OCP\IGroupManager;
@@ -1170,17 +1172,16 @@ class ImportService implements ObjectImporterInterface {
 	 * event-driven accumulation when events ARE enabled. Soft-fails on any
 	 * slug-resolution error (a missed hint must never break the import).
 	 *
-	 * @param Register $register The register the import saved into.
-	 * @param Schema $schema The schema the import saved into.
+	 * @param RegisterSchema $table The register and schema the import saved into.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/realtime-updates/spec.md
 	 */
-	private function queueNotifyPushCollectionHint(Register $register, Schema $schema): void {
+	private function queueNotifyPushCollectionHint(RegisterSchema $table): void {
 		try {
-			$registerSlug = (string)($register->getSlug() ?? '');
-			$schemaSlug = (string)($schema->getSlug() ?? '');
+			$registerSlug = (string)($table->register->getSlug() ?? '');
+			$schemaSlug = (string)($table->schema->getSlug() ?? '');
 			$this->runtime->pushBatch->addBatchedCollection(registerSlug: $registerSlug, schemaSlug: $schemaSlug);
 		} catch (\Throwable $e) {
 			// Slug not resolvable — skip the hint, never break the import.
@@ -1368,6 +1369,7 @@ class ImportService implements ObjectImporterInterface {
 	 */
 	private function parseCsvRows(MappedSheet $sheet, array $parse): array {
 		$parsed = ['objects' => [], 'errors' => []];
+		$table = new RegisterSchema(register: $parse['register'], schema: $parse['schema']);
 		$highestRow = $sheet->sheet->getHighestRow();
 		for ($row = 2; $row <= $highestRow; $row++) {
 			if ($this->isMappedOut(pack: $parse['pack'], row: $row) === true) {
@@ -1376,7 +1378,7 @@ class ImportService implements ObjectImporterInterface {
 
 			$rowData = $this->extractRowData(sheet: $sheet, row: $row);
 			if (empty($rowData) === false) {
-				$this->parseCsvRow(parsed: $parsed, line: ['parse' => $parse, 'row' => $row, 'data' => $rowData]);
+				$this->parseCsvRow(parsed: $parsed, line: ['parse' => $parse, 'table' => $table, 'row' => $row, 'data' => $rowData]);
 			}
 		}
 
@@ -1401,7 +1403,7 @@ class ImportService implements ObjectImporterInterface {
 	 * Add one row to the parse result: its mapping errors, or its object.
 	 *
 	 * @param array $parsed The parse result, changed in place.
-	 * @param array $line   `parse`: the parse settings, `row`: the row number, `data`: the row data.
+	 * @param array $line   `parse`: the parse settings, `table`: the register and schema, `row`: the row number, `data`: the row data.
 	 *
 	 * @return void
 	 *
@@ -1423,12 +1425,8 @@ class ImportService implements ObjectImporterInterface {
 			$rowData = $mapped['data'];
 		}
 
-		$parsed['objects'][] = $this->transformCsvRowToObject(
-			rowData: $rowData,
-			register: $parse['register'],
-			schema: $parse['schema'],
-			currentUser: $parse['currentUser']
-		);
+		$target = new RowImportTarget(table: $line['table'], importer: $parse['currentUser']);
+		$parsed['objects'][] = $this->transformCsvRow(rowData: $rowData, target: $target);
 	}//end parseCsvRow()
 
 	/**
@@ -1538,7 +1536,7 @@ class ImportService implements ObjectImporterInterface {
 				|| empty($saveResult['saved'] ?? []) === false
 				|| empty($saveResult['updated'] ?? []) === false;
 			if ($collectionChanged === true) {
-				$this->queueNotifyPushCollectionHint(register: $import['register'], schema: $import['schema']);
+				$this->queueNotifyPushCollectionHint(table: new RegisterSchema(register: $import['register'], schema: $import['schema']));
 			}
 
 			// Flush BEFORE disabling batch mode — setBatchMode(false) clears the accumulator.
@@ -1693,53 +1691,45 @@ class ImportService implements ObjectImporterInterface {
 	}//end buildDryRunSummary()
 
 	/**
-	 * Transform CSV row data to object format for batch saving
-	 *
-	 * @param array $rowData Row data from CSV
-	 * @param Register $register The register
-	 * @param Schema $schema The schema
-	 * @param IUser|null $currentUser The current user performing the import
-	 *
-	 * @return ((int|mixed|string)[]|mixed)[]
-	 *
-	 * @psalm-return array{'@self': array<string, int|mixed|string>,...}
+	 * Transform a CSV row to object format for batch saving, for one register and schema.
 	 *
 	 * Public because the previewed import maps its rows through this exact
 	 * method. A preview produced by a second transform would be a preview of
 	 * something other than what the write does, which is the failure D-1
 	 * exists to prevent.
 	 *
+	 * @param array           $rowData Row data from CSV
+	 * @param RowImportTarget $target  The register and schema, and the importing user
+	 *
+	 * @return array<string, mixed> The object, with its `@self` section
+	 *
 	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
 	 */
-	public function transformCsvRowToObject(
-		array $rowData,
-		Register $register,
-		Schema $schema,
-		?IUser $currentUser = null,
-	): array {
-		$isAdmin = $this->isRowImporterAdmin(user: $currentUser);
+	public function transformCsvRow(array $rowData, RowImportTarget $target): array {
+		$isAdmin = $this->isRowImporterAdmin(user: $target->importer);
+		$table = $target->table;
 
 		// Translatable-property pre-pass (register-i18n Phase 3 wire-in):
 		// turn flat `field_lang` columns into the nested `field: {lang: value}`
 		// shape the rest of the save pipeline expects. The codec is
 		// tolerant of empty cells and unrelated underscore-suffixed
 		// columns; the rest of this method sees the un-flattened shape.
-		$rowData = $this->codecs->translationCsvCodec->unflattenFromCsv($rowData, $schema);
+		$rowData = $this->codecs->translationCsvCodec->unflattenFromCsv($rowData, $table->schema);
 
 		[$selfColumns, $columns] = $this->splitRowColumns(rowData: $rowData, isAdmin: $isAdmin);
-		$selfData = array_replace(['register' => $register->getId(), 'schema' => $schema->getId()], $selfColumns);
+		$selfData = array_replace(['register' => $table->register->getId(), 'schema' => $table->schema->getId()], $selfColumns);
 		if (empty($rowData['id']) === false) {
 			$selfData['id'] = $rowData['id'];
 		}
 
-		$objectData = $this->typedColumns(columns: $columns, schema: $schema);
+		$objectData = $this->typedColumns(columns: $columns, schema: $table->schema);
 		$objectData['@self'] = $selfData;
 
 		// Validate that we're not accidentally creating invalid properties.
-		$this->validateObjectProperties(objectData: $objectData, _schemaId: (string)$schema->getId());
+		$this->validateObjectProperties(objectData: $objectData, _schemaId: (string)$table->schema->getId());
 
 		return $objectData;
-	}//end transformCsvRowToObject()
+	}//end transformCsvRow()
 
 	/**
 	 * Split the filled cells of a row into `@self` values and object properties.

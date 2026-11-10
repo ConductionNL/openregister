@@ -127,11 +127,11 @@ class ReferentialIntegrityArchivalCascadeTest extends TestCase {
 		$this->service = new ReferentialIntegrityService(
 			index: new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $this->nullCacheFactory()),
 			storage: new IntegrityStorage(objectEntityMapper: $this->objectMapper, db: $this->createMock(IDBConnection::class)),
-			controls: new IntegrityCascadeControls(auditTrailMapper: $this->auditTrailMapper, archivalGuard: new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class))),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $this->auditTrailMapper, archivalGuard: new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($schemaMapper, $this->createMock(LoggerInterface::class)))),
 			logger: $this->createMock(LoggerInterface::class)
 		);
 
-		$this->auditTrailMapper->method('buildAuditTrail')->willReturnCallback(
+		$this->auditTrailMapper->method('buildEntry')->willReturnCallback(
 			static function (): AuditTrail {
 				return new AuditTrail();
 			}

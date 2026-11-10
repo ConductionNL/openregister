@@ -94,29 +94,28 @@ class SeedVersionLedger {
 	}//end shipped()
 
 	/**
-	 * Record the version a seed was shipped at, when it differs from the recorded one.
+	 * Record the versions seeds were shipped at, each only when it differs from the recorded one.
 	 *
 	 * Kept in memory until {@see self::flush()}: an app ships up to a hundred and more seeds in one import,
 	 * and rewriting the whole map once per seed made the import quadratic in the map's size.
 	 *
-	 * @param string $appId   The importing app id.
-	 * @param string $seed    The seed's identity: register id, schema id and slug.
-	 * @param string $version The shipped version.
+	 * @param string                $appId    The importing app id.
+	 * @param array<string, string> $versions Seed identity (register id, schema id and slug) to shipped version.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function record(string $appId, string $seed, string $version): void {
+	public function recordVersions(string $appId, array $versions): void {
 		$map = $this->map(appId: $appId);
-		if (($map[$seed] ?? null) === $version) {
-			return;
+		foreach ($versions as $seed => $version) {
+			if (($map[$seed] ?? null) !== $version) {
+				$map[$seed] = $version;
+				$this->maps[$appId] = $map;
+				$this->dirty[$appId] = true;
+			}
 		}
-
-		$map[$seed] = $version;
-		$this->maps[$appId] = $map;
-		$this->dirty[$appId] = true;
-	}//end record()
+	}//end recordVersions()
 
 	/**
 	 * Write every map that changed, once per app id.

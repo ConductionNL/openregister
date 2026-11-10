@@ -35,9 +35,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Deletion;
 
+use OCA\OpenRegister\Db\AuditTrail\ActionScope;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Edepot\AuditRecording;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -55,6 +57,20 @@ use Throwable;
  */
 class DestructionScopeService {
 	/**
+	 * Versions and content-bearing audit rows.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
+	 * PSR logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Wire the sources a scope member can be counted and destroyed through.
 	 *
 	 * Each is optional so the service stays constructible in a unit test and
@@ -62,19 +78,19 @@ class DestructionScopeService {
 	 * source is missing is reported unavailable and refuses, never silently
 	 * counted as zero.
 	 *
-	 * @param AuditTrailMapperInterface                  $auditTrailMapper Versions and content-bearing audit rows.
-	 * @param LoggerInterface                   $logger           PSR logger.
-	 * @param DestructionScopeReader            $reader           Reads the scope a schema declares.
+	 * @param AuditRecording        $audit      Versions and content-bearing audit rows, and the PSR logger.
+	 * @param DestructionScopeReader $reader     Reads the scope a schema declares.
 	 * @param DestructionCompanions $companions The notes, files, tasks and relations that go with a destroyed object.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly LoggerInterface $logger,
+		AuditRecording $audit,
 		private readonly DestructionScopeReader $reader,
 		private readonly DestructionCompanions $companions,
 	) {
+		$this->auditTrailMapper = $audit->auditTrailMapper;
+		$this->logger           = $audit->logger;
 	}//end __construct()
 
 	/**
@@ -153,7 +169,7 @@ class DestructionScopeService {
 		$total = 0;
 		foreach ($preview['scope'] as $member) {
 			try {
-				$went = $this->destroyMember(member: $member, object: $object, expected: ($preview['counts'][$member] ?? 0));
+				$went = $this->destroyMember(member: new ScopeMember(name: $member, expected: ($preview['counts'][$member] ?? 0)), object: $object);
 				$destroyed[$member] = $went;
 				$total += $went;
 			} catch (Throwable $e) {
@@ -208,15 +224,13 @@ class DestructionScopeService {
 
 		try {
 			return match ($member) {
-				DestructionScope::VERSIONS => $this->auditTrailMapper->countForObject(
+				DestructionScope::VERSIONS => $this->auditTrailMapper->countObjectTrail(
 					objectUuid: $uuid,
-					onlyActions: DestructionScope::VERSION_ACTIONS,
-					excludeActions: DestructionScope::EVIDENCE_ACTIONS
+					scope: new ActionScope(onlyActions: DestructionScope::VERSION_ACTIONS, excludeActions: DestructionScope::EVIDENCE_ACTIONS)
 				),
-				DestructionScope::AUDIT_CONTENT => $this->auditTrailMapper->countForObject(
+				DestructionScope::AUDIT_CONTENT => $this->auditTrailMapper->countObjectTrail(
 					objectUuid: $uuid,
-					onlyActions: null,
-					excludeActions: DestructionScope::EVIDENCE_ACTIONS
+					scope: new ActionScope(onlyActions: null, excludeActions: DestructionScope::EVIDENCE_ACTIONS)
 				),
 				DestructionScope::NOTES => $this->companions->noteService?->countNotesForObject($uuid) ?? 0,
 				DestructionScope::FILES => count($this->companions->fileService?->getFiles($object) ?? []),
@@ -240,27 +254,25 @@ class DestructionScopeService {
 	/**
 	 * Destroy one scope member and report how many rows went.
 	 *
-	 * @param string       $member   The declared member.
-	 * @param ObjectEntity $object   The object.
-	 * @param int          $expected The count the preview promised.
+	 * @param ScopeMember  $member The declared member and the count the preview promised.
+	 * @param ObjectEntity $object The object.
 	 *
 	 * @return int The number destroyed.
 	 *
 	 * @throws Throwable When the source fails.
 	 */
-	private function destroyMember(string $member, ObjectEntity $object, int $expected): int {
-		$uuid = (string)$object->getUuid();
+	private function destroyMember(ScopeMember $member, ObjectEntity $object): int {
+		$uuid     = (string)$object->getUuid();
+		$expected = $member->expected;
 
-		return match ($member) {
-			DestructionScope::VERSIONS => $this->auditTrailMapper->tombstoneForObject(
+		return match ($member->name) {
+			DestructionScope::VERSIONS => $this->auditTrailMapper->tombstoneObjectTrail(
 				objectUuid: $uuid,
-				onlyActions: DestructionScope::VERSION_ACTIONS,
-				excludeActions: DestructionScope::EVIDENCE_ACTIONS
+				scope: new ActionScope(onlyActions: DestructionScope::VERSION_ACTIONS, excludeActions: DestructionScope::EVIDENCE_ACTIONS)
 			),
-			DestructionScope::AUDIT_CONTENT => $this->auditTrailMapper->tombstoneForObject(
+			DestructionScope::AUDIT_CONTENT => $this->auditTrailMapper->tombstoneObjectTrail(
 				objectUuid: $uuid,
-				onlyActions: null,
-				excludeActions: DestructionScope::EVIDENCE_ACTIONS
+				scope: new ActionScope(onlyActions: null, excludeActions: DestructionScope::EVIDENCE_ACTIONS)
 			),
 			DestructionScope::NOTES => $this->destroyNotes(uuid: $uuid, expected: $expected),
 			DestructionScope::FILES => $this->destroyFiles(object: $object, expected: $expected),

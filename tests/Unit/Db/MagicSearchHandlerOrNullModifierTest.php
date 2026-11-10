@@ -44,6 +44,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
 
 /**
  * Locks `orNull` on every list-search builder, and that `ne` keeps its meaning.
@@ -174,7 +175,7 @@ class MagicSearchHandlerOrNullModifierTest extends TestCase {
 	 */
 	private function qbObject(array $filters): array {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applyObjectFilters');
-		$method->invoke($this->handler, $this->makeQueryBuilder(), $filters, $this->makeSchema());
+		$method->invoke($this->handler, new TableFilterRun(qb: $this->makeQueryBuilder(), query: [], table: new MagicReadTable(schema: $this->makeSchema())), $filters);
 		return $this->captured;
 	}//end qbObject()
 
