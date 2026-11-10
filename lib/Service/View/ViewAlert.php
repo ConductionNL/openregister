@@ -432,16 +432,8 @@ final class ViewAlert implements JsonSerializable {
 	 * @throws InvalidViewAlertException When it is not a list of strings.
 	 */
 	private static function stringList(mixed $raw, string $field): array {
-		if (is_string($raw) === true) {
-			$raw = [$raw];
-		}
-
-		if (is_array($raw) === false) {
-			throw new InvalidViewAlertException(field: $field, message: sprintf('%s: expected a list of names.', $field));
-		}
-
 		$list = [];
-		foreach ($raw as $entry) {
+		foreach (self::asList(raw: $raw, field: $field) as $entry) {
 			$name = self::nameIn(entry: $entry, field: $field);
 			if ($name !== '' && in_array($name, $list, true) === false) {
 				$list[] = $name;
@@ -450,6 +442,28 @@ final class ViewAlert implements JsonSerializable {
 
 		return $list;
 	}//end stringList()
+
+	/**
+	 * The declared value as a list: a lone string becomes a list of one.
+	 *
+	 * @param mixed  $raw   The declared value.
+	 * @param string $field The field name, for the refusal.
+	 *
+	 * @return array<int|string, mixed> The entries, unchecked.
+	 *
+	 * @throws InvalidViewAlertException When it is neither a string nor a list.
+	 */
+	private static function asList(mixed $raw, string $field): array {
+		if (is_string($raw) === true) {
+			return [$raw];
+		}
+
+		if (is_array($raw) === false) {
+			throw new InvalidViewAlertException(field: $field, message: sprintf('%s: expected a list of names.', $field));
+		}
+
+		return $raw;
+	}//end asList()
 
 	/**
 	 * One entry of a list of names, trimmed, or a refusal naming the field.
