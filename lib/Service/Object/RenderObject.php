@@ -239,7 +239,7 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		try {
-			$register = $this->stores->mappers->registerMapper->find($id);
+			$register = $this->stores->mappers->catalog->registers()->find($id);
 			// Cache the result.
 			$this->registersCache[$id] = $register;
 			return $register;
@@ -266,7 +266,7 @@ class RenderObject implements RenderObjectInterface {
 		try {
 			// Bypass multi-tenancy for internal schema resolution — schemas must always
 			// be accessible when resolving references, regardless of the current user's organization.
-			$schema = $this->stores->mappers->schemaMapper->find($id, _multitenancy: false);
+			$schema = $this->stores->mappers->catalog->schemas()->find($id, _multitenancy: false);
 			// Cache the result.
 			$this->schemasCache[$id] = $schema;
 			return $schema;
@@ -2619,7 +2619,7 @@ class RenderObject implements RenderObjectInterface {
 	 */
 	private function extendReads(): ExtendTargetReads {
 		$this->extendTargetReads ??= new ExtendTargetReads(
-			mapper: $this->stores->mappers->objectEntityMapper,
+			mapper: $this->stores->mappers->catalog->tables(),
 			mayRead: fn (ObjectEntity $object): bool => $this->mayReadInverse(object: $object)
 		);
 
@@ -4711,7 +4711,7 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		$this->inverseSupport = new InverseRenderSupport(
-			mapper: $this->stores->mappers->objectEntityMapper,
+			mapper: $this->stores->mappers->catalog->tables(),
 			logger: $this->runtime->logger,
 			schemas: new InverseSchemaLookups(
 				find: fn (int|string $id): ?Schema => $this->getSchema(id: $id),
@@ -4805,7 +4805,7 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		try {
-			return (string)$this->stores->mappers->schemaMapper->find($reference)->getId();
+			return (string)$this->stores->mappers->catalog->schemas()->find($reference)->getId();
 		} catch (\Exception $e) {
 			return null;
 		}
@@ -4832,7 +4832,7 @@ class RenderObject implements RenderObjectInterface {
 		$lastSegment = strtolower(preg_replace('/#.*$/', '', $lastSegment));
 
 		try {
-			$schemas = $this->stores->mappers->schemaMapper->findAll(_rbac: false, _multitenancy: false);
+			$schemas = $this->stores->mappers->catalog->schemas()->findAll(_rbac: false, _multitenancy: false);
 		} catch (\Exception $e) {
 			return null;
 		}
@@ -4857,7 +4857,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function schemaIdBySlug(string $slug): ?string {
-		$schemas = $this->stores->mappers->schemaMapper->findAll(filters: ['slug' => $slug], _rbac: false, _multitenancy: false);
+		$schemas = $this->stores->mappers->catalog->schemas()->findAll(filters: ['slug' => $slug], _rbac: false, _multitenancy: false);
 		if (count($schemas) === 1) {
 			return (string)array_shift($schemas)->getId();
 		}
