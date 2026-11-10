@@ -18,7 +18,7 @@ final class FlowTimerDiagnosticControllerFactory {
 	/**
 	 * The constructor arguments of FlowTimerDiagnosticController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Unused; kept so existing calls still fit.
 	 * @param IRequest $request Constructor argument.
 	 * @param IUserSession $userSession Constructor argument.
 	 * @param IGroupManager $groupManager Constructor argument.
@@ -36,7 +36,6 @@ final class FlowTimerDiagnosticControllerFactory {
 		\OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinitionsInterface $calendars = new \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars(),
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\FlowTimerDiagnosticControllerServices(
 				userSession: $userSession,

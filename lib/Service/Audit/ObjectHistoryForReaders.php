@@ -120,8 +120,8 @@ class ObjectHistoryForReaders implements ObjectHistoryForReadersInterface {
 			return null;
 		}
 
-		$schemaEntity = $this->readerSchema(object: $object);
-		if ($schemaEntity === null) {
+		$readable = $this->readerObject(object: $object);
+		if ($readable === null) {
 			return null;
 		}
 
@@ -138,7 +138,7 @@ class ObjectHistoryForReaders implements ObjectHistoryForReadersInterface {
 
 		$rows = $this->services->auditTrailMapper->findAll(filters: $filters, sort: $sort);
 
-		$entries = $this->services->redactor->redact(rows: $rows, schema: $schemaEntity, object: $object);
+		$entries = $this->services->redactor->redact(rows: $rows, readable: $readable);
 
 		// Who read the object is shown only to the groups named for it, and
 		// dropped before paging so the totals count what the reader is given.
@@ -183,16 +183,16 @@ class ObjectHistoryForReaders implements ObjectHistoryForReadersInterface {
 			return null;
 		}
 
-		$schemaEntity = $this->readerSchema(object: $object);
-		if ($schemaEntity === null) {
+		$readable = $this->readerObject(object: $object);
+		if ($readable === null) {
 			return null;
 		}
 
-		return $this->services->redactor->redact(rows: $rows, schema: $schemaEntity, object: $object);
+		return $this->services->redactor->redact(rows: $rows, readable: $readable);
 	}//end readerEntries()
 
 	/**
-	 * The schema a readable object's entries are redacted with, after the doelbinding guard.
+	 * A readable object with the schema its entries are redacted with, after the doelbinding guard.
 	 *
 	 * Every unknown hides: without the schema the property rules cannot be
 	 * applied, and an unfiltered history is the leak this prevents. The guard
@@ -201,11 +201,11 @@ class ObjectHistoryForReaders implements ObjectHistoryForReadersInterface {
 	 *
 	 * @param ObjectEntity $object An object the read check returned.
 	 *
-	 * @return Schema|null The schema, or null when the object's uuid, schema or register does not resolve.
+	 * @return ReadableObject|null The object and its schema, or null when the object's uuid, schema or register does not resolve.
 	 *
 	 * @throws PurposeRefusedException When the schema asks for a purpose and none usable was named.
 	 */
-	private function readerSchema(ObjectEntity $object): ?Schema {
+	private function readerObject(ObjectEntity $object): ?ReadableObject {
 		$objectUuid = $object->getUuid();
 		$schemaEntity = $this->access->schemaOf(object: $object);
 		if ($objectUuid === null || $objectUuid === '' || $schemaEntity === null) {
@@ -219,8 +219,8 @@ class ObjectHistoryForReaders implements ObjectHistoryForReadersInterface {
 
 		$this->enforcePurpose(register: $registerEntity, schema: $schemaEntity);
 
-		return $schemaEntity;
-	}//end readerSchema()
+		return new ReadableObject(object: $object, schema: $schemaEntity);
+	}//end readerObject()
 
 	/**
 	 * Run the doelbinding guard once per register and schema in this request.

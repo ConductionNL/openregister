@@ -18,7 +18,7 @@ final class DsarControllerFactory {
 	/**
 	 * The constructor arguments of DsarController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param DsarService $dsarService Constructor argument.
 	 * @param AvgComplianceService $complianceService Constructor argument.
@@ -36,7 +36,6 @@ final class DsarControllerFactory {
 		\OCP\IGroupManager $groupManager,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\DsarControllerServices(
 				dsarService: $dsarService,

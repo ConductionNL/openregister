@@ -49,7 +49,6 @@ final class FlowPrincipalControllerTest extends TestCase {
 		$principals->method('types')->willReturn(['agent', 'group', 'position', 'user']);
 
 		$controller = new FlowPrincipalController(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$principals
 		);
@@ -74,7 +73,6 @@ final class FlowPrincipalControllerTest extends TestCase {
 		$principals->method('types')->willReturn([]);
 
 		$controller = new FlowPrincipalController(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$principals
 		);

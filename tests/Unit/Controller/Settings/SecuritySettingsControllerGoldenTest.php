@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\SecuritySettingsControllerServices;
 use OCA\OpenRegister\Controller\Settings\SecuritySettingsController;
 use OCA\OpenRegister\Service\SecurityService;
 use OCP\IRequest;
@@ -58,7 +59,7 @@ class SecuritySettingsControllerGoldenTest extends TestCase {
 			});
 		}
 
-		$this->controller = new SecuritySettingsController('openregister', $this->request, $this->security, $this->logger);
+		$this->controller = new SecuritySettingsController($this->request, new SecuritySettingsControllerServices($this->security, $this->logger));
 	}//end setUp()
 
 	/**
@@ -90,7 +91,7 @@ class SecuritySettingsControllerGoldenTest extends TestCase {
 		$this->params(['ip' => '10.0.0.1']);
 		$this->security = $this->createMock(SecurityService::class);
 		$this->security->method('clearIpRateLimits')->willThrowException(new Exception('boom'));
-		$controller = new SecuritySettingsController('openregister', $this->request, $this->security, $this->logger);
+		$controller = new SecuritySettingsController($this->request, new SecuritySettingsControllerServices($this->security, $this->logger));
 		$response = $controller->clearIpRateLimits();
 		$this->assertSame(500, $response->getStatus());
 		$this->assertSame(['error' => 'boom'], $response->getData());
@@ -118,7 +119,7 @@ class SecuritySettingsControllerGoldenTest extends TestCase {
 		$this->params(['username' => 'alice']);
 		$this->security = $this->createMock(SecurityService::class);
 		$this->security->method('clearUserRateLimits')->willThrowException(new Exception('nope'));
-		$controller = new SecuritySettingsController('openregister', $this->request, $this->security, $this->logger);
+		$controller = new SecuritySettingsController($this->request, new SecuritySettingsControllerServices($this->security, $this->logger));
 		$response = $controller->clearUserRateLimits();
 		$this->assertSame(500, $response->getStatus());
 		$this->assertSame(['error' => 'nope'], $response->getData());
@@ -164,7 +165,7 @@ class SecuritySettingsControllerGoldenTest extends TestCase {
 		$this->params(['ip' => '10.0.0.4', 'username' => 'carol']);
 		$this->security = $this->createMock(SecurityService::class);
 		$this->security->method('clearUserRateLimits')->willThrowException(new Exception('down'));
-		$controller = new SecuritySettingsController('openregister', $this->request, $this->security, $this->logger);
+		$controller = new SecuritySettingsController($this->request, new SecuritySettingsControllerServices($this->security, $this->logger));
 		$response = $controller->clearAllRateLimits();
 		$this->assertSame(500, $response->getStatus());
 		$this->assertSame(['error' => 'down'], $response->getData());

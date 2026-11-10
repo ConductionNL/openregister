@@ -22,9 +22,7 @@ class SearchControllerTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 		$this->objectService = $this->createMock(ObjectService::class);
 
-		$this->controller = new SearchController(
-			'openregister',
-			$this->request,
+		$this->controller = new SearchController($this->request,
 			$this->objectService
 		);
 	}
