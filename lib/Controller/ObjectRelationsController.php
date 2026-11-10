@@ -47,6 +47,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Export\ExportGateInterface;
 use OCA\OpenRegister\Service\Object\ObjectReadAccessInterface;
+use OCA\OpenRegister\Service\Relation\GraphExportOptions;
 use OCA\OpenRegister\Service\Relation\AffectedSetQuery;
 use OCA\OpenRegister\Service\Relation\AffectedSets;
 use OCA\OpenRegister\Service\Relation\ExternalLink;
@@ -837,8 +838,7 @@ class ObjectRelationsController extends Controller {
 		return $this->purposeScope->narrow(
 			graph: $this->graphs->graph(
 				rootUuid: (string)$object->getUuid(),
-				depth: $this->params->depth(),
-				language: $this->params->language()
+				options: new GraphExportOptions(depth: $this->params->depth(), language: $this->params->language())
 			)
 		);
 	}//end graphWithinPurpose()

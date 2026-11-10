@@ -122,7 +122,7 @@ class RelationGraphServiceTest extends TestCase {
 	public function testADepthTwoRequestReturnsTheObjectsAndTheirTypedEdges(): void {
 		$service = $this->service(['a' => ['b'], 'b' => ['c'], 'c' => []]);
 
-		$graph = $service->graph(rootUuid: 'a', depth: 2);
+		$graph = $service->graph(rootUuid: 'a', options: new GraphExportOptions(depth: 2));
 
 		$this->assertSame('a', $graph['root']);
 		$this->assertSame(2, $graph['depth']);
@@ -146,7 +146,7 @@ class RelationGraphServiceTest extends TestCase {
 	public function testAWalkThatStillHadSomewhereToGoIsMarkedTruncated(): void {
 		$service = $this->service(['a' => ['b'], 'b' => ['c'], 'c' => ['d'], 'd' => []]);
 
-		$graph = $service->graph(rootUuid: 'a', depth: 1);
+		$graph = $service->graph(rootUuid: 'a', options: new GraphExportOptions(depth: 1));
 
 		$this->assertSame(['a', 'b'], array_column($graph['nodes'], 'uuid'));
 		$this->assertTrue($graph['truncated']);
@@ -159,7 +159,7 @@ class RelationGraphServiceTest extends TestCase {
 	public function testARequestAtTheMaximumThatReachesEverythingIsNotTruncated(): void {
 		$service = $this->service(['a' => ['b'], 'b' => ['c'], 'c' => []], maxDepth: 2);
 
-		$graph = $service->graph(rootUuid: 'a', depth: 2);
+		$graph = $service->graph(rootUuid: 'a', options: new GraphExportOptions(depth: 2));
 
 		$this->assertSame(['a', 'b', 'c'], array_column($graph['nodes'], 'uuid'));
 		$this->assertFalse($graph['truncated']);
@@ -180,7 +180,7 @@ class RelationGraphServiceTest extends TestCase {
 			maxDepth: 2
 		);
 
-		$graph = $service->graph(rootUuid: 'a', depth: 9);
+		$graph = $service->graph(rootUuid: 'a', options: new GraphExportOptions(depth: 9));
 
 		$this->assertSame(9, $graph['requestedDepth']);
 		$this->assertSame(2, $graph['maxDepth']);
@@ -202,7 +202,7 @@ class RelationGraphServiceTest extends TestCase {
 			maxNodes: 2
 		);
 
-		$graph = $service->graph(rootUuid: 'a', depth: 5);
+		$graph = $service->graph(rootUuid: 'a', options: new GraphExportOptions(depth: 5));
 
 		$this->assertCount(2, $graph['nodes']);
 		$this->assertTrue($graph['truncated']);
@@ -216,7 +216,7 @@ class RelationGraphServiceTest extends TestCase {
 	public function testACycleTerminates(): void {
 		$service = $this->service(['a' => ['b'], 'b' => ['a']], maxDepth: 5);
 
-		$graph = $service->graph(rootUuid: 'a', depth: 5);
+		$graph = $service->graph(rootUuid: 'a', options: new GraphExportOptions(depth: 5));
 
 		$this->assertSame(['a', 'b'], array_column($graph['nodes'], 'uuid'));
 		$this->assertCount(2, $graph['edges']);
@@ -230,7 +230,7 @@ class RelationGraphServiceTest extends TestCase {
 	public function testAnUnreadableNodeStillAppears(): void {
 		$service = $this->service(['a' => ['gone']]);
 
-		$graph = $service->graph(rootUuid: 'a', depth: 1);
+		$graph = $service->graph(rootUuid: 'a', options: new GraphExportOptions(depth: 1));
 
 		$this->assertSame(['a', 'gone'], array_column($graph['nodes'], 'uuid'));
 		$this->assertTrue($graph['nodes'][0]['resolved']);
@@ -262,7 +262,7 @@ class RelationGraphServiceTest extends TestCase {
 			]
 		);
 
-		$graph = $this->service(['a' => []], stored: [$external])->graph(rootUuid: 'a', depth: 1);
+		$graph = $this->service(['a' => []], stored: [$external])->graph(rootUuid: 'a', options: new GraphExportOptions(depth: 1));
 
 		$node = null;
 		foreach ($graph['nodes'] as $candidate) {
@@ -338,7 +338,7 @@ class RelationGraphServiceTest extends TestCase {
 	 * A request above the maximum is marked even when the chain ends exactly at the maximum.
 	 */
 	public function testARequestAboveTheMaximumIsMarkedEvenWhenNothingIsLeft(): void {
-		$graph = $this->service(['a' => ['b'], 'b' => ['c'], 'c' => []], maxDepth: 2)->graph(rootUuid: 'a', depth: 9);
+		$graph = $this->service(['a' => ['b'], 'b' => ['c'], 'c' => []], maxDepth: 2)->graph(rootUuid: 'a', options: new GraphExportOptions(depth: 9));
 
 		$this->assertSame(['a', 'b', 'c'], array_column($graph['nodes'], 'uuid'));
 		$this->assertSame(RelationGraphService::TRUNCATED_DEPTH, $graph['truncatedBy']);
@@ -349,7 +349,7 @@ class RelationGraphServiceTest extends TestCase {
 	 */
 	public function testTheNodeCapStopsTheWalkForTheLevelsAfterIt(): void {
 		$graph = $this->service(['a' => ['b', 'c'], 'b' => ['d'], 'c' => [], 'd' => []], maxDepth: 5, maxNodes: 2)
-			->graph(rootUuid: 'a', depth: 3);
+			->graph(rootUuid: 'a', options: new GraphExportOptions(depth: 3));
 
 		$this->assertSame(['a', 'b'], array_column($graph['nodes'], 'uuid'));
 		$this->assertSame([['a', 'b'], ['a', 'c']], array_map(static fn (array $e): array => [$e['from'], $e['to']], $graph['edges']));
@@ -360,7 +360,7 @@ class RelationGraphServiceTest extends TestCase {
 	 * The same edge read twice is listed once.
 	 */
 	public function testADuplicateEdgeIsListedOnce(): void {
-		$graph = $this->service(['a' => ['b', 'b'], 'b' => []])->graph(rootUuid: 'a', depth: 1);
+		$graph = $this->service(['a' => ['b', 'b'], 'b' => []])->graph(rootUuid: 'a', options: new GraphExportOptions(depth: 1));
 
 		$this->assertCount(1, $graph['edges']);
 		$this->assertSame(['a', 'b'], array_column($graph['nodes'], 'uuid'));
@@ -373,7 +373,7 @@ class RelationGraphServiceTest extends TestCase {
 		$row = new ObjectRelation();
 		$row->hydrate(['sourceUuid' => 'z', 'targetUuid' => 'a', 'kind' => 'object', 'origin' => ObjectRelation::ORIGIN_MANUAL, 'label' => 'hoort bij']);
 
-		$graph = $this->service(['a' => [], 'z' => []], stored: [$row], bothEnds: true)->graph(rootUuid: 'a', depth: 1);
+		$graph = $this->service(['a' => [], 'z' => []], stored: [$row], bothEnds: true)->graph(rootUuid: 'a', options: new GraphExportOptions(depth: 1));
 
 		$this->assertSame(['a', 'z'], array_column($graph['nodes'], 'uuid'));
 		$this->assertSame([[1 => 'z']], array_map(static fn (array $n): array => [$n['distance'] => $n['uuid']], array_slice($graph['nodes'], 1)));
@@ -395,7 +395,7 @@ class RelationGraphServiceTest extends TestCase {
 			]
 		);
 
-		$graph = $this->service(['a' => ['b'], 'b' => []], stored: [$external])->graph(rootUuid: 'a', depth: 2);
+		$graph = $this->service(['a' => ['b'], 'b' => []], stored: [$external])->graph(rootUuid: 'a', options: new GraphExportOptions(depth: 2));
 
 		$this->assertSame([0, 1, 2], array_column($graph['nodes'], 'distance'));
 	}//end testAnExternalAddressFurtherOutHasItsDistance()
