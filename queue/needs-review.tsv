@@ -1,21 +1,13 @@
 # pr	head	last_approved	reason
-8451	540080dc51db11bf88c9d93f869d01b79637cbe1	2bc35835911f6920a27cdd90ce16ea3e7c760db5	access title, path or words
 8502	fcb201fa8a15ab692dfdaf21cac70234546d38ef	3ff5ec88b7d1eae7f8ab104585996b4eaa83ff6c	access title, path or words
 8539	5ee22aa98f31458cb9d2abe123f1fd69cc7383f3	03e7953dac14f3386d0b8ff8e07ae67a77001442	access title, path or words
 8548	39670121438b0d699275da3ed3732b9773b12ea0	385ce6f73cefad30ace1b15be80e1ebb2a097791	access title, path or words
-8634	a66f90d2531ad752f683686c9fe518291975aa22	-	access title, path or words
 8689	76e326185dca7aa1c8c4287bd4619b38822875bc	67cc7de7330458b22b29b0e824cee5c5f72966bd	access title, path or words
 8692	444c8fa52b76971ae37425ad5cd101ce09992f18	-	access title, path or words
 8726	7c40baf16348e8ced130bcefcc478daf0ef71e42	-	access title, path or words
-8762	6b206fba5cfa49142c249a8ba3650807aabe5984	-	access title, path or words
 8773	4db4cf26a7f00c0edd010fff10f02a9f6c643d6d	-	access title, path or words
-8775	c5777fc8adba219d28ba3489d887b79b8774bd14	-	access title, path or words
-8783	63e73d4f758beb3af399efdf3836bb88ffa884ef		code moved into a strict_types file
-8789	c53910c7e1e718cf9ad875d2bd0e6832b392ca06	-	access title, path or words
 8809	31f0606d7a638af495c16b9f3b9cba66eb77253c	-	access title, path or words
 8826	2e88b5236b2f4d9f5d95c43d19fd81250e6b090e	-	access title, path or words
-8838	536e5a981e64a3ad19a088f08d2719d4edc86e0b	-	access title, path or words
-8841	9a9faa80f80aa9c369de633d56519482ee193549	-	access title, path or words
 8873	f1615880dc85fd78fbe24c6c53a3f11ac672911f	-	access title, path or words
 8880	abf17952b7d05c4049a5d93ae197a0186ca88434	-	access title, path or words
 8882	bf45d604cbed1c217e31595612bbd0961407b8f3	-	access title, path or words
@@ -30,4 +22,3 @@
 8907	ec9a07b94150540ada5c60493f35067b4539aa71	-	access title, path or words
 8911	868c53666af2e3267529f9d87ca69c0abf639720	-	access title, path or words
 8914	4ab80829af4c29fff55cee279471a6eed8ad6bbe	-	access title, path or words
-8916	add3edea194087ef97d147e47188466233189923	-	access title, path or words
