@@ -40,6 +40,7 @@ use OCA\OpenRegister\Exception\FlowRunRefused;
 use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowVersionMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Throwable;
 
@@ -95,12 +96,7 @@ class FlowService implements FlowServiceInterface {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	private function caller(): FlowCaller {
-		return new FlowCaller(
-			mapper: $this->definitions->mapper,
-			userSession: $this->platform->userSession,
-			container: $this->platform->container,
-			logger: $this->platform->logger
-		);
+		return new FlowCaller(mapper: $this->definitions->mapper, platform: $this->platform);
 	}//end caller()
 
 	/**
@@ -114,15 +110,25 @@ class FlowService implements FlowServiceInterface {
 	 *
 	 * @return array<int, Flow> The flows visible to the caller.
 	 *
+	 * Kept for its callers (FlowController, other apps); delegates to listFlows().
+	 *
 	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
 	 */
-	public function findAll(
-		?string $app = null,
-		?string $applicationSlug = null,
-		?bool $enabled = null,
-		int $limit = 100,
-		int $offset = 0,
-	): array {
+	public function findAll(?string $app=null, ?string $applicationSlug=null, ?bool $enabled=null, int $limit=100, int $offset=0): array {
+		$filters = ['app' => $app, 'applicationSlug' => $applicationSlug, 'enabled' => $enabled];
+		return $this->listFlows(query: new ListQuery(limit: $limit, offset: $offset, filters: $filters));
+	}//end findAll()
+
+	/**
+	 * List the caller's flows in their active organisation, newest first.
+	 *
+	 * @param ListQuery $query The page, and the `app`, `applicationSlug` and `enabled` filters (each null for any).
+	 *
+	 * @return array<int, Flow> The flows visible to the caller.
+	 *
+	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+	 */
+	public function listFlows(ListQuery $query): array {
 		$organisation = $this->caller()->activeOrganisation();
 		if ($organisation === null) {
 			// No resolvable tenant means no flows, never every tenant's flows.
@@ -130,15 +136,14 @@ class FlowService implements FlowServiceInterface {
 		}
 
 		return $this->definitions->mapper->findAllFlows(
-			app: $app,
-			applicationSlug: $applicationSlug,
+			app: $query->filters['app'] ?? null,
+			applicationSlug: $query->filters['applicationSlug'] ?? null,
 			organisation: $organisation,
-			enabled: $enabled,
-			limit: $limit,
-			offset: $offset
+			enabled: $query->filters['enabled'] ?? null,
+			limit: $query->limit,
+			offset: ($query->offset ?? 0)
 		);
-
-	}//end findAll()
+	}//end listFlows()
 
 	/**
 	 * Count the flows visible to the caller.
@@ -701,18 +706,32 @@ class FlowService implements FlowServiceInterface {
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
-	public function run(
-		string $uuid,
-		array $subject = [],
-		array $context = [],
-		bool $sync = false,
-		string $trigger = Flow::TRIGGER_MANUAL
-	): FlowRun {
+	public function run(string $uuid, array $subject=[], array $context=[], bool $sync=false, string $trigger=Flow::TRIGGER_MANUAL): FlowRun {
+		return $this->runFlow(uuid: $uuid, options: new FlowRunOptions(subject: $subject, context: $context, sync: $sync, trigger: $trigger));
+	}//end run()
+
+	/**
+	 * Queue a run of a flow the caller owns, as run() describes it.
+	 *
+	 * The flow is resolved in the caller's organisation and the owner check runs
+	 * before anything is queued.
+	 *
+	 * @param string         $uuid    The flow uuid.
+	 * @param FlowRunOptions $options The subject, run metadata, whether to wait, and the trigger.
+	 *
+	 * @return FlowRun The queued run, or the finished run when the caller waits.
+	 *
+	 * @throws DoesNotExistException When no such flow exists, or it is not the caller's.
+	 * @throws FlowRunRefused When the caller may not run this flow (no owner, not theirs).
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	public function runFlow(string $uuid, FlowRunOptions $options): FlowRun {
 		$flow = $this->find(uuid: $uuid);
 		$this->assertRunnable(flow: $flow);
 
-		return $this->start(flow: $flow, options: new FlowRunOptions(subject: $subject, context: $context, sync: $sync, trigger: $trigger));
-	}//end run()
+		return $this->start(flow: $flow, options: $options);
+	}//end runFlow()
 
 	/**
 	 * Run a flow on behalf of a declared action whose right the caller already holds.

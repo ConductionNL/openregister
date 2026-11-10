@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Notifications\Service\Timeline\EntryPin;
+use OCA\OpenRegister\Notifications\Service\Timeline\EntrySearch;
 use OCA\OpenRegister\Notifications\Service\Timeline\ReferenceService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntrySearchService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryService;
@@ -552,11 +553,13 @@ class TimelineEntriesController extends Controller {
 		}
 
 		try {
-			$results = $this->search->searchAsArrays(
-				term: $term,
-				visibility: $this->askedVisibility(params: $params),
-				kind: $this->text(params: $params, key: 'kind'),
-				limit: (int)($params['limit'] ?? 25)
+			$results = $this->search->findHitsAsArrays(
+				search: new EntrySearch(
+					term: $term,
+					visibility: $this->askedVisibility(params: $params),
+					kind: $this->text(params: $params, key: 'kind'),
+					limit: (int)($params['limit'] ?? 25)
+				)
 			);
 		} catch (Throwable $e) {
 			return $this->unexpected(exception: $e, context: 'search');

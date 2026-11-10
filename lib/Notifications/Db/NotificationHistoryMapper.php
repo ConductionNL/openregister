@@ -426,17 +426,16 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 	/**
 	 * Snooze one notice until a moment, for the recipient it belongs to.
 	 *
-	 * @param int $id The history row id.
-	 * @param string $recipient The uid the notice is addressed to.
-	 * @param DateTime $until When it returns to the unread list.
+	 * @param RecipientNotice $notice The history row and the uid it is addressed to.
+	 * @param DateTime        $until  When it returns to the unread list.
 	 *
 	 * @return boolean True when a row was snoozed.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
 	 */
-	public function snooze(int $id, string $recipient, DateTime $until): bool {
+	public function snooze(RecipientNotice $notice, DateTime $until): bool {
 		$qb = $this->updateSetting(column: 'snoozed_until', value: $until);
-		$this->whereEquals(qb: $qb, columns: ['id' => $id, 'recipient' => $recipient]);
+		$this->whereEquals(qb: $qb, columns: ['id' => $notice->id, 'recipient' => $notice->recipient]);
 
 		return ($qb->executeStatement() > 0);
 	}//end snooze()
@@ -448,17 +447,16 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 	 * point: an archive that also wrote `read_at` would turn "I do not want to
 	 * see this" into "I have dealt with this", and those are different answers.
 	 *
-	 * @param int $id The history row id.
-	 * @param string $recipient The uid the notice is addressed to.
-	 * @param DateTime|null $archivedAt The moment, defaulting to now.
+	 * @param RecipientNotice $notice     The history row and the uid it is addressed to.
+	 * @param DateTime|null   $archivedAt The moment, defaulting to now.
 	 *
 	 * @return boolean True when a row was archived.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
 	 */
-	public function archive(int $id, string $recipient, ?DateTime $archivedAt = null): bool {
+	public function archive(RecipientNotice $notice, ?DateTime $archivedAt = null): bool {
 		$qb = $this->updateSetting(column: 'archived_at', value: ($archivedAt ?? new DateTime()));
-		$this->whereEquals(qb: $qb, columns: ['id' => $id, 'recipient' => $recipient]);
+		$this->whereEquals(qb: $qb, columns: ['id' => $notice->id, 'recipient' => $notice->recipient]);
 
 		return ($qb->executeStatement() > 0);
 	}//end archive()

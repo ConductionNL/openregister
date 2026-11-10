@@ -456,7 +456,7 @@ class SharedSchemaDedupeService implements SharedSchemaDedupeServiceInterface {
 	 */
 	private function planSplits(array $shared, array $registers): array {
 		$splits = [];
-		foreach ($shared['candidates'] as $registerId => $definition) {
+		foreach (array_keys($shared['candidates']) as $registerId) {
 			$register = ($registers[$registerId] ?? null);
 			if ($registerId === $shared['owner'] || $register === null) {
 				continue;

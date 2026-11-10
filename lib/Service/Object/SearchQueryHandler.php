@@ -37,7 +37,6 @@ use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\Vocabulary\CodedFilterExpander;
 use OCA\OpenRegister\Support\FilterParams;
-use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -152,7 +151,6 @@ class SearchQueryHandler {
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schema operations.
 	 * @param SettingsServiceInterface $settingsService Service for settings operations.
 	 * @param LoggerInterface $logger Logger for performance monitoring.
-	 * @param IRequest $request Request object.
 	 * @param SearchTrailService $searchTrailService Service for recording search trails.
 	 * @param IUserSession|null $userSession Resolves the caller for that lens.
 	 * @param CodedFilterExpander|null $codedFilters Expands a branch filter into the concepts under it.
@@ -168,7 +166,6 @@ class SearchQueryHandler {
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly SettingsServiceInterface $settingsService,
 		private readonly LoggerInterface $logger,
-		private readonly IRequest $request,
 		private readonly SearchTrailService $searchTrailService,
 		private readonly ?IUserSession $userSession = null,
 		// The branch-filter expander. Nullable with a null default so the many
@@ -700,24 +697,6 @@ class SearchQueryHandler {
 
 		return $this->viewScope->apply(query: $query, viewIds: $viewIds);
 	}//end applyViewsToQuery()
-
-	/**
-	 * Add pagination URLs to search results
-	 *
-	 * Adds the next and previous page URLs {@see PaginationLinks} builds from the request URI.
-	 *
-	 * @param array<string, mixed> $paginatedResults Search results array (passed by reference).
-	 * @param int $page Current page number.
-	 * @param int $pages Total number of pages.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md
-	 */
-	public function addPaginationUrls(array &$paginatedResults, int $page, int $pages): void {
-		$links = new PaginationLinks(uri: $this->request->getRequestUri());
-		$paginatedResults = array_merge($paginatedResults, $links->around(page: $page, pages: $pages));
-	}//end addPaginationUrls()
 
 	/**
 	 * Buffer a search trail entry for deferred persistence
