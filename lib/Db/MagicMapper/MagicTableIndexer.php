@@ -234,8 +234,12 @@ final class MagicTableIndexer {
 			$this->db->executeStatement(
 				"CREATE INDEX {$run->tableName}_deleted_owner_idx ON {$run->fullTableName} (_deleted, _owner)"
 			);
-		} catch (\Throwable $e) {
+		} catch (\Exception $e) {
 			// Index already exists (no IF NOT EXISTS on MySQL): ignore.
+			$this->logger->debug(
+				message: '[MagicMapper] Skipped _deleted/_owner index',
+				context: ['tableName' => $run->tableName, 'error' => $e->getMessage()]
+			);
 		}
 	}//end createMySqlDeletedOwnerIndex()
 

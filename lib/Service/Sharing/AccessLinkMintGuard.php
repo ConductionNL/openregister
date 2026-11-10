@@ -50,18 +50,23 @@ use Throwable;
 class AccessLinkMintGuard implements AccessLinkMintGuardInterface {
 
 	/**
+	 * Reads which object a subject names; stateless, so it is built in place.
+	 *
+	 * @var AccessLinkSubject
+	 */
+	private readonly AccessLinkSubject $subjects;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectOperationsInterface $objects The object read path, asked with the rules on.
-	 * @param AccessLinkSubject $subjects Reads which object a subject names.
 	 * @param AccessLinkViewReaders $viewReaders Resolves a view, and the registers and schemas it names, under the caller's own rules.
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objects,
-		private readonly AccessLinkSubject $subjects,
 		private readonly AccessLinkViewReaders $viewReaders,
 	) {
-
+		$this->subjects = new AccessLinkSubject();
 	}//end __construct()
 
 	/**
@@ -195,7 +200,7 @@ class AccessLinkMintGuard implements AccessLinkMintGuardInterface {
 		if (is_array($registers) === true) {
 			foreach ($registers as $registerId) {
 				try {
-					$this->viewReaders->registers->find($registerId);
+					$this->viewReaders->catalog->registers()->find($registerId);
 				} catch (Throwable $denied) {
 					unset($denied);
 					return false;
@@ -207,7 +212,7 @@ class AccessLinkMintGuard implements AccessLinkMintGuardInterface {
 		if (is_array($schemas) === true) {
 			foreach ($schemas as $schemaId) {
 				try {
-					$this->viewReaders->schemas->find($schemaId);
+					$this->viewReaders->catalog->schemas()->find($schemaId);
 				} catch (Throwable $denied) {
 					unset($denied);
 					return false;

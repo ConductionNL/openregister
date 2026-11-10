@@ -110,7 +110,7 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
 	 */
 	public function validate(FlowRun $run, FlowRunMigration $migration): array {
-		return $this->validator->validate(run: $run, targetVersion: $migration->targetVersion, mapping: $migration->mapping());
+		return $this->validator->validate(run: $run, migration: $migration);
 	}//end validate()
 
 	/**
@@ -276,19 +276,17 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 	 * believing every run moved, and the ones that did not are exactly the ones
 	 * somebody has to go and look at.
 	 *
-	 * @param string                 $flowId        The flow.
-	 * @param int                    $sourceVersion The version to move off.
-	 * @param FlowRunMigrationTarget $target        The version to move onto, why, who asked and one mapping for all of them.
-	 * @param int                    $limit         The batch bound.
+	 * @param VersionRunsMigration $request The flow, the version to move off, the target and the batch bound.
 	 *
 	 * @return array{migrated: int, skipped: int, results: array<int, array<string, mixed>>}
 	 *
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-runs-can-be-migrated-in-bulk-per-version
 	 */
-	public function migrateRunsOfVersion(string $flowId, int $sourceVersion, FlowRunMigrationTarget $target, int $limit = 100): array {
+	public function migrateRunsOfVersion(VersionRunsMigration $request): array {
+		$listing = new FlowRunListing(filter: new FlowRunFilter(flowId: $request->flowId), limit: $request->limit);
 		$results = array_map(
-			fn (FlowRun $run): array => $this->migrate(runUuid: (string)$run->getUuid(), target: $target),
-			$this->runsOnVersion(listing: new FlowRunListing(filter: new FlowRunFilter(flowId: $flowId), limit: $limit), version: $sourceVersion)
+			fn (FlowRun $run): array => $this->migrate(runUuid: (string)$run->getUuid(), target: $request->target),
+			$this->runsOnVersion(listing: $listing, version: $request->sourceVersion)
 		);
 		$migrated = count(array_filter($results, static fn (array $outcome): bool => $outcome['migrated'] === true));
 
@@ -296,7 +294,7 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 	}//end migrateRunsOfVersion()
 
 	/**
-	 * The seam a consuming app calls: move the runs of one subject, if any.
+	 * The seam a consuming app calls: move the live runs of one subject, or say why not.
 	 *
 	 * 🔴 `migrated: true` WITH NO RUN IN FLIGHT IS THE CORRECT ANSWER, AND IT IS
 	 * THE ONE THING A CALLER MUST NOT READ AS A FAILURE. dossiq's
@@ -313,23 +311,6 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 	 * across case types, where the target has its OWN flow, gets `migrated:
 	 * false` naming that: the run walks a process the target does not have, and
 	 * moving it silently is exactly the write nobody could read back.
-	 *
-	 * @param string $subjectUuid         The object the run is about.
-	 * @param string $targetDefinitionRef The target version, as a number, or a flow uuid.
-	 * @param string $actorUid            Who asked, recorded as `runAs` on the entry (ADR-099).
-	 *
-	 * @return array{migrated: bool, reason: string, runs: array<int, array<string, mixed>>}
-	 *
-	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
-	 */
-	public function migrateRunForSubject(string $subjectUuid, string $targetDefinitionRef, string $actorUid): array {
-		$request = new SubjectRunsMigration(subjectUuid: $subjectUuid, targetDefinitionRef: $targetDefinitionRef, actorUid: $actorUid);
-
-		return $this->migrateSubjectRuns(request: $request);
-	}//end migrateRunForSubject()
-
-	/**
-	 * Move the live runs of one subject onto the target version, or say why not.
 	 *
 	 * @param SubjectRunsMigration $request The subject, the target reference and who asked.
 	 *

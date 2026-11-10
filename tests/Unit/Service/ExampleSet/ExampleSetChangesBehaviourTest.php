@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
 use OCA\OpenRegister\Tests\Unit\Service\ExampleSet\Fake\FakeExampleSetStore;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * Behaviour of a change row: locating its one target, applying it, and reading
@@ -93,7 +94,7 @@ class ExampleSetChangesBehaviourTest extends TestCase {
 
 		$this->assertSame('', $resolved['refusal']);
 		$this->assertSame(['error' => '', 'entry' => null], $this->changes()->apply($change, $resolved));
-		$this->assertSame('open', $this->store->get(register: 'cases', schema: 'case', id: $id)['status']);
+		$this->assertSame('open', $this->store->row(ref: new ObjectRef(register: 'cases', schema: 'case', id: $id))['status']);
 	}
 
 	public function testAppliedSetAndAppendAreReadBackAndReverted(): void {
@@ -104,13 +105,13 @@ class ExampleSetChangesBehaviourTest extends TestCase {
 		$applied  = $changes->apply($change, $resolved);
 
 		$this->assertSame('', $applied['error']);
-		$row = $this->store->get(register: 'cases', schema: 'case', id: $id);
+		$row = $this->store->row(ref: new ObjectRef(register: 'cases', schema: 'case', id: $id));
 		$this->assertSame('open', $row['status']);
 		$this->assertSame(['a', 'b'], $row['tags']);
 		$this->assertSame([], $changes->lost($applied['entry']));
 
 		$this->assertSame(['ok' => true, 'left' => []], $changes->revert($applied['entry']));
-		$row = $this->store->get(register: 'cases', schema: 'case', id: $id);
+		$row = $this->store->row(ref: new ObjectRef(register: 'cases', schema: 'case', id: $id));
 		$this->assertSame('new', $row['status']);
 		$this->assertSame(['a'], $row['tags']);
 	}
@@ -127,7 +128,7 @@ class ExampleSetChangesBehaviourTest extends TestCase {
 
 		$reverted = $changes->revert($applied['entry']);
 		$this->assertSame(['status'], $reverted['left']);
-		$this->assertSame('closed by hand', $this->store->get(register: 'cases', schema: 'case', id: $id)['status']);
+		$this->assertSame('closed by hand', $this->store->row(ref: new ObjectRef(register: 'cases', schema: 'case', id: $id))['status']);
 	}
 
 	public function testAGoneRowIsLostAndItsRevertIsDone(): void {

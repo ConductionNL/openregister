@@ -83,11 +83,30 @@ class XwikiProvider extends AbstractIntegrationProvider {
 	private const REQUIRED_APP = 'integriq';
 
 	/**
+	 * External-call router.
+	 *
+	 * @var ExternalIntegrationRouterInterface
+	 */
+	private ExternalIntegrationRouterInterface $router;
+
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ExternalIntegrationRouterInterface $router External-call router.
-	 * @param IAppManager $appManager NC app manager (isEnabled check).
-	 * @param IL10N $l10n Localisation.
+	 * @param ConnectorRouting $routing The router, app manager (isEnabled check) and localisation.
 	 * @param XwikiLinkMapperInterface|null $xwikiLinkMapper Tier-2 local link table
 	 *                                              (nullable so the Tier-1
 	 *                                              external-only wiring + the
@@ -97,11 +116,12 @@ class XwikiProvider extends AbstractIntegrationProvider {
 	 * @return void
 	 */
 	public function __construct(
-		private ExternalIntegrationRouterInterface $router,
-		private IAppManager $appManager,
-		private IL10N $l10n,
+		ConnectorRouting $routing,
 		private ?XwikiLinkMapperInterface $xwikiLinkMapper = null,
 	) {
+		$this->router     = $routing->router;
+		$this->appManager = $routing->appManager;
+		$this->l10n       = $routing->l10n;
 	}//end __construct()
 
 	/**

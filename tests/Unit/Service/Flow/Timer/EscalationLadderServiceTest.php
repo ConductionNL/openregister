@@ -28,7 +28,9 @@ use DateTimeZone;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
+use OCA\OpenRegister\Service\Flow\Timer\EscalationAudience;
 use OCA\OpenRegister\Service\Flow\Timer\EscalationLadderService;
+use OCA\OpenRegister\Service\Flow\Timer\RungTimeline;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerDefinitionStore;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
@@ -167,8 +169,8 @@ class EscalationLadderServiceTest extends TestCase {
 		$anchor = $this->at('2026-09-03 10:00');
 		$fireAt = (new SlaCalculator())->add(from: $anchor, value: 2, unit: 'calendarDays', calendar: $this->calendar);
 		$rungs = $this->ladder->normaliseRules(rules: [['trigger' => 'preBreach', 'offset' => 24, 'offsetUnit' => 'hours']], sla: ['value' => 2, 'unit' => 'calendarDays']);
-		$this->ladder->validateAgainstTimeline(rungs: $rungs, anchorAt: $anchor, fireAt: $fireAt, calendar: $this->calendar);
-		self::assertSame('2026-09-04 10:00', $this->ladder->rungInstant(rung: $rungs[0], fireAt: $fireAt, calendar: $this->calendar)->format('Y-m-d H:i'));
+		$this->ladder->validateAgainstTimeline(timeline: new RungTimeline(rungs: $rungs, fireAt: $fireAt, firedKeys: [], calendar: $this->calendar), anchorAt: $anchor);
+		self::assertSame('2026-09-04 10:00', $this->ladder->rungInstant(rung: $rungs[0], timeline: new RungTimeline(rungs: [], fireAt: $fireAt, firedKeys: [], calendar: $this->calendar))->format('Y-m-d H:i'));
 	}//end testAShortWarningOnALongerSlaIsAcceptedAcrossUnits()
 
 	public function testALongWarningOnAShorterSlaIsRefusedAcrossUnits(): void {
@@ -179,7 +181,7 @@ class EscalationLadderServiceTest extends TestCase {
 		$rungs = $this->ladder->normaliseRules(rules: [['trigger' => 'preBreach', 'offset' => 5, 'offsetUnit' => 'businessDays']], sla: ['value' => 48, 'unit' => 'hours']);
 		$this->expectException(FlowTimerValidationException::class);
 		$this->expectExceptionMessage('exceeds the SLA');
-		$this->ladder->validateAgainstTimeline(rungs: $rungs, anchorAt: $anchor, fireAt: $fireAt, calendar: $this->calendar);
+		$this->ladder->validateAgainstTimeline(timeline: new RungTimeline(rungs: $rungs, fireAt: $fireAt, firedKeys: [], calendar: $this->calendar), anchorAt: $anchor);
 	}//end testALongWarningOnAShorterSlaIsRefusedAcrossUnits()
 
 	public function testDueRungsFireEveryPassedRungInLadderOrderOnceEach(): void {
@@ -196,9 +198,9 @@ class EscalationLadderServiceTest extends TestCase {
 		self::assertSame([], $none);
 
 		// next_rung_at is the earliest unfired rung: the 2-day one.
-		$next = $this->ladder->nextRungAt(rungs: $rungs, fireAt: $fireAt, firedKeys: ['preBreach:14:calendarDays', 'preBreach:7:calendarDays'], calendar: $this->calendar);
+		$next = $this->ladder->nextRungAt(timeline: new RungTimeline(rungs: $rungs, fireAt: $fireAt, firedKeys: ['preBreach:14:calendarDays', 'preBreach:7:calendarDays'], calendar: $this->calendar));
 		self::assertSame('2026-09-18 12:00', $next->format('Y-m-d H:i'));
-		self::assertNull($this->ladder->nextRungAt(rungs: $rungs, fireAt: $fireAt, firedKeys: array_column($rungs, 'key'), calendar: $this->calendar));
+		self::assertNull($this->ladder->nextRungAt(timeline: new RungTimeline(rungs: $rungs, fireAt: $fireAt, firedKeys: array_column($rungs, 'key'), calendar: $this->calendar)));
 	}//end testDueRungsFireEveryPassedRungInLadderOrderOnceEach()
 
 	public function testHandlerResolvesToTheAssigneeUserOrGroup(): void {
@@ -209,7 +211,7 @@ class EscalationLadderServiceTest extends TestCase {
 		$user->setAssignee('alice');
 		self::assertSame(
 			[['type' => 'user', 'id' => 'alice', 'role' => 'handler'], ['type' => 'role', 'id' => 'teamleader', 'role' => 'teamleader']],
-			$this->ladder->resolveRecipients(rung: $rung, subject: $user, roleBindings: [])
+			$this->ladder->resolveRecipients(rung: $rung, audience: new EscalationAudience(subject: $user, roleBindings: []))
 		);
 
 		// The GROUP path: a group performer's assignee is a gid.
@@ -218,7 +220,7 @@ class EscalationLadderServiceTest extends TestCase {
 		$group->setAssignee('vergunningen');
 		self::assertSame(
 			[['type' => 'group', 'id' => 'vergunningen', 'role' => 'handler'], ['type' => 'group', 'id' => 'teamleaders', 'role' => 'teamleader']],
-			$this->ladder->resolveRecipients(rung: $rung, subject: $group, roleBindings: ['teamleader' => 'group:teamleaders'])
+			$this->ladder->resolveRecipients(rung: $rung, audience: new EscalationAudience(subject: $group, roleBindings: ['teamleader' => 'group:teamleaders']))
 		);
 	}//end testHandlerResolvesToTheAssigneeUserOrGroup()
 
@@ -231,7 +233,7 @@ class EscalationLadderServiceTest extends TestCase {
 		$pooled->setCandidateUsers(['bob']);
 		self::assertSame(
 			[['type' => 'group', 'id' => 'team-a', 'role' => 'handler'], ['type' => 'group', 'id' => 'team-b', 'role' => 'handler']],
-			$this->ladder->resolveRecipients(rung: $rung, subject: $pooled, roleBindings: [])
+			$this->ladder->resolveRecipients(rung: $rung, audience: new EscalationAudience(subject: $pooled, roleBindings: []))
 		);
 
 		$users = new Task();
@@ -239,18 +241,18 @@ class EscalationLadderServiceTest extends TestCase {
 		$users->setCandidateUsers(['bob', 'carol']);
 		self::assertSame(
 			[['type' => 'user', 'id' => 'bob', 'role' => 'handler'], ['type' => 'user', 'id' => 'carol', 'role' => 'handler']],
-			$this->ladder->resolveRecipients(rung: $rung, subject: $users, roleBindings: [])
+			$this->ladder->resolveRecipients(rung: $rung, audience: new EscalationAudience(subject: $users, roleBindings: []))
 		);
 
-		self::assertSame([['type' => 'role', 'id' => 'handler', 'role' => 'handler']], $this->ladder->resolveRecipients(rung: $rung, subject: null, roleBindings: []));
+		self::assertSame([['type' => 'role', 'id' => 'handler', 'role' => 'handler']], $this->ladder->resolveRecipients(rung: $rung, audience: new EscalationAudience(subject: null, roleBindings: [])));
 	}//end testUnassignedHandlerFallsBackToCandidateGroupsThenUsersThenRole()
 
 	public function testSlaBreachedRungFallsAfterTheDeadline(): void {
 		$rung = $this->ladder->normaliseRules(rules: [['trigger' => 'slaBreached', 'offset' => 2, 'offsetUnit' => 'calendarDays']], sla: ['value' => 5, 'unit' => 'calendarDays'])[0];
 		self::assertSame('slaBreached:2:calendarDays', $rung['key']);
-		self::assertSame('2026-09-22 12:00', $this->ladder->rungInstant(rung: $rung, fireAt: $this->at('2026-09-20 12:00'), calendar: $this->calendar)->format('Y-m-d H:i'));
+		self::assertSame('2026-09-22 12:00', $this->ladder->rungInstant(rung: $rung, timeline: new RungTimeline(rungs: [], fireAt: $this->at('2026-09-20 12:00'), firedKeys: [], calendar: $this->calendar))->format('Y-m-d H:i'));
 		// A slaBreached rung is never checked against the anchor.
-		$this->ladder->validateAgainstTimeline(rungs: [$rung], anchorAt: $this->at('2026-09-19 12:00'), fireAt: $this->at('2026-09-20 12:00'), calendar: $this->calendar);
+		$this->ladder->validateAgainstTimeline(timeline: new RungTimeline(rungs: [$rung], fireAt: $this->at('2026-09-20 12:00'), firedKeys: [], calendar: $this->calendar), anchorAt: $this->at('2026-09-19 12:00'));
 		self::assertInstanceOf(DateTime::class, new DateTime());
 	}//end testSlaBreachedRungFallsAfterTheDeadline()
 	/**
@@ -271,7 +273,7 @@ class EscalationLadderServiceTest extends TestCase {
 		self::assertSame('postBreach:2:calendarDays', $rungs[0]['key']);
 		self::assertSame('we decide on what we have', $rungs[0]['consequence']);
 		$fireAt = $this->at('2026-09-20 12:00');
-		self::assertSame('2026-09-22 12:00', $this->ladder->rungInstant(rung: $rungs[0], fireAt: $fireAt, calendar: $this->calendar)->format('Y-m-d H:i'));
+		self::assertSame('2026-09-22 12:00', $this->ladder->rungInstant(rung: $rungs[0], timeline: new RungTimeline(rungs: [], fireAt: $fireAt, firedKeys: [], calendar: $this->calendar))->format('Y-m-d H:i'));
 	}//end testAPostBreachRungFallsAfterTheDeadlineAndCarriesItsConsequence()
 
 	/**

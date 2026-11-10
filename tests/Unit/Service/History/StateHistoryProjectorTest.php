@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\History;
 
 use DateTime;
+use OCA\OpenRegister\Db\StateHistory\TrackedProperty;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -88,7 +89,7 @@ class StateHistoryProjectorTest extends TestCase {
 
 		$this->mapper->expects($this->once())
 			->method('closeOpenInterval')
-			->with('uuid-1', 'status', $at)
+			->with($this->equalTo(new TrackedProperty('uuid-1', 'status')), $at)
 			->willReturn(1);
 
 		$written = null;

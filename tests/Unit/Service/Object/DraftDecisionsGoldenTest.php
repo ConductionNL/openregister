@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Service\Object\OwnDraftSearch;
 use OCA\OpenRegister\Service\Object\DraftAddress;
+use OCA\OpenRegister\Service\Object\DraftListing;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -203,13 +204,19 @@ class DraftDecisionsGoldenTest extends TestCase {
 		}
 
 		$notADraft = "(t._status IS NULL OR t._status <> 'draft')";
-		$this->assertNull($lens->sql(mode: 'any', columnPrefix: 't.', owner: "'me'"));
-		$this->assertSame("t._status = 'draft'", $lens->sql(mode: 'only', columnPrefix: 't.', owner: null));
-		$this->assertSame($notADraft, $lens->sql(mode: 'none', columnPrefix: 't.', owner: "'me'"));
-		$this->assertSame($notADraft, $lens->sql(mode: 'exclude', columnPrefix: 't.', owner: null));
-		$this->assertSame($notADraft, $lens->sql(mode: 'exclude', columnPrefix: 't.', owner: ''));
-		$this->assertSame('(' . $notADraft . " OR t._owner = 'me')", $lens->sql(mode: 'exclude', columnPrefix: 't.', owner: "'me'"));
-		$this->assertSame('(' . $notADraft . " OR t._owner = 'me')", $lens->sql(mode: 'weird', columnPrefix: 't.', owner: "'me'"));
+		$this->assertNull($lens->clauseFor(listing: new DraftListing(mode: 'any', owner: "'me'"), columnPrefix: 't.'));
+		$this->assertSame("t._status = 'draft'", $lens->clauseFor(listing: new DraftListing(mode: 'only', owner: null), columnPrefix: 't.'));
+		$this->assertSame($notADraft, $lens->clauseFor(listing: new DraftListing(mode: 'none', owner: "'me'"), columnPrefix: 't.'));
+		$this->assertSame($notADraft, $lens->clauseFor(listing: new DraftListing(mode: 'exclude', owner: null), columnPrefix: 't.'));
+		$this->assertSame($notADraft, $lens->clauseFor(listing: new DraftListing(mode: 'exclude', owner: ''), columnPrefix: 't.'));
+		$this->assertSame('(' . $notADraft . " OR t._owner = 'me')", $lens->clauseFor(
+			listing: new DraftListing(mode: 'exclude', owner: "'me'"),
+			columnPrefix: 't.'
+		));
+		$this->assertSame('(' . $notADraft . " OR t._owner = 'me')", $lens->clauseFor(
+			listing: new DraftListing(mode: 'weird', owner: "'me'"),
+			columnPrefix: 't.'
+		));
 	}//end testListLensTables()
 
 	/**

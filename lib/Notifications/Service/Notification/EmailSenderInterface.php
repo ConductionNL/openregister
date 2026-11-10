@@ -48,6 +48,18 @@ interface EmailSenderInterface {
 	public function send(string $uid, string $subject, string $body): string;
 
 	/**
+	 * Send a transactional email to a Nextcloud user; the outcome of {@see send()}.
+	 *
+	 * @param string      $uid     Recipient user UID.
+	 * @param MailContent $content The subject and body.
+	 *
+	 * @return string One of the OUTCOME_* constants.
+	 *
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 */
+	public function sendMail(string $uid, MailContent $content): string;
+
+	/**
 	 * Send a transactional email to a bare address.
 	 *
 	 * Most melders never sign in. Making them Nextcloud users to hold a name
@@ -69,4 +81,17 @@ interface EmailSenderInterface {
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-external-mail-carries-the-unsubscribe-link-req-ero-004
 	 */
 	public function sendToAddress(string $address, string $displayName, string $subject, string $body, ?array $unsubscribe = null): string;
+
+	/**
+	 * Send a transactional email to a bare address; the outcome of {@see sendToAddress()}.
+	 *
+	 * @param MailAddressee $addressee The address and the name to address it to.
+	 * @param MailContent   $content   The subject, body and unsubscribe material.
+	 *
+	 * @return string One of the OUTCOME_* constants.
+	 *
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-external-mail-carries-the-unsubscribe-link-req-ero-004
+	 */
+	public function sendMailTo(MailAddressee $addressee, MailContent $content): string;
 }//end interface

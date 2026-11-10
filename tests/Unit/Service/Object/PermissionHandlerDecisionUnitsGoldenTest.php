@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\TransitionGate;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -217,7 +218,7 @@ class PermissionHandlerDecisionUnitsGoldenTest extends TestCase {
 		foreach ($cases as $label => [$list, $userId, $schemaAuth, $expected]) {
 			$this->assertSame(
 				$expected,
-				$this->handler()->isTransitionAuthorized(authorizationList: $list, userId: $userId, schema: $this->schema($schemaAuth)),
+				$this->handler()->isTransitionAuthorized(gate: new TransitionGate(authorizationList: $list, schema: $this->schema($schemaAuth)), userId: $userId),
 				$label
 			);
 		}

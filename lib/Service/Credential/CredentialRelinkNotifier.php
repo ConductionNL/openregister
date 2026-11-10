@@ -67,17 +67,15 @@ class CredentialRelinkNotifier {
 	/**
 	 * Announce a lost grant, once.
 	 *
-	 * @param string $credentialId The credential UUID, which is the credentialRef apps hold.
-	 * @param string $provider The catalogue provider identifier.
-	 * @param string $owner The owning user id, or an empty string when there is none to tell.
-	 * @param string $reason The provider's OAuth2 error code (secret-free by construction).
+	 * @param CredentialRelinkRequiredEvent $event The lost grant: the credential, its provider, its owner (empty
+	 *                                             when there is none to tell) and the secret-free OAuth2 error code.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
 	 */
-	public function announce(string $credentialId, string $provider, string $owner, string $reason): void {
-		$this->announceEvent(event: new CredentialRelinkRequiredEvent(credentialId: $credentialId, provider: $provider, owner: $owner, reason: $reason));
+	public function announce(CredentialRelinkRequiredEvent $event): void {
+		$this->announceEvent(event: $event);
 	}//end announce()
 
 	/**

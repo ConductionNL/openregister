@@ -26,6 +26,7 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ContentReportControllerServices;
 use OCA\OpenRegister\Db\ContentReport;
 use OCA\OpenRegister\Db\ContentReportMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Service\Audit\ContentReportServiceInterface;
 use OCP\AppFramework\Controller;
@@ -171,10 +172,8 @@ class ContentReportController extends Controller {
 			return $this->forbidden();
 		}
 
-		$rows = $this->reports->findAll(
-			status: $this->optionalParam(key: 'status'),
-			organisationId: $this->optionalParam(key: 'organisation')
-		);
+		$filters = ['status' => $this->optionalParam(key: 'status'), 'organisation_id' => $this->optionalParam(key: 'organisation')];
+		$rows = $this->reports->findAll(query: ListQuery::unbounded(filters: $filters));
 
 		$results = [];
 		foreach ($rows as $row) {

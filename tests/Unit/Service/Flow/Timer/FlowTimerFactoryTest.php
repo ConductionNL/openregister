@@ -29,6 +29,7 @@ use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Service\Flow\Timer\EscalationLadderService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerDefinitionStore;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerArithmetic;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerFactory;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerScope;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
@@ -74,9 +75,7 @@ class FlowTimerFactoryTest extends TestCase {
 		$calculator = new SlaCalculator();
 		$this->calendars = new WorkingCalendarService(definitions: $definitions);
 		$this->factory = new FlowTimerFactory(
-			calendars: $this->calendars,
-			calculator: $calculator,
-			ladder: new EscalationLadderService(definitions: $definitions, calculator: $calculator)
+			new FlowTimerArithmetic($this->calendars, $calculator, new EscalationLadderService(definitions: $definitions, calculator: $calculator))
 		);
 	}//end setUp()
 
