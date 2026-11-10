@@ -150,7 +150,7 @@ class FlowRunSignalService implements FlowRunSignalInterface {
 	 */
 	public function answer(FlowRun $run, RunSignal $signal): FlowRun {
 		$actor = $signal->actor();
-		if ($this->assignees->mayAnswer(run: $run, uid: $actor, nodeId: $signal->nodeId) === false) {
+		if ($this->assignees->mayAnswer(run: $run, signal: $signal) === false) {
 			$this->auditRefusal(run: $run, signal: $signal);
 
 			throw new FlowSignalRefused(
