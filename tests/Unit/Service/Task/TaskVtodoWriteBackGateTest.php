@@ -32,6 +32,7 @@ use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskTransitionNotifier;
+use OCA\OpenRegister\Service\Task\TaskAnswer;
 use OCA\OpenRegister\Service\Task\TaskCalendarProjector;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskProjectionService;
@@ -142,7 +143,7 @@ class TaskVtodoWriteBackGateTest extends TestCase {
 		$completed = TaskCalendarProjectorTest::assignedTask();
 		$completed->setState(Task::STATE_COMPLETED);
 		$this->tasks->expects($this->once())->method('complete')
-			->with(self::UUID, 'done', null, null, 'EXAMPLE_APPROVER_USER')
+			->with(self::UUID, new TaskAnswer(outcome: 'done'), 'EXAMPLE_APPROVER_USER')
 			->willReturn($completed);
 		$this->tasks->expects($this->never())->method('cancel');
 		$this->projections->expects($this->never())->method('reconcileTask');
@@ -249,7 +250,7 @@ class TaskVtodoWriteBackGateTest extends TestCase {
 	public function testANullActorIsPassedToTheLifecycleWhichDeniesIt(): void {
 		$this->taskExists(TaskCalendarProjectorTest::assignedTask());
 		$this->projector->method('isEcho')->willReturn(false);
-		$this->tasks->method('complete')->with(self::UUID, 'done', null, null, null)
+		$this->tasks->method('complete')->with(self::UUID, new TaskAnswer(outcome: 'done'), null)
 			->willThrowException(new TaskAccessDeniedException("Verb 'complete' denied: no acting identity."));
 		// Nobody to notify: the refusal is logged, never widened to anyone else.
 		$this->dispatcher->expects($this->never())->method('dispatchWithSchema');

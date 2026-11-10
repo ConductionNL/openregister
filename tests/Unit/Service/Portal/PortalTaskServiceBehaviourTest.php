@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Portal\PortalCompletion;
 use OCA\OpenRegister\Service\Portal\PortalSubject;
 use OCA\OpenRegister\Service\Portal\PortalTaskService;
 use OCA\OpenRegister\Service\Portal\PortalTaskSources;
+use OCA\OpenRegister\Service\Task\TaskAnswer;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
@@ -296,17 +297,17 @@ class PortalTaskServiceBehaviourTest extends TestCase {
 		$this->tasks->expects($this->once())
 			->method('complete')
 			->willReturnCallback(
-				function (string $uuid, string $outcome, ?string $resultText, ?string $comment, ?string $actor, ?array $responses, ?array $evidence) use ($task): Task {
-					$this->assertSame('submitted', $outcome);
-					$this->assertNull($resultText);
-					$this->assertSame('see attached', $comment);
-					$this->assertSame([1, 2], array_column($evidence, 'fileId'));
-					$this->assertSame(['a.pdf', 'b.pdf'], array_column($evidence, 'name'));
-					$this->assertSame(['t-1', 't-1'], array_column($evidence, 'taskUuid'));
-					$this->assertSame('/case-7/a.pdf', $evidence[0]['path']);
-					$this->assertSame(10, $evidence[0]['size']);
-					$this->assertSame('application/pdf', $evidence[0]['mimeType']);
-					$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T/', $evidence[0]['storedAt']);
+				function (string $uuid, TaskAnswer $answer, ?string $actor) use ($task): Task {
+					$this->assertSame('submitted', $answer->outcome);
+					$this->assertNull($answer->resultText);
+					$this->assertSame('see attached', $answer->comment);
+					$this->assertSame([1, 2], array_column($answer->payload->evidence, 'fileId'));
+					$this->assertSame(['a.pdf', 'b.pdf'], array_column($answer->payload->evidence, 'name'));
+					$this->assertSame(['t-1', 't-1'], array_column($answer->payload->evidence, 'taskUuid'));
+					$this->assertSame('/case-7/a.pdf', $answer->payload->evidence[0]['path']);
+					$this->assertSame(10, $answer->payload->evidence[0]['size']);
+					$this->assertSame('application/pdf', $answer->payload->evidence[0]['mimeType']);
+					$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T/', $answer->payload->evidence[0]['storedAt']);
 
 					return $task;
 				}

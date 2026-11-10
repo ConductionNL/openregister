@@ -167,7 +167,7 @@ class TaskFormCompletionTest extends TestCase {
 		$this->engine->expects($this->never())->method('resolveTransitionInputs');
 		$this->engine->expects($this->never())->method('transition');
 		$this->objects->expects($this->never())->method('saveObject');
-		$this->tasks->expects($this->once())->method('complete')->with('t-7', 'approved', null, 'fine', 'alice');
+		$this->tasks->expects($this->once())->method('complete')->with('t-7', new TaskAnswer(outcome: 'approved', comment: 'fine'), 'alice');
 
 		$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: 'fine'), data: [], actor: 'alice');
 	}//end testAFormlessTaskCompletesWithoutAnyFieldValidation()
@@ -501,7 +501,7 @@ class TaskFormCompletionTest extends TestCase {
 		);
 		$this->engine->expects($this->never())->method('transition');
 		$this->objects->expects($this->never())->method('saveObject');
-		$this->tasks->expects($this->once())->method('complete')->with('t-7', 'submitted', 'submission 41', null, 'alice');
+		$this->tasks->expects($this->once())->method('complete')->with('t-7', new TaskAnswer(outcome: 'submitted', resultText: 'submission 41'), 'alice');
 
 		$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'submitted', resultText: 'submission 41'), data: [], actor: 'alice');
 	}//end testAnExternalFormWritesNoObjectField()

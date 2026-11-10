@@ -97,9 +97,7 @@ class TaskFormCompletion implements TaskFormCompletionInterface {
 
 		return $this->tasks->complete(
 			uuid: $uuid,
-			outcome: $answer->outcome,
-			resultText: $answer->resultText,
-			comment: $answer->comment,
+			answer: new TaskAnswer(outcome: $answer->outcome, resultText: $answer->resultText, comment: $answer->comment),
 			actor: $actor
 		);
 	}//end complete()

@@ -39,6 +39,7 @@ use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRuleDispatcherInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRulesInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskTransitionNotifier;
+use OCA\OpenRegister\Service\Task\TaskAnswer;
 use OCA\OpenRegister\Service\Task\TaskCalendarProjector;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskProjectionService;
@@ -119,8 +120,8 @@ final class TaskVtodoWriteBackGateGoldenTest extends TestCase {
 			return $outcome;
 		};
 		$tasks->method('complete')->willReturnCallback(
-			static fn (string $uuid, string $outcome, ?string $resultText, ?string $comment, ?string $actor): Task => $answer(
-				['complete', $uuid, $outcome, $resultText, $comment, $actor]
+			static fn (string $uuid, TaskAnswer $completion, ?string $actor): Task => $answer(
+				['complete', $uuid, $completion->outcome, $completion->resultText, $completion->comment, $actor]
 			)
 		);
 		$tasks->method('cancel')->willReturnCallback(

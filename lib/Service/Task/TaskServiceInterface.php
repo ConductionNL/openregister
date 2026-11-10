@@ -228,27 +228,17 @@ interface TaskServiceInterface {
 	 * A rejecting or returning outcome REQUIRES a non-empty comment; without
 	 * one the verb is refused and the task keeps its pre-call state.
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string $outcome The outcome (`approved`, `done`, `rejected`, ...).
-	 * @param string|null $resultText Free-text result.
-	 * @param string|null $comment Completion comment.
-	 * @param string|null $actor The completing identity — must be the assignee.
-	 * @param array<string, mixed>|null $responses The submitted answer fields,
-	 *                                             when the completion carries
-	 *                                             any (a portal task's form).
-	 * @param array<int, array<string, mixed>>|null $evidence References to the
-	 *                                                        files ALREADY stored
-	 *                                                        for this completion;
-	 *                                                        never bytes.
+	 * @param string      $uuid   The task uuid.
+	 * @param TaskAnswer  $answer The outcome (`approved`, `done`, `rejected`, ...), free-text result,
+	 *                            comment and, when the completion carries them, the submitted answer
+	 *                            fields and references to the files ALREADY stored for it (never bytes).
+	 * @param string|null $actor  The completing identity — must be the assignee.
 	 *
 	 * @return Task The completed task.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
-	public function complete(
-		string $uuid, string $outcome, ?string $resultText, ?string $comment, ?string $actor, ?array $responses = null,
-		?array $evidence = null
-	): Task;
+	public function complete(string $uuid, TaskAnswer $answer, ?string $actor): Task;
 
 	/**
 	 * Cancel: the requester (or an administrator) terminates the task.
