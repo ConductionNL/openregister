@@ -38,7 +38,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
@@ -156,9 +155,12 @@ final class AssigneeFollowListener implements IEventListener {
 	 */
 	private function followNewAssignee(ObjectEntity $object, ?ObjectEntity $old): void {
 		$schemaId = (string)$object->getSchema();
-		$schema = $this->schemaMapper->find(id: $schemaId, _rbac: false, _multitenancy: false);
-		$assignee = $this->changedAssignee(schema: $schema, object: $object, old: $old);
-		if ($assignee === null || $this->mayRead(schema: $schema, object: $object, userId: $assignee) === false) {
+		$run = new AssigneeFollowRun();
+		$run->schema = $this->schemaMapper->find(id: $schemaId, _rbac: false, _multitenancy: false);
+		$run->object = $object;
+		$run->old = $old;
+		$assignee = $this->changedAssignee(run: $run);
+		if ($assignee === null || $this->mayRead(run: $run, userId: $assignee) === false) {
 			return;
 		}
 
@@ -169,20 +171,18 @@ final class AssigneeFollowListener implements IEventListener {
 	/**
 	 * The assignee the save set, when the schema has the role, the value changed and it names a Nextcloud user.
 	 *
-	 * @param Schema            $schema The object's schema.
-	 * @param ObjectEntity      $object The object as saved.
-	 * @param ObjectEntity|null $old    The object before the save, on an update.
+	 * @param AssigneeFollowRun $run The schema, the object as saved and as it was.
 	 *
 	 * @return string|null The new assignee's uid, or null.
 	 */
-	private function changedAssignee(Schema $schema, ObjectEntity $object, ?ObjectEntity $old): ?string {
-		$property = ($this->roles->roles(properties: $schema->getProperties())['assignee'] ?? null);
+	private function changedAssignee(AssigneeFollowRun $run): ?string {
+		$property = ($this->roles->roles(properties: $run->schema->getProperties())['assignee'] ?? null);
 		if ($property === null) {
 			return null;
 		}
 
-		$assignee = $this->valueOf(object: $object, property: $property);
-		if ($this->isNewUser(assignee: $assignee, previous: $this->valueOf(object: $old, property: $property)) === false) {
+		$assignee = $this->valueOf(object: $run->object, property: $property);
+		if ($this->isNewUser(assignee: $assignee, previous: $this->valueOf(object: $run->old, property: $property)) === false) {
 			return null;
 		}
 
@@ -205,16 +205,16 @@ final class AssigneeFollowListener implements IEventListener {
 	/**
 	 * Whether the assignee may read the object, through the one RBAC evaluator.
 	 *
-	 * @param Schema       $schema The object's schema.
-	 * @param ObjectEntity $object The object as saved.
-	 * @param string       $userId The assignee's uid.
+	 * @param AssigneeFollowRun $run    The schema and the object as saved.
+	 * @param string            $userId The assignee's uid.
 	 *
 	 * @return bool True when the read is allowed.
 	 */
-	private function mayRead(Schema $schema, ObjectEntity $object, string $userId): bool {
+	private function mayRead(AssigneeFollowRun $run, string $userId): bool {
+		$object = $run->object;
 		$owner = $object->getOwner();
 
-		return $this->permissions->hasPermission(schema: $schema, action: 'read', userId: $userId, objectOwner: $owner, _rbac: true, object: $object);
+		return $this->permissions->hasPermission(schema: $run->schema, action: 'read', userId: $userId, objectOwner: $owner, _rbac: true, object: $object);
 
 	}//end mayRead()
 

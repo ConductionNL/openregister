@@ -31,6 +31,8 @@ declare(strict_types=1);
 
 namespace Unit\Service\Flow;
 
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -81,7 +83,7 @@ class FlowTriggerSlugsTest extends TestCase {
 			}
 		);
 
-		return new FlowTriggerSlugs($registers, $schemas, new NullLogger());
+		return new FlowTriggerSlugs(new SchemaCatalog($registers, $schemas, $this->createMock(MagicMapperInterface::class)), new NullLogger());
 	}
 
 	public function testANumericIdResolvesToItsSlug(): void {
@@ -112,7 +114,7 @@ class FlowTriggerSlugsTest extends TestCase {
 		$schemas = $this->createMock(SchemaMapper::class);
 		$schemas->expects($this->never())->method('find');
 
-		$slugs = new FlowTriggerSlugs($registers, $schemas, new NullLogger());
+		$slugs = new FlowTriggerSlugs(new SchemaCatalog($registers, $schemas, $this->createMock(MagicMapperInterface::class)), new NullLogger());
 
 		$this->assertSame('', $slugs->registerSlug(identifier: '  '));
 		$this->assertSame('', $slugs->schemaSlug(identifier: ''));
@@ -129,7 +131,7 @@ class FlowTriggerSlugsTest extends TestCase {
 		$schemas = $this->createMock(SchemaMapper::class);
 		$schemas->method('find')->willReturn(new Schema());
 
-		$slugs = new FlowTriggerSlugs($registers, $schemas, new NullLogger());
+		$slugs = new FlowTriggerSlugs(new SchemaCatalog($registers, $schemas, $this->createMock(MagicMapperInterface::class)), new NullLogger());
 
 		$this->assertSame('16', $slugs->registerSlug(identifier: '16'));
 		$this->assertSame('26', $slugs->schemaSlug(identifier: '26'));

@@ -86,7 +86,20 @@ class NotificationDedupeStateMapper extends QBMapper {
 	 * @return NotificationDedupeState|null Row when present, null when absent.
 	 */
 	public function findOne(int $schemaId, string $ruleKey, string $objectUuid): ?NotificationDedupeState {
-		$qb = $this->selectWhereEquals(columns: ['schema_id' => $schemaId, 'rule_key' => $ruleKey, 'object_uuid' => $objectUuid]);
+		return $this->findByKey(key: new NotificationDedupeKey(schemaId: $schemaId, ruleKey: $ruleKey, objectUuid: $objectUuid));
+	}//end findOne()
+
+	/**
+	 * Look up the dedup row of one key.
+	 *
+	 * @param NotificationDedupeKey $key The schema, rule and object.
+	 *
+	 * @return NotificationDedupeState|null Row when present, null when absent.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	public function findByKey(NotificationDedupeKey $key): ?NotificationDedupeState {
+		$qb = $this->selectWhereEquals(columns: ['schema_id' => $key->schemaId, 'rule_key' => $key->ruleKey, 'object_uuid' => $key->objectUuid]);
 		$qb->setMaxResults(1);
 
 		try {
@@ -101,7 +114,7 @@ class NotificationDedupeStateMapper extends QBMapper {
 		}
 
 		return null;
-	}//end findOne()
+	}//end findByKey()
 
 	/**
 	 * Insert-or-update the dedup row for one triple.
@@ -119,34 +132,43 @@ class NotificationDedupeStateMapper extends QBMapper {
 	 * @return NotificationDedupeState The persisted entity.
 	 */
 	public function upsert(NotificationDedupeKey $key, string $fingerprint, DateTime $now, bool $dispatched): NotificationDedupeState {
-		$existing = $this->findOne(schemaId: $key->schemaId, ruleKey: $key->ruleKey, objectUuid: $key->objectUuid);
+		return $this->store(key: $key, sighting: new DedupeSighting(fingerprint: $fingerprint, now: $now, dispatched: $dispatched));
+	}//end upsert()
+
+	/**
+	 * Insert-or-update the dedup row of one key with what the engine saw.
+	 *
+	 * @param NotificationDedupeKey $key      The schema, rule and object the row belongs to.
+	 * @param DedupeSighting        $sighting The fingerprint, the moment and whether it dispatched.
+	 *
+	 * @return NotificationDedupeState The persisted entity.
+	 */
+	private function store(NotificationDedupeKey $key, DedupeSighting $sighting): NotificationDedupeState {
+		$existing = $this->findByKey(key: $key);
 		if ($existing !== null) {
-			return $this->refresh(existing: $existing, fingerprint: $fingerprint, now: $now, dispatched: $dispatched);
+			return $this->refresh(existing: $existing, sighting: $sighting);
 		}
 
-		$entity = $this->newState(key: $key, fingerprint: $fingerprint, now: $now);
-
-		return $this->insertOrReadWinner(entity: $entity, key: $key);
-	}//end upsert()
+		return $this->insertOrReadWinner(entity: $this->newState(key: $key, sighting: $sighting), key: $key);
+	}//end store()
 
 
 	/**
 	 * A new row, seen and dispatched now.
 	 *
-	 * @param NotificationDedupeKey $key         The schema, rule and object.
-	 * @param string                $fingerprint The fingerprint.
-	 * @param DateTime              $now         The evaluation moment.
+	 * @param NotificationDedupeKey $key      The schema, rule and object.
+	 * @param DedupeSighting        $sighting The fingerprint and the evaluation moment.
 	 *
 	 * @return NotificationDedupeState The unsaved row.
 	 */
-	private function newState(NotificationDedupeKey $key, string $fingerprint, DateTime $now): NotificationDedupeState {
+	private function newState(NotificationDedupeKey $key, DedupeSighting $sighting): NotificationDedupeState {
 		$entity = new NotificationDedupeState();
 		$entity->setSchemaId($key->schemaId);
 		$entity->setRuleKey($key->ruleKey);
 		$entity->setObjectUuid($key->objectUuid);
-		$entity->setFingerprint($fingerprint);
-		$entity->setDispatchedAt($now);
-		$entity->setSeenAt($now);
+		$entity->setFingerprint($sighting->fingerprint);
+		$entity->setDispatchedAt($sighting->now);
+		$entity->setSeenAt($sighting->now);
 
 		return $entity;
 
@@ -156,18 +178,16 @@ class NotificationDedupeStateMapper extends QBMapper {
 	/**
 	 * Move an existing row on: new fingerprint, seen now, dispatched now when it was.
 	 *
-	 * @param NotificationDedupeState $existing    The stored row.
-	 * @param string                  $fingerprint The new fingerprint.
-	 * @param DateTime                $now         The evaluation moment.
-	 * @param bool                    $dispatched  Whether this evaluation dispatched.
+	 * @param NotificationDedupeState $existing The stored row.
+	 * @param DedupeSighting          $sighting The new fingerprint, the evaluation moment and whether it dispatched.
 	 *
 	 * @return NotificationDedupeState The updated row, or the row as changed when the update failed.
 	 */
-	private function refresh(NotificationDedupeState $existing, string $fingerprint, DateTime $now, bool $dispatched): NotificationDedupeState {
-		$existing->setFingerprint($fingerprint);
-		$existing->setSeenAt($now);
-		if ($dispatched === true) {
-			$existing->setDispatchedAt($now);
+	private function refresh(NotificationDedupeState $existing, DedupeSighting $sighting): NotificationDedupeState {
+		$existing->setFingerprint($sighting->fingerprint);
+		$existing->setSeenAt($sighting->now);
+		if ($sighting->dispatched === true) {
+			$existing->setDispatchedAt($sighting->now);
 		}
 
 		try {
@@ -198,7 +218,7 @@ class NotificationDedupeStateMapper extends QBMapper {
 
 			// Concurrent dispatcher won the race — re-read and treat the
 			// row as authoritative.
-			return ($this->findOne(schemaId: $key->schemaId, ruleKey: $key->ruleKey, objectUuid: $key->objectUuid) ?? throw $e);
+			return ($this->findByKey(key: $key) ?? throw $e);
 		}
 
 	}//end insertOrReadWinner()

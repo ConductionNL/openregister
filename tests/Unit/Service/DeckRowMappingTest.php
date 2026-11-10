@@ -13,6 +13,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Service\DeckCardService;
+use Psr\Container\ContainerInterface;
+use OCA\OpenRegister\Service\DeckPlatform;
 use OCA\OpenRegister\Service\DeckLinkService;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -111,7 +113,12 @@ class DeckRowMappingTest extends TestCase {
 		});
 
 		$service = (new ReflectionClass($class))->newInstanceWithoutConstructor();
-		(new ReflectionProperty($class, 'userManager'))->setValue($service, $users);
+		if ($class === DeckCardService::class) {
+			$deck = new DeckPlatform(userManager: $users, container: $this->createMock(ContainerInterface::class));
+			(new ReflectionProperty($class, 'deck'))->setValue($service, $deck);
+		} else {
+			(new ReflectionProperty($class, 'userManager'))->setValue($service, $users);
+		}
 		$reflection = new ReflectionMethod($service, $method);
 		$reflection->setAccessible(true);
 		return $reflection->invoke($service, $entity);

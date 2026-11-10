@@ -203,7 +203,7 @@ class TransferExecutionJob extends QueuedJob {
 			return;
 		}
 
-		$attempt = (int)($argument['attempt'] ?? 1);
+		$run = new TransferAttemptRun(transferListId: $transferListId, attempt: (int)($argument['attempt'] ?? 1));
 
 		$list = $this->transferRecordService->loadTransferList($transferListId);
 		if ($list === null) {
@@ -214,9 +214,10 @@ class TransferExecutionJob extends QueuedJob {
 			return;
 		}
 
-		$list = $this->attempt(list: $list, transferListId: $transferListId, attempt: $attempt);
+		$run->list = $list;
+		$this->attempt(run: $run);
 
-		$this->settle(list: $list, transferListId: $transferListId, attempt: $attempt);
+		$this->settle(run: $run);
 	}//end run()
 
 	/**
@@ -243,76 +244,69 @@ class TransferExecutionJob extends QueuedJob {
 	/**
 	 * Run one attempt; an unexpected throw counts as a partially failed attempt.
 	 *
-	 * @param array<string, mixed> $list           The transfer list.
-	 * @param string               $transferListId Its id, for the log.
-	 * @param int                  $attempt        The attempt number.
-	 *
-	 * @return array<string, mixed> The list after the attempt.
-	 *
-	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
-	 */
-	private function attempt(array $list, string $transferListId, int $attempt): array {
-		try {
-			$transport = $this->resolveTransport();
-			$list = $this->transferService->executeAttempt(transferList: $list, transport: $transport, attempt: $attempt);
-		} catch (\Throwable $e) {
-			$this->logger->error(
-				message: '[TransferExecutionJob] Attempt threw: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'transferListId' => $transferListId, 'attempt' => $attempt]
-			);
-			// Treat an unexpected throw as a failed attempt for retry purposes.
-			$list['status'] = TransferListServiceInterface::STATUS_PARTIALLY_FAILED;
-		}
-
-		return $list;
-	}//end attempt()
-
-	/**
-	 * Save a completed list, or retry / escalate a failed one.
-	 *
-	 * @param array<string, mixed> $list           The list after the attempt.
-	 * @param string               $transferListId Its id.
-	 * @param int                  $attempt        The attempt number.
+	 * @param TransferAttemptRun $run The run; its list is replaced by the list after the attempt.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
 	 */
-	private function settle(array $list, string $transferListId, int $attempt): void {
-		$status = (string)($list['status'] ?? TransferListServiceInterface::STATUS_FAILED);
+	private function attempt(TransferAttemptRun $run): void {
+		try {
+			$transport = $this->resolveTransport();
+			$run->list = $this->transferService->executeAttempt(transferList: $run->list, transport: $transport, attempt: $run->attempt);
+		} catch (\Throwable $e) {
+			$this->logger->error(
+				message: '[TransferExecutionJob] Attempt threw: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'transferListId' => $run->transferListId, 'attempt' => $run->attempt]
+			);
+			// Treat an unexpected throw as a failed attempt for retry purposes.
+			$run->list['status'] = TransferListServiceInterface::STATUS_PARTIALLY_FAILED;
+		}
+	}//end attempt()
+
+	/**
+	 * Save a completed list, or retry / escalate a failed one.
+	 *
+	 * @param TransferAttemptRun $run The run, holding the list after the attempt.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
+	 */
+	private function settle(TransferAttemptRun $run): void {
+		$status = (string)($run->list['status'] ?? TransferListServiceInterface::STATUS_FAILED);
 
 		if ($status === TransferListServiceInterface::STATUS_COMPLETED) {
-			$this->transferRecordService->saveTransferList($list);
+			$this->transferRecordService->saveTransferList($run->list);
 			$this->logger->info(
 				message: '[TransferExecutionJob] Transfer completed',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'transferListId' => $transferListId, 'attempt' => $attempt]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'transferListId' => $run->transferListId, 'attempt' => $run->attempt]
 			);
 			return;
 		}
 
 		// Non-terminal failure: retry until the attempt cap, then escalate.
 		$maxAttempts = $this->maxAttempts();
-		if ($attempt >= $maxAttempts) {
-			$this->escalate(list: $list, transferListId: $transferListId, attempt: $attempt, maxAttempts: $maxAttempts);
+		if ($run->attempt >= $maxAttempts) {
+			$this->escalate(run: $run, maxAttempts: $maxAttempts);
 			return;
 		}
 
-		$this->reschedule(list: $list, transferListId: $transferListId, attempt: $attempt);
+		$this->reschedule(run: $run);
 	}//end settle()
 
 	/**
 	 * Mark the list failed at the attempt cap and notify the archivists.
 	 *
-	 * @param array<string, mixed> $list           The list after the attempt.
-	 * @param string               $transferListId Its id.
-	 * @param int                  $attempt        The attempt number.
-	 * @param int                  $maxAttempts    The attempt cap.
+	 * @param TransferAttemptRun $run         The run, holding the list after the attempt.
+	 * @param int                $maxAttempts The attempt cap.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
 	 */
-	private function escalate(array $list, string $transferListId, int $attempt, int $maxAttempts): void {
+	private function escalate(TransferAttemptRun $run, int $maxAttempts): void {
+		$list = $run->list;
 		$list['status'] = TransferListServiceInterface::STATUS_FAILED;
 		$this->transferRecordService->saveTransferList($list);
 		$this->transferListService->notifyArchivists($list);
@@ -321,8 +315,8 @@ class TransferExecutionJob extends QueuedJob {
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'transferListId' => $transferListId,
-				'attempt' => $attempt,
+				'transferListId' => $run->transferListId,
+				'attempt' => $run->attempt,
 				'maxAttempts' => $maxAttempts,
 			]
 		);
@@ -331,15 +325,16 @@ class TransferExecutionJob extends QueuedJob {
 	/**
 	 * Keep the list in progress and schedule the next attempt with backoff.
 	 *
-	 * @param array<string, mixed> $list           The list after the attempt.
-	 * @param string               $transferListId Its id.
-	 * @param int                  $attempt        The attempt number.
+	 * @param TransferAttemptRun $run The run, holding the list after the attempt.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
 	 */
-	private function reschedule(array $list, string $transferListId, int $attempt): void {
+	private function reschedule(TransferAttemptRun $run): void {
+		$transferListId = $run->transferListId;
+		$attempt = $run->attempt;
+		$list = $run->list;
 		// Keep the list non-terminal (in_progress) between attempts so a
 		// partially-failed run keeps its confirmed objects while retrying.
 		$list['status'] = TransferListServiceInterface::STATUS_IN_PROGRESS;

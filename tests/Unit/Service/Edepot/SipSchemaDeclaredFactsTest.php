@@ -218,11 +218,7 @@ class SipSchemaDeclaredFactsTest extends TestCase {
 		$schemaMapper = $this->createMock(originalClassName: SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn($schema);
 
-		$annotations = new ObjectArchivalAnnotation(
-			schemaMapper: $schemaMapper,
-			evaluator: new RetentionEvaluator(logger: new NullLogger()),
-			logger: new NullLogger()
-		);
+		$annotations = new ObjectArchivalAnnotation(lookup: new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup(schemaMapper: $schemaMapper, logger: new NullLogger()), evaluator: new RetentionEvaluator(logger: new NullLogger()));
 
 		$eventMapper = $this->createMock(originalClassName: MdtoEventMapper::class);
 		$eventMapper->method('forObject')->willReturn([]);
@@ -235,7 +231,7 @@ class SipSchemaDeclaredFactsTest extends TestCase {
 			new MdtoValueSources($appConfig, $eventMapper, $sourceReader),
 			$writer,
 			$bestandGenerator,
-			new MdtoPreconditions($appConfig, new NullLogger(), new MdtoInputReaders($sourceReader, $bestandGenerator, $this->createMock(MdtoMappingResolver::class)))
+			new MdtoPreconditions(new MdtoInputReaders($sourceReader, $bestandGenerator, $this->createMock(MdtoMappingResolver::class)), new \OCA\OpenRegister\Service\Configuration\AppSettingsAccess($appConfig, $this->createMock(\OCP\App\IAppManager::class), new NullLogger()))
 		);
 	}//end generator()
 

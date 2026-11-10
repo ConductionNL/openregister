@@ -34,6 +34,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\CaseItemAudit;
 use OCA\OpenRegister\Db\FlowTimer;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
@@ -333,7 +334,7 @@ class CaseUnitsGoldenTest extends TestCase {
 		$realiser = $this->realiser();
 		$anchor = $this->createMock(CaseAnchorReader::class);
 		$anchor->method('read')->willReturn(['status' => 'open']);
-		$anchor->method('mayRead')->willReturnCallback(static fn (string $objectUuid): bool => $objectUuid !== self::THIRD);
+		$anchor->method('mayRead')->willReturnCallback(static fn (CaseAnchor $anchor): bool => $anchor->objectUuid !== self::THIRD);
 		$writer = $this->createMock(CaseBusinessStateWriter::class);
 		$writer->method('mirrorStatus')->willReturnCallback(
 			static function (CaseItem $milestone) use (&$writes): bool {
@@ -862,7 +863,7 @@ class CaseUnitsGoldenTest extends TestCase {
 		$l10n->method('t')->willReturnCallback(static fn (string $text, array $params = []): string => vsprintf($text, $params));
 		$urls = $this->createMock(IURLGenerator::class);
 		$urls->method('imagePath')->willReturn('/icon.svg');
-		$collaborators = ['steps' => new CaseStepRunner(plans: $this->service(writes: $writes), scope: $scope, session: $session), 'l10n' => $l10n, 'urls' => $urls];
+		$collaborators = ['steps' => new CaseStepRunner(plans: $this->service(writes: $writes), scope: $scope, session: $session), 'presentation' => new \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation($l10n, $urls)];
 		$open = new CaseOpenNode(...$collaborators);
 		$advance = new CaseAdvanceNode(...$collaborators);
 		$out = [];
@@ -1073,13 +1074,13 @@ class CaseUnitsGoldenTest extends TestCase {
 		$out = [];
 		foreach ($rows as $label => $row) {
 			$out['entered'][$label] = $timers->onEntered(item: $row, actor: 'alice', now: $now);
-			$out['rearm'][$label] = $timers->rearmStatutoryExpiry(item: $row, now: $now);
+			$out['rearm'][$label] = $timers->rearmStatutoryExpiry(item: $row, act: new FlowTimerAct(actor: null, now: $now));
 			$out['mark'][$label] = $timers->markIfStatutory(item: $row);
 		}
 
 		$refuse = true;
 		$out['refused'] = $timers->onEntered(item: $rows['both statutory'], actor: null, now: $now);
-		$out['refused rearm'] = $timers->rearmStatutoryExpiry(item: $rows['both statutory'], now: $now, actor: 'bob');
+		$out['refused rearm'] = $timers->rearmStatutoryExpiry(item: $rows['both statutory'], act: new FlowTimerAct(actor: 'bob', now: $now));
 		$out['armed'] = $armed;
 		$out['marked'] = array_keys($markers->all());
 		$out['log'] = $log->lines;

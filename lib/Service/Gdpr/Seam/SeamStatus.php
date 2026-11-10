@@ -51,13 +51,7 @@ final class SeamStatus {
 	 * @spec openspec/specs/dsar-identity-verify-seam/spec.md
 	 */
 	public static function assertAllowed(string $resultName, string $status, array $allowed): void {
-		if (in_array($status, $allowed, true) === true) {
-			return;
-		}
-
-		throw new InvalidArgumentException(
-			sprintf('%s status "%s" is invalid; expected one of: %s', $resultName, $status, implode(', ', $allowed))
-		);
+		(new SeamStatusSet(resultName: $resultName, allowed: $allowed))->assert(status: $status);
 
 	}//end assertAllowed()
 }//end class

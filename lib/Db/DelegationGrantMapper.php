@@ -120,6 +120,18 @@ class DelegationGrantMapper extends QBMapper implements DelegationGrantMapperInt
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
 	public function findOutstandingRequest(string $principal, string $actingAs, array $scope): ?DelegationGrant {
+		return $this->firstInScope(candidates: $this->latestRequest(principal: $principal, actingAs: $actingAs), scope: $scope);
+	}//end findOutstandingRequest()
+
+	/**
+	 * The newest requested or pending grant for this principal and acting-as pair, as a list of at most one.
+	 *
+	 * @param string $principal The uid that would act.
+	 * @param string $actingAs  The uid whose rights would be used.
+	 *
+	 * @return array<int, DelegationGrant> The candidate.
+	 */
+	private function latestRequest(string $principal, string $actingAs): array {
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
@@ -138,14 +150,26 @@ class DelegationGrantMapper extends QBMapper implements DelegationGrantMapperInt
 			->orderBy('id', 'DESC')
 			->setMaxResults(1);
 
-		foreach ($this->findEntities(query: $qb) as $candidate) {
+		return $this->findEntities(query: $qb);
+	}//end latestRequest()
+
+	/**
+	 * The first candidate whose scope is the same delegation as this one.
+	 *
+	 * @param array<int, DelegationGrant> $candidates The candidates.
+	 * @param array                       $scope      The scope being asked for.
+	 *
+	 * @return DelegationGrant|null The match, or null.
+	 */
+	private function firstInScope(array $candidates, array $scope): ?DelegationGrant {
+		foreach ($candidates as $candidate) {
 			if ($this->sameScope(a: ($candidate->getScope() ?? []), b: $scope) === true) {
 				return $candidate;
 			}
 		}
 
 		return null;
-	}//end findOutstandingRequest()
+	}//end firstInScope()
 
 	/**
 	 * Grants awaiting an answer from a given user.

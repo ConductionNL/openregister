@@ -11,6 +11,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Party;
 
 use Exception;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -78,7 +81,7 @@ class PartyServiceTest extends TestCase {
 		$this->schemas->method('find')->willReturn($this->partySchema());
 		$this->schemas->method('findAll')->willReturn([$this->partySchema()]);
 
-		$this->service = new PartyService($this->objects, $this->schemas);
+		$this->service = new PartyService($this->objects, $this->catalog(schemas: $this->schemas, registers: $this->createMock(RegisterMapperInterface::class)));
 	}//end setUp()
 
 	/**
@@ -377,8 +380,23 @@ class PartyServiceTest extends TestCase {
 			->getMock();
 		$registers->method('getAllRegisterIdsWithSchema')->willReturn([3]);
 
-		return new PartyService($objects, $this->schemas, $registers);
+		return new PartyService($objects, $this->catalog(schemas: $this->schemas, registers: $registers));
 	}//end scopedService()
+
+	/**
+	 * A schema catalog serving the given schema and register mappers.
+	 *
+	 * @param SchemaMapperInterface   $schemas   The schema mapper.
+	 * @param RegisterMapperInterface $registers The register mapper.
+	 *
+	 * @return SchemaCatalogInterface The catalog.
+	 */
+	private function catalog(SchemaMapperInterface $schemas, RegisterMapperInterface $registers): SchemaCatalogInterface {
+		$catalog = $this->createMock(SchemaCatalogInterface::class);
+		$catalog->method('schemas')->willReturn($schemas);
+		$catalog->method('registers')->willReturn($registers);
+		return $catalog;
+	}//end catalog()
 
 	/**
 	 * A party is read from the party table, without searching every table on the instance.

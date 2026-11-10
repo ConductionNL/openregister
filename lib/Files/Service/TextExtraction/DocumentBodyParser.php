@@ -150,13 +150,29 @@ class DocumentBodyParser {
 	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-hostile-input-is-bounded-req-docx-009
 	 */
 	public function parse(DOMDocument $document, ?DOMDocument $styles, ?DOMDocument $numbering, array $relationships): ?array {
-		$body = $document->getElementsByTagNameNS('*', 'body')->item(0);
+		return $this->parsePart(
+			part: new DocumentPart(document: $document, styles: $styles, numbering: $numbering, relationships: $relationships)
+		);
+	}//end parse()
+
+	/**
+	 * Parse a document part into its title and sections.
+	 *
+	 * @param DocumentPart $part The document part, its styles and numbering parts, and its relationships.
+	 *
+	 * @return array{title: string, sections: list<DocumentSection>, truncated: bool}|null Null when the part has no body.
+	 *
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-hostile-input-is-bounded-req-docx-009
+	 */
+	public function parsePart(DocumentPart $part): ?array {
+		$body = $part->document->getElementsByTagNameNS('*', 'body')->item(0);
 		if (($body instanceof DOMElement) === false) {
 			return null;
 		}
 
-		$this->styles = new DocumentStyleMap(styles: $styles, numbering: $numbering);
-		$this->relationships = $relationships;
+		$this->styles = new DocumentStyleMap(styles: $part->styles, numbering: $part->numbering);
+		$this->relationships = $part->relationships;
 		$this->title = '';
 		$this->titleTaken = false;
 		$this->sections = [];
@@ -169,7 +185,7 @@ class DocumentBodyParser {
 		$this->closeSection();
 
 		return ['title' => $this->title, 'sections' => $this->sections, 'truncated' => $this->truncated];
-	}//end parse()
+	}//end parsePart()
 
 	/**
 	 * Walk the block-level children of a container: body, content control, custom XML or text box.

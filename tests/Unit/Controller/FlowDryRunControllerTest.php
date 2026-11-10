@@ -41,7 +41,7 @@ class FlowDryRunControllerTest extends TestCase {
 	}
 
 	private function controller(): FlowDryRunController {
-		return new FlowDryRunController(appName: 'openregister', request: $this->request, access: $this->access, service: $this->service);
+		return new FlowDryRunController(request: $this->request, access: $this->access, service: $this->service);
 	}
 
 	private function signedIn(bool $mayUpdate): void {

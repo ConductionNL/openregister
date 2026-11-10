@@ -140,7 +140,7 @@ final class RecordTemplateServiceBehaviourTest extends TestCase {
 		return new RecordTemplateService(
 			new RecordTemplateCollaborators($this->mapper, $schemas, $this->logger),
 			$permissions,
-			new ViewerReachResolver($this->createMock(IUserSession::class), $groups, $this->createMock(LoggerInterface::class))
+			new ViewerReachResolver(new \OCA\OpenRegister\Service\Rbac\CallerContext($this->createMock(IUserSession::class), $groups), $this->createMock(LoggerInterface::class))
 		);
 	}
 

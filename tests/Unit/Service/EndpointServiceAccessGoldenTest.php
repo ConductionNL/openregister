@@ -124,8 +124,7 @@ final class EndpointServiceAccessGoldenTest extends TestCase {
 		return new EndpointService(
 			new EndpointMappers($mapper ?? $this->createMock(EndpointLogMapper::class), $this->createMock(AgentMapper::class)),
 			$this->createMock(LoggerInterface::class),
-			$session,
-			$groups
+			new \OCA\OpenRegister\Service\UserDirectory(session: $session, users: $this->createMock(\OCP\IUserManager::class), groups: $groups)
 		);
 	}//end service()
 

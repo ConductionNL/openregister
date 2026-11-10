@@ -19,6 +19,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Import\ImportValueCaster;
+use OCA\OpenRegister\Service\Import\ImportTarget;
+use OCA\OpenRegister\Service\Import\MappedSheet;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Service\MigrationPack\PassThroughL10nTrait;
@@ -1804,7 +1806,7 @@ class ImportServiceTest extends TestCase {
 		$sheet->setCellValue('B2', 'john@test.nl');
 
 		$columnMapping = ['A' => 'name', 'B' => 'email'];
-		$result = $method->invoke($this->service, $sheet, $columnMapping, 2);
+		$result = $method->invoke($this->service, new MappedSheet($sheet, $columnMapping), 2);
 
 		$this->assertSame([
 			'name' => 'John',
@@ -1823,7 +1825,7 @@ class ImportServiceTest extends TestCase {
 		// Row 2 is empty.
 
 		$columnMapping = ['A' => 'name'];
-		$result = $method->invoke($this->service, $sheet, $columnMapping, 2);
+		$result = $method->invoke($this->service, new MappedSheet($sheet, $columnMapping), 2);
 
 		$this->assertSame([], $result);
 	}
@@ -1839,7 +1841,7 @@ class ImportServiceTest extends TestCase {
 		// B2 is empty.
 
 		$columnMapping = ['A' => 'name', 'B' => 'email'];
-		$result = $method->invoke($this->service, $sheet, $columnMapping, 2);
+		$result = $method->invoke($this->service, new MappedSheet($sheet, $columnMapping), 2);
 
 		$this->assertSame(['name' => 'John'], $result);
 	}
@@ -1854,7 +1856,7 @@ class ImportServiceTest extends TestCase {
 		$sheet->setCellValue('A2', '  John  ');
 
 		$columnMapping = ['A' => 'name'];
-		$result = $method->invoke($this->service, $sheet, $columnMapping, 2);
+		$result = $method->invoke($this->service, new MappedSheet($sheet, $columnMapping), 2);
 
 		$this->assertSame(['name' => 'John'], $result);
 	}
@@ -2001,7 +2003,7 @@ class ImportServiceTest extends TestCase {
 			'age' => '30',
 		];
 
-		$result = $method->invoke($this->service, $rowData, $register, $schema, null);
+		$result = $method->invoke($this->service, $rowData, new ImportTarget($register, $schema, null));
 
 		$this->assertSame('John', $result['name']);
 		$this->assertSame(30, $result['age']);
@@ -2021,7 +2023,7 @@ class ImportServiceTest extends TestCase {
 			'age' => '30',
 		];
 
-		$result = $method->invoke($this->service, $rowData, $register, null, null);
+		$result = $method->invoke($this->service, $rowData, new ImportTarget($register, null, null));
 
 		// Without schema, values should NOT be transformed.
 		$this->assertSame('John', $result['name']);
@@ -2040,7 +2042,7 @@ class ImportServiceTest extends TestCase {
 
 		$rowData = ['name' => 'John'];
 
-		$result = $method->invoke($this->service, $rowData, null, $schema, null);
+		$result = $method->invoke($this->service, $rowData, new ImportTarget(null, $schema, null));
 
 		$this->assertSame('John', $result['name']);
 		$this->assertArrayNotHasKey('register', $result['@self']);
@@ -2062,7 +2064,7 @@ class ImportServiceTest extends TestCase {
 			'name' => 'John',
 		];
 
-		$result = $method->invoke($this->service, $rowData, $register, $schema, null);
+		$result = $method->invoke($this->service, $rowData, new ImportTarget($register, $schema, null));
 
 		$this->assertSame('existing-uuid', $result['@self']['id']);
 	}
@@ -2083,7 +2085,7 @@ class ImportServiceTest extends TestCase {
 			'phone' => null,
 		];
 
-		$result = $method->invoke($this->service, $rowData, $register, $schema, null);
+		$result = $method->invoke($this->service, $rowData, new ImportTarget($register, $schema, null));
 
 		$this->assertSame('John', $result['name']);
 		$this->assertArrayNotHasKey('email', $result);
@@ -2105,7 +2107,7 @@ class ImportServiceTest extends TestCase {
 			'_internal' => 'hidden',
 		];
 
-		$result = $method->invoke($this->service, $rowData, $register, $schema, null);
+		$result = $method->invoke($this->service, $rowData, new ImportTarget($register, $schema, null));
 
 		$this->assertSame('John', $result['name']);
 		$this->assertArrayNotHasKey('_internal', $result);
@@ -2135,7 +2137,7 @@ class ImportServiceTest extends TestCase {
 			'@self.organisation' => '12345678-1234-1234-1234-123456789abc',
 		];
 
-		$result = $method->invoke($this->service, $rowData, $register, $schema, $user);
+		$result = $method->invoke($this->service, $rowData, new ImportTarget($register, $schema, $user));
 
 		$this->assertSame('12345678-1234-1234-1234-123456789abc', $result['@self']['organisation']);
 	}
@@ -2164,7 +2166,7 @@ class ImportServiceTest extends TestCase {
 			'@self.organisation' => 'org-uuid',
 		];
 
-		$result = $method->invoke($this->service, $rowData, $register, $schema, $user);
+		$result = $method->invoke($this->service, $rowData, new ImportTarget($register, $schema, $user));
 
 		// @ columns should be skipped for non-admin.
 		$this->assertArrayNotHasKey('organisation', $result['@self']);
@@ -2194,7 +2196,7 @@ class ImportServiceTest extends TestCase {
 			'@other.field' => 'value',
 		];
 
-		$result = $method->invoke($this->service, $rowData, $register, $schema, $user);
+		$result = $method->invoke($this->service, $rowData, new ImportTarget($register, $schema, $user));
 
 		// @other columns should be ignored (not in @self, not in objectData).
 		$this->assertArrayNotHasKey('@other.field', $result);

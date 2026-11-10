@@ -33,6 +33,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 
 /**
  * Golden outcomes of RetentionRowScanner::scan().
@@ -112,7 +113,7 @@ class RetentionRowScannerGoldenTest extends TestCase {
 			);
 		}
 
-		return new RetentionRowScanner(stores: new RetentionScanStores(db: $db, registerMapper: $registerMapper, schemaMapper: $schemaMapper, objectMapper: $objectMapper), logger: $logger);
+		return new RetentionRowScanner(stores: new RetentionScanStores(db: $db, catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $objectMapper)), logger: $logger);
 	}//end scanner()
 
 	/**
