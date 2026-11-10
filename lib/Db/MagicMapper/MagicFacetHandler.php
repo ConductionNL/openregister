@@ -954,12 +954,8 @@ class MagicFacetHandler {
 	 * @return string|null The conditions, or null when the filters rule the table out.
 	 */
 	private function tableWhereSql(array $baseQuery, array $tableConfig): ?string {
-		$whereConditions = $this->searchHandler->buildWhereConditionsSql(
-			query: $baseQuery,
-			schema: $tableConfig['schema'],
-			registerId: ($tableConfig['register'] ?? null)?->getId(),
-			tableName: $tableConfig['tableName']
-		);
+		$table           = new MagicReadTable(schema: $tableConfig['schema'], registerId: ($tableConfig['register'] ?? null)?->getId(), tableName: $tableConfig['tableName']);
+		$whereConditions = $this->searchHandler->buildWhereClause(request: new WhereClauseRequest(query: $baseQuery, table: $table));
 
 		return $this->conditionsSql(whereConditions: $whereConditions);
 	}//end tableWhereSql()
@@ -1910,12 +1906,8 @@ class MagicFacetHandler {
 		// property, and the facet beside the result still describes every
 		// case in the register. Nothing looks broken, the numbers are just
 		// answers to a different question.
-		$queryBuilder = $this->searchHandler->buildFilteredQuery(
-			query: $facet->baseQuery,
-			schema: $facet->schema,
-			tableName: $facet->tableName,
-			registerId: $facet->register->getId()
-		);
+		$table        = new MagicReadTable(schema: $facet->schema, registerId: $facet->register->getId(), tableName: $facet->tableName);
+		$queryBuilder = $this->searchHandler->buildTableQuery(query: $facet->baseQuery, table: $table);
 		$columnRef = "t.{$facet->field}";
 		$queryBuilder->selectAlias($columnRef, 'facet_value')
 			->addSelect($queryBuilder->createFunction('COUNT(*) as doc_count'))
@@ -2204,12 +2196,8 @@ class MagicFacetHandler {
 	private function dateHistogramQuery(TableTermsFacet $facet, string $interval): IQueryBuilder {
 		// Same reason as the terms facet: a histogram that ignores `_related`
 		// draws a shape of the unfiltered set beside a filtered list.
-		$queryBuilder = $this->searchHandler->buildFilteredQuery(
-			query: $facet->baseQuery,
-			schema: $facet->schema,
-			tableName: $facet->tableName,
-			registerId: $facet->register->getId()
-		);
+		$table        = new MagicReadTable(schema: $facet->schema, registerId: $facet->register->getId(), tableName: $facet->tableName);
+		$queryBuilder = $this->searchHandler->buildTableQuery(query: $facet->baseQuery, table: $table);
 
 		// The date-key SQL expression is platform-specific; buildFilteredQuery aliases the table as 't'.
 		$tDateKeyExpr = $this->buildDateKeyExpr(field: "t.{$facet->field}", interval: $interval);
