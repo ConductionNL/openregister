@@ -62,9 +62,8 @@ class MigrationValueCaster {
 	/**
 	 * Cast a value to the target type.
 	 *
-	 * @param mixed       $value  The value.
-	 * @param string      $toType Target type, one of TYPES.
-	 * @param string|null $format Optional date format.
+	 * @param mixed      $value  The value.
+	 * @param CastTarget $target Target type (one of TYPES) and optional date format.
 	 *
 	 * @return mixed The cast value.
 	 *
@@ -72,16 +71,16 @@ class MigrationValueCaster {
 	 *
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
-	public function cast(mixed $value, string $toType, ?string $format): mixed {
-		if ($toType === 'date') {
-			return $this->castDate(value: $value, format: $format);
+	public function cast(mixed $value, CastTarget $target): mixed {
+		if ($target->type === 'date') {
+			return $this->castDate(value: $value, format: $target->format);
 		}
 
-		if ($toType === 'boolean') {
+		if ($target->type === 'boolean') {
 			return $this->castBoolean(value: $value);
 		}
 
-		return $this->castScalar(value: $value, toType: $toType);
+		return $this->castScalar(value: $value, toType: $target->type);
 	}//end cast()
 
 	/**

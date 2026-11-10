@@ -357,10 +357,9 @@ class SchemaMigrationPlanner {
 	 */
 	private function castStep(array $data, array $step): array {
 		$field  = (string)$step['field'];
-		$toType = (string)$step['to'];
-		$format = ($step['format'] ?? null);
+		$target = new CastTarget(type: (string)$step['to'], format: ($step['format'] ?? null));
 		if (array_key_exists($field, $data) === true && $data[$field] !== null) {
-			$data[$field] = $this->caster->cast(value: $data[$field], toType: $toType, format: $format);
+			$data[$field] = $this->caster->cast(value: $data[$field], target: $target);
 		}
 
 		return ['data' => $data, 'applied' => sprintf('cast %s -> %s', $step['field'], $step['to'])];
