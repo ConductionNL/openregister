@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Service\Object\AuditHandler;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -44,8 +45,8 @@ class AuditHandlerTest extends TestCase {
 	public function testDefaultsBindTheObjectAndOrderNewestFirst(): void {
 		$entry  = new AuditTrail();
 		$mapper = $this->createMock(AuditTrailMapperInterface::class);
-		$mapper->expects($this->once())->method('findAll')
-			->with(null, null, ['object_uuid' => 'u-1', 'order_by' => 'created_at', 'order' => 'DESC'])
+		$mapper->expects($this->once())->method('findTrail')
+			->with(ListQuery::unbounded(['object_uuid' => 'u-1', 'order_by' => 'created_at', 'order' => 'DESC'], ['created' => 'DESC']))
 			->willReturn([$entry]);
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->once())->method('info')
@@ -65,11 +66,8 @@ class AuditHandlerTest extends TestCase {
 	 */
 	public function testOnlyKnownNonEmptyFiltersPassThrough(): void {
 		$mapper = $this->createMock(AuditTrailMapperInterface::class);
-		$mapper->expects($this->once())->method('findAll')
-			->with(
-				null,
-				null,
-				[
+		$mapper->expects($this->once())->method('findTrail')
+			->with(ListQuery::unbounded([
 					'object_uuid' => 'u-1',
 					'action'      => 'update',
 					'user'        => 'alice',
@@ -77,8 +75,7 @@ class AuditHandlerTest extends TestCase {
 					'date_to'     => '2026-02-01',
 					'order_by'    => 'action',
 					'order'       => 'ASC',
-				]
-			)
+				], ['created' => 'DESC']))
 			->willReturn([]);
 		$handler = new AuditHandler(auditTrailMapper: $mapper, logger: $this->createMock(LoggerInterface::class));
 
@@ -106,8 +103,8 @@ class AuditHandlerTest extends TestCase {
 	 */
 	public function testEmptyFilterValuesAreDropped(): void {
 		$mapper = $this->createMock(AuditTrailMapperInterface::class);
-		$mapper->expects($this->once())->method('findAll')
-			->with(null, null, ['object_uuid' => 'u-2', 'order_by' => 'created_at', 'order' => 'DESC'])
+		$mapper->expects($this->once())->method('findTrail')
+			->with(ListQuery::unbounded(['object_uuid' => 'u-2', 'order_by' => 'created_at', 'order' => 'DESC'], ['created' => 'DESC']))
 			->willReturn([]);
 		$handler = new AuditHandler(auditTrailMapper: $mapper, logger: $this->createMock(LoggerInterface::class));
 
@@ -122,7 +119,7 @@ class AuditHandlerTest extends TestCase {
 	public function testMapperFailureIsLoggedAndRethrown(): void {
 		$failure = new RuntimeException('db down');
 		$mapper  = $this->createMock(AuditTrailMapperInterface::class);
-		$mapper->method('findAll')->willThrowException($failure);
+		$mapper->method('findTrail')->willThrowException($failure);
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->once())->method('error')
 			->with('[AuditHandler] Failed to get logs', $this->callback(static fn (array $c): bool => $c['uuid'] === 'u-3' && $c['error'] === 'db down'));

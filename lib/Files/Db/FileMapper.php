@@ -252,22 +252,17 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 	 * publication date it belongs to, which reads as "published" to a careless
 	 * comparison and as nothing at all to a careful one.
 	 *
-	 * @param int            $fileId      The Nextcloud filecache fileid.
-	 * @param \DateTime|null $published   When the file becomes public, or null for never.
-	 * @param \DateTime|null $depublished When it stops, or null for no end date.
+	 * @param int               $fileId The Nextcloud filecache fileid.
+	 * @param PublicationWindow $window When the file becomes public and when it stops.
 	 *
 	 * @return File The updated entity.
 	 *
 	 * @spec openspec/changes/file-publication-window/specs/file-publication-window/spec.md#requirement-a-file-carries-its-own-publication-window-req-fpw-101
 	 */
-	public function setPublicationWindowForFile(
-		int $fileId,
-		?\DateTime $published,
-		?\DateTime $depublished
-	): File {
+	public function setPublicationWindowForFile(int $fileId, PublicationWindow $window): File {
 		$file = $this->findOrCreateByFileId(fileId: $fileId);
-		$file->setPublished($published);
-		$file->setDepublished($depublished);
+		$file->setPublished($window->published);
+		$file->setDepublished($window->depublished);
 		$file->setUpdated(new DateTime());
 		return $this->update(entity: $file);
 	}//end setPublicationWindowForFile()

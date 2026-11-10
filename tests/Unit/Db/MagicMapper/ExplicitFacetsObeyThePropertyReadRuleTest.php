@@ -33,6 +33,8 @@ declare(strict_types=1);
 
 namespace Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableTarget;
 use OCA\OpenRegister\Db\Register;
@@ -115,7 +117,7 @@ class ExplicitFacetsObeyThePropertyReadRuleTest extends TestCase {
 
 		$rbac = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($userSession, $groupManager), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(ConditionMatcher::class), self::stateFieldRuleResolver($userSession, $groupManager)), logger: new NullLogger());
 
-		$this->assertTrue($rbac->canReadProperty(schema: $this->schema(), property: 'contactPerson', object: []));
+		$this->assertTrue($rbac->canReadProperty(property: new SchemaProperty(schema: $this->schema(), name: 'contactPerson'), request: new PropertyAccessRequest(object: [])));
 	}
 
 	/**

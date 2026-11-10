@@ -46,6 +46,7 @@ use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\BulkJob\ReversalRequest;
 
 final class BulkJobsControllerTest extends TestCase {
 
@@ -318,7 +319,7 @@ final class BulkJobsControllerTest extends TestCase {
 	public function testAMalformedCreateAnswersFourHundred(): void {
 		$this->signIn('coordinator');
 		$this->params['action'] = 'openregister:assign';
-		$this->service->method('create')->willThrowException(
+		$this->service->method('createFromRequest')->willThrowException(
 			new \InvalidArgumentException('A bulk job needs both a register and a schema.')
 		);
 
@@ -433,8 +434,8 @@ final class BulkJobsControllerTest extends TestCase {
 		$this->reversal->expects($this->once())
 			->method('reverse')
 			->willReturnCallback(
-				function (BulkJob $job, string $actorUid, ?string $justification) use (&$seen): BulkJob {
-					$seen = ['actor' => $actorUid, 'reason' => $justification];
+				function (ReversalRequest $request) use (&$seen): BulkJob {
+					$seen = ['actor' => $request->actorUid, 'reason' => $request->justification];
 
 					return $this->job('fatima');
 				}

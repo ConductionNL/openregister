@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableTarget;
 use OCA\OpenRegister\Db\Register;
@@ -133,9 +134,9 @@ class MagicFacetHandlerTableTermsTest extends TestCase {
 		if (($world['filtered'] ?? false) === true) {
 			$searchHandler = $this->createMock(MagicSearchHandler::class);
 			$searchHandler->method('buildFilteredQuery')->willReturnCallback(
-				function (array $query, Schema $schema, string $tableName, ?int $registerId = null) {
+				function (array $query, MagicReadTable $table) {
 					$qb = $this->recordingBuilder();
-					$this->queryLog[] = '#' . $this->builderCount . ' buildFilteredQuery(' . $this->renderArgs([$query, $schema->getId(), $tableName, $registerId]) . ')';
+					$this->queryLog[] = '#' . $this->builderCount . ' buildFilteredQuery(' . $this->renderArgs([$query, $table->schema->getId(), $table->tableName, $table->registerId]) . ')';
 					return $qb;
 				}
 			);

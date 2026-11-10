@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\ConflictReportInterface;
+use OCA\OpenRegister\Service\Object\RefusedWrite;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -75,7 +76,7 @@ class ObjectVersionGuardRefusalTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->auditTrail = $this->createMock(AuditTrailMapperInterface::class);
-		$this->auditTrail->method('findAll')->willReturn([]);
+		$this->auditTrail->method('findTrail')->willReturn([]);
 		$this->container = $this->createMock(ContainerInterface::class);
 		$this->logger    = $this->createMock(LoggerInterface::class);
 	}//end setUp()
@@ -162,7 +163,14 @@ class ObjectVersionGuardRefusalTest extends TestCase {
 		$report = $this->createMock(ConflictReportInterface::class);
 		$report->expects($this->once())
 			->method('build')
-			->with($this->isInstanceOf(ObjectEntity::class), $schema, ['title' => 'mine'], [])
+			->with(
+				$this->callback(
+					callback: static fn (RefusedWrite $write): bool => $write->stored instanceof ObjectEntity
+						&& $write->schema === $schema
+						&& $write->sent === ['title' => 'mine']
+				),
+				[]
+			)
 			->willReturn(['error' => 'detailed', 'conflicts' => ['title' => ['theirs', 'mine', 'base']]]);
 		$this->container->method('get')->with(ConflictReportInterface::class)->willReturn($report);
 

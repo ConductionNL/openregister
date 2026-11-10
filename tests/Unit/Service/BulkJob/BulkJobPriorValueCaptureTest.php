@@ -48,6 +48,7 @@ use OCA\OpenRegister\Service\BulkJob\BulkJobPass;
 use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorServices;
 use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorStores;
 use OCA\OpenRegister\Service\BulkJob\BulkJobActionCall;
+use OCA\OpenRegister\Service\BulkJob\BulkJobRequest;
 use OCA\OpenRegister\Service\BulkJob\BulkJobSelection;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use OCA\OpenRegister\Service\BulkJob\BulkSelectionResolver;
@@ -338,7 +339,7 @@ final class BulkJobPriorValueCaptureTest extends TestCase {
 		);
 
 		try {
-			$service->create(new BulkJobActionCall('openregister:set-properties', []), new BulkJobSelection(['ids' => $uuids], 1, 2), 'coordinator', null);
+			$service->createFromRequest(new BulkJobRequest(new BulkJobActionCall('openregister:set-properties', []), new BulkJobSelection(['ids' => $uuids], 1, 2), 'coordinator', null));
 			$this->fail('The undo ceiling should have refused this job.');
 		} catch (BulkJobRefusedException $exception) {
 			$this->assertSame('undo-ceiling', $exception->getReason());
