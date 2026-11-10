@@ -34,6 +34,7 @@ use OCP\Share\IShare;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Files\Service\File\UserShareGrant;
 
 /**
  * A file is shared once per user; a folder only with an existing user; failures are
@@ -99,7 +100,7 @@ final class FileSharingHandlerUserShareTest extends TestCase {
 			->willReturn([$this->shareWith(userId: 'bob'), $this->shareWith(userId: 'alice')]);
 		$this->shares->expects($this->never())->method('newShare');
 
-		$this->handler->shareFileWithUser(file: $file, userId: 'alice');
+		$this->handler->shareFileWithUser(grant: new UserShareGrant(node: $file, userId: 'alice'));
 	}//end testAFileAlreadySharedWithTheUserIsNotSharedAgain()
 
 	/**
@@ -117,7 +118,7 @@ final class FileSharingHandlerUserShareTest extends TestCase {
 		$this->logger->expects($this->once())->method('error')->with('[FileSharingHandler] Failed to share file a.pdf with user alice: quota');
 
 		$this->expectExceptionObject($failure);
-		$this->handler->shareFileWithUser(file: $file, userId: 'alice');
+		$this->handler->shareFileWithUser(grant: new UserShareGrant(node: $file, userId: 'alice'));
 	}//end testAFailedFileShareIsLoggedAndRethrown()
 
 	/**
@@ -141,7 +142,7 @@ final class FileSharingHandlerUserShareTest extends TestCase {
 		$this->shares->method('newShare')->willReturn($share);
 		$this->shares->expects($this->once())->method('createShare')->with($share);
 
-		$this->assertSame($share, $this->handler->shareFolderWithUser(folder: $folder, userId: 'alice', permissions: 1));
+		$this->assertSame($share, $this->handler->shareFolderWithUser(grant: new UserShareGrant(node: $folder, userId: 'alice', permissions: 1)));
 	}//end testAFolderIsSharedByNodeIdWithAnExistingUser()
 
 	/**
@@ -154,7 +155,7 @@ final class FileSharingHandlerUserShareTest extends TestCase {
 		$this->shares->expects($this->never())->method('newShare');
 		$this->logger->expects($this->once())->method('warning');
 
-		$this->assertNull($this->handler->shareFolderWithUser(folder: $this->createMock(Folder::class), userId: 'ghost'));
+		$this->assertNull($this->handler->shareFolderWithUser(grant: new UserShareGrant(node: $this->createMock(Folder::class), userId: 'ghost')));
 	}//end testAFolderIsNotSharedWithAnUnknownUser()
 
 	/**
@@ -174,7 +175,7 @@ final class FileSharingHandlerUserShareTest extends TestCase {
 			$errors[] = $message;
 		});
 
-		$this->assertNull($this->handler->shareFolderWithUser(folder: $folder, userId: 'alice'));
+		$this->assertNull($this->handler->shareFolderWithUser(grant: new UserShareGrant(node: $folder, userId: 'alice')));
 		$this->assertSame(
 			[
 				'[FileSharingHandler] Failed to create share for x by user openregister: denied',

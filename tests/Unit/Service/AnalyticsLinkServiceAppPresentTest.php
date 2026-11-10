@@ -24,6 +24,7 @@ namespace Unit\Service;
 
 require_once __DIR__ . '/Fixtures/AnalyticsAppDoubles.php';
 
+use OCA\OpenRegister\Service\AnalyticsReportDraft;
 use DateTime;
 use OCA\OpenRegister\Db\AnalyticsLink;
 use OCA\OpenRegister\Db\AnalyticsLinkMapper;
@@ -171,7 +172,7 @@ class AnalyticsLinkServiceAppPresentTest extends TestCase {
 
 		$this->expectExceptionCode(500);
 		$this->expectExceptionMessage('Failed to create Analytics report');
-		$this->service->createAndLinkReport($this->target(), 'New');
+		$this->service->createAndLinkReport($this->target(), new AnalyticsReportDraft('New', null));
 	}
 
 	public function testCreateAndLinkReportPassesTheRequestedTypeToAnalytics(): void {
@@ -179,7 +180,7 @@ class AnalyticsLinkServiceAppPresentTest extends TestCase {
 		$this->reports->createResult = 9;
 		$this->reports->reports[9] = ['name' => 'New', 'type' => 3];
 
-		$link = $this->service->createAndLinkReport($this->target(), '  New  ', 3);
+		$link = $this->service->createAndLinkReport($this->target(), new AnalyticsReportDraft('  New  ', 3));
 
 		$this->assertSame(['New', '', 0, 3, 0, '', '', '', '', '', ''], $this->reports->created[0]);
 		$this->assertSame(9, $link->getReportId());

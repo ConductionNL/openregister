@@ -116,10 +116,9 @@ class CasePlanAuthorizationService implements CasePlanAuthorizationServiceInterf
 	/**
 	 * Assert a caller may act on an item (enable, transition, attach under it).
 	 *
-	 * @param string $verb The verb attempted.
+	 * @param CasePlanAct   $act  The verb attempted and the acting identity.
 	 * @param CaseItem|null $item The item acted on, or null for the plan root.
-	 * @param CasePlanTree $tree The plan (for ancestors and root settings).
-	 * @param string|null $uid The acting identity.
+	 * @param CasePlanTree  $tree The plan (for ancestors and root settings).
 	 *
 	 * @return void
 	 *
@@ -127,17 +126,16 @@ class CasePlanAuthorizationService implements CasePlanAuthorizationServiceInterf
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
-	public function assertMayAct(string $verb, ?CaseItem $item, CasePlanTree $tree, ?string $uid): void {
-		$this->assertGranted(act: new CasePlanAct(verb: $verb, actor: $uid), rules: $this->effectiveRules(item: $item, tree: $tree));
+	public function assertMayAct(CasePlanAct $act, ?CaseItem $item, CasePlanTree $tree): void {
+		$this->assertGranted(act: $act, rules: $this->effectiveRules(item: $item, tree: $tree));
 	}//end assertMayAct()
 
 	/**
 	 * Assert a caller may administer a plan: create it, delete it, complete
 	 * the case. Judged against the ROOT rules alone.
 	 *
-	 * @param string $verb The verb attempted.
+	 * @param CasePlanAct          $act      The verb attempted and the acting identity.
 	 * @param array<string, mixed> $settings The plan settings (root rules under `authorization`).
-	 * @param string|null $uid The acting identity.
 	 *
 	 * @return void
 	 *
@@ -145,8 +143,8 @@ class CasePlanAuthorizationService implements CasePlanAuthorizationServiceInterf
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
-	public function assertMayAdminister(string $verb, array $settings, ?string $uid): void {
-		$this->assertGranted(act: new CasePlanAct(verb: $verb, actor: $uid), rules: ($settings['authorization'] ?? null));
+	public function assertMayAdminister(CasePlanAct $act, array $settings): void {
+		$this->assertGranted(act: $act, rules: ($settings['authorization'] ?? null));
 	}//end assertMayAdminister()
 
 	/**

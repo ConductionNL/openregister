@@ -35,6 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Task;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Db\PortalTaskDeliveryMapper;
@@ -56,10 +57,16 @@ use Throwable;
 class TaskInboxService implements TaskInboxServiceInterface {
 
 	/**
+	 * The ONE overdue derivation: a pure function of a task and a clock, so it is built here, not injected.
+	 *
+	 * @var TaskTemporalProjection
+	 */
+	private readonly TaskTemporalProjection $temporal;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param TaskMapper $tasks The datastore queries.
-	 * @param TaskTemporalProjection $temporal The ONE overdue derivation.
 	 * @param LoggerInterface $logger Failure reporting.
 	 * @param MagicMapperInterface|null $objects Resolves subject objects for
 	 *                                           row context. Nullable so the
@@ -90,14 +97,13 @@ class TaskInboxService implements TaskInboxServiceInterface {
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,
-		private readonly TaskTemporalProjection $temporal,
 		private readonly LoggerInterface $logger,
 		private readonly ?MagicMapperInterface $objects = null,
 		private readonly ?PortalTaskDeliveryMapper $deliveries = null,
 		private readonly ?TaskSubjectLocator $locator = null,
 		private readonly ?TaskBlockerMapperInterface $blockers = null,
 	) {
-
+		$this->temporal = new TaskTemporalProjection();
 	}//end __construct()
 
 	/**
@@ -124,7 +130,7 @@ class TaskInboxService implements TaskInboxServiceInterface {
 			return $page->envelope(results: [], total: 0);
 		}
 
-		$tasks = $this->tasks->findInbox(criteria: $criteria, limit: $page->limit, offset: $page->offset);
+		$tasks = $this->tasks->findInbox(criteria: $criteria, page: new ListQuery(limit: $page->limit, offset: $page->offset));
 		$total = $this->tasks->countInbox(criteria: $criteria);
 		$subjects = $this->subjectContexts(tasks: $tasks);
 		$openBlockers = $this->openBlockers(tasks: $tasks);

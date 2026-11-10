@@ -28,6 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+
 /**
  * Proves and reverts made changes.
  *
@@ -63,7 +65,7 @@ class ExampleSetChangeReadBack {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	public function lost(array $entry): array {
-		$row = $this->store->get(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id']);
+		$row = $this->store->row(ref: new ObjectRef(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id']));
 		if ($row === null) {
 			return ['(gone)'];
 		}
@@ -131,7 +133,9 @@ class ExampleSetChangeReadBack {
 	public function revert(array $entry): array {
 		// `read()` tells an object that is gone (nothing left to undo) from a read that failed (nothing is known,
 		// so nothing is reported as undone and the record keeps the change).
-		$read = $this->store->read(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id']);
+		$read = $this->store->readRow(
+			ref: new ObjectRef(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id'])
+		);
 		if ($read['row'] === null) {
 			return ['ok' => ($read['error'] === ''), 'left' => []];
 		}
@@ -178,7 +182,7 @@ class ExampleSetChangeReadBack {
 	private function undoSet(array $row, array $set): array {
 		$row = $this->paths->withoutPath(row: $row, path: $set['path']);
 		if ($set['had'] === true) {
-			return $this->paths->withPath(row: $row, path: $set['path'], value: $set['old']);
+			return $this->paths->withPath(row: $row, set: new ExampleSetPathValue(path: $set['path'], value: $set['old']));
 		}
 
 		// A map the change made on the way to its path goes again when nothing else filled it since.
@@ -202,7 +206,7 @@ class ExampleSetChangeReadBack {
 		foreach ($appended as $append) {
 			$list = (array) ($this->paths->atPath(row: $row, path: $append['path'])['value'] ?? []);
 			$kept = array_values(array_filter($list, static fn ($item): bool => $item !== $append['value']));
-			$row  = $this->paths->withPath(row: $row, path: $append['path'], value: $kept);
+			$row  = $this->paths->withPath(row: $row, set: new ExampleSetPathValue(path: $append['path'], value: $kept));
 		}
 
 		return $row;

@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -118,9 +119,7 @@ class SlugIdLookupGoldenTest extends TestCase {
 			$this->createMock(SchemaMapper::class),
 			$this->createMock(IEventDispatcher::class),
 			$this->createMock(ContainerInterface::class),
-			$this->createMock(OrganisationMapper::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
+			new TenancyServices($this->createMock(OrganisationMapper::class), $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)),
 			$this->createMock(IAppConfig::class),
 			$this->createMock(LoggerInterface::class)
 		);

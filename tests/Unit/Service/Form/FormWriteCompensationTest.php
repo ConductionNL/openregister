@@ -17,6 +17,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Form\FormSubmitFailure;
 use OCA\OpenRegister\Service\Form\FormWriteCompensation;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -55,7 +56,7 @@ class FormWriteCompensationTest extends TestCase {
 		$logger->expects($this->exactly(2))->method('warning');
 
 		$compensation = new FormWriteCompensation(objects: $objects, logger: $logger);
-		$compensation->compensate([$this->done('u-1', 'a'), $this->done('u-2', 'b')], 'c', new RuntimeException('refused'));
+		$compensation->compensate([$this->done('u-1', 'a'), $this->done('u-2', 'b')], new FormSubmitFailure('c', new RuntimeException('refused')));
 
 		$this->assertSame([['u-2', false, false, true], ['u-1', false, false, true]], $deleted);
 	}//end testEveryEarlierWriteIsDeletedPermanentlyNewestFirst()
@@ -76,6 +77,6 @@ class FormWriteCompensationTest extends TestCase {
 		$logger->expects($this->once())->method('warning');
 
 		$compensation = new FormWriteCompensation(objects: $objects, logger: $logger);
-		$compensation->compensate([$this->done('u-1', 'a'), $this->done('u-2', 'b')], 'c', new RuntimeException('refused'));
+		$compensation->compensate([$this->done('u-1', 'a'), $this->done('u-2', 'b')], new FormSubmitFailure('c', new RuntimeException('refused')));
 	}//end testAFailedUndoIsLoggedAndTheOthersStillRun()
 }//end class

@@ -280,7 +280,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 	}
 
 	private function transformAsIs(): void {
-		$this->importService->method('transformCsvRowToObject')->willReturnCallback(
+		$this->importService->method('transformCsvRow')->willReturnCallback(
 			static fn (array $rowData): array => $rowData
 		);
 	}
@@ -422,7 +422,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 				],
 			]
 		);
-		$this->importService->expects($this->never())->method('transformCsvRowToObject');
+		$this->importService->expects($this->never())->method('transformCsvRow');
 
 		$preview = $this->service->preview($this->params($path, ['packSlug' => 'zaken-v1']));
 
@@ -452,7 +452,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 
 	public function testATransformThatThrowsRefusesTheRow(): void {
 		$path = $this->file("bsn\n1\n");
-		$this->importService->method('transformCsvRowToObject')->willThrowException(new RuntimeException('bad date'));
+		$this->importService->method('transformCsvRow')->willThrowException(new RuntimeException('bad date'));
 
 		$this->service->preview($this->params($path));
 

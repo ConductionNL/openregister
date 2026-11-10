@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRunMapper;
@@ -225,7 +226,7 @@ class FlowAdoptionTest extends TestCase {
 
 			$this->assertSame(
 				$case['expected'],
-				$locator->flowsForTrigger(event: 'object.created', register: 'dossiq', schema: 'case'),
+				$locator->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'dossiq', schema: 'case')),
 				'the ownerless flow is refused at dispatch; the adopted and enabled one runs'
 			);
 		}

@@ -25,6 +25,7 @@ namespace Unit\Service\Calculation;
 
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Calculation\ReferringObject;
 use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -81,7 +82,7 @@ class AggregateReferenceResolverTest extends TestCase {
 			],
 		];
 
-		$result = $this->resolver->resolveAll($payload, $aggregates, 'reg-1');
+		$result = $this->resolver->resolveAll(new ReferringObject($payload, 'reg-1'), $aggregates);
 
 		$this->assertSame(120.0, $result['billableHoursThisPeriod']);
 		$this->assertSame('TimeEntry', $capturedSchema);
@@ -117,7 +118,7 @@ class AggregateReferenceResolverTest extends TestCase {
 			],
 		];
 
-		$result = $this->resolver->resolveAll(['@self' => []], $aggregates, 'reg-1');
+		$result = $this->resolver->resolveAll(new ReferringObject(['@self' => []], 'reg-1'), $aggregates);
 
 		$this->assertSame(['open' => 3, 'closed' => 7], $result['byStatus']);
 	}//end testGroupedAggregateInjectsKeyValueMap()
@@ -136,7 +137,7 @@ class AggregateReferenceResolverTest extends TestCase {
 			'total' => ['schema' => 'TimeEntry', 'metric' => 'sum', 'field' => 'hours'],
 		];
 
-		$result = $this->resolver->resolveAll(['@self' => []], $aggregates, 'reg-1');
+		$result = $this->resolver->resolveAll(new ReferringObject(['@self' => []], 'reg-1'), $aggregates);
 
 		$this->assertNull($result['total']);
 	}//end testRunnerThrowInjectsNullAndNeverRethrows()
@@ -151,9 +152,8 @@ class AggregateReferenceResolverTest extends TestCase {
 		$this->runner->expects($this->never())->method('runAdhocByRef');
 
 		$result = $this->resolver->resolveAll(
-			['@self' => []],
-			['bad' => ['metric' => 'sum', 'field' => 'hours']],
-			'reg-1'
+			new ReferringObject(['@self' => []], 'reg-1'),
+			['bad' => ['metric' => 'sum', 'field' => 'hours']]
 		);
 
 		$this->assertNull($result['bad']);

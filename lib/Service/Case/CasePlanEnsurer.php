@@ -33,8 +33,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Case;
 
 use DateTime;
+use DateTimeImmutable;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Exception\CaseValidationException;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct;
 use Throwable;
 
 /**
@@ -209,7 +211,7 @@ class CasePlanEnsurer {
 	 */
 	private function armEntered(array $rows, string $actor): void {
 		foreach ($rows as $row) {
-			$this->timers?->onEntered(item: $row, actor: $actor);
+			$this->timers?->onEntered(item: $row, act: new FlowTimerAct(actor: $actor, now: new DateTimeImmutable()));
 		}
 	}//end armEntered()
 

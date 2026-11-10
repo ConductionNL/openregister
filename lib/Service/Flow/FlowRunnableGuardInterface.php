@@ -72,7 +72,7 @@ interface FlowRunnableGuardInterface {
 	/**
 	 * Refuse unless the caller may RUN this flow.
 	 *
-	 * WHY AT THE ENDPOINT AND NOT IN THE RESOLVER. `FlowLocator::resolveSubject()`
+	 * WHY AT THE ENDPOINT AND NOT IN THE RESOLVER. `FlowLocator::resolveObject()`
 	 * loads with `_rbac: false`, and correctly so — the engine runs a flow as its
 	 * owner, and background jobs and retries have no session to evaluate. But
 	 * these endpoints inherited that bypass, and `retry()` in particular took a

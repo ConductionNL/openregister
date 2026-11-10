@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion;
 
 /**
  * Resolves and mails the addresses an `email` recipient entry names.
@@ -151,11 +152,13 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 			return [];
 		}
 
-		$decisions = $this->delivery->optOut->ask(
-			channel: 'email',
-			category: $request->category,
-			addresses: $this->askable(entries: $entries),
-			correlationId: 'openregister-email:' . (string)($origin->object->getUuid() ?? '')
+		$decisions = $this->delivery->optOut->askQuestion(
+			question: new OptOutQuestion(
+				channel: 'email',
+				category: $request->category,
+				addresses: $this->askable(entries: $entries),
+				correlationId: 'openregister-email:' . (string)($origin->object->getUuid() ?? '')
+			)
 		);
 
 		return $this->sendAll(

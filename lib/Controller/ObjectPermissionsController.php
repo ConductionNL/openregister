@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -60,6 +61,13 @@ use OCA\OpenRegister\Controller\Support\ObjectPermissionsControllerServices;
  * @spec openspec/specs/rbac-scopes/spec.md
  */
 class ObjectPermissionsController extends Controller {
+
+	/**
+	 * Records why an access set could not be assembled.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
 
 	/**
 	 * Names the register and schema the request resolved.
@@ -85,22 +93,18 @@ class ObjectPermissionsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string             $appName       Application identifier.
-	 * @param IRequest           $request       Active HTTP request.
+	 * @param IRequest                            $request  Active HTTP request.
 	 * @param ObjectPermissionsControllerServices $services The services, bundled.
-	 * @param LoggerInterface    $logger        Records why an access set could not be assembled.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ObjectPermissionsControllerServices $services,
-		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->objectService = $services->objectService;
 		$this->report = $services->report;
 		$this->gate = $services->gate;
-
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
@@ -306,6 +310,6 @@ class ObjectPermissionsController extends Controller {
 	 * @return ObjectEntity|JSONResponse The object, or the refusal.
 	 */
 	private function resolveObject(ObjectRef $ref): ObjectEntity|JSONResponse {
-		return ($this->gate->resolve(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id) ?? ObjectSharingEndpoint::notFound());
+		return ($this->gate->resolve(ref: $ref) ?? ObjectSharingEndpoint::notFound());
 	}//end resolveObject()
 }//end class

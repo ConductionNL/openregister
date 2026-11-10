@@ -32,11 +32,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\AppConfigurationImporterInterface;
-use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -72,14 +69,10 @@ class SeedFlowTimerRegister implements IRepairStep, FlowTimerRegisterPathInterfa
 	/**
 	 * Constructor.
 	 *
-	 * @param AppConfigurationImporterInterface $configurationService The OR configuration importer.
-	 * @param IAppManager $appManager Resolves the openregister app path on disk.
-	 * @param LoggerInterface $logger Logger for import diagnostics.
+	 * @param RegisterDescriptorImport $descriptors Importer, app path and log for the descriptor.
 	 */
 	public function __construct(
-		private readonly AppConfigurationImporterInterface $configurationService,
-		private readonly IAppManager $appManager,
-		private readonly LoggerInterface $logger,
+		private readonly RegisterDescriptorImport $descriptors,
 	) {
 	}//end __construct()
 
@@ -105,7 +98,7 @@ class SeedFlowTimerRegister implements IRepairStep, FlowTimerRegisterPathInterfa
 	 */
 	public function run(IOutput $output): void {
 		try {
-			$path = $this->appManager->getAppPath('openregister') . self::REGISTER_PATH;
+			$path = $this->descriptors->appManager->getAppPath('openregister') . self::REGISTER_PATH;
 			if (is_file($path) === false) {
 				$output->warning('Flow-timers register descriptor not found: ' . $path);
 				return;
@@ -119,7 +112,7 @@ class SeedFlowTimerRegister implements IRepairStep, FlowTimerRegisterPathInterfa
 
 			// The importer takes the DECODED descriptor; force: false keeps
 			// the import idempotent and leaves administrator edits in place.
-			$this->configurationService->importFromApp(
+			$this->descriptors->configurationService->importFromApp(
 				appId: 'openregister',
 				data: $data,
 				version: self::REGISTER_VERSION,
@@ -128,7 +121,7 @@ class SeedFlowTimerRegister implements IRepairStep, FlowTimerRegisterPathInterfa
 
 			$output->info('Flow-timers register imported (working-calendar + escalation-ladder schemas and seeded defaults)');
 		} catch (Throwable $e) {
-			$this->logger->warning('[SeedFlowTimerRegister] import failed: ' . $e->getMessage());
+			$this->descriptors->logger->warning('[SeedFlowTimerRegister] import failed: ' . $e->getMessage());
 			$output->warning('Flow-timers register import skipped: ' . $e->getMessage());
 		}//end try
 	}//end run()
