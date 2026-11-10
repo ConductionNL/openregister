@@ -26,6 +26,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -165,9 +166,8 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 		}
 
 		return $this->rows->searchObjectsInRegisterSchemaTable(
-			query: self::withPaging(search: $source['query'], query: $request->query),
-			register: $source['register'],
-			schema: $source['schema']
+			table: new RegisterSchema(register: $source['register'], schema: $source['schema']),
+			query: self::withPaging(search: $source['query'], query: $request->query)
 		);
 	}//end readRows()
 

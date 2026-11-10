@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -128,7 +129,8 @@ class MagicMapperRecentLensTest extends TestCase {
 
 		$rows = ['zaak' => ['uuid-a', 'uuid-c', 'uuid-e'], 'taak' => ['uuid-b', 'uuid-d']];
 		$mapper->method('searchObjectsInRegisterSchemaTable')->willReturnCallback(
-			function (array $query, Register $register, Schema $schema) use ($rows): array {
+			function (RegisterSchema $table, array $query) use ($rows): array {
+				[$register, $schema] = [$table->register, $table->schema];
 				$this->tableQueries[] = $query;
 				return array_map(fn (string $uuid): ObjectEntity => $this->object(uuid: $uuid), $rows[$schema->getSlug()]);
 			}

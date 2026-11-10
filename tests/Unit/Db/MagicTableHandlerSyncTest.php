@@ -244,7 +244,7 @@ class MagicTableHandlerSyncTest extends TestCase {
 				'getExistingTableColumns("'.self::TABLE.'")',
 				'buildTableColumnsFromSchema(schema)',
 				'updateTableStructure("'.self::TABLE.'", '.json_encode($current).', '.json_encode($required).')',
-				'updateTableIndexes("'.self::TABLE.'", register, schema)',
+				'updateTableIndexes("'.self::TABLE.'", schema)',
 				'storeRegisterSchemaVersion(register, schema)',
 			],
 			$this->calls

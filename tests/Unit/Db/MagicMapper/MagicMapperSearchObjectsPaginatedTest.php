@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\RegisterSchema;
 use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
@@ -259,7 +260,11 @@ class MagicMapperSearchObjectsPaginatedTest extends TestCase {
 
 		$stored = $this->storedObjects(stored: ($case['stored'] ?? []));
 		$mapper->method('searchObjectsInRegisterSchemaTable')->willReturnCallback(
-			fn (...$args): array => $this->record(name: 'searchTable', args: $args, answer: ['row-'.$args[2]->getId()])
+			fn (RegisterSchema $table, array $query): array => $this->record(
+				name: 'searchTable',
+				args: [$query, $table->register, $table->schema],
+				answer: ['row-'.$table->schema->getId()]
+			)
 		);
 		$mapper->method('countObjectsInRegisterSchemaTable')->willReturnCallback(
 			fn (...$args): int => $this->record(name: 'countTable', args: $args, answer: (10 + (int)$args[2]->getId()))

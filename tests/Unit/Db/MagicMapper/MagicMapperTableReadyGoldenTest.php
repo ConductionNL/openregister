@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 use Closure;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
@@ -110,7 +111,7 @@ class MagicMapperTableReadyGoldenTest extends TestCase {
 
 	public function testSearchOnAMissingTableWithoutMagicMappingFindsNothing(): void {
 		$mapper = $this->mapper(exists: false);
-		$result = $mapper->searchObjectsInRegisterSchemaTable(query: [], register: $this->register(magic: false), schema: $this->schema());
+		$result = $mapper->searchObjectsInRegisterSchemaTable(table: new RegisterSchema(register: $this->register(magic: false), schema: $this->schema()), query: []);
 
 		$this->assertSame([], $result);
 		$this->assertSame(

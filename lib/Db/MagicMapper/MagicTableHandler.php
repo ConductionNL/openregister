@@ -532,7 +532,7 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 		);
 
 		$result = $this->alterTable(tableName: $target->tableName, schema: $target->schema);
-		$this->magicMapper->updateTableIndexes(tableName: $target->tableName, register: $target->register, schema: $target->schema);
+		$this->magicMapper->updateTableIndexes(tableName: $target->tableName, schema: $target->schema);
 		$this->markSynced(target: $target);
 		$this->logSynced(target: $target, stats: $result);
 

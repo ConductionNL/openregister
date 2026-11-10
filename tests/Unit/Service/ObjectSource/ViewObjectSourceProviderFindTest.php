@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -59,7 +60,7 @@ class ViewObjectSourceProviderFindTest extends TestCase {
 		$schemas->method('find')->with(9)->willReturn(new Schema());
 		$reader = $this->createMock(MagicMapperInterface::class);
 		$reader->method('searchObjectsInRegisterSchemaTable')->willReturnCallback(
-			static function (array $query) use ($rows, &$queries): array {
+			static function (RegisterSchema $table, array $query) use ($rows, &$queries): array {
 				$queries[] = $query;
 
 				return $rows;

@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -151,6 +152,7 @@ class ViewBackedTypeTest extends TestCase {
 		$magic->expects($this->once())
 			->method('searchObjectsInRegisterSchemaTable')
 			->with(
+				$this->callback(fn (RegisterSchema $table): bool => $table->register->getId() === 3 && $table->schema->getId() === 5),
 				$this->callback(
 					function (array $query): bool {
 						$this->assertSame(['active'], $query['status']);
@@ -161,9 +163,7 @@ class ViewBackedTypeTest extends TestCase {
 						$this->assertTrue($query['_rbac'], 'the reader\'s access to the source rows still applies');
 						return true;
 					}
-				),
-				$this->callback(fn (Register $register): bool => $register->getId() === 3),
-				$this->callback(fn (Schema $schema): bool => $schema->getId() === 5)
+				)
 			)
 			->willReturn([$permit]);
 

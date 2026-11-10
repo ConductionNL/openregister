@@ -11,6 +11,7 @@ use OCA\OpenRegister\BackgroundJob\BlobMigrationJob;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -215,7 +216,8 @@ class BlobMigrationJobGoldenTest extends TestCase
             }
         );
         $mapper->method('saveObjectsToRegisterSchemaTable')->willReturnCallback(
-            function (array $objects, Register $register, Schema $schema) use ($case): array {
+            function (RegisterSchema $table, array $objects) use ($case): array {
+                [$register, $schema] = [$table->register, $table->schema];
                 $this->record('saveObjects', [$objects, $register->getId(), $schema->getId()]);
                 if (($case['saveThrows'] ?? false) === true) {
                     throw new RuntimeException('save failed');
