@@ -1596,12 +1596,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			// Initialize facet handler if not already done.
 			$this->initializeHandlers();
 
-			return $this->facetHandler->getSimpleFacets(
-				tableName: $tableName,
-				query: $query,
-				register: $register,
-				schema: $schema
-			);
+			$target            = new MagicTableTarget(register: $register, schema: $schema);
+			$target->tableName = $tableName;
+			return $this->facetHandler->getSimpleFacets(target: $target, query: $query);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[MagicMapper] Failed to get facets from register+schema table',
