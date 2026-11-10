@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Service;
 
 use DateTimeInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
@@ -256,7 +257,7 @@ class ManifestService implements ManifestServiceInterface {
 	 */
 	private function profileSchemas(string $schemaSlug): ?array {
 		try {
-			return $this->schemaMapper->findBySlug(slug: $schemaSlug, limit: 1);
+			return $this->schemaMapper->findBySlug(slug: $schemaSlug, query: new ListQuery(limit: 1));
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: sprintf('[ManifestService] Schema lookup failed for "%s": %s', $schemaSlug, $e->getMessage()),
@@ -525,7 +526,7 @@ class ManifestService implements ManifestServiceInterface {
 	 */
 	private function schemaConfiguration(string $schemaSlug): ?array {
 		try {
-			$schemas = $this->schemaMapper->findBySlug(slug: $schemaSlug, limit: 1);
+			$schemas = $this->schemaMapper->findBySlug(slug: $schemaSlug, query: new ListQuery(limit: 1));
 		} catch (Throwable) {
 			return null;
 		}

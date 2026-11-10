@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Query;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper\AliasedRows;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
@@ -148,7 +149,7 @@ class ReferencedRowFilterTest extends TestCase {
 		$schema->setId(7);
 		$schema->setProperties(['case' => ['type' => 'string']]);
 		$schemaMapper = $this->createMock(SchemaMapper::class);
-		$schemaMapper->expects($this->once())->method('findBySlug')->with('subsidieAanvraag', 2)->willReturn([$schema]);
+		$schemaMapper->expects($this->once())->method('findBySlug')->with('subsidieAanvraag', new ListQuery(limit: 2))->willReturn([$schema]);
 
 		$tableHandler = $this->createMock(MagicTableHandler::class);
 		$tableHandler->method('getTableNameForRegisterSchema')->willReturn('openregister_table_1_7');

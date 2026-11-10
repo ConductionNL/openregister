@@ -887,8 +887,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * multi-tenancy and RBAC filtering.
 	 *
 	 * @param string $slug The slug to search for
-	 * @param int $limit Maximum number of results (default: 10)
-	 * @param int $offset Offset for pagination (default: 0)
+	 * @param ListQuery $query The page: its limit and offset
 	 * @param bool $_rbac Whether to apply RBAC permission checks (default: true)
 	 * @param bool $_multitenancy Whether to apply multi-tenancy filtering (default: true)
 	 *
@@ -900,8 +899,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 */
 	public function findBySlug(
 		string $slug,
-		int $limit = 10,
-		int $offset = 0,
+		ListQuery $query,
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): array {
@@ -909,8 +907,8 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		$qb = $this->exactSlugQuery(slug: $slug);
 		$this->filterByOrganisation(qb: $qb, multitenancy: $_multitenancy);
-		$qb->setMaxResults($limit)
-			->setFirstResult($offset);
+		$qb->setMaxResults($query->limit)
+			->setFirstResult($query->offset ?? 0);
 
 		return array_values($this->fetchSchemas(qb: $qb));
 	}//end findBySlug()
