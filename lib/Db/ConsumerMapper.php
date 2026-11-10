@@ -72,23 +72,34 @@ class ConsumerMapper extends QBMapper implements ConsumerMapperInterface {
 	 * @param array|null $filters Associative array of filters
 	 *
 	 * @return array An array of Consumer entities
+	 *
+	 * @spec exclude Persistence primitive: builds the ListQuery and delegates to findPage().
 	 */
-	public function findAll(
-		int|null $limit = null,
-		int|null $offset = null,
-		array|null $filters = [],
-	): array {
+	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = []): array {
+		return $this->findPage(query: new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset, filters: ($filters ?? [])));
+	}//end findAll()
+
+	/**
+	 * One page of Consumers, narrowed by column filters.
+	 *
+	 * @param ListQuery $query The page (unbounded for every row) and the column filters.
+	 *
+	 * @return Consumer[] The matching Consumer entities.
+	 *
+	 * @spec exclude Persistence primitive: a paged column-filter read with no behaviour of its own.
+	 */
+	public function findPage(ListQuery $query): array {
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
 			->from('openregister_consumers')
-			->setMaxResults($limit)
-			->setFirstResult($offset);
+			->setMaxResults($query->limitOrNull())
+			->setFirstResult($query->offset);
 
-		$this->applyColumnFilters(qb: $qb, filters: $filters);
+		$this->applyColumnFilters(qb: $qb, filters: $query->filters);
 
 		return $this->findEntities(query: $qb);
-	}//end findAll()
+	}//end findPage()
 
 	/**
 	 * Create a new Consumer from an array of data.

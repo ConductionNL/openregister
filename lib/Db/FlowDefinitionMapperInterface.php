@@ -50,13 +50,11 @@ interface FlowDefinitionMapperInterface {
 	 * the row the loser then reads back is byte-identical to the one it tried
 	 * to write — so re-reading is a complete recovery, not a compromise.
 	 *
-	 * @param string $hash       The canonical hash.
-	 * @param string $definition The canonical definition JSON.
-	 * @param string|null $flowUuid The originating flow, for provenance.
+	 * @param FlowDefinition $definition The canonical hash, definition JSON and originating flow; its created stamp is set here.
 	 *
 	 * @return FlowDefinition|null The stored definition, or null when it could not be stored.
 	 *
 	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
-	public function store(string $hash, string $definition, ?string $flowUuid = null): ?FlowDefinition;
+	public function store(FlowDefinition $definition): ?FlowDefinition;
 }//end interface
