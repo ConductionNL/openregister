@@ -44,6 +44,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Notifications\Service\Party\PartyMessage;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\Activity\IManager as IActivityManager;
@@ -2184,11 +2185,8 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			}
 
 			$sent = $this->integrations->serverContainer->get(PartyNotificationService::class)->notifyParties(
-				objectUuid: $objectUuid,
-				subject: $firing->broadcastSubject,
-				body: $firing->addressBody,
-				role: $onlyRole,
-				category: $firing->category
+				message: new PartyMessage(objectUuid: $objectUuid, subject: $firing->broadcastSubject, body: $firing->addressBody, category: $firing->category),
+				role: $onlyRole
 			);
 
 			foreach ($sent as $outcome) {
