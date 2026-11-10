@@ -122,6 +122,19 @@ class MigrateRegisterFlowsToTable implements IRepairStep {
 	];
 
 	/**
+	 * The normalised form of a row that is neither an entity nor an array: no
+	 * uuid, so it is counted as a failure.
+	 *
+	 * @var array{uuid: string, data: array<string, mixed>, owner: ?string, organisation: ?string}
+	 */
+	private const UNREADABLE_ROW = [
+		'uuid'         => '',
+		'data'         => [],
+		'owner'        => null,
+		'organisation' => null,
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param FlowMapperInterface      $flowMapper    Writes into the canonical flow store.
@@ -162,74 +175,162 @@ class MigrateRegisterFlowsToTable implements IRepairStep {
 	 * @spec openspec/specs/register-descriptor-admin/spec.md
 	 */
 	public function run(IOutput $output): void {
-		try {
-			$objects = $this->registerFlows();
-		} catch (Throwable $e) {
-			// A register that does not exist is the ordinary case on an instance
-			// that never authored a flow there. Not a failure.
-			$this->logger->debug('[MigrateRegisterFlowsToTable] no flows register to read: ' . $e->getMessage());
-			$output->info('No `flows` register on this instance — nothing to migrate.');
+		$objects = $this->readRegisterFlows(output: $output);
+		if ($objects === null) {
 			return;
 		}
 
-		$moved = 0;
-		$already = 0;
-		$failed = 0;
-		$notFlows = 0;
-
+		$tally = new MigrateRegisterFlowsRun();
 		foreach ($objects as $object) {
-			$row  = $this->normalise(row: $object);
-			$uuid = $row['uuid'];
-			if ($uuid === '') {
-				$failed++;
-				continue;
-			}
-
-			// The second, independent guard — see isFlowDefinition().
-			if ($this->isFlowDefinition(object: $row['data']) === false) {
-				$notFlows++;
-				$this->logger->warning(
-					'[MigrateRegisterFlowsToTable] refused ' . $uuid
-					. ': no nodes, no edges and no trigger, so it is not a flow definition'
-				);
-				continue;
-			}
-
-			try {
-				$this->flowMapper->findByUuid($uuid);
-				$already++;
-				continue;
-			} catch (DoesNotExistException $e) {
-				// Not in the table yet — this is the one we move.
-				$already += 0;
-			} catch (Throwable $e) {
-				$this->logger->warning('[MigrateRegisterFlowsToTable] lookup failed for ' . $uuid . ': ' . $e->getMessage());
-				$failed++;
-				continue;
-			}
-
-			try {
-				$this->flowMapper->insert($this->toFlow(row: $row));
-				$moved++;
-			} catch (Throwable $e) {
-				$this->logger->warning('[MigrateRegisterFlowsToTable] could not migrate ' . $uuid . ': ' . $e->getMessage());
-				$failed++;
-			}
+			$this->migrateOne(object: $object, tally: $tally);
 		}
 
+		$this->writeSummary(output: $output, tally: $tally);
+	}//end run()
+
+	/**
+	 * Print what the run did, with every count.
+	 *
+	 * @param IOutput                 $output Output interface for status messages.
+	 * @param MigrateRegisterFlowsRun $tally  The run's counts.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
+	 */
+	private function writeSummary(IOutput $output, MigrateRegisterFlowsRun $tally): void {
 		// 🔴 THE COUNTS, ALWAYS. "Migrated successfully" with no numbers cannot
 		// be told apart from a step that read an empty list, which is exactly how
 		// the defect this repairs stayed invisible.
 		$output->info(
 			sprintf(
 				'Register-authored flows: %d migrated, %d already in the table, %d not a flow definition, %d failed (register rows left in place).',
-				$moved,
-				$already,
-				$notFlows,
-				$failed
+				$tally->moved,
+				$tally->already,
+				$tally->notFlows,
+				$tally->failed
 			)
 		);
-	}//end run()
+	}//end writeSummary()
+
+	/**
+	 * Every object in the flows register, or null when there is no such register.
+	 *
+	 * @param IOutput $output Output interface for status messages.
+	 *
+	 * @return array<int, mixed>|null The rows, or null after saying there is nothing to migrate.
+	 *
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
+	 */
+	private function readRegisterFlows(IOutput $output): ?array {
+		try {
+			return $this->registerFlows();
+		} catch (Throwable $e) {
+			// A register that does not exist is the ordinary case on an instance
+			// that never authored a flow there. Not a failure.
+			$this->logger->debug('[MigrateRegisterFlowsToTable] no flows register to read: ' . $e->getMessage());
+			$output->info('No `flows` register on this instance — nothing to migrate.');
+			return null;
+		}
+	}//end readRegisterFlows()
+
+	/**
+	 * Move one register object into the table, counting what happened to it.
+	 *
+	 * @param mixed                   $object One row from the flows register.
+	 * @param MigrateRegisterFlowsRun $tally  The run's counts.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
+	 */
+	private function migrateOne(mixed $object, MigrateRegisterFlowsRun $tally): void {
+		$row = $this->normalise(row: $object);
+		if ($this->acceptsAsFlow(row: $row, tally: $tally) === false) {
+			return;
+		}
+
+		if ($this->isNotInTable(uuid: $row['uuid'], tally: $tally) === false) {
+			return;
+		}
+
+		$this->insertFlow(row: $row, tally: $tally);
+	}//end migrateOne()
+
+	/**
+	 * Insert the flow, counting it as moved or failed.
+	 *
+	 * @param array{uuid: string, data: array<string, mixed>, owner: ?string, organisation: ?string} $row   The normalised row.
+	 * @param MigrateRegisterFlowsRun                                                               $tally The run's counts.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
+	 */
+	private function insertFlow(array $row, MigrateRegisterFlowsRun $tally): void {
+		try {
+			$this->flowMapper->insert($this->toFlow(row: $row));
+			$tally->moved++;
+		} catch (Throwable $e) {
+			$this->logger->warning('[MigrateRegisterFlowsToTable] could not migrate ' . $row['uuid'] . ': ' . $e->getMessage());
+			$tally->failed++;
+		}
+	}//end insertFlow()
+
+	/**
+	 * Whether the row has a uuid and is a flow definition; counts and logs it when not.
+	 *
+	 * @param array{uuid: string, data: array<string, mixed>, owner: ?string, organisation: ?string} $row   The normalised row.
+	 * @param MigrateRegisterFlowsRun                                                               $tally The run's counts.
+	 *
+	 * @return boolean True when the row may be moved.
+	 *
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
+	 */
+	private function acceptsAsFlow(array $row, MigrateRegisterFlowsRun $tally): bool {
+		if ($row['uuid'] === '') {
+			$tally->failed++;
+			return false;
+		}
+
+		// The second, independent guard — see isFlowDefinition().
+		if ($this->isFlowDefinition(object: $row['data']) === true) {
+			return true;
+		}
+
+		$tally->notFlows++;
+		$this->logger->warning(
+			'[MigrateRegisterFlowsToTable] refused ' . $row['uuid']
+			. ': no nodes, no edges and no trigger, so it is not a flow definition'
+		);
+		return false;
+	}//end acceptsAsFlow()
+
+	/**
+	 * Whether the flow is not in the table yet; counts it as already present, or as failed when the lookup fails.
+	 *
+	 * @param string                  $uuid  The flow uuid.
+	 * @param MigrateRegisterFlowsRun $tally The run's counts.
+	 *
+	 * @return boolean True when this is one to move.
+	 *
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
+	 */
+	private function isNotInTable(string $uuid, MigrateRegisterFlowsRun $tally): bool {
+		try {
+			$this->flowMapper->findByUuid($uuid);
+			$tally->already++;
+			return false;
+		} catch (DoesNotExistException $e) {
+			// Not in the table yet — this is the one we move.
+			return true;
+		} catch (Throwable $e) {
+			$this->logger->warning('[MigrateRegisterFlowsToTable] lookup failed for ' . $uuid . ': ' . $e->getMessage());
+			$tally->failed++;
+			return false;
+		}
+	}//end isNotInTable()
+
 
 	/**
 	 * Whether this object is a flow definition at all.
@@ -305,6 +406,19 @@ class MigrateRegisterFlowsToTable implements IRepairStep {
 			_multitenancy: false
 		);
 
+		return $this->rowsOf(result: $result);
+	}//end registerFlows()
+
+	/**
+	 * The list of rows in a findAll() result.
+	 *
+	 * @param array<string, mixed> $result The findAll() result.
+	 *
+	 * @return array<int, mixed> The rows, empty when the result holds no list.
+	 *
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
+	 */
+	private function rowsOf(array $result): array {
 		// No `is_array($result)` guard: `findAll()` is typed to return an array,
 		// so the check could never fire and phpstan says so. The guard below is
 		// NOT redundant — `results` may be absent or hold something else.
@@ -314,7 +428,7 @@ class MigrateRegisterFlowsToTable implements IRepairStep {
 		}
 
 		return $rows;
-	}//end registerFlows()
+	}//end rowsOf()
 
 	/**
 	 * Reduce one row from `findAll()` to the four things this step needs.
@@ -341,23 +455,44 @@ class MigrateRegisterFlowsToTable implements IRepairStep {
 	 */
 	private function normalise(mixed $row): array {
 		if ($row instanceof ObjectEntity) {
-			return [
-				'uuid'         => (string)($row->getUuid() ?? ''),
-				'data'         => $row->getObject(),
-				'owner'        => $row->getOwner(),
-				'organisation' => $row->getOrganisation(),
-			];
+			return self::fromEntity(entity: $row);
 		}
 
 		if (is_array($row) === false) {
-			return [
-				'uuid'         => '',
-				'data'         => [],
-				'owner'        => null,
-				'organisation' => null,
-			];
+			return self::UNREADABLE_ROW;
 		}
 
+		return self::fromArray(row: $row);
+	}//end normalise()
+
+	/**
+	 * Reduce an ObjectEntity row.
+	 *
+	 * @param ObjectEntity $entity The row.
+	 *
+	 * @return array{uuid: string, data: array<string, mixed>, owner: ?string, organisation: ?string} The normalised row.
+	 *
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
+	 */
+	private static function fromEntity(ObjectEntity $entity): array {
+		return [
+			'uuid'         => (string)($entity->getUuid() ?? ''),
+			'data'         => $entity->getObject(),
+			'owner'        => $entity->getOwner(),
+			'organisation' => $entity->getOrganisation(),
+		];
+	}//end fromEntity()
+
+	/**
+	 * Reduce a serialised row, reading `@self` first and the top level second.
+	 *
+	 * @param array<string, mixed> $row The row.
+	 *
+	 * @return array{uuid: string, data: array<string, mixed>, owner: ?string, organisation: ?string} The normalised row.
+	 *
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
+	 */
+	private static function fromArray(array $row): array {
 		$self = ($row['@self'] ?? []);
 		if (is_array($self) === false) {
 			$self = [];
@@ -369,7 +504,7 @@ class MigrateRegisterFlowsToTable implements IRepairStep {
 			'owner'        => ($self['owner'] ?? $row['owner'] ?? null),
 			'organisation' => ($self['organisation'] ?? $row['organisation'] ?? null),
 		];
-	}//end normalise()
+	}//end fromArray()
 
 	/**
 	 * Map a normalised register object onto a Flow entity.
@@ -387,6 +522,32 @@ class MigrateRegisterFlowsToTable implements IRepairStep {
 		$flow->setCreated(new DateTime());
 		$flow->setUpdated(new DateTime());
 
+		$this->copyFields(flow: $flow, object: $object);
+
+		// Ownership carries over from the register object, which OpenRegister
+		// stamps on every write. A flow with no organisation is invisible to
+		// every scoped read — the defect fixed in #2915 — so a migration that
+		// dropped it would move the flow into the right store and out of sight.
+		$flow->setOwner($row['owner']);
+		$flow->setOrganisation($row['organisation']);
+
+		// Disabled on arrival — see the class docblock.
+		$flow->setEnabled(false);
+
+		return $flow;
+	}//end toFlow()
+
+	/**
+	 * Copy the COPIED fields the register object carries onto the flow.
+	 *
+	 * @param Flow                 $flow   The flow being built.
+	 * @param array<string, mixed> $object The register object's payload.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
+	 */
+	private function copyFields(Flow $flow, array $object): void {
 		foreach (self::COPIED as $field) {
 			if (array_key_exists($field, $object) === false) {
 				continue;
@@ -404,17 +565,5 @@ class MigrateRegisterFlowsToTable implements IRepairStep {
 			// unknown one would raise rather than pass silently.
 			$flow->{'set' . ucfirst($field)}($object[$field]);
 		}
-
-		// Ownership carries over from the register object, which OpenRegister
-		// stamps on every write. A flow with no organisation is invisible to
-		// every scoped read — the defect fixed in #2915 — so a migration that
-		// dropped it would move the flow into the right store and out of sight.
-		$flow->setOwner($row['owner']);
-		$flow->setOrganisation($row['organisation']);
-
-		// Disabled on arrival — see the class docblock.
-		$flow->setEnabled(false);
-
-		return $flow;
-	}//end toFlow()
+	}//end copyFields()
 }//end class
