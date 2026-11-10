@@ -169,15 +169,7 @@ class FlowLinksController extends Controller {
 		}
 
 		if ($this->flowLinkService->isCurrentUserAdmin() === false) {
-			return new JSONResponse(
-				[
-					'error' => 'Flow operations are configured by administrators',
-					'code' => 'ADMIN_ONLY',
-					'results' => [],
-					'total' => 0,
-				],
-				403
-			);
+			return $this->adminOnly();
 		}
 
 		$search = $this->request->getParam('search');
@@ -185,9 +177,25 @@ class FlowLinksController extends Controller {
 			$search = (string)$search;
 		}
 
-		$operations = $this->flowLinkService->getAvailableOperations($search);
-		return new JSONResponse(['results' => $operations, 'total' => count($operations)]);
+		return LinkedSourceResponses::listed(items: $this->flowLinkService->getAvailableOperations($search));
 	}//end available()
+
+	/**
+	 * The refusal for a non-admin: flow operations are configured by administrators.
+	 *
+	 * @return JSONResponse 403 with an empty listing
+	 */
+	private function adminOnly(): JSONResponse {
+		return new JSONResponse(
+			[
+				'error' => 'Flow operations are configured by administrators',
+				'code' => 'ADMIN_ONLY',
+				'results' => [],
+				'total' => 0,
+			],
+			403
+		);
+	}//end adminOnly()
 
 	/**
 	 * The Flow operations linked to the routed object.
