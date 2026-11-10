@@ -305,6 +305,24 @@ final class ObjectDateDeclaration {
 	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public static function allFromConfig(array $calendarConfig): array {
+		$declarations = [];
+		foreach (self::datesBlock(calendarConfig: $calendarConfig) as $property => $config) {
+			$declarations[] = self::fromArray(property: self::entryName(property: $property), config: $config);
+		}
+
+		return $declarations;
+	}//end allFromConfig()
+
+	/**
+	 * The `dates` block of a calendar-provider configuration: empty when absent, refused when not an object.
+	 *
+	 * @param array<string, mixed> $calendarConfig The calendarProvider config.
+	 *
+	 * @return array<string|int, mixed> The declarations keyed by property name.
+	 *
+	 * @throws CalendarDateKindException When the block is not an object.
+	 */
+	private static function datesBlock(array $calendarConfig): array {
 		$dates = ($calendarConfig['dates'] ?? null);
 
 		if ($dates === null) {
@@ -317,20 +335,28 @@ final class ObjectDateDeclaration {
 			);
 		}
 
-		$declarations = [];
-		foreach ($dates as $property => $config) {
-			$name = trim((string)$property);
-			if ($name === '') {
-				throw new CalendarDateKindException(
-					message: 'calendarProvider.dates carries an entry with no property name.'
-				);
-			}
+		return $dates;
+	}//end datesBlock()
 
-			$declarations[] = self::fromArray(property: $name, config: $config);
+	/**
+	 * The trimmed property name of a `dates` entry, refusing a blank one.
+	 *
+	 * @param string|int $property The entry key.
+	 *
+	 * @return string The property name.
+	 *
+	 * @throws CalendarDateKindException When the name is blank.
+	 */
+	private static function entryName(string|int $property): string {
+		$name = trim((string)$property);
+		if ($name === '') {
+			throw new CalendarDateKindException(
+				message: 'calendarProvider.dates carries an entry with no property name.'
+			);
 		}
 
-		return $declarations;
-	}//end allFromConfig()
+		return $name;
+	}//end entryName()
 
 	/**
 	 * The alarm offset, in days, refusing a negative or non-integer offset.
@@ -342,26 +368,35 @@ final class ObjectDateDeclaration {
 	 * @throws CalendarDateKindException When the offset is unusable.
 	 */
 	private static function readAlarmOffsetDays(DateDeclarationRun $run): ?int {
-		$property = $run->property;
-		$kind = $run->kind;
 		$raw = ($run->config['alarmOffsetDays'] ?? null);
 
 		if ($raw === null) {
 			return null;
 		}
 
-		if ($kind !== self::KIND_DEADLINE) {
-			throw new CalendarDateKindException(
-				message: sprintf(
-					"calendarProvider.dates.%s declares alarmOffsetDays on a %s; only a deadline carries an alarm.",
-					$property,
-					$kind
-				)
-			);
+		if ($run->kind !== self::KIND_DEADLINE) {
+			throw self::alarmOnANonDeadline(run: $run);
 		}
 
-		return self::wholeDays(property: $property, raw: $raw);
+		return self::wholeDays(property: $run->property, raw: $raw);
 	}//end readAlarmOffsetDays()
+
+	/**
+	 * The refusal of an alarm offset on a kind other than a deadline.
+	 *
+	 * @param DateDeclarationRun $run The property, kind and declaration.
+	 *
+	 * @return CalendarDateKindException The refusal.
+	 */
+	private static function alarmOnANonDeadline(DateDeclarationRun $run): CalendarDateKindException {
+		return new CalendarDateKindException(
+			message: sprintf(
+				"calendarProvider.dates.%s declares alarmOffsetDays on a %s; only a deadline carries an alarm.",
+				$run->property,
+				$run->kind
+			)
+		);
+	}//end alarmOnANonDeadline()
 
 	/**
 	 * A declared alarm offset that is a whole number of days at or above zero.
@@ -451,37 +486,58 @@ final class ObjectDateDeclaration {
 	 * @throws CalendarDateKindException When the purpose is not a timer purpose.
 	 */
 	private static function readTimerPurpose(DateDeclarationRun $run): ?string {
-		$property = $run->property;
-		$kind = $run->kind;
 		$purpose = self::stringOrNull(value: ($run->config['timerPurpose'] ?? null));
 
 		if ($purpose === null) {
 			return null;
 		}
 
-		if ($kind !== self::KIND_DEADLINE) {
-			throw new CalendarDateKindException(
-				message: sprintf(
-					'calendarProvider.dates.%s declares timerPurpose on a %s; only a deadline is computed by the term engine.',
-					$property,
-					$kind
-				)
-			);
+		if ($run->kind !== self::KIND_DEADLINE) {
+			throw self::timerOnANonDeadline(run: $run);
 		}
 
 		if (in_array($purpose, self::TIMER_PURPOSES, true) === false) {
-			throw new CalendarDateKindException(
-				message: sprintf(
-					"calendarProvider.dates.%s declares timerPurpose '%s': use %s.",
-					$property,
-					$purpose,
-					implode(' or ', self::TIMER_PURPOSES)
-				)
-			);
+			throw self::unknownTimerPurpose(property: $run->property, purpose: $purpose);
 		}
 
 		return $purpose;
 	}//end readTimerPurpose()
+
+	/**
+	 * The refusal of a timer purpose on a kind other than a deadline.
+	 *
+	 * @param DateDeclarationRun $run The property, kind and declaration.
+	 *
+	 * @return CalendarDateKindException The refusal.
+	 */
+	private static function timerOnANonDeadline(DateDeclarationRun $run): CalendarDateKindException {
+		return new CalendarDateKindException(
+			message: sprintf(
+				'calendarProvider.dates.%s declares timerPurpose on a %s; only a deadline is computed by the term engine.',
+				$run->property,
+				$run->kind
+			)
+		);
+	}//end timerOnANonDeadline()
+
+	/**
+	 * The refusal of a timer purpose that is not one of TIMER_PURPOSES.
+	 *
+	 * @param string $property The property being declared.
+	 * @param string $purpose  The declared purpose.
+	 *
+	 * @return CalendarDateKindException The refusal.
+	 */
+	private static function unknownTimerPurpose(string $property, string $purpose): CalendarDateKindException {
+		return new CalendarDateKindException(
+			message: sprintf(
+				"calendarProvider.dates.%s declares timerPurpose '%s': use %s.",
+				$property,
+				$purpose,
+				implode(' or ', self::TIMER_PURPOSES)
+			)
+		);
+	}//end unknownTimerPurpose()
 
 	/**
 	 * A trimmed non-empty string, or null.
