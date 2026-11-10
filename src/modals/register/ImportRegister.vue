@@ -570,24 +570,24 @@ const SCOPE_NEEDED = {
 }
 
 /**
- * The state the import modal returns to when it closes.
+ * The state the import modal opens with and returns to when it closes.
  */
 const CLOSED_STATE = {
-	selectedFile: null,
-	loading: false,
-	success: false,
-	error: null,
-	includeObjects: true,
-	validation: true,
-	events: false,
-	rbac: true,
-	multi: true,
-	importSummary: null,
-	importResults: null,
-	expandedSheets: {},
-	expandedErrors: {},
-	isHeartbeatActive: false,
-	heartbeatStatus: null,
+	selectedFile: null, // The file selected for import
+	loading: false, // Loading state
+	success: false, // Success state
+	error: null, // Error message
+	includeObjects: true, // Whether to include objects (default: true)
+	validation: true, // Whether to enable validation (default: true)
+	events: false, // Whether to enable events (default: false)
+	rbac: true, // Whether to enable RBAC (default: true)
+	multi: true, // Whether to enable multi-tenancy (default: true)
+	importSummary: null, // The import summary from the backend
+	importResults: null, // The import results for display
+	expandedSheets: {}, // To track expanded details for each sheet
+	expandedErrors: {}, // To track expanded error details for each sheet
+	isHeartbeatActive: false, // Whether heartbeat is currently running for timeout prevention
+	heartbeatStatus: null, // Current heartbeat status (healthy, failure count, etc.)
 }
 
 /**
@@ -626,25 +626,11 @@ export default {
 	 */
 	data() {
 		return {
-			selectedFile: null, // The file selected for import
-			loading: false, // Loading state
-			success: false, // Success state
-			error: null, // Error message
-			includeObjects: true, // Whether to include objects (default: true)
-			validation: true, // Whether to enable validation (default: true)
-			events: false, // Whether to enable events (default: false)
-			rbac: true, // Whether to enable RBAC (default: true)
-			multi: true, // Whether to enable multi-tenancy (default: true)
+			...freshState(CLOSED_STATE),
 			allowedFileTypes: ['json', 'xlsx', 'xls', 'csv'], // Allowed file types
-			importSummary: null, // The import summary from the backend
-			importResults: null, // The import results for display
 			registerLoading: false,
 			schemaLoading: false,
-			expandedSheets: {}, // To track expanded details for each sheet
-			expandedErrors: {}, // To track expanded error details for each sheet
 			sheetName: null, // Current sheet name for error details
-			isHeartbeatActive: false, // Whether heartbeat is currently running for timeout prevention
-			heartbeatStatus: null, // Current heartbeat status (healthy, failure count, etc.)
 		}
 	},
 
@@ -849,16 +835,12 @@ export default {
 		 * @spec exclude modal submit handler delegating to registerStore.importRegister
 		 */
 		async importRegister() {
-			if (!this.selectedFile || !this.isValidFileType) {
-				this.error = 'Please select a valid file to import'
+			if (this.refusedInvalidFile()) {
 				return
 			}
 			this.loading = true
 			this.error = null
-			// Activate heartbeat indicator for large files (>500KB) to show timeout prevention
-			if (this.selectedFile.size > LARGE_FILE) {
-				this.isHeartbeatActive = true
-			}
+			this.showHeartbeatForLargeFile()
 			try {
 				await this.runImport()
 			} catch (error) {
@@ -866,6 +848,31 @@ export default {
 			} finally {
 				// Always disable heartbeat indicator when import ends
 				this.isHeartbeatActive = false
+			}
+		},
+
+		/**
+		 * Refuse an import without a valid file, saying so.
+		 *
+		 * @return {boolean} True when there is no valid file
+		 */
+		refusedInvalidFile() {
+			if (!this.selectedFile || !this.isValidFileType) {
+				this.error = 'Please select a valid file to import'
+				return true
+			}
+			return false
+		},
+
+		/**
+		 * Activate the heartbeat indicator for large files (>500KB), to show
+		 * the timeout prevention.
+		 *
+		 * @return {void}
+		 */
+		showHeartbeatForLargeFile() {
+			if (this.selectedFile.size > LARGE_FILE) {
+				this.isHeartbeatActive = true
 			}
 		},
 
