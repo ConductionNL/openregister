@@ -4927,9 +4927,7 @@ class ObjectsController extends Controller {
 
 		try {
 			$page = $this->container->get(ObjectHistoryForReadersInterface::class)->page(
-				register: $register,
-				schema: $schema,
-				id: $id,
+				ref: new ObjectRef(register: $register, schema: $schema, id: $id),
 				params: [
 					'limit' => $config['limit'],
 					'offset' => $config['offset'],

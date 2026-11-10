@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Db\ListQuery;
 
 class AuditQueryServiceTest extends TestCase {
 
@@ -104,9 +105,11 @@ class AuditQueryServiceTest extends TestCase {
 			->willReturn([$entry]);
 
 		$result = $this->service->query(
-			filters: ['registerId' => 'procest', 'schemaId' => 'aiAuditEntry'],
-			limit: 50,
-			offset: 0
+			query: new ListQuery(
+				limit: 50,
+				offset: 0,
+				filters: ['registerId' => 'procest', 'schemaId' => 'aiAuditEntry']
+			)
 		);
 
 		$this->assertSame(1, $result['total']);
@@ -139,9 +142,11 @@ class AuditQueryServiceTest extends TestCase {
 			->willReturn([]);
 
 		$this->service->query(
-			filters: ['registerId' => 'procest', 'schemaId' => 'aiAuditEntry', 'objectId' => 'case-uuid'],
-			limit: 50,
-			offset: 0
+			query: new ListQuery(
+				limit: 50,
+				offset: 0,
+				filters: ['registerId' => 'procest', 'schemaId' => 'aiAuditEntry', 'objectId' => 'case-uuid']
+			)
 		);
 
 	}//end testQueryPassesObjectIdAsObjectFieldFilter()
@@ -155,9 +160,11 @@ class AuditQueryServiceTest extends TestCase {
 		$this->objectService->method('searchObjectsBySlug')->willReturn([]);
 
 		$result = $this->service->query(
-			filters: ['registerId' => 'procest', 'schemaId' => 'aiAuditEntry'],
-			limit: 5000,
-			offset: 0
+			query: new ListQuery(
+				limit: 5000,
+				offset: 0,
+				filters: ['registerId' => 'procest', 'schemaId' => 'aiAuditEntry']
+			)
 		);
 
 		$this->assertSame(200, $result['limit']);
@@ -173,9 +180,11 @@ class AuditQueryServiceTest extends TestCase {
 		$this->objectService->method('searchObjectsBySlug')->willReturn([]);
 
 		$result = $this->service->query(
-			filters: ['registerId' => 'procest', 'schemaId' => 'aiAuditEntry'],
-			limit: 0,
-			offset: 0
+			query: new ListQuery(
+				limit: 0,
+				offset: 0,
+				filters: ['registerId' => 'procest', 'schemaId' => 'aiAuditEntry']
+			)
 		);
 
 		$this->assertSame(50, $result['limit']);
@@ -191,9 +200,11 @@ class AuditQueryServiceTest extends TestCase {
 		$this->objectService->method('searchObjectsBySlug')->willReturn([]);
 
 		$result = $this->service->query(
-			filters: ['registerId' => 'procest', 'schemaId' => 'aiAuditEntry'],
-			limit: 50,
-			offset: -10
+			query: new ListQuery(
+				limit: 50,
+				offset: -10,
+				filters: ['registerId' => 'procest', 'schemaId' => 'aiAuditEntry']
+			)
 		);
 
 		$this->assertSame(0, $result['offset']);
@@ -215,9 +226,11 @@ class AuditQueryServiceTest extends TestCase {
 		$this->objectService->method('searchObjectsBySlug')->willReturn($entries);
 
 		$result = $this->service->query(
-			filters: ['registerId' => 'procest', 'schemaId' => 'aiAuditEntry'],
-			limit: 1,
-			offset: 1
+			query: new ListQuery(
+				limit: 1,
+				offset: 1,
+				filters: ['registerId' => 'procest', 'schemaId' => 'aiAuditEntry']
+			)
 		);
 
 		$this->assertSame(3, $result['total']);
@@ -242,14 +255,16 @@ class AuditQueryServiceTest extends TestCase {
 		$this->objectService->method('searchObjectsBySlug')->willReturn($entries);
 
 		$result = $this->service->query(
-			filters: [
+			query: new ListQuery(
+				limit: 50,
+				offset: 0,
+				filters: [
 				'registerId' => 'procest',
 				'schemaId' => 'aiAuditEntry',
 				'timestampStart' => '2026-07-01T00:00:00+00:00',
 				'timestampEnd' => '2026-07-31T00:00:00+00:00',
-			],
-			limit: 50,
-			offset: 0
+			]
+			)
 		);
 
 		$this->assertSame(1, $result['total']);
@@ -277,7 +292,7 @@ class AuditQueryServiceTest extends TestCase {
 			->with($this->equalTo(new RegisterSchemaRef(register: 'procest', schema: 'aiAuditEntry')), [])
 			->willReturn([$entry]);
 
-		$result = $this->service->query(filters: [], limit: 50, offset: 0);
+		$result = $this->service->query(query: new ListQuery(limit: 50, offset: 0, filters: []));
 
 		$this->assertSame(1, $result['total']);
 		$this->assertSame('entry-1', $result['entries'][0]['id']);
@@ -293,7 +308,7 @@ class AuditQueryServiceTest extends TestCase {
 
 		$this->objectService->expects($this->never())->method('searchObjectsBySlug');
 
-		$result = $this->service->query(filters: [], limit: 50, offset: 0);
+		$result = $this->service->query(query: new ListQuery(limit: 50, offset: 0, filters: []));
 
 		$this->assertSame(0, $result['total']);
 		$this->assertSame([], $result['entries']);
@@ -307,7 +322,7 @@ class AuditQueryServiceTest extends TestCase {
 
 		$this->objectService->expects($this->never())->method('searchObjectsBySlug');
 
-		$result = $this->service->query(filters: ['registerId' => 'does-not-exist'], limit: 50, offset: 0);
+		$result = $this->service->query(query: new ListQuery(limit: 50, offset: 0, filters: ['registerId' => 'does-not-exist']));
 
 		$this->assertSame(0, $result['total']);
 		$this->assertSame([], $result['entries']);
@@ -319,7 +334,7 @@ class AuditQueryServiceTest extends TestCase {
 
 		$this->objectService->expects($this->never())->method('searchObjectsBySlug');
 
-		$result = $this->service->query(filters: ['schemaId' => 'does-not-exist'], limit: 50, offset: 0);
+		$result = $this->service->query(query: new ListQuery(limit: 50, offset: 0, filters: ['schemaId' => 'does-not-exist']));
 
 		$this->assertSame(0, $result['total']);
 		$this->assertSame([], $result['entries']);
@@ -335,7 +350,7 @@ class AuditQueryServiceTest extends TestCase {
 
 		$this->objectService->method('searchObjectsBySlug')->willReturn([]);
 
-		$this->service->query(filters: ['app' => 'procest'], limit: 50, offset: 0);
+		$this->service->query(query: new ListQuery(limit: 50, offset: 0, filters: ['app' => 'procest']));
 
 	}//end testQueryUsesAppAsAliasForRegisterId()
 }//end class
