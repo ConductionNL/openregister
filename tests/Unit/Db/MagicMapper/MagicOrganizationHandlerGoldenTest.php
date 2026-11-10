@@ -33,9 +33,9 @@ use OCP\IUserManager;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\DeletedLens;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
+use OCA\OpenRegister\Db\MagicMapper\OrganisationBoundary;
 use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeCondition;
 use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeMembership;
-use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeTable;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\OrganisationContext;
@@ -414,9 +414,7 @@ class MagicOrganizationHandlerGoldenTest extends TestCase {
 			$where = [];
 			$this->handler(caller: $caller)->applyOrganizationFilter(
 				$this->queryBuilder($where),
-				new OrganisationScopeTable(null, null),
-				($caller['user'] ?? '') === 'admin',
-				$withOrgless
+				new OrganisationBoundary(null, null, $withOrgless)
 			);
 			$this->assertSame($expected, $where, 'case '.$index);
 		}
