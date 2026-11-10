@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\SaveObject\UpdatePreparation;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload;
@@ -4870,7 +4871,12 @@ class SaveObjectTest extends TestCase {
 		[$entity, $schema] = $this->slugEntity('hello-world');
 		$data = ['title' => 'A Completely New Title'];
 
-		$this->invokePrivateMethod('prepareObjectForUpdate', [$entity, $schema, new \OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload($data, [])]);
+		$preparation = new UpdatePreparation(
+			existingObject: $entity,
+			schema: $schema,
+			payload: new ObjectPayload(data: $data, selfData: [])
+		);
+		$this->invokePrivateMethod('prepareObjectForUpdate', [$preparation]);
 		$sent = new ObjectPayload(data: $data, selfData: []);
 		$this->invokePrivateMethod('decideSlug', [new SlugRequest(entity: $entity, schema: $schema, clientSlug: $sent->clientSlug()), 'hello-world']);
 

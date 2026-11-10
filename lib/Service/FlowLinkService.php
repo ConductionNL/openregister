@@ -262,8 +262,8 @@ class FlowLinkService implements FlowLinkServiceInterface {
 					// flag (operations are always "live" once configured);
 					// we just surface that the row still exists.
 					$row['enabled'] = true;
-					$row['events'] = $this->decodeJsonField(value: ($onRow['events'] ?? null));
-					$row['checks'] = $this->decodeJsonField(value: ($onRow['checks'] ?? null));
+					$row['events'] = FlowJsonColumn::decode(value: ($onRow['events'] ?? null));
+					$row['checks'] = FlowJsonColumn::decode(value: ($onRow['checks'] ?? null));
 					$row['operation'] = (string)($onRow['operation'] ?? '');
 				}
 			}//end if
@@ -357,8 +357,8 @@ class FlowLinkService implements FlowLinkServiceInterface {
 			'class' => (string)($row['class'] ?? ''),
 			'entity' => (string)($row['entity'] ?? ''),
 			'operation' => (string)($row['operation'] ?? ''),
-			'events' => $this->decodeJsonField(value: ($row['events'] ?? null)),
-			'checks' => $this->decodeJsonField(value: ($row['checks'] ?? null)),
+			'events' => FlowJsonColumn::decode(value: ($row['events'] ?? null)),
+			'checks' => FlowJsonColumn::decode(value: ($row['checks'] ?? null)),
 			'enabled' => true,
 		];
 	}//end pickerRow()
@@ -388,42 +388,4 @@ class FlowLinkService implements FlowLinkServiceInterface {
 			return null;
 		}
 	}//end fetchOperationRow()
-
-	/**
-	 * Decode a JSON-serialised array column (`events`, `checks`).
-	 *
-	 * NC Flow stores these as JSON strings. We tolerate both null and
-	 * already-decoded arrays so callers can pass raw row values.
-	 *
-	 * @param mixed $value Raw column value.
-	 *
-	 * @return array<int,mixed>
-	 */
-	private function decodeJsonField(mixed $value): array {
-		if (is_array($value) === true) {
-			return $value;
-		}
-
-		if (is_string($value) === false || $value === '') {
-			return [];
-		}
-
-		return $this->decodeJsonText(text: $value);
-	}//end decodeJsonField()
-
-	/**
-	 * Decode JSON text to an array; [] when it is not a JSON array or object.
-	 *
-	 * @param string $text The JSON text.
-	 *
-	 * @return array<int|string,mixed>
-	 */
-	private function decodeJsonText(string $text): array {
-		$decoded = json_decode($text, true);
-		if (is_array($decoded) === true) {
-			return $decoded;
-		}
-
-		return [];
-	}//end decodeJsonText()
 }//end class
