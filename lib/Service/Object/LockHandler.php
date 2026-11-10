@@ -110,16 +110,11 @@ class LockHandler {
 	 * Locks an object to prevent concurrent modifications.
 	 * The lock can be associated with a process and have a duration.
 	 *
-	 * @param string $identifier Object ID or UUID
-	 * @param string|null $process Process ID (for tracking who locked it)
-	 * @param int|null $duration Lock duration in seconds
-	 * @param bool $advisory When true, skip the object lookup and take the
-	 *                       appConfig-backed advisory lock directly (used by
-	 *                       pre-creation guards where no object exists yet)
-	 * @param string|null $runUuid Flow run taking the lock. A run-scoped lock
-	 *                             refuses every other caller, the run's own
-	 *                             runAs user included.
-	 * @param string|null $nodeId Flow node that took it, recorded for the sweep
+	 * @param LockRequest $request  The object, process, duration and the flow run step taking the lock.
+	 *                              A run-scoped lock refuses every other caller, the run's own runAs user included.
+	 * @param bool        $advisory When true, skip the object lookup and take the
+	 *                              appConfig-backed advisory lock directly (used by
+	 *                              pre-creation guards where no object exists yet)
 	 *
 	 * @return array Lock result with locked details and uuid.
 	 *
@@ -128,15 +123,7 @@ class LockHandler {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	public function lock(
-		string $identifier,
-		?string $process = null,
-		?int $duration = null,
-		bool $advisory = false,
-		?string $runUuid = null,
-		?string $nodeId = null,
-	): array {
-		$request = new LockRequest(identifier: $identifier, process: $process, duration: $duration, runStep: new LockRunStep($runUuid, $nodeId));
+	public function lock(LockRequest $request, bool $advisory = false): array {
 		$this->logRequest(request: $request, advisory: $advisory);
 
 		return $this->acquire(request: $request, advisory: $advisory);
@@ -190,13 +177,11 @@ class LockHandler {
 	 *
 	 * Removes the lock from an object, allowing other processes to modify it.
 	 *
-	 * @param string $identifier Object ID or UUID
-	 * @param bool $advisory When true, release the appConfig-backed advisory lock
-	 *                       directly and skip the object lookup / all-tables scan
-	 * @param string|null $runUuid Flow run releasing the lock, for a run-scoped lock
-	 * @param bool $break Release regardless of holder. Reserved for the
-	 *                    administrator break-lock and the engine's own release
-	 *                    layers, both of which authorize at their call site.
+	 * @param UnlockRequest $request The object; whether it is an advisory (pre-creation) lock, released
+	 *                               directly without the object lookup; the flow run releasing a
+	 *                               run-scoped lock; and whether to break it regardless of holder, which is
+	 *                               reserved for the administrator break-lock and the engine's own release
+	 *                               layers, both of which authorize at their call site.
 	 *
 	 * @return bool True when a lock was RELEASED; false when there was nothing
 	 *              to release because the object carried no live lock.
@@ -216,25 +201,7 @@ class LockHandler {
 	 *
 	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-is-released-through-its-own-endpoint-and-a-release-says-whether-there-was-one
 	 */
-	public function unlock(
-		string $identifier,
-		bool $advisory = false,
-		?string $runUuid = null,
-		bool $break = false,
-	): bool {
-		return $this->unlockRequested(request: new UnlockRequest(identifier: $identifier, advisory: $advisory, runUuid: $runUuid, break: $break));
-	}//end unlock()
-
-	/**
-	 * Release the lock a request names: an advisory lock directly, any other through the lookup.
-	 *
-	 * @param UnlockRequest $request The object, the kind of lock and who releases it.
-	 *
-	 * @return bool True when a lock was released, false when there was none.
-	 *
-	 * @throws \Exception If unlock operation fails
-	 */
-	private function unlockRequested(UnlockRequest $request): bool {
+	public function unlock(UnlockRequest $request): bool {
 		$this->logger->debug(
 			message: '[LockHandler] Unlocking object',
 			context: $this->logContext(fields: ['identifier' => $request->identifier, 'advisory' => $request->advisory])
@@ -247,7 +214,7 @@ class LockHandler {
 		}
 
 		return $this->unlockLogged(request: $request);
-	}//end unlockRequested()
+	}//end unlock()
 
 	/**
 	 * Release the lock on a resolved object, auditing what happened.
@@ -306,7 +273,7 @@ class LockHandler {
 			throw new Exception('Only an administrator may break a lock');
 		}
 
-		return $this->unlock(identifier: $identifier, break: true);
+		return $this->unlock(request: new UnlockRequest(identifier: $identifier, advisory: false, runUuid: null, break: true));
 	}//end breakLock()
 
 	/**

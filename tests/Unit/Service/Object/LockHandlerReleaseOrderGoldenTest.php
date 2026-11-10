@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -170,7 +171,9 @@ final class LockHandlerReleaseOrderGoldenTest extends TestCase {
 		$this->lockedBy('alice', self::RUN);
 		$this->caller('alice');
 
-		$this->assertTrue($this->handler()->unlock(identifier: self::OBJ, runUuid: self::RUN));
+		$this->assertTrue($this->handler()->unlock(
+			request: new UnlockRequest(identifier: self::OBJ, advisory: false, runUuid: self::RUN, break: false)
+		));
 
 		$this->assertSame('debug:[LockHandler] Unlocking object', $this->events[0]);
 		$this->assertStringStartsWith('find:', $this->events[1]);
@@ -205,7 +208,7 @@ final class LockHandlerReleaseOrderGoldenTest extends TestCase {
 		$this->caller('mallory');
 
 		try {
-			$this->handler()->unlock(identifier: self::OBJ);
+			$this->handler()->unlock(request: new UnlockRequest(identifier: self::OBJ, advisory: false, runUuid: null, break: false));
 			$this->fail('expected a refusal');
 		} catch (Exception $e) {
 			$this->assertSame('User does not have permission to unlock this object', $e->getMessage());
@@ -220,14 +223,18 @@ final class LockHandlerReleaseOrderGoldenTest extends TestCase {
 		$this->magic->method('findAcrossAllSources')->willThrowException(new DoesNotExistException('none'));
 		$this->magic->expects($this->never())->method('unlockObjectEntity');
 
-		$this->assertTrue($this->handler()->unlock(identifier: 'pending-key'));
+		$this->assertTrue($this->handler()->unlock(
+			request: new UnlockRequest(identifier: 'pending-key', advisory: false, runUuid: null, break: false)
+		));
 		$this->assertContains('advisory-release:pending-key', $this->events);
 	}
 
 	public function testTheAdvisoryFlagSkipsTheLookup(): void {
 		$this->magic->expects($this->never())->method('findAcrossAllSources');
 
-		$this->assertTrue($this->handler()->unlock(identifier: 'pending-key', advisory: true));
+		$this->assertTrue($this->handler()->unlock(
+			request: new UnlockRequest(identifier: 'pending-key', advisory: true, runUuid: null, break: false)
+		));
 		$this->assertSame(['debug:[LockHandler] Unlocking object', 'advisory-release:pending-key'], $this->events);
 	}
 }//end class

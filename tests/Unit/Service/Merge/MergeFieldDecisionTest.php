@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace Unit\Service\Merge;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -419,7 +421,7 @@ class MergeFieldDecisionTest extends TestCase {
 		$this->objectService->method('findAll')->willReturn([]);
 
 		$this->propertyRbac->method('canReadProperty')->willReturnCallback(
-			static fn (...$args): bool => (($args[1] ?? '') !== 'medicalNote')
+			static fn (SchemaProperty $read, PropertyAccessRequest $request): bool => ($read->name !== 'medicalNote')
 		);
 
 		$audited = [];
@@ -481,7 +483,7 @@ class MergeFieldDecisionTest extends TestCase {
 		);
 		$this->objectService->method('findAll')->willReturn([]);
 		$this->propertyRbac->method('canReadProperty')->willReturnCallback(
-			static fn (...$args): bool => (($args[1] ?? '') !== 'medicalNote')
+			static fn (SchemaProperty $read, PropertyAccessRequest $request): bool => ($read->name !== 'medicalNote')
 		);
 
 		$this->objectService->method('saveObject')->willReturnCallback(
@@ -530,7 +532,7 @@ class MergeFieldDecisionTest extends TestCase {
 		);
 		$this->objectService->method('findAll')->willReturn([]);
 		$this->propertyRbac->method('canReadProperty')->willReturnCallback(
-			static fn (...$args): bool => (($args[2]['@self']['organisation'] ?? null) === 'org-a')
+			static fn (SchemaProperty $read, PropertyAccessRequest $request): bool => (($request->object['@self']['organisation'] ?? null) === 'org-a')
 		);
 		$this->auditTrailMapper->method('recordObjectEvent')->willReturn(new AuditTrail());
 		$this->objectService->expects($this->never())->method('saveObject');
