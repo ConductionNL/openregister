@@ -618,6 +618,19 @@ function isEmptyList(list) {
  */
 function newConfiguration() {
 	return {
+		...blankConfigurationContent(),
+		// Management tab defaults
+		...localManagementDefaults(),
+	}
+}
+
+/**
+ * What a blank configuration describes and holds: nothing yet, at 1.0.0.
+ *
+ * @return {object} The content fields
+ */
+function blankConfigurationContent() {
+	return {
 		title: '',
 		description: null,
 		type: 'default',
@@ -632,7 +645,16 @@ function newConfiguration() {
 		sources: [],
 		agents: [],
 		views: [],
-		// Management tab defaults
+	}
+}
+
+/**
+ * How a new configuration is managed: locally, without updates.
+ *
+ * @return {object} The management fields
+ */
+function localManagementDefaults() {
+	return {
 		sourceType: 'local',
 		isLocal: true, // New configurations are local by default
 		sourceUrl: null,
@@ -644,6 +666,20 @@ function newConfiguration() {
 		githubBranch: 'main',
 		githubPath: null,
 	}
+}
+
+/**
+ * Select options from rows of value, label and description.
+ *
+ * @param {Array<Array<string>>} rows The rows
+ * @return {Array<object>} The options
+ */
+function describedOptions(rows) {
+	return rows.map(([value, label, description]) => ({
+		value,
+		label,
+		description,
+	}))
 }
 
 /**
@@ -806,51 +842,23 @@ export default {
 		 * @spec exclude Computed static select-option list; UI presentation data.
 		 */
 		sourceTypeOptions() {
-			return [
-				{
-					value: 'local',
-					label: 'Local',
-					description: 'Manually managed configuration',
-				},
-				{
-					value: 'github',
-					label: 'GitHub',
-					description: 'Configuration from GitHub repository',
-				},
-				{
-					value: 'gitlab',
-					label: 'GitLab',
-					description: 'Configuration from GitLab repository',
-				},
-				{
-					value: 'url',
-					label: 'URL',
-					description: 'Configuration from any URL',
-				},
-			]
+			return describedOptions([
+				['local', 'Local', 'Manually managed configuration'],
+				['github', 'GitHub', 'Configuration from GitHub repository'],
+				['gitlab', 'GitLab', 'Configuration from GitLab repository'],
+				['url', 'URL', 'Configuration from any URL'],
+			])
 		},
 
 		/**
 		 * @spec exclude Computed static select-option list; UI presentation data.
 		 */
 		typeOptions() {
-			return [
-				{
-					value: 'default',
-					label: 'Default',
-					description: 'Standard configuration type',
-				},
-				{
-					value: 'application',
-					label: 'Application',
-					description: 'Application-specific configuration',
-				},
-				{
-					value: 'manual',
-					label: 'Manual',
-					description: 'Manually created configuration',
-				},
-			]
+			return describedOptions([
+				['default', 'Default', 'Standard configuration type'],
+				['application', 'Application', 'Application-specific configuration'],
+				['manual', 'Manual', 'Manually created configuration'],
+			])
 		},
 
 		/**
@@ -1222,14 +1230,27 @@ export default {
 					|| null
 			}
 			if (Array.isArray(item.notificationGroups)) {
-				this.selectedNotificationGroups = item.notificationGroups
-					.map((groupValue) =>
-						this.notificationGroupOptions.find(
-							(g) => g.value === groupValue,
-						),
-					)
-					.filter(Boolean)
+				this.selectedNotificationGroups = this.notificationGroupsOf(
+					item.notificationGroups,
+				)
 			}
+		},
+
+		/**
+		 * The notification group options of the stored group values, skipping
+		 * values that are no longer offered.
+		 *
+		 * @param {Array<string>} groupValues The stored group values
+		 * @return {Array<object>} The selected options
+		 */
+		notificationGroupsOf(groupValues) {
+			return groupValues
+				.map((groupValue) =>
+					this.notificationGroupOptions.find(
+						(g) => g.value === groupValue,
+					),
+				)
+				.filter(Boolean)
 		},
 
 		/**
