@@ -30,3 +30,5 @@ FINISH: `bash $I finish` (releases the lease; always run it, also after an error
 
 FINAL MESSAGE (always, at most 25 lines): lease holder id; per tree: tree sha, base development sha, PR count, verdict line (Tests/Assertions/Failures/Errors, front ok/skip/red), wall time of the suite; merged PR numbers with merge commits (or why not); auto-parked PRs with the test; resolved conflicts (PR, files); BUILD-CONFLICT and MOVED PRs; how many PRs wait in queue/needs-review.tsv; RED/ALERT lines verbatim; final `git ls-remote origin refs/heads/development`.
 
+
+GIT IDENTITY (owner rule, 2026-11-10): before your first commit run `git config --global user.name "Ruben van der Linde" && git config --global user.email "ruben@conduction.nl"` and check it with `git config user.name`. Every commit, merge commit and push you make must be authored and committed under that identity, never as Claude or noreply@anthropic.com. Commits carry only the trailer `Assisted-by: ClaudeCode:claude-opus-5-5`, never Co-Authored-By.
