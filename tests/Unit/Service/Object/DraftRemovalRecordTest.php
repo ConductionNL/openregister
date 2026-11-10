@@ -155,9 +155,8 @@ class DraftRemovalRecordTest extends TestCase {
 			$this->createMock(MagicMapper::class),
 			$this->createMock(CacheHandler::class),
 			$this->createMock(IUserSession::class),
-			$auditTrail,
+			new \OCA\OpenRegister\Service\Object\AuditRecording($auditTrail, $this->logger()),
 			$this->createMock(SettingsService::class),
-			$this->logger(),
 			$this->createMock(ReferentialIntegrityService::class),
 			$this->createMock(IDBConnection::class),
 			$this->createMock(OrganisationMapper::class)

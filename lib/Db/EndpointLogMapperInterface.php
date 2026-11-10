@@ -77,6 +77,18 @@ interface EndpointLogMapperInterface {
 	public function findPageWithin(array $visibleIds, ?int $endpointId, ?int $limit = null, ?int $offset = null): array;
 
 	/**
+	 * One page of logs, and their total, of the given endpoints
+	 *
+	 * @param int[]     $endpointIds The endpoints; an empty list matches nothing
+	 * @param ListQuery $query       The page; unbounded for no limit, a null offset for none
+	 *
+	 * @return array{0: list<EndpointLog>, 1: int<0, max>} The page and the total
+	 *
+	 * @spec openspec/specs/production-observability/spec.md#requirement-per-entity-statistics-and-endpoint-delivery-log-api
+	 */
+	public function findPage(array $endpointIds, ListQuery $query): array;
+
+	/**
 	 * Get statistics for endpoint logs
 	 *
 	 * @param int|null $endpointId Optional endpoint ID to filter statistics

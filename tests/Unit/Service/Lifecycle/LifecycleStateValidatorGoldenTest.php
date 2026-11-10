@@ -212,7 +212,7 @@ class LifecycleStateValidatorGoldenTest extends TestCase {
 				$schema = [];
 			}
 
-			$actual = $validator->validateStates($case['annotation'], $schema, $enumSet);
+			$actual = $validator->validateStates($case['annotation'], LifecycleStateValidator::scopeOf($schema, $enumSet));
 		}
 
 		$golden = [];
