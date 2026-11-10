@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\UpstreamRequest;
 
 /**
@@ -65,7 +66,7 @@ trait ConnectorEntityCallsTrait {
 	 * @spec openspec/specs/integration-xwiki/spec.md
 	 */
 	public function get(string $register, string $schema, string $objectId, string $entityId): array {
-		$query = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: []);
+		$query = $this->contextQuery(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId), filters: []);
 
 		return $this->entityRow(request: new UpstreamRequest(method: 'GET', path: rawurlencode($entityId), options: ['query' => $query]));
 	}//end get()
@@ -84,7 +85,7 @@ trait ConnectorEntityCallsTrait {
 	 * @spec openspec/specs/integration-xwiki/spec.md
 	 */
 	public function create(string $register, string $schema, string $objectId, array $payload): array {
-		$body = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: $payload);
+		$body = $this->contextQuery(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId), filters: $payload);
 
 		return $this->entityRow(request: new UpstreamRequest(method: 'POST', path: '', options: ['body' => $body]));
 	}//end create()
@@ -104,7 +105,7 @@ trait ConnectorEntityCallsTrait {
 	 * @spec openspec/specs/integration-xwiki/spec.md
 	 */
 	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
-		$body = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: $payload);
+		$body = $this->contextQuery(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId), filters: $payload);
 
 		return $this->entityRow(request: new UpstreamRequest(method: 'PUT', path: rawurlencode($entityId), options: ['body' => $body]));
 	}//end update()
@@ -123,7 +124,7 @@ trait ConnectorEntityCallsTrait {
 	 * @spec openspec/specs/integration-xwiki/spec.md
 	 */
 	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
-		$query = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: []);
+		$query = $this->contextQuery(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId), filters: []);
 		$this->callEntity(request: new UpstreamRequest(method: 'DELETE', path: rawurlencode($entityId), options: ['query' => $query]));
 	}//end delete()
 
@@ -156,17 +157,15 @@ trait ConnectorEntityCallsTrait {
 	 * The standard `{register, schema, object, …filters}` context, used as the
 	 * query of reads and as the body of writes.
 	 *
-	 * @param string              $register Register slug or numeric id.
-	 * @param string              $schema   Schema slug or numeric id.
-	 * @param string              $objectId Object uuid.
-	 * @param array<string,mixed> $filters  Caller filters or payload merged in.
+	 * @param ObjectRef           $ref     The owning object.
+	 * @param array<string,mixed> $filters Caller filters or payload merged in.
 	 *
 	 * @return array<string,mixed>
 	 */
-	private function contextQuery(string $register, string $schema, string $objectId, array $filters): array {
+	private function contextQuery(ObjectRef $ref, array $filters): array {
 		return array_merge(
 			$filters,
-			['register' => $register, 'schema' => $schema, 'object' => $objectId]
+			['register' => $ref->register, 'schema' => $ref->schema, 'object' => $ref->id]
 		);
 	}//end contextQuery()
 

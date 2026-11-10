@@ -73,25 +73,30 @@ class ExampleSetChanges {
 	private readonly ExampleSetChangeFollower $follower;
 
 	/**
-	 * Constructor.
+	 * Reads and writes values at dot paths.
+	 *
+	 * @var ExampleSetPaths
+	 */
+	private readonly ExampleSetPaths $paths;
+
+	/**
+	 * Constructor. The path reader and the proof (whether a value read back
+	 * is the value written) are stateless and built here.
 	 *
 	 * @param ExampleSetStore  $store  Register access.
 	 * @param ExampleSetValues $values Fills placeholders.
-	 * @param ExampleSetPaths  $paths  Reads and writes values at dot paths.
-	 * @param ExampleSetProof  $proof  Tells whether a value read back is the value written.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly ExampleSetStore $store,
 		private readonly ExampleSetValues $values,
-		private readonly ExampleSetPaths $paths=new ExampleSetPaths(),
-		ExampleSetProof $proof=new ExampleSetProof(),
 	) {
-		$this->written  = new ExampleSetWrittenValue(proof: $proof);
-		$this->fields   = new ExampleSetChangeFields(store: $store, paths: $paths);
-		$this->readBack = new ExampleSetChangeReadBack(store: $store, paths: $paths, fields: $this->fields, written: $this->written);
-		$this->follower = new ExampleSetChangeFollower(paths: $paths, fields: $this->fields, written: $this->written);
+		$this->paths    = new ExampleSetPaths();
+		$this->written  = new ExampleSetWrittenValue(proof: new ExampleSetProof());
+		$this->fields   = new ExampleSetChangeFields(store: $store, paths: $this->paths);
+		$this->readBack = new ExampleSetChangeReadBack(store: $store, paths: $this->paths, fields: $this->fields, written: $this->written);
+		$this->follower = new ExampleSetChangeFollower(paths: $this->paths, fields: $this->fields, written: $this->written);
 	}//end __construct()
 
 	/**

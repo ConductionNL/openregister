@@ -114,7 +114,7 @@ class TaskCalendarProjector {
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-an-assigned-task-appears-in-the-assignees-own-calendar
 	 */
 	public function project(Task $task, ?string $previousAssignee = null): void {
-		$this->sync(task: $task, previousAssignee: $previousAssignee, verifyStore: false);
+		$this->sync(run: new TaskProjectionRun(task: $task, previousAssignee: $previousAssignee, verifyStore: false));
 	}//end project()
 
 	/**
@@ -134,7 +134,7 @@ class TaskCalendarProjector {
 	 */
 	public function reconcile(Task $task): void {
 		$state = $this->services->states->findForTask(taskUuid: (string)$task->getUuid());
-		$this->sync(task: $task, previousAssignee: $state?->getAssignee(), verifyStore: true);
+		$this->sync(run: new TaskProjectionRun(task: $task, previousAssignee: $state?->getAssignee(), verifyStore: true));
 	}//end reconcile()
 
 	/**
@@ -333,29 +333,26 @@ class TaskCalendarProjector {
 	 * task never projected stays out, a missing calendar is skipped, and the
 	 * rest is {@see write()}.
 	 *
-	 * @param Task $task The task.
-	 * @param string|null $previousAssignee Whose calendar may hold a stale copy.
-	 * @param bool $verifyStore Whether to read the calendar rather than trust the state row.
+	 * @param TaskProjectionRun $run The task, its previous assignee, and whether
+	 *                              to verify the stored object even when the
+	 *                              recorded hash matches.
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag IS the difference
-	 * between the two public entry points; both are documented on their own.
-	 *
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-an-assigned-task-appears-in-the-assignees-own-calendar
 	 */
-	private function sync(Task $task, ?string $previousAssignee, bool $verifyStore): void {
-		$assignee = $this->projectableAssignee(task: $task);
-		$state = $this->currentState(task: $task, assignee: $assignee);
+	private function sync(TaskProjectionRun $run): void {
+		$assignee = $this->projectableAssignee(task: $run->task);
+		$run->state = $this->currentState(task: $run->task, assignee: $assignee);
 		if ($assignee === null) {
-			$this->noteUnassigned(task: $task, previousAssignee: $previousAssignee);
+			$this->noteUnassigned(task: $run->task, previousAssignee: $run->previousAssignee);
 
 			return;
 		}
 
-		$calendarId = $this->targetCalendar(task: $task, state: $state, assignee: $assignee);
+		$calendarId = $this->targetCalendar(task: $run->task, state: $run->state);
 		if ($calendarId !== null) {
-			$this->write(write: $this->prepare(task: $task, calendarId: $calendarId), state: $state, verifyStore: $verifyStore);
+			$this->write(run: $run, write: $this->prepare(task: $run->task, calendarId: $calendarId));
 		}
 	}//end sync()
 
@@ -414,18 +411,17 @@ class TaskCalendarProjector {
 	 * A terminal task that was never projected does not become a calendar
 	 * entry now: there is nothing outstanding to show.
 	 *
-	 * @param Task $task The task.
-	 * @param TaskProjectionState|null $state The task's projection state.
-	 * @param string $assignee The assignee uid.
+	 * @param Task $task The task, assigned to an individual.
+	 * @param TaskProjectionState|null $state The current projection, if any.
 	 *
 	 * @return int|null The calendar id.
 	 */
-	private function targetCalendar(Task $task, ?TaskProjectionState $state, string $assignee): ?int {
+	private function targetCalendar(Task $task, ?TaskProjectionState $state): ?int {
 		if ($state === null && $task->isInTerminalState() === true) {
 			return null;
 		}
 
-		return $this->calendarIdFor(task: $task, assignee: $assignee);
+		return $this->calendarIdFor(task: $task, assignee: (string)$this->projectableAssignee(task: $task));
 	}//end targetCalendar()
 
 	/**
@@ -472,18 +468,17 @@ class TaskCalendarProjector {
 	 * Write a rendered projection unless the state row says it is already there.
 	 *
 	 * Idempotent: when nothing the engine owns changed, nothing is written.
-	 * With $verifyStore the state row is not trusted; {@see writeUnlessHeld()}
+	 * With the run's verifyStore the state row is not trusted; {@see writeUnlessHeld()}
 	 * reads the calendar's own copy.
 	 *
-	 * @param TaskCalendarWrite $write The rendered write.
-	 * @param TaskProjectionState|null $state The task's projection state.
-	 * @param bool $verifyStore Whether to read the calendar rather than trust the state row.
+	 * @param TaskProjectionRun $run The run (current state, verify flag).
+	 * @param TaskCalendarWrite $write The prepared write.
 	 *
 	 * @return void
 	 */
-	private function write(TaskCalendarWrite $write, ?TaskProjectionState $state, bool $verifyStore): void {
-		$state = $this->inSameCalendar(state: $state, calendarId: $write->calendarId);
-		if ($verifyStore === false && self::isUnchanged(state: $state, hash: $write->hash) === true) {
+	private function write(TaskProjectionRun $run, TaskCalendarWrite $write): void {
+		$state = $this->inSameCalendar(state: $run->state, calendarId: $write->calendarId);
+		if ($run->verifyStore === false && self::isUnchanged(state: $state, hash: $write->hash) === true) {
 			return;
 		}
 
@@ -504,7 +499,14 @@ class TaskCalendarProjector {
 			return;
 		}
 
-		$this->store(write: $write, state: $this->saveState(write: $write, state: $state), existing: $existing);
+		$saved = $this->saveState(write: $write, state: $state);
+		if ($existing !== null) {
+			$this->services->calDavBackend->updateCalendarObject($write->calendarId, (string)$saved->getObjectUri(), $write->rendered);
+
+			return;
+		}
+
+		$this->createObject(write: $write, state: $saved);
 	}//end writeUnlessHeld()
 
 	/**
@@ -588,25 +590,6 @@ class TaskCalendarProjector {
 
 		return $this->services->states->save(state: $state);
 	}//end saveState()
-
-	/**
-	 * Update the calendar's copy, or create it when there is none.
-	 *
-	 * @param TaskCalendarWrite $write The rendered write.
-	 * @param TaskProjectionState $state The saved state row.
-	 * @param array<string, mixed>|null $existing The calendar's current copy.
-	 *
-	 * @return void
-	 */
-	private function store(TaskCalendarWrite $write, TaskProjectionState $state, ?array $existing): void {
-		if ($existing !== null) {
-			$this->services->calDavBackend->updateCalendarObject($write->calendarId, (string)$state->getObjectUri(), $write->rendered);
-
-			return;
-		}
-
-		$this->createObject(write: $write, state: $state);
-	}//end store()
 
 	/**
 	 * Create the VTODO, falling back to a fresh uri when the first is taken
