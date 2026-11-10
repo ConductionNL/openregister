@@ -371,12 +371,14 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 
 		return $this->audit()->run(
 			target: new ToolAuditTarget(toolId: $toolId, register: $register?->getId(), schema: $schema->getId()),
-			arguments: $arguments,
-			call: fn (): array => $this->runVerb(
-				verb: $verb,
-				call: new DerivedToolCall(schema: $schema, register: $register, arguments: $arguments)
-			),
-			summarise: fn (array $result): array => $this->resultSummary(verb: $verb, result: $result)
+			invocation: new AuditedInvocation(
+				arguments: $arguments,
+				call: fn (): array => $this->runVerb(
+					verb: $verb,
+					call: new DerivedToolCall(schema: $schema, register: $register, arguments: $arguments)
+				),
+				summarise: fn (array $result): array => $this->resultSummary(verb: $verb, result: $result)
+			)
 		);
 	}//end invokeTool()
 

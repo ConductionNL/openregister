@@ -255,9 +255,11 @@ class AttributeToolProvider implements IMcpToolProvider {
 
 		return $this->audit()->run(
 			target: new ToolAuditTarget(toolId: $toolId),
-			arguments: $arguments,
-			call: fn (): array => $this->callEntry(entry: $entry, callArguments: $callArguments),
-			summarise: static fn (array $result): array => ToolInvocationDigest::idSummary(result: $result)
+			invocation: new AuditedInvocation(
+				arguments: $arguments,
+				call: fn (): array => $this->callEntry(entry: $entry, callArguments: $callArguments),
+				summarise: static fn (array $result): array => ToolInvocationDigest::idSummary(result: $result)
+			)
 		);
 	}//end invokeTool()
 

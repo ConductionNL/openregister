@@ -54,21 +54,19 @@ final class ToolInvocationAudit {
 	/**
 	 * Run the invocation and audit its outcome.
 	 *
-	 * @param ToolAuditTarget                              $target    What the record is about.
-	 * @param array<string, mixed>                         $arguments The tool arguments (digested, never stored).
-	 * @param callable(): array<string, mixed>             $call      The invocation.
-	 * @param callable(array<string, mixed>): array<string, mixed> $summarise The success summary of a result.
+	 * @param ToolAuditTarget   $target     What the record is about.
+	 * @param AuditedInvocation $invocation The arguments, the invocation and its success summary.
 	 *
 	 * @return array<string, mixed> The invocation result.
 	 *
 	 * @throws Throwable Whatever the invocation throws, after auditing it.
 	 */
-	public function run(ToolAuditTarget $target, array $arguments, callable $call, callable $summarise): array {
-		$paramsDigest = ToolInvocationDigest::paramsDigest(arguments: $arguments);
+	public function run(ToolAuditTarget $target, AuditedInvocation $invocation): array {
+		$paramsDigest = ToolInvocationDigest::paramsDigest(arguments: $invocation->arguments);
 
 		try {
-			$result = $call();
-			$outcome = new ToolInvocationOutcome(paramsDigest: $paramsDigest, resultSummary: $summarise($result), result: $result);
+			$result = ($invocation->call)();
+			$outcome = new ToolInvocationOutcome(paramsDigest: $paramsDigest, resultSummary: ($invocation->summarise)($result), result: $result);
 			$this->write(target: $target, outcome: $outcome);
 
 			return $result;

@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Mcp\BuiltIn\ToolAuditTarget;
+use OCA\OpenRegister\Mcp\BuiltIn\AuditedInvocation;
 use OCA\OpenRegister\Mcp\BuiltIn\ToolInvocationAudit;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -56,9 +57,11 @@ class ToolInvocationAuditCharacterisationTest extends TestCase
         $runner = new ToolInvocationAudit($mapper, $this->createMock(LoggerInterface::class), 'Src');
         $result = $runner->run(
             new ToolAuditTarget('app.tool', 4, 7),
-            ['a' => 1],
-            static fn (): array => ['id' => 'obj-1'],
-            static fn (array $r): array => ['isError' => false, 'n' => count($r)]
+            new AuditedInvocation(
+                ['a' => 1],
+                static fn (): array => ['id' => 'obj-1'],
+                static fn (array $r): array => ['isError' => false, 'n' => count($r)]
+            )
         );
 
         $this->assertSame(['id' => 'obj-1'], $result);
@@ -85,11 +88,13 @@ class ToolInvocationAuditCharacterisationTest extends TestCase
         try {
             $runner->run(
                 new ToolAuditTarget('app.tool'),
-                [],
-                static function () use ($error): array {
-                    throw $error;
-                },
-                static fn (array $r): array => []
+                new AuditedInvocation(
+                    [],
+                    static function () use ($error): array {
+                        throw $error;
+                    },
+                    static fn (array $r): array => []
+                )
             );
             $this->fail('The invocation error must be rethrown.');
         } catch (RuntimeException $caught) {
@@ -116,9 +121,11 @@ class ToolInvocationAuditCharacterisationTest extends TestCase
         $runner = new ToolInvocationAudit($mapper, $logger, 'Src');
         $result = $runner->run(
             new ToolAuditTarget('app.tool'),
-            [],
-            static fn (): array => ['ok' => true],
-            static fn (array $r): array => ['isError' => false]
+            new AuditedInvocation(
+                [],
+                static fn (): array => ['ok' => true],
+                static fn (array $r): array => ['isError' => false]
+            )
         );
 
         $this->assertSame(['ok' => true], $result);
