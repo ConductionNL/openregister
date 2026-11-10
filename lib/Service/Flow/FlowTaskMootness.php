@@ -119,8 +119,9 @@ class FlowTaskMootness {
 	 */
 	private function pruned(FlowPruningRun $run, array $places): int {
 		$terminated = 0;
-		foreach (array_keys($run->state->all()) as $nodeId) {
-			if ($this->taskUuidAt(run: $run, nodeId: $nodeId) === '' || $this->standsOn(nodeId: $nodeId, places: $places) === false) {
+		foreach ($run->state->all() as $nodeId => $slot) {
+			$taskUuid = trim((string)($slot[FlowTaskBridge::SLOT_TASK_UUID] ?? ''));
+			if ($taskUuid === '' || $this->standsOn(nodeId: $nodeId, places: $places) === false) {
 				continue;
 			}
 
