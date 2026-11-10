@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Flow\FlowRunFrame;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowRunContext
@@ -34,8 +35,8 @@ class FlowRunContextRunUuidBehaviourTest extends TestCase {
 
 	public function testTheInnermostFrameAnswersTrimmed(): void {
 		$context = new FlowRunContext();
-		$context->push(runUuid: 'outer', nodeId: 'a', sequence: 1);
-		$context->push(runUuid: ' inner ', nodeId: 'b', sequence: 2);
+		$context->push(frame: new FlowRunFrame(runUuid: 'outer', nodeId: 'a', sequence: 1));
+		$context->push(frame: new FlowRunFrame(runUuid: ' inner ', nodeId: 'b', sequence: 2));
 
 		self::assertSame('inner', $context->currentRunUuid());
 
@@ -45,8 +46,8 @@ class FlowRunContextRunUuidBehaviourTest extends TestCase {
 
 	public function testAnUnattributableHopDoesNotFallThroughToTheEnclosingRun(): void {
 		$context = new FlowRunContext();
-		$context->push(runUuid: 'outer', nodeId: 'a', sequence: 1);
-		$context->push(runUuid: '  ', nodeId: 'b', sequence: 2);
+		$context->push(frame: new FlowRunFrame(runUuid: 'outer', nodeId: 'a', sequence: 1));
+		$context->push(frame: new FlowRunFrame(runUuid: '  ', nodeId: 'b', sequence: 2));
 
 		self::assertNull($context->currentRunUuid());
 		self::assertSame(2, $context->depth());

@@ -57,6 +57,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use RuntimeException;
 use stdClass;
+use OCA\OpenRegister\Service\Flow\PlacesPruning;
+use OCA\OpenRegister\Service\Flow\FlowRunFrame;
 
 /**
  * A dispatcher whose behaviour per step id is configured by the case.
@@ -457,8 +459,8 @@ class FlowEngineWalkGoldenTest extends TestCase {
 
 	private function runContext(\Closure $trace): FlowRunContext {
 		$context = $this->createMock(FlowRunContext::class);
-		$context->method('push')->willReturnCallback(function (?string $runUuid, string $nodeId, int $sequence) use ($trace): void {
-			$trace(['push', $runUuid, $nodeId, $sequence]);
+		$context->method('push')->willReturnCallback(function (FlowRunFrame $frame) use ($trace): void {
+			$trace(['push', $frame->runUuid, $frame->nodeId, $frame->sequence]);
 		});
 		$context->method('pop')->willReturnCallback(function () use ($trace): void {
 			$trace(['pop']);
@@ -469,8 +471,8 @@ class FlowEngineWalkGoldenTest extends TestCase {
 
 	private function mootness(\Closure $trace): FlowTaskMootness {
 		$mootness = $this->createMock(FlowTaskMootness::class);
-		$mootness->method('placesPruned')->willReturnCallback(function (array $context, array $places, string $byTransition) use ($trace): int {
-			$trace(['pruned', $places, $byTransition]);
+		$mootness->method('placesPruned')->willReturnCallback(function (array $context, PlacesPruning $pruning) use ($trace): int {
+			$trace(['pruned', $pruning->places, $pruning->byTransition]);
 			return 0;
 		});
 

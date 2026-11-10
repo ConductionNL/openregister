@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Task;
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Flow\FlowRunFrame;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\InvalidTransitionInputException;
@@ -150,7 +151,7 @@ class TaskFormSubjectWriterTest extends TestCase {
 		$this->objects->expects($this->once())->method('saveObject')
 			->with(['title' => 'New', 'keep' => 1, 'id' => 'obj-1'], [], '5', '6', 'obj-1', true, true, false, true, null, $this->user)
 			->willReturn(self::subject());
-		$this->runContext->expects($this->once())->method('push')->with('run-1', 'task-form', 0);
+		$this->runContext->expects($this->once())->method('push')->with(new FlowRunFrame('run-1', 'task-form', 0));
 		$this->runContext->expects($this->once())->method('pop');
 
 		$this->writer->write(new TaskFormSubmission(self::task(), ['title' => 'New'], null), self::fieldForm());
@@ -159,7 +160,7 @@ class TaskFormSubjectWriterTest extends TestCase {
 	public function testAnInlineSaveWithoutARunPushesNoRunUuid(): void {
 		$this->engine->method('resolveTransitionInputs')->willReturn(['title' => 'New']);
 		$this->objects->method('find')->willReturn(self::subject());
-		$this->runContext->expects($this->once())->method('push')->with(null, 'task-form', 0);
+		$this->runContext->expects($this->once())->method('push')->with(new FlowRunFrame(null, 'task-form', 0));
 
 		$this->writer->write(new TaskFormSubmission(self::task('obj-1', '  '), ['title' => 'New'], null), self::fieldForm());
 	}

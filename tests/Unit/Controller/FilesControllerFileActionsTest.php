@@ -217,7 +217,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$this->setupObjectServiceMocks($object);
 
 		$batchHandler = $this->createMock(FileBatchHandler::class);
-		$batchHandler->method('executeBatch')->willReturn(
+		$batchHandler->method('runBatch')->willReturn(
 			[
 				'results' => [
 					['fileId' => 42, 'success' => true],
@@ -248,7 +248,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$this->setupObjectServiceMocks($object);
 
 		$batchHandler = $this->createMock(FileBatchHandler::class);
-		$batchHandler->method('executeBatch')->willReturn(
+		$batchHandler->method('runBatch')->willReturn(
 			[
 				'results' => [
 					['fileId' => 42, 'success' => true],
@@ -279,7 +279,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$this->setupObjectServiceMocks($object);
 
 		$batchHandler = $this->createMock(FileBatchHandler::class);
-		$batchHandler->method('executeBatch')
+		$batchHandler->method('runBatch')
 			->willThrowException(new Exception('Invalid batch action. Allowed: publish, depublish, delete, label'));
 		$this->fileService->method('getBatchHandler')->willReturn($batchHandler);
 

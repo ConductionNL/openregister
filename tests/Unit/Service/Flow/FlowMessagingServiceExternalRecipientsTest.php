@@ -69,6 +69,7 @@ use OCA\OpenRegister\Service\Flow\FlowMessagingChannels;
 use OCA\OpenRegister\Service\Flow\FlowMessagingOverrides;
 use OCA\OpenRegister\Service\Flow\FlowMessagingPlatform;
 use OCA\OpenRegister\Service\Flow\FlowMessagingRecipients;
+use OCA\OpenRegister\Service\Flow\FlowRunFrame;
 
 /**
  * External recipients, FlowEmailSentEvent and role fields.
@@ -488,7 +489,7 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 	// ---- FlowEmailSentEvent ------------------------------------------------
 
 	public function testEachSentEmailIsAnnouncedWithTheWholeContract(): void {
-		$this->runContext->push(runUuid: 'run-7', nodeId: 'mail-the-citizen', sequence: 3);
+		$this->runContext->push(frame: new FlowRunFrame(runUuid: 'run-7', nodeId: 'mail-the-citizen', sequence: 3));
 		try {
 			$this->sendEmail(
 				config: ['recipients' => ['bob', 'x@example.org'], 'externalRecipients' => 'any'],

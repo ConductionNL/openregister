@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Files\Controller;
 
 use DateTimeImmutable;
 use Exception;
+use OCA\OpenRegister\Service\File\FileBatchRequest;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Controller\Support\FileAccessCheck;
 use OCA\OpenRegister\Files\Controller\Support\FileActionRefusal;
@@ -2609,7 +2610,10 @@ class FilesController extends Controller {
 		}
 
 		$handler = $this->fileService->getBatchHandler();
-		$result = $handler->executeBatch(object: $object, action: $data['action'] ?? '', fileIds: $fileIds, params: $data);
+		$result = $handler->runBatch(
+			request: new FileBatchRequest(object: $object, action: $data['action'] ?? '', params: $data),
+			fileIds: $fileIds
+		);
 
 		$statusCode = 200;
 		if ($result['summary']['failed'] > 0) {

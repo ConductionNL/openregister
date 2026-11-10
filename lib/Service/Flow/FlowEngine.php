@@ -171,9 +171,11 @@ class FlowEngine {
 	private function enterHop(FlowWalkHop|FlowStreamHop $hop): void {
 		$context = $hop->pass->context;
 		$this->services->runContext?->push(
-			runUuid: ($context[FlowRunContext::CONTEXT_RUN] ?? null),
-			nodeId: $hop->name(),
-			sequence: ((int)($context[FlowRunContext::CONTEXT_BASE] ?? 0) + count($hop->pass->log))
+			frame: new FlowRunFrame(
+				runUuid: ($context[FlowRunContext::CONTEXT_RUN] ?? null),
+				nodeId: $hop->name(),
+				sequence: ((int)($context[FlowRunContext::CONTEXT_BASE] ?? 0) + count($hop->pass->log))
+			)
 		);
 	}//end enterHop()
 

@@ -20,6 +20,7 @@ use OCA\OpenRegister\Service\Flow\FlowTaskMootness;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Symfony\Component\Workflow\MarkingStore\MethodMarkingStore;
+use OCA\OpenRegister\Service\Flow\PlacesPruning;
 
 /**
  * Holds the marking for one walk.
@@ -100,7 +101,7 @@ class FlowEngineBranchPruningTest extends TestCase {
 		$mootness = $this->createMock(FlowTaskMootness::class);
 		$mootness->expects($this->once())
 			->method('placesPruned')
-			->with($this->anything(), ['lo'], 's');
+			->with($this->anything(), new PlacesPruning(places: ['lo'], byTransition: 's'));
 
 		$engine = new FlowEngine(new FlowDefinitionBuilder(), new NullLogger(), services: new FlowEngineServices(mootness: $mootness));
 
