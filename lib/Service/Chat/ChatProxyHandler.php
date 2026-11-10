@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Service\Chat;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\AppFramework\Http\Response;
+use OCP\Http\Client\IResponse;
 use OCP\IAppConfig;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
@@ -264,9 +265,25 @@ class ChatProxyHandler implements ChatProxyHandlerInterface {
 	public function probeReachable(): bool {
 		$url = $this->endpoint->urlGenerator->getAbsoluteURL(self::HERMIQ_HEALTH_PATH);
 
+		$response = $this->probeResponse(url: $url);
+		if ($response === null) {
+			return false;
+		}
+
+		return $response->getStatusCode() < 500;
+	}//end probeReachable()
+
+	/**
+	 * Ask hermiq's health endpoint; a transport failure is logged and gives null.
+	 *
+	 * @param string $url The absolute health URL.
+	 *
+	 * @return IResponse|null The answer, or null.
+	 */
+	private function probeResponse(string $url): ?IResponse {
 		try {
 			$client = $this->endpoint->clientService->newClient();
-			$response = $client->get(
+			return $client->get(
 				$url,
 				[
 					'timeout' => self::PROBE_TIMEOUT_SECONDS,
@@ -274,18 +291,28 @@ class ChatProxyHandler implements ChatProxyHandlerInterface {
 				]
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				'[ChatProxyHandler] hermiq reachability probe failed — falling back to local serving',
-				[
-					'url' => $url,
-					'error' => $e->getMessage(),
-				]
-			);
-			return false;
+			$this->logProbeFailure(url: $url, error: $e);
+			return null;
 		}
+	}//end probeResponse()
 
-		return $response->getStatusCode() < 500;
-	}//end probeReachable()
+	/**
+	 * Log a failed reachability probe; the caller falls back to local serving.
+	 *
+	 * @param string    $url   The absolute health URL.
+	 * @param Throwable $error The transport failure.
+	 *
+	 * @return void
+	 */
+	private function logProbeFailure(string $url, Throwable $error): void {
+		$this->logger->warning(
+			'[ChatProxyHandler] hermiq reachability probe failed — falling back to local serving',
+			[
+				'url' => $url,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logProbeFailure()
 
 	/**
 	 * Build a 308 Permanent Redirect response to hermiq's mirrored path.
