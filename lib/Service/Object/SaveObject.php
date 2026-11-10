@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
+use OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedPass;
 use OCA\OpenRegister\Service\RecordUpdate;
 use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
@@ -4361,20 +4362,20 @@ class SaveObject implements SaveObjectInterface {
 	 * @param ObjectSaveCall       $call         The save call: the resolved register and the sourced schema.
 	 * @param array<string, mixed> $objectSource The `x-openregister-object-source` annotation.
 	 *
-	 * @return \OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider The provider.
+	 * @return WritableObjectSourceProvider The provider.
 	 *
 	 * @throws \RuntimeException When the schema is not writable (v1 rejection).
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function writableObjectSourceProvider(ObjectSaveCall $call, array $objectSource): \OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider {
+	private function writableObjectSourceProvider(ObjectSaveCall $call, array $objectSource): WritableObjectSourceProvider {
 		$provider = null;
 		if ($this->objectSourceRegistry !== null) {
 			$provider = $this->objectSourceRegistry->get((string)$objectSource['provider']);
 		}
 
 		$writableOptIn = (($objectSource['readOnly'] ?? true) === false);
-		$writable = ($provider instanceof \OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider);
+		$writable = ($provider instanceof WritableObjectSourceProvider);
 		if ($writableOptIn === false || $writable === false || $call->register instanceof Register === false) {
 			throw self::readOnlyProjectionRefusal(call: $call, objectSource: $objectSource);
 		}
