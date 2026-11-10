@@ -186,6 +186,23 @@ import AppTabs from '../../components/tabs/AppTabs.vue'
 import { searchGroupsDebounced } from '../../services/groupSearch.js'
 import { viewsStore } from '../../store/store.js'
 
+/**
+ * Ask Nextcloud for the users matching a search.
+ *
+ * @param {string} searchQuery The search query
+ * @return {Promise<Response>} The OCS response
+ */
+function fetchUsersMatching(searchQuery) {
+	return fetch(
+		`/ocs/v1.php/cloud/users?format=json&search=${encodeURIComponent(searchQuery)}`,
+		{
+			headers: {
+				'OCS-APIRequest': 'true',
+			},
+		},
+	)
+}
+
 export default {
 	name: 'EditView',
 	components: {
@@ -323,52 +340,56 @@ export default {
 			}
 
 			// Debounce the search by 300ms
-			this.userSearchDebounce = setTimeout(async () => {
-				this.loadingUsers = true
-				try {
-					// Query Nextcloud OCS API with search parameter
-					const response = await fetch(
-						`/ocs/v1.php/cloud/users?format=json&search=${encodeURIComponent(searchQuery)}`,
-						{
-							headers: {
-								'OCS-APIRequest': 'true',
-							},
-						},
-					)
+			this.userSearchDebounce = setTimeout(
+				() => this.runUserSearch(searchQuery),
+				300,
+			)
+		},
 
-					if (response.ok) {
-						const data = await response.json()
-						if (data.ocs?.data?.users) {
-							// Transform user IDs into objects
-							const searchResults = data.ocs.data.users.map(
-								(userId) => ({
-									id: userId,
-									name: userId,
-								}),
-							)
-
-							// Merge with already selected users to ensure they remain visible
-							const selectedUserIds = this.selectedUsers.map(
-								(u) => u.id,
-							)
-							const mergedUsers = [
-								...this.selectedUsers,
-								...searchResults.filter(
-									(u) => !selectedUserIds.includes(u.id),
-								),
-							]
-
-							this.availableUsers = mergedUsers
-						}
-					} else {
-						console.warn('Failed to search users:', response.statusText)
-					}
-				} catch (error) {
-					console.error('Error searching Nextcloud users:', error)
-				} finally {
-					this.loadingUsers = false
+		/**
+		 * Look up the Nextcloud users matching a search, keeping the selected
+		 * users visible.
+		 *
+		 * @param {string} searchQuery The search query entered by the user
+		 * @return {Promise<void>}
+		 */
+		async runUserSearch(searchQuery) {
+			this.loadingUsers = true
+			try {
+				const response = await fetchUsersMatching(searchQuery)
+				if (response.ok) {
+					this.showFoundUsers(await response.json())
+				} else {
+					console.warn('Failed to search users:', response.statusText)
 				}
-			}, 300)
+			} catch (error) {
+				console.error('Error searching Nextcloud users:', error)
+			} finally {
+				this.loadingUsers = false
+			}
+		},
+
+		/**
+		 * Offer the found users after the already selected ones, without
+		 * listing a selected user twice.
+		 *
+		 * @param {object} data The OCS answer
+		 * @return {void}
+		 */
+		showFoundUsers(data) {
+			if (!data.ocs?.data?.users) {
+				return
+			}
+			// Transform user IDs into objects
+			const searchResults = data.ocs.data.users.map((userId) => ({
+				id: userId,
+				name: userId,
+			}))
+			const selectedUserIds = this.selectedUsers.map((u) => u.id)
+			this.availableUsers = [
+				...this.selectedUsers,
+				...searchResults.filter((u) => !selectedUserIds.includes(u.id)),
+			]
 		},
 
 		/**
@@ -384,43 +405,78 @@ export default {
 			this.error = null
 
 			try {
-				const sharedWith = this.selectedGroups.map((g) => ({
-					group: g.id,
-					mode: g.mode || 'read',
-				}))
-				const updateData = {
-					name: this.viewData.name.trim(),
-					description: this.viewData.description || '',
-					isPublic: this.viewData.isPublic,
-					isDefault: this.viewData.isDefault,
-					query: this.viewData.query,
-					sharedWith,
-					sharedUsers: this.selectedUsers.map((u) => u.id),
-				}
-
-				await viewsStore.updateView(
-					this.view.id || this.view.uuid,
-					updateData,
-				)
-
-				this.success = true
-
-				// Refresh views list
-				await viewsStore.fetchViews()
-
-				// Close after a brief delay to show success message
-				setTimeout(() => {
-					this.$emit('close')
-				}, 1500)
+				await this.persistView()
 			} catch (error) {
-				console.error('Error updating view:', error)
-				this.error =
-					error.response?.data?.error
-					|| error.message
-					|| this.t('openregister', 'Failed to update view')
+				this.showSaveFailure(error)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Save the view as the form describes it, then say so.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async persistView() {
+			await viewsStore.updateView(
+				this.view.id || this.view.uuid,
+				this.viewUpdate(),
+			)
+			await this.showSaved()
+		},
+
+		/**
+		 * The view as the form now describes it, with whom it is shared.
+		 *
+		 * @return {object} The view update
+		 */
+		viewUpdate() {
+			const sharedWith = this.selectedGroups.map((g) => ({
+				group: g.id,
+				mode: g.mode || 'read',
+			}))
+			return {
+				name: this.viewData.name.trim(),
+				description: this.viewData.description || '',
+				isPublic: this.viewData.isPublic,
+				isDefault: this.viewData.isDefault,
+				query: this.viewData.query,
+				sharedWith,
+				sharedUsers: this.selectedUsers.map((u) => u.id),
+			}
+		},
+
+		/**
+		 * Say the view was saved, refresh the views list and close after a
+		 * brief delay to show the success message.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async showSaved() {
+			this.success = true
+
+			// Refresh views list
+			await viewsStore.fetchViews()
+
+			setTimeout(() => {
+				this.$emit('close')
+			}, 1500)
+		},
+
+		/**
+		 * Log a failed save and say why it failed: the server's error, the
+		 * error's message, or a generic one.
+		 *
+		 * @param {Error} error What went wrong
+		 * @return {void}
+		 */
+		showSaveFailure(error) {
+			console.error('Error updating view:', error)
+			this.error =
+				error.response?.data?.error
+				|| error.message
+				|| this.t('openregister', 'Failed to update view')
 		},
 
 		/**
