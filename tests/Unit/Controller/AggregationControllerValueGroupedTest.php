@@ -29,6 +29,8 @@ use OCP\AppFramework\Http;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationMeasure;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Search\Controller\AggregationController
@@ -114,7 +116,7 @@ class AggregationControllerValueGroupedTest extends TestCase {
 
 	public function testTimeseriesSurfacesCacheHeader(): void {
 		$schema = $this->createMock(\OCA\OpenRegister\Db\Schema::class);
-		$query = AggregationQuery::create(metric: 'count', groupBy: ['field' => 'status']);
+		$query = AggregationQuery::create(new AggregationMeasure(metric: 'count'), new AggregationLayout(groupBy: ['field' => 'status']));
 		$this->runner->method('findSchema')->willReturn($schema);
 		$this->validator->method('validate')->willReturn($query);
 		$this->runner->method('runAdhocByRef')->willReturn(['groups' => [], 'backend' => 'postgres', 'cached' => true]);

@@ -50,6 +50,8 @@ use OCP\IDBConnection;
 use OCP\IUserSession;
 use PDO;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationMeasure;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 
 /**
  * No `covers` metadata, deliberately — `beStrictAboutCoverageMetadata="true"`
@@ -86,14 +88,10 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 		$result = $runner->runAdhoc(
 			register: $this->makeRegister(),
 			schema: $this->makeSchema(),
-			query: AggregationQuery::create(
-				metric: 'count',
-				groupBy: ['field' => 'status'],
-				metrics: [
+			query: AggregationQuery::create(new AggregationMeasure(metric: 'count'), new AggregationLayout(groupBy: ['field' => 'status'], metrics: [
 					['metric' => 'count'],
 					['metric' => 'sum', 'field' => 'amount'],
-				]
-			)
+				]))
 		);
 
 		$this->assertSame('sqlite', $result['backend']);
@@ -127,13 +125,10 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 		$result = $runner->runAdhoc(
 			register: $this->makeRegister(),
 			schema: $this->makeSchema(),
-			query: AggregationQuery::create(
-				metric: 'count',
-				metrics: [
+			query: AggregationQuery::create(new AggregationMeasure(metric: 'count'), new AggregationLayout(metrics: [
 					['metric' => 'count'],
 					['metric' => 'sum', 'field' => 'amount'],
-				]
-			)
+				]))
 		);
 
 		$this->assertSame('php-fallback', $result['backend']);
@@ -152,14 +147,11 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 		$result = $runner->runAdhoc(
 			register: $this->makeRegister(),
 			schema: $this->makeSchema(),
-			query: AggregationQuery::create(
-				metric: 'count',
-				metrics: [
+			query: AggregationQuery::create(new AggregationMeasure(metric: 'count'), new AggregationLayout(metrics: [
 					['metric' => 'count'],
 					['metric' => 'sum', 'field' => 'amount'],
 					['metric' => 'avg', 'field' => 'amount'],
-				]
-			)
+				]))
 		);
 
 		$this->assertSame('php-fallback', $result['backend']);
@@ -186,10 +178,7 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 		$result = $this->makePhpFallbackRunner()->runAdhoc(
 			register: $this->makeRegister(),
 			schema: $this->makeSchema(),
-			query: AggregationQuery::create(
-				metric: 'sum',
-				field: 'amount',
-				metrics: [
+			query: AggregationQuery::create(new AggregationMeasure(metric: 'sum', field: 'amount'), new AggregationLayout(metrics: [
 					[
 						'metric' => 'sum',
 						'field' => 'amount',
@@ -203,8 +192,7 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 						'as' => 'wipTotal',
 					],
 					['metric' => 'sum', 'field' => 'amount'],
-				]
-			)
+				]))
 		);
 
 		$this->assertSame('php-fallback', $result['backend']);
@@ -227,11 +215,7 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 		$result = $this->makeNativeRunner()->runAdhoc(
 			register: $this->makeRegister(),
 			schema: $this->makeSchema(),
-			query: AggregationQuery::create(
-				metric: 'sum',
-				field: 'amount',
-				groupBy: ['status'],
-				metrics: [
+			query: AggregationQuery::create(new AggregationMeasure(metric: 'sum', field: 'amount'), new AggregationLayout(groupBy: ['status'], metrics: [
 					[
 						'metric' => 'sum',
 						'field' => 'amount',
@@ -239,8 +223,7 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 						'as' => 'openTotal',
 					],
 					['metric' => 'count'],
-				]
-			)
+				]))
 		);
 
 		$this->assertSame(
@@ -257,14 +240,10 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 		$result = $runner->runAdhoc(
 			register: $this->makeRegister(),
 			schema: $this->makeSchema(),
-			query: AggregationQuery::create(
-				metric: 'count',
-				groupBy: ['field' => 'status'],
-				metrics: [
+			query: AggregationQuery::create(new AggregationMeasure(metric: 'count'), new AggregationLayout(groupBy: ['field' => 'status'], metrics: [
 					['metric' => 'count'],
 					['metric' => 'sum', 'field' => 'amount'],
-				]
-			)
+				]))
 		);
 
 		$folded = [];
@@ -287,7 +266,7 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 		$result = $runner->runAdhoc(
 			register: $this->makeRegister(),
 			schema: $this->makeSchema(),
-			query: AggregationQuery::create(metric: 'count')
+			query: AggregationQuery::create(new AggregationMeasure(metric: 'count'))
 		);
 
 		$this->assertSame(3, $result['value']);
@@ -301,10 +280,7 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 		$result = $runner->runAdhoc(
 			register: $this->makeRegister(),
 			schema: $this->makeSchema(),
-			query: AggregationQuery::create(
-				metric: 'count',
-				metrics: [['metric' => 'count']]
-			)
+			query: AggregationQuery::create(new AggregationMeasure(metric: 'count'), new AggregationLayout(metrics: [['metric' => 'count']]))
 		);
 
 		$this->assertSame(3, $result['value']);

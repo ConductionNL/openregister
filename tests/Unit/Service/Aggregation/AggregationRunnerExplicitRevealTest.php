@@ -48,6 +48,8 @@ use OCP\IDBConnection;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationMeasure;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 
 /**
  * @covers \OCA\OpenRegister\Service\Aggregation\AggregationRunner
@@ -169,7 +171,10 @@ class AggregationRunnerExplicitRevealTest extends TestCase {
 		$this->runner()->runAdhoc(
 			register: $this->register(),
 			schema: $this->schema(),
-			query: AggregationQuery::create(metric: 'count', groupBy: ['field' => 'citizenServiceNumber'])
+			query: AggregationQuery::create(
+				new AggregationMeasure(metric: 'count'),
+				new AggregationLayout(groupBy: ['field' => 'citizenServiceNumber'])
+			)
 		);
 	}//end testAnAdhocGroupByOnItIsRefused()
 
@@ -185,7 +190,7 @@ class AggregationRunnerExplicitRevealTest extends TestCase {
 		$this->runner()->runAdhoc(
 			register: $this->register(),
 			schema: $this->schema(),
-			query: AggregationQuery::create(metric: 'max', field: 'citizenServiceNumber')
+			query: AggregationQuery::create(new AggregationMeasure(metric: 'max', field: 'citizenServiceNumber'))
 		);
 	}//end testAnAdhocMaxOverItIsRefused()
 
@@ -201,7 +206,10 @@ class AggregationRunnerExplicitRevealTest extends TestCase {
 		$this->runner()->runAdhoc(
 			register: $this->register(),
 			schema: $this->schema(),
-			query: AggregationQuery::create(metric: 'count', filter: ['citizenServiceNumber' => '123457609'], groupBy: ['field' => 'municipality'])
+			query: AggregationQuery::create(
+				new AggregationMeasure(metric: 'count', filter: ['citizenServiceNumber' => '123457609']),
+				new AggregationLayout(groupBy: ['field' => 'municipality'])
+			)
 		);
 	}//end testAnAdhocFilterOnItIsRefused()
 
@@ -248,7 +256,7 @@ class AggregationRunnerExplicitRevealTest extends TestCase {
 		$this->runner()->runAdhocByRef(
 			registerRef: 'brp',
 			schemaRef: 'brp-person',
-			query: AggregationQuery::create(metric: 'max', field: 'citizenServiceNumber'),
+			query: AggregationQuery::create(new AggregationMeasure(metric: 'max', field: 'citizenServiceNumber')),
 			bypassRbac: true
 		);
 	}//end testABypassingAdhocMaxOverItIsRefused()

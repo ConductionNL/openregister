@@ -24,6 +24,8 @@ namespace Unit\Service\Aggregation;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationMeasure;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 
 /**
  * Each case reads a query (or calls a static helper) and records every
@@ -42,27 +44,33 @@ class AggregationQueryReadGoldenTest extends TestCase {
 		$bucket = ['field' => 'd', 'start' => 'a', 'end' => 'b', 'gap' => 'day'];
 		return [
 			'legacy single metric, nested filter' => [static fn () => self::read(AggregationQuery::create(
-				metric: 'sum',
-				field: 'amount',
-				filter: ['b' => ['lte' => 10, 'gt' => 5], 'a' => 1, 'c' => [['z' => 1, 'a' => 2]]]
+				new AggregationMeasure(
+					metric: 'sum',
+					field: 'amount',
+					filter: ['b' => ['lte' => 10, 'gt' => 5], 'a' => 1, 'c' => [['z' => 1, 'a' => 2]]]
+				)
 			))],
-			'metrics list with condition and alias' => [static fn () => self::read(AggregationQuery::create(
-				metric: 'count',
-				groupBy: ['fields' => ['x' => 'status', 'y' => 'kind']],
-				metrics: [
+			'metrics list with condition and alias' => [static fn () => self::read(AggregationQuery::create(new AggregationMeasure(metric: 'count'), new AggregationLayout(groupBy: ['fields' => ['x' => 'status', 'y' => 'kind']], metrics: [
 					['metric' => 'count'],
 					['metric' => 'sum', 'field' => 'amount', 'condition' => ['status' => 'open'], 'as' => 'openSum'],
 					['metric' => 'count', 'field' => '', 'condition' => [], 'as' => ''],
 					['metric' => 'avg', 'field' => 'x', 'as' => 5, 'condition' => 'str'],
-				]
-			))],
+				])))],
 			'one metric in list, list groupBy' => [static fn () => self::read(AggregationQuery::create(
-				metric: 'count',
-				groupBy: self::asGroupBy(['status', 'kind']),
-				metrics: [['metric' => 'max', 'field' => 'n', 'extra' => 1]]
+				new AggregationMeasure(metric: 'count'),
+				new AggregationLayout(
+					groupBy: self::asGroupBy(['status', 'kind']),
+					metrics: [['metric' => 'max', 'field' => 'n', 'extra' => 1]]
+				)
 			))],
-			'single field groupBy' => [static fn () => self::read(AggregationQuery::create(metric: 'min', field: 'n', groupBy: ['field' => 'status']))],
-			'cumulative date bucket' => [static fn () => self::read(AggregationQuery::create(metric: 'count', dateBucket: $bucket, cumulative: true))],
+			'single field groupBy' => [static fn () => self::read(AggregationQuery::create(
+				new AggregationMeasure(metric: 'min', field: 'n'),
+				new AggregationLayout(groupBy: ['field' => 'status'])
+			))],
+			'cumulative date bucket' => [static fn () => self::read(AggregationQuery::create(
+				new AggregationMeasure(metric: 'count'),
+				new AggregationLayout(dateBucket: $bucket, cumulative: true)
+			))],
 			'normaliseGroupByFields' => [static function (): array {
 				$shapes = [
 					null, 'status', 7, [], ['a', 'b'], ['fields' => ['k' => 'a', 'b']], ['fields' => 'a', 'field' => 'b'],

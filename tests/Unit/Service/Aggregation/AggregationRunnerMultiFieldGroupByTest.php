@@ -53,6 +53,8 @@ use OCP\IDBConnection;
 use OCP\IUserSession;
 use PDO;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationMeasure;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 
 /**
  * No `covers` metadata, deliberately — `beStrictAboutCoverageMetadata="true"`
@@ -97,10 +99,8 @@ class AggregationRunnerMultiFieldGroupByTest extends TestCase {
 	public function testNativeTwoFieldGroupBySum(): void {
 		$runner = $this->makeNativeRunner(capturedSql: $captured);
 		$query = AggregationQuery::create(
-			metric: 'sum',
-			field: 'amount',
-			filter: self::STATE_FILTER,
-			groupBy: ['fields' => ['vendorId', 'dueDateBucket']]
+			new AggregationMeasure(metric: 'sum', field: 'amount', filter: self::STATE_FILTER),
+			new AggregationLayout(groupBy: ['fields' => ['vendorId', 'dueDateBucket']])
 		);
 
 		$result = $runner->runAdhoc(register: $this->makeRegister(), schema: $this->makeSchema(), query: $query);
@@ -128,9 +128,8 @@ class AggregationRunnerMultiFieldGroupByTest extends TestCase {
 	public function testNativeTwoFieldGroupByCount(): void {
 		$runner = $this->makeNativeRunner(capturedSql: $captured);
 		$query = AggregationQuery::create(
-			metric: 'count',
-			filter: self::STATE_FILTER,
-			groupBy: ['vendorId', 'dueDateBucket']
+			new AggregationMeasure(metric: 'count', filter: self::STATE_FILTER),
+			new AggregationLayout(groupBy: ['vendorId', 'dueDateBucket'])
 		);
 
 		$result = $runner->runAdhoc(register: $this->makeRegister(), schema: $this->makeSchema(), query: $query);
@@ -150,10 +149,8 @@ class AggregationRunnerMultiFieldGroupByTest extends TestCase {
 	public function testNativeSingleFieldGroupByIsBackwardCompatible(): void {
 		$runner = $this->makeNativeRunner(capturedSql: $captured);
 		$query = AggregationQuery::create(
-			metric: 'sum',
-			field: 'amount',
-			filter: self::STATE_FILTER,
-			groupBy: ['field' => 'vendorId']
+			new AggregationMeasure(metric: 'sum', field: 'amount', filter: self::STATE_FILTER),
+			new AggregationLayout(groupBy: ['field' => 'vendorId'])
 		);
 
 		$result = $runner->runAdhoc(register: $this->makeRegister(), schema: $this->makeSchema(), query: $query);
@@ -180,10 +177,8 @@ class AggregationRunnerMultiFieldGroupByTest extends TestCase {
 			register: $this->makeRegister(),
 			schema: $this->makeSchema(),
 			query: AggregationQuery::create(
-				metric: 'sum',
-				field: 'amount',
-				filter: self::STATE_FILTER,
-				groupBy: ['fields' => ['vendorId', 'dueDateBucket']]
+				new AggregationMeasure(metric: 'sum', field: 'amount', filter: self::STATE_FILTER),
+				new AggregationLayout(groupBy: ['fields' => ['vendorId', 'dueDateBucket']])
 			)
 		);
 
@@ -191,10 +186,8 @@ class AggregationRunnerMultiFieldGroupByTest extends TestCase {
 			register: $this->makeRegister(),
 			schema: $this->makeSchema(),
 			query: AggregationQuery::create(
-				metric: 'sum',
-				field: 'amount',
-				filter: self::STATE_FILTER,
-				groupBy: ['fields' => ['vendorId', 'dueDateBucket']]
+				new AggregationMeasure(metric: 'sum', field: 'amount', filter: self::STATE_FILTER),
+				new AggregationLayout(groupBy: ['fields' => ['vendorId', 'dueDateBucket']])
 			)
 		);
 

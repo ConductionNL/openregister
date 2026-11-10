@@ -44,6 +44,8 @@ use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationMeasure;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 
 /**
  * Resolves `x-openregister-aggregate-refs` into an `@aggregate` payload map.
@@ -243,7 +245,10 @@ class AggregateReferenceResolver implements AggregateReferenceResolverInterface 
 		}
 
 		$filters = $this->filtersFor(payload: $payload, spec: $spec);
-		return AggregationQuery::create(metric: $metric, field: $field, filter: $filters, groupBy: $groupBy);
+		return AggregationQuery::create(
+			new AggregationMeasure(metric: $metric, field: $field, filter: $filters),
+			new AggregationLayout(groupBy: $groupBy)
+		);
 	}//end queryFor()
 
 	/**

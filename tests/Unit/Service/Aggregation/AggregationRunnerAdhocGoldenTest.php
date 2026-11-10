@@ -54,6 +54,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationMeasure;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 
 /**
  * Each case names an ad-hoc query, the caller's permission, the session
@@ -200,13 +202,13 @@ class AggregationRunnerAdhocGoldenTest extends TestCase {
 		$q = $case['query'];
 		try {
 			$query = AggregationQuery::create(
-				metric: $q['metric'],
-				field: ($q['field'] ?? null),
-				filter: ($q['filter'] ?? []),
-				groupBy: ($q['groupBy'] ?? null),
-				dateBucket: ($q['dateBucket'] ?? null),
-				metrics: ($q['metrics'] ?? null),
-				cumulative: ($q['cumulative'] ?? false)
+				new AggregationMeasure(metric: $q['metric'], field: ($q['field'] ?? null), filter: ($q['filter'] ?? [])),
+				new AggregationLayout(
+					groupBy: ($q['groupBy'] ?? null),
+					dateBucket: ($q['dateBucket'] ?? null),
+					metrics: ($q['metrics'] ?? null),
+					cumulative: ($q['cumulative'] ?? false)
+				)
 			);
 			$result = $runner->runAdhoc(register: $register, schema: $schema, query: $query, bypassRbac: $case['bypass']);
 			$outcome = ['result' => $result];

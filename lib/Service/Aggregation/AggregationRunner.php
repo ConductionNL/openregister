@@ -71,6 +71,8 @@ use RuntimeException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCacheInterface;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationSlot;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationMeasure;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 
 /**
  * Runs a named aggregation against a schema.
@@ -846,13 +848,13 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 */
 	private function resolveAdhocQuery(AggregationQuery $query): AggregationQuery {
 		return AggregationQuery::create(
-			metric: $query->metric,
-			field: $query->field,
-			filter: $this->placeholders->resolveArray($query->filter),
-			groupBy: $query->groupBy,
-			dateBucket: $query->dateBucket,
-			metrics: $query->metrics,
-			cumulative: $query->cumulative
+			new AggregationMeasure(metric: $query->metric, field: $query->field, filter: $this->placeholders->resolveArray($query->filter)),
+			new AggregationLayout(
+				groupBy: $query->groupBy,
+				dateBucket: $query->dateBucket,
+				metrics: $query->metrics,
+				cumulative: $query->cumulative
+			)
 		);
 	}//end resolveAdhocQuery()
 

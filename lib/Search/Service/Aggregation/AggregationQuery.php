@@ -111,50 +111,9 @@ class AggregationQuery {
 	/**
 	 * Construct an aggregation query — fails fast on bad input.
 	 *
-	 * @param string $metric One of METRIC_*.
-	 * @param ?string $field Field for non-count metrics; null for count.
-	 * @param array<string, mixed> $filter Filter map.
-	 * @param array<string, mixed>|null $groupBy Optional groupBy. Single-field (`{field: 'x'}`),
-	 *                                           multi-field (`{fields: ['a','b']}`), or a plain
-	 *                                           list (`['a','b']`). Multi-field yields one
-	 *                                           grouped row per distinct field tuple.
-	 * @param array<string, mixed>|null $dateBucket Optional dateBucket spec `{field, start, end, gap}`.
-	 * @param array<int, array{metric: string, field?: ?string}>|null $metrics Optional multi-metric list
-	 *                                                                         (`[{metric: 'count'},
-	 *                                                                         {metric: 'sum', field:
-	 *                                                                         'price'}]`). When supplied
-	 *                                                                         (non-empty), every listed
-	 *                                                                         pair is computed in one
-	 *                                                                         request and the response
-	 *                                                                         carries a `values` map
-	 *                                                                         instead of a single scalar
-	 *                                                                         `value`/per-group `value`.
-	 *                                                                         The legacy
-	 *                                                                         `$metric`/`$field` pair
-	 *                                                                         remains the "primary"
-	 *                                                                         metric (used by callers
-	 *                                                                         that only look at
-	 *                                                                         `->metric`/`->field`) and
-	 *                                                                         SHOULD mirror
-	 *                                                                         `$metrics[0]` when both
-	 *                                                                         are supplied. Mutually
-	 *                                                                         exclusive with
-	 *                                                                         `$dateBucket` (not yet
-	 *                                                                         supported — REQ-AGG-102
-	 *                                                                         covers the categorical
-	 *                                                                         value/grouped paths only).
-	 * @param bool $cumulative Optional running-total
-	 *                         flag (REQ-AGG-103).
-	 *                         Only meaningful —
-	 *                         and only accepted —
-	 *                         alongside a
-	 *                         `$dateBucket` (the
-	 *                         time-bucket
-	 *                         primitive); a
-	 *                         categorical `$groupBy`
-	 *                         has no inherent bucket
-	 *                         ordering to accumulate
-	 *                         over.
+	 * @param AggregationMeasure $measure The metric, the field it reads and the filter that selects the rows.
+	 * @param AggregationLayout  $layout  The grouping, date buckets, multi-metric list (REQ-AGG-102) and
+	 *                                    running-total flag (REQ-AGG-103, only alongside date buckets).
 	 *
 	 * @return self
 	 *
@@ -163,19 +122,10 @@ class AggregationQuery {
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	public static function create(
-		string $metric,
-		?string $field = null,
-		array $filter = [],
-		?array $groupBy = null,
-		?array $dateBucket = null,
-		?array $metrics = null,
-		bool $cumulative = false,
-	): self {
-		AggregationQueryRules::assertValidMetric(metric: $metric, field: $field);
-		$layout = new AggregationLayout(groupBy: $groupBy, dateBucket: $dateBucket, metrics: $metrics, cumulative: $cumulative);
+	public static function create(AggregationMeasure $measure, AggregationLayout $layout = new AggregationLayout()): self {
+		AggregationQueryRules::assertValidMetric(metric: $measure->metric, field: $measure->field);
 		self::assertValidLayout(layout: $layout);
-		return new self(metric: $metric, field: $field, filter: $filter, layout: $layout);
+		return new self(metric: $measure->metric, field: $measure->field, filter: $measure->filter, layout: $layout);
 	}//end create()
 
 	/**

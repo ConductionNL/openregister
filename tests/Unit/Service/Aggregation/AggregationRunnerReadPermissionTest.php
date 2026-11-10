@@ -69,6 +69,8 @@ use PDO;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationMeasure;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 
 /**
  * No `covers` metadata, deliberately; see AggregationRunnerNativeBucketTest and #2847.
@@ -305,7 +307,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 	 * @return AggregationQuery The query.
 	 */
 	private function countByLevel(): AggregationQuery {
-		return AggregationQuery::create(metric: 'count', groupBy: ['field' => 'level']);
+		return AggregationQuery::create(new AggregationMeasure(metric: 'count'), new AggregationLayout(groupBy: ['field' => 'level']));
 	}//end countByLevel()
 
 	/**

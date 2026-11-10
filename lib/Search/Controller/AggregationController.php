@@ -58,6 +58,8 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use RuntimeException;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationMeasure;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 
 /**
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The count went to the
@@ -369,11 +371,8 @@ class AggregationController extends Controller {
 
 		try {
 			$query = AggregationQuery::create(
-				metric: $primary['metric'],
-				field: $primary['field'],
-				filter: $run->filter,
-				groupBy: $groupBy,
-				metrics: $metrics
+				new AggregationMeasure(metric: $primary['metric'], field: $primary['field'], filter: $run->filter),
+				new AggregationLayout(groupBy: $groupBy, metrics: $metrics)
 			);
 		} catch (InvalidArgumentException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);

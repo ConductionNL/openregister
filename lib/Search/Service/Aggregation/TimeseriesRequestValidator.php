@@ -90,13 +90,17 @@ class TimeseriesRequestValidator implements TimeseriesRequestValidatorInterface 
 		// MULTI-METRIC is validated by the SAME class the annotation path uses
 		// (see validatedMetrics()).
 		return AggregationQuery::create(
-			metric: $this->requestedMetric(input: $input),
-			field: $request->metricField,
-			filter: (array) ($input['filter'] ?? []),
-			groupBy: $request->groupBy,
-			dateBucket: $request->dateBucket,
-			metrics: $this->validatedMetrics(raw: ($input['metrics'] ?? null), allowed: $request->allowed),
-			cumulative: $this->validatedCumulative(input: $input, dateBucket: $request->dateBucket)
+			new AggregationMeasure(
+				metric: $this->requestedMetric(input: $input),
+				field: $request->metricField,
+				filter: (array) ($input['filter'] ?? [])
+			),
+			new AggregationLayout(
+				groupBy: $request->groupBy,
+				dateBucket: $request->dateBucket,
+				metrics: $this->validatedMetrics(raw: ($input['metrics'] ?? null), allowed: $request->allowed),
+				cumulative: $this->validatedCumulative(input: $input, dateBucket: $request->dateBucket)
+			)
 		);
 	}//end validate()
 

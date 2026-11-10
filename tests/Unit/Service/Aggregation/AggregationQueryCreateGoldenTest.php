@@ -11,6 +11,8 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationMeasure;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 
 /**
  * Golden test for AggregationQuery::create().
@@ -75,7 +77,10 @@ class AggregationQueryCreateGoldenTest extends TestCase {
 	#[DataProvider('cases')]
 	public function testCreate(array $args): void {
 		try {
-			$actual = ['query' => get_object_vars(AggregationQuery::create(...$args))];
+			$actual = ['query' => get_object_vars(AggregationQuery::create(
+				new AggregationMeasure(...array_intersect_key($args, array_flip(['metric', 'field', 'filter']))),
+				new AggregationLayout(...array_diff_key($args, array_flip(['metric', 'field', 'filter'])))
+			))];
 		} catch (InvalidArgumentException $e) {
 			$actual = ['error' => $e->getMessage()];
 		}

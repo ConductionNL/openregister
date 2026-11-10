@@ -47,6 +47,8 @@ use OCP\IDBConnection;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationMeasure;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 
 /**
  * No `covers` metadata, deliberately — `beStrictAboutCoverageMetadata="true"`
@@ -127,8 +129,10 @@ class AggregationRunnerNativeBucketTest extends TestCase {
 			register: $this->makeRegister(),
 			schema: $this->makeSchema(),
 			query: AggregationQuery::create(
-				metric: 'count',
-				dateBucket: ['field' => 'created', 'start' => '2026-05-21T00:00:00Z', 'end' => '2026-05-22T00:00:00Z', 'gap' => 'hour']
+				new AggregationMeasure(metric: 'count'),
+				new AggregationLayout(
+					dateBucket: ['field' => 'created', 'start' => '2026-05-21T00:00:00Z', 'end' => '2026-05-22T00:00:00Z', 'gap' => 'hour']
+				)
 			)
 		);
 
@@ -152,8 +156,10 @@ class AggregationRunnerNativeBucketTest extends TestCase {
 			register: $this->makeRegister(),
 			schema: $this->makeSchema(),
 			query: AggregationQuery::create(
-				metric: 'count',
-				dateBucket: ['field' => 'created', 'start' => '2026-05-21T00:00:00Z', 'end' => '2026-05-21T01:00:00Z', 'gap' => 'minute']
+				new AggregationMeasure(metric: 'count'),
+				new AggregationLayout(
+					dateBucket: ['field' => 'created', 'start' => '2026-05-21T00:00:00Z', 'end' => '2026-05-21T01:00:00Z', 'gap' => 'minute']
+				)
 			)
 		);
 
@@ -194,8 +200,10 @@ class AggregationRunnerNativeBucketTest extends TestCase {
 			register: $this->makeRegister(),
 			schema: $this->makeSchema(),
 			query: AggregationQuery::create(
-				metric: 'count',
-				dateBucket: ['field' => 'created', 'start' => '2026-05-21T00:00:00Z', 'end' => '2026-05-21T01:00:00Z', 'gap' => 'minute']
+				new AggregationMeasure(metric: 'count'),
+				new AggregationLayout(
+					dateBucket: ['field' => 'created', 'start' => '2026-05-21T00:00:00Z', 'end' => '2026-05-21T01:00:00Z', 'gap' => 'minute']
+				)
 			)
 		);
 
@@ -248,8 +256,10 @@ class AggregationRunnerNativeBucketTest extends TestCase {
 			register: $this->makeRegister(),
 			schema: $this->makeSchema(),
 			query: AggregationQuery::create(
-				metric: 'count',
-				dateBucket: ['field' => 'created', 'start' => '2026-05-01T00:00:00Z', 'end' => '2026-05-22T00:00:00Z', 'gap' => 'day']
+				new AggregationMeasure(metric: 'count'),
+				new AggregationLayout(
+					dateBucket: ['field' => 'created', 'start' => '2026-05-01T00:00:00Z', 'end' => '2026-05-22T00:00:00Z', 'gap' => 'day']
+				)
 			)
 		);
 
@@ -273,10 +283,7 @@ class AggregationRunnerNativeBucketTest extends TestCase {
 		$runner->runAdhoc(
 			register: $this->makeRegister(),
 			schema: $this->makeSchema(),
-			query: AggregationQuery::create(
-				metric: 'count',
-				filter: ['status' => ['notIn' => ['archived', 'deleted']]]
-			)
+			query: AggregationQuery::create(new AggregationMeasure(metric: 'count', filter: ['status' => ['notIn' => ['archived', 'deleted']]]))
 		);
 
 		$this->assertNotNull($captured['sql'], 'runAdhoc MUST prepare a SQL statement');
@@ -301,10 +308,7 @@ class AggregationRunnerNativeBucketTest extends TestCase {
 		$runner->runAdhoc(
 			register: $this->makeRegister(),
 			schema: $this->makeSchema(),
-			query: AggregationQuery::create(
-				metric: 'count',
-				filter: ['status' => ['notIn' => []]]
-			)
+			query: AggregationQuery::create(new AggregationMeasure(metric: 'count', filter: ['status' => ['notIn' => []]]))
 		);
 
 		$this->assertNotNull($captured['sql'], 'runAdhoc MUST prepare a SQL statement');
@@ -363,15 +367,12 @@ class AggregationRunnerNativeBucketTest extends TestCase {
 	}//end wirePlatform()
 
 	private function dayBucketQuery(): AggregationQuery {
-		return AggregationQuery::create(
-			metric: 'count',
-			dateBucket: [
+		return AggregationQuery::create(new AggregationMeasure(metric: 'count'), new AggregationLayout(dateBucket: [
 				'field' => 'created',
 				'start' => '2026-05-01T00:00:00Z',
 				'end' => '2026-05-22T00:00:00Z',
 				'gap' => 'day',
-			]
-		);
+			]));
 
 	}//end dayBucketQuery()
 

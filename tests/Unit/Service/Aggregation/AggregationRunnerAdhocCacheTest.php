@@ -42,6 +42,8 @@ use OCP\IDBConnection;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationMeasure;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 
 /**
  * No `covers` metadata, deliberately — `beStrictAboutCoverageMetadata="true"`
@@ -130,8 +132,10 @@ class AggregationRunnerAdhocCacheTest extends TestCase {
 		$this->cache->expects($this->never())->method('setAdhoc');
 
 		$query = AggregationQuery::create(
-			metric: 'count',
-			dateBucket: ['field' => 'created', 'start' => '2026-05-01T00:00:00Z', 'end' => '2026-05-22T00:00:00Z', 'gap' => 'day']
+			new AggregationMeasure(metric: 'count'),
+			new AggregationLayout(
+				dateBucket: ['field' => 'created', 'start' => '2026-05-01T00:00:00Z', 'end' => '2026-05-22T00:00:00Z', 'gap' => 'day']
+			)
 		);
 
 		$result = $this->runner->runAdhoc(
@@ -158,8 +162,10 @@ class AggregationRunnerAdhocCacheTest extends TestCase {
 			});
 
 		$query = AggregationQuery::create(
-			metric: 'count',
-			dateBucket: ['field' => 'created', 'start' => '2026-05-01T00:00:00Z', 'end' => '2026-05-22T00:00:00Z', 'gap' => 'day']
+			new AggregationMeasure(metric: 'count'),
+			new AggregationLayout(
+				dateBucket: ['field' => 'created', 'start' => '2026-05-01T00:00:00Z', 'end' => '2026-05-22T00:00:00Z', 'gap' => 'day']
+			)
 		);
 
 		$result = $this->runner->runAdhoc(
@@ -188,10 +194,7 @@ class AggregationRunnerAdhocCacheTest extends TestCase {
 			$capturedSet = $q;
 		});
 
-		$query = AggregationQuery::create(
-			metric: 'count',
-			filter: ['status' => 'open']
-		);
+		$query = AggregationQuery::create(new AggregationMeasure(metric: 'count', filter: ['status' => 'open']));
 
 		$this->runner->runAdhoc(
 			register: $this->makeRegister(),
@@ -254,10 +257,7 @@ class AggregationRunnerAdhocCacheTest extends TestCase {
 		];
 		$this->cache->method('getAdhoc')->willReturn($stored);
 
-		$query = AggregationQuery::create(
-			metric: 'count',
-			groupBy: ['field' => 'stage']
-		);
+		$query = AggregationQuery::create(new AggregationMeasure(metric: 'count'), new AggregationLayout(groupBy: ['field' => 'stage']));
 
 		$result = $runner->runAdhoc(
 			register: $this->makeTranslatableRegister(),

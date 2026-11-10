@@ -52,6 +52,8 @@ use OCP\IDBConnection;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationMeasure;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 
 /**
  * No `covers` metadata, deliberately — `beStrictAboutCoverageMetadata="true"`
@@ -248,15 +250,12 @@ class AggregationRunnerArchiveDefaultTest extends TestCase {
 	 * @return AggregationQuery The query.
 	 */
 	private function dayBucketQuery(): AggregationQuery {
-		return AggregationQuery::create(
-			metric: 'count',
-			dateBucket: [
+		return AggregationQuery::create(new AggregationMeasure(metric: 'count'), new AggregationLayout(dateBucket: [
 				'field' => 'created',
 				'start' => '2026-05-01T00:00:00Z',
 				'end' => '2026-05-22T00:00:00Z',
 				'gap' => 'day',
-			]
-		);
+			]));
 	}//end dayBucketQuery()
 
 	/**

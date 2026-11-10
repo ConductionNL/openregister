@@ -63,6 +63,8 @@ use OCP\IDBConnection;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationMeasure;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 
 /**
  * No `covers` metadata, deliberately — `beStrictAboutCoverageMetadata="true"`
@@ -120,15 +122,17 @@ class AggregationRunnerCumulativeTest extends TestCase {
 		$this->expectException(\InvalidArgumentException::class);
 		$this->expectExceptionMessage('cumulative MUST only be combined with a dateBucket');
 
-		AggregationQuery::create(metric: 'count', cumulative: true);
+		AggregationQuery::create(new AggregationMeasure(metric: 'count'), new AggregationLayout(cumulative: true));
 
 	}//end testCumulativeRequiresDateBucket()
 
 	public function testCumulativeWithDateBucketIsAccepted(): void {
 		$query = AggregationQuery::create(
-			metric: 'count',
-			dateBucket: ['field' => 'created', 'start' => '2026-05-01T00:00:00Z', 'end' => '2026-05-22T00:00:00Z', 'gap' => 'day'],
-			cumulative: true
+			new AggregationMeasure(metric: 'count'),
+			new AggregationLayout(
+				dateBucket: ['field' => 'created', 'start' => '2026-05-01T00:00:00Z', 'end' => '2026-05-22T00:00:00Z', 'gap' => 'day'],
+				cumulative: true
+			)
 		);
 
 		$this->assertTrue($query->isCumulative());
@@ -137,7 +141,7 @@ class AggregationRunnerCumulativeTest extends TestCase {
 	}//end testCumulativeWithDateBucketIsAccepted()
 
 	public function testCumulativeDefaultsToFalse(): void {
-		$query = AggregationQuery::create(metric: 'count');
+		$query = AggregationQuery::create(new AggregationMeasure(metric: 'count'));
 		$this->assertFalse($query->isCumulative());
 
 	}//end testCumulativeDefaultsToFalse()
@@ -437,16 +441,12 @@ class AggregationRunnerCumulativeTest extends TestCase {
 	// -----------------------------------------------------------------------
 
 	private function dayBucketQuery(bool $cumulative = false): AggregationQuery {
-		return AggregationQuery::create(
-			metric: 'count',
-			dateBucket: [
+		return AggregationQuery::create(new AggregationMeasure(metric: 'count'), new AggregationLayout(dateBucket: [
 				'field' => 'created',
 				'start' => '2026-05-01T00:00:00Z',
 				'end' => '2026-05-22T00:00:00Z',
 				'gap' => 'day',
-			],
-			cumulative: $cumulative
-		);
+			], cumulative: $cumulative));
 
 	}//end dayBucketQuery()
 

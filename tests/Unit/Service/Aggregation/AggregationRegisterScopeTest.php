@@ -60,6 +60,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationMeasure;
 
 /**
  * No `covers` metadata, deliberately — `beStrictAboutCoverageMetadata="true"`
@@ -218,7 +219,7 @@ class AggregationRegisterScopeTest extends TestCase {
 		$result = $this->runner->runAdhocByRef(
 			registerRef: 'hrmq',
 			schemaRef: 'TimeEntry',
-			query: AggregationQuery::create(metric: 'count')
+			query: AggregationQuery::create(new AggregationMeasure(metric: 'count'))
 		);
 
 		$this->assertSame(2, $result['value']);
@@ -275,7 +276,7 @@ class AggregationRegisterScopeTest extends TestCase {
 			$this->runner->runAdhocByRef(
 				registerRef: 'hrmq',
 				schemaRef: 'TimeEntry',
-				query: AggregationQuery::create(metric: 'count')
+				query: AggregationQuery::create(new AggregationMeasure(metric: 'count'))
 			);
 		} catch (RuntimeException $e) {
 			$caught = $e;
@@ -312,7 +313,7 @@ class AggregationRegisterScopeTest extends TestCase {
 			$this->runner->runAdhocByRef(
 				registerRef: 'no-such-register',
 				schemaRef: 'TimeEntry',
-				query: AggregationQuery::create(metric: 'count')
+				query: AggregationQuery::create(new AggregationMeasure(metric: 'count'))
 			);
 		} catch (RuntimeException $e) {
 			$caught = $e;
@@ -349,7 +350,7 @@ class AggregationRegisterScopeTest extends TestCase {
 		$result = $this->runner->runAdhocByRef(
 			registerRef: 'hrmq',
 			schemaRef: '161',
-			query: AggregationQuery::create(metric: 'count')
+			query: AggregationQuery::create(new AggregationMeasure(metric: 'count'))
 		);
 
 		$this->assertNotNull($result);
@@ -422,7 +423,7 @@ class AggregationRegisterScopeTest extends TestCase {
 			$this->runner->runAdhocByRef(
 				registerRef: 'hrmq',
 				schemaRef: 'TimeEntry',
-				query: AggregationQuery::create(metric: 'count')
+				query: AggregationQuery::create(new AggregationMeasure(metric: 'count'))
 			);
 		} catch (RuntimeException $e) {
 			$caught = $e;

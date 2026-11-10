@@ -14,6 +14,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationMeasure;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 
 /**
  * Verifies the cache is content-addressed (filter shape + RBAC scope)
@@ -214,7 +216,7 @@ class AggregationCacheTest extends TestCase {
 	public function testGetAdhocReturnsNullOnMiss(): void {
 		$this->cache->method('get')->willReturn(null);
 		$cache = $this->makeCache();
-		$query = AggregationQuery::create(metric: 'count');
+		$query = AggregationQuery::create(new AggregationMeasure(metric: 'count'));
 		$this->assertNull($cache->getAdhoc('reg', 'sch', $query));
 	}
 
@@ -231,15 +233,12 @@ class AggregationCacheTest extends TestCase {
 		});
 
 		$cache = $this->makeCache();
-		$query = AggregationQuery::create(
-			metric: 'count',
-			dateBucket: [
+		$query = AggregationQuery::create(new AggregationMeasure(metric: 'count'), new AggregationLayout(dateBucket: [
 				'field' => 'created',
 				'start' => '2026-05-01T00:00:00Z',
 				'end' => '2026-05-22T00:00:00Z',
 				'gap' => 'day',
-			]
-		);
+			]));
 
 		$envelope = ['groups' => [['key' => '2026-05-01T00:00:00Z', 'value' => 7]], 'backend' => 'postgres', 'cached' => false];
 		$cache->setAdhoc('reg', 'sch', $query, $envelope);
@@ -255,7 +254,7 @@ class AggregationCacheTest extends TestCase {
 		});
 
 		$cache = $this->makeCache();
-		$query = AggregationQuery::create(metric: 'count', filter: ['status' => 'open']);
+		$query = AggregationQuery::create(new AggregationMeasure(metric: 'count', filter: ['status' => 'open']));
 
 		$cache->set(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'sch', name: 'totalOpen', filter: []), result: ['value' => 1]);
 		$cache->setAdhoc('reg', 'sch', $query, ['value' => 1, 'backend' => 'postgres', 'cached' => false]);
@@ -281,14 +280,8 @@ class AggregationCacheTest extends TestCase {
 		});
 
 		$cache = $this->makeCache();
-		$first = AggregationQuery::create(
-			metric: 'count',
-			filter: ['status' => 'open', 'priority' => 'high']
-		);
-		$second = AggregationQuery::create(
-			metric: 'count',
-			filter: ['priority' => 'high', 'status' => 'open']
-		);
+		$first = AggregationQuery::create(new AggregationMeasure(metric: 'count', filter: ['status' => 'open', 'priority' => 'high']));
+		$second = AggregationQuery::create(new AggregationMeasure(metric: 'count', filter: ['priority' => 'high', 'status' => 'open']));
 
 		$cache->setAdhoc('reg', 'sch', $first, ['value' => 1, 'backend' => 'postgres', 'cached' => false]);
 		$cache->setAdhoc('reg', 'sch', $second, ['value' => 1, 'backend' => 'postgres', 'cached' => false]);
@@ -305,12 +298,16 @@ class AggregationCacheTest extends TestCase {
 
 		$cache = $this->makeCache();
 		$dayQ = AggregationQuery::create(
-			metric: 'count',
-			dateBucket: ['field' => 'created', 'start' => '2026-05-01T00:00:00Z', 'end' => '2026-05-22T00:00:00Z', 'gap' => 'day']
+			new AggregationMeasure(metric: 'count'),
+			new AggregationLayout(
+				dateBucket: ['field' => 'created', 'start' => '2026-05-01T00:00:00Z', 'end' => '2026-05-22T00:00:00Z', 'gap' => 'day']
+			)
 		);
 		$hourQ = AggregationQuery::create(
-			metric: 'count',
-			dateBucket: ['field' => 'created', 'start' => '2026-05-01T00:00:00Z', 'end' => '2026-05-22T00:00:00Z', 'gap' => 'hour']
+			new AggregationMeasure(metric: 'count'),
+			new AggregationLayout(
+				dateBucket: ['field' => 'created', 'start' => '2026-05-01T00:00:00Z', 'end' => '2026-05-22T00:00:00Z', 'gap' => 'hour']
+			)
 		);
 
 		$cache->setAdhoc('reg', 'sch', $dayQ, ['value' => 1, 'backend' => 'postgres', 'cached' => false]);

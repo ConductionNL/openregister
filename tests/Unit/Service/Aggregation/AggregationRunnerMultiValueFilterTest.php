@@ -68,6 +68,8 @@ use OCP\IUserSession;
 use PDO;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationMeasure;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 
 /**
  * No `covers` metadata, deliberately — `beStrictAboutCoverageMetadata="true"`
@@ -130,9 +132,8 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 			register: $this->makeRegister(),
 			schema: $this->makeStatusSchema(),
 			query: AggregationQuery::create(
-				metric: 'count',
-				filter: ['status' => ['open', 'in-progress']],
-				groupBy: ['field' => 'region']
+				new AggregationMeasure(metric: 'count', filter: ['status' => ['open', 'in-progress']]),
+				new AggregationLayout(groupBy: ['field' => 'region'])
 			)
 		);
 
@@ -157,9 +158,8 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 			register: $this->makeRegister(),
 			schema: $this->makeStatusSchema(),
 			query: AggregationQuery::create(
-				metric: 'count',
-				filter: ['status' => []],
-				groupBy: ['field' => 'region']
+				new AggregationMeasure(metric: 'count', filter: ['status' => []]),
+				new AggregationLayout(groupBy: ['field' => 'region'])
 			)
 		);
 
@@ -177,9 +177,8 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 			register: $this->makeRegister(),
 			schema: $this->makeStatusSchema(),
 			query: AggregationQuery::create(
-				metric: 'count',
-				filter: ['status' => ['in' => ['open', 'in-progress']]],
-				groupBy: ['field' => 'region']
+				new AggregationMeasure(metric: 'count', filter: ['status' => ['in' => ['open', 'in-progress']]]),
+				new AggregationLayout(groupBy: ['field' => 'region'])
 			)
 		);
 
@@ -211,7 +210,7 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 		$count = fn (array $filter): mixed => $runner->runAdhoc(
 			register: $this->makeRegister(),
 			schema: $this->makeStatusSchema(),
-			query: AggregationQuery::create(metric: 'count', filter: $filter)
+			query: AggregationQuery::create(new AggregationMeasure(metric: 'count', filter: $filter))
 		)['value'];
 
 		$this->assertSame(2, $count(['region' => 'IS NULL']), 'the literal text "IS NULL" matched nothing before');
@@ -228,9 +227,8 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 			register: $this->makeRegister(),
 			schema: $this->makeStatusSchema(),
 			query: AggregationQuery::create(
-				metric: 'count',
-				filter: ['region' => 'IS NULL'],
-				groupBy: ['field' => 'status']
+				new AggregationMeasure(metric: 'count', filter: ['region' => 'IS NULL']),
+				new AggregationLayout(groupBy: ['field' => 'status'])
 			)
 		);
 
@@ -246,9 +244,8 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 			register: $this->makeRegister(),
 			schema: $this->makeStatusSchema(),
 			query: AggregationQuery::create(
-				metric: 'count',
-				filter: ['region' => ['isnull' => 'false']],
-				groupBy: ['field' => 'status']
+				new AggregationMeasure(metric: 'count', filter: ['region' => ['isnull' => 'false']]),
+				new AggregationLayout(groupBy: ['field' => 'status'])
 			)
 		);
 
@@ -287,10 +284,7 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 		$result = $runner->runAdhoc(
 			register: $this->makeRegister(),
 			schema: $this->makeStatusSchema(),
-			query: AggregationQuery::create(
-				metric: 'count',
-				filter: ['status' => ['open', 'in-progress']]
-			)
+			query: AggregationQuery::create(new AggregationMeasure(metric: 'count', filter: ['status' => ['open', 'in-progress']]))
 		);
 
 		$this->assertSame('php-fallback', $result['backend']);
@@ -304,10 +298,7 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 		$result = $runner->runAdhoc(
 			register: $this->makeRegister(),
 			schema: $this->makeStatusSchema(),
-			query: AggregationQuery::create(
-				metric: 'count',
-				filter: ['status' => ['in' => ['open', 'in-progress']]]
-			)
+			query: AggregationQuery::create(new AggregationMeasure(metric: 'count', filter: ['status' => ['in' => ['open', 'in-progress']]]))
 		);
 
 		$this->assertSame(3, $result['value']);
@@ -338,10 +329,7 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 		$runner->runAdhoc(
 			register: $this->makeRegister(),
 			schema: $this->makeStatusSchema(),
-			query: AggregationQuery::create(
-				metric: 'count',
-				filter: ['status' => ['not-in' => ['closed']]]
-			)
+			query: AggregationQuery::create(new AggregationMeasure(metric: 'count', filter: ['status' => ['not-in' => ['closed']]]))
 		);
 
 	}//end testUnknownFilterOperatorIsRefusedRatherThanMatchingEverything()
@@ -358,10 +346,7 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 		$result = $runner->runAdhoc(
 			register: $this->makeRegister(),
 			schema: $this->makeStatusSchema(),
-			query: AggregationQuery::create(
-				metric: 'count',
-				filter: ['status' => ['notIn' => ['open', 'in-progress']]]
-			)
+			query: AggregationQuery::create(new AggregationMeasure(metric: 'count', filter: ['status' => ['notIn' => ['open', 'in-progress']]]))
 		);
 
 		$this->assertSame(2, $result['value'], '5 rows minus 2 open minus 1 in-progress');
@@ -376,7 +361,7 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 		$result = $runner->runAdhoc(
 			register: $this->makeRegister(),
 			schema: $this->makeStatusSchema(),
-			query: AggregationQuery::create(metric: 'count', filter: ['status' => 'open'])
+			query: AggregationQuery::create(new AggregationMeasure(metric: 'count', filter: ['status' => 'open']))
 		);
 
 		$this->assertSame(2, $result['value']);
@@ -398,7 +383,7 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 		$result = $runner->runAdhoc(
 			register: $this->makeRegister(),
 			schema: $this->makeTagsSchema(),
-			query: AggregationQuery::create(metric: 'count', filter: ['tags' => 'a'])
+			query: AggregationQuery::create(new AggregationMeasure(metric: 'count', filter: ['tags' => 'a']))
 		);
 
 		$this->assertSame('php-fallback', $result['backend'], 'a multi-value property filter MUST defer to PHP, not native SQL');
@@ -411,7 +396,7 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 		$result = $runner->runAdhoc(
 			register: $this->makeRegister(),
 			schema: $this->makeTagsSchema(),
-			query: AggregationQuery::create(metric: 'count', filter: ['tags' => 'a'])
+			query: AggregationQuery::create(new AggregationMeasure(metric: 'count', filter: ['tags' => 'a']))
 		);
 
 		// Rows 1 (['a','b']) and 3 (['a']) contain 'a'; row 4 (['x']) does not.
@@ -425,7 +410,7 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 		$result = $runner->runAdhoc(
 			register: $this->makeRegister(),
 			schema: $this->makeTagsSchema(),
-			query: AggregationQuery::create(metric: 'count', filter: ['tags' => ['a', 'c']])
+			query: AggregationQuery::create(new AggregationMeasure(metric: 'count', filter: ['tags' => ['a', 'c']]))
 		);
 
 		// Rows 1 (a,b — has a), 2 (b,c — has c), 3 (a — has a) overlap;
@@ -440,7 +425,7 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 		$result = $runner->runAdhoc(
 			register: $this->makeRegister(),
 			schema: $this->makeTagsSchema(),
-			query: AggregationQuery::create(metric: 'count', filter: ['tags' => ['in' => ['x']]])
+			query: AggregationQuery::create(new AggregationMeasure(metric: 'count', filter: ['tags' => ['in' => ['x']]]))
 		);
 
 		// Only row 4 has 'x'.
@@ -458,7 +443,7 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 		$result = $runner->runAdhoc(
 			register: $this->makeRegister(),
 			schema: $this->makeStatusSchema(),
-			query: AggregationQuery::create(metric: 'count', filter: ['status' => 'open'])
+			query: AggregationQuery::create(new AggregationMeasure(metric: 'count', filter: ['status' => 'open']))
 		);
 
 		$this->assertSame(
@@ -477,7 +462,7 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 		$result = $runner->runAdhoc(
 			register: $this->makeRegister(),
 			schema: $this->makeStatusSchema(),
-			query: AggregationQuery::create(metric: 'count', groupBy: ['field' => 'status'])
+			query: AggregationQuery::create(new AggregationMeasure(metric: 'count'), new AggregationLayout(groupBy: ['field' => 'status']))
 		);
 
 		$this->assertSame(['backend', 'cached', 'groups'], $this->sortedKeys($result));

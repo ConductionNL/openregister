@@ -29,6 +29,8 @@ use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationMeasure;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 
 /**
  * @group DB
@@ -374,10 +376,8 @@ class AggregationRunnerIntegrationTest extends TestCase {
 		$fixture = $this->seedTaskFixture();
 
 		$query = AggregationQuery::create(
-			metric: 'sum',
-			field: 'priority',
-			filter: [],
-			groupBy: ['field' => 'taskStatus']
+			new AggregationMeasure(metric: 'sum', field: 'priority'),
+			new AggregationLayout(groupBy: ['field' => 'taskStatus'])
 		);
 
 		$result = $this->runner->runAdhocByRef(
@@ -408,9 +408,7 @@ class AggregationRunnerIntegrationTest extends TestCase {
 		$fixture = $this->seedTaskFixture();
 
 		$query = AggregationQuery::create(
-			metric: 'avg',
-			field: 'priority',
-			filter: ['taskStatus' => ['notIn' => ['completed']]]
+			new AggregationMeasure(metric: 'avg', field: 'priority', filter: ['taskStatus' => ['notIn' => ['completed']]])
 		);
 
 		$result = $this->runner->runAdhocByRef(
@@ -433,12 +431,12 @@ class AggregationRunnerIntegrationTest extends TestCase {
 		$min = $this->runner->runAdhocByRef(
 			$fixture['register']->getSlug(),
 			$fixture['schema']->getSlug(),
-			AggregationQuery::create(metric: 'min', field: 'priority')
+			AggregationQuery::create(new AggregationMeasure(metric: 'min', field: 'priority'))
 		);
 		$max = $this->runner->runAdhocByRef(
 			$fixture['register']->getSlug(),
 			$fixture['schema']->getSlug(),
-			AggregationQuery::create(metric: 'max', field: 'priority')
+			AggregationQuery::create(new AggregationMeasure(metric: 'max', field: 'priority'))
 		);
 
 		$this->assertSame(1.0, (float)$min['value']);
