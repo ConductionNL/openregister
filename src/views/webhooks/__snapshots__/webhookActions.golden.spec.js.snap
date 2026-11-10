@@ -1,0 +1,379 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`WebhookLogsIndex.loadLogs loads the logs of a failure 1`] = `
+{
+  "data": {
+    "limit": 20,
+    "loading": false,
+    "logsList": [
+      "old",
+    ],
+    "offset": 40,
+    "selectedWebhookId": 5,
+    "totalLogs": 3,
+  },
+  "logged": [
+    "Failed to load logs:",
+  ],
+  "seen": [
+    [
+      [
+        "/apps/openregister/api/webhooks/logs",
+        {
+          "params": {
+            "limit": 20,
+            "offset": 40,
+            "webhook_id": 5,
+          },
+        },
+      ],
+      true,
+    ],
+  ],
+}
+`;
+
+exports[`WebhookLogsIndex.loadLogs loads the logs of all webhooks 1`] = `
+{
+  "data": {
+    "limit": 20,
+    "loading": false,
+    "logsList": [
+      {
+        "id": 1,
+      },
+    ],
+    "offset": 40,
+    "selectedWebhookId": null,
+    "totalLogs": 9,
+  },
+  "logged": [],
+  "seen": [
+    [
+      [
+        "/apps/openregister/api/webhooks/logs",
+        {
+          "params": {
+            "limit": 20,
+            "offset": 40,
+          },
+        },
+      ],
+      true,
+    ],
+  ],
+}
+`;
+
+exports[`WebhookLogsIndex.loadLogs loads the logs of an empty answer 1`] = `
+{
+  "data": {
+    "limit": 20,
+    "loading": false,
+    "logsList": [],
+    "offset": 40,
+    "selectedWebhookId": null,
+    "totalLogs": 0,
+  },
+  "logged": [],
+  "seen": [
+    [
+      [
+        "/apps/openregister/api/webhooks/logs",
+        {
+          "params": {
+            "limit": 20,
+            "offset": 40,
+          },
+        },
+      ],
+      true,
+    ],
+  ],
+}
+`;
+
+exports[`WebhookLogsIndex.loadLogs loads the logs of one webhook 1`] = `
+{
+  "data": {
+    "limit": 20,
+    "loading": false,
+    "logsList": [
+      {
+        "id": 2,
+      },
+    ],
+    "offset": 40,
+    "selectedWebhookId": 5,
+    "totalLogs": 1,
+  },
+  "logged": [],
+  "seen": [
+    [
+      [
+        "/apps/openregister/api/webhooks/logs",
+        {
+          "params": {
+            "limit": 20,
+            "offset": 40,
+            "webhook_id": 5,
+          },
+        },
+      ],
+      true,
+    ],
+  ],
+}
+`;
+
+exports[`WebhooksIndex.testWebhook reports a bare failure and reloads the list 1`] = `
+{
+  "logged": [
+    "Failed to test webhook:",
+  ],
+  "order": [
+    [
+      "post",
+      "/apps/openregister/api/webhooks/7/test",
+    ],
+    [
+      "showError",
+      "t:Failed to test webhook",
+    ],
+    "loadWebhooks",
+  ],
+}
+`;
+
+exports[`WebhooksIndex.testWebhook reports a delivered test and reloads the list 1`] = `
+{
+  "logged": [],
+  "order": [
+    [
+      "post",
+      "/apps/openregister/api/webhooks/7/test",
+    ],
+    [
+      "showSuccess",
+      "t:Test webhook sent successfully",
+    ],
+    "loadWebhooks",
+  ],
+}
+`;
+
+exports[`WebhooksIndex.testWebhook reports a failure with a message and reloads the list 1`] = `
+{
+  "logged": [
+    "Failed to test webhook:",
+  ],
+  "order": [
+    [
+      "post",
+      "/apps/openregister/api/webhooks/7/test",
+    ],
+    [
+      "showError",
+      "Forbidden",
+    ],
+    "loadWebhooks",
+  ],
+}
+`;
+
+exports[`WebhooksIndex.testWebhook reports a failure with an error and reloads the list 1`] = `
+{
+  "logged": [
+    "Failed to test webhook:",
+  ],
+  "order": [
+    [
+      "post",
+      "/apps/openregister/api/webhooks/7/test",
+    ],
+    [
+      "showError",
+      "Gone",
+    ],
+    "loadWebhooks",
+  ],
+}
+`;
+
+exports[`WebhooksIndex.testWebhook reports a refused test with a message and reloads the list 1`] = `
+{
+  "logged": [],
+  "order": [
+    [
+      "post",
+      "/apps/openregister/api/webhooks/7/test",
+    ],
+    [
+      "showError",
+      "Timeout",
+    ],
+    "loadWebhooks",
+  ],
+}
+`;
+
+exports[`WebhooksIndex.testWebhook reports a refused test with an error and reloads the list 1`] = `
+{
+  "logged": [],
+  "order": [
+    [
+      "post",
+      "/apps/openregister/api/webhooks/7/test",
+    ],
+    [
+      "showError",
+      "Bad gateway",
+    ],
+    "loadWebhooks",
+  ],
+}
+`;
+
+exports[`WebhooksIndex.testWebhook reports a refused test without words and reloads the list 1`] = `
+{
+  "logged": [],
+  "order": [
+    [
+      "post",
+      "/apps/openregister/api/webhooks/7/test",
+    ],
+    [
+      "showError",
+      "t:Test webhook delivery failed",
+    ],
+    "loadWebhooks",
+  ],
+}
+`;
+
+exports[`WebhooksIndex.testWebhook reports an answer without data and reloads the list 1`] = `
+{
+  "logged": [],
+  "order": [
+    [
+      "post",
+      "/apps/openregister/api/webhooks/7/test",
+    ],
+    [
+      "showError",
+      "t:Test webhook delivery failed",
+    ],
+    "loadWebhooks",
+  ],
+}
+`;
+
+exports[`WebhooksIndex.webhookActions offers its row menu for a disabled webhook 1`] = `
+{
+  "actions": [
+    {
+      "icon": undefined,
+      "label": "edit",
+    },
+    {
+      "icon": "PlayOutline",
+      "label": "t:Test",
+    },
+    {
+      "icon": "FileDocumentOutline",
+      "label": "t:View Logs",
+    },
+    {
+      "icon": "PlayOutline",
+      "label": "t:Enable",
+    },
+    {
+      "icon": "DeleteOutline",
+      "label": "t:Delete",
+    },
+  ],
+  "calls": [
+    [
+      "editWebhook",
+      {
+        "enabled": false,
+        "id": 4,
+      },
+    ],
+    [
+      "testWebhook",
+      4,
+    ],
+    [
+      "viewLogs",
+      4,
+    ],
+    [
+      "toggleWebhook",
+      {
+        "enabled": false,
+        "id": 4,
+      },
+    ],
+    [
+      "deleteWebhook",
+      4,
+    ],
+  ],
+}
+`;
+
+exports[`WebhooksIndex.webhookActions offers its row menu for an enabled webhook 1`] = `
+{
+  "actions": [
+    {
+      "icon": undefined,
+      "label": "edit",
+    },
+    {
+      "icon": "PlayOutline",
+      "label": "t:Test",
+    },
+    {
+      "icon": "FileDocumentOutline",
+      "label": "t:View Logs",
+    },
+    {
+      "icon": "PauseCircleOutline",
+      "label": "t:Disable",
+    },
+    {
+      "icon": "DeleteOutline",
+      "label": "t:Delete",
+    },
+  ],
+  "calls": [
+    [
+      "editWebhook",
+      {
+        "enabled": true,
+        "id": 3,
+      },
+    ],
+    [
+      "testWebhook",
+      3,
+    ],
+    [
+      "viewLogs",
+      3,
+    ],
+    [
+      "toggleWebhook",
+      {
+        "enabled": true,
+        "id": 3,
+      },
+    ],
+    [
+      "deleteWebhook",
+      3,
+    ],
+  ],
+}
+`;
