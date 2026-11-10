@@ -31,6 +31,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\SequenceContext;
+use OCA\OpenRegister\Service\SequenceScope;
 use OCA\OpenRegister\Service\SequenceService;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -186,7 +187,8 @@ class CalculationEvaluatorGoldenTest extends TestCase {
 		$sequences = $this->createMock(SequenceService::class);
 		$scopes = [];
 		$sequences->method('reserveNext')->willReturnCallback(
-			static function (int $registerId, int $schemaId, string $scopeKey) use (&$scopes): int {
+			static function (SequenceScope $sequence) use (&$scopes): int {
+				[$registerId, $schemaId, $scopeKey] = [$sequence->registerId, $sequence->schemaId, $sequence->scopeKey];
 				$scopes[] = (string)preg_replace('/\d/', '9', $scopeKey);
 				return 42;
 			}
