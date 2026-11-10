@@ -34,6 +34,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationTrialServiceInterface;
 use OCA\OpenRegister\Service\Calculation\OperatorCatalogueInterface;
+use OCA\OpenRegister\Service\Calculation\TrialObject;
+use OCA\OpenRegister\Service\Calculation\UnresolvedTrialObject;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -159,8 +161,7 @@ class CalculationsController extends Controller {
 			} catch (Throwable $e) {
 				$result = $this->trials->objectNotFound(
 					declaration: $declaration,
-					objectId: $target['objectId'],
-					reason: $e->getMessage()
+					target: new UnresolvedTrialObject(objectId: $target['objectId'], reason: $e->getMessage())
 				);
 
 				return new JSONResponse($result, $this->statusFor(result: $result));
@@ -168,8 +169,7 @@ class CalculationsController extends Controller {
 
 			$result = $this->trials->tryObject(
 				declaration: $declaration,
-				object: $readable['object'],
-				schema: $readable['schema']
+				target: new TrialObject(object: $readable['object'], schema: $readable['schema'])
 			);
 
 			return new JSONResponse($result, $this->statusFor(result: $result));
