@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectFileWrite;
 use OCA\OpenRegister\Service\Object\SaveObject\FileStoreRequest;
 use OCP\Files\File;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -1633,7 +1634,7 @@ class FilePropertyHandlerTest extends TestCase {
 
 		$object = ['document' => null];
 
-		$this->handler->handleFileProperty($entity, $object, 'document', $schema);
+		$object = $this->handleFile($entity, $object, 'document', $schema);
 
 		$this->assertNull($object['document']);
 	}
@@ -1652,7 +1653,7 @@ class FilePropertyHandlerTest extends TestCase {
 
 		$object = ['images' => []];
 
-		$this->handler->handleFileProperty($entity, $object, 'images', $schema);
+		$object = $this->handleFile($entity, $object, 'images', $schema);
 
 		$this->assertSame([], $object['images']);
 	}
@@ -1676,7 +1677,7 @@ class FilePropertyHandlerTest extends TestCase {
 		$object = ['document' => null];
 
 		// Should not throw even though deleteFile fails.
-		$this->handler->handleFileProperty($entity, $object, 'document', $schema);
+		$object = $this->handleFile($entity, $object, 'document', $schema);
 
 		$this->assertNull($object['document']);
 	}
@@ -1697,7 +1698,7 @@ class FilePropertyHandlerTest extends TestCase {
 		$object = ['images' => []];
 
 		// Should not throw.
-		$this->handler->handleFileProperty($entity, $object, 'images', $schema);
+		$object = $this->handleFile($entity, $object, 'images', $schema);
 
 		$this->assertSame([], $object['images']);
 	}
@@ -1716,7 +1717,7 @@ class FilePropertyHandlerTest extends TestCase {
 
 		$object = ['document' => null];
 
-		$this->handler->handleFileProperty($entity, $object, 'document', $schema);
+		$object = $this->handleFile($entity, $object, 'document', $schema);
 
 		$this->assertNull($object['document']);
 	}
@@ -1735,7 +1736,7 @@ class FilePropertyHandlerTest extends TestCase {
 
 		$object = ['document' => null];
 
-		$this->handler->handleFileProperty($entity, $object, 'document', $schema);
+		$object = $this->handleFile($entity, $object, 'document', $schema);
 
 		$this->assertNull($object['document']);
 	}
@@ -1757,7 +1758,7 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage("Property 'nonexistent' not found in schema");
 
-		$this->handler->handleFileProperty($entity, $object, 'nonexistent', $schema);
+		$object = $this->handleFile($entity, $object, 'nonexistent', $schema);
 	}
 
 	// =========================================================================
@@ -1777,7 +1778,7 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage("Property 'name' is not configured as a file property");
 
-		$this->handler->handleFileProperty($entity, $object, 'name', $schema);
+		$object = $this->handleFile($entity, $object, 'name', $schema);
 	}
 
 	public function testHandleFilePropertyArrayNotFileThrows(): void {
@@ -1793,7 +1794,7 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('not configured as a file property');
 
-		$this->handler->handleFileProperty($entity, $object, 'tags', $schema);
+		$object = $this->handleFile($entity, $object, 'tags', $schema);
 	}
 
 	// =========================================================================
@@ -1814,7 +1815,7 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('configured as array but received non-array');
 
-		$this->handler->handleFileProperty($entity, $object, 'images', $schema);
+		$object = $this->handleFile($entity, $object, 'images', $schema);
 	}
 
 	// =========================================================================
@@ -1843,7 +1844,7 @@ class FilePropertyHandlerTest extends TestCase {
 
 		$object = ['document' => $dataUri];
 
-		$this->handler->handleFileProperty($entity, $object, 'document', $schema);
+		$object = $this->handleFile($entity, $object, 'document', $schema);
 
 		$this->assertSame(42, $object['document']);
 	}
@@ -1873,7 +1874,7 @@ class FilePropertyHandlerTest extends TestCase {
 
 		$object = ['images' => [$dataUri1, $dataUri2]];
 
-		$this->handler->handleFileProperty($entity, $object, 'images', $schema);
+		$object = $this->handleFile($entity, $object, 'images', $schema);
 
 		$this->assertSame([100, 101], $object['images']);
 	}
@@ -1915,7 +1916,7 @@ class FilePropertyHandlerTest extends TestCase {
 
 		$object = ['document' => $dataUri];
 
-		$this->handler->handleFileProperty($entity, $object, 'document', $schema);
+		$object = $this->handleFile($entity, $object, 'document', $schema);
 
 		$this->assertSame(55, $object['document']);
 	}
@@ -1950,7 +1951,7 @@ class FilePropertyHandlerTest extends TestCase {
 
 		$object = ['document' => $dataUri];
 
-		$this->handler->handleFileProperty($entity, $object, 'document', $schema);
+		$object = $this->handleFile($entity, $object, 'document', $schema);
 
 		$this->assertSame(56, $object['document']);
 	}
@@ -1990,7 +1991,7 @@ class FilePropertyHandlerTest extends TestCase {
 
 		$object = ['photo' => $dataUri];
 
-		$this->handler->handleFileProperty($entity, $object, 'photo', $schema);
+		$object = $this->handleFile($entity, $object, 'photo', $schema);
 
 		$this->assertSame(60, $object['photo']);
 	}
@@ -2014,7 +2015,7 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->fileService->expects($this->never())
 			->method('addFile');
 
-		$this->handler->handleFileProperty($entity, $object, 'document', $schema);
+		$object = $this->handleFile($entity, $object, 'document', $schema);
 
 		// The value should remain unchanged since isFileProperty returns false for int.
 		$this->assertSame(42, $object['document']);
@@ -2039,7 +2040,7 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->fileService->expects($this->never())
 			->method('addFile');
 
-		$this->handler->handleFileProperty($entity, $object, 'images', $schema);
+		$object = $this->handleFile($entity, $object, 'images', $schema);
 
 		// Result should be an empty array since no items passed isFileProperty.
 		$this->assertSame([], $object['images']);
@@ -2495,7 +2496,7 @@ class FilePropertyHandlerTest extends TestCase {
 
 		$object = ['images' => []];
 
-		$this->handler->handleFileProperty($entity, $object, 'images', $schema);
+		$object = $this->handleFile($entity, $object, 'images', $schema);
 
 		$this->assertSame([], $object['images']);
 	}
@@ -2526,7 +2527,7 @@ class FilePropertyHandlerTest extends TestCase {
 		// First item is a data URI (file), second is a plain integer (not file).
 		$object = ['images' => [$dataUri, 42]];
 
-		$this->handler->handleFileProperty($entity, $object, 'images', $schema);
+		$object = $this->handleFile($entity, $object, 'images', $schema);
 
 		$this->assertSame([200], $object['images']);
 	}
@@ -2565,7 +2566,7 @@ class FilePropertyHandlerTest extends TestCase {
 
 		$object = ['document' => $dataUri];
 
-		$this->handler->handleFileProperty($entity, $object, 'document', $schema);
+		$object = $this->handleFile($entity, $object, 'document', $schema);
 
 		$this->assertSame(70, $object['document']);
 	}
@@ -2905,4 +2906,24 @@ class FilePropertyHandlerTest extends TestCase {
 			'http://93.184.216.34/reports/quarterly.pdf'
 		);
 	}
+
+	/**
+	 * Run handleFileProperty() over one property and return the data it rewrote.
+	 *
+	 * @param ObjectEntity $entity   The saved object
+	 * @param array        $object   The object data
+	 * @param string       $property The file property
+	 * @param Schema       $schema   The schema
+	 *
+	 * @return array The data after the call
+	 */
+	private function handleFile(ObjectEntity $entity, array $object, string $property, Schema $schema): array {
+		$write = new ObjectFileWrite();
+		$write->entity = $entity;
+		$write->data = $object;
+		$write->schema = $schema;
+		$this->handler->handleFileProperty($write, $property);
+
+		return $write->data;
+	}//end handleFile()
 }
