@@ -47,6 +47,7 @@ use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Exception\CodedValueException;
 use OCA\OpenRegister\Service\Vocabulary\CodedValueGuardInterface;
+use OCA\OpenRegister\Service\Vocabulary\CodedValueWrite;
 use OCA\OpenRegister\Service\Vocabulary\ConceptShapeGuardInterface;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -148,7 +149,7 @@ class CodedValueValidationListener implements IEventListener {
 			return;
 		}
 
-		$this->guard->enforce(object: $data, schema: $schema);
+		$this->guard->enforce(new CodedValueWrite(object: $data, schema: $schema));
 	}//end check()
 
 	/**

@@ -33,6 +33,7 @@ namespace Unit\Service\Vocabulary;
 use DateTimeImmutable;
 use OCA\OpenRegister\Service\Vocabulary\CodedNarrowing;
 use OCA\OpenRegister\Service\Vocabulary\CodedOptionsBuilder;
+use OCA\OpenRegister\Service\Vocabulary\CodedOptionScope;
 use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration;
 use OCA\OpenRegister\Service\Vocabulary\CodedValueRules;
 use OCA\OpenRegister\Service\Vocabulary\ConceptHierarchy;
@@ -94,12 +95,12 @@ class CodedOptionsBuilderGoldenTest extends TestCase {
 		$at = new DateTimeImmutable('2025-06-01T00:00:00+00:00');
 		$actual = [];
 		foreach (self::declarations() as $name => $declaration) {
-			$actual[$name] = $this->builder->options($declaration, 'en', 'bezwaar', $at);
+			$actual[$name] = $this->builder->options($declaration, new CodedOptionScope(language: 'en', context: 'bezwaar', asOf: $at));
 		}
 
-		$actual['context empty'] = $this->builder->options(self::declarations()['context bound'], 'nl', '', $at);
-		$actual['context beroep'] = $this->builder->options(self::declarations()['context bound'], 'nl', 'beroep', $at);
-		$actual['before retirement'] = $this->builder->options(self::declarations()['plain'], 'nl', null, new DateTimeImmutable('2019-06-01T00:00:00+00:00'));
+		$actual['context empty'] = $this->builder->options(self::declarations()['context bound'], new CodedOptionScope(language: 'nl', context: '', asOf: $at));
+		$actual['context beroep'] = $this->builder->options(self::declarations()['context bound'], new CodedOptionScope(language: 'nl', context: 'beroep', asOf: $at));
+		$actual['before retirement'] = $this->builder->options(self::declarations()['plain'], new CodedOptionScope(language: 'nl', asOf: new DateTimeImmutable('2019-06-01T00:00:00+00:00')));
 
 		$this->assertSame(self::EXPECTED_OPTIONS, json_encode($actual));
 	}//end testOptions()
@@ -111,7 +112,7 @@ class CodedOptionsBuilderGoldenTest extends TestCase {
 		$at = new DateTimeImmutable('2025-06-01T00:00:00+00:00');
 		$actual = [];
 		foreach (self::declarations() as $name => $declaration) {
-			$actual[$name] = $this->builder->tree($declaration, 'en', $at);
+			$actual[$name] = $this->builder->tree($declaration, new CodedOptionScope(language: 'en', asOf: $at));
 		}
 
 		$this->assertSame(self::EXPECTED_TREE, json_encode($actual));
