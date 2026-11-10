@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\StateHistory\TrackedProperty;
 use OCA\OpenRegister\Db\StateHistoryMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -38,7 +39,7 @@ final class StateHistoryCloseGoldenTest extends TestCase {
 
 	public function testOutcomesMatchGolden(): void {
 		$actual = [
-			'close' => $this->recorded(fn (StateHistoryMapper $mapper): mixed => $mapper->closeOpenInterval('uuid-1', 'status', new DateTime('2026-03-01T10:00:00+00:00')), []),
+			'close' => $this->recorded(fn (StateHistoryMapper $mapper): mixed => $mapper->closeOpenInterval(new TrackedProperty('uuid-1', 'status'), new DateTime('2026-03-01T10:00:00+00:00')), []),
 		];
 
 		if (getenv('UPDATE_GOLDEN') === '1') {
