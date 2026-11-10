@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\CascadeTarget;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -364,12 +365,7 @@ class CascadeCreateRightsTest extends TestCase {
 	 * @return string|null The created uuid.
 	 */
 	private static function relatedNote(CascadingHandler $handler): ?string {
-		return $handler->createRelatedObject(
-			objectData: ['text' => 'new'],
-			definition: ['$ref' => '#/components/schemas/note', 'inversedBy' => 'incident'],
-			parentUuid: 'p-1',
-			currentRegister: 10
-		);
+		return $handler->createRelatedObject(objectData: ['text' => 'new'], target: (new CascadeTarget(parentUuid: 'p-1', register: 10))->with(definition: ['$ref' => '#/components/schemas/note', 'inversedBy' => 'incident']));
 	}//end relatedNote()
 
 	public function testThePreValidationCascadeRefusesWhatTheCallerMayNotCreate(): void {
@@ -391,12 +387,7 @@ class CascadeCreateRightsTest extends TestCase {
 	}
 
 	public function testThePreValidationCascadeFindsTheSchemaInAnyCase(): void {
-		$created = $this->cascadingHandler(refusal: null)->createRelatedObject(
-			objectData: ['text' => 'new'],
-			definition: ['$ref' => '#/components/schemas/NOTE', 'inversedBy' => 'incident'],
-			parentUuid: 'p-1',
-			currentRegister: 10
-		);
+		$created = $this->cascadingHandler(refusal: null)->createRelatedObject(objectData: ['text' => 'new'], target: (new CascadeTarget(parentUuid: 'p-1', register: 10))->with(definition: ['$ref' => '#/components/schemas/NOTE', 'inversedBy' => 'incident']));
 
 		$this->assertSame(expected: self::CREATED, actual: $created);
 	}
