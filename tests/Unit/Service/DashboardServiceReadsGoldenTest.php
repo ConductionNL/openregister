@@ -97,7 +97,7 @@ class DashboardServiceReadsGoldenTest extends TestCase {
 				$objects->method($m)->willThrowException($boom);
 			}
 
-			foreach (['getStatistics', 'getActionChartData', 'getDetailedStatistics', 'getActionDistribution', 'getMostActiveObjects'] as $m) {
+			foreach (['getStatistics', 'getActionChartData', 'detailedStatistics', 'actionDistribution', 'mostActiveObjects'] as $m) {
 				$audit->method($m)->willThrowException($boom);
 			}
 		} else {
