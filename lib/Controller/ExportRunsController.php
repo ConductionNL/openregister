@@ -140,13 +140,7 @@ class ExportRunsController extends Controller {
 	 */
 	private function periodRefusal(array $filters): ?JSONResponse {
 		foreach (self::PERIOD_KEYS as $key) {
-			if (isset($filters[$key]) === false) {
-				continue;
-			}
-
-			try {
-				new DateTime($filters[$key]);
-			} catch (Exception) {
+			if (isset($filters[$key]) === true && $this->isDate(value: $filters[$key]) === false) {
 				return new JSONResponse(
 					data: ['error' => sprintf('The %s date "%s" is not a date.', $key, $filters[$key])],
 					statusCode: Http::STATUS_BAD_REQUEST
@@ -156,6 +150,23 @@ class ExportRunsController extends Controller {
 
 		return null;
 	}//end periodRefusal()
+
+	/**
+	 * Whether a period bound parses as a date.
+	 *
+	 * @param string $value The bound as given
+	 *
+	 * @return bool True when it parses
+	 */
+	private function isDate(string $value): bool {
+		try {
+			new DateTime($value);
+		} catch (Exception) {
+			return false;
+		}
+
+		return true;
+	}//end isDate()
 
 	/**
 	 * List one page of the export runs the caller may see.
