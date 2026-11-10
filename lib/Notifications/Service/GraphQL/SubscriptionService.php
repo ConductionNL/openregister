@@ -144,6 +144,20 @@ class SubscriptionService {
 	 * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
 	 */
 	public function eventsMatching(EventStreamFilter $filter): array {
+		$buffer = $this->bufferedEvents();
+		if ($buffer === []) {
+			return [];
+		}
+
+		return $this->visibleEvents(events: $this->filterEventStream(buffer: $buffer, filter: $filter));
+	}//end eventsMatching()
+
+	/**
+	 * The buffered event stream, empty when APCu is unavailable or holds nothing.
+	 *
+	 * @return array<array<string, mixed>> The buffered events.
+	 */
+	private function bufferedEvents(): array {
 		if (function_exists('apcu_enabled') === false || apcu_enabled() === false) {
 			return [];
 		}
@@ -153,15 +167,26 @@ class SubscriptionService {
 			return [];
 		}
 
-		$events = [];
-		foreach ($this->filterEventStream(buffer: $buffer, filter: $filter) as $event) {
+		return $buffer;
+	}//end bufferedEvents()
+
+	/**
+	 * The events the user may see.
+	 *
+	 * @param array<array<string, mixed>> $events The events after the filter.
+	 *
+	 * @return array<array<string, mixed>> The visible events, in order.
+	 */
+	private function visibleEvents(array $events): array {
+		$visible = [];
+		foreach ($events as $event) {
 			if ($this->verifyEventRBAC(event: $event) === true) {
-				$events[] = $event;
+				$visible[] = $event;
 			}
 		}
 
-		return $events;
-	}//end eventsMatching()
+		return $visible;
+	}//end visibleEvents()
 
 	/**
 	 * Filter event buffer by last event ID and schema/register filters.
