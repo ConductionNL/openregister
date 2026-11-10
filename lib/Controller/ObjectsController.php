@@ -5704,7 +5704,8 @@ class ObjectsController extends Controller {
 		$writer->save('php://output');
 		$content = ob_get_clean();
 
-		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'excel', rowCount: $this->countSpreadsheetExportRows(spreadsheet: $spreadsheet)));
+		$rowCount = $this->countSpreadsheetExportRows(spreadsheet: $spreadsheet);
+		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'excel', rowCount: $rowCount));
 
 		return $export->download(format: 'excel', content: $content);
 	}//end excelExport()
@@ -6035,7 +6036,12 @@ class ObjectsController extends Controller {
 		$schemaEntity = $this->services->store->schemaMapper->find($source->schema);
 		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
 		$mayUpdateTarget = $permissions->hasPermission(schema: $schemaEntity, action: 'update', objectOwner: $target->getOwner(), object: $target);
-		$mayDeleteSource = $permissions->hasPermission(schema: $schemaEntity, action: 'delete', objectOwner: $sourceObject->getOwner(), object: $sourceObject);
+		$mayDeleteSource = $permissions->hasPermission(
+			schema: $schemaEntity,
+			action: 'delete',
+			objectOwner: $sourceObject->getOwner(),
+			object: $sourceObject
+		);
 		if ($mayUpdateTarget === false || $mayDeleteSource === false) {
 			return new JSONResponse(data: ['error' => 'You may not merge these objects.'], statusCode: 403);
 		}
