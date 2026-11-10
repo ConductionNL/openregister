@@ -134,11 +134,29 @@ class CaseItemMapper extends QBMapper implements CaseItemMapperInterface {
 		}
 
 		$item->setUpdated(new DateTime());
-		$properties = $item->getUpdatedFields();
-		unset($properties['id']);
 
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($this->getTableName());
+		$this->setChangedFields(qb: $qb, item: $item);
+
+		$qb->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('state', $qb->createNamedParameter($expectedState)));
+
+		return $qb->executeStatement() === 1;
+	}//end updateIfState()
+
+	/**
+	 * Set every changed field of an item, except its id, on an update.
+	 *
+	 * @param IQueryBuilder $qb   The update.
+	 * @param CaseItem      $item The item.
+	 *
+	 * @return void
+	 */
+	private function setChangedFields(IQueryBuilder $qb, CaseItem $item): void {
+		$properties = $item->getUpdatedFields();
+		unset($properties['id']);
+
 		foreach (array_keys($properties) as $property) {
 			$getter = 'get' . ucfirst($property);
 			$qb->set(
@@ -146,12 +164,7 @@ class CaseItemMapper extends QBMapper implements CaseItemMapperInterface {
 				$qb->createNamedParameter($item->$getter(), $this->getParameterTypeForProperty(entity: $item, property: $property))
 			);
 		}
-
-		$qb->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->eq('state', $qb->createNamedParameter($expectedState)));
-
-		return $qb->executeStatement() === 1;
-	}//end updateIfState()
+	}//end setChangedFields()
 
 	/**
 	 * Find a plan item by its public uuid.
