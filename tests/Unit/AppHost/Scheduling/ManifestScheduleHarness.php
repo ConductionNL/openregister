@@ -29,6 +29,7 @@ use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Db\Flow\FlowSelection;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
@@ -301,11 +302,11 @@ abstract class ManifestScheduleHarness extends TestCase {
 		$mapper->method('insert')->willReturnCallback($store);
 		$mapper->method('update')->willReturnCallback($store);
 		$mapper->method('findAllFlows')->willReturnCallback(
-			fn (?string $app = null, ?string $applicationSlug = null) => array_values(
+			fn (FlowSelection $selection) => array_values(
 				array_filter(
 					$this->flows,
-					static fn (Flow $flow) => ($app === null || $flow->getApp() === $app)
-						&& ($applicationSlug === null || $flow->getApplicationSlug() === $applicationSlug)
+					static fn (Flow $flow) => ($selection->app === null || $flow->getApp() === $selection->app)
+						&& ($selection->applicationSlug === null || $flow->getApplicationSlug() === $selection->applicationSlug)
 				)
 			)
 		);

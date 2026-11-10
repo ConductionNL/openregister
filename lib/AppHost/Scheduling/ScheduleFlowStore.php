@@ -99,7 +99,8 @@ class ScheduleFlowStore implements ScheduleFlowStoreInterface {
 	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
 	 */
 	public function hasFlowsNamedFor(string $slug): bool {
-		foreach ($this->mapper->findAllFlows(selection: new FlowSelection(app: Flow::APP_MANIFEST_SCHEDULE), query: new ListQuery(limit: self::PAGE)) as $flow) {
+		$selection = new FlowSelection(app: Flow::APP_MANIFEST_SCHEDULE);
+		foreach ($this->mapper->findAllFlows(selection: $selection, query: new ListQuery(limit: self::PAGE)) as $flow) {
 			if (str_starts_with((string)$flow->getName(), $slug . ': ') === true) {
 				return true;
 			}
