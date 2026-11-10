@@ -38,6 +38,8 @@ use Psr\Log\LoggerInterface;
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization\Handlers
+ *
+ * @spec openspec/specs/vector-embeddings/spec.md
  */
 final class FireworksEmbeddingGenerator implements EmbeddingGeneratorInterface {
 	/**
