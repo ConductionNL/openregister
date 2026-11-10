@@ -32,11 +32,8 @@ use Exception;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicRelationReaderInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCP\App\IAppManager;
-use OCP\IDBConnection;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\ListQuery;
 
 /**
  * EmailService manages email-to-object links via the openregister_email_links table.
@@ -49,76 +46,29 @@ use Psr\Log\LoggerInterface;
 class EmailService implements EmailServiceInterface {
 
 	/**
-	 * Email link mapper.
-	 *
-	 * @var EmailLinkMapperInterface
-	 */
-	private readonly EmailLinkMapperInterface $emailLinkMapper;
-
-	/**
-	 * App manager for checking Mail app availability.
-	 *
-	 * @var IAppManager
-	 */
-	private readonly IAppManager $appManager;
-
-	/**
-	 * Database connection for direct Mail queries.
-	 *
-	 * @var IDBConnection
-	 */
-	private readonly IDBConnection $db;
-
-	/**
-	 * User session for current user context.
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Logger for error reporting.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * Schema mapper for iterating over schemas with `_mail` linked-type column.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Magic mapper for cross-table _mail JSONB containment queries.
-	 *
-	 * @var MagicRelationReaderInterface
-	 */
-	private readonly MagicRelationReaderInterface $magicMapper;
-
-	/**
 	 * Constructor.
 	 *
-	 * @param EmailLinkMapperInterface    $emailLinkMapper Email link mapper.
-	 * @param EmailMailAppReader $mailApp         App manager, database connection and user session for the Mail app.
-	 * @param EmailLinkedSchemas $linkedSchemas   Schema and object mappers for the mail-linked schemas.
-	 * @param LoggerInterface    $logger          Logger.
+	 * @param EmailLinkMapperInterface $emailLinkMapper Email link mapper.
+	 * @param EmailMailAppReader       $mailApp         App manager, database connection and user session for the Mail app.
+	 * @param EmailLinkedSchemas       $linkedSchemas   Schema and object mappers for the mail-linked schemas.
+	 * @param LoggerInterface          $logger          Logger.
 	 */
 	public function __construct(
-		EmailLinkMapperInterface $emailLinkMapper,
-		EmailMailAppReader $mailApp,
-		EmailLinkedSchemas $linkedSchemas,
-		LoggerInterface $logger,
+		private readonly EmailLinkMapperInterface $emailLinkMapper,
+		private readonly EmailMailAppReader $mailApp,
+		private readonly EmailLinkedSchemas $linkedSchemas,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->emailLinkMapper = $emailLinkMapper;
-		$this->appManager = $mailApp->appManager;
-		$this->db = $mailApp->db;
-		$this->userSession = $mailApp->userSession;
-		$this->logger = $logger;
-		$this->schemaMapper = $linkedSchemas->schemaMapper;
-		$this->magicMapper = $linkedSchemas->magicMapper;
 	}//end __construct()
+
+	/**
+	 * The magic mapper in its one role here: cross-table `_mail` containment reads.
+	 *
+	 * @return MagicRelationReaderInterface The relation reader.
+	 */
+	private function relations(): MagicRelationReaderInterface {
+		return $this->linkedSchemas->magicMapper;
+	}//end relations()
 
 	/**
 	 * Check if the Nextcloud Mail app is installed and enabled.
@@ -126,41 +76,30 @@ class EmailService implements EmailServiceInterface {
 	 * @return bool True if Mail app is available.
 	 */
 	public function isMailAvailable(): bool {
-		return $this->appManager->isEnabledForUser('mail');
+		return $this->mailApp->appManager->isEnabledForUser('mail');
 	}//end isMailAvailable()
 
 	/**
 	 * Get all email links for an object.
 	 *
-	 * @param string $objectUuid The object UUID.
-	 * @param int|null $limit Maximum results.
-	 * @param int|null $offset Results offset.
+	 * @param string    $objectUuid The object UUID.
+	 * @param ListQuery $query      The page: limit (unbounded for all) and offset.
 	 *
 	 * @return array{results: array, total: int} Email links with total count.
 	 *
 	 * @spec openspec/specs/mail-sidebar/spec.md
 	 */
-	public function getEmailsForObject(string $objectUuid, ?int $limit = null, ?int $offset = null): array {
-		$links = $this->emailLinkMapper->findByObjectUuid($objectUuid, $limit, $offset);
+	public function getEmailsForObject(string $objectUuid, ListQuery $query = new ListQuery(limit: ListQuery::UNBOUNDED)): array {
+		$links = $this->emailLinkMapper->findByObjectUuid($objectUuid, $query->limitOrNull(), $query->offset);
 		$total = $this->emailLinkMapper->countByObjectUuid($objectUuid);
 
-		$results = array_map(
-			static function (EmailLink $link): array {
-				return $link->jsonSerialize();
-			},
-			$links
-		);
-
-		return ['results' => $results, 'total' => $total];
+		return ['results' => array_map(static fn (EmailLink $link): array => $link->jsonSerialize(), $links), 'total' => $total];
 	}//end getEmailsForObject()
 
 	/**
 	 * Link an existing email to an object.
 	 *
-	 * @param string $objectUuid The object UUID.
-	 * @param int $registerId The register ID.
-	 * @param int $mailAccountId The mail account ID.
-	 * @param int $mailMessageId The mail message ID.
+	 * @param EmailLinkRequest $request The object uuid, its register id, and the mail account and message ids.
 	 *
 	 * @return EmailLink The created link.
 	 *
@@ -168,48 +107,69 @@ class EmailService implements EmailServiceInterface {
 	 *
 	 * @spec openspec/specs/mail-sidebar/spec.md
 	 */
-	public function linkEmail(
-		string $objectUuid,
-		int $registerId,
-		int $mailAccountId,
-		int $mailMessageId,
-	): EmailLink {
+	public function linkEmail(EmailLinkRequest $request): EmailLink {
+		return $this->link(request: $request);
+	}//end linkEmail()
+
+	/**
+	 * Store the link a request asks for, as the signed-in user.
+	 *
+	 * @param EmailLinkRequest $request The object and the Mail message to link.
+	 *
+	 * @return EmailLink The created link.
+	 *
+	 * @throws Exception If the email does not exist, is already linked, or nobody is signed in.
+	 */
+	private function link(EmailLinkRequest $request): EmailLink {
 		// Check for duplicate.
-		$existing = $this->emailLinkMapper->findByObjectAndMessage($objectUuid, $mailMessageId);
+		$existing = $this->emailLinkMapper->findByObjectAndMessage($request->objectUuid, $request->mailMessageId);
 		if ($existing !== null) {
 			throw new Exception('Email already linked to this object', 409);
 		}
 
 		// Verify the email exists in the Mail app database.
-		$messageData = $this->fetchMailMessage(messageId: $mailMessageId, accountId: $mailAccountId);
+		$messageData = $this->fetchMailMessage(messageId: $request->mailMessageId, accountId: $request->mailAccountId);
 		if ($messageData === null) {
 			throw new Exception('Mail message not found', 404);
 		}
 
-		$user = $this->userSession->getUser();
+		$user = $this->mailApp->userSession->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
 		}
 
+		$link = $this->newLink(request: $request, messageData: $messageData);
+		$link->setLinkedBy($user->getUID());
+		$link->setLinkedAt(new DateTime());
+
+		return $this->emailLinkMapper->insert($link);
+	}//end link()
+
+	/**
+	 * A new link row for a request, carrying the Mail message's header fields.
+	 *
+	 * @param EmailLinkRequest     $request     The object and the Mail message to link.
+	 * @param array<string, mixed> $messageData The message as the Mail app stores it.
+	 *
+	 * @return EmailLink The unsaved link.
+	 */
+	private function newLink(EmailLinkRequest $request, array $messageData): EmailLink {
 		$link = new EmailLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setMailAccountId($mailAccountId);
-		$link->setMailMessageId($mailMessageId);
+		$link->setObjectUuid($request->objectUuid);
+		$link->setRegisterId($request->registerId);
+		$link->setMailAccountId($request->mailAccountId);
+		$link->setMailMessageId($request->mailMessageId);
 		$link->setMailMessageUid($messageData['uid'] ?? null);
 		$link->setRfcMessageId(EmailLink::storableMessageId(messageId: ($messageData['rfcMessageId'] ?? null)));
 		$link->setSubject($messageData['subject'] ?? null);
 		$link->setSender($messageData['sender'] ?? null);
 		$link->setSenderName($messageData['senderName'] ?? null);
-		$link->setLinkedBy($user->getUID());
-		$link->setLinkedAt(new DateTime());
-
 		if (isset($messageData['date']) === true) {
 			$link->setMailDate(new DateTime($messageData['date']));
 		}
 
-		return $this->emailLinkMapper->insert($link);
-	}//end linkEmail()
+		return $link;
+	}//end newLink()
 
 	/**
 	 * Remove an email link.
@@ -263,7 +223,7 @@ class EmailService implements EmailServiceInterface {
 		$results = [];
 		foreach ($this->getMailLinkedSchemas() as $schema) {
 			foreach ($messageIds as $linkedId) {
-				$entities = $this->magicMapper->findByLinkedEntity(
+				$entities = $this->relations()->findByLinkedEntity(
 					schema: $schema,
 					columnName: '_mail',
 					entityId: $linkedId
@@ -298,7 +258,7 @@ class EmailService implements EmailServiceInterface {
 		// this any authenticated user could pass an arbitrary sender and learn
 		// which OpenRegister objects link to mail received by OTHER users'
 		// accounts (cross-account leak). oc_mail_accounts.user_id owns the account.
-		$user = $this->userSession->getUser();
+		$user = $this->mailApp->userSession->getUser();
 		if ($user === null) {
 			return [];
 		}
@@ -312,7 +272,7 @@ class EmailService implements EmailServiceInterface {
                      JOIN *PREFIX*mail_accounts ma ON ma.id = mb.account_id
                      WHERE LOWER(r.email) = LOWER(?) AND ma.user_id = ?
                      LIMIT 200';
-			$stmt = $this->db->prepare($sql);
+			$stmt = $this->mailApp->db->prepare($sql);
 			$stmt->execute([$sender, $user->getUID()]);
 			$ids = [];
 			while (($row = $stmt->fetch()) !== false) {
@@ -333,7 +293,7 @@ class EmailService implements EmailServiceInterface {
 	 */
 	private function getMailLinkedSchemas(): array {
 		try {
-			$all = $this->schemaMapper->findAll(_multitenancy: false);
+			$all = $this->linkedSchemas->schemaMapper->findAll(_multitenancy: false);
 		} catch (\Throwable) {
 			return [];
 		}
@@ -371,7 +331,7 @@ class EmailService implements EmailServiceInterface {
 	 */
 	private function fetchMailMessage(int $messageId, int $accountId): ?array {
 		try {
-			$qb = $this->db->getQueryBuilder();
+			$qb = $this->mailApp->db->getQueryBuilder();
 			$qb->select('m.id', 'm.uid', 'm.subject', 'm.sent_at', 'm.message_id')
 				->addSelect('r.email as sender_email', 'r.label as sender_label')
 				->from('mail_messages', 'm')

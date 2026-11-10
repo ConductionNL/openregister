@@ -149,9 +149,9 @@ class AggregationRunnerSpecHelpersGoldenTest extends TestCase {
 				['keys' => ['code' => false, 'team' => 1.5], 'value' => 5],
 			],
 		];
-		$cases['indexJoinedGroups single'] = ['indexJoinedGroups', [$perAlias, false, ['code']]];
-		$cases['indexJoinedGroups multi'] = ['indexJoinedGroups', [$multiAlias, true, ['code', 'team']]];
-		$cases['indexJoinedGroups empty'] = ['indexJoinedGroups', [[], true, ['code']]];
+		$cases['indexJoinedGroups single'] = ['indexJoinedGroups', [$perAlias, ['code']]];
+		$cases['indexJoinedGroups multi'] = ['indexJoinedGroups', [$multiAlias, ['code', 'team']]];
+		$cases['indexJoinedGroups empty'] = ['indexJoinedGroups', [[], ['code', 'team']]];
 
 		$tuples = [
 			'mixed' => [null, true, false, 0, '0', 1.5, 'a', ['x' => 1], [1, 2]],
@@ -214,9 +214,7 @@ class AggregationRunnerSpecHelpersGoldenTest extends TestCase {
 	private function runner(): AggregationRunner {
 		$session = $this->createMock(IUserSession::class);
 		return new AggregationRunner(
-			magicMapper: $this->createMock(MagicMapper::class),
-			registerMapper: $this->createMock(RegisterMapper::class),
-			schemaMapper: $this->createMock(SchemaMapper::class),
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapper::class)),
 			placeholders: new PlaceholderResolver($session),
 			db: $this->createMock(IDBConnection::class),
 			cache: $this->createMock(AggregationCache::class),

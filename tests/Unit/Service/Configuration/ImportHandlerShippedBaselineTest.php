@@ -39,7 +39,9 @@ use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\SchemaImportOptions;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ShippedBaseline\DescriptorParts;
@@ -47,6 +49,7 @@ use OCA\OpenRegister\Service\ShippedBaseline\DivergenceComparator;
 use OCA\OpenRegister\Service\ShippedBaseline\GuardedDescriptorMerge;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineStore;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedDefinition;
 use OCP\IAppConfig;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -127,7 +130,8 @@ class ImportHandlerShippedBaselineTest extends TestCase {
 			])
 		);
 		$store->method('record')->willReturnCallback(
-			function (string $subject, array $definition): bool {
+			function (string $subject, ShippedDefinition $shipped): bool {
+				$definition = $shipped->definition;
 				$this->recorded[] = $definition;
 				return true;
 			}
@@ -184,7 +188,13 @@ class ImportHandlerShippedBaselineTest extends TestCase {
 		$this->schemaMapper->method('updateFromArray')->willThrowException(new Exception('Invalid type'));
 
 		try {
-			$this->handler(baseline: null)->importSchema(data: $this->incoming(version: '0.4.0'), slugsAndIdsMap: [], appId: 'portaliq', version: '0.56.0');
+			$this->handler(baseline: null)->importSchema(
+				definition: new ImportedSchemaLookup(
+					data: $this->incoming(version: '0.4.0'),
+					options: new SchemaImportOptions(appId: 'portaliq', version: '0.56.0')
+				),
+				slugsAndIdsMap: []
+			);
 			$this->fail('the refused write must still fail the import');
 		} catch (Exception $e) {
 			$this->assertStringContainsString('Invalid type', $e->getMessage());
@@ -210,7 +220,13 @@ class ImportHandlerShippedBaselineTest extends TestCase {
 			}
 		);
 
-		$this->handler(baseline: null)->importSchema(data: $this->incoming(version: '0.4.1'), slugsAndIdsMap: [], appId: 'portaliq', version: '0.56.1');
+		$this->handler(baseline: null)->importSchema(
+			definition: new ImportedSchemaLookup(
+				data: $this->incoming(version: '0.4.1'),
+				options: new SchemaImportOptions(appId: 'portaliq', version: '0.56.1')
+			),
+			slugsAndIdsMap: []
+		);
 
 		$this->assertSame(self::SHIPPED['kind']['enum'], $written['properties']['kind']['enum'], 'the shipped properties are written');
 		$this->assertCount(1, $this->recorded, 'the baseline is recorded once the write succeeded');

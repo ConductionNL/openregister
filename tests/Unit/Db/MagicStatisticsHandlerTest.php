@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCP\IConfig;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -45,10 +49,8 @@ class MagicStatisticsHandlerTest extends TestCase {
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 
 		$this->handler = new MagicStatisticsHandler(
-			db: $this->db,
-			logger: $this->logger,
-			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
+			sql: new MagicTableSql(db: $this->db, config: $this->createMock(IConfig::class), logger: $this->logger),
+			catalog: new SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(MagicMapperInterface::class)),
 			dateTimeNormalizer: new DateTimeNormalizer($this->logger),
 			schemaTypeConverter: new SchemaTypeConverter()
 		);

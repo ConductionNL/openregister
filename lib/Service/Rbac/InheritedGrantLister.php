@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\Share\IShare;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -140,11 +141,10 @@ class InheritedGrantLister {
 				continue;
 			}
 
-			$shares = $this->shares->sharesOn(
-				object: $ancestor,
-				sharers: [(string)$ancestor->getOwner()],
-				complete: $complete
-			);
+			$shares = match ($complete) {
+				true => $this->shares->completeSharesOn(object: $ancestor, sharers: [(string)$ancestor->getOwner()]),
+				false => $this->shares->sharesOn(object: $ancestor, sharers: [(string)$ancestor->getOwner()]),
+			};
 			foreach ($shares as $share) {
 				$found[] = ['ancestor' => $ancestor, 'type' => $share['type'], 'share' => $share['share']];
 			}
@@ -166,9 +166,11 @@ class InheritedGrantLister {
 	private function ancestorsOf(ObjectEntity $object, bool $complete): array {
 		try {
 			return $this->hierarchy->ancestorsOf(
-				registerId: (int)$object->getRegister(),
-				schemaId: (int)$object->getSchema(),
-				objectUuid: (string)$object->getUuid()
+				ref: new ObjectRef(
+					register: (int)$object->getRegister(),
+					schema: (int)$object->getSchema(),
+					id: (string)$object->getUuid()
+				)
 			);
 		} catch (Throwable $e) {
 			if ($complete === true) {

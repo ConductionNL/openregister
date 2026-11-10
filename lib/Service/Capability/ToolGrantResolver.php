@@ -678,22 +678,21 @@ class ToolGrantResolver {
 	 * a per-grant opt-in and start being the default. The two questions share a
 	 * return value and mean opposite things; this guard is where they separate.
 	 *
-	 * @param array<string, array<int, array<string, array>>> $waivedSets From `waivedConstraintSets()`.
-	 * @param string $toolId The invoked tool id.
-	 * @param array<string, mixed> $arguments The decoded tool-call arguments.
+	 * @param array<int, array<string, array>> $alternatives The invoked tool's entry in `waivedConstraintSets()`,
+	 *                                                       or `[]` when the tool has none.
+	 * @param array<string, mixed>             $arguments    The decoded tool-call arguments.
 	 *
 	 * @return bool True when a waived entry covers this exact invocation.
 	 *
 	 * @spec openspec/specs/agent-capability-reach/spec.md#scenario-a-waived-granted-conforming-invocation-runs-without-an-approval
 	 */
-	public static function waives(array $waivedSets, string $toolId, array $arguments): bool {
-		$alternatives = ($waivedSets[$toolId] ?? []);
+	public static function waivedBy(array $alternatives, array $arguments): bool {
 		if ($alternatives === []) {
 			return false;
 		}
 
 		return (self::violationFor(constraintSets: $alternatives, arguments: $arguments) === null);
-	}//end waives()
+	}//end waivedBy()
 
 	/**
 	 * Parse a grant's raw constraint query into an `argument => constraint` map.
@@ -923,15 +922,12 @@ class ToolGrantResolver {
 		}
 
 		if (preg_match('/^(.+)\.\*:write$/', $grant, $matches) === 1) {
-			return $this->schemaVerbIds(
-				prefix: $matches[1],
-				verbs: array_merge(self::READ_VERBS, self::WRITE_VERBS),
-				catalogIds: $catalogIds
-			);
+			$candidates = self::schemaVerbIds(prefix: $matches[1], verbs: array_merge(self::READ_VERBS, self::WRITE_VERBS));
+			return self::inCatalog(ids: $candidates, catalogIds: $catalogIds);
 		}
 
 		if (preg_match('/^(.+)\.\*$/', $grant, $matches) === 1) {
-			return $this->schemaVerbIds(prefix: $matches[1], verbs: self::READ_VERBS, catalogIds: $catalogIds);
+			return self::inCatalog(ids: self::schemaVerbIds(prefix: $matches[1], verbs: self::READ_VERBS), catalogIds: $catalogIds);
 		}
 
 		// Exact id (a verb-subset `{app}.{schema}.{verb}`, a plain `{app}.{tool}`,
@@ -941,27 +937,30 @@ class ToolGrantResolver {
 	}//end expandGrant()
 
 	/**
-	 * Build `{prefix}.{verb}` candidates that actually exist in the catalog.
+	 * The `{prefix}.{verb}` candidates of a schema wildcard, in verb order.
 	 *
 	 * @param string $prefix The `{app}.{schema}` prefix.
 	 * @param array<int, string> $verbs Candidate verbs to try.
+	 *
+	 * @return array<int, string>
+	 */
+	private static function schemaVerbIds(string $prefix, array $verbs): array {
+		return array_map(static fn (string $verb): string => $prefix . '.' . $verb, $verbs);
+	}//end schemaVerbIds()
+
+	/**
+	 * The candidates that actually exist in the catalog, in candidate order.
+	 *
+	 * @param array<int, string> $ids Candidate ids.
 	 * @param array<int, string> $catalogIds Every id the catalog currently exposes.
 	 *
 	 * @return array<int, string>
 	 */
-	private function schemaVerbIds(string $prefix, array $verbs, array $catalogIds): array {
+	private static function inCatalog(array $ids, array $catalogIds): array {
 		$catalogSet = array_flip($catalogIds);
 
-		$ids = [];
-		foreach ($verbs as $verb) {
-			$candidate = $prefix . '.' . $verb;
-			if (isset($catalogSet[$candidate]) === true) {
-				$ids[] = $candidate;
-			}
-		}
-
-		return $ids;
-	}//end schemaVerbIds()
+		return array_values(array_filter($ids, static fn (string $id): bool => isset($catalogSet[$id]) === true));
+	}//end inCatalog()
 
 	/**
 	 * Whether a grant string uses the `{app}.{schema}.*` (optionally `:write`) form.

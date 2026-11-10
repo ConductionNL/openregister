@@ -97,7 +97,7 @@ class ScheduledReportServiceRunOneTest extends TestCase {
 		);
 
 		$this->service = new ScheduledReportService(
-			new ScheduledReportStores($this->mapper, $this->registerMapper, $this->schemaMapper),
+			new ScheduledReportStores($this->mapper, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
 			new ScheduledReportExporters($this->exportService, null, null),
 			new ScheduledReportDelivery(
 				new ScheduledReportOwnerServices($this->userManager, $this->userSession, $this->rootFolder, $this->notificationManager),

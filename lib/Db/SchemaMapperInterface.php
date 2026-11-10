@@ -214,8 +214,7 @@ interface SchemaMapperInterface {
 	 * multi-tenancy and RBAC filtering.
 	 *
 	 * @param string $slug The slug to search for
-	 * @param int $limit Maximum number of results (default: 10)
-	 * @param int $offset Offset for pagination (default: 0)
+	 * @param ListQuery $query The page: its limit and offset
 	 * @param bool $_rbac Whether to apply RBAC permission checks (default: true)
 	 * @param bool $_multitenancy Whether to apply multi-tenancy filtering (default: true)
 	 *
@@ -225,7 +224,7 @@ interface SchemaMapperInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
 	 */
-	public function findBySlug(string $slug, int $limit = 10, int $offset = 0, bool $_rbac = true, bool $_multitenancy = true): array;
+	public function findBySlug(string $slug, ListQuery $query, bool $_rbac = true, bool $_multitenancy = true): array;
 
 	/**
 	 * Finds all schemas, files: with optional extension for statistics
@@ -457,17 +456,15 @@ interface SchemaMapperInterface {
 	 * This method searches through properties recursively to find $ref values
 	 * that match the target schema's ID, files: UUID, rbac: or slug.
 	 *
-	 * @param array $properties The properties array to search through
-	 * @param string $targetSchemaId The target schema ID to look for
-	 * @param string $targetSchemaUuid The target schema UUID to look for
-	 * @param string $targetSchemaSlug The target schema slug to look for
+	 * @param array  $properties The properties array to search through
+	 * @param Schema $target     The schema whose id, uuid or slug a reference names
 	 *
 	 * @return bool True if a reference to the target schema is found
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      Recursive reference checking requires many conditions
 	 */
-	public function hasReferenceToSchema(array $properties, string $targetSchemaId, string $targetSchemaUuid, string $targetSchemaSlug): bool;
+	public function hasReferenceToSchema(array $properties, Schema $target): bool;
 
 	/**
 	 * Get property source metadata for a schema

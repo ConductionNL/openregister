@@ -77,10 +77,7 @@ class FacetsObeyThePropertyReadRuleTest extends TestCase {
 			$this->createMock(IDBConnection::class),
 			new NullLogger(),
 			null,
-			null,
-			null,
-			$container,
-			null
+			$container
 		);
 	}//end handlerWhereReadIs()
 

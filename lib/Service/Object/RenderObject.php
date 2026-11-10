@@ -28,12 +28,16 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\Object\SaveObject\ComputedPass;
 use Adbar\Dot;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Translation;
+use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Calculation\CalculationPayload;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
@@ -237,7 +241,7 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		try {
-			$register = $this->stores->mappers->registerMapper->find($id);
+			$register = $this->stores->mappers->catalog->registers()->find($id);
 			// Cache the result.
 			$this->registersCache[$id] = $register;
 			return $register;
@@ -264,7 +268,7 @@ class RenderObject implements RenderObjectInterface {
 		try {
 			// Bypass multi-tenancy for internal schema resolution — schemas must always
 			// be accessible when resolving references, regardless of the current user's organization.
-			$schema = $this->stores->mappers->schemaMapper->find($id, _multitenancy: false);
+			$schema = $this->stores->mappers->catalog->schemas()->find($id, _multitenancy: false);
 			// Cache the result.
 			$this->schemasCache[$id] = $schema;
 			return $schema;
@@ -641,7 +645,7 @@ class RenderObject implements RenderObjectInterface {
 
 		$translations = $this->enrichers->translations->translationHandler;
 		$row->setObject(
-			$translations->resolveTranslationsForRender(objectData: $row->getObject(), schema: $schema, register: $register)
+			$translations->resolveTranslationsForRender(objectData: $row->getObject(), scope: new TranslationScope(schema: $schema, register: $register))
 		);
 	}//end translateEntityRow()
 
@@ -662,8 +666,7 @@ class RenderObject implements RenderObjectInterface {
 
 		return $this->enrichers->translations->translationHandler->resolveTranslationsForRender(
 			objectData: $row,
-			schema: $schema,
-			register: $this->arrayRowRegister(row: $row)
+			scope: new TranslationScope(schema: $schema, register: $this->arrayRowRegister(row: $row))
 		);
 	}//end translateArrayRow()
 
@@ -752,7 +755,10 @@ class RenderObject implements RenderObjectInterface {
 			return;
 		}
 
-		$row->setObject($this->applyLens(schema: $schema, objectData: ($row->getObject() ?? []), rbac: $rbac));
+		$lensResolver = $this->runtime->extensions->lensResolver;
+		if ($lensResolver !== null) {
+			$row->setObject($lensResolver->apply(schema: $schema, data: ($row->getObject() ?? []), _rbac: $rbac));
+		}
 	}//end applyLensToRow()
 
 	/**
@@ -803,6 +809,7 @@ class RenderObject implements RenderObjectInterface {
 		// The trusted-internal-read bypass applies to property `authorization.read` and to
 		// decryption ONLY. The writeOnly strip deliberately does not consult it.
 		$pass = new RowRedaction();
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		$pass->applyGatedStrips = ($_rbac !== false) && (SystemOperationContext::isActive() === false);
 
 		foreach ($rows as &$row) {
@@ -853,7 +860,7 @@ class RenderObject implements RenderObjectInterface {
 	 * Decrypt a row's fields when the gated strips apply and the schema encrypts properties.
 	 *
 	 * Runs AFTER redaction: a field the strip removed is no longer a key, so
-	 * decryptProperties() (which only acts on keys still present) skips it,
+	 * decryptInScope() (which only acts on keys still present) skips it,
 	 * and an unauthorized caller never reaches decryption for that field.
 	 *
 	 * @param RowRedaction $pass The redaction pass, on one row.
@@ -868,7 +875,10 @@ class RenderObject implements RenderObjectInterface {
 			&& $this->runtime->extensions->fieldEncryptionHandler !== null
 			&& $pass->schema->hasEncryptedProperties() === true
 		) {
-			return $this->runtime->extensions->fieldEncryptionHandler->decryptProperties(data: $data, schema: $pass->schema);
+			return $this->runtime->extensions->fieldEncryptionHandler->decryptInScope(
+				data: $data,
+				scope: new \OCA\OpenRegister\Service\FieldDecryptionScope(schema: $pass->schema, throwOnFailure: false)
+			);
 		}
 
 		return $data;
@@ -1536,7 +1546,14 @@ class RenderObject implements RenderObjectInterface {
 		try {
 			$this->hydrateFilesOf(entity: $entity);
 		} catch (Exception $e) {
-			// Log error but don't break rendering - just return original entity.
+			// Rendering goes on with the entity as it is.
+			$this->runtime->logger->warning(
+				message: '[RenderObject] Could not render the file properties',
+				context: [
+					'uuid' => $entity->getUuid(),
+					'exception' => $e->getMessage(),
+				]
+			);
 		}//end try
 
 		return $entity;
@@ -1847,7 +1864,14 @@ class RenderObject implements RenderObjectInterface {
 				$entity->setImage(self::fileUrlOf(value: $value));
 			}
 		} catch (\Exception $e) {
-			// Log error but don't break rendering - just return original entity.
+			// Rendering goes on with the entity as it is.
+			$this->runtime->logger->warning(
+				message: '[RenderObject] Could not hydrate the image metadata from file properties',
+				context: [
+					'uuid' => $entity->getUuid(),
+					'exception' => $e->getMessage(),
+				]
+			);
 		}//end try
 
 		return $entity;
@@ -2123,28 +2147,79 @@ class RenderObject implements RenderObjectInterface {
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): ObjectEntity {
-		if (self::isVisited(entity: $entity, visitedIds: $visitedIds) === true) {
+		$selection = new RenderSelection(extend: $_extend, filter: $filter, fields: $fields, unset: $unset);
+		$preloads  = new RenderPreloads(registers: $registers, schemas: $schemas, objects: $objects);
+		$request   = new RenderRequest(selection: $selection, preloads: $preloads, path: new RenderPath(depth: $depth, visitedIds: $visitedIds));
+		return $this->render(entity: $entity, request: $request, _rbac: $_rbac, _multitenancy: $_multitenancy);
+	}//end renderEntity()
+
+	/**
+	 * Render an entity with the extensions, filters and field selection a request asks for.
+	 *
+	 * @param ObjectEntity  $entity        The entity to render
+	 * @param RenderRequest $request       The selection, the preloaded registers, schemas and objects, and the path
+	 * @param bool          $_rbac         Whether to apply RBAC checks (default: true).
+	 * @param bool          $_multitenancy Whether to apply multitenancy filtering (default: true).
+	 *
+	 * @return ObjectEntity The rendered entity with applied extensions and filters
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC and multitenancy flags control security behavior
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	public function render(ObjectEntity $entity, RenderRequest $request, bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+		if (self::isVisited(entity: $entity, visitedIds: $request->path->visitedIds) === true) {
 			// @psalm-suppress NullableReturnStatement - setObject() returns $this (ObjectEntity) despite void annotation
 			$entity->setObject(['@circular' => true, 'id' => $entity->getUuid()]);
 			return $entity;
 		}
 
-		if ($depth === 0) {
+		if ($request->path->depth === 0) {
 			$this->applyReadRule(rbac: $_rbac, multitenancy: $_multitenancy);
 		}
 
 		$context = new RenderContext(
-			new RenderSelection($_extend, $filter, self::withIdentityFields(fields: $fields), $unset), new RenderPreloads($registers, $schemas, $objects),
-			new RenderPath($depth, self::withVisitedId(entity: $entity, visitedIds: $visitedIds)), $_rbac
+			self::withIdentitySelection(selection: $request->selection), $request->preloads,
+			new RenderPath($request->path->depth, self::withVisitedId(entity: $entity, visitedIds: $request->path->visitedIds)), $_rbac
 		);
 		$this->primeRenderCaches(context: $context);
 
-		$rendered = $this->renderWithContext(entity: $entity, context: $context);
+		return $this->markRendered(rendered: $this->renderWithContext(entity: $entity, context: $context));
+	}//end render()
+
+	/**
+	 * The selection with the identity fields added when the caller selected fields.
+	 *
+	 * @param RenderSelection $selection The caller's selection
+	 *
+	 * @return RenderSelection
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function withIdentitySelection(RenderSelection $selection): RenderSelection {
+		return new RenderSelection(
+			extend: $selection->extend,
+			filter: $selection->filter,
+			fields: self::withIdentityFields(fields: $selection->fields),
+			unset: $selection->unset
+		);
+	}//end withIdentitySelection()
+
+	/**
+	 * Remember that an entity went through a render, so `@self.objects` can tell it from a loaded one.
+	 *
+	 * @param ObjectEntity $rendered The rendered entity
+	 *
+	 * @return ObjectEntity The same entity
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function markRendered(ObjectEntity $rendered): ObjectEntity {
 		$this->renderedEntities ??= new WeakMap();
 		$this->renderedEntities[$rendered] = true;
 
 		return $rendered;
-	}//end renderEntity()
+	}//end markRendered()
 
 	/**
 	 * Render an entity once its options are gathered in a RenderContext.
@@ -2160,81 +2235,68 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function renderWithContext(ObjectEntity $entity, RenderContext $context): ObjectEntity {
-		$entity = $this->hydrateEntityFiles(entity: $entity, extend: $context->selection->extend);
+		$run = new RenderRun(entity: $this->hydrateEntityFiles(entity: $entity, extend: $context->selection->extend), context: $context);
 
 		// The object before any caller-supplied projection. The lifecycle state's
 		// field rules are resolved against this, so `?fields=onderwerp` cannot change
 		// which rules apply by hiding the lifecycle field from the resolver.
-		$unprojectedData = $entity->getObject();
+		$unprojectedData = $run->entity->getObject();
 
-		$objectData = $this->applyFieldSelection(entity: $entity, objectData: $unprojectedData, fields: $context->selection->fields);
-		if (self::matchesFilter(objectData: $objectData, filter: $context->selection->filter) === false) {
-			$entity->setObject([]);
-			return $entity;
+		$run->data = $unprojectedData;
+		$run->data = $this->applyFieldSelection(run: $run);
+		if (self::matchesFilter(objectData: $run->data, filter: $context->selection->filter) === false) {
+			$run->entity->setObject([]);
+			return $run->entity;
 		}
 
-		$objectData = $this->applyUnset(entity: $entity, objectData: $objectData, unset: $context->selection->unset);
-		$objectData = $this->redactWriteOnlyForRbac(entity: $entity, objectData: $objectData, rbac: $context->rbac);
-		$objectData = $this->applyInversedProperties(entity: $entity, objectData: $objectData, context: $context);
+		$run->data = $this->applyUnset(run: $run);
+		$run->data = $this->redactWriteOnlyForRbac(run: $run);
+		$run->data = $this->applyInversedProperties(run: $run);
 
-		$context    = $context->withExtend(self::normalizeExtend(extend: $context->selection->extend, objectData: $objectData));
-		$objectData = $this->applyExtensions(entity: $entity, objectData: $objectData, context: $context);
-		$this->enrichLinkedEntities(entity: $entity, extend: $context->selection->extend);
+		$run->context = $context->withExtend(self::normalizeExtend(extend: $context->selection->extend, objectData: $run->data));
+		$run->data    = $this->applyExtensions(run: $run);
+		$this->enrichLinkedEntities(entity: $run->entity, extend: $run->context->selection->extend);
 
-		return $this->finishRender(entity: $entity, objectData: $objectData, unprojectedData: $unprojectedData, context: $context);
+		return $this->finishRender(run: $run, unprojectedData: $unprojectedData);
 	}//end renderWithContext()
 
 	/**
 	 * Apply the read boundary, the presentation steps and the render markers.
 	 *
-	 * @param ObjectEntity  $entity          The entity being rendered
-	 * @param array         $objectData      The object data after projection and extension
-	 * @param array         $unprojectedData The object data before caller projection
-	 * @param RenderContext $context         The render options
+	 * @param RenderRun $run             The render, with the data after projection and extension
+	 * @param array     $unprojectedData The object data before caller projection
 	 *
 	 * @return ObjectEntity The rendered entity
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function finishRender(
-		ObjectEntity $entity,
-		array $objectData,
-		array $unprojectedData,
-		RenderContext $context
-	): ObjectEntity {
-		$readSchema = $this->getSchema(id: $entity->getSchema());
-		$objectData = $this->applyReadTimeValues(entity: $entity, schema: $readSchema, objectData: $objectData);
+	private function finishRender(RenderRun $run, array $unprojectedData): ObjectEntity {
+		$run->schema = $this->getSchema(id: $run->entity->getSchema());
+		$run->data   = $this->applyReadTimeValues(run: $run);
 
-		$schema     = $readSchema ?? $this->getSchema(id: $entity->getSchema());
-		$objectData = $this->stripUnreadableProperties(entity: $entity, schema: $schema, objectData: $objectData, rbac: $context->rbac);
+		$run->schema ??= $this->getSchema(id: $run->entity->getSchema());
+		$run->data     = $this->stripUnreadableProperties(run: $run);
 
 		// Publish the lifecycle state's field rules beside the object. It runs after
 		// the strip because the two must agree: what was just removed is what
 		// `hidden` names. StateFieldRuleListener still enforces them on save.
-		if ($schema !== null) {
-			$this->attachFieldRules(entity: $entity, schema: $schema, stored: $unprojectedData);
-		}
+		$this->attachFieldRules(run: $run, stored: $unprojectedData);
 
-		$objectData = $this->decryptRenderedProperties(schema: $schema, objectData: $objectData);
+		$run->data = $this->decryptRenderedProperties(schema: $run->schema, objectData: $run->data);
 
 		// Explicit-reveal values leave masked on every read, admins and `_rbac: false` included,
 		// after decryption so the mask is of the value and not of its ciphertext.
-		$objectData = $this->maskRenderedReveals(read: new EntityRead(entity: $entity, schema: $schema), objectData: $objectData);
+		$run->data = $this->maskRenderedReveals(read: new EntityRead(entity: $run->entity, schema: $run->schema), objectData: $run->data);
 
-		$renderSchema = $this->getSchema(id: $entity->getSchema());
-		$objectData   = $this->resolveRenderTranslations(entity: $entity, schema: $renderSchema, objectData: $objectData);
-		$objectData   = $this->applyRequestedCalculations(
-			entity: $entity,
-			schema: $renderSchema,
-			objectData: $objectData,
-			extend: $context->selection->extend
-		);
-		$objectData   = $this->applyLens(schema: $renderSchema, objectData: $objectData, rbac: $context->rbac);
+		$run->schema = $this->getSchema(id: $run->entity->getSchema());
+		$run->data   = $this->resolveRenderTranslations(run: $run);
+		$run->data   = $this->applyRequestedCalculations(run: $run);
+		$run->data   = $this->applyLens(run: $run);
 
-		$entity->setObject($objectData);
-		$this->applyRenderMarkers(entity: $entity, schema: $renderSchema, extend: $context->selection->extend);
+		$run->entity->setObject($run->data);
+		$this->applyRenderMarkers(run: $run);
 
-		return $entity;
+		return $run->entity;
 	}//end finishRender()
 
 	/**
@@ -2353,27 +2415,28 @@ class RenderObject implements RenderObjectInterface {
 	/**
 	 * Keep only the requested fields that hold a non-null value.
 	 *
-	 * @param ObjectEntity $entity     The entity being rendered
-	 * @param array        $objectData The object data
-	 * @param array|null   $fields     The requested fields, `@self` and `id` included
+	 * The requested fields come from the run's selection, `@self` and `id` included.
+	 *
+	 * @param RenderRun $run The render
 	 *
 	 * @return array The selected data, or the data unchanged when no fields were requested
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function applyFieldSelection(ObjectEntity $entity, array $objectData, ?array $fields): array {
+	private function applyFieldSelection(RenderRun $run): array {
+		$fields = $run->context->selection->fields;
 		if (empty($fields) === true) {
-			return $objectData;
+			return $run->data;
 		}
 
 		$filteredData = [];
 		foreach ($fields as $field) {
-			if (($objectData[$field] ?? null) !== null) {
-				$filteredData[$field] = $objectData[$field];
+			if (($run->data[$field] ?? null) !== null) {
+				$filteredData[$field] = $run->data[$field];
 			}
 		}
 
-		$entity->setObject($filteredData);
+		$run->entity->setObject($filteredData);
 
 		return $filteredData;
 	}//end applyFieldSelection()
@@ -2401,26 +2464,25 @@ class RenderObject implements RenderObjectInterface {
 	/**
 	 * Remove the named properties from the response.
 	 *
-	 * @param ObjectEntity $entity     The entity being rendered
-	 * @param array        $objectData The object data
-	 * @param array|null   $unset      The properties to remove
+	 * @param RenderRun $run The render; its selection names the properties to remove
 	 *
 	 * @return array
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function applyUnset(ObjectEntity $entity, array $objectData, ?array $unset): array {
-		if (empty($unset) === true) {
+	private function applyUnset(RenderRun $run): array {
+		$objectData = $run->data;
+		if (empty($run->context->selection->unset) === true) {
 			return $objectData;
 		}
 
-		foreach ($unset as $property) {
+		foreach ($run->context->selection->unset as $property) {
 			if (($objectData[$property] ?? null) !== null) {
 				unset($objectData[$property]);
 			}
 		}
 
-		$entity->setObject($objectData);
+		$run->entity->setObject($objectData);
 
 		return $objectData;
 	}//end applyUnset()
@@ -2438,32 +2500,29 @@ class RenderObject implements RenderObjectInterface {
 	 * that needs the full object. The `relations` search-index copy, surfaced as
 	 * `@self.relations`, is redacted too, because it mirrors every scalar property.
 	 *
-	 * @param ObjectEntity $entity     The entity being rendered
-	 * @param array        $objectData The object data
-	 * @param bool         $rbac       Whether access control applies
+	 * @param RenderRun $run The render; its context's rbac flag says whether access control applies
 	 *
 	 * @return array
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The rbac flag is the trust boundary this method enforces
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function redactWriteOnlyForRbac(ObjectEntity $entity, array $objectData, bool $rbac): array {
-		if ($rbac !== true || empty($objectData) === true) {
+	private function redactWriteOnlyForRbac(RenderRun $run): array {
+		$objectData = $run->data;
+		if ($run->context->rbac !== true || empty($objectData) === true) {
 			return $objectData;
 		}
 
-		$writeOnly = $this->getWriteOnlyProperties(schemaId: $entity->getSchema());
+		$writeOnly = $this->getWriteOnlyProperties(schemaId: $run->entity->getSchema());
 		if (empty($writeOnly) === true) {
 			return $objectData;
 		}
 
 		$redacted = self::withoutKeys(data: $objectData, keys: $writeOnly);
 		if ($redacted !== $objectData) {
-			$entity->setObject($redacted);
+			$run->entity->setObject($redacted);
 		}
 
-		self::redactRelations(entity: $entity, writeOnly: $writeOnly);
+		self::redactRelations(entity: $run->entity, writeOnly: $writeOnly);
 
 		return $redacted;
 	}//end redactWriteOnlyForRbac()
@@ -2515,24 +2574,23 @@ class RenderObject implements RenderObjectInterface {
 	 *
 	 * Inverse lookups search all magic tables, so they run only on request.
 	 *
-	 * @param ObjectEntity  $entity     The entity being rendered
-	 * @param array         $objectData The object data
-	 * @param RenderContext $context    The render options
+	 * @param RenderRun $run The render
 	 *
 	 * @return array
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function applyInversedProperties(ObjectEntity $entity, array $objectData, RenderContext $context): array {
+	private function applyInversedProperties(RenderRun $run): array {
+		$context = $run->context;
 		if ($context->path->depth >= 10 || empty($context->selection->extend) === true) {
-			return $objectData;
+			return $run->data;
 		}
 
-		if ($this->extendsInverseProperty(entity: $entity, extend: $context->selection->extend) === false) {
-			return $objectData;
+		if ($this->extendsInverseProperty(entity: $run->entity, extend: $context->selection->extend) === false) {
+			return $run->data;
 		}
 
-		return $this->inverseRelations()->handleInversedProperties(entity: $entity, objectData: $objectData);
+		return $this->inverseRelations()->handleInversedProperties(entity: $run->entity, objectData: $run->data);
 	}//end applyInversedProperties()
 
 	/**
@@ -2563,7 +2621,7 @@ class RenderObject implements RenderObjectInterface {
 	 */
 	private function extendReads(): ExtendTargetReads {
 		$this->extendTargetReads ??= new ExtendTargetReads(
-			mapper: $this->stores->mappers->objectEntityMapper,
+			mapper: $this->stores->mappers->catalog->tables(),
 			mayRead: fn (ObjectEntity $object): bool => $this->mayReadInverse(object: $object)
 		);
 
@@ -2663,7 +2721,7 @@ class RenderObject implements RenderObjectInterface {
 				object: $object
 			);
 		} catch (\Throwable $e) {
-			$this->logRenderFailure(failure: 'inverse read check failed for', entity: $object, error: $e);
+			$this->logRenderFailure(failure: 'inverse read check failed for '.(string) $object->getUuid(), error: $e);
 			return false;
 		}
 	}//end mayReadInverse()
@@ -2782,20 +2840,18 @@ class RenderObject implements RenderObjectInterface {
 	/**
 	 * Extend the object's references while the depth limit is not reached.
 	 *
-	 * @param ObjectEntity  $entity     The entity being rendered
-	 * @param array         $objectData The object data
-	 * @param RenderContext $context    The render options, with a normalised extend list
+	 * @param RenderRun $run The render, with a normalised extend list
 	 *
 	 * @return array
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function applyExtensions(ObjectEntity $entity, array $objectData, RenderContext $context): array {
-		if (empty($context->selection->extend) === true || $context->path->depth >= 10) {
-			return $objectData;
+	private function applyExtensions(RenderRun $run): array {
+		if (empty($run->context->selection->extend) === true || $run->context->path->depth >= 10) {
+			return $run->data;
 		}
 
-		return $this->extendObject(entity: $entity, objectData: $objectData, context: $context);
+		return $this->extendObject(render: $run);
 	}//end applyExtensions()
 
 	/**
@@ -2837,32 +2893,29 @@ class RenderObject implements RenderObjectInterface {
 	 * stored. Recurrence properties get their upcoming occurrences under
 	 * `_occurrences`; the RRULE string itself is left unchanged.
 	 *
-	 * @param ObjectEntity $entity     The entity being rendered
-	 * @param Schema|null  $schema     The object's schema
-	 * @param array        $objectData The object data
+	 * @param RenderRun $run The render: the entity, its schema and the data so far
 	 *
 	 * @return array
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function applyReadTimeValues(ObjectEntity $entity, ?Schema $schema, array $objectData): array {
-		if ($schema === null) {
-			return $objectData;
+	private function applyReadTimeValues(RenderRun $run): array {
+		if ($run->schema === null) {
+			return $run->data;
 		}
 
-		if ($this->enrichers->derivations->computedFieldHandler->hasComputedProperties($schema) === true) {
-			$objectData = $this->enrichers->derivations->computedFieldHandler->evaluateComputedFields(
-				data: $objectData,
-				schema: $schema,
-				evaluateOn: 'read'
+		if ($this->enrichers->derivations->computedFieldHandler->hasComputedProperties($run->schema) === true) {
+			$run->data = $this->enrichers->derivations->computedFieldHandler->evaluateComputedFields(
+				data: $run->data,
+				pass: new ComputedPass(schema: $run->schema, evaluateOn: 'read')
 			);
-			$entity->setObject($objectData);
+			$run->entity->setObject($run->data);
 		}
 
-		$objectData = (new RecurrenceOccurrences(request: $this->runtime->request))->enrich(objectData: $objectData, schema: $schema);
-		$entity->setObject($objectData);
+		$run->data = (new RecurrenceOccurrences(request: $this->runtime->request))->enrich(objectData: $run->data, schema: $run->schema);
+		$run->entity->setObject($run->data);
 
-		return $objectData;
+		return $run->data;
 	}//end applyReadTimeValues()
 
 	/**
@@ -2880,36 +2933,32 @@ class RenderObject implements RenderObjectInterface {
 	 * `_rbac: false` reads and during a SystemOperationContext, mirroring
 	 * PermissionHandlerInterface::hasPermission().
 	 *
-	 * @param ObjectEntity $entity     The entity being rendered
-	 * @param Schema|null  $schema     The object's schema
-	 * @param array        $objectData The object data
-	 * @param bool         $rbac       Whether access control applies
+	 * @param RenderRun $run The render: the entity, its schema, the data so far and whether access control applies
 	 *
 	 * @return array
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The rbac flag gates the authorization strip
 	 * @SuppressWarnings(PHPMD.StaticAccess)        SystemOperationContext is a static execution-context holder by design
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function stripUnreadableProperties(ObjectEntity $entity, ?Schema $schema, array $objectData, bool $rbac): array {
-		$doWriteOnly = $this->schemaHasWriteOnlyRule(schema: $schema);
-		$doAuthz     = self::stripsAuthorizedProperties(schema: $schema, rbac: $rbac);
+	private function stripUnreadableProperties(RenderRun $run): array {
+		$doWriteOnly = $this->schemaHasWriteOnlyRule(schema: $run->schema);
+		$doAuthz     = self::stripsAuthorizedProperties(schema: $run->schema, rbac: $run->context->rbac);
 		if ($doWriteOnly === false && $doAuthz === false) {
-			return $objectData;
+			return $run->data;
 		}
 
 		if ($doAuthz === true) {
-			$objectData = $this->filterAuthorizedProperties(read: new EntityRead(entity: $entity, schema: $schema), objectData: $objectData);
+			$run->data = $this->filterAuthorizedProperties(read: new EntityRead(entity: $run->entity, schema: $run->schema), objectData: $run->data);
 		} else {
-			$objectData = $this->propertyRbacHandler->stripWriteOnlyProperties(schema: $schema, object: $objectData);
+			$run->data = $this->propertyRbacHandler->stripWriteOnlyProperties(schema: $run->schema, object: $run->data);
 		}
 
 		if ($doWriteOnly === true) {
-			$this->stripWriteOnlyRelationsMirror(entity: $entity, schema: $schema);
+			$this->stripWriteOnlyRelationsMirror(entity: $run->entity, schema: $run->schema);
 		}
 
-		return $objectData;
+		return $run->data;
 	}//end stripUnreadableProperties()
 
 	/**
@@ -2926,6 +2975,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private static function stripsAuthorizedProperties(?Schema $schema, bool $rbac): bool {
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return $rbac !== false
 			&& SystemOperationContext::isActive() === false
 			&& $schema !== null
@@ -2988,7 +3038,7 @@ class RenderObject implements RenderObjectInterface {
 	 * Decrypt properties flagged `x-openregister-encrypted: true`.
 	 *
 	 * Runs after the read strip and nowhere earlier: a stripped property is no
-	 * longer a key, so decryptProperties() skips it and an unauthorized reader
+	 * longer a key, so decryptInScope() skips it and an unauthorized reader
 	 * never reaches decryption. A value that is not an envelope passes through;
 	 * one that fails to decrypt becomes an error marker (see FieldEncryptionHandler).
 	 *
@@ -3004,7 +3054,10 @@ class RenderObject implements RenderObjectInterface {
 			return $objectData;
 		}
 
-		return $this->runtime->extensions->fieldEncryptionHandler->decryptProperties(data: $objectData, schema: $schema);
+		return $this->runtime->extensions->fieldEncryptionHandler->decryptInScope(
+			data: $objectData,
+			scope: new \OCA\OpenRegister\Service\FieldDecryptionScope(schema: $schema, throwOnFailure: false)
+		);
 	}//end decryptRenderedProperties()
 
 	/**
@@ -3014,43 +3067,40 @@ class RenderObject implements RenderObjectInterface {
 	 * translatable property's served and source language and workflow status;
 	 * it is opt-in to keep the payload flat by default.
 	 *
-	 * @param ObjectEntity $entity     The entity being rendered
-	 * @param Schema|null  $schema     The object's schema
-	 * @param array        $objectData The object data
+	 * @param RenderRun $run The render: the entity, its schema and the data so far
 	 *
 	 * @return array
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function resolveRenderTranslations(ObjectEntity $entity, ?Schema $schema, array $objectData): array {
-		$register       = $this->getRegister(id: $entity->getRegister());
-		$preResolveData = $objectData;
-		if ($schema === null) {
-			return $objectData;
+	private function resolveRenderTranslations(RenderRun $run): array {
+		$register       = $this->getRegister(id: $run->entity->getRegister());
+		$preResolveData = $run->data;
+		if ($run->schema === null) {
+			return $run->data;
 		}
 
-		$objectData = $this->enrichers->translations->translationHandler->resolveTranslationsForRender(
-			objectData: $objectData,
-			schema: $schema,
-			register: $register
+		$run->data = $this->enrichers->translations->translationHandler->resolveTranslationsForRender(
+			objectData: $run->data,
+			scope: new TranslationScope(schema: $run->schema, register: $register)
 		);
 		if ($this->shouldAttachLanguageMeta() === false) {
-			return $objectData;
+			return $run->data;
 		}
 
 		try {
 			$subject = new LanguageMetaSubject(
-				entity: $entity,
-				schema: $schema,
+				entity: $run->entity,
+				schema: $run->schema,
 				registerDefault: ($register?->getDefaultLanguage() ?? 'nl'),
 				preResolveData: $preResolveData
 			);
-			return $this->attachLanguageMeta(objectData: $objectData, subject: $subject);
+			return $this->attachLanguageMeta(objectData: $run->data, subject: $subject);
 		} catch (\Throwable $e) {
-			$this->logRenderFailure(failure: 'languageMeta attach failed for', entity: $entity, error: $e);
+			$this->logRenderFailure(failure: 'languageMeta attach failed for '.(string) $run->entity->getUuid(), error: $e);
 		}
 
-		return $objectData;
+		return $run->data;
 	}//end resolveRenderTranslations()
 
 	/**
@@ -3058,21 +3108,14 @@ class RenderObject implements RenderObjectInterface {
 	 *
 	 * Materialised calculations are already in the data (CalculationOnSaveListener).
 	 *
-	 * @param ObjectEntity      $entity     The entity being rendered
-	 * @param Schema|null       $schema     The object's schema
-	 * @param array             $objectData The object data
-	 * @param array|string|null $extend     The normalised extend list
+	 * @param RenderRun $run The render: the entity, its schema, the data so far and the normalised extend list
 	 *
 	 * @return array
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function applyRequestedCalculations(
-		ObjectEntity $entity,
-		?Schema $schema,
-		array $objectData,
-		array|string|null $extend
-	): array {
+	private function applyRequestedCalculations(RenderRun $run): array {
+		$extend    = $run->context->selection->extend;
 		$extendArr = [$extend];
 		if (is_array($extend) === true) {
 			$extendArr = $extend;
@@ -3081,16 +3124,16 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		if (in_array('calculations', $extendArr, true) === false) {
-			return $objectData;
+			return $run->data;
 		}
 
 		$calculations = new VirtualCalculations(evaluator: $this->enrichers->derivations->calculationEvaluator, logger: $this->runtime->logger);
 
 		return array_replace(
-			$objectData,
+			$run->data,
 			$calculations->values(
-				calculations: VirtualCalculations::declaredBy(schema: $schema),
-				payload: (new CalculationPayload())->withSelf(data: $objectData, entity: $entity)
+				calculations: VirtualCalculations::declaredBy(schema: $run->schema),
+				payload: (new CalculationPayload())->withSelf(data: $run->data, entity: $run->entity)
 			)
 		);
 	}//end applyRequestedCalculations()
@@ -3102,22 +3145,18 @@ class RenderObject implements RenderObjectInterface {
 	 * asked for it is a field two readers disagree about. A schema declaring no
 	 * lens gets its data back untouched.
 	 *
-	 * @param Schema|null $schema     The object's schema
-	 * @param array       $objectData The object data
-	 * @param bool        $rbac       Whether access control applies
+	 * @param RenderRun $run The render: the schema, the data so far and whether access control applies
 	 *
 	 * @return array
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The lens resolver takes the rbac flag
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function applyLens(?Schema $schema, array $objectData, bool $rbac): array {
+	private function applyLens(RenderRun $run): array {
 		if ($this->runtime->extensions->lensResolver === null) {
-			return $objectData;
+			return $run->data;
 		}
 
-		return $this->runtime->extensions->lensResolver->apply(schema: $schema, data: $objectData, _rbac: $rbac);
+		return $this->runtime->extensions->lensResolver->apply(schema: $run->schema, data: $run->data, _rbac: $run->context->rbac);
 	}//end applyLens()
 
 	/**
@@ -3127,26 +3166,24 @@ class RenderObject implements RenderObjectInterface {
 	 * The archival steps run in order because each reads the previous one's output,
 	 * and the external links run last so a template sees the values the reader sees.
 	 *
-	 * @param ObjectEntity      $entity The rendered entity
-	 * @param Schema|null       $schema The object's schema
-	 * @param array|string|null $extend The normalised extend list
+	 * @param RenderRun $run The render: the rendered entity, its schema and the normalised extend list
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function applyRenderMarkers(ObjectEntity $entity, ?Schema $schema, array|string|null $extend): void {
-		$this->applyUrn(entity: $entity);
-		$this->applyTranslationCompleteness(entity: $entity, schema: $schema);
-		$this->applyRegistryState(entity: $entity, schema: $schema);
-		$this->applyWatcherMarkers(entity: $entity);
-		$this->applyReadStateMarkers(entity: $entity);
-		$this->applyUpdateRightMarker(entity: $entity, schema: $schema, extend: $extend);
+	private function applyRenderMarkers(RenderRun $run): void {
+		$this->applyUrn(entity: $run->entity);
+		$this->applyTranslationCompleteness(entity: $run->entity, schema: $run->schema);
+		$this->applyRegistryState(entity: $run->entity, schema: $run->schema);
+		$this->applyWatcherMarkers(entity: $run->entity);
+		$this->applyReadStateMarkers(entity: $run->entity);
+		$this->applyUpdateRightMarker(run: $run);
 		$annotations = new RecordAnnotations(logger: $this->runtime->logger);
-		$annotations->attachRetention(entity: $entity, schema: $schema);
-		$annotations->attachDecision(entity: $entity);
-		$this->applyRetentionClocks(entity: $entity);
-		$annotations->attachExternalLinks(entity: $entity, schema: $schema);
+		$annotations->attachRetention(entity: $run->entity, schema: $run->schema);
+		$annotations->attachDecision(entity: $run->entity);
+		$this->applyRetentionClocks(entity: $run->entity);
+		$annotations->attachExternalLinks(entity: $run->entity, schema: $run->schema);
 	}//end applyRenderMarkers()
 
 	/**
@@ -3162,7 +3199,7 @@ class RenderObject implements RenderObjectInterface {
 		try {
 			$entity->setUrn($this->enrichers->derivations->urnService->buildForObject($entity));
 		} catch (\Throwable $e) {
-			$this->logRenderFailure(failure: 'URN derivation failed for object', entity: $entity, error: $e);
+			$this->logRenderFailure(failure: 'URN derivation failed for object '.(string) $entity->getUuid(), error: $e);
 		}
 	}//end applyUrn()
 
@@ -3184,7 +3221,7 @@ class RenderObject implements RenderObjectInterface {
 		try {
 			$this->setTranslationCompleteness(entity: $entity, schema: $schema);
 		} catch (\Throwable $e) {
-			$this->logRenderFailure(failure: 'translation completeness lookup failed for', entity: $entity, error: $e);
+			$this->logRenderFailure(failure: 'translation completeness lookup failed for '.(string) $entity->getUuid(), error: $e);
 		}
 	}//end applyTranslationCompleteness()
 
@@ -3223,7 +3260,7 @@ class RenderObject implements RenderObjectInterface {
 		try {
 			$this->setRegistryState(entity: $entity, schema: $schema);
 		} catch (\Throwable $e) {
-			$this->logRenderFailure(failure: 'registry subscription state lookup failed for', entity: $entity, error: $e);
+			$this->logRenderFailure(failure: 'registry subscription state lookup failed for '.(string) $entity->getUuid(), error: $e);
 		}
 	}//end applyRegistryState()
 
@@ -3256,17 +3293,16 @@ class RenderObject implements RenderObjectInterface {
 	/**
 	 * Log a render step that failed without failing the render.
 	 *
-	 * @param string       $failure What failed, phrased to precede the object uuid
-	 * @param ObjectEntity $entity  The entity being rendered
-	 * @param \Throwable   $error   The failure
+	 * @param string     $failure What failed, ending with the object uuid
+	 * @param \Throwable $error   The failure
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function logRenderFailure(string $failure, ObjectEntity $entity, \Throwable $error): void {
+	private function logRenderFailure(string $failure, \Throwable $error): void {
 		$this->runtime->logger->debug(
-			sprintf('[RenderObject] %s %s: %s', $failure, (string) $entity->getUuid(), $error->getMessage())
+			sprintf('[RenderObject] %s: %s', $failure, $error->getMessage())
 		);
 	}//end logRenderFailure()
 
@@ -3288,24 +3324,27 @@ class RenderObject implements RenderObjectInterface {
 	 * the payload: a key set on the array here would be dropped on serialisation,
 	 * silently, which is the same shape of no-op this change exists to refuse.
 	 *
-	 * @param ObjectEntity $entity The entity being rendered.
-	 * @param Schema $schema The entity's schema.
+	 * @param RenderRun            $run    The render: the entity and its schema.
 	 * @param array<string, mixed> $stored The object before any projection or strip.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
-	private function attachFieldRules(ObjectEntity $entity, Schema $schema, array $stored): void {
+	private function attachFieldRules(RenderRun $run, array $stored): void {
+		if ($run->schema === null) {
+			return;
+		}
+
 		try {
-			$rules = $this->propertyRbacHandler->stateFieldRulesFor(schema: $schema, object: $stored);
+			$rules = $this->propertyRbacHandler->stateFieldRulesFor(schema: $run->schema, object: $stored);
 		} catch (\Throwable $e) {
 			// The hint is a courtesy on a read. Losing it must never cost the
 			// object, and the save path refuses the same write either way.
 			$this->runtime->logger->debug(
 				sprintf(
 					'[RenderObject] field rules could not be resolved for %s: %s',
-					(string)$entity->getUuid(),
+					(string)$run->entity->getUuid(),
 					$e->getMessage()
 				)
 			);
@@ -3316,7 +3355,7 @@ class RenderObject implements RenderObjectInterface {
 			return;
 		}
 
-		$entity->setFieldRules($rules->jsonSerialize());
+		$run->entity->setFieldRules($rules->jsonSerialize());
 	}//end attachFieldRules()
 
 	/**
@@ -3503,24 +3542,22 @@ class RenderObject implements RenderObjectInterface {
 	 * render layer free of a construction cycle. A failure leaves the marker
 	 * out, which the list reads as "no editor": the safe side.
 	 *
-	 * @param ObjectEntity      $entity The entity being rendered.
-	 * @param Schema|null       $schema The object's schema.
-	 * @param array|string|null $extend The _extend parameter.
+	 * @param RenderRun $run The render: the entity, its schema and the _extend parameter.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
 	 */
-	private function applyUpdateRightMarker(ObjectEntity $entity, ?Schema $schema, array|string|null $extend): void {
-		if ($schema === null || self::asksForRights(extend: $extend) === false) {
+	private function applyUpdateRightMarker(RenderRun $run): void {
+		if ($run->schema === null || self::asksForRights(extend: $run->context->selection->extend) === false) {
 			return;
 		}
 
 		try {
-			$this->setRightsMarker(entity: $entity, schema: $schema);
+			$this->setRightsMarker(entity: $run->entity, schema: $run->schema);
 		} catch (\Throwable $e) {
 			$this->runtime->logger->debug(
-				sprintf('[RenderObject] update right marker skipped for %s: %s', (string)$entity->getUuid(), $e->getMessage())
+				sprintf('[RenderObject] update right marker skipped for %s: %s', (string)$run->entity->getUuid(), $e->getMessage())
 			);
 		}
 	}//end applyUpdateRightMarker()
@@ -3650,12 +3687,7 @@ class RenderObject implements RenderObjectInterface {
 		$served = $this->enrichers->translations->languageService->getPreferredLanguage();
 		$languageMeta = [];
 		foreach ($translatableProps as $property) {
-			$sourceLanguage = $this->resolveSourceLanguageForProperty(
-				schema: $subject->schema,
-				preResolveData: $subject->preResolveData,
-				property: $property,
-				registerDefault: $subject->registerDefault
-			);
+			$sourceLanguage = $this->resolveSourceLanguageForProperty(subject: $subject, property: $property);
 			$languageMeta[$property] = $this->languageEntry(served: $served, sourceLanguage: $sourceLanguage);
 		}
 
@@ -3697,7 +3729,7 @@ class RenderObject implements RenderObjectInterface {
 			}
 
 			try {
-				$row = $this->enrichers->translations->translationMapper->findOne($uuid, $property, $entry['served']);
+				$row = $this->enrichers->translations->translationMapper->findOne(new TranslationSlot(objectUuid: $uuid, property: $property, language: $entry['served']));
 			} catch (\Throwable $e) {
 				$row = null;
 			}
@@ -3730,41 +3762,30 @@ class RenderObject implements RenderObjectInterface {
 	 * Resolve the source language for a single property from object override
 	 * → schema modifier → register default.
 	 *
-	 * @param Schema $schema The schema for the entity.
-	 * @param array<string, mixed> $preResolveData Raw object data with `_translationMeta` block intact.
-	 * @param string $property The translatable property name.
-	 * @param string $registerDefault Register-level default.
+	 * @param LanguageMetaSubject $subject  The schema, the register default and the raw object data with its `_translationMeta` block intact.
+	 * @param string              $property The translatable property name.
 	 *
 	 * @return string Resolved BCP-47 source language.
 	 *
 	 * @spec openspec/specs/i18n-source-of-truth/spec.md
 	 */
-	private function resolveSourceLanguageForProperty(
-		Schema $schema,
-		array $preResolveData,
-		string $property,
-		string $registerDefault,
-	): string {
-		$rule = new PropertySourceLanguage(schema: $schema, registerDefault: $registerDefault);
-		return $rule->forProperty(body: $preResolveData, property: $property);
+	private function resolveSourceLanguageForProperty(LanguageMetaSubject $subject, string $property): string {
+		$rule = new PropertySourceLanguage(schema: $subject->schema, registerDefault: $subject->registerDefault);
+		return $rule->forProperty(body: $subject->preResolveData, property: $property);
 	}//end resolveSourceLanguageForProperty()
 
 	/**
 	 * Handle extends containing a wildcard ($)
 	 *
-	 * @param array $objectData The data to extend
-	 * @param array $_extend The fields that should be extended
-	 * @param int $depth The current depth.
+	 * @param ExtendDotRun $run     The pass: the data to extend, as a Dot, and the current depth
+	 * @param array        $_extend The fields that should be extended; its wildcard entries leave it
 	 *
 	 * @return array
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function handleWildcardExtends(array $objectData, array &$_extend, int $depth): array {
-		$run = new ExtendDotRun();
-		$run->data = new Dot($objectData);
-		$run->depth = $depth;
-		if ($depth >= 10) {
+	private function handleWildcardExtends(ExtendDotRun $run, array &$_extend): array {
+		if ($run->depth >= 10) {
 			return $run->data->all();
 		}
 
@@ -3826,7 +3847,7 @@ class RenderObject implements RenderObjectInterface {
 			$tmpExtends = $run->keyExtends;
 			$nested = new ExtendDotRun();
 			$nested->depth = $run->depth;
-			$data[$key] = $this->handleExtendDot(data: $date, _extend: $tmpExtends, run: $nested);
+			$data[$key] = $this->handleExtendDot(request: new ExtendDotRequest(data: $date, extend: $tmpExtends), run: $nested);
 		}
 
 		$run->data->set($run->key, $data);
@@ -3835,13 +3856,9 @@ class RenderObject implements RenderObjectInterface {
 	/**
 	 * Handle extends on a dot array
 	 *
-	 * @param array        $data      The data to extend.
-	 * @param array        $_extend   The fields to extend.
-	 * @param ExtendDotRun $run       The extend pass: its depth, whether all relations
-	 *                                extend, and the ids already handled on this path.
-	 * @param array        $exposures The relation descriptors that declare a field set, keyed by
-	 *                         the property the link hangs on. Empty for every schema that
-	 *                         declares none, which is every schema written so far.
+	 * @param ExtendDotRequest $request The data, the fields to extend and the links' exposure.
+	 * @param ExtendDotRun     $run     The extend pass: its depth, whether all relations
+	 *                                  extend, and the ids already handled on this path.
 	 *
 	 * @return array
 	 *
@@ -3849,8 +3866,9 @@ class RenderObject implements RenderObjectInterface {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function handleExtendDot(array $data, array &$_extend, ExtendDotRun $run, array $exposures = []): array {
-		$data      = $this->handleWildcardExtends(objectData: $data, _extend: $_extend, depth: $run->depth + 1);
+	private function handleExtendDot(ExtendDotRequest $request, ExtendDotRun $run): array {
+		$_extend   = $request->extend;
+		$data      = $this->handleWildcardExtends(run: self::wildcardRun(data: $request->data, depth: $run->depth + 1), _extend: $_extend);
 		$run->data = new Dot($data);
 
 		foreach ($_extend as $override => $key) {
@@ -3861,7 +3879,7 @@ class RenderObject implements RenderObjectInterface {
 
 			$run->override = $override;
 			$run->key = $key;
-			$run->descriptor = ($exposures[$key] ?? null);
+			$run->descriptor = ($request->exposures[$key] ?? null);
 			$run->keyExtends = array_map(
 				fn (string $extendedKey) => substr(string: $extendedKey, offset: strlen($key) + 1),
 				array_filter(
@@ -3874,6 +3892,24 @@ class RenderObject implements RenderObjectInterface {
 
 		return $run->data->jsonSerialize();
 	}//end handleExtendDot()
+
+	/**
+	 * A wildcard pass over the data at the given depth.
+	 *
+	 * @param array $data  The data to extend
+	 * @param int   $depth The depth of the pass
+	 *
+	 * @return ExtendDotRun
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function wildcardRun(array $data, int $depth): ExtendDotRun {
+		$run        = new ExtendDotRun();
+		$run->data  = new Dot($data);
+		$run->depth = $depth;
+
+		return $run;
+	}//end wildcardRun()
 
 	/**
 	 * Extend the value at the run's key: a list of references or a single one.
@@ -4034,14 +4070,9 @@ class RenderObject implements RenderObjectInterface {
 			$subExtend = array_merge(['all'], $run->keyExtends);
 		}
 
-		$rendered = $this->renderEntity(
+		$rendered = $this->render(
 			entity: $object,
-			_extend: $subExtend,
-			depth: $run->depth + 1,
-			filter: [],
-			fields: [],
-			unset: [],
-			visitedIds: $run->visitedIds
+			request: RenderRequest::nested(extend: $subExtend, path: new RenderPath(depth: $run->depth + 1, visitedIds: $run->visitedIds))
 		)->jsonSerialize();
 
 		return $this->applyLinkExposure(rendered: $rendered, descriptor: $run->descriptor);
@@ -4195,8 +4226,7 @@ class RenderObject implements RenderObjectInterface {
 
 		$projected = $this->exposureRules()->project(
 			farObject: $body,
-			relationType: $descriptor,
-			readable: array_map('strval', array_keys($body))
+			visible: $this->exposureRules()->visibleProperties(relationType: $descriptor, readable: array_map('strval', array_keys($body)))
 		);
 
 		if (is_array($envelope['@self'] ?? null) === true) {
@@ -4234,16 +4264,17 @@ class RenderObject implements RenderObjectInterface {
 	/**
 	 * Extends an object with additional data based on the extension configuration
 	 *
-	 * @param ObjectEntity  $entity     The entity to extend
-	 * @param array         $objectData Current object data
-	 * @param RenderContext $context    The render options: the extend list, the depth and the visited ids
+	 * @param RenderRun $render The render: the entity, its data so far and the extend list, depth and visited ids
 	 *
 	 * @return array The extended object data
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function extendObject(ObjectEntity $entity, array $objectData, RenderContext $context): array {
-		$_extend = $context->selection->extend;
+	private function extendObject(RenderRun $render): array {
+		$entity     = $render->entity;
+		$objectData = $render->data;
+		$context    = $render->context;
+		$_extend    = $context->selection->extend;
 
 		// Add register and schema context to @self if requested.
 		if (in_array('@self.register', $_extend) === true || in_array('@self.schema', $_extend) === true) {
@@ -4270,12 +4301,13 @@ class RenderObject implements RenderObjectInterface {
 		$dotRun->allFlag    = in_array('all', $run->extend, true);
 		$dotRun->visitedIds = $context->path->visitedIds;
 
-		return $this->handleExtendDot(
+		$request = new ExtendDotRequest(
 			data: $run->objectData,
-			_extend: $run->extend,
-			run: $dotRun,
+			extend: $run->extend,
 			exposures: $this->exposuresFor(schema: $this->getSchema(id: $entity->getSchema()))
 		);
+
+		return $this->handleExtendDot(request: $request, run: $dotRun);
 	}//end extendObject()
 
 	/**
@@ -4571,23 +4603,16 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		$related = $run->provider->find(
-			register: $run->register,
-			schema: $run->target,
-			id: (string)$identifier,
-			config: $run->config
+			source: new SourcedTable(table: new RegisterSchema(register: $run->register, schema: $run->target), config: $run->config),
+			id: (string)$identifier
 		);
 		if ($related === null) {
 			return $identifier;
 		}
 
-		return $this->renderEntity(
+		return $this->render(
 			entity: $related,
-			_extend: [],
-			depth: ($run->depth + 1),
-			filter: [],
-			fields: [],
-			unset: [],
-			visitedIds: $run->visitedIds
+			request: RenderRequest::nested(extend: [], path: new RenderPath(depth: ($run->depth + 1), visitedIds: $run->visitedIds))
 		)->jsonSerialize();
 	}//end resolveSourceRef()
 
@@ -4686,7 +4711,7 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		$this->inverseSupport = new InverseRenderSupport(
-			mapper: $this->stores->mappers->objectEntityMapper,
+			mapper: $this->stores->mappers->catalog->tables(),
 			logger: $this->runtime->logger,
 			schemas: new InverseSchemaLookups(
 				find: fn (int|string $id): ?Schema => $this->getSchema(id: $id),
@@ -4717,7 +4742,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function renderRelated(ObjectEntity $object): array {
-		return $this->renderEntity(entity: $object, _extend: [], depth: 1, filter: [], fields: [], unset: [])->jsonSerialize();
+		return $this->render(entity: $object, request: RenderRequest::nested(extend: [], path: new RenderPath(depth: 1, visitedIds: [])))->jsonSerialize();
 	}//end renderRelated()
 
 	/**
@@ -4780,7 +4805,7 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		try {
-			return (string)$this->stores->mappers->schemaMapper->find($reference)->getId();
+			return (string)$this->stores->mappers->catalog->schemas()->find($reference)->getId();
 		} catch (\Exception $e) {
 			return null;
 		}
@@ -4807,7 +4832,7 @@ class RenderObject implements RenderObjectInterface {
 		$lastSegment = strtolower(preg_replace('/#.*$/', '', $lastSegment));
 
 		try {
-			$schemas = $this->stores->mappers->schemaMapper->findAll(_rbac: false, _multitenancy: false);
+			$schemas = $this->stores->mappers->catalog->schemas()->findAll(_rbac: false, _multitenancy: false);
 		} catch (\Exception $e) {
 			return null;
 		}
@@ -4832,7 +4857,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function schemaIdBySlug(string $slug): ?string {
-		$schemas = $this->stores->mappers->schemaMapper->findAll(filters: ['slug' => $slug], _rbac: false, _multitenancy: false);
+		$schemas = $this->stores->mappers->catalog->schemas()->findAll(filters: ['slug' => $slug], _rbac: false, _multitenancy: false);
 		if (count($schemas) === 1) {
 			return (string)array_shift($schemas)->getId();
 		}
@@ -4889,46 +4914,96 @@ class RenderObject implements RenderObjectInterface {
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): array {
-		if (is_string($_extend) === true) {
-			$_extend = explode(',', $_extend);
-		}
+		$selection = new RenderSelection(
+			extend: self::extendList(extend: $_extend), filter: self::trimmedList(value: $_filter),
+			fields: self::trimmedList(value: $_fields), unset: self::trimmedList(value: $_unset)
+		);
+		return $this->renderRows(entities: $entities, selection: $selection, _rbac: $_rbac, _multitenancy: $_multitenancy);
+	}//end renderEntities()
 
+	/**
+	 * Render a page of entities with one selection: extensions, filters and field selections.
+	 *
+	 * @param array           $entities      Array of ObjectEntity instances to render.
+	 * @param RenderSelection $selection     What every row shows: extend, filter, fields and unset.
+	 * @param bool            $_rbac         Whether to apply RBAC checks (default: true).
+	 * @param bool            $_multitenancy Whether to apply multitenancy filtering (default: true).
+	 *
+	 * @return ObjectEntity[]
+	 *
+	 * @psalm-return list<ObjectEntity>
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC and multitenancy flags control security behavior
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	public function renderRows(array $entities, RenderSelection $selection, bool $_rbac = true, bool $_multitenancy = true): array {
 		$page = new PageRender();
-		$page->extend = ($_extend ?? []);
-		$page->fields = self::trimmedList(value: $_fields);
-		$page->filter = self::trimmedList(value: $_filter);
-		$page->unset = self::trimmedList(value: $_unset);
+		$page->extend = self::extendList(extend: $selection->extend);
+		$page->fields = $selection->fields;
+		$page->filter = $selection->filter;
+		$page->unset = $selection->unset;
 		$page->rbac = $_rbac;
 		$page->multitenancy = $_multitenancy;
 
+		$this->applyReadRule(rbac: $page->rbac, multitenancy: $page->multitenancy);
+		$this->preloadPage(extend: $page->extend, entities: $entities);
+
+		return $this->renderPage(page: $page, entities: $entities);
+	}//end renderRows()
+
+	/**
+	 * Load what every row of a page needs before the first row renders, to prevent N+1 queries.
+	 *
+	 * @param array $extend   The page's extend list
+	 * @param array $entities The page of entities
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function preloadPage(array $extend, array $entities): void {
 		// Debug level: this fires on EVERY extended list render (hot path).
 		$this->runtime->logger->debug(
 			message: '[RenderObject] [BATCH_PRELOAD] Starting batch preload check',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'extendParam' => $page->extend,
+				'extendParam' => $extend,
 				'entityCount' => count($entities),
 			]
 		);
 
-		$this->applyReadRule(rbac: $page->rbac, multitenancy: $page->multitenancy);
-
 		// Batch preload ALL related objects BEFORE rendering, to prevent N+1 queries.
-		if (empty($page->extend) === false && empty($entities) === false) {
-			$this->preloadExtendedRelations(entities: $entities, extend: $page->extend);
+		if (empty($extend) === false && empty($entities) === false) {
+			$this->preloadExtendedRelations(entities: $entities, extend: $extend);
 		}
 
-		$this->prefetchPageFileIds(entities: $entities, extend: $page->extend);
+		$this->prefetchPageFileIds(entities: $entities, extend: $extend);
 
 		// PERF-1: batch-prefetch full file objects + tags for every file-typed property
 		// value across the whole page, so renderFileProperties()/getFileObject() do not
 		// issue 1+ queries per file per row. Caches are request-scoped and cleared in
 		// the finally of renderPage().
 		$this->batchPreloadFileObjects(entities: $entities);
+	}//end preloadPage()
 
-		return $this->renderPage(page: $page, entities: $entities);
-	}//end renderEntities()
+	/**
+	 * An extend option as a list: a comma-separated string split, null as no extends.
+	 *
+	 * @param array|string|null $extend The extend option
+	 *
+	 * @return array
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function extendList(array|string|null $extend): array {
+		if (is_string($extend) === true) {
+			return explode(',', $extend);
+		}
+
+		return ($extend ?? []);
+	}//end extendList()
 
 	/**
 	 * A comma-separated option as a list of trimmed, non-empty names; any other value as it is.
@@ -5077,19 +5152,22 @@ class RenderObject implements RenderObjectInterface {
 	 */
 	private function renderPage(PageRender $page, array $entities): array {
 		$renderedEntities = [];
+		$selection        = new RenderSelection(
+			extend: $page->extend,
+			filter: self::trimmedList(value: $page->filter),
+			fields: self::trimmedList(value: $page->fields),
+			unset: self::trimmedList(value: $page->unset)
+		);
+		$request          = RenderRequest::page(selection: $selection);
 
 		// PERF-8: mark a page render so extendObject() skips per-row re-preloading.
 		$this->pageRenderActive = true;
 
 		try {
 			foreach ($entities as $entity) {
-				$renderedEntity = $this->renderEntity(
+				$renderedEntity = $this->render(
 					entity: $entity,
-					_extend: $page->extend,
-					depth: 0,
-					filter: $page->filter,
-					fields: $page->fields,
-					unset: $page->unset,
+					request: $request,
 					_rbac: $page->rbac,
 					_multitenancy: $page->multitenancy
 				);

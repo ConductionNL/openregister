@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\AliasedRows;
 use Doctrine\DBAL\Platforms\PostgreSQL120Platform;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
@@ -261,8 +262,8 @@ class RuleKeysFailClosedTest extends TestCase {
 			$handler->buildRbacConditionsSql(schema: $refused, action: 'read')['conditions']
 		);
 		$this->assertSame(
-			$closed($handler->buildRbacPredicateForAlias(schema: $known, alias: 'r0')),
-			$handler->buildRbacPredicateForAlias(schema: $refused, alias: 'r0')
+			$closed($handler->buildRbacPredicateForAlias(schema: $known, rows: new AliasedRows(alias: 'r0'))),
+			$handler->buildRbacPredicateForAlias(schema: $refused, rows: new AliasedRows(alias: 'r0'))
 		);
 		$this->assertSame(
 			$closed((string)$handler->buildRbacRowPredicateSql(schema: $known)),
@@ -278,7 +279,7 @@ class RuleKeysFailClosedTest extends TestCase {
 	public function testAKnownKeyCompilesWithItsAlias(): void {
 		$handler = $this->handler();
 		$schema = $this->schema($this->allow(['status' => 'open']));
-		$this->assertStringContainsString("r0.`status` = 'open'", $handler->buildRbacPredicateForAlias(schema: $schema, alias: 'r0'));
+		$this->assertStringContainsString("r0.`status` = 'open'", $handler->buildRbacPredicateForAlias(schema: $schema, rows: new AliasedRows(alias: 'r0')));
 
 		$wheres = [];
 		$handler->applyRbacFilters($this->queryBuilder($wheres), $schema);
@@ -348,7 +349,7 @@ class RuleKeysFailClosedTest extends TestCase {
 		$schema = $this->schema($this->deny([$key => 'a']));
 
 		$this->assertSame([], $handler->buildRbacConditionsSql(schema: $schema, action: 'read')['conditions']);
-		$this->assertSame('FALSE', $handler->buildRbacPredicateForAlias(schema: $schema, alias: 'r0'));
+		$this->assertSame('FALSE', $handler->buildRbacPredicateForAlias(schema: $schema, rows: new AliasedRows(alias: 'r0')));
 
 		$wheres = [];
 		$handler->applyRbacFilters($this->queryBuilder($wheres), $schema);
@@ -362,7 +363,7 @@ class RuleKeysFailClosedTest extends TestCase {
 	 */
 	public function testADenyOnAKnownKeyKeepsTheList(): void {
 		$handler = $this->handler(denyMode: DenyEnforcementMode::MODE_ENFORCING);
-		$sql = $handler->buildRbacPredicateForAlias(schema: $this->schema($this->deny(['status' => 'a'])), alias: 'r0');
+		$sql = $handler->buildRbacPredicateForAlias(schema: $this->schema($this->deny(['status' => 'a'])), rows: new AliasedRows(alias: 'r0'));
 
 		$this->assertStringContainsString("(NOT (r0.`status` = 'a'))", $sql);
 

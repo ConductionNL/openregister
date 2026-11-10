@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Service\Edepot;
 
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -108,15 +109,27 @@ class MdtoEventMapper {
 	];
 
 	/**
+	 * Source of the event history.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
+	 * Logger for truncation and lookup failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailMapperInterface $auditTrailMapper Source of the event history.
-	 * @param LoggerInterface $logger Logger for truncation and lookup failures.
+	 * @param AuditRecording $audit The source of the event history and the logger for truncation and lookup failures.
 	 */
-	public function __construct(
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly LoggerInterface $logger,
-	) {
+	public function __construct(AuditRecording $audit) {
+		$this->auditTrailMapper = $audit->auditTrailMapper;
+		$this->logger           = $audit->logger;
 	}//end __construct()
 
 	/**
@@ -199,7 +212,10 @@ class MdtoEventMapper {
 			$kept = array_merge([$creation], array_slice($ordered, -(self::MAX_EVENTS - 1)));
 		}
 
-		$this->logTruncation(uuid: $uuid, qualifying: count($ordered), emitted: count($kept));
+		$this->logger->info(
+			message: '[MdtoEventMapper] Audit trail exceeded the MDTO event bound; older events were omitted',
+			context: ['objectUuid' => $uuid, 'qualifying' => count($ordered), 'emitted' => count($kept), 'bound' => self::MAX_EVENTS]
+		);
 
 		return $kept;
 	}//end applyBound()
@@ -260,11 +276,12 @@ class MdtoEventMapper {
 	 * @return array<int, AuditTrail> The rows.
 	 */
 	private function recentRows(string $uuid): array {
-		return $this->auditTrailMapper->findAll(
-			limit: self::MAX_EVENTS,
-			offset: null,
-			filters: ['object_uuid' => $uuid, 'action' => implode(',', array_keys(self::EVENT_TYPE_BY_ACTION))],
-			sort: ['created' => 'DESC'],
+		return $this->auditTrailMapper->findTrail(
+			query: new ListQuery(
+				limit: self::MAX_EVENTS,
+				filters: ['object_uuid' => $uuid, 'action' => implode(',', array_keys(self::EVENT_TYPE_BY_ACTION))],
+				sort: ['created' => 'DESC']
+			)
 		);
 	}//end recentRows()
 
@@ -277,29 +294,10 @@ class MdtoEventMapper {
 	 * @return array<int, AuditTrail> The rows.
 	 */
 	private function creationRows(string $uuid): array {
-		return $this->auditTrailMapper->findAll(
-			limit: 1,
-			offset: null,
-			filters: ['object_uuid' => $uuid, 'action' => 'create'],
-			sort: ['created' => 'ASC'],
+		return $this->auditTrailMapper->findTrail(
+			query: new ListQuery(limit: 1, filters: ['object_uuid' => $uuid, 'action' => 'create'], sort: ['created' => 'ASC'])
 		);
 	}//end creationRows()
-
-	/**
-	 * Log that older events were left out.
-	 *
-	 * @param string $uuid       The object uuid.
-	 * @param int    $qualifying How many rows qualified.
-	 * @param int    $emitted    How many are emitted.
-	 *
-	 * @return void
-	 */
-	private function logTruncation(string $uuid, int $qualifying, int $emitted): void {
-		$this->logger->info(
-			message: '[MdtoEventMapper] Audit trail exceeded the MDTO event bound; older events were omitted',
-			context: ['objectUuid' => $uuid, 'qualifying' => $qualifying, 'emitted' => $emitted, 'bound' => self::MAX_EVENTS]
-		);
-	}//end logTruncation()
 
 	/**
 	 * The first `create` row, or null.

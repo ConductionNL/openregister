@@ -33,6 +33,7 @@ use OCA\OpenRegister\Event\FlowTimerFiredEvent;
 use OCA\OpenRegister\Exception\FlowTimerStateException;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Exception\TaskConflictException;
+use OCA\OpenRegister\Service\Flow\Timer\RollRule;
 use OCA\OpenRegister\Service\Flow\Timer\EscalationLadderService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerDefinitionStore;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerArithmetic;
@@ -47,6 +48,8 @@ use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarService;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
+use OCA\OpenRegister\Service\Task\TimerOutcome;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -280,16 +283,12 @@ class FlowTimerServiceTest extends TestCase {
 			// where the deadline IS: fire_at = roll(add(...)). Left out, this
 			// would fail every rolling timer and, worse, would keep passing if
 			// the roll silently stopped being applied.
-			$expected = $this->calculator->roll(
-				moment: $this->calculator->add(
+			$expected = $this->calculator->roll(moment: $this->calculator->add(
 					from: $timer->getRunningSince(),
 					value: (float)$timer->getBudgetValue() - (float)$timer->getConsumedValue(),
 					unit: (string)$timer->getBudgetUnit(),
 					calendar: $calendar
-				),
-				roll: (string)($timer->getRollToWorkingDay() ?? 'none'),
-				calendar: $calendar
-			)['at'];
+				), rule: new RollRule(roll: (string)($timer->getRollToWorkingDay() ?? 'none'), calendar: $calendar))['at'];
 			self::assertNotNull($timer->getFireAt());
 			self::assertEqualsWithDelta($expected->getTimestamp(), $timer->getFireAt()->getTimestamp(), 1, 'fire_at = roll(add(running_since, budget - consumed))');
 		}
@@ -754,7 +753,10 @@ class FlowTimerServiceTest extends TestCase {
 		$start = $this->at('2026-09-01 09:00');
 		$applied = [];
 		$this->taskService->method('applyTimerOutcome')->willReturnCallback(
-			function (string $uuid, string $outcome, string $source, string $reason) use (&$applied): Task {
+			function (string $uuid, TimerOutcome $timer) use (&$applied): Task {
+				$outcome = $timer->outcome;
+				$source  = $timer->trigger->source;
+				$reason  = $timer->trigger->reason;
 				$applied[$uuid] = [$outcome, $source];
 
 				return $this->store->tasks[$uuid];
@@ -1022,7 +1024,10 @@ class FlowTimerServiceTest extends TestCase {
 
 		$applied = [];
 		$this->taskService->method('applyTimerOutcome')->willReturnCallback(
-			function (string $uuid, string $outcome, string $source, string $reason) use (&$applied): Task {
+			function (string $uuid, TimerOutcome $timer) use (&$applied): Task {
+				$outcome = $timer->outcome;
+				$source  = $timer->trigger->source;
+				$reason  = $timer->trigger->reason;
 				$applied[] = [$uuid, $outcome, $reason];
 
 				return $this->store->tasks[$uuid];

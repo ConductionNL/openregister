@@ -36,7 +36,6 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
 use OCP\IDBConnection;
 use OCP\IL10N;
-use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -61,7 +60,7 @@ class PollsProviderDegradeBehaviourTest extends TestCase {
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getQueryBuilder')->willReturnCallback(fn (): IQueryBuilder => $this->queryBuilder());
 
-		return new PollsProvider(new LeafProviderPlatform($db, $apps, $this->createMock(IL10N::class)), $mapper, $this->createMock(IUserSession::class));
+		return new PollsProvider(new LeafProviderPlatform($db, $apps, $this->createMock(IL10N::class)), $mapper);
 	}//end provider()
 
 	private function queryBuilder(): IQueryBuilder {

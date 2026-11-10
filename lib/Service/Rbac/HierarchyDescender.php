@@ -44,6 +44,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -253,24 +254,23 @@ class HierarchyDescender {
 	/**
 	 * The children of a set of parents, as child uuid => parent uuid.
 	 *
-	 * With a `$limit` the read itself is bounded: at most that many rows leave
+	 * With a limit the read itself is bounded: at most that many rows leave
 	 * the database, so a caller that stops at a node cap does not first fetch
 	 * a level of a hundred thousand rows to find out it is over it. A row
 	 * naming itself as its parent is then left out in SQL, so it does not use
 	 * up the limit.
 	 *
-	 * @param string $table The magic table.
-	 * @param string $parentColumn The column naming the parent.
-	 * @param string[] $parentUuids The parents to read children of.
-	 * @param int|null $limit The most rows to read, or null for the whole level.
+	 * @param HierarchyLevel $level       The magic table, the column naming the parent and the most rows to read
+	 *                                    (null for the whole level).
+	 * @param string[]       $parentUuids The parents to read children of.
 	 *
 	 * @return array<string, string> Child UUID => parent UUID.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function childrenOf(string $table, string $parentColumn, array $parentUuids, ?int $limit = null): array {
+	public function childrenOf(HierarchyLevel $level, array $parentUuids): array {
 		return $this->readChildren(
-			read: new ChildrenRead(table: $table, parentColumn: $parentColumn, limit: $limit),
+			read: new ChildrenRead(table: $level->table, parentColumn: $level->parentColumn, limit: $level->limit),
 			parentUuids: $parentUuids
 		);
 	}//end childrenOf()
@@ -396,25 +396,23 @@ class HierarchyDescender {
 	 * something an import writes, and a walk that does not expect one never
 	 * returns.
 	 *
-	 * @param integer $registerId The register the object is in.
-	 * @param integer $schemaId The object's schema.
-	 * @param string $objectUuid The object to walk up from.
+	 * @param ObjectRef $ref The object to walk up from, by register id, schema id and uuid.
 	 *
 	 * @return string[] The ancestor UUIDs, nearest first, empty when the schema declares no hierarchy.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function ancestorsOf(int $registerId, int $schemaId, string $objectUuid): array {
-		if ($objectUuid === '') {
+	public function ancestorsOf(ObjectRef $ref): array {
+		if ($ref->id === '') {
 			return [];
 		}
 
-		$hierarchy = $this->hierarchyFor(registerId: $registerId, schemaId: $schemaId);
+		$hierarchy = $this->hierarchyFor(registerId: (int)$ref->register, schemaId: (int)$ref->schema);
 		if ($hierarchy === null) {
 			return [];
 		}
 
-		return $this->walkUp(hierarchy: $hierarchy, objectUuid: $objectUuid);
+		return $this->walkUp(hierarchy: $hierarchy, objectUuid: $ref->id);
 	}//end ancestorsOf()
 
 	/**

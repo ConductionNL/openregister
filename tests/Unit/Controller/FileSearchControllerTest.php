@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Files\Controller\FileSearchController;
+use OCA\OpenRegister\Search\Service\Vectorization\SemanticSearchRequest;
 use OCA\OpenRegister\Files\Controller\Support\FileSearchControllerServices;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Search\Service\VectorizationService;
@@ -12,6 +13,7 @@ use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\HybridSearchRequest;
 
 /**
  * Unit tests for FileSearchController.
@@ -128,12 +130,11 @@ class FileSearchControllerTest extends TestCase {
 		$this->vectorService->expects($this->once())
 			->method('semanticSearch')
 			->with(
-				'scoped query',
-				10,
 				$this->callback(
-					function (array $filters): bool {
-						return ($filters['entity_type'] ?? null) === 'file'
-							&& array_key_exists('entityType', $filters) === false;
+					function (SemanticSearchRequest $request): bool {
+						return $request->query === 'scoped query' && $request->limit === 10
+							&& ($request->filters['entity_type'] ?? null) === 'file'
+							&& array_key_exists('entityType', $request->filters) === false;
 					}
 				)
 			)
@@ -252,10 +253,12 @@ class FileSearchControllerTest extends TestCase {
 		$this->vectorService->expects($this->once())
 			->method('hybridSearch')
 			->with(
-				'quarterly report',
-				$keywordResults,
-				10,
-				['keyword' => 0.5, 'vector' => 0.5]
+				new HybridSearchRequest(
+					query: 'quarterly report',
+					keywordResults: $keywordResults,
+					limit: 10,
+					weights: ['keyword' => 0.5, 'vector' => 0.5]
+				)
 			)
 			->willReturn($this->makeHybridServiceResponse(1));
 

@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionLifecycleInterface;
 use OCA\OpenRegister\Service\WriteCause;
@@ -127,20 +128,7 @@ class RegistrySubscriptionController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function subscribe(string $register, string $schema, string $id): JSONResponse {
-		try {
-			[$object, $resolvedSchema] = $this->resolveObjectAndGuardUpdate(register: $register, schema: $schema, id: $id);
-
-			$row = $this->subscriptions->requestSubscription(object: $object, schema: $resolvedSchema);
-
-			$this->logger?->info(
-				'[OpenRegister.RegistrySubscriptionController] Subscription requested for object '
-				. (string)$object->getUuid() . ' on registry ' . (string)$row->getRegistry()
-			);
-
-			return new JSONResponse(data: $row->toSelfMirror());
-		} catch (\Throwable $e) {
-			return $this->handleApiException(e: $e, context: 'registry-subscription-request');
-		}
+		return $this->subscribeOn(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end subscribe()
 
 	/**
@@ -156,8 +144,47 @@ class RegistrySubscriptionController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function unsubscribe(string $register, string $schema, string $id): JSONResponse {
+		return $this->unsubscribeOn(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end unsubscribe()
+
+	/**
+	 * Request a subscription on the named record, once the caller may update it.
+	 *
+	 * @param ObjectRef $ref The record the route names.
+	 *
+	 * @return JSONResponse The persisted subscription state, or an error.
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
+	 */
+	private function subscribeOn(ObjectRef $ref): JSONResponse {
 		try {
-			[$object] = $this->resolveObjectAndGuardUpdate(register: $register, schema: $schema, id: $id);
+			[$object, $resolvedSchema] = $this->resolveObjectAndGuardUpdate(ref: $ref);
+
+			$row = $this->subscriptions->requestSubscription(object: $object, schema: $resolvedSchema);
+
+			$this->logger?->info(
+				'[OpenRegister.RegistrySubscriptionController] Subscription requested for object '
+				. (string)$object->getUuid() . ' on registry ' . (string)$row->getRegistry()
+			);
+
+			return new JSONResponse(data: $row->toSelfMirror());
+		} catch (\Throwable $e) {
+			return $this->handleApiException(e: $e, context: 'registry-subscription-request');
+		}
+	}//end subscribeOn()
+
+	/**
+	 * End the subscription on the named record, once the caller may update it.
+	 *
+	 * @param ObjectRef $ref The record the route names.
+	 *
+	 * @return JSONResponse The persisted subscription state, or an error.
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
+	 */
+	private function unsubscribeOn(ObjectRef $ref): JSONResponse {
+		try {
+			[$object] = $this->resolveObjectAndGuardUpdate(ref: $ref);
 
 			$row = $this->subscriptions->endSubscription(object: $object);
 
@@ -170,16 +197,14 @@ class RegistrySubscriptionController extends Controller {
 		} catch (\Throwable $e) {
 			return $this->handleApiException(e: $e, context: 'registry-subscription-end');
 		}
-	}//end unsubscribe()
+	}//end unsubscribeOn()
 
 	/**
 	 * Resolve the target object and its schema, then refuse (throw) unless
 	 * the calling user has `update` on THIS specific object — the per-object
 	 * IDOR guard both endpoints in this controller need.
 	 *
-	 * @param string $register The register slug or identifier.
-	 * @param string $schema The schema slug or identifier.
-	 * @param string $id The object id or uuid.
+	 * @param ObjectRef $ref The record the route names.
 	 *
 	 * @return array{0: ObjectEntity, 1: Schema} The resolved object and schema.
 	 *
@@ -189,8 +214,8 @@ class RegistrySubscriptionController extends Controller {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
-	private function resolveObjectAndGuardUpdate(string $register, string $schema, string $id): array {
-		$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $id, register: $register, schema: $schema, _render: false));
+	private function resolveObjectAndGuardUpdate(ObjectRef $ref): array {
+		$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $ref->id, register: $ref->register, schema: $ref->schema, _render: false));
 		$resolvedSchema = $this->schemaMapper->find(id: (string)$object->getSchema());
 
 		if ($this->mayUpdate(schema: $resolvedSchema, object: $object) === false) {

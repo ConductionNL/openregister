@@ -27,6 +27,8 @@ use Exception;
 use OCA\OpenRegister\Service\CalendarEvent\VeventCodec;
 use PHPUnit\Framework\TestCase;
 use Sabre\VObject\Reader;
+use OCA\OpenRegister\Service\CalendarEvent\VeventDraft;
+use OCA\OpenRegister\Service\CalendarEvent\CalendarObjectAddress;
 
 /**
  * All dates are UTC, so the encoded lines do not depend on the machine's timezone.
@@ -44,12 +46,7 @@ class VeventCodecEdgeTest extends TestCase
 
     public function testAnEndDateIsWrittenAndAttendeesThatAreNotAListAreIgnored(): void
     {
-        $ics = (new VeventCodec())->calendarData(
-            'uid-1',
-            new DateTime('2027-03-01T09:00:00Z', new DateTimeZone('UTC')),
-            ['summary' => 'Intake', 'dtend' => '2027-03-01T10:30:00Z', 'attendees' => 'alice@example.org'],
-            ['registerId' => 1, 'schemaId' => 2, 'objectUuid' => 'obj-1', 'objectTitle' => 'Case 1']
-        );
+        $ics = (new VeventCodec())->calendarDataOf(new VeventDraft('uid-1', new DateTime('2027-03-01T09:00:00Z', new DateTimeZone('UTC')), ['summary' => 'Intake', 'dtend' => '2027-03-01T10:30:00Z', 'attendees' => 'alice@example.org'], ['registerId' => 1, 'schemaId' => 2, 'objectUuid' => 'obj-1', 'objectTitle' => 'Case 1']));
 
         $this->assertStringContainsString("DTEND:20270301T103000Z", $ics);
         $this->assertStringNotContainsString('ATTENDEE', $ics);
@@ -63,7 +60,7 @@ class VeventCodecEdgeTest extends TestCase
             ."ATTENDEE:mailto:bob@example.org\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
         )->VEVENT;
 
-        $event = (new VeventCodec())->eventArray($vevent, 'cal-1', 'uid-9.ics');
+        $event = (new VeventCodec())->eventArrayAt($vevent, new CalendarObjectAddress('cal-1', 'uid-9.ics'));
 
         $this->assertSame('confirmed', $event['status']);
         $this->assertSame(['obj-9', null, 12], [$event['objectUuid'], $event['registerId'], $event['schemaId']]);

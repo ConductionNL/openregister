@@ -109,18 +109,19 @@ class FlowTokenRouter {
 	 * which is also how a genuine parallel split keeps working: it has no
 	 * conditioned exits, so there is nothing to choose between.
 	 *
-	 * @param array<string, mixed> $flow The flow document.
-	 * @param object $transition The fired transition (a node).
-	 * @param array<int, mixed> $items What the step produced.
-	 * @param array<string, mixed> $context Run-level metadata.
+	 * @param FlowNodeExits  $exits  The fired node within its flow, among its output places ({@see exitsOf()}).
+	 * @param FlowStepOutput $output What the step produced and the run-level metadata.
 	 *
 	 * @return array<string> The output places that receive the token.
 	 *
 	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
 	 */
-	public function takenExits(array $flow, object $transition, array $items, array $context): array {
-		$data = FlowExpression::dataFor(item: ($items[0] ?? []), itemCount: count($items), context: $context);
-		$exits = $this->exitsOf(flow: $flow, transition: $transition);
+	public function takenExits(FlowNodeExits $exits, FlowStepOutput $output): array {
+		$items = $output->items;
+		$data  = FlowExpression::documentFor(
+			item: ($items[0] ?? []),
+			options: new FlowExpressionDataOptions(itemCount: count($items), context: $output->context)
+		);
 		return $this->exitsTaken(choice: new FlowExitChoice(exits: $exits, data: $data, tags: $this->routedTags(items: $items)));
 	}//end takenExits()
 
@@ -158,8 +159,10 @@ class FlowTokenRouter {
 	 * @param object               $transition The Symfony transition that fired.
 	 *
 	 * @return FlowNodeExits The node's exits.
+	 *
+	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
 	 */
-	private function exitsOf(array $flow, object $transition): FlowNodeExits {
+	public function exitsOf(array $flow, object $transition): FlowNodeExits {
 		$candidates = array_map(static fn ($t): string => (string)$t, $transition->getTos());
 		return new FlowNodeExits(flow: $flow, nodeId: (string)$transition->getName(), candidates: $candidates);
 	}//end exitsOf()
@@ -223,7 +226,7 @@ class FlowTokenRouter {
 			return [];
 		}
 
-		return $this->placesOf(exits: $exits, exitId: (string)($exit['id'] ?? ''));
+		return $this->placesForExit(exits: $exits, exitId: (string)($exit['id'] ?? ''));
 	}//end targetsOfExit()
 
 	/**
@@ -297,16 +300,14 @@ class FlowTokenRouter {
 	 * naming neither is left as-is, keeping the existing drop semantics for a
 	 * genuinely unroutable tag.
 	 *
-	 * @param array<string, mixed> $flow The flow document.
-	 * @param object $transition The fired transition (a node).
+	 * @param FlowNodeExits     $exits The fired node within its flow, among its output places ({@see exitsOf()}).
 	 * @param array<int, mixed> $items What the step produced.
 	 *
 	 * @return array<int, mixed> The items, exit-id tags resolved to places.
 	 *
 	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
 	 */
-	public function resolveOutputTags(array $flow, object $transition, array $items): array {
-		$exits = $this->exitsOf(flow: $flow, transition: $transition);
+	public function resolveOutputTags(FlowNodeExits $exits, array $items): array {
 		return array_map(fn (mixed $item): mixed => $this->resolveItemTag(exits: $exits, item: $item), $items);
 	}//end resolveOutputTags()
 
@@ -330,7 +331,7 @@ class FlowTokenRouter {
 			return $item;
 		}
 
-		return $this->retag(item: $item, places: $this->placesOf(exits: $exits, exitId: $tag));
+		return $this->retag(item: $item, places: $this->placesForExit(exits: $exits, exitId: $tag));
 	}//end resolveItemTag()
 
 	/**
@@ -359,28 +360,14 @@ class FlowTokenRouter {
 	/**
 	 * The output places reached through one named exit.
 	 *
-	 * @param array<string, mixed> $flow The flow document.
-	 * @param string $nodeId The firing node.
-	 * @param string $exitId The exit.
-	 * @param array<string> $candidates The transition's output places.
-	 *
-	 * @return array<string> The matching places.
-	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
-	 */
-	public function placesForExit(array $flow, string $nodeId, string $exitId, array $candidates): array {
-		return $this->placesOf(exits: new FlowNodeExits(flow: $flow, nodeId: $nodeId, candidates: $candidates), exitId: $exitId);
-	}//end placesForExit()
-
-	/**
-	 * The output places one named exit of a node reaches, as {@see placesForExit()} documents.
-	 *
 	 * @param FlowNodeExits $exits  The node within its flow, among its candidate places.
 	 * @param string        $exitId The exit id.
 	 *
 	 * @return array<int, string> The places, in edge order, without duplicates.
+	 *
+	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
 	 */
-	private function placesOf(FlowNodeExits $exits, string $exitId): array {
+	public function placesForExit(FlowNodeExits $exits, string $exitId): array {
 		$places = [];
 		foreach (($exits->flow['edges'] ?? []) as $edge) {
 			if ($this->edgeLeavesNode(edge: $edge, nodeId: $exits->nodeId) === false || trim((string)($edge['fromExit'] ?? '')) !== $exitId) {
@@ -391,7 +378,7 @@ class FlowTokenRouter {
 		}
 
 		return array_values(array_unique($places));
-	}//end placesOf()
+	}//end placesForExit()
 
 	/**
 	 * Whether an edge leaves the given node; the caller matches the exit.
@@ -549,19 +536,19 @@ class FlowTokenRouter {
 	 * A node with no conditioned exits takes every output, so a genuine split
 	 * passes through here untouched.
 	 *
-	 * @param object $workflow The workflow.
-	 * @param object $subject The marking-carrying subject.
-	 * @param object $transition The fired transition.
-	 * @param array<string> $taken The output places the exit claimed.
+	 * @param FlowWalkHop|FlowStreamHop $hop   The fired hop: its transition, and its pass's workflow and subject.
+	 * @param array<string>             $taken The output places the exit claimed.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
 	 */
-	public function keepOnlyTakenExits(object $workflow, object $subject, object $transition, array $taken): void {
-		$tos = array_map(static fn ($t): string => (string)$t, $transition->getTos());
+	public function keepOnlyTakenExits(FlowWalkHop|FlowStreamHop $hop, array $taken): void {
+		$tos = array_map(static fn ($t): string => (string)$t, $hop->transition->getTos());
 		if (count($taken) !== count($tos)) {
-			$this->withdraw(withdrawal: new FlowTokenWithdrawal(workflow: $workflow, subject: $subject, places: array_values(array_diff($tos, $taken))));
+			$pass = $hop->pass;
+			$places = array_values(array_diff($tos, $taken));
+			$this->withdraw(withdrawal: new FlowTokenWithdrawal(workflow: $pass->workflow, subject: $pass->subject, places: $places));
 		}
 	}//end keepOnlyTakenExits()
 

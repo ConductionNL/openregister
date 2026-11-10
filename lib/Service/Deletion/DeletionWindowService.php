@@ -167,59 +167,62 @@ class DeletionWindowService {
 	 * window is derived from `deletedAt` plus the retention that applies now,
 	 * which is the only honest answer available for those rows.
 	 *
-	 * @param ObjectEntity $object The object to describe.
-	 * @param Schema|null  $schema The object's schema, when it resolves.
-	 * @param DateTimeImmutable|null $now Reference moment, now when omitted.
+	 * @param DeletionWindowQuery $query The object, its schema and the reference moment.
 	 *
 	 * @return DeletionWindow|null The window, or null when the object is live.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	public function windowFor(
-		ObjectEntity $object,
-		?Schema $schema = null,
-		?DateTimeImmutable $now = null,
-	): ?DeletionWindow {
-		if ($object->isSoftDeleted() === false) {
+	public function windowOf(DeletionWindowQuery $query): ?DeletionWindow {
+		if ($query->object->isSoftDeleted() === false) {
 			return null;
 		}
 
-		$metadata = ($object->getDeleted() ?? []);
-		$moment = ($now ?? new DateTimeImmutable());
-		$deletedAt = $this->parseDate(
-			value: ($metadata['deletedAt'] ?? $metadata['deleted'] ?? null),
-			fallback: $moment
-		);
-
-		$retentionDays = null;
-		if (is_numeric($metadata['retentionPeriod'] ?? null) === true
-			&& (int)$metadata['retentionPeriod'] > 0
-		) {
-			$retentionDays = (int)$metadata['retentionPeriod'];
-		}
-
-		$source = (string)($metadata['retentionSource'] ?? '');
-		if ($retentionDays === null || $source === '') {
-			$resolved = $this->retentionFor(schema: $schema);
-			if ($retentionDays === null) {
-				$retentionDays = $resolved['days'];
-			}
-
-			$source = $resolved['source'];
-		}
+		$metadata  = ($query->object->getDeleted() ?? []);
+		$moment    = ($query->now ?? new DateTimeImmutable());
+		$deletedAt = $this->parseDate(value: ($metadata['deletedAt'] ?? $metadata['deleted'] ?? null), fallback: $moment);
+		$retention = $this->recordedRetention(metadata: $metadata, schema: $query->schema);
 
 		$destroyableFrom = $this->parseDate(
 			value: ($metadata['destroyableFrom'] ?? $metadata['purgeDate'] ?? null),
-			fallback: $deletedAt->modify('+' . $retentionDays . ' days')
+			fallback: $deletedAt->modify('+' . $retention->days . ' days')
 		);
 
 		return new DeletionWindow(
 			destroyableFrom: $destroyableFrom,
 			daysRemaining: $this->daysBetween(from: $moment, to: $destroyableFrom),
-			retention: new DeletionRetention(days: $retentionDays, source: $source),
+			retention: $retention,
 			deletedAt: $deletedAt
 		);
-	}//end windowFor()
+	}//end windowOf()
+
+	/**
+	 * The retention recorded on the deletion, completed from the rule that applies now.
+	 *
+	 * A recorded positive period is kept; the rule now in force supplies the
+	 * period when none was recorded, and the source whenever the period or the
+	 * source is missing.
+	 *
+	 * @param array<string, mixed> $metadata The object's deletion metadata.
+	 * @param Schema|null          $schema   The object's schema, when it resolves.
+	 *
+	 * @return DeletionRetention The retention the window is computed from.
+	 */
+	private function recordedRetention(array $metadata, ?Schema $schema): DeletionRetention {
+		$days = null;
+		if (is_numeric($metadata['retentionPeriod'] ?? null) === true && (int)$metadata['retentionPeriod'] > 0) {
+			$days = (int)$metadata['retentionPeriod'];
+		}
+
+		$source = (string)($metadata['retentionSource'] ?? '');
+		if ($days !== null && $source !== '') {
+			return new DeletionRetention(days: $days, source: $source);
+		}
+
+		$resolved = $this->retentionFor(schema: $schema);
+
+		return new DeletionRetention(days: ($days ?? $resolved['days']), source: $resolved['source']);
+	}//end recordedRetention()
 
 	/**
 	 * The refusal body a reader gets from the normal object path, naming where
@@ -233,7 +236,7 @@ class DeletionWindowService {
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function refusalBody(ObjectEntity $object, ?Schema $schema = null): array {
-		$window = $this->windowFor(object: $object, schema: $schema);
+		$window = $this->windowOf(query: new DeletionWindowQuery(object: $object, schema: $schema));
 		if ($window === null) {
 			return [
 				'error' => 'Object with id ' . (string)$object->getUuid() . ' not found',

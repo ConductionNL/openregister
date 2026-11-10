@@ -41,6 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\ObjectReadState\ReadStateScope;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -116,56 +117,42 @@ class ObjectReadStateMapper extends QBMapper implements ObjectReadStateMapperInt
 	/**
 	 * The uuids one user has already seen, optionally narrowed to a scope.
 	 *
-	 * @param string $userId The reading user's uid.
-	 * @param string|null $register Narrow to this register, as stored on the row.
-	 * @param string|null $schema Narrow to this schema, as stored on the row.
-	 * @param int $limit How many uuids to load at most.
+	 * @param string         $userId The reading user's uid.
+	 * @param ListQuery|null $query  How many uuids to load at most (the limit) and the `register` and `schema`
+	 *                               filters to narrow to, as stored on the row; null for SEEN_SET_LIMIT unnarrowed.
 	 *
 	 * @return array<int, string> The seen object uuids.
 	 *
 	 * @spec openspec/specs/object-read-state/spec.md
 	 */
-	public function uuidsForUser(
-		string $userId,
-		?string $register = null,
-		?string $schema = null,
-		int $limit = self::SEEN_SET_LIMIT
-	): array {
-		$qb = $this->db->getQueryBuilder();
+	public function uuidsForUser(string $userId, ?ListQuery $query = null): array {
+		$query ??= new ListQuery(limit: self::SEEN_SET_LIMIT);
+		$qb      = $this->db->getQueryBuilder();
 		$qb->select('object_uuid')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)))
-			->setMaxResults($limit);
+			->setMaxResults($query->limit);
+		(new ReadStateScope(register: ($query->filters['register'] ?? null), schema: ($query->filters['schema'] ?? null)))->applyTo(qb: $qb);
 
-		$this->narrowToScope(qb: $qb, register: $register, schema: $schema);
+		return $this->distinctSeenUuids(qb: $qb);
 
+	}//end uuidsForUser()
+
+	/**
+	 * Run a seen-set read and return its distinct uuids, in first-seen order.
+	 *
+	 * @param IQueryBuilder $qb The seen-set query.
+	 *
+	 * @return array<int, string> The seen object uuids.
+	 */
+	private function distinctSeenUuids(IQueryBuilder $qb): array {
 		$result = $qb->executeQuery();
 		$uuids = $this->seenUuids(result: $result);
 		$result->closeCursor();
 
 		return array_values(array_unique($uuids));
 
-	}//end uuidsForUser()
-
-	/**
-	 * Narrow a seen-set read to a register and/or a schema, as stored on the row.
-	 *
-	 * @param IQueryBuilder $qb       The query being built.
-	 * @param string|null   $register The register; null or empty means no restriction.
-	 * @param string|null   $schema   The schema; null or empty means no restriction.
-	 *
-	 * @return void
-	 */
-	private function narrowToScope(IQueryBuilder $qb, string|null $register, string|null $schema): void {
-		if ($register !== null && $register !== '') {
-			$qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($register)));
-		}
-
-		if ($schema !== null && $schema !== '') {
-			$qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schema)));
-		}
-
-	}//end narrowToScope()
+	}//end distinctSeenUuids()
 
 	/**
 	 * The non-empty object uuids of a seen-set result, in row order.
@@ -210,37 +197,36 @@ class ObjectReadStateMapper extends QBMapper implements ObjectReadStateMapperInt
 		$now = ($sighting->getLastSeenAt() ?? new DateTime());
 
 		$sighting->setLastSeenAt($now);
-		$sighting->setSubSeen(($subSeen ?? []));
-		$sighting->setCreated($now);
 
 		$existing = $this->findOne(userId: (string)$sighting->getUserId(), objectUuid: (string)$sighting->getObjectUuid());
+		if ($existing !== null) {
+			return $this->refreshSeen(existing: $existing, sighting: $sighting);
+		}
 
-		return $this->refreshSeen(existing: $existing, sighting: $sighting, subSeen: $subSeen)
-			?? $this->insertSeen(row: $sighting);
+		$sighting->setSubSeen(($subSeen ?? []));
+		$sighting->setCreated($now);
+		return $this->insertSeen(row: $sighting);
 
 	}//end markSeen()
 
 	/**
-	 * Refresh an existing row from a sighting; null when there is no row.
+	 * Refresh an existing row from a sighting.
 	 *
 	 * The register and schema are only overwritten by a non-empty value, and
 	 * sub-resource moments are merged rather than replaced: opening the files
-	 * tab says nothing about when the messages tab was last read.
+	 * tab says nothing about when the messages tab was last read. The
+	 * sighting's sub-resource moments (null for none) are merged in.
 	 *
-	 * @param ObjectReadState|null       $existing The stored row, if any.
-	 * @param ObjectReadState            $sighting The row the sighting would insert.
-	 * @param array<string, string>|null $subSeen  Sub-resource seen moments to merge in.
+	 * @param ObjectReadState $existing The stored row.
+	 * @param ObjectReadState $sighting The row the sighting would insert.
 	 *
-	 * @return ObjectReadState|null The updated row, or null when there was none.
+	 * @return ObjectReadState The updated row.
 	 */
-	private function refreshSeen(ObjectReadState|null $existing, ObjectReadState $sighting, array|null $subSeen): ObjectReadState|null {
-		if ($existing === null) {
-			return null;
-		}
-
+	private function refreshSeen(ObjectReadState $existing, ObjectReadState $sighting): ObjectReadState {
 		$existing->setLastSeenAt($sighting->getLastSeenAt());
 		$this->refreshScope(existing: $existing, sighting: $sighting);
 
+		$subSeen = $sighting->getSubSeen();
 		if ($subSeen !== null) {
 			$existing->setSubSeen(array_merge(($existing->getSubSeen() ?? []), $subSeen));
 		}

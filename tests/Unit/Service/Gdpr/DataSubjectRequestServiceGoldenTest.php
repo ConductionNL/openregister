@@ -222,7 +222,7 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 				logger: $logger
 			)), retentionGate: new SubjectRetentionGate(
 				retentionService: $this->retentionService,
-				archivalGuard: new ArchivalRetentionGuard($this->schemaMapper, $logger)
+				archivalGuard: new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($this->schemaMapper, $logger))
 			), deadline: new DataSubjectDeadline(), logger: $logger);
 
 	}//end buildService()
@@ -578,8 +578,8 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 		$a = $this->object('a');
 		$frozen = $this->object('frozen-3');
 
-		$this->assertNotNull($service->setRestriction(objectIdentifier: 'a', restricted: true, reason: 'contested'));
-		$this->assertNotNull($service->setObjection(objectIdentifier: 'a', objected: false, reason: 'withdrawn'));
+		$this->assertNotNull($service->setRestriction(objectIdentifier: 'a', flag: new \OCA\OpenRegister\Service\Gdpr\ProcessingFlag(active: true, reason: 'contested')));
+		$this->assertNotNull($service->setObjection(objectIdentifier: 'a', flag: new \OCA\OpenRegister\Service\Gdpr\ProcessingFlag(active: false, reason: 'withdrawn')));
 		$payload = $this->payload(object: $a);
 		$this->assertSame(['active', 'reason', 'setBy', 'setAt'], array_keys($payload['_gdprRestriction']));
 		$this->assertTrue($payload['_gdprRestriction']['active']);
@@ -589,8 +589,8 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 		$this->assertSame('withdrawn', $payload['_gdprObjection']['reason']);
 		$this->assertSame('activity-uuid', $a->getProcessingActivityId());
 
-		$this->assertNull($service->setRestriction(objectIdentifier: 'nope', restricted: true, reason: 'r'));
-		$this->assertNull($service->setObjection(objectIdentifier: 'frozen-3', objected: true, reason: 'r'));
+		$this->assertNull($service->setRestriction(objectIdentifier: 'nope', flag: new \OCA\OpenRegister\Service\Gdpr\ProcessingFlag(active: true, reason: 'r')));
+		$this->assertNull($service->setObjection(objectIdentifier: 'frozen-3', flag: new \OCA\OpenRegister\Service\Gdpr\ProcessingFlag(active: true, reason: 'r')));
 		$this->assertArrayNotHasKey('_gdprObjection', $this->payload(object: $frozen));
 		$this->assertSame([['a', true, true], ['a', true, true]], $this->saves);
 

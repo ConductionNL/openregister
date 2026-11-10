@@ -216,12 +216,7 @@ class SecurityService implements LoginSecurityInterface, RateLimitResetInterface
 	public function checkLoginRateLimit(string $username, string $ipAddress): array {
 		$who = $this->loginIdentity(username: $username, ipAddress: $ipAddress);
 		foreach (self::LOGIN_LOCKOUTS as $lockout) {
-			$refusal = $this->activeLoginLockout(
-				key: $lockout['prefix'] . $who[$lockout['field']],
-				event: $lockout['event'],
-				reason: $lockout['reason'],
-				who: $who
-			);
+			$refusal = $this->activeLoginLockout(lockout: $lockout, who: $who);
 			if ($refusal !== null) {
 				return $refusal;
 			}
@@ -248,22 +243,20 @@ class SecurityService implements LoginSecurityInterface, RateLimitResetInterface
 	/**
 	 * The refusal for a login lockout still in force, logged; null when there is none.
 	 *
-	 * @param string                                       $key    The lockout cache key.
-	 * @param string                                       $event  The security event to log.
-	 * @param string                                       $reason The refusal reason.
-	 * @param array{username: string, ip_address: string} $who    The login identity.
+	 * @param array{prefix: string, field: string, event: string, reason: string} $lockout One of LOGIN_LOCKOUTS.
+	 * @param array{username: string, ip_address: string}                        $who     The login identity.
 	 *
 	 * @return array{allowed: false, lockout_until: mixed, reason: string}|null
 	 */
-	private function activeLoginLockout(string $key, string $event, string $reason, array $who): ?array {
-		$lockoutUntil = $this->cache->get($key);
+	private function activeLoginLockout(array $lockout, array $who): ?array {
+		$lockoutUntil = $this->cache->get($lockout['prefix'] . $who[$lockout['field']]);
 		if ($lockoutUntil === null || ($lockoutUntil > time()) === false) {
 			return null;
 		}
 
-		$this->logSecurityEvent(event: $event, context: $who + ['lockout_until' => $lockoutUntil]);
+		$this->logSecurityEvent(event: $lockout['event'], context: $who + ['lockout_until' => $lockoutUntil]);
 
-		return ['allowed' => false, 'lockout_until' => $lockoutUntil, 'reason' => $reason];
+		return ['allowed' => false, 'lockout_until' => $lockoutUntil, 'reason' => $lockout['reason']];
 	}//end activeLoginLockout()
 
 	/**
@@ -315,18 +308,38 @@ class SecurityService implements LoginSecurityInterface, RateLimitResetInterface
 	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
 	 */
 	public function recordFailedLoginAttempt(string $username, string $ipAddress, string $reason = 'invalid_credentials'): void {
-		$who          = $this->loginIdentity(username: $username, ipAddress: $ipAddress);
+		$this->recordFailedLogin(attempt: new FailedAttempt(subject: $username, ipAddress: $ipAddress, reason: $reason));
+	}//end recordFailedLoginAttempt()
+
+	/**
+	 * Record a failed login attempt, as {@see recordFailedLoginAttempt()} describes.
+	 *
+	 * @param FailedAttempt $attempt The username, client address and failure reason.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
+	 */
+	public function recordFailedLogin(FailedAttempt $attempt): void {
+		$who          = $this->loginIdentity(username: $attempt->subject, ipAddress: $attempt->ipAddress);
 		$userAttempts = $this->countAttempt(key: self::CACHE_PREFIX_LOGIN_ATTEMPTS . $who['username'], ttl: self::LOGIN_RATE_LIMIT_WINDOW);
 		$ipAttempts   = $this->countAttempt(key: self::CACHE_PREFIX_IP_ATTEMPTS . $who['ip_address'], ttl: self::LOGIN_RATE_LIMIT_WINDOW);
 
-		$this->lockOutAtLimit(attempts: $userAttempts, key: self::CACHE_PREFIX_USER_LOCKOUT . $who['username'], event: 'user_locked_out', who: $who);
-		$this->lockOutAtLimit(attempts: $ipAttempts, key: self::CACHE_PREFIX_IP_LOCKOUT . $who['ip_address'], event: 'ip_locked_out', who: $who);
+		$this->lockOutAtLimit(
+			strike: new LockoutStrike(attempts: $userAttempts, key: self::CACHE_PREFIX_USER_LOCKOUT . $who['username'], event: 'user_locked_out'),
+			who: $who
+		);
+		$this->lockOutAtLimit(
+			strike: new LockoutStrike(attempts: $ipAttempts, key: self::CACHE_PREFIX_IP_LOCKOUT . $who['ip_address'], event: 'ip_locked_out'),
+			who: $who
+		);
 
 		$this->logSecurityEvent(
 			event: 'failed_login_attempt',
-			context: $who + ['reason' => $reason, 'user_attempts' => $userAttempts, 'ip_attempts' => $ipAttempts]
+			context: $who + ['reason' => $attempt->reason, 'user_attempts' => $userAttempts, 'ip_attempts' => $ipAttempts]
 		);
-	}//end recordFailedLoginAttempt()
+	}//end recordFailedLogin()
+
 
 	/**
 	 * Add one attempt to a counter and return the new count.
@@ -346,21 +359,19 @@ class SecurityService implements LoginSecurityInterface, RateLimitResetInterface
 	/**
 	 * Lock a login identity out, and log it, once its counter reached the limit.
 	 *
-	 * @param mixed                                        $attempts The count after this attempt.
-	 * @param string                                       $key      The lockout cache key.
-	 * @param string                                       $event    The security event to log.
-	 * @param array{username: string, ip_address: string} $who      The login identity.
+	 * @param LockoutStrike                                $strike The count, the lockout key and the event to log.
+	 * @param array{username: string, ip_address: string} $who    The login identity.
 	 *
 	 * @return void
 	 */
-	private function lockOutAtLimit(mixed $attempts, string $key, string $event, array $who): void {
-		if (($attempts >= self::LOGIN_RATE_LIMIT_ATTEMPTS) === false) {
+	private function lockOutAtLimit(LockoutStrike $strike, array $who): void {
+		if (($strike->attempts >= self::LOGIN_RATE_LIMIT_ATTEMPTS) === false) {
 			return;
 		}
 
 		$lockoutUntil = (time() + self::LOGIN_LOCKOUT_DURATION);
-		$this->cache->set($key, $lockoutUntil, self::LOGIN_LOCKOUT_DURATION);
-		$this->logSecurityEvent(event: $event, context: $who + ['attempts' => $attempts, 'lockout_until' => $lockoutUntil]);
+		$this->cache->set($strike->key, $lockoutUntil, self::LOGIN_LOCKOUT_DURATION);
+		$this->logSecurityEvent(event: $strike->event, context: $who + ['attempts' => $strike->attempts, 'lockout_until' => $lockoutUntil]);
 	}//end lockOutAtLimit()
 
 	/**
@@ -517,50 +528,50 @@ class SecurityService implements LoginSecurityInterface, RateLimitResetInterface
 	 * counter, applying a lockout when either threshold is crossed. Callers
 	 * (the middleware) MUST swallow any exception this throws (fail-open).
 	 *
-	 * @param string $identity The authentication identity (username/token id) or '' if unknown
-	 * @param string $ipAddress The trusted client IP address of the failed attempt
-	 * @param string $reason The reason for authentication failure
+	 * @param FailedAttempt $attempt The identity ('' when unknown), trusted client address and failure reason.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
 	 */
-	public function recordFailedAuthAttempt(string $identity, string $ipAddress, string $reason = 'inbound_auth_failed'): void {
-		$compositeKey = $this->buildAuthCompositeKey(identity: $identity, ipAddress: $ipAddress);
-		$who          = ['identity' => $identity, 'ip_address' => $this->sanitizeForCacheKey(input: $ipAddress)];
-		$ceiling      = $this->authCeiling();
+	public function recordFailedAuthAttempt(FailedAttempt $attempt): void {
+		$run = new AuthFailureRun(
+			compositeKey: $this->buildAuthCompositeKey(identity: $attempt->subject, ipAddress: $attempt->ipAddress),
+			who: ['identity' => $attempt->subject, 'ip_address' => $this->sanitizeForCacheKey(input: $attempt->ipAddress)],
+			ceiling: $this->authCeiling()
+		);
 
 		// Composite (identity+IP) counter — primary gate; coarse per-IP counter — high-ceiling backstop only.
 		$counts = [
-			'attempts'    => $this->countAttempt(key: self::CACHE_PREFIX_AUTH_ATTEMPTS . $compositeKey, ttl: $ceiling['windowSeconds']),
-			'ip_attempts' => $this->countAttempt(key: self::CACHE_PREFIX_AUTH_IP_ATTEMPTS . $who['ip_address'], ttl: $ceiling['windowSeconds']),
+			'attempts'    => $this->countAttempt(key: self::CACHE_PREFIX_AUTH_ATTEMPTS . $run->compositeKey, ttl: $run->ceiling['windowSeconds']),
+			'ip_attempts' => $this->countAttempt(key: self::CACHE_PREFIX_AUTH_IP_ATTEMPTS . $run->who['ip_address'], ttl: $run->ceiling['windowSeconds']),
 		];
 
-		$lockoutTriggered = $this->lockOutAuthAtCeiling(compositeKey: $compositeKey, counts: $counts, ceiling: $ceiling, who: $who);
+		$lockoutTriggered = $this->lockOutAuthAtCeiling(run: $run, counts: $counts);
 		$this->logSecurityEvent(
 			event: 'failed_auth_attempt',
-			context: $who + ['reason' => $reason] + $counts + ['lockout_triggered' => $lockoutTriggered]
+			context: $run->who + ['reason' => $attempt->reason] + $counts + ['lockout_triggered' => $lockoutTriggered]
 		);
 	}//end recordFailedAuthAttempt()
+
 
 	/**
 	 * Lock the identity+address pair out, and log it, once either counter reached its ceiling.
 	 *
-	 * @param string                                                        $compositeKey The identity+address cache key.
-	 * @param array{attempts: mixed, ip_attempts: mixed}                    $counts       The counts after this attempt.
-	 * @param array{attemptsPerIdentity: int, attemptsPerAddress: int, windowSeconds: int, lockoutSeconds: int} $ceiling The ceiling in force.
-	 * @param array{identity: string, ip_address: string}                   $who          The identity and sanitised address.
+	 * @param AuthFailureRun                             $run    The composite key, who it was and the ceiling in force.
+	 * @param array{attempts: mixed, ip_attempts: mixed} $counts The counts after this attempt.
 	 *
 	 * @return bool Whether this attempt triggered the lockout.
 	 */
-	private function lockOutAuthAtCeiling(string $compositeKey, array $counts, array $ceiling, array $who): bool {
+	private function lockOutAuthAtCeiling(AuthFailureRun $run, array $counts): bool {
+		$ceiling = $run->ceiling;
 		if (($counts['attempts'] >= $ceiling['attemptsPerIdentity'] || $counts['ip_attempts'] >= $ceiling['attemptsPerAddress']) === false) {
 			return false;
 		}
 
 		$lockoutUntil = (time() + $ceiling['lockoutSeconds']);
-		$this->cache->set(self::CACHE_PREFIX_AUTH_LOCKOUT . $compositeKey, $lockoutUntil, $ceiling['lockoutSeconds']);
-		$this->logSecurityEvent(event: 'auth_locked_out', context: $who + $counts + ['lockout_until' => $lockoutUntil]);
+		$this->cache->set(self::CACHE_PREFIX_AUTH_LOCKOUT . $run->compositeKey, $lockoutUntil, $ceiling['lockoutSeconds']);
+		$this->logSecurityEvent(event: 'auth_locked_out', context: $run->who + $counts + ['lockout_until' => $lockoutUntil]);
 
 		return true;
 	}//end lockOutAuthAtCeiling()

@@ -34,18 +34,32 @@ use OCP\IUserSession;
  */
 final class SearchTrailControllerServices {
 	/**
+	 * Active user session for caller identity
+	 *
+	 * @var IUserSession
+	 */
+	public readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for admin / role checks
+	 *
+	 * @var IGroupManager
+	 */
+	public readonly IGroupManager $groupManager;
+
+	/**
 	 * Bundle the services.
 	 *
+	 * @param SessionPrincipal $principal The session and group manager, kept as userSession and groupManager.
 	 * @param SearchTrailServiceInterface $searchTrailService The search trail service
 	 * @param SearchTrailMapperInterface  $searchTrailMapper  Mapper the admin clear-all path deletes through
-	 * @param IUserSession                $userSession        Active user session for caller identity
-	 * @param IGroupManager               $groupManager       Group manager for admin / role checks
 	 */
 	public function __construct(
+		SessionPrincipal $principal,
 		public readonly SearchTrailServiceInterface $searchTrailService,
 		public readonly SearchTrailMapperInterface $searchTrailMapper,
-		public readonly IUserSession $userSession,
-		public readonly IGroupManager $groupManager,
 	) {
+		$this->userSession  = $principal->userSession;
+		$this->groupManager = $principal->groupManager;
 	}//end __construct()
 }//end class

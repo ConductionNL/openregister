@@ -38,10 +38,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ObjectSource;
 
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -68,19 +68,33 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 	private const UUID_SCAN_CAP = 1000;
 
 	/**
+	 * The acting-user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Logger for read failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param TablesProviderParts $parts       The reader, row mapper, uuid derivation and managed-schema lookup.
-	 * @param IUserSession        $userSession Acting-user session (RBAC scoping).
-	 * @param LoggerInterface     $logger      Logger for read diagnostics.
+	 * @param TablesProviderParts $parts   The reader, row mapper, uuid derivation and managed-schema lookup.
+	 * @param LinkSessionRuntime  $session The acting-user session and the logger for read failures.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly TablesProviderParts $parts,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		LinkSessionRuntime $session,
 	) {
+		$this->userSession = $session->userSession;
+		$this->logger = $session->logger;
 	}//end __construct()
 
 	/**
@@ -115,23 +129,32 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 	 * bounded, logged scan of the bound table). Returns null when the row is
 	 * absent OR the acting user may not read it (denied == absent).
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param string $id The rowId or derived UUID.
-	 * @param array<string, mixed> $config The object-source config block.
 	 *
 	 * @return ObjectEntity|null The virtual object, or null when absent/denied.
 	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
-		$scope = $this->scope(config: $config);
-		if ($scope === null || $scope->tableId === 0) {
+	public function find(SourcedTable $source, string $id): ?ObjectEntity {
+		return $this->findTargeted(target: $this->target(table: $source->table, config: $source->config), id: $id);
+	}//end find()
+
+	/**
+	 * Read one object of a target that names a table.
+	 *
+	 * @param TablesObjectTarget|null $target The target, or null when no user is logged in.
+	 * @param string                  $id     The object uuid or numeric row id.
+	 *
+	 * @return ObjectEntity|null The object, or null when absent or the target names no table.
+	 */
+	private function findTargeted(?TablesObjectTarget $target, string $id): ?ObjectEntity {
+		if ($target === null || $target->scope->tableId === 0) {
 			return null;
 		}
 
-		return $this->findById(target: new TablesObjectTarget(register: $register, schema: $schema, scope: $scope), id: $id);
-	}//end find()
+		return $this->findById(target: $target, id: $id);
+	}//end findTargeted()
 
 	/**
 	 * {@inheritDoc}
@@ -140,22 +163,31 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 	 * or a sort is applied in PHP over a bounded scan, and paged after that. A
 	 * `config.viewId` binds a Tables View instead of the raw `config.tableId`.
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param array<string, mixed> $query Query (filters/sort/limit/offset).
-	 * @param array<string, mixed> $config The object-source config block.
 	 *
 	 * @return ObjectEntity[] The matching virtual objects.
 	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
-		$scope = $this->scope(config: $config);
-		if ($scope === null || $scope->tableId === 0) {
+	public function findAll(SourcedTable $source, array $query = []): array {
+		return $this->listTargeted(target: $this->target(table: $source->table, config: $source->config), query: $query);
+	}//end findAll()
+
+	/**
+	 * Read one page of a target that names a table.
+	 *
+	 * @param TablesObjectTarget|null $target The target, or null when no user is logged in.
+	 * @param array<string, mixed>    $query  Query (filters/search/limit/offset).
+	 *
+	 * @return ObjectEntity[] The page, or an empty list when the target names no table.
+	 */
+	private function listTargeted(?TablesObjectTarget $target, array $query): array {
+		if ($target === null || $target->scope->tableId === 0) {
 			return [];
 		}
 
-		$target = new TablesObjectTarget(register: $register, schema: $schema, scope: $scope);
+		$scope       = $target->scope;
 		$objectQuery = new TablesObjectQuery(query: $query);
 		if ($objectQuery->isNarrowing() === true) {
 			return $objectQuery->page(objects: $this->matching(target: $target, query: $objectQuery), defaultLimit: self::DEFAULT_LIMIT);
@@ -164,34 +196,42 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 		$page = $scope->withPage(limit: (int)($query['limit'] ?? self::DEFAULT_LIMIT), offset: (int)($query['offset'] ?? 0));
 
 		return $this->toObjects(target: $target, rows: $this->parts->reader->findRows(scope: $page));
-	}//end findAll()
+	}//end listTargeted()
 
 	/**
 	 * {@inheritDoc}
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param array<string, mixed> $query Query (filters/search).
-	 * @param array<string, mixed> $config The object-source config block.
 	 *
 	 * @return int The number of matching virtual objects.
 	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
-		$scope = $this->scope(config: $config);
-		if ($scope === null || $scope->sourceId() === 0) {
+	public function count(SourcedTable $source, array $query = []): int {
+		return $this->countTargeted(target: $this->target(table: $source->table, config: $source->config), query: $query);
+	}//end count()
+
+	/**
+	 * Count the objects of a target that names a table or a view.
+	 *
+	 * @param TablesObjectTarget|null $target The target, or null when no user is logged in.
+	 * @param array<string, mixed>    $query  Query (filters/search).
+	 *
+	 * @return int The count, or 0 when the target names no table or view.
+	 */
+	private function countTargeted(?TablesObjectTarget $target, array $query): int {
+		if ($target === null || $target->scope->sourceId() === 0) {
 			return 0;
 		}
 
 		$objectQuery = new TablesObjectQuery(query: $query);
-		if ($objectQuery->isNarrowing() === true && $scope->tableId !== 0) {
-			$target = new TablesObjectTarget(register: $register, schema: $schema, scope: $scope);
+		if ($objectQuery->isNarrowing() === true && $target->scope->tableId !== 0) {
 			return count($this->matching(target: $target, query: $objectQuery));
 		}
 
-		return $this->parts->reader->countRows(scope: $scope);
-	}//end count()
+		return $this->parts->reader->countRows(scope: $target->scope);
+	}//end countTargeted()
 
 	/**
 	 * Resolve a virtual object by a numeric row id or a derived UUID.
@@ -421,6 +461,23 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 			return $cache[$targetTableId];
 		};
 	}//end targetSchemaResolver()
+
+	/**
+	 * The target a schema's config names for the acting user.
+	 *
+	 * @param RegisterSchema       $table  The register and schema the objects belong to.
+	 * @param array<string, mixed> $config The object-source config block.
+	 *
+	 * @return TablesObjectTarget|null The target, or null when no user is logged in.
+	 */
+	private function target(RegisterSchema $table, array $config): ?TablesObjectTarget {
+		$scope = $this->scope(config: $config);
+		if ($scope === null) {
+			return null;
+		}
+
+		return new TablesObjectTarget(register: $table->register, schema: $table->schema, scope: $scope);
+	}//end target()
 
 	/**
 	 * The read scope of a schema's config for the acting user.

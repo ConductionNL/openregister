@@ -194,7 +194,7 @@ class NotificationGroupPreferencesController extends Controller {
 			return new JSONResponse(data: ['error' => 'Unknown group'], statusCode: 404);
 		}
 
-		if ($this->mayReadGroup(group: $group, userId: $userId, groupId: $groupId) === false) {
+		if ($this->mayReadGroup(group: $group, groupId: $groupId) === false) {
 			return new JSONResponse(data: ['error' => 'Not a member of that group'], statusCode: 403);
 		}
 
@@ -205,17 +205,17 @@ class NotificationGroupPreferencesController extends Controller {
 	 * Whether the caller is in the group or administers it.
 	 *
 	 * @param IGroup $group   The group.
-	 * @param string $userId  The caller.
 	 * @param string $groupId The group's id.
 	 *
 	 * @return boolean True when the caller may read the group's defaults.
 	 */
-	private function mayReadGroup(IGroup $group, string $userId, string $groupId): bool {
+	private function mayReadGroup(IGroup $group, string $groupId): bool {
 		if ($group->inGroup($this->userSession->getUser()) === true) {
 			return true;
 		}
 
-		return $this->administersGroup(userId: $userId, groupId: $groupId);
+		// Only a signed-in caller reaches refuseRead(), so the session names one.
+		return $this->administersGroup(userId: (string)$this->resolveUserId(), groupId: $groupId);
 	}//end mayReadGroup()
 
 	/**
@@ -236,7 +236,7 @@ class NotificationGroupPreferencesController extends Controller {
 				scope: $scope
 			);
 			if ($stored !== null) {
-				$items[] = $this->groupItem(groupId: $groupId, entry: $entry, scope: $scope, stored: $stored);
+				$items[] = self::groupItem(entry: ['group' => $groupId, 'scope' => $scope] + $entry, stored: $stored);
 			}
 		}
 
@@ -246,20 +246,19 @@ class NotificationGroupPreferencesController extends Controller {
 	/**
 	 * One stored group default as the list answers it.
 	 *
-	 * @param string                                                         $groupId The group.
-	 * @param array{schema: string, schemaTitle: string, notification: string} $entry   The declared notification.
-	 * @param string|null                                                    $scope   The scope, or null for global.
-	 * @param array<string, mixed>                                           $stored  The stored default.
+	 * @param array<string, mixed> $entry  The declared notification (schema, schemaTitle,
+	 *                                     notification), with the group and scope asked for.
+	 * @param array<string, mixed> $stored The stored default.
 	 *
 	 * @return array<string, mixed> The list item.
 	 */
-	private function groupItem(string $groupId, array $entry, ?string $scope, array $stored): array {
+	private static function groupItem(array $entry, array $stored): array {
 		return [
-			'group' => $groupId,
+			'group' => $entry['group'],
 			'schema' => $entry['schema'],
 			'schemaTitle' => $entry['schemaTitle'],
 			'notification' => $entry['notification'],
-			'scope' => ($scope ?? 'global'),
+			'scope' => ($entry['scope'] ?? 'global'),
 			'enabled' => (bool)($stored['enabled'] ?? true),
 			'channels' => ($stored['channels'] ?? null),
 		];
@@ -289,7 +288,7 @@ class NotificationGroupPreferencesController extends Controller {
 
 		$scope = $target['scope'];
 		$stored = $this->preferenceService->getGroupDefault(groupId: $groupId, schemaSlug: $schema, notificationKey: $notification, scope: $scope);
-		return $this->settingResponse(target: $target, key: 'default', stored: $stored);
+		return $this->settingResponse(target: $target, stored: ['default' => $stored]);
 	}//end writeGroupDefault()
 
 	/**

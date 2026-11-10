@@ -44,6 +44,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Notifications\Service\Party\PartyMessage;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\Activity\IManager as IActivityManager;
@@ -59,6 +60,8 @@ use OCP\IUserManager;
 use OCP\Mail\IMailer;
 use OCP\Notification\IManager as INotificationManager;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Notification\MailingRequest;
+use OCA\OpenRegister\Service\Notification\ReferenceOrigin;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifierInterface;
 
 /**
@@ -85,43 +88,32 @@ use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifierInterface;
 class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInterface {
 
 	/**
-	 * The nc-notification channel unit — injected, or lazily built.
-	 * Nullable-and-lazy keeps every existing constructor call site working:
-	 * the shared units are appended OPTIONAL constructor parameters, and a
-	 * dispatcher constructed without them builds each from its own
-	 * dependencies on first use — the same objects, wired the same way.
+	 * Logger for dispatch diagnostics (from the ledger).
 	 *
-	 * @var NcNotificationSender|null
+	 * @var LoggerInterface
 	 */
-	private ?NcNotificationSender $lazyNcSender = null;
+	private readonly LoggerInterface $logger;
 
 	/**
-	 * The email channel unit — injected, or lazily built.
+	 * URL generator for action-target deeplinks (from the rendering set).
 	 *
-	 * @var EmailSender|null
+	 * @var IURLGenerator|null
 	 */
-	private ?EmailSender $lazyEmailSender = null;
+	private readonly ?IURLGenerator $urlGenerator;
 
 	/**
-	 * The Talk channel unit — injected, or lazily built.
+	 * Object resolver for relation-target deeplinks (from the rendering set).
 	 *
-	 * @var TalkSender|null
+	 * @var \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface|null
 	 */
-	private ?TalkSender $lazyTalkSender = null;
+	private readonly ?\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface $objectService;
 
 	/**
-	 * The shared recipient resolver — injected, or lazily built.
+	 * Canonical per-app deeplink resolver (from the rendering set).
 	 *
-	 * @var NotificationRecipientResolver|null
+	 * @var \OCA\OpenRegister\Service\DeepLinkResolverInterface|null
 	 */
-	private ?NotificationRecipientResolver $lazyRecipientResolver = null;
-
-	/**
-	 * The dialect's placeholder evaluator — injected, or lazily built.
-	 *
-	 * @var NotificationTemplating|null
-	 */
-	private ?NotificationTemplating $lazyTemplating = null;
+	private readonly ?\OCA\OpenRegister\Service\DeepLinkResolverInterface $deepLinkRegistry;
 
 	/**
 	 * The register's languages for the object being dispatched, default first.
@@ -140,83 +132,31 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	private RuleReachRecorder $reachRecorder;
 
 	/**
-	 * Constructor.
+	 * Constructor. The dispatcher's collaborators come in six capability sets,
+	 * each built by the container: the channels it delivers over, the gates a
+	 * delivery passes, its reach into other apps, what it records, whom a rule
+	 * reaches, and how a message is composed.
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Mapper used to resolve the object's schema.
-	 * @param INotificationManager $notificationManager Nextcloud notification API.
-	 * @param LoggerInterface $logger Logger for dispatch diagnostics.
-	 * @param IGroupManager $groupManager Group resolver for `groups` recipient kinds.
-	 * @param IUserManager $userManager User resolver for `users` recipient kinds.
-	 * @param IMailer $mailer Mailer for the `email` channel.
-	 * @param IActivityManager $activityManager Activity manager for the `activity` channel.
-	 * @param IClientService $httpClient HTTP client for the `webhook` and `talk` channels.
-	 * @param IServerContainer $serverContainer Server container for expression resolvers (F06).
-	 * @param RateLimiter|null $rateLimiter Optional rate limiter (per-rule, per-recipient).
-	 * @param IConfig|null $config Optional config service for runtime tunables.
-	 * @param NotificationHistoryMapper|null $historyMapper Optional history mapper for delivery audit rows.
-	 * @param NotificationCoalescer|null $coalescer Optional coalescer for burst suppression.
-	 * @param \OCA\OpenRegister\Notifications\Db\NotificationSubscriptionMapper|null $subscriptionMapper Optional subscription mapper (DEPRECATED).
-	 * @param NotificationDispatchLogMapper|null $dispatchLogMapper Dispatch-log mapper for idempotency dedup.
-	 * @param NotificationPreferenceService|null $preferenceService Override-only preference resolver (delivery gate).
-	 * @param IJobList|null $jobList Job list used to enqueue the web-push dispatch job.
-	 * @param IURLGenerator|null $urlGenerator URL generator for action-target deeplinks.
-	 * @param RegisterMapperInterface|null $registerMapper Register mapper used for the default originApp.
-	 * @param \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface|null $objectService Object resolver for relation-target deeplinks (RBAC).
-	 * @param \OCA\OpenRegister\Service\DeepLinkResolverInterface|null $deepLinkRegistry Canonical per-app deeplink resolver.
-	 * @param IAppManager|null $appManager Resolves originApp display name (auto body).
-	 * @param NotificationDeliveryWindowService|null $deliveryWindowService Override-only quiet-hours resolver + evaluator.
-	 * @param QueuedNotificationMapper|null $queuedNotificationMapper Durable queue mapper (quiet-hours + digest schedule).
-	 * @param DigestScheduleEvaluator|null $digestScheduleEvaluator Live evaluator for the `digest` fixed-time schedule.
-	 * @param ITimeFactory|null $timeFactory Time source for the delivery/digest gate.
-	 * @param NcNotificationSender|null $ncSender Shared nc-notification channel unit (lazily built when absent).
-	 * @param EmailSender|null $emailSender Shared email channel unit (lazily built when absent).
-	 * @param TalkSender|null $talkSender Shared Talk channel unit (lazily built when absent).
-	 * @param NotificationRecipientResolver|null $recipientResolver Shared recipient resolver (lazily built when absent).
-	 * @param NotificationTemplating|null $templating Shared placeholder evaluator (lazily built when absent).
-	 * @param RuleReachRecorder|null $reachRecorder Notes rules that reached nobody (lazily built when absent).
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected dependencies.
+	 * @param ChannelSet       $channels     The nc-notification, email, Talk and activity channels.
+	 * @param DispatchGates    $gates        Throttle, quiet-hours / digest hold, preference and subscription gates.
+	 * @param AppIntegrations  $integrations Webhook HTTP, web-push job list, runtime app services, app lookup.
+	 * @param DeliveryLedger   $ledger       Logger, delivery history, idempotency log and reach notes.
+	 * @param RuleAudience     $audience     Schema and register lookup, recipient resolver, user config.
+	 * @param MessageRendering $rendering    Placeholder evaluator and the deeplink sources.
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly INotificationManager $notificationManager,
-		private readonly LoggerInterface $logger,
-		private readonly IGroupManager $groupManager,
-		private readonly IUserManager $userManager,
-		private readonly IMailer $mailer,
-		private readonly IActivityManager $activityManager,
-		private readonly IClientService $httpClient,
-		private readonly IServerContainer $serverContainer,
-		private readonly ?RateLimiter $rateLimiter = null,
-		private readonly ?IConfig $config = null,
-		private readonly ?NotificationHistoryMapper $historyMapper = null,
-		private readonly ?NotificationCoalescer $coalescer = null,
-		private readonly ?\OCA\OpenRegister\Notifications\Db\NotificationSubscriptionMapper $subscriptionMapper = null,
-		private readonly ?NotificationDispatchLogMapper $dispatchLogMapper = null,
-		private readonly ?NotificationPreferenceService $preferenceService = null,
-		private readonly ?IJobList $jobList = null,
-		private readonly ?IURLGenerator $urlGenerator = null,
-		private readonly ?RegisterMapperInterface $registerMapper = null,
-		private readonly ?\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface $objectService = null,
-		private readonly ?\OCA\OpenRegister\Service\DeepLinkResolverInterface $deepLinkRegistry = null,
-		private readonly ?IAppManager $appManager = null,
-		private readonly ?NotificationDeliveryWindowService $deliveryWindowService = null,
-		private readonly ?QueuedNotificationMapper $queuedNotificationMapper = null,
-		private readonly ?DigestScheduleEvaluator $digestScheduleEvaluator = null,
-		private readonly ?ITimeFactory $timeFactory = null,
-		?NcNotificationSender $ncSender = null,
-		?EmailSender $emailSender = null,
-		?TalkSender $talkSender = null,
-		?NotificationRecipientResolver $recipientResolver = null,
-		?NotificationTemplating $templating = null,
-		?RuleReachRecorder $reachRecorder = null,
+		private readonly ChannelSet $channels,
+		private readonly DispatchGates $gates,
+		private readonly AppIntegrations $integrations,
+		private readonly DeliveryLedger $ledger,
+		private readonly RuleAudience $audience,
+		private readonly MessageRendering $rendering,
 	) {
-		$this->reachRecorder = ($reachRecorder ?? new RuleReachRecorder(logger: $logger));
-		$this->lazyNcSender = $ncSender;
-		$this->lazyEmailSender = $emailSender;
-		$this->lazyTalkSender = $talkSender;
-		$this->lazyRecipientResolver = $recipientResolver;
-		$this->lazyTemplating = $templating;
+		$this->logger           = $ledger->logger;
+		$this->urlGenerator     = $rendering->urlGenerator;
+		$this->objectService    = $rendering->objectService;
+		$this->deepLinkRegistry = $rendering->deepLinkRegistry;
+		$this->reachRecorder    = ($ledger->reachRecorder ?? new RuleReachRecorder(logger: $ledger->logger));
 	}//end __construct()
 
 	/**
@@ -229,14 +169,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function ncSender(): NcNotificationSender {
-		$this->lazyNcSender ??= new NcNotificationSender(
-			notificationManager: $this->notificationManager,
-			logger: $this->logger,
-			userManager: $this->userManager,
-			jobList: $this->jobList
-		);
-
-		return $this->lazyNcSender;
+		return $this->channels->ncSender;
 	}//end ncSender()
 
 	/**
@@ -248,13 +181,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function emailSender(): EmailSender {
-		$this->lazyEmailSender ??= new EmailSender(
-			userManager: $this->userManager,
-			mailer: $this->mailer,
-			logger: $this->logger
-		);
-
-		return $this->lazyEmailSender;
+		return $this->channels->emailSender;
 	}//end emailSender()
 
 	/**
@@ -266,13 +193,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function talkSender(): TalkSender {
-		$this->lazyTalkSender ??= new TalkSender(
-			httpClient: $this->httpClient,
-			logger: $this->logger,
-			config: ($this->config ?? $this->systemConfig())
-		);
-
-		return $this->lazyTalkSender;
+		return $this->channels->talkSender;
 	}//end talkSender()
 
 	/**
@@ -284,14 +205,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function recipientResolver(): NotificationRecipientResolver {
-		$this->lazyRecipientResolver ??= new NotificationRecipientResolver(
-			userManager: $this->userManager,
-			groupManager: $this->groupManager,
-			logger: $this->logger,
-			serverContainer: $this->serverContainer
-		);
-
-		return $this->lazyRecipientResolver;
+		return $this->audience->recipientResolver;
 	}//end recipientResolver()
 
 	/**
@@ -303,33 +217,8 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function templating(): NotificationTemplating {
-		$this->lazyTemplating ??= new NotificationTemplating(
-			logger: $this->logger,
-			objectService: $this->objectService
-		);
-
-		return $this->lazyTemplating;
+		return $this->rendering->templating;
 	}//end templating()
-
-	/**
-	 * The system config, resolved through the server container for callers
-	 * that constructed the dispatcher with the legacy (no-IConfig) signature.
-	 *
-	 * @return IConfig|null The config service, or null when unresolvable.
-	 */
-	private function systemConfig(): ?IConfig {
-		try {
-			$config = $this->serverContainer->get(IConfig::class);
-		} catch (\Throwable $e) {
-			return null;
-		}
-
-		if (($config instanceof IConfig) === false) {
-			return null;
-		}
-
-		return $config;
-	}//end systemConfig()
 
 	/**
 	 * Fire any notifications declared on the schema whose trigger matches.
@@ -604,7 +493,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		return new RuleMessageRenderer(
 			templating: $this->templating(),
 			languages: $this->registerLanguages,
-			appManager: $this->appManager,
+			appManager: $this->integrations->appManager,
 			logger: $this->logger
 		);
 	}//end messages()
@@ -670,7 +559,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @return void
 	 */
 	private function deliverToRecipient(RuleFiring $firing, RecipientDelivery $delivery): void {
-		if ($this->rateLimitAllows(firing: $firing, recipient: $delivery->uid) === false) {
+		if ($this->gates->throttle->rateAllows(firing: $firing, recipient: $delivery->uid) === false) {
 			$delivery->status = 'rate-limited';
 			$this->recordSkippedDelivery(firing: $firing, delivery: $delivery);
 			return;
@@ -678,7 +567,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 
 		$this->renderForRecipient(firing: $firing, delivery: $delivery);
 
-		if ($this->coalesceAllows(firing: $firing, recipient: $delivery->uid) === false) {
+		if ($this->gates->throttle->coalesceAllows(firing: $firing, recipient: $delivery->uid) === false) {
 			$delivery->status = 'coalesced';
 			$this->recordSkippedDelivery(firing: $firing, delivery: $delivery);
 			return;
@@ -726,11 +615,11 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 */
 	private function applyPreference(RuleFiring $firing, RecipientDelivery $delivery): bool {
 		$delivery->channels = $firing->channels;
-		if ($this->preferenceService === null) {
+		if ($this->gates->preferenceService === null) {
 			return true;
 		}
 
-		$pref = $this->preferenceService->resolveEffective(
+		$pref = $this->gates->preferenceService->resolveEffective(
 			schemaDefault: $firing->spec,
 			userId: $delivery->uid,
 			schemaSlug: $firing->schemaSlug,
@@ -930,7 +819,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		}
 
 		try {
-			$service = $this->serverContainer->get($handler);
+			$service = $this->integrations->serverContainer->get($handler);
 		} catch (\Throwable $e) {
 			return sprintf('transport "%s" could not be resolved: %s', $handler, $e->getMessage());
 		}
@@ -976,21 +865,6 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	}//end newEventId()
 
 	/**
-	 * Resolve "now" for the delivery-window / digest-schedule gate. Uses
-	 * the injected `ITimeFactory` when present (tests inject a controllable
-	 * clock), else the real wall clock.
-	 *
-	 * @return DateTimeImmutable
-	 */
-	private function currentTime(): DateTimeImmutable {
-		if ($this->timeFactory !== null) {
-			return DateTimeImmutable::createFromInterface($this->timeFactory->getDateTime());
-		}
-
-		return new DateTimeImmutable('now');
-	}//end currentTime()
-
-	/**
 	 * Evaluate the delivery-window (quiet-hours) / digest-schedule gate for
 	 * one recipient and, when it suppresses, persist a `QueuedNotification`
 	 * row (never drop the event) and record notification history with the
@@ -1014,16 +888,14 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			return false;
 		}
 
-		$now = $this->currentTime();
-		$reason = $this->queueReason(
-			windowActive: $this->insideQuietHours(uid: $delivery->uid, now: $now),
-			digestDeclared: $this->digestDeclared(spec: $firing->spec)
-		);
-		if ($reason === null) {
+		$hold = $this->gates->deliveryHold->decide(firing: $firing, uid: $delivery->uid);
+		if ($hold === null) {
 			return false;
 		}
 
-		if ($this->queuedNotificationMapper !== null) {
+		$now    = $hold->at;
+		$reason = $hold->reason;
+		if ($this->gates->deliveryHold->keepsRows() === true) {
 			$entity = $this->queuedNotificationFor(firing: $firing, delivery: $delivery);
 			$entity->setReason($reason);
 			$entity->setPayload(
@@ -1049,7 +921,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			$entity->setCreatedAt(DateTime::createFromImmutable($now));
 
 			try {
-				$this->queuedNotificationMapper->insert(entity: $entity);
+				$this->gates->deliveryHold->keep(row: $entity);
 			} catch (\Throwable $e) {
 				$this->logger->warning(
 					sprintf('[AnnotationNotificationDispatcher] failed to queue rule="%s" recipient="%s": %s', $firing->ruleId, $delivery->uid, $e->getMessage())
@@ -1068,73 +940,6 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 
 		return true;
 	}//end deliveryWindowOrDigestSuppresses()
-
-	/**
-	 * Why a recipient's delivery is held: quiet hours, a digest schedule, both,
-	 * or null when it may go out now.
-	 *
-	 * @param bool $windowActive   Whether the recipient is inside quiet hours.
-	 * @param bool $digestDeclared Whether the rule declares a digest schedule.
-	 *
-	 * @return string|null A QueuedNotification reason, or null.
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function queueReason(bool $windowActive, bool $digestDeclared): ?string {
-		if ($windowActive === true && $digestDeclared === true) {
-			return QueuedNotification::REASON_BOTH;
-		}
-
-		if ($windowActive === true) {
-			return QueuedNotification::REASON_QUIET_HOURS;
-		}
-
-		if ($digestDeclared === true) {
-			return QueuedNotification::REASON_DIGEST_SCHEDULE;
-		}
-
-		return null;
-	}//end queueReason()
-
-	/**
-	 * Whether the recipient is inside their quiet hours now.
-	 *
-	 * @param string            $uid The recipient.
-	 * @param DateTimeImmutable $now The current time.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function insideQuietHours(string $uid, DateTimeImmutable $now): bool {
-		if ($this->deliveryWindowService === null) {
-			return false;
-		}
-
-		$window = $this->deliveryWindowService->getForUser(userId: $uid);
-		if ($window === null) {
-			return false;
-		}
-
-		return $this->deliveryWindowService->isInsideWindow(window: $window, now: $now);
-	}//end insideQuietHours()
-
-	/**
-	 * Whether the rule declares a valid digest schedule.
-	 *
-	 * @param array<string, mixed> $spec The rule declaration.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function digestDeclared(array $spec): bool {
-		$digestSpec = ($spec['digest'] ?? null);
-
-		return is_array($digestSpec) === true
-			&& $this->digestScheduleEvaluator !== null
-			&& $this->digestScheduleEvaluator->isValidDigestSpec($digestSpec) === true;
-	}//end digestDeclared()
 
 	/**
 	 * A queued notification row for this recipient, without reason or payload.
@@ -1319,9 +1124,9 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		$recipientKey = '__'.$channel.'__';
 		$status       = 'dispatched';
 		$failure      = null;
-		if ($this->rateLimitAllows(firing: $firing, recipient: $recipientKey) === false) {
+		if ($this->gates->throttle->rateAllows(firing: $firing, recipient: $recipientKey) === false) {
 			$status = 'rate-limited';
-		} elseif ($this->coalesceAllows(firing: $firing, recipient: $recipientKey) === false) {
+		} elseif ($this->gates->throttle->coalesceAllows(firing: $firing, recipient: $recipientKey) === false) {
 			$status = 'coalesced';
 		} elseif ($channel === 'webhook') {
 			$failure = $this->emitWebhook(firing: $firing);
@@ -1346,49 +1151,6 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		);
 
 	}//end dispatchBroadcastChannel()
-
-	/**
-	 * Apply the (optional) rate limiter. Returns true when the
-	 * dispatch may proceed. A null limiter (test contexts where the
-	 * dependency wasn't injected) always allows — keeps existing
-	 * tests passing without forcing every test to construct a
-	 * RateLimiter.
-	 *
-	 * @param RuleFiring $firing    The rule and its per-rule override block.
-	 * @param string     $recipient Recipient identifier.
-	 *
-	 * @return bool True when the dispatch may proceed.
-	 */
-	private function rateLimitAllows(RuleFiring $firing, string $recipient): bool {
-		if ($this->rateLimiter === null) {
-			return true;
-		}
-
-		return $this->rateLimiter->tryConsume(ruleId: $firing->ruleId, recipient: $recipient, perRuleOverride: $firing->rateLimit);
-	}//end rateLimitAllows()
-
-	/**
-	 * Apply the (optional) coalescer. Returns true when the dispatch
-	 * may proceed.
-	 *
-	 * A null coalescer (test contexts where the dependency wasn't
-	 * injected) always allows, as does a missing per-rule
-	 * `coalesce` config block (the rule simply opted out of grouping).
-	 *
-	 * @param RuleFiring $firing    The rule and its per-rule coalesce block.
-	 * @param string     $recipient Recipient identifier.
-	 *
-	 * @return bool True when the dispatch may proceed.
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function coalesceAllows(RuleFiring $firing, string $recipient): bool {
-		if ($this->coalescer === null) {
-			return true;
-		}
-
-		return $this->coalescer->shouldDispatch(ruleId: $firing->ruleId, recipient: $recipient, perRuleOverride: $firing->coalesce);
-	}//end coalesceAllows()
 
 	/**
 	 * Claim the idempotency slot for (slug, key) atomically.
@@ -1417,16 +1179,16 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 *              dispatcher already claimed this (slug, key).
 	 */
 	private function claimIdempotencyKey(string $slug, string $key): bool {
-		if ($this->dispatchLogMapper === null) {
+		if ($this->ledger->dispatchLogMapper === null) {
 			return true;
 		}
 
 		// Prune expired rows lazily — best-effort, failures are swallowed
 		// inside the mapper.
-		$this->dispatchLogMapper->pruneExpired();
+		$this->ledger->dispatchLogMapper->pruneExpired();
 
 		try {
-			$this->dispatchLogMapper->record(
+			$this->ledger->dispatchLogMapper->record(
 				notificationSlug: $slug,
 				idempotencyKey: $key
 			);
@@ -1520,13 +1282,13 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	private function recordHistory(DeliveryOrigin $origin, DeliveryRecord $record): void {
-		if ($this->historyMapper === null) {
+		if ($this->ledger->historyMapper === null) {
 			return;
 		}
 
 		$object = $origin->object;
 		try {
-			$this->historyMapper->record(
+			$this->ledger->historyMapper->record(
 				entry: new HistoryEntry(
 					delivery: new HistoryDelivery(
 						ruleId: $origin->ruleId,
@@ -1707,7 +1469,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		];
 
 		try {
-			$client = $this->httpClient->newClient();
+			$client = $this->integrations->httpClient->newClient();
 			$client->request(
 				$method,
 				$url,
@@ -1838,12 +1600,12 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @return string|null The 2-letter language code, or null when unknown.
 	 */
 	private function resolveUserLocale(string $uid): ?string {
-		if ($this->config === null) {
+		if ($this->audience->config === null) {
 			return null;
 		}
 
 		try {
-			$raw = $this->config->getUserValue($uid, 'core', 'lang', '');
+			$raw = $this->audience->config->getUserValue($uid, 'core', 'lang', '');
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -1891,11 +1653,11 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 */
 	private function objectRegister(ObjectEntity $object): ?Register {
 		$registerId = $object->getRegister();
-		if ($this->registerMapper === null || $registerId === null || (string)$registerId === '') {
+		if ($this->audience->registerMapper === null || $registerId === null || (string)$registerId === '') {
 			return null;
 		}
 
-		return $this->registerMapper->find($registerId, _rbac: false, _multitenancy: false);
+		return $this->audience->registerMapper->find($registerId, _rbac: false, _multitenancy: false);
 	}//end objectRegister()
 
 	/**
@@ -2348,7 +2110,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	private function enqueueWebPush(RuleFiring $firing): void {
-		if ($this->jobList === null) {
+		if ($this->integrations->jobList === null) {
 			$this->logger->debug('[AnnotationNotificationDispatcher] web-push declared but IJobList unavailable.');
 			return;
 		}
@@ -2422,12 +2184,9 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 				$onlyRole = $role;
 			}
 
-			$sent = $this->serverContainer->get(PartyNotificationService::class)->notifyParties(
-				objectUuid: $objectUuid,
-				subject: $firing->broadcastSubject,
-				body: $firing->addressBody,
-				role: $onlyRole,
-				category: $firing->category
+			$sent = $this->integrations->serverContainer->get(PartyNotificationService::class)->notifyParties(
+				message: new PartyMessage(objectUuid: $objectUuid, subject: $firing->broadcastSubject, body: $firing->addressBody, category: $firing->category),
+				role: $onlyRole
 			);
 
 			foreach ($sent as $outcome) {
@@ -2478,14 +2237,14 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			return 0;
 		}
 
-		$outcomes = $this->serverContainer->get(ReferencedAddressNotifierInterface::class)->notify(
-			object: $firing->object,
-			data: $firing->data,
-			recipientsSpec: $firing->recipientsSpec(),
-			subject: $firing->broadcastSubject,
-			body: $firing->addressBody,
-			category: $firing->category,
-			schema: $firing->schema
+		$outcomes = $this->integrations->serverContainer->get(ReferencedAddressNotifierInterface::class)->mail(
+			origin: new ReferenceOrigin(object: $firing->object, data: $firing->data, schema: $firing->schema),
+			request: new MailingRequest(
+				recipients: $firing->recipientsSpec(),
+				subject: $firing->broadcastSubject,
+				body: $firing->addressBody,
+				category: $firing->category
+			)
 		);
 
 		$reached = 0;
@@ -2529,7 +2288,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		}
 
 		try {
-			$event = $this->activityManager->generateEvent();
+			$event = $this->channels->activityManager->generateEvent();
 			$event
 				->setApp('openregister')
 				->setType('openregister_objects')
@@ -2537,7 +2296,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 				->setSubject($name, ['_text' => $subject])
 				->setObject('object', 0, $objectRef)
 				->setTimestamp(time());
-			$this->activityManager->publish($event);
+			$this->channels->activityManager->publish($event);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				sprintf('[AnnotationNotificationDispatcher] activity to "%s" failed (%s)', $uid, $e->getMessage())
@@ -2559,7 +2318,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		}
 
 		try {
-			return $this->schemaMapper->find($ref, _multitenancy: false);
+			return $this->audience->schemaMapper->find($ref, _multitenancy: false);
 		} catch (\Throwable) {
 			return null;
 		}
@@ -2599,7 +2358,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @return array<int, mixed>
 	 */
 	private function filterBySubscription(array $recipients, ObjectEntity $object): array {
-		if ($this->subscriptionMapper === null) {
+		if ($this->gates->subscriptionMapper === null) {
 			return $recipients;
 		}
 
@@ -2610,7 +2369,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		}
 
 		try {
-			$subscribed = $this->subscriptionMapper->findSubscribedUids(
+			$subscribed = $this->gates->subscriptionMapper->findSubscribedUids(
 				registerId: (int)$registerId,
 				schemaId: (int)$schemaId
 			);

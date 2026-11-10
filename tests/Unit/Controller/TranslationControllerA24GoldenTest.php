@@ -34,13 +34,16 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapperInterface;
+use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Service\BulkTranslationServiceInterface;
+use OCA\OpenRegister\Service\TranslationSearch;
 use OCA\OpenRegister\Service\TranslationStatusServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Service\ObjectTranslationRequest;
 
 /**
  * Pins search parameter handling and every response shape.
@@ -135,16 +138,8 @@ class TranslationControllerA24GoldenTest extends TestCase {
 	 */
 	private function recordSearch(string $method): void {
 		$this->status->method($method)->willReturnCallback(
-			static fn (
-				?string $query,
-				?string $language,
-				?string $status,
-				?string $objectUuid,
-				int $limit,
-				?string $sourceLanguage,
-				bool $isOutOfDate
-			): array => [
-				[$method, $query, $language, $status, $objectUuid, $limit, $sourceLanguage, $isOutOfDate],
+			static fn (TranslationSearch $search): array => [
+				[$method, $search->query, $search->filter->language, $search->filter->status, $search->filter->objectUuid, $search->limit, $search->filter->sourceLanguage, $search->isOutOfDate],
 			]
 		);
 	}//end recordSearch()
@@ -262,7 +257,7 @@ class TranslationControllerA24GoldenTest extends TestCase {
 		$row = $this->createMock(Translation::class);
 		$row->method('jsonSerialize')->willReturn(['status' => 'human_reviewed']);
 		$this->status->method('setStatus')->willReturnCallback(
-			function (string $uuid, string $property, string $language, string $status) use ($row): Translation {
+			function (TranslationSlot $slot, string $status) use ($row): Translation {
 				if ($status === 'bogus') {
 					throw new InvalidArgumentException('bad status');
 				}
@@ -299,7 +294,7 @@ class TranslationControllerA24GoldenTest extends TestCase {
 
 			return $object;
 		});
-		$this->bulk->method('translateObject')->with($object, 'nl', 'en', ['title'])->willReturn(['translated' => ['title' => 'T'], 'skipped' => []]);
+		$this->bulk->method('translate')->with(new ObjectTranslationRequest(object: $object, fromLong: 'nl', toLong: 'en'), ['title'])->willReturn(['translated' => ['title' => 'T'], 'skipped' => []]);
 		$c = $this->controller();
 		foreach ([[null, 'en'], ['', 'en'], ['nl', null], ['nl', '']] as [$from, $to]) {
 			$r = $c->bulkTranslate('u', $from, $to);

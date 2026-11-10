@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Relation\RelationGraphSources;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use OCP\IAppConfig;
 use PHPUnit\Framework\Attributes\DataProvider;
+use OCA\OpenRegister\Service\Relation\GraphExportOptions;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -183,7 +184,7 @@ class RelationGraphServiceWalkGoldenTest extends TestCase {
 	 */
 	#[DataProvider('walkProvider')]
 	public function testWalkMatchesThePin(string $root, int $depth, int $maxDepth, int $maxNodes): void {
-		$export = $this->service(maxDepth: $maxDepth, maxNodes: $maxNodes)->export(rootUuid: $root, depth: $depth, language: 'en');
+		$export = $this->service(maxDepth: $maxDepth, maxNodes: $maxNodes)->export(rootUuid: $root, options: new GraphExportOptions(depth: $depth, language: 'en'));
 
 		$actual = (string)json_encode(value: $export, flags: JSON_UNESCAPED_SLASHES);
 		$this->assertSame(self::PINNED[$this->dataName()] ?? '', md5(string: $actual), $actual);

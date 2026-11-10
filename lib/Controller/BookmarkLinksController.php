@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\BookmarkDraft;
 use OCA\OpenRegister\Service\BookmarkLinkServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -93,15 +94,26 @@ class BookmarkLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
+		return $this->indexFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end index()
+
+	/**
+	 * List linked bookmarks for an object: the body of index() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function indexFor(ObjectRef $ref): JSONResponse {
 		if ($this->bookmarkLinkService->isBookmarksAvailable() === false) {
 			return $this->appNotInstalled(appName: 'Nextcloud Bookmarks');
 		}
 
 		return $this->listLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			route: $this->routeOf(ref: $ref),
 			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->bookmarkLinkService->getLinkedBookmarks($object->getUuid()))
 		);
-	}//end index()
+	}//end indexFor()
 
 	/**
 	 * Link an existing bookmark.
@@ -120,12 +132,23 @@ class BookmarkLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
+		return $this->linkFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end link()
+
+	/**
+	 * Link an existing bookmark: the body of link() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function linkFor(ObjectRef $ref): JSONResponse {
 		if ($this->bookmarkLinkService->isBookmarksAvailable() === false) {
 			return $this->appNotInstalled(appName: 'Nextcloud Bookmarks');
 		}
 
 		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			route: $this->routeOf(ref: $ref),
 			action: function (ObjectEntity $object): JSONResponse {
 				$bookmarkId = (int)$this->request->getParam('bookmarkId', 0);
 				if ($bookmarkId === 0) {
@@ -140,7 +163,7 @@ class BookmarkLinksController extends Controller {
 				return new JSONResponse($link->jsonSerialize(), 201);
 			}
 		);
-	}//end link()
+	}//end linkFor()
 
 	/**
 	 * Create a new bookmark and link it.
@@ -161,12 +184,23 @@ class BookmarkLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function createNew(string $register, string $schema, string $id): JSONResponse {
+		return $this->createNewFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end createNew()
+
+	/**
+	 * Create a new bookmark and link it: the body of createNew() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function createNewFor(ObjectRef $ref): JSONResponse {
 		if ($this->bookmarkLinkService->isBookmarksAvailable() === false) {
 			return $this->appNotInstalled(appName: 'Nextcloud Bookmarks');
 		}
 
 		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			route: $this->routeOf(ref: $ref),
 			action: function (ObjectEntity $object): JSONResponse {
 				$title = (string)$this->request->getParam('title', '');
 				$url = (string)$this->request->getParam('url', '');
@@ -198,7 +232,7 @@ class BookmarkLinksController extends Controller {
 				return new JSONResponse($link->jsonSerialize(), 201);
 			}
 		);
-	}//end createNew()
+	}//end createNewFor()
 
 	/**
 	 * Unlink a bookmark.
@@ -216,19 +250,31 @@ class BookmarkLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function destroy(string $register, string $schema, string $id, string $bookmarkId): JSONResponse {
+		return $this->destroyFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id), bookmarkId: $bookmarkId);
+	}//end destroy()
+
+	/**
+	 * Unlink a bookmark: the body of destroy() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 * @param string $bookmarkId NC Bookmarks bookmark id (numeric).
+	 *
+	 * @return JSONResponse
+	 */
+	private function destroyFor(ObjectRef $ref, string $bookmarkId): JSONResponse {
 		if ($this->bookmarkLinkService->isBookmarksAvailable() === false) {
 			return $this->appNotInstalled(appName: 'Nextcloud Bookmarks');
 		}
 
 		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			route: $this->routeOf(ref: $ref),
 			action: function (ObjectEntity $object) use ($bookmarkId): JSONResponse {
 				$this->bookmarkLinkService->unlinkBookmark($object->getUuid(), (int)$bookmarkId);
 
 				return new JSONResponse(['success' => true]);
 			}
 		);
-	}//end destroy()
+	}//end destroyFor()
 
 	/**
 	 * List bookmarks visible to the current user (picker source).
@@ -307,4 +353,15 @@ class BookmarkLinksController extends Controller {
 
 		return new JSONResponse(['error' => $exception->getMessage()], 400);
 	}//end mapException()
+
+	/**
+	 * The link route of the object a route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return ObjectLinkRoute The route the link traits resolve.
+	 */
+	private function routeOf(ObjectRef $ref): ObjectLinkRoute {
+		return new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
+	}//end routeOf()
 }//end class

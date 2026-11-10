@@ -111,14 +111,33 @@ final class ProviderSet {
 	 * @spec openspec/specs/dsar-identity-verify-seam/spec.md
 	 */
 	public function resolve(?string $selectorId, object $default, string $defaultId, string $fallbackWarning): object {
+		$fallback = new ProviderFallback(default: $default, defaultId: $defaultId, warning: $fallbackWarning);
+		return $this->resolveOr(selectorId: $selectorId, fallback: $fallback);
+
+	}//end resolve()
+
+	/**
+	 * Resolve a selector to its provider, FAIL-CLOSED to the fallback's default.
+	 *
+	 * An unset, empty or unregistered selector logs the fallback warning and
+	 * answers the default. Never null.
+	 *
+	 * @param string|null      $selectorId The pack selector.
+	 * @param ProviderFallback $fallback   The fail-closed default, its id and the warning.
+	 *
+	 * @return T The bound provider, or the default.
+	 *
+	 * @spec openspec/specs/dsar-identity-verify-seam/spec.md
+	 */
+	public function resolveOr(?string $selectorId, ProviderFallback $fallback): object {
 		if ($selectorId !== null && $selectorId !== '' && isset($this->providers[$selectorId]) === true) {
 			return $this->providers[$selectorId];
 		}
 
-		$this->logger->warning(sprintf($fallbackWarning, ($selectorId ?? '(null)'), $defaultId));
-		return $default;
+		$this->logger->warning(sprintf($fallback->warning, ($selectorId ?? '(null)'), $fallback->defaultId));
+		return $fallback->default;
 
-	}//end resolve()
+	}//end resolveOr()
 
 	/**
 	 * Every registered provider, in registration order.

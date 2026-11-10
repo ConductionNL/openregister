@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Service\LinkedEntityIntegrations;
@@ -41,6 +42,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\EntityLink;
 
 /**
  * Allowed and refused outcomes of the linked-entity write paths.
@@ -78,9 +80,7 @@ class LinkedEntityServiceWriteAccessGoldenTest extends TestCase {
 
 		$this->service = new LinkedEntityService(
 			new LinkedEntityMappers(
-				$this->magicMapper,
-				$this->schemaMapper,
-				$this->registerMapper,
+				new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper),
 				$this->createMock(OrganisationMapperInterface::class)
 			),
 			new LinkedEntityIntegrations(
@@ -119,7 +119,7 @@ class LinkedEntityServiceWriteAccessGoldenTest extends TestCase {
 	private function expectUpdateCheck(ObjectEntity $object, bool $allow): void {
 		$expectation = $this->permissionHandler->expects($this->once())
 			->method('checkPermission')
-			->with($this->identicalTo($this->schema), 'update', null, 'alice', true, $this->identicalTo($object));
+			->with($this->identicalTo($this->schema), 'update', new PermissionCheckOptions(objectOwner: 'alice', object: $object));
 		if ($allow === false) {
 			$expectation->willThrowException(new NotAuthorizedException('denied'));
 		}
@@ -130,7 +130,7 @@ class LinkedEntityServiceWriteAccessGoldenTest extends TestCase {
 		$this->expectUpdateCheck(object: $object, allow: true);
 		$this->magicMapper->expects($this->once())->method('update')->with($this->identicalTo($object));
 
-		$this->assertSame(['n-1', 'n-2'], $this->service->addLink('o-1', 'notes', 'n-2'));
+		$this->assertSame(['n-1', 'n-2'], $this->service->addLink('o-1', new EntityLink('notes', 'n-2')));
 		$this->assertSame(['n-1', 'n-2'], $object->getNotes());
 	}//end testAddLinkAllowedWritesAfterTheCheck()
 
@@ -140,7 +140,7 @@ class LinkedEntityServiceWriteAccessGoldenTest extends TestCase {
 		$this->magicMapper->expects($this->never())->method('update');
 
 		try {
-			$this->service->addLink('o-1', 'notes', 'n-2');
+			$this->service->addLink('o-1', new EntityLink('notes', 'n-2'));
 			$this->fail('A refused write must throw.');
 		} catch (NotAuthorizedException $e) {
 			$this->assertSame('denied', $e->getMessage());
@@ -154,7 +154,7 @@ class LinkedEntityServiceWriteAccessGoldenTest extends TestCase {
 		$this->permissionHandler->expects($this->never())->method('checkPermission');
 		$this->magicMapper->expects($this->never())->method('update');
 
-		$this->assertSame(['n-1'], $this->service->addLink('o-1', 'notes', 'n-1'));
+		$this->assertSame(['n-1'], $this->service->addLink('o-1', new EntityLink('notes', 'n-1')));
 	}//end testAddLinkAlreadyPresentNeitherChecksNorWrites()
 
 	public function testAddLinkWithoutSchemaIsRefused(): void {
@@ -166,7 +166,7 @@ class LinkedEntityServiceWriteAccessGoldenTest extends TestCase {
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Cannot resolve schema for linked-entity write permission check.');
-		$this->service->addLink('o-1', 'notes', 'n-1');
+		$this->service->addLink('o-1', new EntityLink('notes', 'n-1'));
 	}//end testAddLinkWithoutSchemaIsRefused()
 
 	public function testRemoveLinkAllowedWritesAfterTheCheck(): void {
@@ -210,12 +210,12 @@ class LinkedEntityServiceWriteAccessGoldenTest extends TestCase {
 		$this->registerMapper->expects($this->once())->method('update')->with($this->identicalTo($register));
 		$this->permissionHandler->expects($this->never())->method('checkPermission');
 
-		$this->assertSame(['n-1', 'n-2'], $this->service->addLinkToRegister('r-1', 'notes', 'n-2'));
-		$this->assertSame(['n-1', 'n-2'], $this->service->addLinkToRegister('r-1', 'notes', 'n-2'));
+		$this->assertSame(['n-1', 'n-2'], $this->service->addLinkToRegister('r-1', new EntityLink('notes', 'n-2')));
+		$this->assertSame(['n-1', 'n-2'], $this->service->addLinkToRegister('r-1', new EntityLink('notes', 'n-2')));
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Register not found: r-9');
-		$this->service->addLinkToRegister('r-9', 'notes', 'n-2');
+		$this->service->addLinkToRegister('r-9', new EntityLink('notes', 'n-2'));
 	}//end testAddLinkToRegisterAppendsOnceAndNotFoundThrows()
 
 	public function testAddLinkToSchemaAppendsOnceAndNotFoundThrows(): void {
@@ -226,11 +226,11 @@ class LinkedEntityServiceWriteAccessGoldenTest extends TestCase {
 		);
 		$this->schemaMapper->expects($this->once())->method('update')->with($this->identicalTo($schema));
 
-		$this->assertSame(['n-1', 'n-2'], $this->service->addLinkToSchema('s-1', 'notes', 'n-2'));
-		$this->assertSame(['n-1', 'n-2'], $this->service->addLinkToSchema('s-1', 'notes', 'n-2'));
+		$this->assertSame(['n-1', 'n-2'], $this->service->addLinkToSchema('s-1', new EntityLink('notes', 'n-2')));
+		$this->assertSame(['n-1', 'n-2'], $this->service->addLinkToSchema('s-1', new EntityLink('notes', 'n-2')));
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Schema not found: s-9');
-		$this->service->addLinkToSchema('s-9', 'notes', 'n-2');
+		$this->service->addLinkToSchema('s-9', new EntityLink('notes', 'n-2'));
 	}//end testAddLinkToSchemaAppendsOnceAndNotFoundThrows()
 }//end class

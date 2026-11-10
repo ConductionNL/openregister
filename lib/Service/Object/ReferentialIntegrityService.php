@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -204,11 +205,9 @@ class ReferentialIntegrityService {
 	 *
 	 * Execution order: SET_NULL → SET_DEFAULT → CASCADE (deepest first).
 	 *
-	 * @param DeletionAnalysis $analysis The pre-computed deletion analysis.
-	 * @param string $userId The user performing the deletion.
-	 * @param string $cascadeSource The UUID of the root object being deleted.
-	 * @param string|null $organisationId The active organisation ID.
-	 * @param string|null $triggerSchemaSlug Slug of the schema of the deleted object (for audit trail).
+	 * @param DeletionAnalysis    $analysis The pre-computed deletion analysis.
+	 * @param CascadeDeleteOrigin $origin   The deleting user, the root object, the slug of its schema
+	 *                                      (for the audit trail) and the active organisation.
 	 *
 	 * @return array{retained: array<int, array<string, mixed>>} The cascade targets the
 	 *               archival obligation kept live, each naming the record and the ground.
@@ -218,20 +217,7 @@ class ReferentialIntegrityService {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function applyDeletionActions(
-		DeletionAnalysis $analysis,
-		string $userId,
-		string $cascadeSource,
-		?string $organisationId = null,
-		?string $triggerSchemaSlug = null,
-	): array {
-		$origin = new CascadeDeleteOrigin(
-			userId: $userId,
-			cascadeSource: $cascadeSource,
-			triggerSchemaSlug: $triggerSchemaSlug,
-			organisationId: $organisationId
-		);
-
+	public function applyDeletionActions(DeletionAnalysis $analysis, CascadeDeleteOrigin $origin): array {
 		return ['retained' => $this->applyInOrder(analysis: $analysis, origin: $origin)];
 	}//end applyDeletionActions()
 
@@ -390,30 +376,40 @@ class ReferentialIntegrityService {
 	 * Called when a deletion is prevented by RESTRICT constraints. Records the
 	 * blocked object and the blockers that prevented deletion.
 	 *
-	 * @param string $objectUuid The UUID of the object that could not be deleted.
-	 * @param string|null $schemaId Schema ID of the blocked object.
+	 * @param RefusedDeletion  $refused  The object that could not be deleted, its schema and who asked.
 	 * @param DeletionAnalysis $analysis The analysis containing blocker information.
-	 * @param string $userId The user who attempted the deletion.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function logRestrictBlock(string $objectUuid, ?string $schemaId, DeletionAnalysis $analysis, string $userId): void {
-		$this->logIntegrityAction(
-			entry: (new IntegrityAuditEntry(
-				action: 'referential_integrity.restrict_blocked',
-				objectUuid: $objectUuid,
-				changed: [
-					'blockerCount' => count($analysis->blockers),
-					'blockerSchema' => self::firstBlockerValue(blockers: $analysis->blockers, key: 'schema'),
-					'blockerProperty' => self::firstBlockerValue(blockers: $analysis->blockers, key: 'property'),
-					'reason' => 'RESTRICT constraint prevents deletion',
-				],
-				userId: $userId
-			))->within(schemaId: $schemaId, registerId: null)
+	public function logRestrictBlock(RefusedDeletion $refused, DeletionAnalysis $analysis): void {
+		$entry = new IntegrityAuditEntry(
+			action: 'referential_integrity.restrict_blocked',
+			objectUuid: $refused->objectUuid,
+			changed: self::restrictBlockChange(analysis: $analysis),
+			userId: $refused->userId
 		);
+		$this->logIntegrityAction(entry: $entry->within(schemaId: $refused->schemaId, registerId: null));
 	}//end logRestrictBlock()
+
+	/**
+	 * What a RESTRICT block records: how many blockers, the first blocker's schema and property, and why.
+	 *
+	 * @param DeletionAnalysis $analysis The analysis containing blocker information.
+	 *
+	 * @return array{blockerCount: int, blockerSchema: mixed, blockerProperty: mixed, reason: string}
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private static function restrictBlockChange(DeletionAnalysis $analysis): array {
+		return [
+			'blockerCount' => count($analysis->blockers),
+			'blockerSchema' => self::firstBlockerValue(blockers: $analysis->blockers, key: 'schema'),
+			'blockerProperty' => self::firstBlockerValue(blockers: $analysis->blockers, key: 'property'),
+			'reason' => 'RESTRICT constraint prevents deletion',
+		];
+	}//end restrictBlockChange()
 
 	/**
 	 * The value the first blocker holds under a key, or 'unknown'.
@@ -699,7 +695,7 @@ class ReferentialIntegrityService {
 		);
 		sort($parts);
 
-		return count($parts) . '|' . md5(implode("\n", $parts));
+		return count($parts) . '|' . hash(algo: 'xxh128', data: implode("\n", $parts));
 	}//end catalogueHash()
 
 	/**
@@ -2164,7 +2160,7 @@ class ReferentialIntegrityService {
 	 *
 	 * One row per analysis target (a target referenced through two properties
 	 * gets two rows, matching the per-object path), each pre-built through
-	 * AuditTrailMapper::buildAuditTrail() with action
+	 * AuditTrailMapper::buildEntry() with action
 	 * `referential_integrity.cascade_delete` and the canonical cascade-context
 	 * fold (triggerObject/triggerSchema/action_type/property). Audit failures
 	 * are logged but never abort the cascade — parity with the per-object
@@ -2201,7 +2197,9 @@ class ReferentialIntegrityService {
 	 */
 	private function cascadeAuditRow(ObjectEntity $entity, array $cascadeContext): mixed {
 		try {
-			return $this->controls->auditTrailMapper->buildAuditTrail(old: $entity, new: null, action: self::CASCADE_DELETE, cascadeContext: $cascadeContext);
+			return $this->controls->auditTrailMapper->buildEntry(
+				change: new AuditedChange(old: $entity, new: null, action: self::CASCADE_DELETE, cascadeContext: $cascadeContext)
+			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[ReferentialIntegrity] Could not build cascade audit row',

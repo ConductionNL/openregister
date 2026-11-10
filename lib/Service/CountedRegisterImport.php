@@ -28,9 +28,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 
 /**
@@ -43,13 +42,11 @@ class CountedRegisterImport {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapperInterface               $registerMapper Reads the registers.
-	 * @param SchemaMapperInterface                 $schemaMapper   Reads the schemas a re-import touched.
-	 * @param ShippedAuthorizationDecision $decision       The administrator's decision, shared with the guard.
+	 * @param SchemaCatalogInterface       $catalog  Reads the registers and the schemas a re-import touched.
+	 * @param ShippedAuthorizationDecision $decision The administrator's decision, shared with the guard.
 	 */
 	public function __construct(
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly ShippedAuthorizationDecision $decision,
 	) {
 	}//end __construct()
@@ -69,22 +66,27 @@ class CountedRegisterImport {
 	 *
 	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
 	 */
-	public function run(
-		string $slug,
-		array $slugs,
-		string $version,
-		int $fragments,
-		string $via,
-		callable $import
-	): array {
-		$document = (new RegisterImportDocument(slug: $slug, slugs: $slugs))
-			->release(version: $version, fragments: $fragments);
+	public function run(string $slug, array $slugs, string $version, int $fragments, string $via, callable $import): array {
+		$document = (new RegisterImportDocument(slug: $slug, slugs: $slugs))->release(version: $version, fragments: $fragments);
+		return $this->runCall(document: $document, call: new RegisterImportCall(via: $via, operation: $import(...)));
+	}//end run()
 
+	/**
+	 * Run one import call under the administrator's decision, and count what it changed.
+	 *
+	 * @param RegisterImportDocument $document The imported document: the slug, its declared slugs, version and fragments.
+	 * @param RegisterImportCall     $call     Who asked, and the operation that runs the import.
+	 *
+	 * @return array<string, mixed> The reimport() result.
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public function runCall(RegisterImportDocument $document, RegisterImportCall $call): array {
 		return $this->counted(
 			document: $document,
-			import: fn (): mixed => $this->decision->run(via: $via, operation: $import)
+			import: fn (): mixed => $this->decision->run(via: $call->via, operation: $call->operation)
 		);
-	}//end run()
+	}//end runCall()
 
 	/**
 	 * Snapshot, import, snapshot again, and report the counts and the outcome.
@@ -205,7 +207,7 @@ class CountedRegisterImport {
 	private function snapshot(array $slugs): array {
 		$registers = [];
 		$schemaIds = [];
-		foreach ($this->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
+		foreach ($this->catalog->registers()->findAll(_rbac: false, _multitenancy: false) as $register) {
 			$slug = strtolower((string)$register->getSlug());
 			if (in_array($slug, $slugs, true) === false) {
 				continue;
@@ -249,7 +251,7 @@ class CountedRegisterImport {
 			return $schemas;
 		}
 
-		$found = $this->schemaMapper->findMultiple(ids: array_values($schemaIds), _rbac: false, _multitenancy: false);
+		$found = $this->catalog->schemas()->findMultiple(ids: array_values($schemaIds), _rbac: false, _multitenancy: false);
 		foreach ($found as $schema) {
 			// Keyed by a string, never a bare id PHP would turn into an int key.
 			$schemas['schema:' . (string)$schema->getId()] = $this->schemaFingerprint(schema: $schema);
@@ -269,8 +271,9 @@ class CountedRegisterImport {
 		$schemas = array_map('strval', array_filter($register->getSchemas(), 'is_scalar'));
 		sort($schemas);
 
-		return md5(
-			(string)json_encode(
+		return hash(
+			algo: 'xxh128',
+			data: (string)json_encode(
 				[$register->getVersion(), $register->getTitle(), $register->getDescription(), $schemas]
 			)
 		);
@@ -284,8 +287,9 @@ class CountedRegisterImport {
 	 * @return string The fingerprint.
 	 */
 	private function schemaFingerprint(Schema $schema): string {
-		return md5(
-			(string)json_encode(
+		return hash(
+			algo: 'xxh128',
+			data: (string)json_encode(
 				[
 					$schema->getVersion(),
 					$schema->getTitle(),

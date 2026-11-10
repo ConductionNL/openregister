@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Schemas;
 
+use OCA\OpenRegister\Service\Schemas\UniqueConflict;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
 use PHPUnit\Framework\TestCase;
 
@@ -132,8 +133,7 @@ class UniqueConstraintEvaluatorTest extends TestCase {
 	public function testTheBreachNamesTheCombinationAndTheConflictingObject(): void {
 		$message = $this->evaluator->describeBreach(
 			constraint: ['name' => 'een-bezwaar', 'properties' => ['besluit', 'indiener'], 'action' => 'refuse'],
-			object: ['besluit' => 'B-1', 'indiener' => 'P-9'],
-			conflictingId: 'abc-123'
+			conflict: new UniqueConflict(object: ['besluit' => 'B-1', 'indiener' => 'P-9'], conflictingId: 'abc-123')
 		);
 
 		$this->assertStringContainsString('besluit and indiener', $message);

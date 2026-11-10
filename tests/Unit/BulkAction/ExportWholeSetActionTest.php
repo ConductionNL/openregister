@@ -126,11 +126,12 @@ final class ExportWholeSetActionTest extends TestCase {
 	}//end testAFilteredProfileIsNotAWholeSetJob()
 
 	public function testAWholeSetProfileIsAccepted(): void {
+		$this->expectNotToPerformAssertions();
+
 		$this->profiles->method('find')->willReturn($this->profile(true));
 
 		$this->action()->validateParameters(['profileId' => 42]);
 
-		self::assertTrue(true);
 	}//end testAWholeSetProfileIsAccepted()
 
 	public function testTheRehearsalWritesNothing(): void {

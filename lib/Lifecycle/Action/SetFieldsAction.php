@@ -70,18 +70,43 @@ final class SetFieldsAction implements LifecycleActionInterface {
 	 */
 	public function execute(array $objectData, array $previousData, array $parameters, string $actionName): array {
 		$fields = $this->resolveFieldMap(parameters: $parameters);
+		$this->assertDeclaresFields(fields: $fields, actionName: $actionName);
+		return $this->stampFields(objectData: $objectData, fields: $fields);
+	}//end execute()
+
+	/**
+	 * Refuse an action whose field map is empty: declared but useless, so fail loud.
+	 *
+	 * @param array<string, mixed> $fields     The resolved field map.
+	 * @param string               $actionName The declared action name.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the field map is empty.
+	 */
+	private function assertDeclaresFields(array $fields, string $actionName): void {
 		if ($fields === []) {
 			throw new RuntimeException(
 				sprintf('Lifecycle action "%s" declares no fields to set.', $actionName)
 			);
 		}
+	}//end assertDeclaresFields()
 
+	/**
+	 * Stamp the resolved field values onto the payload.
+	 *
+	 * @param array<string, mixed> $objectData The object payload.
+	 * @param array<string, mixed> $fields     The field → declared value map.
+	 *
+	 * @return array<string, mixed> The payload with the fields stamped.
+	 */
+	private function stampFields(array $objectData, array $fields): array {
 		foreach ($fields as $key => $value) {
 			$objectData[(string)$key] = $this->resolveValue(value: $value);
 		}
 
 		return $objectData;
-	}//end execute()
+	}//end stampFields()
 
 	/**
 	 * Resolve the field map from either authoring shape.

@@ -81,7 +81,7 @@ class MdtoXmlGeneratorTest extends TestCase {
 		$writer = new MdtoDocumentWriter();
 		$sourceReader = new MdtoSourceReader(new MdtoValueReader(), $this->objectAnnotations());
 		$bestandGenerator = new MdtoBestandGenerator($writer);
-		$preconditions = new MdtoPreconditions($appConfig, $this->createMock(LoggerInterface::class), new MdtoInputReaders($sourceReader, $bestandGenerator, $this->createMock(MdtoMappingResolver::class)));
+		$preconditions = new MdtoPreconditions(new MdtoInputReaders($sourceReader, $bestandGenerator, $this->createMock(MdtoMappingResolver::class)), new \OCA\OpenRegister\Service\Configuration\AppSettingsAccess($appConfig, $this->createMock(\OCP\App\IAppManager::class), $this->createMock(LoggerInterface::class)));
 
 		return new MdtoXmlGenerator(
 			new MdtoValueSources($appConfig, $eventMapper, $this->sourceReader),
@@ -1004,11 +1004,7 @@ class MdtoXmlGeneratorTest extends TestCase {
 	 * @return ObjectArchivalAnnotation The resolver.
 	 */
 	private function objectAnnotations(): ObjectArchivalAnnotation {
-		return new ObjectArchivalAnnotation(
-			schemaMapper: $this->createMock(originalClassName: SchemaMapper::class),
-			evaluator: new RetentionEvaluator(logger: new NullLogger()),
-			logger: new NullLogger()
-		);
+		return new ObjectArchivalAnnotation(lookup: new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup(schemaMapper: $this->createMock(originalClassName: SchemaMapper::class), logger: new NullLogger()), evaluator: new RetentionEvaluator(logger: new NullLogger()));
 	}
 
 }

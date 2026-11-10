@@ -36,8 +36,10 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\RuleRun;
 use OCA\OpenRegister\Db\RuleRunMapper;
 use OCA\OpenRegister\Db\RuleRunSummary;
+use OCA\OpenRegister\Db\RuleRunSummary\RuleEvaluation;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
@@ -57,15 +59,18 @@ use OCA\OpenRegister\Service\Rules\ConditionTracer;
 use OCA\OpenRegister\Service\Rules\NamedConditionEvaluator;
 use OCA\OpenRegister\Service\Rules\NamedConditionLibrary;
 use OCA\OpenRegister\Service\Rules\RuleAuditService;
-use OCA\OpenRegister\Service\Rules\RuleCeilingService;
 use OCA\OpenRegister\Service\Rules\RuleEnablementService;
 use OCA\OpenRegister\Service\Rules\FlowRuleDescriptors;
 use OCA\OpenRegister\Service\Rules\RuleInventoryService;
 use OCA\OpenRegister\Service\Rules\RuleReplayService;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
 use OCA\OpenRegister\Service\Rules\RuleRunStores;
+use OCA\OpenRegister\Service\Rules\RuleTargets;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
+use OCA\OpenRegister\Service\Rules\RuleInventoryOptions;
 use OCA\OpenRegister\Service\Rules\RuleTrialService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\Rules\RuleTrialRequest;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCA\OpenRegister\Service\Rules\Support\AdministeredValidationChecks;
 use OCA\OpenRegister\Service\Rules\Support\RuleTrialEngine;
@@ -173,11 +178,38 @@ class RulesServicesGoldenTest extends TestCase {
 		);
 		return new RuleInventoryService(
 			summaries: $summaries,
-			propertyCalculations: new PropertyCalculations(),
-			vocabulary: new RuleVocabulary(),
 			flows: new FlowRuleDescriptors(triggers: $triggers, published: $published)
 		);
 	}//end inventory()
+
+	/**
+	 * The declared rules over the given mappers and object service; the rest are inert mocks.
+	 *
+	 * @param RegisterMapperInterface|null   $registers The register mapper.
+	 * @param SchemaMapperInterface|null     $schemas   The schema mapper.
+	 * @param MagicMapperInterface|null      $tables    The magic table mapper.
+	 * @param ObjectOperationsInterface|null $objects   The object service.
+	 *
+	 * @return RuleTargets
+	 */
+	private function targets(
+		?RegisterMapperInterface $registers = null,
+		?SchemaMapperInterface $schemas = null,
+		?MagicMapperInterface $tables = null,
+		?ObjectOperationsInterface $objects = null
+	): RuleTargets {
+		$catalog = new SchemaCatalog(
+			registers: ($registers ?? $this->createMock(RegisterMapperInterface::class)),
+			schemas: ($schemas ?? $this->createMock(SchemaMapperInterface::class)),
+			tables: ($tables ?? $this->createMock(MagicMapperInterface::class))
+		);
+
+		return new RuleTargets(
+			rules: $this->inventory(),
+			catalog: $catalog,
+			objects: ($objects ?? $this->createMock(ObjectOperationsInterface::class))
+		);
+	}//end targets()
 
 	public function testInventory(): void {
 		$inventory = $this->inventory();
@@ -185,9 +217,9 @@ class RulesServicesGoldenTest extends TestCase {
 		$now = new DateTime('2026-09-14T00:00:00+00:00');
 		$actual = [
 			'describe' => array_map(static fn ($rule): array => $rule->jsonSerialize(), $inventory->describe($schema)),
-			'window30' => $inventory->inventory($schema, 30, $now),
-			'window0' => $inventory->inventory($schema, 0, $now),
-			'scoped' => $inventory->inventory($schema, 365, $now, ['zaaktype' => 'c']),
+			'window30' => $inventory->inventory($schema, new RuleInventoryOptions(30, $now)),
+			'window0' => $inventory->inventory($schema, new RuleInventoryOptions(0, $now)),
+			'scoped' => $inventory->inventory($schema, new RuleInventoryOptions(365, $now, ['zaaktype' => 'c'])),
 			'find' => $inventory->find($schema, 'flow:bezwaar:flow-b')?->jsonSerialize(),
 			'missing' => $inventory->find($schema, 'flow:bezwaar:nope'),
 		];
@@ -234,10 +266,8 @@ class RulesServicesGoldenTest extends TestCase {
 			ast: new CalculationEvaluator(placeholders: new PlaceholderResolver(userSession: $this->createMock(IUserSession::class)))
 		);
 		return new RuleTrialService(
-			inventory: $this->inventory(),
-			engine: new RuleTrialEngine(evaluator: $evaluator, tracer: new ConditionTracer(dialect: $dialect), dialect: $dialect),
-			registerMapper: $registers,
-			objectMapper: $objects
+			targets: $this->targets(registers: $registers, tables: $objects),
+			engine: new RuleTrialEngine(evaluator: $evaluator, tracer: new ConditionTracer(dialect: $dialect), dialect: $dialect)
 		);
 	}//end trialService()
 
@@ -248,23 +278,23 @@ class RulesServicesGoldenTest extends TestCase {
 		$low = ['bedrag' => 1];
 		$draft = ['expression' => ['ok' => 'draft']];
 		$actual = [
-			'calculation' => $trials->trySample($schema, 'calculation:bezwaar:uiterlijkeDatum', ['a' => 1]),
-			'property calculation' => $trials->trySample($schema, 'calculation:bezwaar:termijn', []),
-			'calculation throws' => $trials->trySample($schema, 'calculation:bezwaar:kapot', []),
-			'condition holds' => $trials->trySample($schema, 'lifecycleCondition:bezwaar:sluiten', $high),
-			'condition fails' => $trials->trySample($schema, 'lifecycleCondition:bezwaar:sluiten', $low),
-			'ast condition' => $trials->trySample($schema, 'lifecycleCondition:bezwaar:ast', $low),
-			'state rule' => $trials->trySample($schema, 'stateFieldRule:bezwaar:open', []),
-			'flow' => $trials->trySample($schema, 'flow:bezwaar:flow-a', []),
-			'unknown' => $trials->trySample($schema, 'calculation:bezwaar:nope', []),
-			'unknown draft' => $trials->trySample($schema, 'calculation:bezwaar:nope', [], $draft),
-			'draft on condition' => $trials->trySample($schema, 'lifecycleCondition:bezwaar:sluiten', $high, ['expression' => ['==' => [1, 1]]]),
-			'override without expression' => $trials->trySample($schema, 'calculation:bezwaar:nope', [], ['x' => 1]),
-			'object' => $trials->tryObject($schema, 'lifecycleCondition:bezwaar:sluiten', 'reg', 'o1'),
-			'object calculation draft' => $trials->tryObject($schema, 'calculation:bezwaar:geen', 'reg', 'o2', $draft),
-			'object register missing' => $trials->tryObject($schema, 'calculation:bezwaar:uiterlijkeDatum', 'missing', 'o1'),
-			'object gone' => $trials->tryObject($schema, 'calculation:bezwaar:uiterlijkeDatum', 'reg', 'gone'),
-			'object unknown rule' => $trials->tryObject($schema, 'calculation:bezwaar:nope', 'missing', 'gone'),
+			'calculation' => $trials->trySample(new RuleTrialRequest($schema, 'calculation:bezwaar:uiterlijkeDatum'), ['a' => 1]),
+			'property calculation' => $trials->trySample(new RuleTrialRequest($schema, 'calculation:bezwaar:termijn'), []),
+			'calculation throws' => $trials->trySample(new RuleTrialRequest($schema, 'calculation:bezwaar:kapot'), []),
+			'condition holds' => $trials->trySample(new RuleTrialRequest($schema, 'lifecycleCondition:bezwaar:sluiten'), $high),
+			'condition fails' => $trials->trySample(new RuleTrialRequest($schema, 'lifecycleCondition:bezwaar:sluiten'), $low),
+			'ast condition' => $trials->trySample(new RuleTrialRequest($schema, 'lifecycleCondition:bezwaar:ast'), $low),
+			'state rule' => $trials->trySample(new RuleTrialRequest($schema, 'stateFieldRule:bezwaar:open'), []),
+			'flow' => $trials->trySample(new RuleTrialRequest($schema, 'flow:bezwaar:flow-a'), []),
+			'unknown' => $trials->trySample(new RuleTrialRequest($schema, 'calculation:bezwaar:nope'), []),
+			'unknown draft' => $trials->trySample(new RuleTrialRequest($schema, 'calculation:bezwaar:nope', $draft), []),
+			'draft on condition' => $trials->trySample(new RuleTrialRequest($schema, 'lifecycleCondition:bezwaar:sluiten', ['expression' => ['==' => [1, 1]]]), $high),
+			'override without expression' => $trials->trySample(new RuleTrialRequest($schema, 'calculation:bezwaar:nope', ['x' => 1]), []),
+			'object' => $trials->tryObject(new RuleTrialRequest($schema, 'lifecycleCondition:bezwaar:sluiten'), new ObjectRef('reg', (string)$schema->getId(), 'o1')),
+			'object calculation draft' => $trials->tryObject(new RuleTrialRequest($schema, 'calculation:bezwaar:geen', $draft), new ObjectRef('reg', (string)$schema->getId(), 'o2')),
+			'object register missing' => $trials->tryObject(new RuleTrialRequest($schema, 'calculation:bezwaar:uiterlijkeDatum'), new ObjectRef('missing', (string)$schema->getId(), 'o1')),
+			'object gone' => $trials->tryObject(new RuleTrialRequest($schema, 'calculation:bezwaar:uiterlijkeDatum'), new ObjectRef('reg', (string)$schema->getId(), 'gone')),
+			'object unknown rule' => $trials->tryObject(new RuleTrialRequest($schema, 'calculation:bezwaar:nope'), new ObjectRef('missing', (string)$schema->getId(), 'gone')),
 		];
 		$this->assertGolden('trial', $actual);
 	}//end testTrial()
@@ -297,8 +327,7 @@ class RulesServicesGoldenTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 		return new RuleEnablementService(
-			inventory: $this->inventory(),
-			schemaMapper: $schemas,
+			targets: $this->targets(schemas: $schemas),
 			flows: $flows,
 			audit: new RuleAuditService(userSession: $session, logger: $this->createMock(LoggerInterface::class))
 		);
@@ -350,7 +379,7 @@ class RulesServicesGoldenTest extends TestCase {
 				return $count;
 			}
 		);
-		return new RuleReplayService(inventory: $this->inventory(), ceiling: new RuleCeilingService(), jobs: $jobs, objects: $objects);
+		return new RuleReplayService(targets: $this->targets(objects: $objects), jobs: $jobs);
 	}//end replay()
 
 	public function testReplay(): void {
@@ -399,8 +428,8 @@ class RulesServicesGoldenTest extends TestCase {
 		);
 		$summaries = $this->createMock(RuleRunSummaryMapper::class);
 		$summaries->method('record')->willReturnCallback(
-			function (...$args) use ($failSummary): RuleRunSummary {
-				$args[3] = $args[3]->format(DATE_ATOM);
+			function (RuleRun $run, RuleEvaluation $evaluation) use ($failSummary): RuleRunSummary {
+				$args = [$run->getRuleId(), $run->getSchemaSlug(), $evaluation->verdict, $evaluation->moment->format(DATE_ATOM), $evaluation->error];
 				$this->calls[] = ['summary', $args];
 				if ($failSummary === true) {
 					throw new RuntimeException('summary failed');

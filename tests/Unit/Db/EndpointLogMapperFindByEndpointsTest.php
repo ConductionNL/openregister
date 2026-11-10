@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\EndpointLogMapper;
+use OCA\OpenRegister\Db\ListQuery;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 
@@ -36,14 +37,14 @@ class EndpointLogMapperFindByEndpointsTest extends TestCase {
 	}
 
 	public function testAnEmptyListMatchesNothingWithoutAQuery(): void {
-		$this->assertSame([], $this->mapper()->findByEndpoints([]));
+		$this->assertSame([], $this->mapper()->findByEndpoints([], ListQuery::unbounded()));
 		$this->assertSame([], $this->queryLog);
 	}
 
 	public function testItFiltersOnAllGivenEndpointsAndPages(): void {
 		$this->queuedRows = [[['id' => 4]]];
 
-		$found = $this->mapper()->findByEndpoints([3, 7], 5, 10);
+		$found = $this->mapper()->findByEndpoints([3, 7], new ListQuery(limit: 5, offset: 10));
 
 		$this->assertCount(1, $found);
 		$this->assertSame(4, $found[0]->getId());

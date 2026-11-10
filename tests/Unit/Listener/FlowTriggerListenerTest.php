@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace Unit\Listener;
 
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\CaseItemTransitionedEvent;
@@ -99,7 +101,7 @@ class FlowTriggerListenerTest extends TestCase {
 			}
 		);
 
-		return new FlowTriggerSlugs($registers, $schemas, new NullLogger());
+		return new FlowTriggerSlugs(new SchemaCatalog($registers, $schemas, $this->createMock(MagicMapperInterface::class)), new NullLogger());
 	}
 
 	private function object(): ObjectEntity {

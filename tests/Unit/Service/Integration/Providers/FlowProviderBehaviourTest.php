@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 use OCA\OpenRegister\Db\FlowLink;
 use OCA\OpenRegister\Db\FlowLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\Providers\FlowProvider;
+use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
 use OCP\App\IAppManager;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -66,7 +67,7 @@ class FlowProviderBehaviourTest extends TestCase {
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getQueryBuilder')->willReturnCallback(fn (): IQueryBuilder => $this->queryBuilder());
 
-		return new FlowProvider($mapper, $db, $apps, $l10n);
+		return new FlowProvider(new LeafProviderPlatform($db, $apps, $l10n), $mapper);
 	}//end provider()
 
 	private function queryBuilder(): IQueryBuilder {

@@ -84,39 +84,32 @@ class IcalendarWriter {
 	/**
 	 * Assemble a VCALENDAR from component lines.
 	 *
-	 * @param string $calendarName The display name the client shows.
-	 * @param DateTimeZone|null $timeZone The tenant time zone, when the body holds timed events.
-	 * @param array<int, string> $componentLines The unfolded lines of every component.
-	 * @param CalendarYearSpan $years The years the VTIMEZONE must cover.
+	 * @param CalendarContents $contents The name, zone, component lines and years.
 	 *
 	 * @return string The complete, folded, CRLF-terminated calendar.
 	 *
 	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
-	public function calendar(
-		string $calendarName,
-		?DateTimeZone $timeZone,
-		array $componentLines,
-		CalendarYearSpan $years,
-	): string {
+	public function calendar(CalendarContents $contents): string {
+		$timeZone = $contents->timeZone;
 		$lines = [
 			'BEGIN:VCALENDAR',
 			'VERSION:2.0',
 			'PRODID:' . self::PRODID,
 			'CALSCALE:GREGORIAN',
 			'METHOD:PUBLISH',
-			'X-WR-CALNAME:' . $this->escapeText(value: $calendarName),
+			'X-WR-CALNAME:' . $this->escapeText(value: $contents->calendarName),
 		];
 
 		if ($timeZone !== null) {
 			$lines[] = 'X-WR-TIMEZONE:' . $timeZone->getName();
 			$lines = array_merge(
 				$lines,
-				$this->timeZoneComponent(timeZone: $timeZone, years: $years)
+				$this->timeZoneComponent(timeZone: $timeZone, years: $contents->years)
 			);
 		}
 
-		$lines = array_merge($lines, $componentLines);
+		$lines = array_merge($lines, $contents->componentLines);
 		$lines[] = 'END:VCALENDAR';
 
 		$folded = array_map([$this, 'fold'], $lines);

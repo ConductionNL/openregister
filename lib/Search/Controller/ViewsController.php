@@ -20,10 +20,12 @@
 
 namespace OCA\OpenRegister\Search\Controller;
 
+use OCA\OpenRegister\Service\Rbac\ReachedView;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Search\Controller\Support\ViewPatch;
 use OCA\OpenRegister\Search\Db\View;
 use InvalidArgumentException;
+use OCA\OpenRegister\Search\Service\CalendarRange;
 use OCA\OpenRegister\Search\Service\ViewPresentationService;
 use OCA\OpenRegister\Search\Service\ViewAudience;
 use OCA\OpenRegister\Search\Service\ViewDefinition;
@@ -37,6 +39,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCA\OpenRegister\Service\Rbac\ViewerReachCheckInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\ViewEdit;
 
 /**
  * Controller for managing saved search views
@@ -234,8 +237,7 @@ class ViewsController extends Controller {
 		);
 
 		$refused = $this->viewers->refusedFields(
-			view: $view->jsonSerialize(),
-			reach: $this->viewers->reachOf(userId: $userId),
+			reached: new ReachedView(view: $view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId)),
 			update: $fields
 		);
 
@@ -446,21 +448,26 @@ class ViewsController extends Controller {
 	 */
 	private function saveNew(string $userId, ViewPatch $write): JSONResponse {
 		$data = $write->data;
-		$this->viewers->assertMayNameRecipients(view: ['owner' => $userId], reach: $this->viewers->reachOf(userId: $userId), data: $data);
+		$this->viewers->assertMayNameRecipients(
+			reached: new ReachedView(view: ['owner' => $userId], reach: $this->viewers->reachOf(userId: $userId)),
+			data: $data
+		);
 		$view = $this->viewService->create(
-			definition: new ViewDefinition(
-				name: $data['name'],
-				description: $data['description'] ?? '',
-				query: $write->query(),
-				presentation: $write->presentation()
-			),
-			audience: new ViewAudience(
-				owner: $userId,
-				isPublic: $data['isPublic'] ?? false,
-				isDefault: $data['isDefault'] ?? false,
-				sharedWith: $write->shares()
-			),
-			alert: ViewAlert::declaredIn(body: $data)
+			edit: new ViewEdit(
+				definition: new ViewDefinition(
+					name: $data['name'],
+					description: $data['description'] ?? '',
+					query: $write->query(),
+					presentation: $write->presentation()
+				),
+				audience: new ViewAudience(
+					owner: $userId,
+					isPublic: $data['isPublic'] ?? false,
+					isDefault: $data['isDefault'] ?? false,
+					sharedWith: $write->shares()
+				),
+				alert: ViewAlert::declaredIn(body: $data)
+			)
 		);
 		return new JSONResponse(data: ['view' => $view->jsonSerialize()], statusCode: 201);
 	}//end saveNew()
@@ -535,8 +542,7 @@ class ViewsController extends Controller {
 		if ($refusal === null) {
 			// PUT writes `isPublic` false when omitted, so the recipients are judged on that body.
 			$this->viewers->assertMayNameRecipients(
-				view: $update->view->jsonSerialize(),
-				reach: $this->viewers->reachOf(userId: $userId),
+				reached: new ReachedView(view: $update->view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId)),
 				data: ($update->data + ['isPublic' => false])
 			);
 		}
@@ -553,17 +559,23 @@ class ViewsController extends Controller {
 	 */
 	private function saveUpdate(ViewPatch $update): JSONResponse {
 		$data = $update->data;
-		$view = $this->viewService->update(
+		$view = $this->viewService->revise(
 			id: $update->id,
-			name: $data['name'],
-			description: $data['description'] ?? '',
-			owner: $update->view->getOwner(),
-			isPublic: $data['isPublic'] ?? false,
-			isDefault: $data['isDefault'] ?? false,
-			query: $update->query(),
-			presentation: $update->presentation(),
-			sharedWith: $update->shares(),
-			alert: ViewAlert::declaredIn(body: $data)
+			edit: new ViewEdit(
+				definition: new ViewDefinition(
+					name: $data['name'],
+					description: $data['description'] ?? '',
+					query: $update->query(),
+					presentation: $update->presentation()
+				),
+				audience: new ViewAudience(
+					owner: $update->view->getOwner(),
+					isPublic: $data['isPublic'] ?? false,
+					isDefault: $data['isDefault'] ?? false,
+					sharedWith: $update->shares()
+				),
+				alert: ViewAlert::declaredIn(body: $data)
+			)
 		);
 		return new JSONResponse(data: ['view' => $view->jsonSerialize()]);
 	}//end saveUpdate()
@@ -630,7 +642,10 @@ class ViewsController extends Controller {
 		// additionally carries `@NoCSRFRequired`.
 		$refusal = $this->refuseForbiddenViewFields(write: $patch, userId: $userId);
 		if ($refusal === null) {
-			$this->viewers->assertMayNameRecipients(view: $patch->view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId), data: $patch->data);
+			$this->viewers->assertMayNameRecipients(
+				reached: new ReachedView(view: $patch->view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId)),
+				data: $patch->data
+			);
 		}
 
 		return $refusal ?? $this->savePatch(patch: $patch);
@@ -653,18 +668,24 @@ class ViewsController extends Controller {
 			return $shareRefusal;
 		}
 
-		$updatedView = $this->viewService->update(
+		$updatedView = $this->viewService->revise(
 			id: $patch->id,
-			name: $data['name'] ?? $view->getName() ?? '',
-			description: $data['description'] ?? $view->getDescription() ?? '',
-			owner: $view->getOwner(),
-			isPublic: $data['isPublic'] ?? $view->getIsPublic(),
-			isDefault: $data['isDefault'] ?? $view->getIsDefault(),
-			query: $query,
-			favoredBy: $data['favoredBy'] ?? $view->getFavoredBy(),
-			presentation: $presentation,
-			sharedWith: $patch->shares(),
-			alert: ViewAlert::declaredIn(body: $data)
+			edit: new ViewEdit(
+				definition: new ViewDefinition(
+					name: $data['name'] ?? $view->getName() ?? '',
+					description: $data['description'] ?? $view->getDescription() ?? '',
+					query: $query,
+					presentation: $presentation
+				),
+				audience: new ViewAudience(
+					owner: $view->getOwner(),
+					isPublic: $data['isPublic'] ?? $view->getIsPublic(),
+					isDefault: $data['isDefault'] ?? $view->getIsDefault(),
+					sharedWith: $patch->shares()
+				),
+				favoredBy: $data['favoredBy'] ?? $view->getFavoredBy(),
+				alert: ViewAlert::declaredIn(body: $data)
+			)
 		);
 		return new JSONResponse(data: ['view' => $updatedView->jsonSerialize()]);
 	}//end savePatch()
@@ -848,8 +869,7 @@ class ViewsController extends Controller {
 			// they can rule it out.
 			$result = $this->viewPresentationService->getCalendarObjects(
 				view: $view,
-				rangeStart: $rangeStart,
-				rangeEnd: $rangeEnd
+				range: new CalendarRange(start: $rangeStart, end: $rangeEnd)
 			);
 
 			return new JSONResponse(data: $result);

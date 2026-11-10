@@ -43,6 +43,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -59,19 +60,33 @@ use OCA\OpenRegister\Command\Support\PurgeSwitches;
 class PurgeObjectCommand extends Command {
 
 	/**
+	 * Magic-table object lookup and delete.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $objectMapper;
+
+	/**
+	 * Schema lookup, to read the archival annotation.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * Wire the mappers.
 	 *
-	 * @param MagicMapperInterface      $objectMapper     Magic-table object lookup and delete.
-	 * @param SchemaMapperInterface     $schemaMapper     Schema lookup, to read the archival annotation.
+	 * @param SchemaCatalogInterface    $catalog          Magic-table object lookup and delete, and the schema lookup that reads the archival annotation.
 	 * @param AuditTrailMapperInterface $auditTrailMapper Resolves the objects an import job created.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $objectMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		SchemaCatalogInterface $catalog,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 	) {
+		$this->objectMapper = $catalog->tables();
+		$this->schemaMapper = $catalog->schemas();
 		parent::__construct();
 	}//end __construct()
 

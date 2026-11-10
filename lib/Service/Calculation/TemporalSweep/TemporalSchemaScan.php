@@ -28,9 +28,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Calculation\TemporalSweep;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -43,15 +42,13 @@ final class TemporalSchemaScan {
 	/**
 	 * Wire the mappers and the logger.
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Schema enumeration (system scope).
-	 * @param RegisterMapperInterface $registerMapper Register enumeration for schema→register resolution.
-	 * @param LoggerInterface $logger Structured logging.
+	 * @param SchemaCatalogInterface $catalog Schema enumeration (system scope) and register enumeration for schema→register resolution.
+	 * @param LoggerInterface        $logger  Structured logging.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -65,7 +62,7 @@ final class TemporalSchemaScan {
 	 */
 	public function schemas(): ?array {
 		try {
-			return $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
+			return $this->catalog->schemas()->findAll(_rbac: false, _multitenancy: false);
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				message: '[TemporalCalculationSweep] schema enumeration failed: ' . $e->getMessage(),
@@ -84,7 +81,7 @@ final class TemporalSchemaScan {
 	 */
 	public function registers(): array {
 		try {
-			return $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
+			return $this->catalog->registers()->findAll(_rbac: false, _multitenancy: false);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[TemporalCalculationSweep] register enumeration failed: ' . $e->getMessage(),

@@ -124,7 +124,13 @@ final class FileInputReader {
 			}
 
 			$dataUri = $this->uploadDataUri(fieldName: $fieldName, fileInfo: $fileInfo);
-			$data    = $this->injectUpload(data: $data, fieldName: $fieldName, dataUri: $dataUri);
+			$list    = $this->listField(fieldName: $fieldName);
+			if ($list === null) {
+				$data[$fieldName] = $dataUri;
+				continue;
+			}
+
+			$data[$list][] = $dataUri;
 		}
 
 		return $data;
@@ -214,29 +220,19 @@ final class FileInputReader {
 	}//end uploadDataUri()
 
 	/**
-	 * Put an upload's data URI into the object data; it takes precedence over a sent value.
+	 * The list a field name in array notation (`files[]`, `files[0]`) appends to.
 	 *
-	 * Array notation (`images[]`, `images[0]`) appends to the `images` list.
+	 * @param string $fieldName The upload's field name.
 	 *
-	 * @param array<string, mixed> $data      The object data.
-	 * @param string               $fieldName The form field name.
-	 * @param string               $dataUri   The upload as a data URI.
-	 *
-	 * @return array<string, mixed>
+	 * @return string|null The list's key, or null when the name is a plain field.
 	 */
-	private function injectUpload(array $data, string $fieldName, string $dataUri): array {
+	private function listField(string $fieldName): ?string {
 		if (preg_match('/^(.+)\[\d*\]$/', $fieldName, $matches) !== 1) {
-			$data[$fieldName] = $dataUri;
-			return $data;
+			return null;
 		}
 
-		if (isset($data[$matches[1]]) === false) {
-			$data[$matches[1]] = [];
-		}
-
-		$data[$matches[1]][] = $dataUri;
-		return $data;
-	}//end injectUpload()
+		return $matches[1];
+	}//end listField()
 
 	/**
 	 * Parse a data URI (data:image/png;base64,iVBOR...); its MIME type is taken as declared.
@@ -258,7 +254,7 @@ final class FileInputReader {
 			throw new Exception('Invalid base64 content in data URI');
 		}
 
-		return $this->fileData(content: $content, mimeType: $matches[1], extension: $this->extensionOf(mimeType: $matches[1]));
+		return $this->fileData(content: $content, format: new FileFormat(mimeType: $matches[1], extension: $this->extensionOf(mimeType: $matches[1])));
 	}//end parseDataUri()
 
 	/**
@@ -278,7 +274,7 @@ final class FileInputReader {
 		}
 
 		$mimeType = $this->detectMimeType(content: $content);
-		return $this->fileData(content: $content, mimeType: $mimeType, extension: $this->extensionOf(mimeType: $mimeType));
+		return $this->fileData(content: $content, format: new FileFormat(mimeType: $mimeType, extension: $this->extensionOf(mimeType: $mimeType)));
 	}//end parseBase64()
 
 	/**
@@ -300,17 +296,16 @@ final class FileInputReader {
 	/**
 	 * The parsed file data shape.
 	 *
-	 * @param string $content   The file content.
-	 * @param string $mimeType  The MIME type.
-	 * @param string $extension The extension.
+	 * @param string     $content The file content.
+	 * @param FileFormat $format  The MIME type and the extension.
 	 *
 	 * @return array{content: string, mimeType: string, extension: string, size: int}
 	 */
-	public function fileData(string $content, string $mimeType, string $extension): array {
+	public function fileData(string $content, FileFormat $format): array {
 		return [
 			'content' => $content,
-			'mimeType' => $mimeType,
-			'extension' => $extension,
+			'mimeType' => $format->mimeType,
+			'extension' => $format->extension,
 			'size' => strlen($content),
 		];
 	}//end fileData()

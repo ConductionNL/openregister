@@ -53,6 +53,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
+use OCA\OpenRegister\Repair\Support\ColumnMove;
 use OCP\DB\Exception;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
@@ -181,7 +182,7 @@ class RenameDutchColumns implements IRepairStep {
 		$outcomes = [];
 
 		foreach (self::COLUMN_MAP as $old => $new) {
-			$outcome = $this->migrateColumn(table: $table, columns: $columns, old: $old, new: $new);
+			$outcome = $this->migrateColumn(move: new ColumnMove(table: $table, old: $old, new: $new), columns: $columns);
 			if ($outcome !== null) {
 				$outcomes[] = $outcome;
 			}
@@ -193,49 +194,45 @@ class RenameDutchColumns implements IRepairStep {
 	/**
 	 * Rename or back-fill one Dutch column, refusing when two sources share a destination.
 	 *
-	 * @param string             $table   The shard table.
+	 * @param ColumnMove         $move    The table, the Dutch column and the English column.
 	 * @param array<int, string> $columns The table's columns.
-	 * @param string             $old     The Dutch column.
-	 * @param string             $new     The English column.
 	 *
 	 * @return string|null 'renamed', 'copied', 'refused', or null when nothing was counted.
 	 *
 	 * @spec exclude No canonical spec covers the Dutch-to-English vocabulary
 	 */
-	private function migrateColumn(string $table, array $columns, string $old, string $new): ?string {
-		if (in_array($old, $columns, true) === false) {
+	private function migrateColumn(ColumnMove $move, array $columns): ?string {
+		if (in_array($move->old, $columns, true) === false) {
 			return null;
 		}
 
-		if ($this->hasCollision(columns: $columns, target: $new) === true) {
+		if ($this->hasCollision(columns: $columns, target: $move->new) === true) {
 			$this->logger->warning(
 				'RenameDutchColumns: two sources target one destination; migrating neither.',
-				['table' => $table, 'source' => $old, 'destination' => $new]
+				['table' => $move->table, 'source' => $move->old, 'destination' => $move->new]
 			);
 			return 'refused';
 		}
 
-		if (in_array($new, $columns, true) === false) {
-			return $this->renameColumn(table: $table, old: $old, new: $new);
+		if (in_array($move->new, $columns, true) === false) {
+			return $this->renameColumn(move: $move);
 		}
 
-		return $this->backfillColumn(table: $table, old: $old, new: $new);
+		return $this->backfillColumn(move: $move);
 	}//end migrateColumn()
 
 	/**
 	 * Rename the Dutch column to the English one.
 	 *
-	 * @param string $table The shard table.
-	 * @param string $old   The Dutch column.
-	 * @param string $new   The English column.
+	 * @param ColumnMove $move The table, the Dutch column and the English column.
 	 *
 	 * @return string|null 'renamed', or null when the statement failed.
 	 *
 	 * @spec exclude No canonical spec covers the Dutch-to-English vocabulary
 	 */
-	private function renameColumn(string $table, string $old, string $new): ?string {
-		$sql = 'ALTER TABLE ' . $this->quote(identifier: $table) . ' RENAME COLUMN '
-			. $this->quote(identifier: $old) . ' TO ' . $this->quote(identifier: $new);
+	private function renameColumn(ColumnMove $move): ?string {
+		$sql = 'ALTER TABLE ' . $this->quote(identifier: $move->table) . ' RENAME COLUMN '
+			. $this->quote(identifier: $move->old) . ' TO ' . $this->quote(identifier: $move->new);
 		if ($this->exec(sql: $sql) === true) {
 			return 'renamed';
 		}
@@ -246,18 +243,16 @@ class RenameDutchColumns implements IRepairStep {
 	/**
 	 * Copy the Dutch column into the English one where the English one is still empty.
 	 *
-	 * @param string $table The shard table.
-	 * @param string $old   The Dutch column.
-	 * @param string $new   The English column.
+	 * @param ColumnMove $move The table, the Dutch column and the English column.
 	 *
 	 * @return string|null 'copied', or null when the statement failed.
 	 *
 	 * @spec exclude No canonical spec covers the Dutch-to-English vocabulary
 	 */
-	private function backfillColumn(string $table, string $old, string $new): ?string {
-		$qTable = $this->quote(identifier: $table);
-		$qNew = $this->quote(identifier: $new);
-		$qOld = $this->quote(identifier: $old);
+	private function backfillColumn(ColumnMove $move): ?string {
+		$qTable = $this->quote(identifier: $move->table);
+		$qNew = $this->quote(identifier: $move->new);
+		$qOld = $this->quote(identifier: $move->old);
 		$sql = 'UPDATE ' . $qTable . ' SET ' . $qNew . ' = ' . $qOld
 			. ' WHERE ' . $qNew . ' IS NULL AND ' . $qOld . ' IS NOT NULL';
 		if ($this->exec(sql: $sql) === true) {

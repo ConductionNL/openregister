@@ -16,6 +16,7 @@ use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
+use OCA\OpenRegister\Service\Survivorship\MasterRecord;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolverInterface;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolverInterface;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipTrustLookup;
@@ -149,7 +150,7 @@ class SurvivorshipRecomputeListenerGoldenTest extends TestCase {
 		$this->schema(survivorship: ['sourceLink' => ['mode' => 'reverseFk']]);
 		$this->sources->method('isReverseFk')->willReturn(true);
 		$this->sources->expects($this->once())->method('resolveSources')
-			->with(['goldenRecord' => ['name' => 'Kept'], 'id' => 'master-1'], 'master-1', ['sourceLink' => ['mode' => 'reverseFk']], '5')
+			->with(new MasterRecord(data: ['goldenRecord' => ['name' => 'Kept'], 'id' => 'master-1'], uuid: 'master-1', register: '5'), ['sourceLink' => ['mode' => 'reverseFk']])
 			->willReturn([]);
 		$this->resolver->expects($this->never())->method('resolveGoldenRecord');
 		$this->objects->expects($this->never())->method('findAll');

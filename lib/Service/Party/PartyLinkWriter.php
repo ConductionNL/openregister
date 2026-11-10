@@ -63,10 +63,7 @@ class PartyLinkWriter {
 	/**
 	 * Write a party link, or refresh the one the party already holds in that role.
 	 *
-	 * @param PartyLinkTarget $target The object, register and schema the link records.
-	 * @param string $partyUuid The party object's uuid.
-	 * @param string|null $role The role.
-	 * @param string|null $linkedBy Who links it when nobody is signed in, such as an example set's app; the signed-in user wins.
+	 * @param PartyLinkRequest $request The object, party, role and named linker; the signed-in user wins over the named linker.
 	 *
 	 * A trusted import (nobody signed in, a linker named) finds the party
 	 * without RBAC, as PartyRoleService accepted it; a signed-in caller finds
@@ -79,15 +76,17 @@ class PartyLinkWriter {
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 * @spec openspec/changes/example-set-install-agrees-with-the-store/specs/example-sets/spec.md
 	 */
-	public function write(PartyLinkTarget $target, string $partyUuid, ?string $role, ?string $linkedBy = null): ContactLink {
+	public function write(PartyLinkRequest $request): ContactLink {
+		$partyUuid = $request->partyUuid;
 		$signedIn = $this->session->getUser();
-		$party    = $this->readParty(partyUuid: $partyUuid, trusted: ($signedIn === null && $linkedBy !== null));
+		$party    = $this->readParty(partyUuid: $partyUuid, trusted: ($signedIn === null && $request->namesLinker() === true));
 		$definition = $this->definitionOf(party: $party, partyUuid: $partyUuid);
 
-		$linker     = $this->linkerOf(signedIn: $signedIn, linkedBy: $linkedBy);
+		$linker     = $this->linkerOf(signedIn: $signedIn, linkedBy: $request->linkedBy);
 
+		$target     = $request->target;
 		$contactUid = ContactLink::partyUid(partyUuid: $partyUuid);
-		$existing   = $this->links->findByObjectContactAndRole(objectUuid: $target->objectUuid, contactUid: $contactUid, role: $role);
+		$existing   = $this->links->findByObjectContactAndRole(objectUuid: $target->objectUuid, contactUid: $contactUid, role: $request->role);
 		$link       = ($existing ?? $this->newLink(objectUuid: $target->objectUuid, contactUid: $contactUid));
 
 		$link->setRegisterId($target->registerId);
@@ -96,7 +95,7 @@ class PartyLinkWriter {
 		$link->setPartyKind($definition->kind());
 		$link->setDisplayName($this->displayNameOf(party: $party, definition: $definition));
 		$link->setEmail($this->primaryEmailOf(party: $party, definition: $definition));
-		$link->setRole($role);
+		$link->setRole($request->role);
 		$link->setLinkedBy($linker);
 		$link->setLinkedAt(new DateTime());
 
@@ -233,7 +232,7 @@ class PartyLinkWriter {
 	 * @return string|null The address.
 	 */
 	private function primaryEmailOf(ObjectEntity $party, PartyDefinition $definition): ?string {
-		$preferred = $this->parties->addressesOfKind(party: $party, kind: 'correspondence', definition: $definition);
+		$preferred = $this->parties->addressesOfKind(party: $party, selection: new PartyAddressSelection(kind: 'correspondence', definition: $definition));
 		if ($preferred === []) {
 			$preferred = $this->parties->addresses(party: $party, definition: $definition);
 		}

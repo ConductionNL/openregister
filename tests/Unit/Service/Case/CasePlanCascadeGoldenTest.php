@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\CaseItemAuditMapper;
 use OCA\OpenRegister\Db\CaseItemMapper;
 use OCA\OpenRegister\Exception\CaseCascadeBoundException;
+use OCA\OpenRegister\Service\Case\CaseAnchor;
 use OCA\OpenRegister\Service\Case\CaseAnchorReader;
 use OCA\OpenRegister\Service\Case\CaseCascadeReaders;
 use OCA\OpenRegister\Service\Case\CasePlanCascade;
@@ -160,8 +161,8 @@ class CasePlanCascadeGoldenTest extends TestCase {
 
 		$anchor = $this->createMock(CaseAnchorReader::class);
 		$anchor->method('read')->willReturnCallback(
-			function (string $objectUuid, ?int $registerId, ?int $schemaId): array {
-				$this->calls[] = sprintf('anchor:%s:%s:%s', $objectUuid, $registerId ?? '-', $schemaId ?? '-');
+			function (CaseAnchor $anchor): array {
+				$this->calls[] = sprintf('anchor:%s:%s:%s', $anchor->objectUuid, $anchor->registerId ?? '-', $anchor->schemaId ?? '-');
 				return ['status' => 'withdrawn'];
 			}
 		);
@@ -169,8 +170,11 @@ class CasePlanCascadeGoldenTest extends TestCase {
 		$catalog = $this->createMock(EventCatalogService::class);
 		$catalog->method('aliasesFor')->willReturnCallback(static fn (string $dispatched): array => [$dispatched]);
 
+		$machine->method('store')->willReturn(
+			new CasePlanStore(items: $items, audits: $this->createMock(CaseItemAuditMapper::class), db: $this->db(), logger: $this->logger())
+		);
+
 		return new CasePlanCascade(
-			store: new CasePlanStore(items: $items, audits: $this->createMock(CaseItemAuditMapper::class), db: $this->db(), logger: $this->logger()),
 			machine: $machine,
 			readers: new CaseCascadeReaders(sentries: new CaseSentryEvaluator(catalog: $catalog), realiser: $realiser, anchor: $anchor)
 		);

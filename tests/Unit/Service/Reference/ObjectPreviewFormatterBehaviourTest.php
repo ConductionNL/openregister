@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Reference;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -221,7 +222,7 @@ final class ObjectPreviewFormatterBehaviourTest extends TestCase {
 	}
 
 	public function testEveryCanonicalUrlParsesBackToItsParts(): void {
-		$urls = $this->formatter->buildCanonicalUrls(7, 8, self::UUID);
+		$urls = $this->formatter->buildCanonicalUrls(new ObjectRef(7, 8, self::UUID));
 
 		$this->assertCount(3, $urls);
 		foreach ($urls as $url) {

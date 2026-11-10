@@ -64,6 +64,20 @@ final readonly class CaseTransitionCause {
 		$entry->setCaseItemId((int)$item->getId());
 		$entry->setFromState($fromState);
 		$entry->setToState($toState);
+
+		return $this->stamped(entry: $entry);
+	}//end auditFor()
+
+	/**
+	 * An audit row carrying this cause, authorized.
+	 *
+	 * @param CaseItemAudit $entry The row, its item and states set.
+	 *
+	 * @return CaseItemAudit The same row, with the cause, its reference, the actor and the reason.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 */
+	private function stamped(CaseItemAudit $entry): CaseItemAudit {
 		$entry->setCause($this->cause);
 		$entry->setCauseRef($this->causeRef);
 		$entry->setActor($this->actor);
@@ -71,5 +85,5 @@ final readonly class CaseTransitionCause {
 		$entry->setAuthorized(true);
 
 		return $entry;
-	}//end auditFor()
+	}//end stamped()
 }//end class

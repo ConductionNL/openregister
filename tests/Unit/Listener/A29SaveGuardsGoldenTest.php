@@ -50,6 +50,11 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
 use OCA\OpenRegister\Listener\Support\StateFieldRulePlatform;
+use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Listener\Support\EventSchemaLookup;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * Pins what each guard allows, refuses, grants and queues, written against the
@@ -180,7 +185,7 @@ final class A29SaveGuardsGoldenTest extends TestCase {
 		$full = $this->createStub(ObjectQuotaService::class);
 		$full->method('limitFor')->willReturn(3);
 		$full->method('count')->willReturn(3);
-		$event = $this->quotaCreate(new ObjectQuotaListener($full, $schemas, new NullLogger()));
+		$event = $this->quotaCreate(new ObjectQuotaListener($full, $this->eventSchemaLookup($schemas, new NullLogger())));
 		$this->assertTrue($event->isPropagationStopped());
 		$this->assertSame(
 			[
@@ -197,7 +202,7 @@ final class A29SaveGuardsGoldenTest extends TestCase {
 		$broken = $this->createStub(ObjectQuotaService::class);
 		$broken->method('limitFor')->willReturn(3);
 		$broken->method('count')->willThrowException(new RuntimeException('db down'));
-		$event = $this->quotaCreate(new ObjectQuotaListener($broken, $schemas, new NullLogger()));
+		$event = $this->quotaCreate(new ObjectQuotaListener($broken, $this->eventSchemaLookup($schemas, new NullLogger())));
 		$this->assertTrue($event->isPropagationStopped());
 		$this->assertSame(
 			[
@@ -210,7 +215,7 @@ final class A29SaveGuardsGoldenTest extends TestCase {
 		$room = $this->createStub(ObjectQuotaService::class);
 		$room->method('limitFor')->willReturn(3);
 		$room->method('count')->willReturn(2);
-		$event = $this->quotaCreate(new ObjectQuotaListener($room, $schemas, new NullLogger()));
+		$event = $this->quotaCreate(new ObjectQuotaListener($room, $this->eventSchemaLookup($schemas, new NullLogger())));
 		$this->assertFalse($event->isPropagationStopped());
 	}//end testObjectQuotaRefusalPayloads()
 
@@ -308,4 +313,14 @@ final class A29SaveGuardsGoldenTest extends TestCase {
 		);
 		$this->assertSame([false, []], $this->stateRules(['x' => 1], ['y' => 2], $rules));
 	}//end testStateFieldRuleOutcomes()
+
+	/**
+	 * The schema lookup a listener under test resolves through.
+	 */
+	private function eventSchemaLookup(SchemaMapperInterface $schemas, LoggerInterface $logger): EventSchemaLookup {
+		return new EventSchemaLookup(
+			new SchemaCatalog($this->createMock(RegisterMapperInterface::class), $schemas, $this->createMock(MagicMapperInterface::class)),
+			$logger
+		);
+	}
 }//end class

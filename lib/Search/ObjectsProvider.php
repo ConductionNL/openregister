@@ -26,19 +26,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatterInterface;
-use OCP\IL10N;
 use OCP\IUser;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Search\SearchScopes;
 use OCP\Search\FilterDefinition;
 use OCP\Search\IFilteringProvider;
 use OCP\Search\ISearchQuery;
 use OCP\Search\SearchResult;
-use Psr\Log\LoggerInterface;
 
 /**
  * ObjectsProvider class for the objects search.
@@ -117,79 +114,21 @@ class ObjectsProvider implements IFilteringProvider {
 	private ?array $nonSearchableIds = null;
 
 	/**
-	 * The localization service
-	 *
-	 * @var IL10N
-	 */
-	private readonly IL10N $l10n;
-
-	/**
-	 * The object service for advanced search operations
-	 *
-	 * @var ObjectOperationsInterface
-	 */
-	private readonly ObjectOperationsInterface $objectService;
-
-	/**
-	 * Logger for debugging search operations
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * Schema mapper for resolving the searchable-schema opt-out
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Shared result-formatting service (icon precedence, deep-link URL,
-	 * subline/excerpt building).
-	 *
-	 * @var ObjectSearchResultFormatterInterface
-	 */
-	private readonly ObjectSearchResultFormatterInterface $resultFormatter;
-
-	/**
-	 * Registers, for resolving which one owns a schema a scope names.
-	 *
-	 * @var RegisterMapperInterface|null
-	 */
-	private readonly ?RegisterMapperInterface $registerMapper;
-
-	/**
 	 * Constructor for the ObjectsProvider class
 	 *
 	 * @param ObjectOperationsInterface $objectService The object service for search operations
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper for the searchable-schema opt-out
-	 * @param ObjectsProviderOutput $output The localization service, shared result formatter and logger
-	 * @param RegisterMapperInterface|null $registerMapper Resolves a register named in a search scope. Nullable and last
-	 *                                            so no positional caller shifts; absent, a scope naming a
-	 *                                            register narrows nothing, which is the pre-scope behaviour
+	 * @param SchemaCatalogInterface    $catalog       Schemas for the searchable-schema opt-out, registers for resolving a register a search scope names
+	 * @param ObjectsProviderOutput     $output        The localization service, shared result formatter and logger
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
-		ObjectOperationsInterface $objectService,
-		SchemaMapperInterface $schemaMapper,
-		ObjectsProviderOutput $output,
-		// Appended LAST and nullable, deliberately: a new constructor argument
-		// inserted anywhere else shifts every positional caller, and the
-		// resulting TypeError names the argument AFTER the one that moved.
-		// Null simply means a scope naming a register narrows nothing, which
-		// is the pre-scope behaviour.
-		?RegisterMapperInterface $registerMapper = null,
+		private readonly ObjectOperationsInterface $objectService,
+		private readonly SchemaCatalogInterface $catalog,
+		private readonly ObjectsProviderOutput $output,
 	) {
-		$this->l10n = $output->l10n;
-		$this->objectService = $objectService;
-		$this->logger = $output->logger;
-		$this->schemaMapper = $schemaMapper;
-		$this->resultFormatter = $output->resultFormatter;
-		$this->registerMapper = $registerMapper;
 	}//end __construct()
 
 	/**
@@ -213,7 +152,7 @@ class ObjectsProvider implements IFilteringProvider {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function getName(): string {
-		return $this->l10n->t('Open Register Objects');
+		return $this->output->l10n->t('Open Register Objects');
 	}//end getName()
 
 	/**
@@ -339,7 +278,7 @@ class ObjectsProvider implements IFilteringProvider {
 		$searchQuery = $this->withCreatedRange(searchQuery: $searchQuery, query: $query);
 		[$limit, $offset] = $this->pageWindow(query: $query);
 
-		$this->logger->debug(
+		$this->output->logger->debug(
 			message: '[ObjectsProvider] OpenRegister search requested',
 			context: [
 				'file' => __FILE__,
@@ -368,18 +307,16 @@ class ObjectsProvider implements IFilteringProvider {
 		// skipped, so the top-bar search never errors out and never blanks
 		// the section for one broken table.
 		$searchResults = $this->searchChunks(
-			query: $searchQuery,
-			schemaChunks: $schemaChunks,
-			limit: $limit,
-			offset: $offset
+			query: new ListQuery(limit: $limit, offset: $offset, filters: $searchQuery),
+			schemaChunks: $schemaChunks
 		);
 
 		$searchResultEntries = [];
 		foreach ($searchResults['results'] as $result) {
-			$searchResultEntries[] = $this->resultFormatter->format(result: $result, term: $search);
+			$searchResultEntries[] = $this->output->resultFormatter->format(result: $result, term: $search);
 		}
 
-		$this->logger->debug(
+		$this->output->logger->debug(
 			message: '[ObjectsProvider] OpenRegister search completed',
 			context: [
 				'file' => __FILE__,
@@ -587,68 +524,118 @@ class ObjectsProvider implements IFilteringProvider {
 	 * A chunk that throws is logged at ERROR level with the schema ids it
 	 * spanned and skipped. The other chunks still answer.
 	 *
-	 * @param array<string, mixed>    $query        The pipeline query, without limit, offset or schema list.
-	 * @param array<int, int[]|null>  $schemaChunks Schema-id chunks; a null chunk means the query already names its schema.
-	 * @param int                     $limit        Page size.
-	 * @param int                     $offset       Page offset.
+	 * @param ListQuery              $query        The page window (limit, offset); its filters are the pipeline
+	 *                                             query without limit, offset or schema list.
+	 * @param array<int, int[]|null> $schemaChunks Schema-id chunks; a null chunk means the query already names its schema.
 	 *
 	 * @return array{results: array<int, mixed>, total: int} The page rows in pipeline order, and the summed total.
 	 *
 	 * @spec openspec/specs/unified-search-provider/spec.md
 	 */
-	private function searchChunks(array $query, array $schemaChunks, int $limit, int $offset): array {
+	private function searchChunks(ListQuery $query, array $schemaChunks): array {
 		$chunkCount = count($schemaChunks);
-		$single = ($chunkCount === 1);
+		$fetch = $this->fetchWindow(query: $query, chunkCount: $chunkCount);
 		$rows = [];
 		$total = 0;
 
 		foreach ($schemaChunks as $index => $chunk) {
-			$chunkQuery = $query;
-			if ($chunk !== null) {
-				$chunkQuery['@self']['schema'] = $chunk;
-			}
-
-			$chunkQuery['_limit'] = $limit;
-			$chunkQuery['_offset'] = $offset;
-			if ($single === false) {
-				$chunkQuery['_limit'] = ($offset + $limit);
-				$chunkQuery['_offset'] = 0;
-			}
-
-			try {
-				$page = $this->objectService->searchObjectsPaginated(query: $chunkQuery, _rbac: true, _multitenancy: true);
-			} catch (\Throwable $e) {
-				$this->logger->error(
-					'[ObjectsProvider] OpenRegister search failed for schema chunk {chunk} of {chunks}; the other chunks still answer: {error}',
-					[
-						'chunk' => ($index + 1),
-						'chunks' => $chunkCount,
-						'schemas' => $chunk,
-						'error' => $e->getMessage(),
-						'exception' => $e,
-					]
-				);
-				continue;
-			}
-
+			$page = $this->searchChunk(
+				chunkQuery: $this->chunkQuery(fetch: $fetch, chunk: $chunk),
+				where: ['chunk' => ($index + 1), 'chunks' => $chunkCount, 'schemas' => $chunk]
+			);
 			foreach (($page['results'] ?? []) as $row) {
 				$rows[] = $row;
 			}
 
 			$total += (int)($page['total'] ?? 0);
-		}//end foreach
+		}
 
-		if ($single === true) {
+		if ($chunkCount === 1) {
 			return ['results' => $rows, 'total' => $total];
 		}
 
+		return ['results' => $this->mergedPage(rows: $rows, query: $query), 'total' => $total];
+	}//end searchChunks()
+
+	/**
+	 * The window each chunk is asked for.
+	 *
+	 * One chunk pages inside the pipeline: it is asked for the page itself.
+	 * Several chunks each answer the head of their own ordering up to the end
+	 * of the requested page, because the page boundary only exists after the
+	 * merge.
+	 *
+	 * @param ListQuery $query      The requested page.
+	 * @param int       $chunkCount How many chunks the search fans out over.
+	 *
+	 * @return ListQuery The window each chunk is asked for.
+	 */
+	private function fetchWindow(ListQuery $query, int $chunkCount): ListQuery {
+		if ($chunkCount === 1) {
+			return $query;
+		}
+
+		return new ListQuery(limit: (($query->offset ?? 0) + $query->limit), offset: 0, filters: $query->filters);
+	}//end fetchWindow()
+
+	/**
+	 * The pipeline query for one schema chunk.
+	 *
+	 * @param ListQuery      $fetch The window the chunk is asked for, with the pipeline query as its filters.
+	 * @param array<int>|null $chunk The schema ids of the chunk; null means the query already names its schema.
+	 *
+	 * @return array<string, mixed> The pipeline query.
+	 */
+	private function chunkQuery(ListQuery $fetch, ?array $chunk): array {
+		$chunkQuery = $fetch->filters;
+		if ($chunk !== null) {
+			$chunkQuery['@self']['schema'] = $chunk;
+		}
+
+		$chunkQuery['_limit'] = $fetch->limit;
+		$chunkQuery['_offset'] = ($fetch->offset ?? 0);
+
+		return $chunkQuery;
+	}//end chunkQuery()
+
+	/**
+	 * Run the pipeline search for one chunk; a chunk that throws answers nothing.
+	 *
+	 * The failure is logged at ERROR level with the schema ids the chunk
+	 * spanned, so a broken table is a gap in the page, never a silent "no
+	 * results" for the whole section.
+	 *
+	 * @param array<string, mixed> $chunkQuery The pipeline query for the chunk.
+	 * @param array<string, mixed> $where      The log context naming the chunk (chunk, chunks, schemas).
+	 *
+	 * @return array<string, mixed> The pipeline page, or an empty array when the chunk failed.
+	 */
+	private function searchChunk(array $chunkQuery, array $where): array {
+		try {
+			return $this->objectService->searchObjectsPaginated(query: $chunkQuery, _rbac: true, _multitenancy: true);
+		} catch (\Throwable $e) {
+			$this->output->logger->error(
+				'[ObjectsProvider] OpenRegister search failed for schema chunk {chunk} of {chunks}; the other chunks still answer: {error}',
+				array_merge($where, ['error' => $e->getMessage(), 'exception' => $e])
+			);
+
+			return [];
+		}
+	}//end searchChunk()
+
+	/**
+	 * Re-sort the merged chunk heads the way the pipeline orders a page, and slice the page out.
+	 *
+	 * @param array<int, mixed> $rows  The rows of every chunk head.
+	 * @param ListQuery         $query The requested page.
+	 *
+	 * @return array<int, mixed> The page rows.
+	 */
+	private function mergedPage(array $rows, ListQuery $query): array {
 		usort($rows, fn (mixed $a, mixed $b): int => $this->compareRows(a: $a, b: $b));
 
-		return [
-			'results' => array_slice($rows, $offset, $limit),
-			'total' => $total,
-		];
-	}//end searchChunks()
+		return array_slice($rows, ($query->offset ?? 0), $query->limit);
+	}//end mergedPage()
 
 	/**
 	 * Order two result rows the way the pipeline orders a cross-schema page.
@@ -716,9 +703,9 @@ class ObjectsProvider implements IFilteringProvider {
 	 */
 	private function getSearchableIds(): array {
 		try {
-			return $this->schemaMapper->findSearchableIds();
+			return $this->catalog->schemas()->findSearchableIds();
 		} catch (\Throwable $e) {
-			$this->logger->error(
+			$this->output->logger->error(
 				'[ObjectsProvider] Failed to resolve searchable schemas, returning no results: {error}',
 				['error' => $e->getMessage(), 'exception' => $e]
 			);
@@ -744,16 +731,16 @@ class ObjectsProvider implements IFilteringProvider {
 	 */
 	private function describeSearchableSchemas(): array {
 		try {
-			$searchable = array_flip($this->schemaMapper->findSearchableIds());
+			$searchable = array_flip($this->catalog->schemas()->findSearchableIds());
 			$owner = [];
-			foreach (($this->registerMapper?->findAll() ?? []) as $register) {
+			foreach ($this->catalog->registers()->findAll() as $register) {
 				foreach (($register->getSchemas() ?? []) as $schemaId) {
 					$owner[(int)$schemaId] = (string)$register->getSlug();
 				}
 			}
 
 			$described = [];
-			foreach ($this->schemaMapper->findAll() as $schema) {
+			foreach ($this->catalog->schemas()->findAll() as $schema) {
 				$id = (int)$schema->getId();
 				if (array_key_exists($id, $searchable) === false) {
 					continue;
@@ -768,7 +755,7 @@ class ObjectsProvider implements IFilteringProvider {
 
 			return $described;
 		} catch (\Throwable $e) {
-			$this->logger->error(
+			$this->output->logger->error(
 				'[ObjectsProvider] Failed to describe searchable schemas for scoping: {error}',
 				['error' => $e->getMessage(), 'exception' => $e]
 			);
@@ -785,7 +772,7 @@ class ObjectsProvider implements IFilteringProvider {
 	 * @spec openspec/specs/unified-search-provider/spec.md
 	 */
 	private function getSectionName(): string {
-		return $this->l10n->t('Open Register Objects');
+		return $this->output->l10n->t('Open Register Objects');
 	}//end getSectionName()
 
 	/**
@@ -811,7 +798,7 @@ class ObjectsProvider implements IFilteringProvider {
 		}
 
 		try {
-			return (int)$this->schemaMapper->find($trimmed, _rbac: false, _multitenancy: false)->getId();
+			return (int)$this->catalog->schemas()->find($trimmed, _rbac: false, _multitenancy: false)->getId();
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -835,9 +822,9 @@ class ObjectsProvider implements IFilteringProvider {
 		}
 
 		try {
-			$this->nonSearchableIds = $this->schemaMapper->findNonSearchableIds();
+			$this->nonSearchableIds = $this->catalog->schemas()->findNonSearchableIds();
 		} catch (\Throwable $e) {
-			$this->logger->warning(
+			$this->output->logger->warning(
 				'[ObjectsProvider] Failed to resolve non-searchable schemas, treating all as searchable: {error}',
 				['error' => $e->getMessage()]
 			);

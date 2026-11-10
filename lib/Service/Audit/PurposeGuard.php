@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Audit;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
+use OCA\OpenRegister\Db\AuditTrail\PurposeRefusal;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -127,7 +129,7 @@ class PurposeGuard implements PurposeGuardInterface {
 		try {
 			return $this->acceptDeclared();
 		} catch (PurposeRefusedException $refusal) {
-			$this->recordRefusal(refusal: $refusal, register: $register, schema: $schema);
+			$this->recordRefusal(refusal: $refusal, scope: new PurposeReadScope(register: $register, schema: $schema));
 			throw $refusal;
 		}
 	}//end enforce()
@@ -186,25 +188,18 @@ class PurposeGuard implements PurposeGuardInterface {
 	 * Fail-soft: a refusal that cannot be recorded is still a refusal. The
 	 * read does not become permitted because the bookkeeping failed.
 	 *
-	 * @param PurposeRefusedException $refusal  The refusal to record.
-	 * @param Register|null           $register The register being read.
-	 * @param Schema|null             $schema   The schema being read.
+	 * @param PurposeRefusedException $refusal The refusal to record.
+	 * @param PurposeReadScope        $scope   The register and schema being read.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
-	private function recordRefusal(
-		PurposeRefusedException $refusal,
-		?Register $register,
-		?Schema $schema,
-	): void {
+	private function recordRefusal(PurposeRefusedException $refusal, PurposeReadScope $scope): void {
 		try {
-			$this->audit->createPurposeRefusalEntry(
-				rule: $refusal->getRule(),
-				purpose: $refusal->getPurpose(),
-				register: $register?->getId(),
-				schema: $schema?->getId()
+			$target = new AuditedObject(register: $scope->register?->getId(), schema: $scope->schema?->getId());
+			$this->audit->recordPurposeRefusal(
+				refusal: new PurposeRefusal(rule: $refusal->getRule(), purpose: $refusal->getPurpose(), target: $target)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(

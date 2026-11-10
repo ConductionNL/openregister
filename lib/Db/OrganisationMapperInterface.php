@@ -180,17 +180,39 @@ interface OrganisationMapperInterface {
 	public function findAll(int $limit = 50, int $offset = 0, ?array $filters = []): array;
 
 	/**
-	 * Find organisations by name with pagination
+	 * Find the organisations that are tenants of this installation (a NULL
+	 * `is_local_tenant` counts as a tenant), one list query at a time.
 	 *
-	 * @param string $name The name pattern to search for
-	 * @param int $limit Maximum number of results to return
-	 * @param int $offset Number of results to skip
+	 * @param ListQuery $query The limit, offset and column => value equality filters.
 	 *
 	 * @return Organisation[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
 	 */
-	public function findByName(string $name, int $limit = 50, int $offset = 0): array;
+	public function findLocalTenantList(ListQuery $query): array;
+
+	/**
+	 * Find the organisations one list query asks for, ordered by name.
+	 *
+	 * @param ListQuery $query The limit, offset and column => value equality filters.
+	 *
+	 * @return Organisation[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
+	 */
+	public function findList(ListQuery $query): array;
+
+	/**
+	 * Find the organisations whose name contains a pattern, one page at a time.
+	 *
+	 * @param string    $name  The name pattern to search for.
+	 * @param ListQuery $query The limit and offset (its filters are not applied).
+	 *
+	 * @return Organisation[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
+	 */
+	public function findListByName(string $name, ListQuery $query): array;
 
 	/**
 	 * Find an organisation by its slug

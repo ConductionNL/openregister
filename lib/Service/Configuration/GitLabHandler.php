@@ -27,10 +27,6 @@ namespace OCA\OpenRegister\Service\Configuration;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
-use OCP\Http\Client\IClient;
-use OCP\Http\Client\IClientService;
-use OCP\IAppConfig;
-use OCP\IConfig;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -63,62 +59,16 @@ class GitLabHandler implements GitLabHandlerInterface {
 
 
 	/**
-	 * GitLab API base URL (can be configured for self-hosted instances)
-	 *
-	 * @var string
-	 */
-	private string $apiBase;
-
-	/**
-	 * HTTP client for API requests
-	 *
-	 * @var IClient
-	 */
-	private IClient $client;
-
-	/**
 	 * GitLabHandler constructor
 	 *
-	 * @param IClientService $clientService HTTP client service
-	 * @param IAppConfig $appConfig App configuration service for app-level settings
-	 * @param IConfig $config Configuration service for system-level settings
+	 * @param GitLabApiClient $api    Authenticated GET requests against the configured GitLab API
 	 * @param LoggerInterface $logger Logger instance
 	 */
 	public function __construct(
-		IClientService $clientService,
-		private readonly IAppConfig $appConfig,
-		private readonly IConfig $config,
+		private readonly GitLabApiClient $api,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->client = $clientService->newClient();
-
-		// Allow configuration of GitLab URL (app-level setting takes precedence over system setting).
-		$this->apiBase = $this->appConfig->getValueString('openregister', 'gitlab_api_url', '');
-		if (empty($this->apiBase) === true) {
-			$this->apiBase = $this->config->getSystemValue('gitlab_api_url', 'https://gitlab.com/api/v4');
-		}
 	}//end __construct()
-
-	/**
-	 * Get authentication headers for GitLab API
-	 *
-	 * @return string[]
-	 *
-	 * @psalm-return array{'PRIVATE-TOKEN'?: string}
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
-	 */
-	private function getHeaders(): array {
-		$headers = [];
-
-		// Add authentication token if configured.
-		$token = $this->appConfig->getValueString('openregister', 'gitlab_api_token', '');
-		if (empty($token) === false) {
-			$headers['PRIVATE-TOKEN'] = $token;
-		}
-
-		return $headers;
-	}//end getHeaders()
 
 	/**
 	 * The log context every GitLab log line starts with, then the line's own keys.
@@ -130,21 +80,6 @@ class GitLabHandler implements GitLabHandlerInterface {
 	private static function logContext(array $extra = []): array {
 		return ['file' => __FILE__, 'line' => __LINE__] + $extra;
 	}//end logContext()
-
-	/**
-	 * GET a path of the configured GitLab API with the API headers and decode the JSON body.
-	 *
-	 * @param string               $path    The path after the API base.
-	 * @param array<string, mixed> $options Request options; the headers are added last.
-	 *
-	 * @return mixed The decoded body.
-	 *
-	 * @throws GuzzleException If the request fails.
-	 */
-	private function getJson(string $path, array $options = []): mixed {
-		$response = $this->client->request('GET', $this->apiBase.$path, $options + ['headers' => $this->getHeaders()]);
-		return json_decode($response->getBody(), true);
-	}//end getJson()
 
 	/**
 	 * Log a failed API call and turn it into an exception for the caller.
@@ -198,8 +133,10 @@ class GitLabHandler implements GitLabHandlerInterface {
 	 * @return array{total_count: int, results: list<array<string, mixed>>, page: int, per_page: int}
 	 *
 	 * @throws Exception If the API request fails.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
-	private function searchPage(string $search, RepositorySearchPage $page): array {
+	public function searchPage(string $search, RepositorySearchPage $page): array {
 		// Always search for x-openregister, optionally narrowed by the user's terms.
 		$searchQuery = 'x-openregister';
 		if (empty($search) === false) {
@@ -233,7 +170,7 @@ class GitLabHandler implements GitLabHandlerInterface {
 		$this->logger->info(message: self::LOG_TAG.'Searching GitLab for OpenRegister configurations', context: $context);
 
 		$query = ['scope' => 'blobs', 'search' => $where['query'], 'page' => $page->page, 'per_page' => $page->perPage];
-		return $this->getJson(path: '/search', options: ['query' => $query]);
+		return $this->api->getJson(path: '/search', options: ['query' => $query]);
 	}//end searchBlobs()
 
 	/**
@@ -285,7 +222,7 @@ class GitLabHandler implements GitLabHandlerInterface {
 		$where = ['project_id' => $projectId];
 		try {
 			$this->logger->info(message: self::LOG_TAG.'Fetching branches from GitLab', context: self::logContext(extra: $where));
-			$branches = $this->getJson(path: "/projects/{$projectId}/repository/branches");
+			$branches = $this->api->getJson(path: "/projects/{$projectId}/repository/branches");
 		} catch (GuzzleException $e) {
 			throw $this->requestFailure(exception: $e, call: new RepositoryApiCall(action: 'get branches', context: $where));
 		}
@@ -337,13 +274,15 @@ class GitLabHandler implements GitLabHandlerInterface {
 	 * @return array The decoded document.
 	 *
 	 * @throws Exception If the file cannot be fetched or parsed.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
-	private function fileContent(GitLabProjectRef $project, string $path): array {
+	public function fileContent(GitLabProjectRef $project, string $path): array {
 		$where = ['project_id' => $project->projectId, 'path' => $path, 'ref' => $project->ref];
 		try {
 			$this->logger->info(message: self::LOG_TAG.'Fetching file from GitLab', context: self::logContext(extra: $where));
 			$filePath = "/projects/{$project->projectId}/repository/files/".urlencode($path).'/raw';
-			$json = $this->getJson(path: $filePath, options: ['query' => ['ref' => $project->ref]]);
+			$json = $this->api->getJson(path: $filePath, options: ['query' => ['ref' => $project->ref]]);
 		} catch (GuzzleException $e) {
 			throw $this->requestFailure(exception: $e, call: new RepositoryApiCall(action: 'get file content', context: $where));
 		}
@@ -356,53 +295,32 @@ class GitLabHandler implements GitLabHandlerInterface {
 	}//end fileContent()
 
 	/**
-	 * List OpenRegister configuration files in a project
-	 *
-	 * Searches for files matching naming conventions within the project
-	 *
-	 * @param int $projectId GitLab project ID
-	 * @param string $ref Branch or tag name (default: main)
-	 * @param string $path Directory path to search (default: root)
-	 *
-	 * @return ((mixed|null|string)[]|mixed|null)[][] List of configuration files with metadata
-	 *
-	 * @throws \Exception If API request fails
-	 *
-	 * @since 0.2.10
-	 *
-	 * @psalm-return list<array{config: array{app: mixed|null,
-	 *     description: ''|mixed, title: mixed|string, type: 'manual'|mixed,
-	 *     version: '1.0.0'|mixed}, id: mixed|null, path: mixed}>
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
-	 */
-	public function listConfigurationFiles(int $projectId, string $ref = 'main', string $path = ''): array {
-		return $this->listFiles(project: new GitLabProjectRef(projectId: $projectId, ref: $ref), path: $path);
-	}//end listConfigurationFiles()
-
-	/**
-	 * The configuration files in a project directory, read from the repository tree.
+	 * List OpenRegister configuration files in a project directory, read from the repository tree.
 	 *
 	 * @param GitLabProjectRef $project The project and ref.
 	 * @param string           $path    The directory path; empty for the root.
 	 *
-	 * @return list<array<string, mixed>>
+	 * @return list<array<string, mixed>> The configuration files with their metadata.
 	 *
 	 * @throws Exception If the API request fails.
+	 *
+	 * @since 0.2.10
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
-	private function listFiles(GitLabProjectRef $project, string $path): array {
+	public function listConfigurationFiles(GitLabProjectRef $project, string $path = ''): array {
 		$where = ['project_id' => $project->projectId, 'ref' => $project->ref];
 		try {
 			$context = self::logContext(extra: $where + ['path' => $path]);
 			$this->logger->info(message: self::LOG_TAG.'Listing configuration files from GitLab', context: $context);
 			$query = ['ref' => $project->ref, 'path' => $path, 'recursive' => true];
-			$tree = $this->getJson(path: "/projects/{$project->projectId}/repository/tree", options: ['query' => $query]);
+			$tree = $this->api->getJson(path: "/projects/{$project->projectId}/repository/tree", options: ['query' => $query]);
 		} catch (GuzzleException $e) {
 			throw $this->requestFailure(exception: $e, call: new RepositoryApiCall(action: 'list files', context: $where));
 		}
 
 		return $this->configurationFiles(project: $project, tree: $tree);
-	}//end listFiles()
+	}//end listConfigurationFiles()
 
 	/**
 	 * The blobs of a repository tree that are valid configuration files, as file entries.
@@ -484,7 +402,7 @@ class GitLabHandler implements GitLabHandlerInterface {
 		try {
 			$projectPath = urlencode($namespace.'/'.$project);
 			$this->logger->info(message: self::LOG_TAG.'Fetching GitLab project by path', context: self::logContext(extra: $where));
-			return $this->getJson(path: "/projects/{$projectPath}");
+			return $this->api->getJson(path: "/projects/{$projectPath}");
 		} catch (GuzzleException $e) {
 			throw $this->requestFailure(exception: $e, call: new RepositoryApiCall(action: 'get project', context: $where));
 		}
@@ -543,6 +461,6 @@ class GitLabHandler implements GitLabHandlerInterface {
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
 	public function getApiBase(): string {
-		return $this->apiBase;
+		return $this->api->apiBase();
 	}//end getApiBase()
 }//end class

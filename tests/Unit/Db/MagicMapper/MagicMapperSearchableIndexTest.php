@@ -160,7 +160,7 @@ class MagicMapperSearchableIndexTest extends TestCase {
 		$method->setAccessible(true);
 		$method->invokeArgs(
 			$mapper,
-			[$tableName, $this->createMock(Register::class), $this->makeSchema($properties)]
+			[$tableName, $this->makeSchema($properties)]
 		);
 	}//end runCreateIndexes()
 

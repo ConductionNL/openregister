@@ -28,6 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Query;
 
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Db\MagicMapper\AliasedRows;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
@@ -35,6 +37,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Query\RelatedRowFilterTarget;
 use OCA\OpenRegister\Service\Query\RelatedRowAccess;
 use OCA\OpenRegister\Service\Query\RelatedRowExistsClause;
 use OCA\OpenRegister\Service\Query\RelatedRowFilter;
@@ -146,7 +149,7 @@ class ReferencedRowFilterTest extends TestCase {
 		$schema->setId(7);
 		$schema->setProperties(['case' => ['type' => 'string']]);
 		$schemaMapper = $this->createMock(SchemaMapper::class);
-		$schemaMapper->expects($this->once())->method('findBySlug')->with('subsidieAanvraag', 2)->willReturn([$schema]);
+		$schemaMapper->expects($this->once())->method('findBySlug')->with('subsidieAanvraag', new ListQuery(limit: 2))->willReturn([$schema]);
 
 		$tableHandler = $this->createMock(MagicTableHandler::class);
 		$tableHandler->method('getTableNameForRegisterSchema')->willReturn('openregister_table_1_7');
@@ -154,7 +157,7 @@ class ReferencedRowFilterTest extends TestCase {
 
 		$rbac = $this->createMock(MagicRbacHandler::class);
 		$rbac->expects($this->once())->method('buildRbacPredicateForAlias')
-			->with($schema, 'rel0', 'read')
+			->with($schema, new AliasedRows(alias: 'rel0', action: 'read', tableName: 'openregister_table_1_7'))
 			->willReturn('rel0._owner = \'alice\'');
 
 		$sql = [];
@@ -173,7 +176,7 @@ class ReferencedRowFilterTest extends TestCase {
 			db: $this->createMock(IDBConnection::class),
 			logger: new NullLogger(),
 			access: new RelatedRowAccess(rbac: $rbac, logger: new NullLogger())
-		))->apply(qb: $qb, query: $this->forwardQuery(), register: $register, organisationScopeFor: static fn (): array => ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []]);
+		))->apply(target: new RelatedRowFilterTarget(qb: $qb, register: $register, organisationScopeFor: static fn (): array => ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []]), query: $this->forwardQuery());
 
 		$this->assertSame(1, $applied);
 		$this->assertStringContainsString('rel0._uuid = t."subsidieaanvraag"', $sql[0]);

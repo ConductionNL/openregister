@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Notifications\Service\Timeline;
 
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Interaction\AddressedObject;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -169,54 +170,54 @@ class EntryMentionService {
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	public function apply(WrittenEntry $written, ?string $register = null, ?string $schema = null): array {
-		$object    = $written->object;
-		$entryUuid = $written->uuid();
-		$caller    = $this->principals->userSession->getUser()?->getUID();
-		$pulled    = [];
+		$author = $this->principals->userSession->getUser()?->getUID();
 
-		foreach ($this->parse(text: $written->message) as $uid) {
-			if ($uid === $caller) {
-				// Naming yourself is not a mention. It notifies you of your
-				// own sentence and subscribes you to a case you are on.
-				continue;
+		return $this->pullInNamed(run: new MentionRun(written: $written, register: $register, schema: $schema, author: $author));
+	}//end apply()
+
+	/**
+	 * Notify and subscribe everybody the run's entry named, other than its author.
+	 *
+	 * @param MentionRun $run The entry, how it was addressed and who wrote it.
+	 *
+	 * @return array<int,string> The uids notified and subscribed.
+	 */
+	private function pullInNamed(MentionRun $run): array {
+		$pulled = [];
+		foreach ($this->parse(text: $run->written->message) as $uid) {
+			// Naming yourself is not a mention. It notifies you of your
+			// own sentence and subscribes you to a case you are on.
+			if ($uid !== $run->author && $this->pullIn(run: $run, uid: $uid) === true) {
+				$this->notify(run: $run, uid: $uid);
+				$pulled[] = $uid;
 			}
-
-			if ($this->pullIn(object: $object, uid: $uid, entryUuid: $entryUuid, addressed: [$register, $schema]) === false) {
-				continue;
-			}
-
-			$this->notify(object: $object, uid: $uid, entryUuid: $entryUuid, author: $caller);
-			$pulled[] = $uid;
 		}
 
 		return $pulled;
-	}//end apply()
+	}//end pullInNamed()
 
 	/**
 	 * Subscribe one named principal, when they may read the object.
 	 *
-	 * @param ObjectEntity                   $object    The object the entry hangs on.
-	 * @param string                         $uid       The named principal.
-	 * @param string                         $entryUuid The entry that named them.
-	 * @param array{0:?string, 1:?string}    $addressed The register and schema as the caller addressed them.
+	 * @param MentionRun $run The entry, how it was addressed and who wrote it.
+	 * @param string     $uid The named principal.
 	 *
 	 * @return boolean True when they were subscribed.
 	 */
-	private function pullIn(ObjectEntity $object, string $uid, string $entryUuid, array $addressed): bool {
+	private function pullIn(MentionRun $run, string $uid): bool {
+		$object = $run->written->object;
 		if ($this->mayRead(object: $object, userId: $uid) === false) {
 			return false;
 		}
 
 		try {
 			$this->principals->watchers->subscribeMentioned(
-				object: $object,
-				userId: $uid,
-				register: $addressed[0],
-				schema: $addressed[1]
+				target: new AddressedObject(object: $object, register: $run->register, schema: $run->schema),
+				userId: $uid
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
-				'[EntryMentionService] '.$uid.' was named in entry '.$entryUuid
+				'[EntryMentionService] '.$uid.' was named in entry '.$run->written->uuid()
 					.' but could not be subscribed',
 				['exception' => $e]
 			);
@@ -274,14 +275,14 @@ class EntryMentionService {
 	 * been written, and losing the whole entry because a notification backend
 	 * was briefly unreachable would be a worse trade than a missing popup.
 	 *
-	 * @param ObjectEntity $object    The object.
-	 * @param string       $uid       The named principal.
-	 * @param string       $entryUuid The entry.
-	 * @param string|null  $author    Who named them.
+	 * @param MentionRun $run The entry, how it was addressed and who wrote it.
+	 * @param string     $uid The named principal.
 	 *
 	 * @return void
 	 */
-	private function notify(ObjectEntity $object, string $uid, string $entryUuid, ?string $author): void {
+	private function notify(MentionRun $run, string $uid): void {
+		$object    = $run->written->object;
+		$entryUuid = $run->written->uuid();
 		try {
 			$notification = $this->delivery->notifications->createNotification();
 			$notification->setApp('openregister')
@@ -296,7 +297,7 @@ class EntryMentionService {
 						'registerId' => $object->getRegister(),
 						'schemaId' => $object->getSchema(),
 						'entryUuid' => $entryUuid,
-						'author' => ($author ?? ''),
+						'author' => ($run->author ?? ''),
 					]
 				);
 			$notification->setLink($this->objectLink(object: $object));

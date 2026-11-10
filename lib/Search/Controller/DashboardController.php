@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Search\Controller;
 use DateTime;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Search\Service\ActivityWindow;
 use OCA\OpenRegister\Search\Service\DashboardScope;
 use OCA\OpenRegister\Search\Service\DashboardService;
 use OCA\OpenRegister\Search\Controller\Support\DashboardControllerServices;
@@ -402,28 +403,12 @@ class DashboardController extends Controller {
 		?int $registerId = null,
 		?int $schemaId = null,
 	): JSONResponse {
-		if ($this->isCurrentUserAdmin() === false) {
-			return new JSONResponse(['error' => 'Admin privileges required'], 403);
-		}
-
-		try {
-			$fromDate = null;
-			if ($from !== null) {
-				$fromDate = new DateTime($from);
-			}
-
-			$tillDate = null;
-			if ($till !== null) {
-				$tillDate = new DateTime($till);
-			}
-
-			$data = $this->dashboardService->auditReads()->getAuditTrailActionChartData(
-				period: (new DashboardScope(registerId: $registerId, schemaId: $schemaId))->during(from: $fromDate, till: $tillDate)
-			);
-			return new JSONResponse(data: $data);
-		} catch (\Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-		}//end try
+		return $this->adminRead(
+			read: fn (): array => $this->dashboardService->auditReads()->getAuditTrailActionChartData(
+				period: (new DashboardScope(registerId: $registerId, schemaId: $schemaId))
+					->during(from: self::dateOrNull(value: $from), till: self::dateOrNull(value: $till))
+			)
+		);
 	}//end getAuditTrailActionChart()
 
 	/**
@@ -542,20 +527,22 @@ class DashboardController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-8
 	 */
 	public function getAuditTrailStatistics(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): JSONResponse {
-		if ($this->isCurrentUserAdmin() === false) {
-			return new JSONResponse(['error' => 'Admin privileges required'], 403);
-		}
-
-		try {
-			$data = $this->dashboardService->auditReads()->getAuditTrailStatistics(
-				scope: new DashboardScope(registerId: $registerId, schemaId: $schemaId),
-				hours: $hours
-			);
-			return new JSONResponse(data: $data);
-		} catch (\Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-		}
+		return $this->auditStatistics(scope: new DashboardScope(registerId: $registerId, schemaId: $schemaId), hours: $hours);
 	}//end getAuditTrailStatistics()
+
+	/**
+	 * The audit trail statistics of a scope, for an administrator.
+	 *
+	 * @param DashboardScope $scope The register/schema scope.
+	 * @param int|null       $hours The look-back hours for recent activity.
+	 *
+	 * @return JSONResponse The statistics, 403 for anyone else, or 500 with the logged failure.
+	 */
+	private function auditStatistics(DashboardScope $scope, ?int $hours): JSONResponse {
+		return $this->adminRead(
+			read: fn (): array => $this->dashboardService->auditReads()->getAuditTrailStatistics(scope: $scope, hours: $hours)
+		);
+	}//end auditStatistics()
 
 	/**
 	 * Get action distribution data for audit trails
@@ -577,20 +564,22 @@ class DashboardController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-8
 	 */
 	public function getAuditTrailActionDistribution(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): JSONResponse {
-		if ($this->isCurrentUserAdmin() === false) {
-			return new JSONResponse(['error' => 'Admin privileges required'], 403);
-		}
-
-		try {
-			$data = $this->dashboardService->auditReads()->getAuditTrailActionDistribution(
-				scope: new DashboardScope(registerId: $registerId, schemaId: $schemaId),
-				hours: $hours
-			);
-			return new JSONResponse(data: $data);
-		} catch (\Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-		}
+		return $this->auditDistribution(scope: new DashboardScope(registerId: $registerId, schemaId: $schemaId), hours: $hours);
 	}//end getAuditTrailActionDistribution()
+
+	/**
+	 * The audit action distribution of a scope, for an administrator.
+	 *
+	 * @param DashboardScope $scope The register/schema scope.
+	 * @param int|null       $hours The look-back hours.
+	 *
+	 * @return JSONResponse The distribution, 403 for anyone else, or 500 with the logged failure.
+	 */
+	private function auditDistribution(DashboardScope $scope, ?int $hours): JSONResponse {
+		return $this->adminRead(
+			read: fn (): array => $this->dashboardService->auditReads()->getAuditTrailActionDistribution(scope: $scope, hours: $hours)
+		);
+	}//end auditDistribution()
 
 	/**
 	 * Get most active objects based on audit trail activity
@@ -618,14 +607,23 @@ class DashboardController extends Controller {
 		?int $limit = 10,
 		?int $hours = 24,
 	): JSONResponse {
+		$scope = new DashboardScope(registerId: $registerId, schemaId: $schemaId);
+		return $this->mostActive(window: $scope->mostActive(limit: $limit, hours: $hours));
+	}//end getMostActiveObjects()
+	/**
+	 * The objects with the most audit activity in a window, for an administrator.
+	 *
+	 * @param ActivityWindow $window The register/schema scope, the limit and the look-back hours.
+	 *
+	 * @return JSONResponse The objects, 403 for anyone else, or 500 with the logged failure.
+	 */
+	private function mostActive(ActivityWindow $window): JSONResponse {
 		if ($this->isCurrentUserAdmin() === false) {
 			return new JSONResponse(['error' => 'Admin privileges required'], 403);
 		}
 
 		try {
-			$data = $this->dashboardService->auditReads()->getMostActiveObjects(
-				window: (new DashboardScope(registerId: $registerId, schemaId: $schemaId))->mostActive(limit: $limit, hours: $hours)
-			);
+			$data = $this->dashboardService->auditReads()->getMostActiveObjects(window: $window);
 			return new JSONResponse(data: $data);
 		} catch (\Exception $e) {
 			$this->session->logger->error(
@@ -633,10 +631,10 @@ class DashboardController extends Controller {
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'register_id' => $registerId,
-					'schema_id' => $schemaId,
-					'limit' => $limit,
-					'hours' => $hours,
+					'register_id' => $window->scope->registerId,
+					'schema_id' => $window->scope->schemaId,
+					'limit' => $window->limit,
+					'hours' => $window->hours,
 					'trace' => $e->getTraceAsString(),
 				]
 			);
@@ -648,5 +646,43 @@ class DashboardController extends Controller {
 				statusCode: 500
 			);
 		}//end try
-	}//end getMostActiveObjects()
+	}//end mostActive()
+
+	/**
+	 * Answer an analytics read for an administrator: 403 for anyone else, 500 with the message when it fails.
+	 *
+	 * The admin check runs before the read, so nothing is computed for a non-admin.
+	 *
+	 * @param \Closure(): array<string, mixed> $read The read.
+	 *
+	 * @return JSONResponse The read's data, or the refusal or failure.
+	 */
+	private function adminRead(\Closure $read): JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(['error' => 'Admin privileges required'], 403);
+		}
+
+		try {
+			return new JSONResponse(data: $read());
+		} catch (\Exception $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+		}
+	}//end adminRead()
+
+	/**
+	 * A date from a query parameter, or null when there is none.
+	 *
+	 * @param string|null $value The Y-m-d parameter.
+	 *
+	 * @return DateTime|null
+	 *
+	 * @throws \Exception When the value is not a date.
+	 */
+	private static function dateOrNull(?string $value): ?DateTime {
+		if ($value === null) {
+			return null;
+		}
+
+		return new DateTime($value);
+	}//end dateOrNull()
 }//end class

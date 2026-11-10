@@ -56,6 +56,7 @@ use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
+use OCA\OpenRegister\Service\Schemas\ScopedField;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyException;
@@ -814,8 +815,15 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 					_rbac: $_rbac,
 					_multitenancy: $_multitenancy
 				);
-			} catch (DoesNotExistException|MultipleObjectsReturnedException|DBException) {
-				// Catch all exceptions but do nothing.
+			} catch (DoesNotExistException|MultipleObjectsReturnedException|DBException $e) {
+				// Ids that cannot be loaded are left out of the result.
+				$this->logger->debug(
+					message: '[SchemaMapper] findMultiple skips a schema id that could not be loaded',
+					context: [
+						'id' => $id,
+						'exception' => $e->getMessage(),
+					]
+				);
 			}
 		}
 
@@ -879,8 +887,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * multi-tenancy and RBAC filtering.
 	 *
 	 * @param string $slug The slug to search for
-	 * @param int $limit Maximum number of results (default: 10)
-	 * @param int $offset Offset for pagination (default: 0)
+	 * @param ListQuery $query The page: its limit and offset
 	 * @param bool $_rbac Whether to apply RBAC permission checks (default: true)
 	 * @param bool $_multitenancy Whether to apply multi-tenancy filtering (default: true)
 	 *
@@ -892,8 +899,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 */
 	public function findBySlug(
 		string $slug,
-		int $limit = 10,
-		int $offset = 0,
+		ListQuery $query,
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): array {
@@ -901,8 +907,8 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		$qb = $this->exactSlugQuery(slug: $slug);
 		$this->filterByOrganisation(qb: $qb, multitenancy: $_multitenancy);
-		$qb->setMaxResults($limit)
-			->setFirstResult($offset);
+		$qb->setMaxResults($query->limit)
+			->setFirstResult($query->offset ?? 0);
 
 		return array_values($this->fetchSchemas(qb: $qb));
 	}//end findBySlug()
@@ -975,16 +981,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		bool $_multitenancy = true,
 	): array {
 		$this->readTrace()->record(method: 'findAll');
-
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select('*')
-			->from('openregister_schemas')
-			->setMaxResults($limit)
-			->setFirstResult($offset);
-
-		$this->applyColumnFilters(qb: $qb, filters: $filters);
-
+		$qb = $this->listedQuery(query: new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset, filters: ($filters ?? [])));
 		if (empty($searchConditions) === false) {
 			$qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
 			$this->bindSearchParams(qb: $qb, params: $searchParams);
@@ -992,9 +989,27 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		$this->filterByOrganisation(qb: $qb, multitenancy: $_multitenancy);
 
-		// Just return the entities; do not attach stats here.
 		return $this->findEntities(query: $qb);
 	}//end findAll()
+
+	/**
+	 * The schema list query for one page of column-filtered rows.
+	 *
+	 * @param ListQuery $query The limit (unbounded for every row), the offset and the column filters.
+	 *
+	 * @return IQueryBuilder The query, before search conditions and the organisation filter.
+	 */
+	private function listedQuery(ListQuery $query): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from('openregister_schemas')
+			->setMaxResults($query->limitOrNull())
+			->setFirstResult($query->offset);
+
+		$this->applyColumnFilters(qb: $qb, filters: $query->filters);
+
+		return $qb;
+	}//end listedQuery()
 
 	/**
 	 * Bind the named parameters of the search conditions.
@@ -1080,7 +1095,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		foreach ($this->scopedProperties(schema: $entity) as $name => $scope) {
 			$governance->assertMayAddAtScope(scope: $scope, path: (string)$name);
-			$governance->assertBelowCeiling(schema: $entity, scope: $scope, property: (string)$name);
+			$governance->assertBelowCeiling(schema: $entity, field: new ScopedField(property: (string)$name, scope: $scope));
 		}
 	}//end assertScopedPropertiesAreGoverned()
 
@@ -1800,21 +1815,14 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	/**
 	 * Recursively check if properties contain a reference to the target schema.
 	 *
-	 * @param array  $properties       The properties array to search through.
-	 * @param string $targetSchemaId   The target schema ID to look for.
-	 * @param string $targetSchemaUuid The target schema UUID to look for.
-	 * @param string $targetSchemaSlug The target schema slug to look for.
+	 * @param array  $properties The properties array to search through.
+	 * @param Schema $target     The schema whose id, uuid or slug a reference names.
 	 *
 	 * @return bool True if a reference to the target schema is found
 	 */
-	public function hasReferenceToSchema(
-		array $properties,
-		string $targetSchemaId,
-		string $targetSchemaUuid,
-		string $targetSchemaSlug,
-	): bool {
+	public function hasReferenceToSchema(array $properties, Schema $target): bool {
 		$search = new SchemaReferenceSearch(
-			target: ['id' => $targetSchemaId, 'uuid' => $targetSchemaUuid, 'slug' => $targetSchemaSlug]
+			target: ['id' => (string)$target->getId(), 'uuid' => $target->getUuid() ?? '', 'slug' => $target->getSlug() ?? '']
 		);
 
 		return $search->foundIn(properties: $properties);

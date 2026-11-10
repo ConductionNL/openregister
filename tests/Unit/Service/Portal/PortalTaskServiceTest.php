@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Portal;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Service\Task\TaskAct;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
@@ -107,7 +108,7 @@ class PortalTaskServiceTest extends TestCase {
 		$this->tasks = $this->createMock(TaskService::class);
 		$this->mapper = $this->createMock(TaskMapper::class);
 		$this->files = $this->createMock(FileService::class);
-		$inbox = new TaskInboxService(tasks: $this->mapper, temporal: new TaskTemporalProjection(), logger: new NullLogger());
+		$inbox = new TaskInboxService(tasks: $this->mapper, logger: new NullLogger());
 		$this->service = new PortalTaskService(
 			sources: new PortalTaskSources(tasks: $this->tasks, mapper: $this->mapper, inbox: $inbox, temporal: new TaskTemporalProjection()),
 			files: $this->files,
@@ -148,9 +149,9 @@ class PortalTaskServiceTest extends TestCase {
 	private function openForRuns(Task $task): void {
 		$authorization = new TaskAuthorizationService();
 		$this->tasks->method('openFor')->willReturnCallback(
-			function (string $verb, string $uuid, ?string $actor) use ($task, $authorization): Task {
-				$this->trace[] = 'authorize:' . $actor;
-				$authorization->assertMay(act: new TaskAct(verb: $verb, actor: $actor), task: $task);
+			function (TaskAct $act) use ($task, $authorization): Task {
+				$this->trace[] = 'authorize:' . $act->actor;
+				$authorization->assertMay(act: $act, task: $task);
 
 				return $task;
 			}
@@ -284,8 +285,8 @@ class PortalTaskServiceTest extends TestCase {
 		$groups->method('isAdmin')->willReturn(true);
 		$authorization = new TaskAuthorizationService(groupManager: $groups);
 		$this->tasks->method('openFor')->willReturnCallback(
-			static function (string $verb, string $uuid, ?string $actor) use ($task, $authorization): Task {
-				$authorization->assertMay(act: new TaskAct(verb: $verb, actor: $actor), task: $task);
+			static function (TaskAct $act) use ($task, $authorization): Task {
+				$authorization->assertMay(act: $act, task: $task);
 
 				return $task;
 			}
@@ -322,7 +323,7 @@ class PortalTaskServiceTest extends TestCase {
 			$tasks = $this->createMock(TaskService::class);
 			$tasks->method('openFor')->willReturn($task);
 			$service = new PortalTaskService(
-				sources: new PortalTaskSources(tasks: $tasks, mapper: $this->mapper, inbox: new TaskInboxService(tasks: $this->mapper, temporal: new TaskTemporalProjection(), logger: new NullLogger()), temporal: new TaskTemporalProjection()),
+				sources: new PortalTaskSources(tasks: $tasks, mapper: $this->mapper, inbox: new TaskInboxService(tasks: $this->mapper, logger: new NullLogger()), temporal: new TaskTemporalProjection()),
 				files: $this->files,
 				logger: new NullLogger()
 			);
@@ -369,7 +370,7 @@ class PortalTaskServiceTest extends TestCase {
 		$foreign = $this->task();
 		$foreign->setUuid('t-9');
 		$foreign->setAssignee('party:bsn-2');
-		$this->mapper->expects($this->once())->method('findOpenExternalForParty')->with('party:bsn-1', 25, 0)->willReturn([$mine, $foreign]);
+		$this->mapper->expects($this->once())->method('findOpenExternalForParty')->with('party:bsn-1', $this->equalTo(new ListQuery(limit: 25, offset: 0)))->willReturn([$mine, $foreign]);
 		$this->mapper->expects($this->once())->method('countOpenExternalForParty')->with('party:bsn-1')->willReturn(1);
 
 		$page = $this->service->listForSubject(subject: new PortalSubject(subjectRef: 'bsn-1'));
@@ -402,7 +403,6 @@ class PortalTaskServiceTest extends TestCase {
 
 		$inbox = new TaskInboxService(
 			tasks: $this->mapper,
-			temporal: new TaskTemporalProjection(),
 			logger: new NullLogger(),
 			objects: $objects
 		);

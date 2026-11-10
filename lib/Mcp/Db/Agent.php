@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Mcp\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Kernel\Contracts\AgentInterface;
 use OCP\AppFramework\Db\Entity;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Db\Configuration;
@@ -110,7 +111,7 @@ use OCA\OpenRegister\Db\Organisation;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class Agent extends Entity implements JsonSerializable {
+class Agent extends Entity implements JsonSerializable, AgentInterface {
 
 	/**
 	 * Unique identifier for the agent

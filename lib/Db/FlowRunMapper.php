@@ -24,11 +24,10 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use InvalidArgumentException;
-use OCA\OpenRegister\Event\FlowRunTerminalEvent;
+use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 
 /**
@@ -61,8 +60,8 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db The database connection.
-	 * @param IEventDispatcher|null $dispatcher Publishes run terminality
-	 *                                          ({@see FlowRunTerminalEvent}).
+	 * @param EntityEventsInterface|null $entityEvents Publishes run terminality
+	 *                                                (FlowRunTerminalEvent).
 	 *                                          Nullable so the mapper stays
 	 *                                          constructible without a
 	 *                                          container; absent, terminality
@@ -70,7 +69,7 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 	 */
 	public function __construct(
 		IDBConnection $db,
-		private readonly ?IEventDispatcher $dispatcher = null,
+		private readonly ?EntityEventsInterface $entityEvents = null,
 	) {
 		parent::__construct(db: $db, tableName: 'openregister_flow_runs', entityClass: FlowRun::class);
 
@@ -102,13 +101,8 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 
 		$updated = parent::update(entity: $entity);
 
-		if ($this->dispatcher !== null && $updated->isTerminal() === true) {
-			$this->dispatcher->dispatchTyped(
-				new FlowRunTerminalEvent(
-					runUuid: (string)$updated->getUuid(),
-					status: (string)$updated->getStatus()
-				)
-			);
+		if ($this->entityEvents !== null && $updated->isTerminal() === true) {
+			$this->entityEvents->flowRunTerminal(runUuid: (string)$updated->getUuid(), status: (string)$updated->getStatus());
 		}
 
 		return $updated;

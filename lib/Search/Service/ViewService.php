@@ -165,31 +165,9 @@ class ViewService {
 	}//end findAllFor()
 
 	/**
-	 * Create a new view
-	 *
-	 * Creates a new view entity with specified properties. If view is set as default,
-	 * clears any existing default view for the user. Validates and stores view in database.
-	 *
-	 * @param ViewDefinition $definition The name, description, query and presentation of the view
-	 * @param ViewAudience   $audience   The owner, public and default flags and the group shares of the view
-	 * @param array|null     $alert      The declared count alert; null or `[]` = none
-	 *
-	 * @return View The created view entity
-	 *
-	 * @throws Exception If view creation fails (database error, validation error, etc.)
-	 * @throws InvalidArgumentException If the presentation config cannot render (REQ-VIEW-PRES-01)
-	 *
-	 * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-8
-	 */
-	public function create(ViewDefinition $definition, ViewAudience $audience, ?array $alert = null): View {
-		return $this->createView(edit: new ViewEdit(definition: $definition, audience: $audience, alert: $alert));
-	}//end create()
-
-	/**
 	 * Create a new view from one edit.
 	 *
-	 * If the view is set as default, clears any existing default view for the owner first.
+	 * Validates and stores the view. If the view is set as default, clears any existing default view for the owner first.
 	 * Nobody favours a new view, whatever the edit says.
 	 *
 	 * @param ViewEdit $edit The definition, audience and count alert of the new view
@@ -201,7 +179,7 @@ class ViewService {
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
 	 */
-	public function createView(ViewEdit $edit): View {
+	public function create(ViewEdit $edit): View {
 		try {
 			return $this->viewMapper->insert($this->newViewFor(edit: $edit));
 		} catch (Exception $e) {
@@ -212,7 +190,7 @@ class ViewService {
 			);
 			throw $e;
 		}
-	}//end createView()
+	}//end create()
 
 	/**
 	 * Validate an edit and build the unsaved view it creates, clearing the owner's old default when it is one.
@@ -258,50 +236,6 @@ class ViewService {
 		$view->setSharedWith(array_values($audience->sharedWith ?? []));
 		return $view;
 	}//end newView()
-
-	/**
-	 * Update an existing view.
-	 *
-	 * @param int|string $id The ID of the view to update
-	 * @param string $name The name of the view
-	 * @param string $description The description of the view
-	 * @param string $owner The owner user ID (for access control)
-	 * @param bool $isPublic Whether the view is public
-	 * @param bool $isDefault Whether the view is default
-	 * @param array $query The query parameters
-	 * @param array|null $favoredBy Array of user IDs who favor this view
-	 * @param array|null $presentation Presentation config (viewType + kanban/calendar config); null leaves the existing value untouched
-	 * @param array|null $sharedWith Validated group shares, `[{group, mode}]`; null leaves the existing shares untouched
-	 * @param array|null $alert The declared count alert; null leaves it untouched, `[]` clears it
-	 *
-	 * @return View The updated view
-	 *
-	 * @throws Exception If update fails
-	 * @throws InvalidArgumentException If the presentation config cannot render (REQ-VIEW-PRES-01)
-	 *
-	 * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-8
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Each optional field is null-means-untouched; a bag would lose that per field.
-	 */
-	public function update(
-		int|string $id,
-		string $name,
-		string $description,
-		string $owner,
-		bool $isPublic,
-		bool $isDefault,
-		array $query,
-		?array $favoredBy = null,
-		?array $presentation = null,
-		?array $sharedWith = null,
-		?array $alert = null,
-	): View {
-		$definition = new ViewDefinition(name: $name, description: $description, query: $query, presentation: $presentation);
-		$audience = new ViewAudience(owner: $owner, isPublic: $isPublic, isDefault: $isDefault, sharedWith: $sharedWith);
-		$edit = new ViewEdit(definition: $definition, audience: $audience, favoredBy: $favoredBy, alert: $alert);
-		return $this->revise(id: $id, edit: $edit);
-	}//end update()
 
 	/**
 	 * Apply one edit to an existing view the edit's owner may read.

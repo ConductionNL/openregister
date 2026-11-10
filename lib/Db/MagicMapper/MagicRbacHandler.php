@@ -44,7 +44,10 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\OrganisationContext;
+use OCA\OpenRegister\Service\Rbac\GrantLookup;
+use OCA\OpenRegister\Service\Rbac\AuthorizationColumn;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
+use OCA\OpenRegister\Service\Rbac\GrantedRows;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolverInterface;
 use OCA\OpenRegister\Service\Rbac\RbacCollaborators;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -443,8 +446,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 */
 	private function ownedByMyGroupSql(RbacAccessCall $call): ?string {
 		return $this->objectScope()->ownedByMyGroupSql(
-			authColumn: $call->authorizationColumn(),
-			isPostgres: $this->isPostgres(),
+			column: new AuthorizationColumn(name: $call->authorizationColumn(), isPostgres: $this->isPostgres()),
 			quotedUserGroups: $this->quotedCallerGroups()
 		);
 	}//end ownedByMyGroupSql()
@@ -473,8 +475,10 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	private function reachableRowSqlFor(RbacAccessCall $call): string {
 		$reachable = $this->objectScope()->notPrivateOrGrantedSql(
 			notPrivateSql: $this->notPrivateSqlFor(call: $call),
-			uuidColumn: $call->columnPrefix . '_uuid',
-			quotedUuids: $this->quotedGrantedUuids(userId: $call->userId, action: $call->action)
+			granted: new GrantedRows(
+				uuidColumn: $call->columnPrefix . '_uuid',
+				quotedUuids: $this->quotedGrantedUuids(userId: $call->userId, action: $call->action)
+			)
 		);
 
 		if ($this->hidesDrafts(call: $call) === true) {
@@ -493,9 +497,8 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 */
 	private function notPrivateSqlFor(RbacAccessCall $call): string {
 		return $this->objectScope()->notPrivateSql(
-			columnName: $call->authorizationColumn(),
-			defaultPrivate: $this->objectScope()->schemaDefaultIsPrivate(schemaAuthorization: $call->authorization),
-			isPostgres: $this->isPostgres()
+			column: new AuthorizationColumn(name: $call->authorizationColumn(), isPostgres: $this->isPostgres()),
+			defaultPrivate: $this->objectScope()->schemaDefaultIsPrivate(schemaAuthorization: $call->authorization)
 		);
 	}//end notPrivateSqlFor()
 
@@ -1558,7 +1561,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return false;
 		}
 
-		return $this->objectGrants()?->isGranted(userId: $check->userId, objectUuid: $check->objectUuid, action: $check->action) !== true;
+		return $this->objectGrants()?->isGranted(lookup: new GrantLookup(userId: $check->userId, objectUuid: $check->objectUuid), action: $check->action) !== true;
 	}//end privateObjectRefuses()
 
 	/**
@@ -1855,10 +1858,8 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * - no conditions at all is DENY ALL and becomes `FALSE`, never `TRUE` and
 	 *   never omitted.
 	 *
-	 * @param Schema $schema The schema of the rows the subquery reads.
-	 * @param string $alias  The alias those rows carry in the subquery.
-	 * @param string $action The CRUD action being filtered.
-	 * @param string|null $tableName The bare magic table of the aliased rows; a `_status` column it lacks is left out of the draft predicate.
+	 * @param Schema      $schema The schema of the rows the subquery reads.
+	 * @param AliasedRows $rows   The alias the rows carry, the CRUD action and their bare magic table.
 	 *
 	 * @return string A predicate, always non-empty, safe to AND into a WHERE.
 	 *
@@ -1866,9 +1867,9 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 *
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
 	 */
-	public function buildRbacPredicateForAlias(Schema $schema, string $alias, string $action = 'read', ?string $tableName = null): string {
-		$this->assertPredicateAlias(alias: $alias);
-		$result = $this->buildRbacConditionsSql(schema: $schema, action: $action, columnPrefix: $alias . '.', tableName: $tableName);
+	public function buildRbacPredicateForAlias(Schema $schema, AliasedRows $rows): string {
+		$this->assertPredicateAlias(alias: $rows->alias);
+		$result = $this->buildRbacConditionsSql(schema: $schema, action: $rows->action, columnPrefix: $rows->alias . '.', tableName: $rows->tableName);
 		if (($result['bypass'] ?? false) === true) {
 			return 'TRUE';
 		}
@@ -1964,6 +1965,19 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 		$call = new RbacAccessCall(schema: $schema, columnPrefix: $columnPrefix);
 		$call->action = $action;
 		$call->tableName = $tableName;
+		return $this->accessConditions(call: $call);
+	}//end buildRbacConditionsSql()
+
+	/**
+	 * The bypass flag and the SQL conditions of one access call; fails closed.
+	 *
+	 * @param RbacAccessCall $call The schema, action, column prefix and table of the read.
+	 *
+	 * @return array{bypass: bool, conditions: array<int, string>} The bypass flag and conditions.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function accessConditions(RbacAccessCall $call): array {
 		if ($this->sqlFilterBypassed(call: $call) === true) {
 			return ['bypass' => true, 'conditions' => []];
 		}
@@ -1977,7 +1991,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 		}
 
 		return ['bypass' => false, 'conditions' => $this->conditionsSql(call: $call)];
-	}//end buildRbacConditionsSql()
+	}//end accessConditions()
 
 	/**
 	 * Identify the caller, and say whether the raw-SQL filter lets it through unfiltered.
@@ -1992,6 +2006,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 */
 	private function sqlFilterBypassed(RbacAccessCall $call): bool {
 		$user = $this->identifyCaller(call: $call);
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return $call->callerIsAdmin() === true
 			|| ($this->isTrustedSystemCaller(user: $user) === true && SystemOperationContext::isActive() === true);
 	}//end sqlFilterBypassed()
@@ -2199,6 +2214,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return false;
 		}
 
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return $this->isCommandLine() === true || SystemOperationContext::isActive() === true;
 	}//end isTrustedSystemCaller()
 

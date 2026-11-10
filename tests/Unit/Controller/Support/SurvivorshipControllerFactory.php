@@ -18,7 +18,6 @@ final class SurvivorshipControllerFactory {
 	/**
 	 * The constructor arguments of SurvivorshipController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param ObjectOperationsInterface $objectService Constructor argument.
 	 * @param SchemaMapperInterface $schemaMapper Constructor argument.
@@ -28,7 +27,6 @@ final class SurvivorshipControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface $objectService,
 		\OCA\OpenRegister\Db\SchemaMapperInterface $schemaMapper,
@@ -36,14 +34,13 @@ final class SurvivorshipControllerFactory {
 		\OCP\IUserSession $userSession,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\SurvivorshipControllerServices(
 				objectService: $objectService,
 				schemaMapper: $schemaMapper,
 				sourceRecordResolver: $sourceRecordResolver,
+				userSession: $userSession,
 			),
-			$userSession,
 		];
 	}
 

@@ -57,7 +57,6 @@ class SelectielijstControllerTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 
 		$this->controller = SelectielijstControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->selectielijst,
 			$this->settingsHandler,

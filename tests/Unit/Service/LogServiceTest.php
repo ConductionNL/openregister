@@ -11,8 +11,10 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\LogService;
+use OCA\OpenRegister\Tests\Support\AuditTrailListing;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -31,9 +33,7 @@ class LogServiceTest extends TestCase {
 
 		$this->service = new LogService(
 			$this->auditTrailMapper,
-			$this->objectEntityMapper,
-			$this->registerMapper,
-			$this->schemaMapper
+			new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->objectEntityMapper)
 		);
 	}
 
@@ -74,7 +74,7 @@ class LogServiceTest extends TestCase {
 		$this->objectEntityMapper->method('findInRegisterSchemaTable')->willReturn($object);
 		$this->registerMapper->method('find')->willReturn($register);
 		$this->schemaMapper->method('find')->willReturn($schema);
-		$this->auditTrailMapper->method('findAll')->willReturn(['log1', 'log2']);
+		$this->auditTrailMapper->method('findTrail')->willReturn(['log1', 'log2']);
 
 		$result = $this->service->getLogs('1', '2', '42');
 
@@ -91,7 +91,7 @@ class LogServiceTest extends TestCase {
 		$this->schemaMapper->method('find')->willReturn($schema);
 
 		$this->auditTrailMapper->expects($this->once())
-			->method('findAll')
+			->method('findTrail')
 			->willReturn([]);
 
 		$result = $this->service->getLogs('1', '2', '42', [
@@ -111,7 +111,7 @@ class LogServiceTest extends TestCase {
 		$this->registerMapper->method('find')->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
 
 		$this->auditTrailMapper->expects($this->once())
-			->method('findAll')
+			->method('findTrail')
 			->willReturn(['log1']);
 
 		$result = $this->service->getLogs('deleted-reg', 'deleted-schema', '42');
@@ -142,7 +142,7 @@ class LogServiceTest extends TestCase {
 			->method('findInRegisterSchemaTable')
 			->with('hello-world', $register, $schema, false, false, true)
 			->willReturn($object);
-		$this->auditTrailMapper->method('findAll')->willReturn(['log1']);
+		$this->auditTrailMapper->method('findTrail')->willReturn(['log1']);
 
 		$this->assertSame(['log1'], $this->service->getLogs('1', '2', 'hello-world'));
 	}
@@ -152,7 +152,7 @@ class LogServiceTest extends TestCase {
 		$this->schemaMapper->method('find')->willReturn($this->createSchema(2));
 		$this->objectEntityMapper->method('findInRegisterSchemaTable')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not in this register and schema'));
-		$this->auditTrailMapper->expects($this->never())->method('findAll');
+		$this->auditTrailMapper->expects($this->never())->method('findTrail');
 
 		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
 		$this->service->getLogs('1', '2', 'hello-world');
@@ -163,7 +163,7 @@ class LogServiceTest extends TestCase {
 		$this->schemaMapper->method('find')->willReturn($this->createSchema(2));
 		$this->objectEntityMapper->method('findInRegisterSchemaTable')
 			->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('two objects hold "dubbel"'));
-		$this->auditTrailMapper->expects($this->never())->method('findAll');
+		$this->auditTrailMapper->expects($this->never())->method('findTrail');
 
 		$this->expectException(\OCP\AppFramework\Db\MultipleObjectsReturnedException::class);
 		$this->service->count('1', '2', 'dubbel');
@@ -186,7 +186,7 @@ class LogServiceTest extends TestCase {
 				return $live;
 			}
 		);
-		$this->auditTrailMapper->method('findAll')->willReturn(['log-live']);
+		$this->auditTrailMapper->method('findTrail')->willReturn(['log-live']);
 
 		$this->assertSame(['log-live'], $this->service->getLogs('1', '2', 'dubbel'));
 	}
@@ -203,7 +203,7 @@ class LogServiceTest extends TestCase {
 				throw new \OCP\AppFramework\Db\DoesNotExistException('no live holder');
 			}
 		);
-		$this->auditTrailMapper->expects($this->never())->method('findAll');
+		$this->auditTrailMapper->expects($this->never())->method('findTrail');
 
 		$this->expectException(\OCP\AppFramework\Db\MultipleObjectsReturnedException::class);
 		$this->service->getLogs('1', '2', 'dubbel');
@@ -217,7 +217,7 @@ class LogServiceTest extends TestCase {
 		$this->objectEntityMapper->method('findInRegisterSchemaTable')->willReturn($object);
 		$this->registerMapper->method('find')->willReturn($register);
 		$this->schemaMapper->method('find')->willReturn($schema);
-		$this->auditTrailMapper->method('findAll')->willReturn(['a', 'b', 'c']);
+		$this->auditTrailMapper->method('findTrail')->willReturn(['a', 'b', 'c']);
 
 		$result = $this->service->count('1', '2', '42');
 
@@ -232,7 +232,7 @@ class LogServiceTest extends TestCase {
 		$this->objectEntityMapper->method('findInRegisterSchemaTable')->willReturn($object);
 		$this->registerMapper->method('find')->willReturn($register);
 		$this->schemaMapper->method('find')->willReturn($schema);
-		$this->auditTrailMapper->method('findAll')->willReturn([]);
+		$this->auditTrailMapper->method('findTrail')->willReturn([]);
 
 		$result = $this->service->count('1', '2', '42');
 
@@ -260,14 +260,14 @@ class LogServiceTest extends TestCase {
 		$seenFilters = null;
 		$seenSearch = 'not-called';
 		$this->auditTrailMapper->expects($this->once())
-			->method('findAll')
-			->willReturnCallback(
+			->method('findTrail')
+			->willReturnCallback(AuditTrailListing::positional(
 				function ($limit = null, $offset = null, $filters = [], $sort = null, $search = null) use (&$seenFilters, &$seenSearch) {
 					$seenFilters = $filters;
 					$seenSearch = $search;
 					return ['a', 'b'];
 				}
-			);
+			));
 
 		$result = $this->service->count(
 			'1',
@@ -287,7 +287,7 @@ class LogServiceTest extends TestCase {
 
 	public function testGetAllLogsWithDefaults(): void {
 		$this->auditTrailMapper->expects($this->once())
-			->method('findAll')
+			->method('findTrail')
 			->willReturn(['log1']);
 
 		$result = $this->service->getAllLogs();
@@ -297,7 +297,7 @@ class LogServiceTest extends TestCase {
 
 	public function testGetAllLogsWithConfig(): void {
 		$this->auditTrailMapper->expects($this->once())
-			->method('findAll')
+			->method('findTrail')
 			->willReturn([]);
 
 		$result = $this->service->getAllLogs([
@@ -312,7 +312,7 @@ class LogServiceTest extends TestCase {
 	}
 
 	public function testCountAllLogs(): void {
-		$this->auditTrailMapper->method('findAll')->willReturn(['a', 'b']);
+		$this->auditTrailMapper->method('findTrail')->willReturn(['a', 'b']);
 
 		$result = $this->service->countAllLogs();
 
@@ -320,7 +320,7 @@ class LogServiceTest extends TestCase {
 	}
 
 	public function testCountAllLogsWithFilters(): void {
-		$this->auditTrailMapper->method('findAll')->willReturn([]);
+		$this->auditTrailMapper->method('findTrail')->willReturn([]);
 
 		$result = $this->service->countAllLogs(['action' => 'delete']);
 
@@ -333,7 +333,7 @@ class LogServiceTest extends TestCase {
 
 		$result = $this->service->getLog(1);
 
-		$this->assertInstanceOf(AuditTrail::class, $result);
+		$this->assertSame($auditTrail, $result);
 	}
 
 	public function testExportLogsJson(): void {
@@ -351,7 +351,7 @@ class LogServiceTest extends TestCase {
 			'size' => 100,
 		]);
 
-		$this->auditTrailMapper->method('findAll')->willReturn([$mockLog]);
+		$this->auditTrailMapper->method('findTrail')->willReturn([$mockLog]);
 
 		$result = $this->service->exportLogs('json');
 
@@ -375,7 +375,7 @@ class LogServiceTest extends TestCase {
 			'size' => 100,
 		]);
 
-		$this->auditTrailMapper->method('findAll')->willReturn([$mockLog]);
+		$this->auditTrailMapper->method('findTrail')->willReturn([$mockLog]);
 
 		$result = $this->service->exportLogs('csv');
 
@@ -398,7 +398,7 @@ class LogServiceTest extends TestCase {
 			'size' => 100,
 		]);
 
-		$this->auditTrailMapper->method('findAll')->willReturn([$mockLog]);
+		$this->auditTrailMapper->method('findTrail')->willReturn([$mockLog]);
 
 		$result = $this->service->exportLogs('xml');
 
@@ -420,7 +420,7 @@ class LogServiceTest extends TestCase {
 			'size' => 100,
 		]);
 
-		$this->auditTrailMapper->method('findAll')->willReturn([$mockLog]);
+		$this->auditTrailMapper->method('findTrail')->willReturn([$mockLog]);
 
 		$result = $this->service->exportLogs('txt');
 
@@ -429,7 +429,7 @@ class LogServiceTest extends TestCase {
 	}
 
 	public function testExportLogsUnsupportedFormat(): void {
-		$this->auditTrailMapper->method('findAll')->willReturn([]);
+		$this->auditTrailMapper->method('findTrail')->willReturn([]);
 
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('Unsupported export format');
@@ -438,7 +438,7 @@ class LogServiceTest extends TestCase {
 	}
 
 	public function testExportLogsCsvEmpty(): void {
-		$this->auditTrailMapper->method('findAll')->willReturn([]);
+		$this->auditTrailMapper->method('findTrail')->willReturn([]);
 
 		$result = $this->service->exportLogs('csv');
 

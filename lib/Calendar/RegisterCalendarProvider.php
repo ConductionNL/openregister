@@ -27,10 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Calendar;
 
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\Calendar\ICalendarProvider;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * Calendar provider that creates virtual calendars from OpenRegister schemas
@@ -42,36 +39,10 @@ use Psr\Log\LoggerInterface;
  * @package OCA\OpenRegister\Calendar
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * @spec openspec/specs/calendar-integration/spec.md
  */
 class RegisterCalendarProvider implements ICalendarProvider {
-
-	/**
-	 * The schema mapper for loading schemas
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * The collaborators every calendar reads through
-	 *
-	 * @var RegisterCalendarSources
-	 */
-	private RegisterCalendarSources $sources;
-
-	/**
-	 * The user session for authentication context
-	 *
-	 * @var IUserSession
-	 */
-	private IUserSession $userSession;
-
-	/**
-	 * Logger instance
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
 
 	/**
 	 * Cached calendar-enabled schemas (per-request)
@@ -83,19 +54,11 @@ class RegisterCalendarProvider implements ICalendarProvider {
 	/**
 	 * Constructor
 	 *
-	 * @param SchemaMapperInterface   $schemaMapper The schema mapper
-	 * @param IUserSession            $userSession  The user session
-	 * @param RegisterCalendarSources $sources      Object/register lookup, transformer and logger
+	 * @param RegisterCalendarSources $sources Schema/register/object lookup, transformer and logger
 	 */
 	public function __construct(
-		SchemaMapperInterface $schemaMapper,
-		IUserSession $userSession,
-		RegisterCalendarSources $sources,
+		private readonly RegisterCalendarSources $sources,
 	) {
-		$this->schemaMapper = $schemaMapper;
-		$this->userSession = $userSession;
-		$this->logger = $sources->logger;
-		$this->sources = $sources;
 	}//end __construct()
 
 	/**
@@ -138,8 +101,7 @@ class RegisterCalendarProvider implements ICalendarProvider {
 				}
 
 				$calendars[] = new RegisterCalendar(
-					schema: $schema,
-					calendarConfig: $config,
+					definition: new CalendarDefinition(schema: $schema, config: $config),
 					principalUri: $principalUri,
 					sources: $this->sources
 				);
@@ -147,7 +109,7 @@ class RegisterCalendarProvider implements ICalendarProvider {
 
 			return $calendars;
 		} catch (\Exception $e) {
-			$this->logger->warning(
+			$this->sources->logger->warning(
 				'[RegisterCalendarProvider] Failed to load calendars: ' . $e->getMessage(),
 				['exception' => $e]
 			);
@@ -177,7 +139,7 @@ class RegisterCalendarProvider implements ICalendarProvider {
 			// is fetched) should see the calendar even if the schema's
 			// organisation differs from the user's active organisation.
 			// Per-object ACLs gate the actual event content.
-			$allSchemas = $this->schemaMapper->findAll(
+			$allSchemas = $this->sources->catalog->schemas()->findAll(
 				_multitenancy: false
 			);
 
@@ -194,7 +156,7 @@ class RegisterCalendarProvider implements ICalendarProvider {
 				];
 			}
 		} catch (\Exception $e) {
-			$this->logger->warning(
+			$this->sources->logger->warning(
 				'[RegisterCalendarProvider] Failed to load schemas: ' . $e->getMessage(),
 				['exception' => $e]
 			);

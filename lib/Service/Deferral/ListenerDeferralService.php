@@ -221,15 +221,34 @@ class ListenerDeferralService implements ListenerDeferralInterface {
 		int $chunkSize = self::DEFAULT_CHUNK_SIZE,
 		?string $dedupeKey = null,
 	): void {
+		$options = new DeferralOptions(chunkSize: $chunkSize, dedupeKey: $dedupeKey);
+		$this->deferEntry(deferred: new DeferredEntry(jobClass: $jobClass, entry: $entry), options: $options);
+	}//end defer()
+
+	/**
+	 * Buffer one entry for its job class, flushing full chunks immediately.
+	 *
+	 * Fail-soft like defer(): a capture or enqueue failure is logged and never
+	 * breaks the save that triggered it.
+	 *
+	 * @param DeferredEntry   $deferred The entry and the job class it is enqueued for.
+	 * @param DeferralOptions $options  Chunk size and optional coalescing key.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function deferEntry(DeferredEntry $deferred, DeferralOptions $options = new DeferralOptions()): void {
+		$jobClass = $deferred->jobClass;
 		try {
 			$this->captureActor();
-			$this->ensureBuffer(jobClass: $jobClass, chunkSize: $chunkSize);
+			$this->ensureBuffer(jobClass: $jobClass, chunkSize: $options->chunkSize);
 
-			if ($this->isDuplicate(jobClass: $jobClass, dedupeKey: $dedupeKey) === true) {
+			if ($this->isDuplicate(jobClass: $jobClass, dedupeKey: $options->dedupeKey) === true) {
 				return;
 			}
 
-			$this->buffers[$jobClass]['entries'][] = $entry;
+			$this->buffers[$jobClass]['entries'][] = $deferred->entry;
 
 			$this->hookShutdown();
 			$this->flushWhenFull(jobClass: $jobClass);
@@ -244,7 +263,7 @@ class ListenerDeferralService implements ListenerDeferralInterface {
 				]
 			);
 		}//end try
-	}//end defer()
+	}//end deferEntry()
 
 	/**
 	 * Open the buffer of a job class on its first entry; its chunk size is fixed then.

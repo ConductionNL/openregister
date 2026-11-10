@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Service\Relation;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectRelation;
+use OCA\OpenRegister\Db\Schema;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -99,7 +100,7 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 	): ObjectRelation {
 		$link ??= new ProvenanceLink();
 		return $this->stores->mapper->createFromArray(
-			$this->fields->objectLink(from: $created, to: $source, origin: ObjectRelation::ORIGIN_SPLIT)
+			$this->fields->splitLink(from: $created, to: $source)
 			+ ['relationType' => $link->relationType, 'sourceEntry' => $link->entry, 'createdBy' => $this->actor()]
 		);
 	}//end recordSplit()
@@ -129,10 +130,25 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function applyInheritance(ObjectEntity $parent, array $childData, array $inherits): array {
-		$parentData = $parent->getObject();
+		return $this->inherit(inheritance: new ParentInheritance(parent: $parent, childData: $childData, inherits: $inherits));
+	}//end applyInheritance()
+
+	/**
+	 * What a child takes from its parent at creation, as {@see applyInheritance()} describes.
+	 *
+	 * @param ParentInheritance $inheritance The parent, the child's data so far and the roles inherited.
+	 *
+	 * @return array{data: array<string, mixed>, inherited: array<string, mixed>}
+	 *         The child's data with the inherited values applied, and the record.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	public function inherit(ParentInheritance $inheritance): array {
+		$parentData = $inheritance->parent->getObject();
+		$childData = $inheritance->childData;
 		$record = [];
 
-		foreach ($inherits as $role => $property) {
+		foreach ($inheritance->inherits as $role => $property) {
 			// A value the child already carries is the child's own. Inheritance
 			// fills a gap; it does not overrule what somebody typed.
 			if ($this->fields->hasValue(data: $parentData, property: $property) === false
@@ -146,10 +162,10 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 		}
 
 		return ['data' => $childData, 'inherited' => $record];
-	}//end applyInheritance()
+	}//end inherit()
 
 	/**
-	 * Record a child created under a parent, with what it inherited.
+	 * Record a child created under a parent, with what it inherited (positional form of recordDerived()).
 	 *
 	 * @param ObjectEntity $parent The parent object.
 	 * @param ObjectEntity $child The created child.
@@ -170,13 +186,32 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 		?ProvenanceLink $link = null,
 		array $inherited = [],
 	): ObjectRelation {
-		$link ??= new ProvenanceLink();
+		return $this->recordDerived(derivation: new Derivation(parent: $parent, child: $child, link: ($link ?? new ProvenanceLink()), inherited: $inherited));
+	}//end recordDerivation()
+
+	/**
+	 * Record a child created under a parent, with what it inherited.
+	 *
+	 * A derivation and a split are the same act seen twice: a sub-case started
+	 * from a timeline entry is both.
+	 *
+	 * @param Derivation $derivation The parent, the child, the link naming it and what the child inherited.
+	 *
+	 * @return ObjectRelation The row.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	public function recordDerived(Derivation $derivation): ObjectRelation {
 		return $this->stores->mapper->createFromArray(
-			$this->fields->objectLink(from: $child, to: $parent, origin: ObjectRelation::ORIGIN_DERIVE)
-			+ ['relationType' => $link->relationType, 'sourceEntry' => $link->entry, 'inherited' => $this->fields->recordOf(inherited: $inherited)]
+			$this->fields->derivedLink(from: $derivation->child, to: $derivation->parent)
+			+ [
+				'relationType' => $derivation->link->relationType,
+				'sourceEntry' => $derivation->link->entry,
+				'inherited' => $this->fields->recordOf(inherited: $derivation->inherited),
+			]
 			+ ['createdBy' => $this->actor()]
 		);
-	}//end recordDerivation()
+	}//end recordDerived()
 
 	/**
 	 * Add an address outside the product as a relation on an object.
@@ -369,22 +404,30 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function declarationFor(?int $schemaId, string $property, string $language = 'nl'): ?array {
+		// No schema reads as no declaration: the resolver answers null for it.
+		return $this->stores->relationTypes->descriptorFor(schema: $this->schemaOrNull(schemaId: $schemaId), property: $property, language: $language);
+	}//end declarationFor()
+
+	/**
+	 * The schema behind an id, or null when there is none or it cannot be found.
+	 *
+	 * Metadata only, so the read is not scoped to the caller.
+	 *
+	 * @param int|null $schemaId The schema id.
+	 *
+	 * @return Schema|null The schema.
+	 */
+	private function schemaOrNull(?int $schemaId): ?Schema {
 		if ($schemaId === null) {
 			return null;
 		}
 
 		try {
-			$schema = $this->stores->schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
+			return $this->stores->schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
 		} catch (\Exception $e) {
 			return null;
 		}
-
-		return $this->stores->relationTypes->descriptorFor(
-			schema: $schema,
-			property: $property,
-			language: $language
-		);
-	}//end declarationFor()
+	}//end schemaOrNull()
 
 	/**
 	 * Every stored relation row touching an object, with its labels resolved.
@@ -432,19 +475,27 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function render(ObjectRelation $row, string $direction, string $language = 'nl'): array {
-		$rendered = $row->jsonSerialize();
-		$descriptor = $this->descriptorOf(row: $row, language: $language);
+		$relation = $this->stores->relationTypes->row(descriptor: $this->descriptorOf(row: $row, language: $language), direction: $direction, path: null);
 
-		$rendered['relation'] = $this->stores->relationTypes->row(
-			descriptor: $descriptor,
-			direction: $direction,
-			path: null
-		);
-		$rendered['relation']['origin'] = $row->getOrigin();
-		$rendered['relation']['kind'] = $row->getKind();
+		return $this->withRelation(row: $row, relation: $relation);
+	}//end render()
+
+	/**
+	 * The row as JSON with its relation reading, origin and kind under `relation`.
+	 *
+	 * @param ObjectRelation       $row      The relation row.
+	 * @param array<string, mixed> $relation The reading of the relation in one direction.
+	 *
+	 * @return array<string, mixed> The rendered row.
+	 */
+	private function withRelation(ObjectRelation $row, array $relation): array {
+		$rendered = $row->jsonSerialize();
+		$relation['origin'] = $row->getOrigin();
+		$relation['kind']   = $row->getKind();
+		$rendered['relation'] = $relation;
 
 		return $rendered;
-	}//end render()
+	}//end withRelation()
 
 	/**
 	 * Resolve a row's labels: from the schema when it names a type, from the

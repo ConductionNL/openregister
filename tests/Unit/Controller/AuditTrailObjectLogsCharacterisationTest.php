@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\BackgroundJob\AuditExportSource;
 use OCA\OpenRegister\Controller\AuditTrailController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrailPageQuery;
@@ -93,8 +94,7 @@ class AuditTrailObjectLogsCharacterisationTest extends TestCase {
 			$this->groupManager,
 			$this->createMock(ReadableAuditTrailLister::class),
 			new AuditTrailPageService(
-				$this->createMock(AuditTrailPageQuery::class),
-				$this->logService,
+				new AuditExportSource($this->createMock(AuditTrailPageQuery::class), $this->logService),
 				$this->createMock(IJobList::class)
 			),
 			$this->history
@@ -145,9 +145,9 @@ class AuditTrailObjectLogsCharacterisationTest extends TestCase {
 		$this->logService->expects($this->never())->method('getLogs');
 		$this->history->expects($this->once())->method('page')->willReturnCallback(
 			function (...$args): array {
-				$this->assertSame(['reg', 'sch', 'obj'], array_slice($args, 0, 3));
-				$this->assertSame(10, $args[3]['limit']);
-				$this->assertSame(20, $args[3]['offset']);
+				$this->assertSame(['reg', 'sch', 'obj'], [$args[0]->register, $args[0]->schema, $args[0]->id]);
+				$this->assertSame(10, $args[1]['limit']);
+				$this->assertSame(20, $args[1]['offset']);
 				return ['results' => [], 'total' => 0];
 			}
 		);

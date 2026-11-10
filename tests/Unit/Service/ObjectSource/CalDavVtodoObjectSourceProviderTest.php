@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectSource\CalDavVtodoObjectSourceProvider;
@@ -52,7 +54,7 @@ class CalDavVtodoObjectSourceProviderTest extends TestCase {
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('isInstalled')->willReturn($appsThere);
 
-		return new CalDavVtodoObjectSourceProvider($taskService, $appManager, new NullLogger());
+		return new CalDavVtodoObjectSourceProvider(taskService: $taskService, app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $appManager, container: $this->createMock(\Psr\Container\ContainerInterface::class), logger: new NullLogger()));
 	}//end provider()
 
 	/**
@@ -119,7 +121,7 @@ class CalDavVtodoObjectSourceProviderTest extends TestCase {
 
 		// Default scoping: only the VTODO linked to register 3 / schema 9 is returned;
 		// the schema-99 task is excluded.
-		$objects = $this->provider($this->tasks())->findAll($register, $schema);
+		$objects = $this->provider($this->tasks())->findAll(new SourcedTable(new RegisterSchema($register, $schema)));
 
 		$this->assertCount(1, $objects);
 		$data = $objects[0]->getObject();
@@ -141,13 +143,13 @@ class CalDavVtodoObjectSourceProviderTest extends TestCase {
 		$schema->setId(9);
 
 		// Default: schema-99 task excluded → 1 of 2.
-		$this->assertCount(1, $this->provider($this->tasks())->findAll($register, $schema));
+		$this->assertCount(1, $this->provider($this->tasks())->findAll(new SourcedTable(new RegisterSchema($register, $schema))));
 
 		// unscoped: both tasks returned.
-		$this->assertCount(2, $this->provider($this->tasks())->findAll($register, $schema, [], ['unscoped' => true]));
+		$this->assertCount(2, $this->provider($this->tasks())->findAll(new SourcedTable(new RegisterSchema($register, $schema), ['unscoped' => true]), []));
 
 		// config.schemas override: scope to schema 99 only → the other task.
-		$only99 = $this->provider($this->tasks())->findAll($register, $schema, [], ['schemas' => [99]]);
+		$only99 = $this->provider($this->tasks())->findAll(new SourcedTable(new RegisterSchema($register, $schema), ['schemas' => [99]]), []);
 		$this->assertCount(1, $only99);
 		$this->assertSame('uid-2', $only99[0]->getUuid());
 	}//end testScopingByBoundSchema()
@@ -164,9 +166,9 @@ class CalDavVtodoObjectSourceProviderTest extends TestCase {
 		$schema->setId(9);
 
 		$provider = $this->provider($this->tasks());
-		$this->assertSame('Send the minutes', $provider->find($register, $schema, 'uid-1')?->getObject()['title']);
-		$this->assertSame('Send the minutes', $provider->find($register, $schema, 'uri-1.ics')?->getObject()['title']);
-		$this->assertNull($provider->find($register, $schema, 'does-not-exist'));
+		$this->assertSame('Send the minutes', $provider->find(new SourcedTable(new RegisterSchema($register, $schema)), 'uid-1')?->getObject()['title']);
+		$this->assertSame('Send the minutes', $provider->find(new SourcedTable(new RegisterSchema($register, $schema)), 'uri-1.ics')?->getObject()['title']);
+		$this->assertNull($provider->find(new SourcedTable(new RegisterSchema($register, $schema)), 'does-not-exist'));
 	}//end testFindByIdAndMissing()
 
 	/**
@@ -191,7 +193,7 @@ class CalDavVtodoObjectSourceProviderTest extends TestCase {
 			'fields' => ['assignee' => 'Wethouder Duurzaamheid', 'taskStatus' => 'open'],
 		];
 
-		$objects = $this->provider([$task])->findAll($register, $schema);
+		$objects = $this->provider([$task])->findAll(new SourcedTable(new RegisterSchema($register, $schema)));
 		$this->assertCount(1, $objects);
 		$data = $objects[0]->getObject();
 		$this->assertSame('Draft the plan', $data['title']);

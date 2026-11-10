@@ -34,63 +34,27 @@ use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Db\TranslationEdit;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Db\Translation;
-use OCA\OpenRegister\Db\TranslationMapperInterface;
 use OCA\OpenRegister\Service\Object\PropertySourceLanguage;
-use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 class TranslationProjectionService implements TranslationProjectionServiceInterface {
-	/**
-	 * The translation mapper.
-	 *
-	 * @var TranslationMapperInterface
-	 */
-	private readonly TranslationMapperInterface $translationMapper;
-
-	/**
-	 * The translation handler.
-	 *
-	 * @var TranslationHandler
-	 */
-	private readonly TranslationHandler $translationHandler;
-
-	/**
-	 * The schema mapper.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * The register mapper.
-	 *
-	 * @var RegisterMapperInterface
-	 */
-	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param TranslationStores $stores The translation mapper and translation handler.
-	 * @param RegisterSchemaMappers $mappers The register and schema mappers.
-	 * @param IUserSession $userSession The user session.
-	 * @param LoggerInterface $logger The logger.
+	 * @param TranslationStores     $stores      The translation mapper and translation handler.
+	 * @param RegisterSchemaMappers $mappers     The register and schema mappers.
+	 * @param IUserSession          $userSession The user session.
+	 * @param LoggerInterface       $logger      The logger.
 	 */
 	public function __construct(
-		TranslationStores $stores,
-		RegisterSchemaMappers $mappers,
+		private readonly TranslationStores $stores,
+		private readonly RegisterSchemaMappers $mappers,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->translationMapper = $stores->translationMapper;
-		$this->translationHandler = $stores->translationHandler;
-		$this->schemaMapper = $mappers->schemaMapper;
-		$this->registerMapper = $mappers->registerMapper;
 	}//end __construct()
 
 	/**
@@ -148,7 +112,7 @@ class TranslationProjectionService implements TranslationProjectionServiceInterf
 
 		// With no translatable properties nothing is desired, so every
 		// row left over from when a property was translatable is removed.
-		$properties = $this->translationHandler->getTranslatableProperties($schema);
+		$properties = $this->stores->translationHandler->getTranslatableProperties($schema);
 		$keptKeys = [];
 		if (count($properties) > 0) {
 			$sources = $this->sourceLanguages(object: $object, target: ['schema' => $schema, 'properties' => $properties]);
@@ -175,10 +139,7 @@ class TranslationProjectionService implements TranslationProjectionServiceInterf
 		$sources = [];
 		foreach ($target['properties'] as $property) {
 			$sources[$property] = $this->resolveSourceLanguage(
-				schema: $target['schema'],
-				object: $object,
-				property: $property,
-				registerDefault: $defaultLanguage
+				lookup: new SourceLanguageLookup(schema: $target['schema'], object: $object, property: $property, registerDefault: $defaultLanguage)
 			);
 		}
 
@@ -302,7 +263,7 @@ class TranslationProjectionService implements TranslationProjectionServiceInterf
 	 */
 	private function upsertProperty(array $slot, array $byLanguage): void {
 		foreach ($byLanguage as $language => $stringValue) {
-			$this->translationMapper->upsert(
+			$this->stores->translationMapper->upsert(
 				slot: new TranslationSlot(objectUuid: $slot['uuid'], property: $slot['property'], language: $language),
 				edit: new TranslationEdit(value: $stringValue, status: null, translator: $slot['translator'], sourceLanguage: $slot['sourceLanguage'])
 			);
@@ -320,15 +281,22 @@ class TranslationProjectionService implements TranslationProjectionServiceInterf
 	 * @spec openspec/specs/register-i18n/spec.md
 	 */
 	private function deleteRowsNotIn(string $uuid, array $keptKeys): void {
-		foreach ($this->translationMapper->findByObject($uuid) as $row) {
+		foreach ($this->stores->translationMapper->findByObject($uuid) as $row) {
 			if (in_array($row->getProperty() . '|' . $row->getLanguage(), $keptKeys, true) === true) {
 				continue;
 			}
 
 			try {
-				$this->translationMapper->delete($row);
+				$this->stores->translationMapper->delete($row);
 			} catch (\Throwable $e) {
-				// Best effort.
+				// Best effort: the row is retried on the next projection of this object.
+				$this->logger->warning(
+					message: '[TranslationProjection] Stale translation row not deleted',
+					context: [
+						'uuid' => $uuid,
+						'exception' => $e->getMessage(),
+					]
+				);
 			}
 		}
 	}//end deleteRowsNotIn()
@@ -349,7 +317,7 @@ class TranslationProjectionService implements TranslationProjectionServiceInterf
 		}
 
 		try {
-			$this->translationMapper->deleteByObject($uuid);
+			$this->stores->translationMapper->deleteByObject($uuid);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				sprintf('[TranslationProjection] purge failed for object %s: %s', $uuid, $e->getMessage())
@@ -367,7 +335,7 @@ class TranslationProjectionService implements TranslationProjectionServiceInterf
 	private function loadSchema(ObjectEntity $object): ?Schema {
 		return $this->findQuietly(
 			ref: $object->getSchema(),
-			finder: fn ($ref) => $this->schemaMapper->find($ref, _rbac: false, _multitenancy: false)
+			finder: fn ($ref) => $this->mappers->schemaMapper->find($ref, _rbac: false, _multitenancy: false)
 		);
 	}//end loadSchema()
 
@@ -381,7 +349,7 @@ class TranslationProjectionService implements TranslationProjectionServiceInterf
 	private function loadRegister(ObjectEntity $object): ?Register {
 		return $this->findQuietly(
 			ref: $object->getRegister(),
-			finder: fn ($ref) => $this->registerMapper->find((string)$ref, _rbac: false, _multitenancy: false)
+			finder: fn ($ref) => $this->mappers->registerMapper->find((string)$ref, _rbac: false, _multitenancy: false)
 		);
 	}//end loadRegister()
 
@@ -414,23 +382,16 @@ class TranslationProjectionService implements TranslationProjectionServiceInterf
 	 *   3. supplied register default
 	 *   4. hardcoded `'nl'` fallback
 	 *
-	 * @param Schema $schema The schema declaring the property.
-	 * @param ObjectEntity $object The object body containing optional override.
-	 * @param string $property The translatable property name.
-	 * @param string $registerDefault Register-level default language.
+	 * @param SourceLanguageLookup $lookup The schema declaring the property, the object body containing an
+	 *                                     optional override, the property name and the register's default language.
 	 *
 	 * @return string The resolved BCP-47 source language for the property.
 	 *
 	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-2
 	 */
-	public function resolveSourceLanguage(
-		Schema $schema,
-		ObjectEntity $object,
-		string $property,
-		string $registerDefault,
-	): string {
-		$rule = new PropertySourceLanguage(schema: $schema, registerDefault: $registerDefault);
-		return $rule->forProperty(body: (array)($object->getObject() ?? []), property: $property);
+	public function resolveSourceLanguage(SourceLanguageLookup $lookup): string {
+		$rule = new PropertySourceLanguage(schema: $lookup->schema, registerDefault: $lookup->registerDefault);
+		return $rule->forProperty(body: (array)($lookup->object->getObject() ?? []), property: $lookup->property);
 	}//end resolveSourceLanguage()
 
 	/**

@@ -13,6 +13,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
@@ -26,6 +27,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Configuration\SchemaImportOptions;
 
 /**
  * Golden test for ImportService::importFromJson().
@@ -260,12 +262,17 @@ class ImportServiceImportFromJsonGoldenTest extends TestCase {
 		$validator->method('generateErrorMessage')->willReturn('title is wrong');
 
 		$importHandler = $this->createMock(ImportHandler::class);
-		$importHandler->method('importSchema')->willReturnCallback(function (array $data) {
-			$this->record(method: 'importHandler.importSchema', args: func_get_args());
+		$importHandler->method('importSchema')->willReturnCallback(function (ImportedSchemaLookup $definition, array $slugsAndIdsMap) {
+			$data = $definition->data;
+			$options = $definition->options;
+			$this->record(
+				method: 'importHandler.importSchema',
+				args: [$data, $slugsAndIdsMap, $options->owner, $options->appId, $options->version, $options->force, $definition->registerSchemaIds]
+			);
 			return $this->schema(id: 30 + strlen((string)($data['slug'] ?? '')), slug: (string)($data['slug'] ?? 'none'));
 		});
-		$importHandler->method('importRegister')->willReturnCallback(function () {
-			$this->record(method: 'importHandler.importRegister', args: func_get_args());
+		$importHandler->method('importRegister')->willReturnCallback(function (array $data, SchemaImportOptions $options) {
+			$this->record(method: 'importHandler.importRegister', args: [$data, $options->owner, $options->appId, $options->version, $options->force]);
 			$register = new Register();
 			$register->setId(40);
 			$register->setSlug('reg');

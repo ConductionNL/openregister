@@ -49,14 +49,14 @@ final class RoleActionMap {
 
 		$map = [];
 		foreach ($roleDefinitions as $key => $definition) {
-			$map = $this->withDefinition(map: $map, key: $key, definition: $definition);
+			$map = array_replace($map, $this->entryOf(key: $key, definition: $definition));
 		}
 
 		return $map;
 	}//end of()
 
 	/**
-	 * The map with one definition added, when it is one.
+	 * The map entry of one definition, empty when it is not one.
 	 *
 	 * Two shapes reach this: the list of definitions a register stores, each with
 	 * its own `name`, and the flat `name => actions` map the hierarchy resolver
@@ -64,26 +64,24 @@ final class RoleActionMap {
 	 * caller holding the resolved map is exactly the caller whose answer is most
 	 * accurate.
 	 *
-	 * @param array<string, array<int, string>> $map        The map so far.
-	 * @param int|string                        $key        The definition's key.
-	 * @param mixed                             $definition The definition.
+	 * @param int|string $key        The definition's key.
+	 * @param mixed      $definition The definition.
 	 *
-	 * @return array<string, array<int, string>> The map.
+	 * @return array<string, array<int, string>> The entry: the role name and its actions.
 	 */
-	private function withDefinition(array $map, int|string $key, mixed $definition): array {
+	private function entryOf(int|string $key, mixed $definition): array {
 		if (is_array($definition) === false) {
-			return $map;
+			return [];
 		}
 
 		if (isset($definition['name']) === true && is_array(($definition['actions'] ?? null)) === true) {
-			$map[(string)$definition['name']] = array_values(array_filter($definition['actions'], 'is_string'));
-			return $map;
+			return [(string)$definition['name'] => array_values(array_filter($definition['actions'], 'is_string'))];
 		}
 
 		if (is_string($key) === true) {
-			$map[$key] = array_values(array_filter($definition, 'is_string'));
+			return [$key => array_values(array_filter($definition, 'is_string'))];
 		}
 
-		return $map;
-	}//end withDefinition()
+		return [];
+	}//end entryOf()
 }//end class

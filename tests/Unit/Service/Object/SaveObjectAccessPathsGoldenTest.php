@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusal;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -40,6 +41,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
+use OCA\OpenRegister\Service\DeclaredRow;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
@@ -304,9 +306,9 @@ class SaveObjectAccessPathsGoldenTest extends TestCase {
 
 		$shares = $this->createMock(SharedMasterDataService::class);
 		$shares->method('assertWritable')->willReturnCallback(
-			function (string $table, ?int $id, array $activeOrgUuids) use ($refuseTable): void {
-				$this->asked[] = [$table, $id, $activeOrgUuids];
-				if ($table === $refuseTable) {
+			function (DeclaredRow $row, array $activeOrgUuids) use ($refuseTable): void {
+				$this->asked[] = [$row->table, $row->id, $activeOrgUuids];
+				if ($row->table === $refuseTable) {
 					throw new SharedMasterDataWriteException(holderUuid: 'org-holder');
 				}
 			}
@@ -318,28 +320,19 @@ class SaveObjectAccessPathsGoldenTest extends TestCase {
 		);
 
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('createSharedMasterDataRefusalEntry')->willReturnCallback(
-			function (
-				string $holderOrganisation,
-				string $sourceOrganisation,
-				string $resourceType,
-				array $context = [],
-				?int $register = null,
-				?int $schema = null,
-				?string $objectUuid = null,
-				?string $actorId = null,
-				?string $actorReference = null
-			): void {
+		$audit->method('recordSharedMasterDataRefusal')->willReturnCallback(
+			function (SharedMasterDataRefusal $refusal): void {
+				$options = $refusal->options;
 				$this->audited[] = [
-					'holderOrganisation' => $holderOrganisation,
-					'sourceOrganisation' => $sourceOrganisation,
-					'resourceType' => $resourceType,
-					'context' => $context,
-					'register' => $register,
-					'schema' => $schema,
-					'objectUuid' => $objectUuid,
-					'actorId' => $actorId,
-					'actorReference' => $actorReference,
+					'holderOrganisation' => $refusal->holderOrganisation,
+					'sourceOrganisation' => $refusal->sourceOrganisation,
+					'resourceType' => $refusal->resourceType,
+					'context' => $options->context,
+					'register' => $options->target->register,
+					'schema' => $options->target->schema,
+					'objectUuid' => $options->target->objectUuid,
+					'actorId' => $options->actor->id,
+					'actorReference' => $options->actor->name,
 				];
 			}
 		);

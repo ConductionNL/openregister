@@ -13,7 +13,7 @@
  * The decisive steps are the import path's own. A saved column mapping is
  * applied by {@see \OCA\OpenRegister\Service\MigrationPack\MappingEngine},
  * the row becomes an object through
- * {@see \OCA\OpenRegister\Service\ImportService::transformCsvRowToObject()},
+ * {@see \OCA\OpenRegister\Service\ImportService::transformCsvRow()},
  * it is validated by {@see \OCA\OpenRegister\Service\Object\ValidateObject}
  * and written by {@see \OCA\OpenRegister\Service\ObjectService::saveObjects()}.
  * What this service adds is the step that was missing: the decision, taken
@@ -45,6 +45,7 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewRow;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
@@ -635,11 +636,9 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	private function decideMappedRow(array $data, ImportRun $run): array {
 		$destination = $run->destination;
 		try {
-			$object = $this->matching->importService->transformCsvRowToObject(
+			$object = $this->matching->importService->transformCsvRow(
 				rowData: $data,
-				register: $destination->register,
-				schema: $destination->schema,
-				currentUser: null
+				target: new RowImportTarget(table: new RegisterSchema(register: $destination->register, schema: $destination->schema))
 			);
 		} catch (Throwable $exception) {
 			return ImportRowPayload::refusal(reason: 'The row could not be mapped onto the schema: '.$exception->getMessage());
@@ -736,7 +735,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 
 		foreach ($this->store->rowMapper->findByPreview(
 			previewId: (int)$preview->getId(),
-			decision: ImportPreviewRow::DECISION_REFUSE
+			query: ListQuery::unbounded(filters: ['decision' => ImportPreviewRow::DECISION_REFUSE])
 		) as $row) {
 			$refusals[] = [
 				'row' => $row->getSourceRow(),

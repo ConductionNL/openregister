@@ -122,24 +122,18 @@ final class RelationGraphShapes {
 	/**
 	 * The node of an external address: resolved, with the title the stored row carries.
 	 *
-	 * @param array<string, mixed> $edge     The edge that reached it.
-	 * @param string               $uuid     The address.
-	 * @param int                  $distance Its distance from the root.
+	 * @param array<string, mixed> $edge The edge that reached it.
+	 * @param array<string, mixed> $node The address as an unresolved node, with its uuid and distance.
 	 *
 	 * @return array<string, mixed> The node.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	public function externalNode(array $edge, string $uuid, int $distance): array {
-		return [
-			'uuid' => $uuid,
-			'title' => ($edge['targetTitle'] ?? $uuid),
-			'register' => null,
-			'schema' => null,
-			'distance' => $distance,
-			'resolved' => true,
-			'external' => true,
-		];
+	public function externalNode(array $edge, array $node): array {
+		return array_merge(
+			$node,
+			['title' => ($edge['targetTitle'] ?? $node['uuid']), 'resolved' => true, 'external' => true]
+		);
 	}//end externalNode()
 
 	/**

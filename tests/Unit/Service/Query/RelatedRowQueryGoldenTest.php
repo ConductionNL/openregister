@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Query;
 
+use OCA\OpenRegister\Db\MagicMapper\AliasedRows;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
@@ -33,6 +34,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Query\RelatedRowFilterTarget;
 use OCA\OpenRegister\Service\Query\PropertyReadGuard;
 use OCA\OpenRegister\Service\Query\RelatedRowAccess;
 use OCA\OpenRegister\Service\Query\RelatedRowExistsClause;
@@ -434,9 +436,9 @@ class RelatedRowQueryGoldenTest extends TestCase {
 
 		$rbac = $this->createMock(MagicRbacHandler::class);
 		$rbac->method('buildRbacPredicateForAlias')->willReturnCallback(
-			static function (Schema $schema, string $alias, string $action, ?string $tableName) use (&$log): string {
-				$log[] = 'rbac ' . $alias . ' ' . $action . ' ' . $tableName;
-				return $alias . '._owner = \'alice\'';
+			static function (Schema $schema, AliasedRows $rows) use (&$log): string {
+				$log[] = 'rbac ' . $rows->alias . ' ' . $rows->action . ' ' . $rows->tableName;
+				return $rows->alias . '._owner = \'alice\'';
 			}
 		);
 
@@ -513,18 +515,13 @@ class RelatedRowQueryGoldenTest extends TestCase {
 		);
 		$qb      = $this->loggingBuilder(log: $log);
 
-		$applied = $applier->apply(
-			qb: $qb,
-			query: [
-				'_referenced' => ['fw' => ['ref' => ['case' => 'c-1']]],
-				'_related' => ['cp' => ['case' => ['value' => ['gte' => '100']]], 'gone' => ['case' => ['value' => 1]]],
-			],
-			register: $this->register(),
-			organisationScopeFor: static function (Schema $schema, int $registerId) use (&$log): array {
+		$applied = $applier->apply(target: new RelatedRowFilterTarget(qb: $qb, register: $this->register(), organisationScopeFor: static function (Schema $schema, int $registerId) use (&$log): array {
 				$log[] = 'scope ' . $schema->getId() . ' ' . $registerId;
 				return ['mode' => MagicOrganizationHandler::SCOPE_IN, 'uuids' => ['org-a']];
-			}
-		);
+			}), query: [
+				'_referenced' => ['fw' => ['ref' => ['case' => 'c-1']]],
+				'_related' => ['cp' => ['case' => ['value' => ['gte' => '100']]], 'gone' => ['case' => ['value' => 1]]],
+			]);
 
 		$this->assertSame(3, $applied);
 		$this->assertSame(
@@ -573,15 +570,10 @@ class RelatedRowQueryGoldenTest extends TestCase {
 		$qb      = $this->loggingBuilder(log: $log);
 
 		try {
-			$applier->apply(
-				qb: $qb,
-				query: ['_related' => ['cp' => ['case' => ['value' => ['gte' => '100']]]]],
-				register: $this->register(),
-				organisationScopeFor: static function () use (&$log): array {
+			$applier->apply(target: new RelatedRowFilterTarget(qb: $qb, register: $this->register(), organisationScopeFor: static function () use (&$log): array {
 					$log[] = 'scope';
 					return ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []];
-				}
-			);
+				}), query: ['_related' => ['cp' => ['case' => ['value' => ['gte' => '100']]]]]);
 			$this->fail('An unreadable property must be refused.');
 		} catch (InvalidArgumentException $refusal) {
 			$this->assertSame("'value' is not a property of schema 'cp' that a related-row filter can match on.", $refusal->getMessage());
@@ -601,12 +593,7 @@ class RelatedRowQueryGoldenTest extends TestCase {
 		$qb      = $this->loggingBuilder(log: $log);
 
 		try {
-			$applier->apply(
-				qb: $qb,
-				query: ['_related' => ['cp' => ['case' => [0 => ['value' => '1'], 1 => ['_owner' => 'x']]]]],
-				register: $this->register(),
-				organisationScopeFor: static fn (): array => ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []]
-			);
+			$applier->apply(target: new RelatedRowFilterTarget(qb: $qb, register: $this->register(), organisationScopeFor: static fn (): array => ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []]), query: ['_related' => ['cp' => ['case' => [0 => ['value' => '1'], 1 => ['_owner' => 'x']]]]]);
 			$this->fail('A metadata column must be refused.');
 		} catch (InvalidArgumentException $refusal) {
 			$this->assertSame("'_owner' is not a property of schema 'cp' that a related-row filter can match on.", $refusal->getMessage());
@@ -626,12 +613,7 @@ class RelatedRowQueryGoldenTest extends TestCase {
 		$applier = $this->loggingApplier(log: $log, bySlug: ['cp' => [$this->schema(id: 2)]], tables: [2 => false], readable: false);
 		$qb      = $this->loggingBuilder(log: $log);
 
-		$applied = $applier->apply(
-			qb: $qb,
-			query: ['_related' => ['cp' => ['case' => ['value' => '1']]]],
-			register: $this->register(),
-			organisationScopeFor: static fn (): array => ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []]
-		);
+		$applied = $applier->apply(target: new RelatedRowFilterTarget(qb: $qb, register: $this->register(), organisationScopeFor: static fn (): array => ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []]), query: ['_related' => ['cp' => ['case' => ['value' => '1']]]]);
 
 		$this->assertSame(1, $applied);
 		$this->assertSame(['findBySlug cp', 'tableName 2', 'tableExists 2', 'createFunction 1 = 0', 'andWhere'], $log);
@@ -647,12 +629,7 @@ class RelatedRowQueryGoldenTest extends TestCase {
 		$applier = $this->loggingApplier(log: $log, bySlug: [], tables: [7 => false], byId: $this->schema(id: 7));
 		$this->assertSame(
 			1,
-			$applier->apply(
-				qb: $this->loggingBuilder(log: $log),
-				query: ['_related' => ['7' => ['case' => ['value' => '1']]]],
-				register: $this->register(),
-				organisationScopeFor: static fn (): array => []
-			)
+			$applier->apply(target: new RelatedRowFilterTarget(qb: $this->loggingBuilder(log: $log), register: $this->register(), organisationScopeFor: static fn (): array => []), query: ['_related' => ['7' => ['case' => ['value' => '1']]]])
 		);
 		$this->assertSame(['findBySlug 7', 'find 7', 'tableName 7', 'tableExists 7', 'createFunction 1 = 0', 'andWhere'], $log);
 
@@ -664,12 +641,7 @@ class RelatedRowQueryGoldenTest extends TestCase {
 		foreach ($cases as $label => [$bySlug, $name, $message]) {
 			$log = [];
 			try {
-				$this->loggingApplier(log: $log, bySlug: $bySlug, tables: [])->apply(
-					qb: $this->loggingBuilder(log: $log),
-					query: ['_related' => [$name => ['case' => ['value' => '1']]]],
-					register: $this->register(),
-					organisationScopeFor: static fn (): array => []
-				);
+				$this->loggingApplier(log: $log, bySlug: $bySlug, tables: [])->apply(target: new RelatedRowFilterTarget(qb: $this->loggingBuilder(log: $log), register: $this->register(), organisationScopeFor: static fn (): array => []), query: ['_related' => [$name => ['case' => ['value' => '1']]]]);
 				$this->fail($label . ' must be refused.');
 			} catch (InvalidArgumentException $refusal) {
 				$this->assertSame($message, $refusal->getMessage(), $label);
@@ -688,12 +660,7 @@ class RelatedRowQueryGoldenTest extends TestCase {
 		$log = [];
 		$this->assertSame(
 			0,
-			$this->loggingApplier(log: $log, bySlug: [], tables: [])->apply(
-				qb: $this->loggingBuilder(log: $log),
-				query: ['other' => 1],
-				register: $this->register(),
-				organisationScopeFor: static fn (): array => []
-			)
+			$this->loggingApplier(log: $log, bySlug: [], tables: [])->apply(target: new RelatedRowFilterTarget(qb: $this->loggingBuilder(log: $log), register: $this->register(), organisationScopeFor: static fn (): array => []), query: ['other' => 1])
 		);
 		$this->assertSame([], $log);
 	}//end testNoBlockTouchesNothing()

@@ -74,34 +74,6 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 	];
 
 	/**
-	 * Resolves the configured Mapping entity.
-	 *
-	 * @var MappingMapperInterface
-	 */
-	private readonly MappingMapperInterface $mappingMapper;
-
-	/**
-	 * Applies Twig field transformation.
-	 *
-	 * @var MappingService
-	 */
-	private readonly MappingService $mappingService;
-
-	/**
-	 * Validates + persists target objects.
-	 *
-	 * @var ObjectOperationsInterface
-	 */
-	private readonly ObjectOperationsInterface $objectService;
-
-	/**
-	 * Decides source/local conflicts.
-	 *
-	 * @var SyncConflictResolver
-	 */
-	private readonly SyncConflictResolver $conflictResolver;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param SyncRecordMapperInterface $syncRecordMapper Per-record tracking persistence
@@ -110,34 +82,22 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 	 */
 	public function __construct(
 		private readonly SyncRecordMapperInterface $syncRecordMapper,
-		HarvestImportServices $importServices,
+		private readonly HarvestImportServices $importServices,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->mappingMapper    = $importServices->mappingMapper;
-		$this->mappingService   = $importServices->mappingService;
-		$this->objectService    = $importServices->objectService;
-		$this->conflictResolver = $importServices->conflictResolver;
 	}//end __construct()
 
 	/**
 	 * Run the full pipeline for a source.
 	 *
-	 * @param Source $source The source to harvest
-	 * @param SourceFetcherInterface $fetcher Transport for gather/fetch
-	 * @param string $executionId Unique id for this run
-	 * @param string|null $since Incremental checkpoint (null = full)
+	 * @param HarvestRun $harvest The source to harvest, its transport, the execution id and the
+	 *                            incremental checkpoint (null = full)
 	 *
 	 * @return array<string, int|string> Execution summary (counts + status)
 	 *
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */
-	public function run(
-		Source $source,
-		SourceFetcherInterface $fetcher,
-		string $executionId,
-		?string $since = null,
-	): array {
-		$harvest  = new HarvestRun(source: $source, fetcher: $fetcher, executionId: $executionId, since: $since);
+	public function run(HarvestRun $harvest): array {
 		$gathered = $this->gather(harvest: $harvest);
 		$fetched  = $this->fetchAll(harvest: $harvest, records: $gathered);
 
@@ -358,7 +318,7 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 		}
 
 		// Conflict resolution when an existing local object changed too.
-		$decision = $this->conflictResolver->resolve(
+		$decision = $this->importServices->conflictResolver->resolve(
 			strategy: (string)($source->getConflictStrategy() ?? SyncConflictResolver::SOURCE_WINS),
 			conflict: new SyncConflict(localChanged: $this->localChangedSinceSync(source: $source, previous: $previous))
 		);
@@ -404,7 +364,7 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 	 */
 	private function writeObject(Source $source, HarvestedRecord $item): ?string {
 		$existingUuid = $item->trackedUuid();
-		$saved        = $this->objectService->saveObject(
+		$saved        = $this->importServices->objectService->saveObject(
 			object: $item->mapped,
 			register: $source->getTargetRegister(),
 			schema: $source->getTargetSchema(),
@@ -456,7 +416,7 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 			return $raw;
 		}
 
-		return $this->mappingService->executeMapping(mapping: $mapping, input: $raw);
+		return $this->importServices->mappingService->executeMapping(mapping: $mapping, input: $raw);
 	}//end applyMapping()
 
 	/**
@@ -516,7 +476,7 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 		}
 
 		try {
-			return $this->mappingMapper->find($mappingId);
+			return $this->importServices->mappingMapper->find($mappingId);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: sprintf('[HarvestPipeline] Mapping %d not resolvable: %s', $mappingId, $e->getMessage())
@@ -546,7 +506,7 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 		}
 
 		try {
-			$local = WriteCause::asLookup(fn () => $this->objectService->find(
+			$local = WriteCause::asLookup(fn () => $this->importServices->objectService->find(
 				id: (string)$previous->getObjectUuid(),
 				register: $source->getTargetRegister(),
 				schema: $source->getTargetSchema()

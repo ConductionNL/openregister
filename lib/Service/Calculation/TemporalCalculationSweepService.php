@@ -117,7 +117,9 @@ class TemporalCalculationSweepService implements TemporalCalculationSweepService
 			}
 
 			$summary['temporalSchemas']++;
-			$this->sweeper->sweep(target: $target, rows: $this->objectMapper, summary: $summary);
+			foreach ($this->sweeper->sweep(target: $target, rows: $this->objectMapper) as $counter => $count) {
+				$summary[$counter] += $count;
+			}
 		}
 	}//end sweepAll()
 

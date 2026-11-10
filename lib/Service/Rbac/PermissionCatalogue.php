@@ -301,9 +301,7 @@ class PermissionCatalogue implements PermissionCatalogueInterface {
 	 * stopped at the first unknown verb would turn one bad paste into five round
 	 * trips.
 	 *
-	 * @param array|null $authorization   The block as written.
-	 * @param mixed      $roleDefinitions The register's role definitions, when there are any.
-	 * @param string     $subject         What this belongs to, for the message.
+	 * @param GrantDeclaration $declaration The block and role definitions as written, and what they belong to.
 	 *
 	 * @return void
 	 *
@@ -311,19 +309,64 @@ class PermissionCatalogue implements PermissionCatalogueInterface {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function assertGrantable(?array $authorization, mixed $roleDefinitions, string $subject): void {
-		$findings = [];
+	public function assertGrantable(GrantDeclaration $declaration): void {
+		$this->refuseAny(
+			findings: array_merge(
+				$this->verbFindings(authorization: $declaration->authorization, subject: $declaration->subject),
+				$this->roleFindings(roleDefinitions: $declaration->roleDefinitions, subject: $declaration->subject)
+			)
+		);
+	}//end assertGrantable()
 
+	/**
+	 * Throw every finding at once, when there is any.
+	 *
+	 * @param string[] $findings The findings.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthorizationBlockException When there is at least one finding.
+	 */
+	private function refuseAny(array $findings): void {
+		if ($findings !== []) {
+			throw new AuthorizationBlockException(message: implode(' ', $findings));
+		}
+	}//end refuseAny()
+
+	/**
+	 * The finding for the verbs a block names that nobody declared, if any.
+	 *
+	 * @param array|null $authorization The block as written.
+	 * @param string     $subject       What this belongs to, for the message.
+	 *
+	 * @return string[] At most one finding.
+	 */
+	private function verbFindings(?array $authorization, string $subject): array {
 		$unknown = $this->unknownVerbsIn(authorization: $authorization);
-		if ($unknown !== []) {
-			$findings[] = sprintf(
+		if ($unknown === []) {
+			return [];
+		}
+
+		return [
+			sprintf(
 				'%s names %s, which no app declares. Grantable here: %s.',
 				ucfirst($subject),
 				$this->quoteList(values: $unknown),
 				$this->quoteList(values: $this->verbs())
-			);
-		}
+			),
+		];
+	}//end verbFindings()
 
+	/**
+	 * One finding per role that names a verb nobody declared.
+	 *
+	 * @param mixed  $roleDefinitions The register's role definitions, when there are any.
+	 * @param string $subject         What this belongs to, for the message.
+	 *
+	 * @return string[] The findings.
+	 */
+	private function roleFindings(mixed $roleDefinitions, string $subject): array {
+		$findings = [];
 		foreach ($this->unknownActionsInRoles(roleDefinitions: $roleDefinitions) as $role => $verbs) {
 			$findings[] = sprintf(
 				'The role "%s" on %s names %s, which no app declares.',
@@ -333,12 +376,8 @@ class PermissionCatalogue implements PermissionCatalogueInterface {
 			);
 		}
 
-		if ($findings === []) {
-			return;
-		}
-
-		throw new AuthorizationBlockException(message: implode(' ', $findings));
-	}//end assertGrantable()
+		return $findings;
+	}//end roleFindings()
 
 	/**
 	 * Dispatch the declaration event and take what the apps wrote.

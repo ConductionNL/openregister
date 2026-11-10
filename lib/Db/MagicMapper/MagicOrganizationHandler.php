@@ -40,12 +40,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use OCA\OpenRegister\Service\OrganisationContext;
+use OCA\OpenRegister\Service\DeclaredPair;
 use OCA\OpenRegister\Service\SharedMasterDataServiceInterface;
 use OCA\OpenRegister\Service\TenancyCollaborators;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
-use OCP\IGroupManager;
-use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -63,15 +62,13 @@ class MagicOrganizationHandler implements OrganisationScopeResolverInterface {
 	/**
 	 * Constructor for MagicOrganizationHandler.
 	 *
-	 * @param IUserSession $userSession User session manager
-	 * @param IGroupManager $groupManager Group manager
-	 * @param IAppConfig $appConfig Application configuration
-	 * @param ContainerInterface $container Container for lazy loading services
-	 * @param LoggerInterface $logger Logger for logging operations
+	 * @param MagicMapperIdentity $identity  User session and group manager of the caller
+	 * @param IAppConfig          $appConfig Application configuration
+	 * @param ContainerInterface  $container Container for lazy loading services
+	 * @param LoggerInterface     $logger    Logger for logging operations
 	 */
 	public function __construct(
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		private readonly MagicMapperIdentity $identity,
 		private readonly IAppConfig $appConfig,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
@@ -87,35 +84,31 @@ class MagicOrganizationHandler implements OrganisationScopeResolverInterface {
 	 * 3. Objects belonging to parent organizations are accessible
 	 * 4. Objects with null organization are accessible to all (legacy/global data)
 	 *
-	 * @param IQueryBuilder          $qb                 Query builder to modify
-	 * @param OrganisationScopeTable $table              The register and schema this table belongs to, for shared master data
-	 * @param bool                   $adminBypassEnabled Whether admin users can bypass org filtering
-	 * @param bool                   $withOrgless        Whether the caller's RBAC grant also admits org-less rows
+	 * The admin bypass is this instance's setting ({@see isAdminOverrideEnabled()}).
+	 *
+	 * @param IQueryBuilder        $qb       Query builder to modify
+	 * @param OrganisationBoundary $boundary The register and schema this table belongs to (for shared master data),
+	 *                                       whether the caller's RBAC grant also admits org-less rows, and the
+	 *                                       cross-organisation branch OR-ed in, if any
 	 *
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
 	 *
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
-	public function applyOrganizationFilter(
-		IQueryBuilder $qb,
-		OrganisationScopeTable $table,
-		bool $adminBypassEnabled = false,
-		bool $withOrgless = false,
-	): void {
+	public function applyOrganizationFilter(IQueryBuilder $qb, OrganisationBoundary $boundary): void {
 		$scope = $this->resolveOrganizationScope(
-			adminBypassEnabled: $adminBypassEnabled,
-			registerId: $table->registerId,
-			schemaId: $table->schemaId
+			adminBypassEnabled: $this->isAdminOverrideEnabled(),
+			registerId: $boundary->registerId,
+			schemaId: $boundary->schemaId
 		);
-		if ($withOrgless === true) {
+		if ($boundary->withOrgless === true) {
 			$scope = self::admitOrganisationless(scope: $scope);
 		}
 
-		(new OrganisationScopeCondition())->apply(qb: $qb, scope: $scope);
+		(new OrganisationScopeCondition())->apply(qb: $qb, scope: $scope, orAlso: $boundary->crossBranch);
 
 	}//end applyOrganizationFilter()
 
@@ -174,24 +167,38 @@ class MagicOrganizationHandler implements OrganisationScopeResolverInterface {
 	 *   which has carried these three suppressions since it was written. The
 	 *   branches are the tenancy rule itself (system context, admin, bypass,
 	 *   SaaS, active-org set) and collapsing them would hide it.
-	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
 	 */
 	public function resolveOrganizationScope(
 		bool $adminBypassEnabled = false,
 		?int $registerId = null,
 		?int $schemaId = null,
 	): array {
+		return $this->scopeOf(adminBypassEnabled: $adminBypassEnabled, table: new OrganisationScopeTable(registerId: $registerId, schemaId: $schemaId));
+
+	}//end resolveOrganizationScope()
+
+	/**
+	 * The organisation scope of a table: the active organisation context's, else the session caller's.
+	 *
+	 * @param bool                   $adminBypassEnabled Whether the caller honours the admin bypass.
+	 * @param OrganisationScopeTable $table              The table being read, for shared master data.
+	 *
+	 * @return array{mode: string, uuids: array<int, string>} `mode` is one of the SCOPE_* constants.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
+	 */
+	private function scopeOf(bool $adminBypassEnabled, OrganisationScopeTable $table): array {
 		// Code acting for an organisation reads that organisation (and its
 		// parents and shared master data holders), never more: the session
 		// user, the admin bypass and the system context do not widen it.
-		$table = new OrganisationScopeTable(registerId: $registerId, schemaId: $schemaId);
 		if (OrganisationContext::isActive() === true) {
 			return $this->contextOrganizationScope(table: $table);
 		}
 
 		return $this->callerOrganizationScope(adminBypassEnabled: $adminBypassEnabled, table: $table);
-
-	}//end resolveOrganizationScope()
+	}//end scopeOf()
 
 	/**
 	 * The organisation scope of the session caller, outside an organisation context.
@@ -202,7 +209,7 @@ class MagicOrganizationHandler implements OrganisationScopeResolverInterface {
 	 * @return array{mode: string, uuids: array<int, string>} The scope.
 	 */
 	private function callerOrganizationScope(bool $adminBypassEnabled, OrganisationScopeTable $table): array {
-		$user = $this->userSession->getUser();
+		$user = $this->identity->userSession->getUser();
 
 		// CLI / no-session system context (occ commands, repair steps, cron
 		// jobs, background calculations, system listeners) is a trusted system
@@ -232,7 +239,7 @@ class MagicOrganizationHandler implements OrganisationScopeResolverInterface {
 			return false;
 		}
 
-		return in_array('admin', $this->groupManager->getUserGroupIds($user), true);
+		return in_array('admin', $this->identity->groupManager->getUserGroupIds($user), true);
 	}//end isAdmin()
 
 	/**
@@ -395,8 +402,7 @@ class MagicOrganizationHandler implements OrganisationScopeResolverInterface {
 		}
 
 		return $resolver->holdersForResource(
-			registerId: $table->registerId,
-			schemaId: $table->schemaId,
+			pair: new DeclaredPair(registerId: $table->registerId, schemaId: $table->schemaId),
 			consumerOrgUuids: $consumerOrgUuids
 		);
 

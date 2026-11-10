@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationTarget;
+use OCA\OpenRegister\Service\Flow\VersionRunsMigration;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuardInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -144,7 +145,7 @@ class FlowRunMigrationController extends Controller {
 			return $actor;
 		}
 
-		$outcome = $this->outcomeFor(uuid: $uuid, actorUid: $actor->getUID(), mapping: $this->nodeMappingParam());
+		$outcome = $this->outcomeFor(uuid: $uuid, actorUid: $actor->getUID());
 
 		return $this->outcomeResponse(outcome: $outcome);
 	}//end migrate()
@@ -267,14 +268,16 @@ class FlowRunMigrationController extends Controller {
 
 		return new JSONResponse(
 			$this->migrations->migrateRunsOfVersion(
-				flowId: $flow,
-				sourceVersion: (int)$this->request->getParam('sourceVersion', 0),
-				target: new FlowRunMigrationTarget(
-					targetVersion: (int)$this->request->getParam('targetVersion', 0),
-					reason: $reason,
-					actor: $actor->getUID(),
-					mapping: $nodeMapping
-				),
+				request: new VersionRunsMigration(
+					flowId: $flow,
+					sourceVersion: (int)$this->request->getParam('sourceVersion', 0),
+					target: new FlowRunMigrationTarget(
+						targetVersion: (int)$this->request->getParam('targetVersion', 0),
+						reason: $reason,
+						actor: $actor->getUID(),
+						mapping: $nodeMapping
+					),
+				)
 			)
 		);
 	}//end migrateRuns()
@@ -287,20 +290,21 @@ class FlowRunMigrationController extends Controller {
 	 * the answer still carries the caller's own `dryRun` back, so it reads
 	 * like the preview they wanted.
 	 *
-	 * @param string                $uuid     The run.
-	 * @param string                $actorUid Who asked.
-	 * @param array<string, string> $mapping  Old node id to new node id.
+	 * The node mapping (old node id to new node id) is the request's `mapping`.
+	 *
+	 * @param string $uuid     The run.
+	 * @param string $actorUid Who asked.
 	 *
 	 * @return array<string, mixed> What the service answered.
 	 *
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
 	 */
-	private function outcomeFor(string $uuid, string $actorUid, array $mapping): array {
+	private function outcomeFor(string $uuid, string $actorUid): array {
 		$target = new FlowRunMigrationTarget(
 			targetVersion: (int)$this->request->getParam('targetVersion', 0),
 			reason: (string)$this->request->getParam('reason', ''),
 			actor: $actorUid,
-			mapping: $mapping
+			mapping: $this->nodeMappingParam()
 		);
 
 		if ($this->request->getParam('dryRun', false) === true) {

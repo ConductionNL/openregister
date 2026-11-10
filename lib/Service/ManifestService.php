@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Service;
 
 use DateTimeInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
@@ -174,7 +175,9 @@ class ManifestService implements ManifestServiceInterface {
 		}
 
 		// 4. Profile found → evaluate calculations and inject.
-		return $this->buildUserContext(userId: $userId, profile: $profile, schemaSlug: (string) $schemaSlug);
+		return $this->buildUserContext(
+			found: new ManifestProfile(userId: $userId, schemaSlug: (string) $schemaSlug, profile: $profile)
+		);
 	}//end runtimeUser()
 
 	/**
@@ -254,7 +257,7 @@ class ManifestService implements ManifestServiceInterface {
 	 */
 	private function profileSchemas(string $schemaSlug): ?array {
 		try {
-			return $this->schemaMapper->findBySlug(slug: $schemaSlug, limit: 1);
+			return $this->schemaMapper->findBySlug(slug: $schemaSlug, query: new ListQuery(limit: 1));
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: sprintf('[ManifestService] Schema lookup failed for "%s": %s', $schemaSlug, $e->getMessage()),
@@ -305,30 +308,28 @@ class ManifestService implements ManifestServiceInterface {
 	 * calculations are evaluated at read-time here so that the manifest always
 	 * reflects the freshest derived state.
 	 *
-	 * @param string       $userId     Nextcloud user ID (always included as `id`).
-	 * @param ObjectEntity $profile    The user's profile object entity.
-	 * @param string       $schemaSlug Schema slug (used for schema re-lookup to read calcs).
+	 * @param ManifestProfile $found The user ID, schema slug and profile object entity.
 	 *
 	 * @return array<string, mixed> The `runtime.user` data block.
 	 */
-	private function buildUserContext(string $userId, ObjectEntity $profile, string $schemaSlug): array {
-		$data = $profile->getObject() ?? [];
+	private function buildUserContext(ManifestProfile $found): array {
+		$data = $found->profile->getObject() ?? [];
 
 		// Resolve the field allowlist BEFORE copying anything from the
 		// profile object. Without an allowlist every stored field — including
 		// schema-internal or PII fields — would leak verbatim to anything
 		// consuming the manifest.
-		$calcs   = $this->getCalculations(schemaSlug: $schemaSlug);
-		$allowed = $this->resolveAllowedFieldNames(schemaSlug: $schemaSlug, calcs: $calcs);
+		$calcs   = $this->getCalculations(schemaSlug: $found->schemaSlug);
+		$allowed = $this->resolveAllowedFieldNames(schemaSlug: $found->schemaSlug, calcs: $calcs);
 
 		// Always surface the Nextcloud user ID as `id`.
-		$context = array_merge($this->pickFields(data: $data, names: $allowed), ['id' => $userId]);
+		$context = array_merge($this->pickFields(data: $data, names: $allowed), ['id' => $found->userId]);
 		if ($calcs === null) {
 			return $context;
 		}
 
-		$data['@self'] = $this->buildSelfMeta(profile: $profile);
-		return $this->applyCalculations(context: $context, data: $data, calcs: $calcs, userId: $userId);
+		$data['@self'] = $this->buildSelfMeta(profile: $found->profile);
+		return $this->applyCalculations(run: new CalculationRun(userId: $found->userId, data: $data, calcs: $calcs), context: $context);
 	}//end buildUserContext()
 
 	/**
@@ -389,20 +390,18 @@ class ManifestService implements ManifestServiceInterface {
 	 * Evaluate the calculations from the schema and merge the non-materialised
 	 * results into $context.
 	 *
+	 * @param CalculationRun       $run     The user, evaluation data including `@self`, and calculation spec map.
 	 * @param array<string, mixed> $context Base context (already contains filtered profile fields).
-	 * @param array<string, mixed> $data    Evaluation data including `@self`.
-	 * @param array<string, mixed> $calcs   Calculation spec map from the schema.
-	 * @param string               $userId  Nextcloud user id (used in warning messages only).
 	 *
 	 * @return array<string, mixed> Enriched context.
 	 */
-	private function applyCalculations(array $context, array $data, array $calcs, string $userId): array {
-		foreach ($calcs as $name => $spec) {
+	private function applyCalculations(CalculationRun $run, array $context): array {
+		foreach ($run->calcs as $name => $spec) {
 			if (is_array($spec) === false) {
 				continue;
 			}
 
-			$outcome = $this->evaluateCalculation(name: (string) $name, spec: $spec, data: $data, userId: $userId);
+			$outcome = $this->evaluateCalculation(run: $run, name: (string) $name);
 			// Only inject non-materialised computations here; materialised ones
 			// are already stored in the profile payload and surfaced via $context.
 			if ($outcome['ok'] === true && ($spec['materialise'] ?? false) !== true) {
@@ -416,19 +415,17 @@ class ManifestService implements ManifestServiceInterface {
 	/**
 	 * Evaluate one calculation; a failing expression is logged and reported as not ok.
 	 *
-	 * @param string               $name   The calculation name.
-	 * @param array<string, mixed> $spec   The calculation spec.
-	 * @param array<string, mixed> $data   Evaluation data including `@self`.
-	 * @param string               $userId Nextcloud user id (used in warning messages only).
+	 * @param CalculationRun $run  The user, evaluation data and calculation spec map.
+	 * @param string         $name The calculation name.
 	 *
 	 * @return array{ok: bool, value: mixed} Whether it evaluated, and its raw value.
 	 */
-	private function evaluateCalculation(string $name, array $spec, array $data, string $userId): array {
+	private function evaluateCalculation(CalculationRun $run, string $name): array {
 		try {
-			return ['ok' => true, 'value' => $this->evaluator->evaluate($data, ($spec['expression'] ?? null))];
+			return ['ok' => true, 'value' => $this->evaluator->evaluate($run->data, ($run->calcs[$name]['expression'] ?? null))];
 		} catch (EvaluationException $e) {
 			$this->logger->warning(
-				message: sprintf('[ManifestService] Calculation "%s" failed for user "%s": %s', $name, $userId, $e->getMessage()),
+				message: sprintf('[ManifestService] Calculation "%s" failed for user "%s": %s', $name, $run->userId, $e->getMessage()),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 			return ['ok' => false, 'value' => null];
@@ -529,7 +526,7 @@ class ManifestService implements ManifestServiceInterface {
 	 */
 	private function schemaConfiguration(string $schemaSlug): ?array {
 		try {
-			$schemas = $this->schemaMapper->findBySlug(slug: $schemaSlug, limit: 1);
+			$schemas = $this->schemaMapper->findBySlug(slug: $schemaSlug, query: new ListQuery(limit: 1));
 		} catch (Throwable) {
 			return null;
 		}

@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -40,41 +40,15 @@ use OCP\AppFramework\Db\DoesNotExistException;
  */
 class FlowDryRunService implements FlowDryRunServiceInterface {
 	/**
-	 * Finds the flow within the caller's organisation.
-	 *
-	 * @var FlowService
-	 */
-	private readonly FlowService $flows;
-
-	/**
-	 * Builds the flow document the engine walks.
-	 *
-	 * @var FlowLocator
-	 */
-	private readonly FlowLocator $locator;
-
-	/**
-	 * Reads the object with the caller's access.
-	 *
-	 * @var ObjectOperationsInterface
-	 */
-	private readonly ObjectOperationsInterface $objects;
-
-	/**
 	 * Constructor.
 	 *
-	 * @param FlowDryRunLookups $lookups Finds the flow, builds its document and reads the object.
-	 * @param FlowEngine       $engine   The engine runs walk.
-	 * @param FlowNodeRegistryInterface $registry Resolves each step's node.
+	 * @param FlowDryRunLookups   $lookups Finds the flow, builds its document and reads the object.
+	 * @param FlowRunWalkServices $walk    The engine runs walk and the registry resolving each step's node.
 	 */
 	public function __construct(
-		FlowDryRunLookups $lookups,
-		private readonly FlowEngine $engine,
-		private readonly FlowNodeRegistryInterface $registry,
+		private readonly FlowDryRunLookups $lookups,
+		private readonly FlowRunWalkServices $walk,
 	) {
-		$this->flows   = $lookups->flows;
-		$this->locator = $lookups->locator;
-		$this->objects = $lookups->objects;
 	}//end __construct()
 
 	/**
@@ -92,16 +66,32 @@ class FlowDryRunService implements FlowDryRunServiceInterface {
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
 	 */
 	public function dryRun(string $flowId, string $register, string $schema, string $objectId): array {
+		return $this->dryRunObject(flowId: $flowId, ref: new ObjectRef(register: $register, schema: $schema, id: $objectId));
+	}//end dryRun()
+
+	/**
+	 * The steps a flow would take for the referenced object, and what each would do.
+	 *
+	 * @param string    $flowId The flow uuid.
+	 * @param ObjectRef $ref    The object's register, schema and uuid.
+	 *
+	 * @return array{status: string, error?: string, steps: array<int, array<string, mixed>>}
+	 *
+	 * @throws DoesNotExistException When the flow or the object is out of the caller's reach.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
+	 */
+	public function dryRunObject(string $flowId, ObjectRef $ref): array {
 		$document = $this->flowDocument(flowId: $flowId);
 
 		// A lookup, not a person opening the object: no audit-trail row, so the
 		// object does not land in anyone's recent list.
-		$object = $this->objects->find(
-			id: $objectId,
+		$object = $this->lookups->objects->find(
+			id: $ref->id,
 			_extend: [],
 			files: false,
-			register: $register,
-			schema: $schema,
+			register: $ref->register,
+			schema: $ref->schema,
 			_rbac: true,
 			_multitenancy: true,
 			_render: true,
@@ -112,7 +102,7 @@ class FlowDryRunService implements FlowDryRunServiceInterface {
 		}
 
 		return $this->walk(document: $document, object: $object);
-	}//end dryRun()
+	}//end dryRunObject()
 
 	/**
 	 * The steps a flow would take for an example payload, and what each would do.
@@ -150,9 +140,9 @@ class FlowDryRunService implements FlowDryRunServiceInterface {
 	 */
 	private function flowDocument(string $flowId): array {
 		// Throws for a flow outside the caller's organisation.
-		$this->flows->find(uuid: $flowId);
+		$this->lookups->flows->find(uuid: $flowId);
 
-		$document = $this->locator->resolveFlow(flowId: $flowId);
+		$document = $this->lookups->locator->resolveFlow(flowId: $flowId);
 		if ($document === null) {
 			throw new DoesNotExistException('No such flow');
 		}
@@ -171,9 +161,9 @@ class FlowDryRunService implements FlowDryRunServiceInterface {
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
 	 */
 	private function walk(array $document, ObjectEntity $object): array {
-		$dispatcher = new PreviewStepDispatcher(registry: $this->registry);
+		$dispatcher = new PreviewStepDispatcher(registry: $this->walk->registry);
 		$start = new FlowRunStart(flow: $document, store: new FlowRunMarkingStore(run: new FlowRun()), subject: $object, dispatcher: $dispatcher);
-		$result = $this->engine->run(start: $start->withContext(context: ['dryRun' => true]));
+		$result = $this->walk->engine->run(start: $start->withContext(context: ['dryRun' => true]));
 
 		$answer = [
 			'status' => (string)($result['status'] ?? ''),

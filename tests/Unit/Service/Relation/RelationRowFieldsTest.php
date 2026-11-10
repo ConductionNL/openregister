@@ -55,9 +55,25 @@ class RelationRowFieldsTest extends TestCase {
 				'kind' => 'object',
 				'origin' => 'split',
 			],
-			(new RelationRowFields())->objectLink(from: $from, to: $to, origin: 'split')
+			(new RelationRowFields())->splitLink(from: $from, to: $to)
 		);
 	}//end testAnObjectLinkCarriesBothEnds()
+
+	/**
+	 * A derivation's link names its own origin.
+	 *
+	 * @return void
+	 */
+	public function testADerivedLinkNamesTheDeriveOrigin(): void {
+		$child  = new ObjectEntity();
+		$parent = new ObjectEntity();
+		$child->setUuid('c');
+		$parent->setUuid('p');
+
+		$row = (new RelationRowFields())->derivedLink(from: $child, to: $parent);
+		$this->assertSame(['c', 'p', 'derive'], [$row['sourceUuid'], $row['targetUuid'], $row['origin']]);
+		$this->assertSame('origin', array_key_last($row));
+	}//end testADerivedLinkNamesTheDeriveOrigin()
 
 	/**
 	 * Only a present, non-null, non-empty value counts as a value.

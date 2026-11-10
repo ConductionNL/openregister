@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Search\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Kernel\Contracts\ViewInterface;
 use OCP\AppFramework\Db\Entity;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Db\Configuration;
@@ -82,7 +83,7 @@ use OCA\OpenRegister\Db\Task;
  * request and never written, and merging those two into one bag would hide
  * what they are to move a number by one.
  */
-class View extends Entity implements JsonSerializable {
+class View extends Entity implements JsonSerializable, ViewInterface {
 	use IsoTimestampsTrait;
 
 	/**

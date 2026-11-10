@@ -71,10 +71,14 @@ final class ObjectSourceWiring {
 			'clientService' => 'OCP\Http\Client\IClientService',
 			'logger'        => 'Psr\Log\LoggerInterface',
 		],
+		OptionalAppBridge::class => [
+			'appManager' => 'OCP\App\IAppManager',
+			'container'  => self::CONTAINER,
+			'logger'     => 'Psr\Log\LoggerInterface',
+		],
 		CalDavVtodoObjectSourceProvider::class => [
 			'taskService' => TaskService::class,
-			'appManager'  => 'OCP\App\IAppManager',
-			'logger'      => 'Psr\Log\LoggerInterface',
+			'app'         => OptionalAppBridge::class,
 		],
 		UserDirectoryObjectSourceProvider::class => [
 			'userManager'  => 'OCP\IUserManager',
@@ -84,8 +88,7 @@ final class ObjectSourceWiring {
 		],
 		GroupObjectSourceProvider::class => [
 			'groupManager' => 'OCP\IGroupManager',
-			'userSession'  => 'OCP\IUserSession',
-			'logger'       => 'Psr\Log\LoggerInterface',
+			'session'      => \OCA\OpenRegister\Service\LinkSessionRuntime::class,
 		],
 		OrganisationActingUser::class => [
 			'userSession'  => 'OCP\IUserSession',
@@ -99,30 +102,23 @@ final class ObjectSourceWiring {
 		],
 		ContactsObjectSourceProvider::class => [
 			'contactsManager' => 'OCP\Contacts\IManager',
-			'appManager'      => 'OCP\App\IAppManager',
-			'logger'          => 'Psr\Log\LoggerInterface',
+			'app'             => OptionalAppBridge::class,
 		],
 		CalendarEventObjectSourceProvider::class => [
 			'calendarEventService' => \OCA\OpenRegister\Service\CalendarEventService::class,
-			'appManager'           => 'OCP\App\IAppManager',
-			'logger'               => 'Psr\Log\LoggerInterface',
+			'app'                  => OptionalAppBridge::class,
 		],
 		FilesObjectSourceProvider::class => [
-			'rootFolder'  => 'OCP\Files\IRootFolder',
-			'userSession' => 'OCP\IUserSession',
-			'logger'      => 'Psr\Log\LoggerInterface',
+			'rootFolder' => 'OCP\Files\IRootFolder',
+			'session'    => \OCA\OpenRegister\Service\LinkSessionRuntime::class,
 		],
 		DeckObjectSourceProvider::class => [
-			'appManager'  => 'OCP\App\IAppManager',
+			'app'         => OptionalAppBridge::class,
 			'userSession' => 'OCP\IUserSession',
-			'container'   => self::CONTAINER,
-			'logger'      => 'Psr\Log\LoggerInterface',
 		],
 		TalkObjectSourceProvider::class => [
-			'appManager'  => 'OCP\App\IAppManager',
+			'app'         => OptionalAppBridge::class,
 			'userSession' => 'OCP\IUserSession',
-			'container'   => self::CONTAINER,
-			'logger'      => 'Psr\Log\LoggerInterface',
 		],
 		// DBAL virtual registers: the connection factory depends only on the CredentialStore interface.
 		DbalConnectionFactory::class => [
@@ -146,9 +142,7 @@ final class ObjectSourceWiring {
 		// Tables provider stack: a guarded reader (the sole Tables boundary), pure mappers, a schema-sync reconciler and the provider.
 		TablesUuidDeriver::class => [],
 		TablesTableReader::class => [
-			'appManager' => 'OCP\App\IAppManager',
-			'container'  => self::CONTAINER,
-			'logger'     => 'Psr\Log\LoggerInterface',
+			'app' => OptionalAppBridge::class,
 		],
 		TablesColumnMapper::class => [
 			'uuidDeriver' => TablesUuidDeriver::class,
@@ -167,9 +161,8 @@ final class ObjectSourceWiring {
 			'syncService'  => TablesSchemaSyncService::class,
 		],
 		TablesObjectSourceProvider::class => [
-			'parts'       => TablesProviderParts::class,
-			'userSession' => 'OCP\IUserSession',
-			'logger'      => 'Psr\Log\LoggerInterface',
+			'parts'   => TablesProviderParts::class,
+			'session' => \OCA\OpenRegister\Service\LinkSessionRuntime::class,
 		],
 	];
 

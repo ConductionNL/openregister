@@ -16,6 +16,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\CauseFrame;
 use OCA\OpenRegister\Service\Object\UserActivityStamper;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\WriteCause;
@@ -79,12 +80,12 @@ class UserActivityStamperTest extends TestCase {
 		$stamper = $this->stamper();
 		foreach ([WriteCause::SCHEDULED, WriteCause::RULE, WriteCause::IMPORT, WriteCause::MIGRATION, WriteCause::CASCADE] as $cause) {
 			$this->assertFalse(
-				WriteCause::runAs(cause: $cause, run: null, operation: static fn (): bool => $stamper->isUserWrite()),
+				WriteCause::runAs(frame: new CauseFrame(cause: $cause), operation: static fn (): bool => $stamper->isUserWrite()),
 				$cause
 			);
 		}
 
-		$this->assertTrue(WriteCause::runAs(cause: WriteCause::PERSON, run: null, operation: static fn (): bool => $stamper->isUserWrite()));
+		$this->assertTrue(WriteCause::runAs(frame: new CauseFrame(cause: WriteCause::PERSON), operation: static fn (): bool => $stamper->isUserWrite()));
 	}
 
 	public function testStampSetsNowOnAUserWrite(): void {

@@ -101,19 +101,7 @@ class HierarchyAnnotationValidator implements HierarchyAnnotationValidatorInterf
 			return $findings;
 		}
 
-		$declaredProperties = [];
-		if (is_array($schema['properties'] ?? null) === true) {
-			$declaredProperties = $schema['properties'];
-		}
-
-		$findings = array_merge(
-			$findings,
-			$this->checkParentProperty(
-				parent: $parent,
-				properties: $declaredProperties,
-				identities: self::identitiesOf(schema: $schema)
-			)
-		);
+		$findings = array_merge($findings, $this->checkParentProperty(parent: $parent, schema: $schema));
 
 		$findings = array_merge(
 			$findings,
@@ -223,14 +211,17 @@ class HierarchyAnnotationValidator implements HierarchyAnnotationValidatorInterf
 	/**
 	 * Whether the named property is a reference to this same schema.
 	 *
-	 * @param string $parent The declared property name.
-	 * @param array<string, mixed> $properties The schema's properties.
-	 * @param array<int, string> $identities Every spelling that names THIS schema.
+	 * @param string               $parent The declared property name.
+	 * @param array<string, mixed> $schema The schema shape being validated, with its properties and identities.
 	 *
 	 * @return array<int, array{code: string, message: string, severity: string}> The findings.
 	 */
-	private function checkParentProperty(string $parent, array $properties, array $identities): array {
-		$property = ($properties[$parent] ?? null);
+	private function checkParentProperty(string $parent, array $schema): array {
+		$property = null;
+		if (is_array($schema['properties'] ?? null) === true) {
+			$property = ($schema['properties'][$parent] ?? null);
+		}
+
 		if (is_array($property) === false) {
 			return [
 				$this->error(
@@ -255,6 +246,7 @@ class HierarchyAnnotationValidator implements HierarchyAnnotationValidatorInterf
 			];
 		}
 
+		$identities = self::identitiesOf(schema: $schema);
 		if ($identities !== [] && $this->targetsSelf(target: $target, identities: $identities) === false) {
 			return [
 				$this->error(

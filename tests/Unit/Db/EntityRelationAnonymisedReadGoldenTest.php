@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
@@ -143,7 +144,7 @@ final class EntityRelationAnonymisedReadGoldenTest extends TestCase {
 			$db,
 			$this->createMock(AuditTrailMapperInterface::class),
 			$this->createMock(IUserSession::class),
-			$this->createMock(IEventDispatcher::class),
+			new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class)),
 			new NullLogger()
 		);
 	}//end mapper()

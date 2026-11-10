@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
     phpunit-dark.xml: the suites that need a booted Nextcloud and a live
-    database, and so ran in no workflow until api-test-coverage.yml gained its
-    "Dark PHPUnit suites" step: tests/Db, tests/Service and tests/Api.
+    database: tests/Db, tests/Service and tests/Api. CI runs each suite as its
+    own job in .github/workflows/dark-suites.yml.
 
     Same settings as phpunit.xml (bootstrap, strictness, memory cap); only the
-    suites differ. Run it inside the booted CI stack:
+    suites differ. Run one suite against an installed Nextcloud:
 
-        php vendor/bin/phpunit -c phpunit-dark.xml (no coverage, no colors)
+        OPENREGISTER_TEST_NC_ROOT=/var/www/html php vendor/bin/phpunit -c phpunit-dark.xml, testsuite "Database Tests"
 
     QUARANTINE: every <exclude> below is a red file from the measurement run,
     with a comment naming its failure class. It is a list to burn down, not a

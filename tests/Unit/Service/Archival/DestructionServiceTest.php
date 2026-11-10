@@ -20,6 +20,7 @@ use OCA\OpenRegister\BackgroundJob\DestructionExecutionJob;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\ApprovalChoice;
+use OCA\OpenRegister\Service\Archival\ApprovalRequest;
 use OCA\OpenRegister\Service\Archival\DestructionService;
 use OCP\BackgroundJob\IJobList;
 use OCP\IAppConfig;
@@ -124,7 +125,7 @@ class DestructionServiceTest extends TestCase {
 
 		$this->jobList->expects($this->once())->method('add');
 
-		$result = $this->service->approveList($list, new ApprovalChoice('approve_all'));
+		$result = $this->service->approveList($list, new ApprovalRequest(choice: new ApprovalChoice('approve_all'), requiresDual: false, listUuid: null));
 
 		$this->assertEquals(DestructionService::STATUS_APPROVED, $result['status']);
 		$this->assertCount(1, $result['approvals']);
@@ -160,10 +161,7 @@ class DestructionServiceTest extends TestCase {
 
 		$this->jobList->expects($this->once())->method('add');
 
-		$result = $this->service->approveList(
-			$list,
-			new ApprovalChoice('approve_partial', ['uuid-2'], ['uuid-2' => 'Verkeerde classificatie'])
-		);
+		$result = $this->service->approveList($list, new ApprovalRequest(choice: new ApprovalChoice('approve_partial', ['uuid-2'], ['uuid-2' => 'Verkeerde classificatie']), requiresDual: false, listUuid: null));
 
 		$this->assertEquals(DestructionService::STATUS_APPROVED, $result['status']);
 		$this->assertEquals(1, $result['objectCount']);
@@ -212,7 +210,7 @@ class DestructionServiceTest extends TestCase {
 			'approvals' => [],
 		];
 
-		$result = $this->service->approveList($list, new ApprovalChoice('approve_all'), true);
+		$result = $this->service->approveList($list, new ApprovalRequest(choice: new ApprovalChoice('approve_all'), requiresDual: true, listUuid: null));
 
 		$this->assertEquals(DestructionService::STATUS_AWAITING_SECOND, $result['status']);
 		$this->assertCount(1, $result['approvals']);
@@ -248,7 +246,7 @@ class DestructionServiceTest extends TestCase {
 				}
 			);
 
-		$this->service->approveList($list, new ApprovalChoice('approve_all'), false, 'list-uuid-42');
+		$this->service->approveList($list, new ApprovalRequest(choice: new ApprovalChoice('approve_all'), requiresDual: false, listUuid: 'list-uuid-42'));
 
 		$this->assertIsArray($captured);
 		$this->assertArrayHasKey(
@@ -263,7 +261,7 @@ class DestructionServiceTest extends TestCase {
 	 * D2 (openregister#393): the approval MUST be recorded under the canonical
 	 * `userId` key.
 	 *
-	 * Both readers of the approvals list — RetentionService::generateDestructionCertificate()
+	 * Both readers of the approvals list — RetentionService::certify()
 	 * and DestructionExecutionJob — do array_column($approvals, 'userId'). approveList()
 	 * previously wrote `approvedBy`, so the certificate's approver list came out EMPTY:
 	 * a legally worthless "verklaring van vernietiging" that does not record who
@@ -278,7 +276,7 @@ class DestructionServiceTest extends TestCase {
 			'approvals' => [],
 		];
 
-		$result = $this->service->approveList($list, new ApprovalChoice('approve_all'), false, 'list-uuid-42');
+		$result = $this->service->approveList($list, new ApprovalRequest(choice: new ApprovalChoice('approve_all'), requiresDual: false, listUuid: 'list-uuid-42'));
 
 		$this->assertSame('archivaris-1', $result['approvals'][0]['userId']);
 

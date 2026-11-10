@@ -25,6 +25,8 @@ use OCA\OpenRegister\Command\PurgeObjectCommand;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -62,8 +64,7 @@ class PurgeObjectCommandBehaviourTest extends TestCase {
 	private function purge(array $input): CommandTester {
 		$tester = new CommandTester(
 			new PurgeObjectCommand(
-				$this->objectMapper,
-				$this->schemaMapper,
+				new SchemaCatalog($this->createMock(RegisterMapperInterface::class), $this->schemaMapper, $this->objectMapper),
 				$this->createMock(AuditTrailMapperInterface::class)
 			)
 		);

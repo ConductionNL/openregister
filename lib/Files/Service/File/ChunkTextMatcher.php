@@ -44,41 +44,37 @@ use OCA\OpenRegister\Exception\ChunkMatcherException;
  */
 class ChunkTextMatcher {
 	/**
-	 * Find every occurrence of the request's value in `$chunks`, deduped by
-	 * absolute position across chunk boundaries.
+	 * Find every occurrence of the searched value in the chunks, deduped by
+	 * absolute position across chunk boundaries, in document order.
 	 *
-	 * Matches are returned in document order. Empty when no match found.
-	 *
-	 * @param Chunk[] $chunks Chunks for the target file, ordered by chunkIndex.
-	 * @param ManualEntityRequest $request The operator-supplied value (the needle) and its
-	 *                                     whole-word and case-sensitive match options.
-	 * @param int $chunkOverlap Configured chunk overlap (chars). Needles longer than this
-	 *                          cannot reliably be matched per-chunk and are rejected.
+	 * @param ChunkSearch $search The chunks, the value with its match options and the chunk overlap.
 	 *
 	 * @return array<int, array{chunkId: int, positionStart: int, positionEnd: int, context: string}>
 	 *
-	 * @throws ChunkMatcherException When the needle is longer than `$chunkOverlap` or the
+	 * @throws ChunkMatcherException When the needle is longer than the chunk overlap or the
 	 *                               regex pattern fails to compile.
+	 *
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
-	public function match(array $chunks, ManualEntityRequest $request, int $chunkOverlap): array {
-		if ($request->value === '') {
+	public function search(ChunkSearch $search): array {
+		if ($search->request->value === '') {
 			return [];
 		}
 
-		$this->assertFitsOverlap(needle: $request->value, chunkOverlap: $chunkOverlap);
-		if (empty($chunks) === true) {
+		$this->assertFitsOverlap(needle: $search->request->value, chunkOverlap: $search->chunkOverlap);
+		if (empty($search->chunks) === true) {
 			return [];
 		}
 
 		// Per-chunk regex pass; the run collects every hit and the dedup
 		// pass collapses overlap-region duplicates.
-		$run = new ChunkMatchRun(pattern: $this->buildPattern(request: $request), needleLength: strlen($request->value));
-		foreach ($chunks as $chunk) {
+		$run = new ChunkMatchRun(pattern: $this->buildPattern(request: $search->request), needleLength: strlen($search->request->value));
+		foreach ($search->chunks as $chunk) {
 			$this->collectHits(run: $run, chunk: $chunk);
 		}
 
 		return $this->matchesOf(run: $run);
-	}//end match()
+	}//end search()
 
 	/**
 	 * Refuse a needle longer than the configured chunk overlap.
@@ -134,7 +130,7 @@ class ChunkTextMatcher {
 		}
 
 		return $result;
-	}//end match()
+	}//end matchesOf()
 
 	/**
 	 * Build the regex pattern from the needle + match options.

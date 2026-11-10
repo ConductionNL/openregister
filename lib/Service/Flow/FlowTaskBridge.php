@@ -128,10 +128,10 @@ class FlowTaskBridge implements FlowTaskBridgeInterface {
 	 * actor, and a task with a direct assignee is created active and never
 	 * offered.
 	 *
-	 * @param array<string, mixed> $data The task fields the node assembled.
-	 * @param string $runUuid The run raising the task.
-	 * @param string $nodeId The node raising it.
-	 * @param string|null $actor The run's acting identity; the task's requester.
+	 * @param array<string, mixed> $data    The task fields the node assembled.
+	 * @param string               $runUuid The run raising the task.
+	 * @param string               $nodeId  The node raising it.
+	 * @param string|null          $actor   The run's acting identity; the task's requester.
 	 *
 	 * @return Task The persisted task.
 	 *
@@ -141,32 +141,73 @@ class FlowTaskBridge implements FlowTaskBridgeInterface {
 	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
 	 */
 	public function createTask(array $data, string $runUuid, string $nodeId, ?string $actor): Task {
-		$data['runUuid'] = $runUuid;
-		$data['nodeId'] = $nodeId;
-		$data['requester'] = ($data['requester'] ?? $actor);
-		$data['definitionVersion'] = $this->definitionVersionOf(runUuid: $runUuid);
+		return $this->create(request: new FlowTaskRequest(data: $data, runUuid: $runUuid, nodeId: $nodeId, actor: $actor));
+	}//end createTask()
 
+	/**
+	 * Create the task through the trusted intake, then route it.
+	 *
+	 * @param FlowTaskRequest $request The task fields, and the run, node and identity raising it.
+	 *
+	 * @return Task The created task.
+	 *
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
+	 */
+	private function create(FlowTaskRequest $request): Task {
 		// The TRUSTED intake, not the HTTP one: `create()` pins the requester
 		// to the caller and refuses anything an ordinary user may not write,
 		// because it answers a request body. This payload was assembled by a
 		// node from a saved definition and is stamped with the run's owner as
 		// requester, which is the fact the node knows and a browser does not.
-		$task = $this->tasks->import(data: $data, actor: $actor);
+		$task = $this->tasks->import(data: $this->stamped(request: $request), actor: $request->actor);
 
-		$strategy = trim((string)($data['routingStrategy'] ?? ''));
-		if ($strategy !== '' && trim((string)($data['assignee'] ?? '')) === '') {
-			$task = $this->tasks->offer(
-				uuid: (string)$task->getUuid(),
-				pool: [
-					'routingStrategy' => $strategy,
-					'routingFallback' => ($data['routingFallback'] ?? null),
-				],
-				actor: $actor
-			);
+		return $this->routed(task: $task, request: $request);
+	}//end create()
+
+	/**
+	 * The node's task fields, stamped with the run, the node, the requester and the version pin.
+	 *
+	 * @param FlowTaskRequest $request The request.
+	 *
+	 * @return array<string, mixed> The fields to import.
+	 *
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
+	 */
+	private function stamped(FlowTaskRequest $request): array {
+		$data = $request->data;
+		$data['runUuid'] = $request->runUuid;
+		$data['nodeId'] = $request->nodeId;
+		$data['requester'] = ($data['requester'] ?? $request->actor);
+		$data['definitionVersion'] = $this->definitionVersionOf(runUuid: $request->runUuid);
+
+		return $data;
+	}//end stamped()
+
+	/**
+	 * The task, offered to its pool when it names a routing strategy and no direct assignee.
+	 *
+	 * @param Task            $task    The imported task.
+	 * @param FlowTaskRequest $request The request it was imported from.
+	 *
+	 * @return Task The task as it now stands.
+	 *
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
+	 */
+	private function routed(Task $task, FlowTaskRequest $request): Task {
+		$strategy = trim((string)($request->data['routingStrategy'] ?? ''));
+		if ($strategy === '' || trim((string)($request->data['assignee'] ?? '')) !== '') {
+			return $task;
 		}
 
-		return $task;
-	}//end createTask()
+		return $this->tasks->offer(
+			uuid: (string)$task->getUuid(),
+			pool: [
+				'routingStrategy' => $strategy,
+				'routingFallback' => ($request->data['routingFallback'] ?? null),
+			],
+			actor: $request->actor
+		);
+	}//end routed()
 
 	/**
 	 * Record a fact about a task the graph raised, in its audit, without
@@ -174,17 +215,14 @@ class FlowTaskBridge implements FlowTaskBridgeInterface {
 	 * the reference it froze. Delegates to the task service, which owns the
 	 * audit's shape.
 	 *
-	 * @param string $uuid The task.
-	 * @param string $action The audited action name.
-	 * @param string|null $actor The run's acting identity.
-	 * @param string $reason What is being recorded.
+	 * @param TaskAuditEntry $entry The task, the action, the acting identity and what is recorded.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-matched-party-comes-from-the-case-and-is-frozen-at-creation
 	 */
-	public function record(string $uuid, string $action, ?string $actor, string $reason): void {
-		$this->tasks->record(uuid: $uuid, action: $action, actor: $actor, reason: $reason);
+	public function record(TaskAuditEntry $entry): void {
+		$this->tasks->record(uuid: $entry->uuid, action: $entry->action, actor: $entry->actor, reason: $entry->reason);
 	}//end record()
 
 	/**

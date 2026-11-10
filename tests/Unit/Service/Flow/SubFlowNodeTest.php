@@ -37,10 +37,8 @@ class SubFlowNodeTest extends TestCase {
 		$this->runs = $this->createMock(FlowRunService::class);
 
 		$this->node = new SubFlowNode(
-			$this->resolvers,
-			$this->runs,
-			$l,
-			$this->createMock(IURLGenerator::class)
+			new \OCA\OpenRegister\Service\Flow\FlowExecution($this->resolvers, $this->runs, new \Psr\Log\NullLogger()),
+			new \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation($l, $this->createMock(IURLGenerator::class))
 		);
 	}//end setUp()
 
@@ -55,8 +53,8 @@ class SubFlowNodeTest extends TestCase {
 		$this->resolvers->method('resolveFlow')->with('child')->willReturn(['id' => 'child', 'edges' => []]);
 
 		$produced = [FlowItems::item(json: ['answer' => 42])];
-		$this->runs->method('queue')->willReturn($this->finishedRun(FlowRun::STATUS_QUEUED));
-		$this->runs->expects($this->once())->method('execute')
+		$this->runs->method('queueRun')->willReturn($this->finishedRun(FlowRun::STATUS_QUEUED));
+		$this->runs->expects($this->once())->method('executePass')
 			->willReturn($this->finishedRun(FlowRun::STATUS_COMPLETED, $produced));
 
 		$out = $this->node->execute([FlowItems::item(json: ['in' => 1])], ['flowId' => 'child'], []);
@@ -69,8 +67,8 @@ class SubFlowNodeTest extends TestCase {
 		$input = [FlowItems::item(json: ['in' => 1])];
 
 		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'child']);
-		$this->runs->expects($this->once())->method('queue')->willReturn($this->finishedRun(FlowRun::STATUS_QUEUED));
-		$this->runs->expects($this->never())->method('execute');
+		$this->runs->expects($this->once())->method('queueRun')->willReturn($this->finishedRun(FlowRun::STATUS_QUEUED));
+		$this->runs->expects($this->never())->method('executePass');
 
 		$out = $this->node->execute($input, ['flowId' => 'child', 'wait' => false], []);
 
@@ -100,8 +98,8 @@ class SubFlowNodeTest extends TestCase {
 
 	public function testAWaitedSubRunThatDidNotCompleteRaises(): void {
 		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'child']);
-		$this->runs->method('queue')->willReturn($this->finishedRun(FlowRun::STATUS_QUEUED));
-		$this->runs->method('execute')->willReturn($this->finishedRun(FlowRun::STATUS_FAILED));
+		$this->runs->method('queueRun')->willReturn($this->finishedRun(FlowRun::STATUS_QUEUED));
+		$this->runs->method('executePass')->willReturn($this->finishedRun(FlowRun::STATUS_FAILED));
 
 		$this->expectException(RuntimeException::class);
 		$this->node->execute([], ['flowId' => 'child'], []);

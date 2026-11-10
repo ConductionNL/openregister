@@ -499,7 +499,7 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 	private function advance(TaskSequence $sequence, Task $completed): void {
 		$next = $this->nextPosition(sequence: $sequence, completed: $completed);
 		if ($next !== null) {
-			$this->enableNext(sequence: $sequence, completed: $completed, next: $next);
+			$this->enableNext(sequence: $sequence, advance: new PositionAdvance(completed: $completed, next: $next));
 
 			return;
 		}
@@ -530,18 +530,14 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 	 * Enable the next position and move the cursor onto it.
 	 *
 	 * @param TaskSequence $sequence The running sequence.
-	 * @param Task $completed The position that just completed approvingly.
-	 * @param Task $next The position to enable.
+	 * @param PositionAdvance $advance The completed position and the next one.
 	 *
 	 * @return void
 	 */
-	private function enableNext(TaskSequence $sequence, Task $completed, Task $next): void {
-		$this->services->tasks->enable(
-			uuid: (string)$next->getUuid(),
-			source: self::ACTOR_PREFIX . (string)$sequence->getUuid(),
-			reason: sprintf('Position %d approved; position %d is now enabled.', (int)$completed->getSequencePosition(), (int)$next->getSequencePosition())
-		);
-		$sequence->setPositionCursor((int)$next->getSequencePosition());
+	private function enableNext(TaskSequence $sequence, PositionAdvance $advance): void {
+		$source = self::ACTOR_PREFIX . (string)$sequence->getUuid();
+		$this->services->tasks->enable(uuid: (string)$advance->next->getUuid(), trigger: new TaskTrigger(source: $source, reason: $advance->reason()));
+		$sequence->setPositionCursor((int)$advance->next->getSequencePosition());
 		$this->services->sequences->update($sequence);
 	}//end enableNext()
 
@@ -650,8 +646,7 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 		try {
 			$this->services->tasks->terminateAsMoot(
 				uuid: (string)$sibling->getUuid(),
-				reason: $closure->reason,
-				source: self::ACTOR_PREFIX . (string)$sequence->getUuid()
+				trigger: new TaskTrigger(source: self::ACTOR_PREFIX . (string)$sequence->getUuid(), reason: $closure->reason)
 			);
 		} catch (Throwable $failure) {
 			$this->logger->error(

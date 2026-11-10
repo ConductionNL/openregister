@@ -29,9 +29,21 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
+use OCA\OpenRegister\Service\Object\SaveObject\ComputedPass;
+use OCA\OpenRegister\Service\RecordUpdate;
+use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
 use Adbar\Dot;
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Service\ProtectedCarryForward;
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\PropertyWriteCheck;
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
+use OCA\OpenRegister\Db\AuditTrail\NamedActor;
+use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusal;
+use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusalOptions;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -48,6 +60,7 @@ use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\DeclaredRow;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
@@ -69,6 +82,8 @@ use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
 use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload;
+use OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission;
+use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectWriteTarget;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectUpdateRun;
 use OCA\OpenRegister\Service\Object\SaveObject\OutdatedTranslations;
@@ -84,6 +99,10 @@ use OCA\OpenRegister\Service\Object\SaveObject\SaveLookups;
 use OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\LifecycleSeed;
+use OCA\OpenRegister\Service\Object\SaveObject\SharedWriteAttempt;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSourceChange;
+use OCA\OpenRegister\Service\Object\SaveObject\FolderBind;
+use OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationScanRun;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationScanner;
@@ -97,7 +116,9 @@ use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
 use OCA\OpenRegister\Service\Quality\UniqueHintChecker;
+use OCA\OpenRegister\Service\Quality\UniqueHintCandidate;
 use OCA\OpenRegister\Service\Quality\UniqueHintScope;
+use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolvers;
@@ -105,6 +126,7 @@ use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCA\OpenRegister\Service\TenantLogRedactor;
 use OCA\OpenRegister\Service\TmloService;
+use OCA\OpenRegister\Service\File\FolderAccessCheck;
 use OCA\OpenRegister\Service\TranslationProjectionService;
 use OCA\OpenRegister\Service\TranslationStatusService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -522,10 +544,10 @@ class SaveObject implements SaveObjectInterface {
 		$values = $services->handlers->values;
 		$platform = $services->platform;
 		$tenancy = $services->tenancy;
-		$this->objectEntityMapper = $mappers->objectEntityMapper;
+		$this->objectEntityMapper = $mappers->catalog->tables();
 		$this->unifiedObjectMapper = $mappers->unifiedObjectMapper;
-		$this->schemaMapper = $mappers->schemaMapper;
-		$this->registerMapper = $mappers->registerMapper;
+		$this->schemaMapper = $mappers->catalog->schemas();
+		$this->registerMapper = $mappers->catalog->registers();
 		$this->auditTrailMapper = $records->auditTrailMapper;
 		$this->settingsService = $records->settingsService;
 		$this->tmloService = $records->tmloService;
@@ -610,20 +632,17 @@ class SaveObject implements SaveObjectInterface {
 
 		try {
 			$resolver->assertWritable(
-				table: SharedMasterDataService::REGISTERS,
-				id: $target->registerId,
+				row: new DeclaredRow(table: SharedMasterDataService::REGISTERS, id: $target->registerId),
 				activeOrgUuids: $activeOrgUuids
 			);
 			$resolver->assertWritable(
-				table: SharedMasterDataService::SCHEMAS,
-				id: $target->schemaId,
+				row: new DeclaredRow(table: SharedMasterDataService::SCHEMAS, id: $target->schemaId),
 				activeOrgUuids: $activeOrgUuids
 			);
 		} catch (SharedMasterDataWriteException $refusal) {
 			$this->recordSharedMasterDataRefusal(
 				refusal: $refusal,
-				target: $target,
-				activeOrgUuid: ($activeOrgUuids[0] ?? null)
+				attempt: new SharedWriteAttempt(target: $target, sourceOrganisation: ($activeOrgUuids[0] ?? null))
 			);
 
 			throw $refusal;
@@ -634,8 +653,7 @@ class SaveObject implements SaveObjectInterface {
 	 * Record one refused cross-entity write, on the audit trail and in the log.
 	 *
 	 * @param SharedMasterDataWriteException $refusal The refusal.
-	 * @param ObjectWriteTarget $target The register and schema being written, and the object uuid when named.
-	 * @param string|null $activeOrgUuid The organisation that attempted the write.
+	 * @param SharedWriteAttempt             $attempt Where the write was aimed, and the organisation that attempted it.
 	 *
 	 * @return void
 	 *
@@ -643,9 +661,10 @@ class SaveObject implements SaveObjectInterface {
 	 */
 	private function recordSharedMasterDataRefusal(
 		SharedMasterDataWriteException $refusal,
-		ObjectWriteTarget $target,
-		?string $activeOrgUuid,
+		SharedWriteAttempt $attempt,
 	): void {
+		$target        = $attempt->target;
+		$activeOrgUuid = $attempt->sourceOrganisation;
 		$registerId = $target->registerId;
 		$schemaId   = $target->schemaId;
 		$uuid       = $target->uuid;
@@ -677,16 +696,18 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		try {
-			$this->auditTrailMapper->createSharedMasterDataRefusalEntry(
-				holderOrganisation: $refusal->getHolderUuid(),
-				sourceOrganisation: ($activeOrgUuid ?? ''),
-				resourceType: $refusal->getResourceType(),
+			$options = new SharedMasterDataRefusalOptions(
 				context: $redactor->redact(context: $context),
-				register: $registerId,
-				schema: $schemaId,
-				objectUuid: $uuid,
-				actorId: $actorId,
-				actorReference: $redactor->pseudonym(userId: $actorId)
+				target: new AuditedObject(register: $registerId, schema: $schemaId, objectUuid: $uuid),
+				actor: new NamedActor(id: $actorId, name: $redactor->pseudonym(userId: $actorId))
+			);
+			$this->auditTrailMapper->recordSharedMasterDataRefusal(
+				refusal: new SharedMasterDataRefusal(
+					holderOrganisation: $refusal->getHolderUuid(),
+					sourceOrganisation: ($activeOrgUuid ?? ''),
+					resourceType: $refusal->getResourceType(),
+					options: $options
+				)
 			);
 		} catch (\Throwable $e) {
 			// Best effort by design: see the docblock on the caller. The write
@@ -1210,27 +1231,22 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
 	 *
-	 * @param ObjectEntity $objectEntity The parent object entity
-	 * @param Schema $schema The schema of the parent object
-	 * @param array $data The object data to process
-	 * @param array $stored The parent's stored data when its schema opted into orphan cleanup, else empty
+	 * @param CascadeRun $run    The cascade pass: the parent object entity, the object data to
+	 *                           process and the parent's stored data when its schema opted into
+	 *                           orphan cleanup, else empty.
+	 * @param Schema     $schema The schema of the parent object
 	 *
 	 * @return array The processed data with cascaded objects removed
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function cascadeObjects(ObjectEntity $objectEntity, Schema $schema, array $data, array $stored): array {
+	private function cascadeObjects(CascadeRun $run, Schema $schema): array {
 		try {
 			$schemaObject = $schema->getSchemaObject($this->urlGenerator);
 			$properties = json_decode(json_encode($schemaObject), associative: true)['properties'] ?? [];
 		} catch (Exception $e) {
-			return $data;
+			return $run->data;
 		}
-
-		$run = new CascadeRun();
-		$run->parent = $objectEntity;
-		$run->data = $data;
-		$run->stored = $stored;
 
 		// Single object properties first, then array properties, as each pass rewrites the data.
 		$objectProperties = array_filter($properties, fn (array $property) => CascadeRules::isObjectProperty(property: $property));
@@ -1284,8 +1300,7 @@ class SaveObject implements SaveObjectInterface {
 
 		try {
 			$createdUuid = $this->cascadeSingleObject(
-				objectEntity: $run->parent,
-				definition: $run->definition,
+				target: new NestedObjectTarget(parent: $run->parent, definition: $run->definition),
 				object: $objectData
 			);
 			CascadeRules::applySingleResult(run: $run, createdUuid: $createdUuid);
@@ -1293,6 +1308,13 @@ class SaveObject implements SaveObjectInterface {
 			throw $e;
 		} catch (Exception $e) {
 			// Continue with other properties even if one fails.
+			$this->logger->warning(
+				message: '[SaveObject] Cascade of an object property failed, continuing with the other properties',
+				context: [
+					'property' => $run->property,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 	}//end cascadeObjectProperty()
 
@@ -1323,8 +1345,7 @@ class SaveObject implements SaveObjectInterface {
 
 		try {
 			$createdUuids = $this->cascadeMultipleObjects(
-				objectEntity: $run->parent,
-				property: $run->definition,
+				target: new NestedObjectTarget(parent: $run->parent, definition: $run->definition),
 				propData: $run->data[$run->property]
 			);
 
@@ -1338,6 +1359,13 @@ class SaveObject implements SaveObjectInterface {
 			throw $e;
 		} catch (Exception $e) {
 			// Continue with other properties even if one fails.
+			$this->logger->warning(
+				message: '[SaveObject] Cascade of an array property failed, continuing with the other properties',
+				context: [
+					'property' => $run->property,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 	}//end cascadeArrayProperty()
 
@@ -1396,9 +1424,8 @@ class SaveObject implements SaveObjectInterface {
 	/**
 	 * Cascade multiple objects from an array of objects in the data.
 	 *
-	 * @param ObjectEntity $objectEntity The parent object.
-	 * @param array $property The property to add the objects to.
-	 * @param array $propData The data in the property.
+	 * @param NestedObjectTarget $target   The parent object and the definition of the property to add the objects to.
+	 * @param array              $propData The data in the property.
 	 *
 	 * @return string[] Array of UUIDs of created objects
 	 *
@@ -1412,7 +1439,7 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function cascadeMultipleObjects(ObjectEntity $objectEntity, array $property, array $propData): array {
+	private function cascadeMultipleObjects(NestedObjectTarget $target, array $propData): array {
 		if (array_is_list($propData) === false) {
 			return [];
 		}
@@ -1422,7 +1449,7 @@ class SaveObject implements SaveObjectInterface {
 			return [];
 		}
 
-		$definition = CascadeRules::itemsDefinition(property: $property);
+		$definition = CascadeRules::itemsDefinition(property: $target->definition);
 		if ($definition === null) {
 			return [];
 		}
@@ -1442,8 +1469,7 @@ class SaveObject implements SaveObjectInterface {
 		foreach ($objectsToCreate as $object) {
 			try {
 				$uuid = $this->cascadeSingleObject(
-					objectEntity: $objectEntity,
-					definition: $definition,
+					target: new NestedObjectTarget(parent: $target->parent, definition: $definition),
 					object: $object
 				);
 				if ($uuid !== null) {
@@ -1453,6 +1479,12 @@ class SaveObject implements SaveObjectInterface {
 				throw $e;
 			} catch (Exception $e) {
 				// Continue with other objects even if one fails.
+				$this->logger->warning(
+					message: '[SaveObject] Cascade of a nested object failed, continuing with the others',
+					context: [
+						'exception' => $e->getMessage(),
+					]
+				);
 			}
 		}
 
@@ -1497,9 +1529,8 @@ class SaveObject implements SaveObjectInterface {
 	/**
 	 * Cascade a single object form an object in the source data
 	 *
-	 * @param ObjectEntity $objectEntity The parent object
-	 * @param array $definition The definition of the property the cascaded object is found in
-	 * @param array $object The object to cascade
+	 * @param NestedObjectTarget $target The parent object and the definition of the property the cascaded object is found in
+	 * @param array              $object The object to cascade
 	 *
 	 * @return string|null The UUID of the created object, or null if no object was created
 	 *
@@ -1510,7 +1541,9 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function cascadeSingleObject(ObjectEntity $objectEntity, array $definition, array $object): ?string {
+	private function cascadeSingleObject(NestedObjectTarget $target, array $object): ?string {
+		$objectEntity = $target->parent;
+		$definition   = $target->definition;
 		// Validate that we have the necessary configuration.
 		if (isset($definition['$ref']) === false) {
 			return null;
@@ -1824,12 +1857,9 @@ class SaveObject implements SaveObjectInterface {
 		bool $_dedupOverride = false,
 		?string $_owner = null,
 	): ObjectEntity {
-		// Extract UUID and @self metadata from data.
-		[$uuid, $selfData, $data] = $this->extractUuidAndSelfData(
-			data: $data,
-			uuid: $uuid,
-			uploadedFiles: $uploadedFiles
-		);
+		// Extract UUID and @self metadata from data, then put the uploaded files in.
+		[$uuid, $selfData, $data] = self::splitSelfData(data: $data, uuid: $uuid);
+		$data = $this->injectUploadedFiles(data: $data, uploadedFiles: $uploadedFiles);
 
 		$call = new ObjectSaveCall();
 		$call->flags = new ObjectSaveFlags();
@@ -1955,8 +1985,7 @@ class SaveObject implements SaveObjectInterface {
 		// Normalize translatable properties (wrap simple values under default language).
 		$call->data = $this->translationHandler->normalizeTranslationsForSave(
 			objectData: $call->data,
-			schema: $call->schema,
-			register: $call->register
+			scope: new TranslationScope(schema: $call->schema, register: $call->register)
 		);
 
 		// Skip when _rbac is false (internal/system calls bypass all authorization).
@@ -1995,10 +2024,7 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		$unauthorizedProps = $this->propertyRbacHandler->getUnauthorizedProperties(
-			schema: $call->schema,
-			object: $existingObjectData,
-			incomingData: $call->data,
-			isCreate: $isCreate
+			write: new PropertyWriteCheck(schema: $call->schema, request: new PropertyAccessRequest(object: $existingObjectData, isCreate: $isCreate), incoming: $call->data)
 		);
 
 		if (empty($unauthorizedProps) === false) {
@@ -2056,11 +2082,7 @@ class SaveObject implements SaveObjectInterface {
 			message: '[SaveObject] UUID provided, checking for existing object'
 		);
 
-		$existingObject = $this->findAndValidateExistingObject(
-			uuid: $call->uuid,
-			register: $call->register,
-			schema: $call->schema
-		);
+		$existingObject = $this->findAndValidateExistingObject(call: $call);
 
 		if ($existingObject !== null) {
 			$this->refuseExistingWhenInsertOnly(call: $call, existingObject: $existingObject);
@@ -2218,10 +2240,12 @@ class SaveObject implements SaveObjectInterface {
 		$dedupPolicy = $this->resolveDedupCreatePolicy();
 		if ($dedupPolicy !== null) {
 			$dedupOverriddenMatches = $dedupPolicy->guardCreate(
-				register: $call->registerId,
-				schema: $call->schemaId,
-				data: $call->data,
-				overrideRequested: $call->flags->dedupOverride
+				candidate: new CreateCandidate(
+					register: $call->registerId,
+					schema: $call->schemaId,
+					data: $call->data,
+					overrideRequested: $call->flags->dedupOverride
+				)
 			);
 		}
 
@@ -2264,8 +2288,11 @@ class SaveObject implements SaveObjectInterface {
 
 		$uniqueHints->check(
 			configuration: ($call->schema->getConfiguration() ?? []),
-			scope: new UniqueHintScope(register: $call->registerId, schema: $call->schemaId),
-			data: $call->data
+			candidate: new UniqueHintCandidate(
+				scope: new UniqueHintScope(register: $call->registerId, schema: $call->schemaId),
+				data: $call->data,
+				selfUuid: null
+			)
 		);
 	}//end recordUniqueHints()
 
@@ -2337,8 +2364,8 @@ class SaveObject implements SaveObjectInterface {
 		$this->permissionHandler->checkPermission(
 			schema: $schema,
 			action: 'create',
-			_rbac: in_array(needle: false, haystack: $this->cascadeScopes, strict: true) === false,
-			register: $register
+			options: new PermissionCheckOptions(register: $register),
+			_rbac: in_array(needle: false, haystack: $this->cascadeScopes, strict: true) === false
 		);
 	}//end assertMayCascadeCreate()
 
@@ -2381,21 +2408,16 @@ class SaveObject implements SaveObjectInterface {
 	}//end resolveDedupCreatePolicy()
 
 	/**
-	 * Extract UUID and @self metadata from data.
+	 * Takes `@self` and the identifier out of the data.
 	 *
-	 * @param array $data Object data
-	 * @param string|null $uuid Provided UUID
-	 * @param array|null $uploadedFiles Uploaded files
+	 * @param array       $data The object data.
+	 * @param string|null $uuid The UUID the caller gave, if any.
 	 *
-	 * @return array{0: string|null, 1: array, 2: array} [uuid, selfData, cleanedData]
+	 * @return array{0: string|null, 1: array, 2: array} [uuid, selfData, data without `@self` and `id`]
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function extractUuidAndSelfData(
-		array $data,
-		?string $uuid,
-		?array $uploadedFiles,
-	): array {
+	private static function splitSelfData(array $data, ?string $uuid): array {
 		// Extract @self metadata.
 		$selfData = [];
 		if (($data['@self'] ?? null) !== null && is_array($data['@self']) === true) {
@@ -2416,16 +2438,29 @@ class SaveObject implements SaveObjectInterface {
 		unset($data['@self']);
 		unset($data['id']);
 
-		// Process uploaded files and inject them into data.
-		if ($uploadedFiles !== null && empty($uploadedFiles) === false) {
-			$data = $this->filePropertyHandler->processUploadedFiles(
-				uploadedFiles: $uploadedFiles,
-				data: $data
-			);
+		return [$uuid, $selfData, $data];
+	}//end splitSelfData()
+
+	/**
+	 * Injects uploaded files into the object data.
+	 *
+	 * @param array      $data          The object data.
+	 * @param array|null $uploadedFiles The uploaded files, if any.
+	 *
+	 * @return array The data with the uploaded files in it.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function injectUploadedFiles(array $data, ?array $uploadedFiles): array {
+		if ($uploadedFiles === null || empty($uploadedFiles) === true) {
+			return $data;
 		}
 
-		return [$uuid, $selfData, $data];
-	}//end extractUuidAndSelfData()
+		return $this->filePropertyHandler->processUploadedFiles(
+			uploadedFiles: $uploadedFiles,
+			data: $data
+		);
+	}//end injectUploadedFiles()
 
 	/**
 	 * Resolve schema and register to entity objects with their IDs.
@@ -2456,9 +2491,7 @@ class SaveObject implements SaveObjectInterface {
 	 * validating the stored object never fails on the caller's permissions;
 	 * the caller's access to the write is decided elsewhere.
 	 *
-	 * @param string $uuid Object UUID.
-	 * @param Register|null $register Optional register for magic mapper routing.
-	 * @param Schema|null $schema Optional schema for magic mapper routing.
+	 * @param ObjectSaveCall $call The save call: the object UUID, and the optional register and schema for magic mapper routing.
 	 *
 	 * @return ObjectEntity|null Existing object or null if not found.
 	 *
@@ -2466,18 +2499,15 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function findAndValidateExistingObject(
-		string $uuid,
-		?Register $register = null,
-		?Schema $schema = null,
-	): ?ObjectEntity {
+	private function findAndValidateExistingObject(ObjectSaveCall $call): ?ObjectEntity {
+		$uuid = (string)$call->uuid;
 		try {
 			// Always disable RBAC and multitenancy for internal object lookup
 			// to avoid permission errors when validating existing objects.
 			$existingObject = $this->objectEntityMapper->find(
 				identifier: $uuid,
-				register: $register,
-				schema: $schema,
+				register: $call->register,
+				schema: $call->schema,
 				includeDeleted: false,
 				_rbac: false,
 				_multitenancy: false
@@ -2608,17 +2638,19 @@ class SaveObject implements SaveObjectInterface {
 
 		// Decide the slug once, here: a stored one is frozen. updateObject() does
 		// not decide it again; `@self` is gone from the data there (#4037).
-		$this->decideSlug(entity: $preparedObject, schema: $call->schema, stored: $oldObject->getSlug(), sent: [$call->selfData, $call->data]);
+		$sent = new ObjectPayload(data: $call->data, selfData: $call->selfData);
+		$this->decideSlug(
+			request: new SlugRequest(entity: $preparedObject, schema: $call->schema, clientSlug: $sent->clientSlug()),
+			stored: $oldObject->getSlug()
+		);
 
 		// A record that changes its own selectielijst category (DECISIONS row 48)
 		// is refused when that category has no row, re-derived while it is still
 		// active, and refused once it has been nominated.
 		$retentionService = $this->resolveRetentionService();
 		if ($retentionService !== null) {
-			$preparedObject = $retentionService->applyClassificationOnUpdate(
-				object: $preparedObject,
-				schema: $call->schema,
-				previousData: ($oldObjectData ?? [])
+			$preparedObject = $retentionService->applyClassification(
+				update: new RecordUpdate(object: $preparedObject, schema: $call->schema, previousData: ($oldObjectData ?? []))
 			);
 		}
 
@@ -2703,9 +2735,11 @@ class SaveObject implements SaveObjectInterface {
 
 		$uniqueHints->check(
 			configuration: ($call->schema->getConfiguration() ?? []),
-			scope: new UniqueHintScope(register: $call->register->getId(), schema: $call->schema->getId()),
-			data: $call->data,
-			selfUuid: ((string)$existingObject->getUuid())
+			candidate: new UniqueHintCandidate(
+				scope: new UniqueHintScope(register: $call->register->getId(), schema: $call->schema->getId()),
+				data: $call->data,
+				selfUuid: ((string)$existingObject->getUuid())
+			)
 		);
 	}//end recordUpdateUniqueHints()
 
@@ -2954,7 +2988,7 @@ class SaveObject implements SaveObjectInterface {
 		$selfData = $payload->selfData;
 
 		// Set @self metadata properties.
-		$this->setSelfMetadata(objectEntity: $objectEntity, selfData: $selfData, data: $data, currentUser: $flags->currentUser);
+		$this->setSelfMetadata(objectEntity: $objectEntity, submission: new SelfSubmission(selfData: $selfData, actingUser: $flags->currentUser));
 
 		// Start the object's version sequence. Nothing wrote this before, so on
 		// the magic tables (which carry no column default) every object read
@@ -2981,7 +3015,7 @@ class SaveObject implements SaveObjectInterface {
 		);
 
 		// Prepare the data.
-		$preparedData = $this->prepareObjectData(objectEntity: $objectEntity, schema: $schema, data: $data);
+		$preparedData = $this->prepareCascadeData(run: CascadeRun::forObject(parent: $objectEntity, data: $data), schema: $schema);
 
 		// Validate reference existence for properties with validateReference: true.
 		$this->validateReferences(schema: $schema, run: ReferencePropertyRun::forSave(data: $preparedData, register: $objectEntity->getRegister()));
@@ -2999,7 +3033,10 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		// Decide the slug after hydration, with the uuid known (#4037).
-		$this->decideSlug(entity: $objectEntity, schema: $schema, stored: null, sent: [$selfData, $data]);
+		$this->decideSlug(
+			request: new SlugRequest(entity: $objectEntity, schema: $schema, clientSlug: $payload->clientSlug()),
+			stored: null
+		);
 
 		// Extract Nc* property references and populate linked entity metadata columns.
 		$this->linkedEntityHandler->extractAndPopulate($objectEntity, $schema, $preparedData);
@@ -3010,7 +3047,7 @@ class SaveObject implements SaveObjectInterface {
 		// Set owner from the active user session, or fall back to the system
 		// identifier when no session is active. See applyOwnerAttribution()
 		// for the system-context contract (openregister#1617).
-		$this->applyOwnerAttribution(objectEntity: $objectEntity, _unowned: $flags->unowned, _owner: $flags->owner);
+		$this->applyOwnerAttribution(objectEntity: $objectEntity, flags: $flags);
 
 		// Set organisation from active organisation if not already set.
 		// setSelfMetadata() (called above) only accepted a client-supplied @self.organisation
@@ -3070,18 +3107,35 @@ class SaveObject implements SaveObjectInterface {
 	 * owned by `portal:<subjectRef>` (decision 195, see DraftOwner), names
 	 * it here. No controller forwards it either.
 	 *
-	 * @param ObjectEntity $objectEntity Entity being prepared for creation.
-	 * @param bool         $_unowned     Stamp the system identity even when a session exists.
-	 * @param string|null  $_owner       An explicit owner; wins over the session and the system identity.
+	 * @param ObjectEntity    $objectEntity Entity being prepared for creation.
+	 * @param ObjectSaveFlags $flags        Its `unowned` stamps the system identity even when a session exists;
+	 *                                      its `owner` is an explicit owner that wins over the session and the
+	 *                                      system identity.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
 	 */
-	private function applyOwnerAttribution(ObjectEntity $objectEntity, bool $_unowned = false, ?string $_owner = null): void {
+	private function applyOwnerAttribution(ObjectEntity $objectEntity, ObjectSaveFlags $flags = new ObjectSaveFlags()): void {
+		$owner = ($this->attributedOwner(_unowned: $flags->unowned, _owner: $flags->owner) ?? $this->ownerWithoutSession(objectEntity: $objectEntity));
+		if ($owner !== null) {
+			$objectEntity->setOwner($owner);
+		}
+	}//end applyOwnerAttribution()
+
+	/**
+	 * The owner a new object gets from the write itself: the explicit owner, the system identity, or the session user.
+	 *
+	 * @param bool        $_unowned Stamp the system identity even when a session exists.
+	 * @param string|null $_owner   An explicit owner; wins over the session and the system identity.
+	 *
+	 * @return string|null The owner, or null when there is no session and nothing was asked for.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function attributedOwner(bool $_unowned, ?string $_owner): ?string {
 		if ($_owner !== null && $_owner !== '') {
-			$objectEntity->setOwner($_owner);
-			return;
+			return $_owner;
 		}
 
 		// DELIBERATELY UNOWNED. The system identifier rather than an empty
@@ -3089,24 +3143,32 @@ class SaveObject implements SaveObjectInterface {
 		// REST list path's RBAC filter even for admins (openregister#1617), so
 		// "no owner" has to mean the system, not nobody.
 		if ($_unowned === true) {
-			$objectEntity->setOwner($this->organisationService->getSystemUserId());
-			return;
+			return $this->organisationService->getSystemUserId();
 		}
 
-		$user = $this->userSession->getUser();
-		if ($user !== null) {
-			$objectEntity->setOwner($user->getUID());
-			return;
-		}
+		return $this->userSession->getUser()?->getUID();
+	}//end attributedOwner()
 
+	/**
+	 * The owner a new object gets when there is no session: the system identity, unless it already has one.
+	 *
+	 * @param ObjectEntity $objectEntity Entity being prepared for creation.
+	 *
+	 * @return string|null The system identity, or null to keep the owner it has.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function ownerWithoutSession(ObjectEntity $objectEntity): ?string {
 		// No user session — only fall back to the system identifier when
 		// owner is genuinely missing (empty or null). An explicit non-empty
 		// owner (e.g. set by the caller) is preserved.
 		$currentOwner = $objectEntity->getOwner();
 		if ($currentOwner === null || $currentOwner === '') {
-			$objectEntity->setOwner($this->organisationService->getSystemUserId());
+			return $this->organisationService->getSystemUserId();
 		}
-	}//end applyOwnerAttribution()
+
+		return null;
+	}//end ownerWithoutSession()
 
 	/**
 	 * Prepares an object for update by applying all necessary transformations.
@@ -3136,7 +3198,7 @@ class SaveObject implements SaveObjectInterface {
 		$storedRecord = $existingObject->getMatchEnvelope();
 
 		// Set @self metadata properties.
-		$this->setSelfMetadata(objectEntity: $existingObject, selfData: $selfData, data: $data, currentUser: $currentUser);
+		$this->setSelfMetadata(objectEntity: $existingObject, submission: new SelfSubmission(selfData: $selfData, actingUser: $currentUser));
 
 		// A save is a patch. Bumped here rather than after the write so the
 		// value the audit trail copies onto its own `version` column is the
@@ -3151,8 +3213,8 @@ class SaveObject implements SaveObjectInterface {
 		$this->versionHandler->advanceVersion(entity: $existingObject, carried: $carriedVersion);
 
 		// Set folder ID if provided.
-		// Snapshot the object's pre-update data BEFORE prepareObjectData runs.
-		// prepareObjectData calls preCacheParentName which writes the incoming
+		// Snapshot the object's pre-update data BEFORE prepareCascadeData runs.
+		// prepareCascadeData calls preCacheParentName which writes the incoming
 		// data back into $existingObject via setObject() so cascade descendants
 		// can resolve the parent's name template; reading getObject() afterwards
 		// would yield the new data, not the original. Capturing here keeps the
@@ -3161,7 +3223,7 @@ class SaveObject implements SaveObjectInterface {
 
 		// Detect which declared write-only locations this payload OMITS, so the stored
 		// values can be carried forward below instead of being nulled (openregister#463).
-		// This runs on the RAW $data on purpose: prepareObjectData's setDefaultValues()
+		// This runs on the RAW $data on purpose: prepareCascadeData's setDefaultValues()
 		// applies a property's `default` when the key is absent, which would materialize
 		// an omitted key and hide the omission from this check.
 		$omittedWriteOnly = $this->propertyRbacHandler->collectOmittedWriteOnlyPaths(
@@ -3178,17 +3240,13 @@ class SaveObject implements SaveObjectInterface {
 			array_unique(
 				array_merge(
 					$omittedWriteOnly,
-					$this->propertyRbacHandler->collectOmittedProtectedProperties(
-						schema: $schema,
-						incoming: $data,
-						stored: $storedRecord
-					)
+					$this->propertyRbacHandler->collectOmittedProtectedProperties(update: new ProtectedCarryForward(schema: $schema, incoming: $data, stored: $storedRecord))
 				)
 			)
 		);
 
 		// Prepare the data.
-		$preparedData = $this->prepareObjectData(objectEntity: $existingObject, schema: $schema, data: $data);
+		$preparedData = $this->prepareCascadeData(run: CascadeRun::forObject(parent: $existingObject, data: $data), schema: $schema);
 
 		// Validate reference existence for properties with validateReference: true.
 		// On updates, skip validation for unchanged values to avoid re-validating existing references.
@@ -3203,7 +3261,7 @@ class SaveObject implements SaveObjectInterface {
 		// is the save-side half of the writeOnly contract, symmetric with the read-side
 		// strip in PropertyRbacHandler::stripWriteOnlyProperties().
 		//
-		// Ordering is load-bearing in both directions. It must run AFTER prepareObjectData
+		// Ordering is load-bearing in both directions. It must run AFTER prepareCascadeData
 		// because that is where FieldEncryptionHandler::encryptProperties() runs: $oldData
 		// holds the stored value, which for an encrypted property is ciphertext, and
 		// restoring it any earlier would double-encrypt it. It must run BEFORE the null-fill
@@ -3260,22 +3318,17 @@ class SaveObject implements SaveObjectInterface {
 	/**
 	 * Decide and set an entity's slug: frozen when it has one, otherwise unique in its register+schema (#4037).
 	 *
-	 * @param ObjectEntity                 $entity The entity, hydrated and with its uuid.
-	 * @param Schema                       $schema Its schema.
-	 * @param string|null                  $stored The slug stored before this save (null on create).
-	 * @param array{0: array, 1: array}    $sent   The `@self` metadata and the data the client sent.
+	 * @param SlugRequest $request The entity (hydrated and with its uuid), its schema and the slug the client sent.
+	 * @param string|null $stored  The slug stored before this save (null on create).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-an-object-slug-once-set-must-not-be-changed-by-a-later-save
 	 */
-	private function decideSlug(ObjectEntity $entity, Schema $schema, ?string $stored, array $sent): void {
-		[$selfData, $data] = $sent;
+	private function decideSlug(SlugRequest $request, ?string $stored): void {
 		$this->slugHandler->applyOnSave(
-			entity: $entity,
-			schema: $schema,
-			originalSlug: $stored,
-			clientSlug: $this->clientSlug(selfData: $selfData, data: $data)
+			request: $request,
+			originalSlug: $stored
 		);
 	}//end decideSlug()
 
@@ -3291,48 +3344,46 @@ class SaveObject implements SaveObjectInterface {
 	}//end getSlugHandler()
 
 	/**
-	 * The slug a client sent: `@self.slug`, else a top-level `slug` property.
-	 *
-	 * @param array $selfData The @self metadata.
-	 * @param array $data     The object data.
-	 *
-	 * @return string|null The non-empty string, or null.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
-	 */
-	private function clientSlug(array $selfData, array $data): ?string {
-		// Keep in step with BulkObjectSlugs::apply(), which reads the
-		// same two places for a bulk row.
-		$slug = $selfData['slug'] ?? $data['slug'] ?? null;
-		if (is_string($slug) === false || $slug === '') {
-			return null;
-		}
-
-		return $slug;
-	}//end clientSlug()
-
-	/**
 	 * Sets @self metadata properties on an object entity.
 	 *
-	 * @param ObjectEntity $objectEntity The object entity to set metadata on.
-	 * @param array $selfData The @self metadata.
-	 * @param array $data The object data.
-	 * @param IUser|null $currentUser Explicit acting user for the `@self.folder` access check; falls back to the session user when null.
+	 * @param ObjectEntity   $objectEntity The object entity to set metadata on.
+	 * @param SelfSubmission $submission   The @self metadata and the explicit acting user for the `@self.folder`
+	 *                                     access check (the session user when null).
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex metadata extraction from multiple sources
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple optional metadata fields with validation
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
 	 */
-	private function setSelfMetadata(
-		ObjectEntity $objectEntity,
-		array $selfData,
-		array $data = [],
-		?IUser $currentUser = null,
-	): void {
+	private function setSelfMetadata(ObjectEntity $objectEntity, SelfSubmission $submission): void {
+		$selfData = $submission->selfData;
+		$this->applyClientSelfData(objectEntity: $objectEntity, selfData: $selfData);
+		$this->bindSelfFolder(objectEntity: $objectEntity, bind: FolderBind::fromSelfData(selfData: $selfData, actingUser: $submission->actingUser));
+		self::applySelfGeo(objectEntity: $objectEntity, selfData: $selfData);
+		// SECURITY (wave-11 WF1): TMLO fields (@self.tmlo) must NOT be accepted verbatim
+		// from client input on CREATE.  The destruction pipeline keys off archiefstatus;
+		// a client-submitted {"archiefstatus":"vernietigd"} would mark an object as
+		// destruction-eligible bypassing the validated state machine.  populateTmloDefaults()
+		// (called after this method) will apply the correct system defaults including
+		// resetting archiefstatus to 'actief' for new objects, overriding any client value.
+		// On UPDATE, validateTmloOnUpdate() enforces the allowed transition matrix.
+		// Therefore: strip @self.tmlo entirely here; let populateTmloDefaults() own it.
+		// (No setTmlo() call — the field is intentionally omitted).
+	}//end setSelfMetadata()
+
+	/**
+	 * Applies the client-writable @self fields that need no folder: owner refusal, status and organisation.
+	 *
+	 * @param ObjectEntity $objectEntity The object entity to set metadata on.
+	 * @param array        $selfData     The @self metadata.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When @self names an owner the caller may not set.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function applyClientSelfData(ObjectEntity $objectEntity, array $selfData): void {
 		// The slug is not set here any more: ObjectSlugHandler::applyOnSave()
 		// decides it after hydration, so the freeze and uniqueness rules see
 		// the client slug and the stored one together (#4037).
@@ -3386,56 +3437,80 @@ class SaveObject implements SaveObjectInterface {
 			// Non-member callers silently fall through; prepareObjectForCreation() will
 			// stamp the caller's active organisation via getOrganisationForNewEntity().
 		}
+	}//end applyClientSelfData()
 
+	/**
+	 * Binds the folder @self asks for, after the access check when it names a folder id.
+	 *
+	 * @param ObjectEntity    $objectEntity The object entity to set the folder on.
+	 * @param FolderBind|null $bind         The requested bind, or null when @self names no folder.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+	 */
+	private function bindSelfFolder(ObjectEntity $objectEntity, ?FolderBind $bind): void {
 		// Propagate @self.folder so the access-control check governs the bind
 		// (numeric → access-checked, empty/legacy → auto-create). Without
 		// propagation a user-supplied @self.folder is silently dropped —
 		// defeating the whole `self-folder-access-control` capability.
-		if (array_key_exists('folder', $selfData) === true && empty($selfData['folder']) === false) {
-			$folderValue = (string)$selfData['folder'];
+		if ($bind === null) {
+			return;
+		}
 
-			// For folder values that are a bare positive integer node id (the
-			// format produced by explicit `@self.folder` writes), require that
-			// the acting user can read the target folder — otherwise reject the
-			// bind with `FolderAccessDeniedException`. We gate on `ctype_digit`
-			// rather than `is_numeric` so floats / scientific-notation / signed
-			// strings (e.g. "42.5", "4e2", "+42") don't slip through and then
-			// get `(int)`-truncated to a *different* node than was validated.
-			// Legacy non-numeric values fall through to the auto-create path.
-			// A payload that echoes the folder the object already has is not a
-			// bind: the stored value was written by OpenRegister and is
-			// re-validated as a managed folder in ensureObjectFolder(). Asking
-			// the caller-supplied question here refused every editor, because a
-			// managed folder sits in the openregister account's home and in
-			// nobody's own mount.
-			$storedFolder = (string)($objectEntity->getFolder() ?? '');
-			$isUnchanged = ($storedFolder !== '' && $storedFolder === $folderValue);
+		$folderValue = $bind->folder;
 
-			if (ctype_digit($folderValue) === true && $isUnchanged === false) {
-				// Pass `$currentUser` through so the access check uses the
-				// SAME user identity that the downstream
-				// `createObjectFolderById` check uses on the lazy-init path.
-				// When `$currentUser` is null (HTTP path), both checks fall
-				// back to `IUserSession::getUser()` and agree by default.
-				// When `$currentUser` is non-null (DI / event listener path),
-				// both checks use it explicitly — no chance of one site
-				// passing while another denies because of session vs explicit
-				// user disagreement.
-				$this->folderManagementHandler->assertFolderIsAccessible(
-					folderId: $folderValue,
-					currentUser: $currentUser,
-					objectEntity: $objectEntity
-				);
+		// For folder values that are a bare positive integer node id (the
+		// format produced by explicit `@self.folder` writes), require that
+		// the acting user can read the target folder — otherwise reject the
+		// bind with `FolderAccessDeniedException`. We gate on `ctype_digit`
+		// rather than `is_numeric` so floats / scientific-notation / signed
+		// strings (e.g. "42.5", "4e2", "+42") don't slip through and then
+		// get `(int)`-truncated to a *different* node than was validated.
+		// Legacy non-numeric values fall through to the auto-create path.
+		// A payload that echoes the folder the object already has is not a
+		// bind: the stored value was written by OpenRegister and is
+		// re-validated as a managed folder in ensureObjectFolder(). Asking
+		// the caller-supplied question here refused every editor, because a
+		// managed folder sits in the openregister account's home and in
+		// nobody's own mount.
+		$storedFolder = (string)($objectEntity->getFolder() ?? '');
+		$isUnchanged = ($storedFolder !== '' && $storedFolder === $folderValue);
 
-				// Normalise to the canonical integer string so the persisted
-				// value matches the node that was validated (no "42.5" vs "42"
-				// drift in audit / analytics / equality checks).
-				$folderValue = (string)(int)$folderValue;
-			}//end if
+		if (ctype_digit($folderValue) === true && $isUnchanged === false) {
+			// Pass `$currentUser` through so the access check uses the
+			// SAME user identity that the downstream
+			// `createObjectFolderById` check uses on the lazy-init path.
+			// When `$currentUser` is null (HTTP path), both checks fall
+			// back to `IUserSession::getUser()` and agree by default.
+			// When `$currentUser` is non-null (DI / event listener path),
+			// both checks use it explicitly — no chance of one site
+			// passing while another denies because of session vs explicit
+			// user disagreement.
+			$this->folderManagementHandler->assertFolderIsAccessible(
+				check: new FolderAccessCheck(folderId: $folderValue, currentUser: $bind->actingUser, objectEntity: $objectEntity)
+			);
 
-			$objectEntity->setFolder($folderValue);
+			// Normalise to the canonical integer string so the persisted
+			// value matches the node that was validated (no "42.5" vs "42"
+			// drift in audit / analytics / equality checks).
+			$folderValue = (string)(int)$folderValue;
 		}//end if
 
+		$objectEntity->setFolder($folderValue);
+	}//end bindSelfFolder()
+
+	/**
+	 * Applies @self.geo, the object's geographical metadata.
+	 *
+	 * @param ObjectEntity $objectEntity The object entity to set the geo on.
+	 * @param array        $selfData     The @self metadata.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function applySelfGeo(ObjectEntity $objectEntity, array $selfData): void {
 		// Propagate @self.geo — the object's geographical metadata (a GeoJSON-ish
 		// array rendered/edited by map widgets, e.g. CnObjectGeoWidget). Unlike
 		// organisation/tmlo this is plain descriptive data driving no security or
@@ -3446,17 +3521,7 @@ class SaveObject implements SaveObjectInterface {
 				$objectEntity->setGeo($geoValue);
 			}
 		}
-
-		// SECURITY (wave-11 WF1): TMLO fields (@self.tmlo) must NOT be accepted verbatim
-		// from client input on CREATE.  The destruction pipeline keys off archiefstatus;
-		// a client-submitted {"archiefstatus":"vernietigd"} would mark an object as
-		// destruction-eligible bypassing the validated state machine.  populateTmloDefaults()
-		// (called after this method) will apply the correct system defaults including
-		// resetting archiefstatus to 'actief' for new objects, overriding any client value.
-		// On UPDATE, validateTmloOnUpdate() enforces the allowed transition matrix.
-		// Therefore: strip @self.tmlo entirely here; let populateTmloDefaults() own it.
-		// (No setTmlo() call — the field is intentionally omitted).
-	}//end setSelfMetadata()
+	}//end applySelfGeo()
 
 	/**
 	 * Refuse a write that asks for an owner the acting user may not take.
@@ -3591,7 +3656,7 @@ class SaveObject implements SaveObjectInterface {
 			}
 		}
 
-		$this->tmloService->populateDefaults($objectEntity, $register, $schema);
+		$this->tmloService->populateDefaults($objectEntity, new RegisterSchema(register: $register, schema: $schema));
 	}//end populateTmloDefaults()
 
 	/**
@@ -3732,38 +3797,28 @@ class SaveObject implements SaveObjectInterface {
 	 * re-validation is sequenced after this primitive lands and is
 	 * tracked separately.
 	 *
-	 * @param Register|null $register Register context for the batch.
-	 * @param Schema|int|string|null $schema Schema context for the batch.
-	 * @param iterable $rows Input rows (each is the same
-	 *                       shape `saveObject` accepts).
-	 * @param BatchOperationStatus|null $status Optional pre-existing status
-	 *                                          (for callers that want to
-	 *                                          accumulate across multiple
-	 *                                          calls).
+	 * @param StreamingSave $save The register and schema context of the batch, its rows (each the shape
+	 *                            `saveObject` accepts) and an optional pre-existing status for callers
+	 *                            that accumulate across multiple calls.
 	 *
 	 * @return BatchOperationStatus
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	public function saveObjectsStreaming(
-		Register|int|string|null $register,
-		Schema|int|string|null $schema,
-		iterable $rows,
-		?BatchOperationStatus $status = null,
-	): BatchOperationStatus {
-		$status ??= new BatchOperationStatus();
+	public function saveObjectsStreaming(StreamingSave $save): BatchOperationStatus {
+		$status = ($save->status ?? new BatchOperationStatus());
 		$status->start();
 
 		$run = new StreamRun();
-		$run->register = $register;
-		$run->schema = $schema;
+		$run->register = $save->register;
+		$run->schema = $save->schema;
 		$run->status = $status;
 
 		// Position in the submitted batch. A failed create has no UUID yet, so
 		// this is the only thing that lets a caller identify the row it lost
 		// (issue #2778). Counted rather than read from the key because $rows is
 		// an iterable and may be a generator.
-		foreach ($rows as $row) {
+		foreach ($save->rows as $row) {
 			$run->rowIndex++;
 			$run->row = $row;
 			$cacheBefore = $this->referenceExistence()->verdictCount();
@@ -3799,10 +3854,7 @@ class SaveObject implements SaveObjectInterface {
 		} catch (Exception $e) {
 			$rowUuid = self::streamRowUuid(row: $run->row);
 			$run->status->recordFailed(
-				uuid: $rowUuid,
-				message: $e->getMessage(),
-				exceptionClass: $e::class,
-				index: $run->rowIndex
+				failure: new RowFailure(uuid: $rowUuid, message: $e->getMessage(), exceptionClass: $e::class, index: $run->rowIndex)
 			);
 
 			$this->logger->warning(
@@ -3931,11 +3983,10 @@ class SaveObject implements SaveObjectInterface {
 	}//end referenceAdminBypass()
 
 	/**
-	 * Prepares object data by applying all necessary transformations.
+	 * Prepares the run's object data by applying all necessary transformations.
 	 *
-	 * @param ObjectEntity $objectEntity The object entity.
-	 * @param Schema $schema The schema of the object.
-	 * @param array $data The object data.
+	 * @param CascadeRun $run    The pass: the object entity as parent, and the object data.
+	 * @param Schema     $schema The schema of the object.
 	 *
 	 * @return array The prepared object data.
 	 *
@@ -3943,7 +3994,9 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function prepareObjectData(ObjectEntity $objectEntity, Schema $schema, array $data): array {
+	private function prepareCascadeData(CascadeRun $run, Schema $schema): array {
+		$objectEntity = $run->parent;
+		$data = $run->data;
 		// Sanitize empty strings after validation but before cascading operations.
 		// This prevents empty values from causing issues in downstream processing.
 		try {
@@ -3958,9 +4011,9 @@ class SaveObject implements SaveObjectInterface {
 
 		// Removed references are only cleaned up when the schema opts in. Read before
 		// the pre-cache below overwrites the entity's data with the incoming data.
-		$stored = [];
+		$run->data = $data;
 		if (($schema->getConfiguration()['orphanCleanup'] ?? false) === true) {
-			$stored = ($objectEntity->getObject() ?? []);
+			$run->stored = ($objectEntity->getObject() ?? []);
 		}
 
 		// Pre-populate the name cache with the parent object's name before cascading.
@@ -3968,10 +4021,10 @@ class SaveObject implements SaveObjectInterface {
 		// (e.g., {{ moduleA }}) via the name template, they can find the parent's name
 		// in the cache even though the parent hasn't been persisted to the database yet.
 		// Without this, cascaded sub-objects fall back to showing the raw UUID as the name.
-		$this->preCacheParentName(objectEntity: $objectEntity, schema: $schema, data: $data);
+		$this->preCacheParentName(run: $run, schema: $schema);
 
 		// Apply cascading operations.
-		$data = $this->cascadeObjects(objectEntity: $objectEntity, schema: $schema, data: $data, stored: $stored);
+		$data = $this->cascadeObjects(run: $run, schema: $schema);
 		$writeBack = new CascadeRun();
 		$writeBack->parent = $objectEntity;
 		$writeBack->data = $data;
@@ -3987,8 +4040,7 @@ class SaveObject implements SaveObjectInterface {
 		if ($this->computedFieldHandler->hasComputedProperties($schema) === true) {
 			$data = $this->computedFieldHandler->evaluateComputedFields(
 				data: $data,
-				schema: $schema,
-				evaluateOn: 'save'
+				pass: new ComputedPass(schema: $schema, evaluateOn: 'save')
 			);
 		}
 
@@ -4005,7 +4057,7 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		return $data;
-	}//end prepareObjectData()
+	}//end prepareCascadeData()
 
 	/**
 	 * Pre-populate the name cache with the parent object's name before cascading.
@@ -4020,15 +4072,16 @@ class SaveObject implements SaveObjectInterface {
 	 * This method computes the parent's name from its data and schema configuration,
 	 * then stores it in the cache so sub-objects can resolve it during cascading.
 	 *
-	 * @param ObjectEntity $objectEntity The parent object entity (with UUID already set).
-	 * @param Schema $schema The parent object's schema.
-	 * @param array $data The parent object's data.
+	 * @param CascadeRun $run    The pass: the parent object entity (with UUID already set) and its data.
+	 * @param Schema     $schema The parent object's schema.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function preCacheParentName(ObjectEntity $objectEntity, Schema $schema, array $data): void {
+	private function preCacheParentName(CascadeRun $run, Schema $schema): void {
+		$objectEntity = $run->parent;
+		$data = $run->data;
 		$uuid = $objectEntity->getUuid();
 		if ($uuid === null) {
 			return;
@@ -4203,10 +4256,8 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		try {
-			return $retentionService->recalculateArchiveActionDate(
-				$preparedObject,
-				$run->schema,
-				$run->oldObject->getObject()
+			return $retentionService->recalculateActionDate(
+				new RecordUpdate($preparedObject, $run->schema, $run->oldObject->getObject())
 			);
 		} catch (\Throwable $e) {
 			$this->logger->debug('[SaveObject] Skipping archive action date recalculation: ' . $e->getMessage());
@@ -4311,14 +4362,21 @@ class SaveObject implements SaveObjectInterface {
 		$config = ($objectSource['config'] ?? []);
 
 		if ($uuid === null || $uuid === '') {
-			$entity = $provider->insert(register: $register, schema: $schema, data: $data, config: $config);
-			$this->recordObjectSourceAudit(old: null, new: $entity, action: 'create', silent: $silent);
+			$entity = $provider->insert(
+				source: new SourcedTable(table: new RegisterSchema(register: $register, schema: $schema), config: $config),
+				data: $data
+			);
+			$this->recordObjectSourceAudit(change: new ObjectSourceChange(action: 'create', old: null, new: $entity), silent: $silent);
 			return $entity;
 		}
 
-		$old = $provider->find(register: $register, schema: $schema, id: $uuid, config: $config);
-		$entity = $provider->update(register: $register, schema: $schema, id: $uuid, data: $data, config: $config);
-		$this->recordObjectSourceAudit(old: $old, new: $entity, action: 'update', silent: $silent);
+		$old = $provider->find(source: new SourcedTable(table: new RegisterSchema(register: $register, schema: $schema), config: $config), id: $uuid);
+		$entity = $provider->update(
+			source: new SourcedTable(table: new RegisterSchema(register: $register, schema: $schema), config: $config),
+			id: $uuid,
+			data: $data
+		);
+		$this->recordObjectSourceAudit(change: new ObjectSourceChange(action: 'update', old: $old, new: $entity), silent: $silent);
 
 		return $entity;
 	}//end delegateObjectSourceWrite()
@@ -4329,25 +4387,23 @@ class SaveObject implements SaveObjectInterface {
 	 * An audit failure must never mask a successful external write; it degrades
 	 * to a structured secret-free warning.
 	 *
-	 * @param ObjectEntity|null $old The pre-write entity (null on create).
-	 * @param ObjectEntity $new The post-write entity.
-	 * @param string $action The action (`create`|`update`).
-	 * @param bool $silent Whether audit creation is suppressed.
+	 * @param ObjectSourceChange $change What the external write changed, and as which action.
+	 * @param bool               $silent Whether audit creation is suppressed.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function recordObjectSourceAudit(?ObjectEntity $old, ObjectEntity $new, string $action, bool $silent): void {
+	private function recordObjectSourceAudit(ObjectSourceChange $change, bool $silent): void {
 		if ($silent === true) {
 			return;
 		}
 
 		try {
-			$this->auditTrailMapper->createAuditTrail(old: $old, new: $new, action: $action);
+			$this->auditTrailMapper->createAuditTrail(old: $change->old, new: $change->new, action: $change->action);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
-				'[SaveObject] audit trail for external ' . $action . ' on uuid ' . ((string)$new->getUuid()) . ' could not be recorded: ' . $e->getMessage(),
+				'[SaveObject] audit trail for external ' . $change->action . ' on uuid ' . ((string)$change->new->getUuid()) . ' could not be recorded: ' . $e->getMessage(),
 				['file' => __FILE__, 'line' => __LINE__]
 			);
 		}

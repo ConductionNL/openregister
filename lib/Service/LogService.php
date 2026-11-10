@@ -25,10 +25,13 @@ namespace OCA\OpenRegister\Service;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
 use OCP\AppFramework\Db\DoesNotExistException;
 
@@ -119,24 +122,17 @@ class LogService {
 	 * audit trail logs and related entities.
 	 *
 	 * @param AuditTrailMapperInterface $auditTrailMapper Mapper for audit trail database operations.
-	 * @param MagicMapperInterface $unifiedObjectMapper Mapper for unified object database operations.
-	 * @param RegisterMapperInterface $registerMapper Mapper for register database operations.
-	 * @param SchemaMapperInterface $schemaMapper Mapper for schema database operations.
+	 * @param SchemaCatalogInterface    $catalog          The register, schema and unified object (magic) mappers.
 	 *
 	 * @return void
 	 */
-	public function __construct(
-		AuditTrailMapperInterface $auditTrailMapper,
-		MagicMapperInterface $unifiedObjectMapper,
-		RegisterMapperInterface $registerMapper,
-		SchemaMapperInterface $schemaMapper,
-	) {
+	public function __construct(AuditTrailMapperInterface $auditTrailMapper, SchemaCatalogInterface $catalog) {
 		$this->auditTrailMapper = $auditTrailMapper;
-		$this->unifiedObjectMapper = $unifiedObjectMapper;
-		$this->registerMapper = $registerMapper;
-		$this->schemaMapper = $schemaMapper;
-		$this->revealMasker = new ExplicitRevealTrailMasker(schemaMapper: $schemaMapper);
-		$this->objectInTable = new LogObjectInTable(objectMapper: $unifiedObjectMapper);
+		$this->unifiedObjectMapper = $catalog->tables();
+		$this->registerMapper = $catalog->registers();
+		$this->schemaMapper = $catalog->schemas();
+		$this->revealMasker = new ExplicitRevealTrailMasker(schemaMapper: $this->schemaMapper);
+		$this->objectInTable = new LogObjectInTable(objectMapper: $this->unifiedObjectMapper);
 		$this->exportFormatter = new LogExportFormatter();
 	}//end __construct()
 
@@ -168,9 +164,26 @@ class LogService {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-4
 	 */
 	public function getLogs(string $register, string $schema, string $id, array $config = []): array {
+		return $this->logsOf(ref: new ObjectRef(register: $register, schema: $schema, id: $id), config: $config);
+	}//end getLogs()
+
+	/**
+	 * Get the audit trail logs of one object, as {@see getLogs()} describes.
+	 *
+	 * @param ObjectRef            $ref    The register, schema and object identifier.
+	 * @param array<string, mixed> $config Configuration array (limit, offset, filters, sort, search).
+	 *
+	 * @return \OCA\OpenRegister\Db\AuditTrail[] Array of audit trail log entries
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException If no object with that identifier exists in the register and schema
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If the identifier is a slug two objects of the register and schema hold
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-4
+	 */
+	public function logsOf(ObjectRef $ref, array $config = []): array {
 		// Step 1: Resolve the object within the register and schema of the route
 		// (deleted objects included, so the history stays readable after a soft-delete).
-		$object = $this->findObjectInScope(register: $register, schema: $schema, id: $id);
+		$object = $this->findObjectInScope(ref: $ref);
 
 		// Step 3: Add object UUID to filters to restrict logs to this object.
 		$filters = $config['filters'] ?? [];
@@ -181,14 +194,16 @@ class LogService {
 		// 2. Adding those filters can cause issues if register/schema have been recreated with same slug
 		// 3. The object ID is sufficient to uniquely identify audit trails
 		// Step 4: Retrieve logs from audit trail mapper with pagination and filtering.
-		return $this->auditTrailMapper->findAll(
-			limit: $config['limit'] ?? 20,
-			offset: $config['offset'] ?? 0,
-			filters: $filters,
-			sort: $config['sort'] ?? ['created' => 'DESC'],
-			search: $config['search'] ?? null
+		return $this->auditTrailMapper->findTrail(
+			query: new ListQuery(
+				limit: ($config['limit'] ?? 20),
+				offset: ($config['offset'] ?? 0),
+				filters: $filters,
+				sort: ($config['sort'] ?? ['created' => 'DESC']),
+				search: ($config['search'] ?? null)
+			)
 		);
-	}//end getLogs()
+	}//end logsOf()
 
 	/**
 	 * Count logs for an object
@@ -219,9 +234,26 @@ class LogService {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-4
 	 */
 	public function count(string $register, string $schema, string $id, array $config = []): int {
+		return $this->countOf(ref: new ObjectRef(register: $register, schema: $schema, id: $id), config: $config);
+	}//end count()
+
+	/**
+	 * Count the audit trail logs of one object, as {@see count()} describes.
+	 *
+	 * @param ObjectRef            $ref    The register, schema and object identifier.
+	 * @param array<string, mixed> $config Configuration array (filters, search).
+	 *
+	 * @return int Number of log entries (0 or positive integer)
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException If no object with that identifier exists in the register and schema
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If the identifier is a slug two objects of the register and schema hold
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-4
+	 */
+	public function countOf(ObjectRef $ref, array $config = []): int {
 		// Step 1: Resolve the object within the register and schema of the route
 		// (deleted objects included, so the history stays readable after a soft-delete).
-		$object = $this->findObjectInScope(register: $register, schema: $schema, id: $id);
+		$object = $this->findObjectInScope(ref: $ref);
 
 		// Step 3: Get the logs this object matches, under the caller's own
 		// filters, with the UUID filter added exactly as getLogs() adds it.
@@ -229,14 +261,13 @@ class LogService {
 		$filters = $config['filters'] ?? [];
 		$filters['object_uuid'] = $object->getUuid();
 
-		$logs = $this->auditTrailMapper->findAll(
-			filters: $filters,
-			search: $config['search'] ?? null
+		$logs = $this->auditTrailMapper->findTrail(
+			query: new ListQuery(limit: ListQuery::UNBOUNDED, filters: $filters, sort: ['created' => 'DESC'], search: ($config['search'] ?? null))
 		);
 
 		// Step 4: Return count of log entries.
 		return count($logs);
-	}//end count()
+	}//end countOf()
 
 	/**
 	 * The object whose history is asked for, looked up within the register and schema of the route.
@@ -249,9 +280,7 @@ class LogService {
 	 * resolves (soft-deleted), the scope cannot be built and the cross-table lookup remains,
 	 * so the history of an object in a deleted register stays readable.
 	 *
-	 * @param string $register The register identifier (slug or ID).
-	 * @param string $schema   The schema identifier (slug or ID).
-	 * @param string $id       The object identifier (ID, UUID or slug).
+	 * @param ObjectRef $ref The register and schema identifiers (slug or ID) and the object identifier (ID, UUID or slug).
 	 *
 	 * @return ObjectEntity The object, deleted or not.
 	 *
@@ -261,10 +290,11 @@ class LogService {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
 	 */
-	private function findObjectInScope(string $register, string $schema, string $id): ObjectEntity {
+	private function findObjectInScope(ObjectRef $ref): ObjectEntity {
+		$id = $ref->id;
 		try {
-			$registerEntity = $this->registerMapper->find($register, _multitenancy: false, _rbac: false);
-			$schemaEntity = $this->schemaMapper->find($schema, _multitenancy: false, _rbac: false);
+			$registerEntity = $this->registerMapper->find($ref->register, _multitenancy: false, _rbac: false);
+			$schemaEntity = $this->schemaMapper->find($ref->schema, _multitenancy: false, _rbac: false);
 		} catch (DoesNotExistException $e) {
 			// Register or schema gone (soft-deleted): no scope to search in; the
 			// history of the object itself stays readable, as before. Any other
@@ -310,12 +340,14 @@ class LogService {
 	 * @spec exclude Thin delegation to AuditTrailMapper::findAll with default pagination/sort; no business logic.
 	 */
 	public function getAllLogs(array $config = []): array {
-		return $this->auditTrailMapper->findAll(
-			limit: $config['limit'] ?? 20,
-			offset: $config['offset'] ?? 0,
-			filters: $config['filters'] ?? [],
-			sort: $config['sort'] ?? ['created' => 'DESC'],
-			search: $config['search'] ?? null
+		return $this->auditTrailMapper->findTrail(
+			query: new ListQuery(
+				limit: ($config['limit'] ?? 20),
+				offset: ($config['offset'] ?? 0),
+				filters: ($config['filters'] ?? []),
+				sort: ($config['sort'] ?? ['created' => 'DESC']),
+				search: ($config['search'] ?? null)
+			)
 		);
 	}//end getAllLogs()
 
@@ -331,7 +363,7 @@ class LogService {
 	 * @spec exclude Thin delegation to AuditTrailMapper::findAll + count(); no business logic.
 	 */
 	public function countAllLogs(array $filters = []): int {
-		$logs = $this->auditTrailMapper->findAll(filters: $filters);
+		$logs = $this->auditTrailMapper->findTrail(query: ListQuery::unbounded(filters: $filters, sort: ['created' => 'DESC']));
 		return count($logs);
 	}//end countAllLogs()
 
@@ -384,10 +416,13 @@ class LogService {
 	 */
 	public function exportLogs(string $format, array $config = []): array {
 		// Get all logs with current filters.
-		$logs = $this->auditTrailMapper->findAll(
-			filters: $config['filters'] ?? [],
-			sort: ['created' => 'DESC'],
-			search: $config['search'] ?? null
+		$logs = $this->auditTrailMapper->findTrail(
+			query: new ListQuery(
+				limit: ListQuery::UNBOUNDED,
+				filters: ($config['filters'] ?? []),
+				sort: ['created' => 'DESC'],
+				search: ($config['search'] ?? null)
+			)
 		);
 
 		return $this->exportRows(format: $format, logs: $logs, config: $config);

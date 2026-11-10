@@ -76,19 +76,20 @@ final class ObjectTreeBounds {
 	/**
 	 * The unseen rows of a bounded read, cut to the budget, and whether the read overflowed it.
 	 *
-	 * @param array<string, string> $rows   Child uuid => parent uuid, as read.
-	 * @param array<string, mixed>  $seen   The uuids already in the answer.
-	 * @param int                   $budget The children the cap still admits.
+	 * @param array<string, string> $rows Child uuid => parent uuid, as read.
+	 * @param array<string, mixed>  $read `seen` (the uuids already in the answer) and `budget` (the children the
+	 *                                    cap still admits; below zero counts as zero).
 	 *
 	 * @return array{children: array<string, string>, overflow: bool} The children.
 	 *
 	 * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md
 	 */
-	public function withinBudget(array $rows, array $seen, int $budget): array {
+	public function withinBudget(array $rows, array $read): array {
+		$budget = max(0, $read['budget']);
 		// Counted before the seen ones are dropped: a row that is a cycle
 		// still used up a place of the bounded read, so it may hide a wider level.
 		$overflow = (count($rows) > $budget);
-		$children = array_diff_key($rows, $seen);
+		$children = array_diff_key($rows, $read['seen']);
 		if ($overflow === true) {
 			$children = array_slice($children, 0, $budget, true);
 		}

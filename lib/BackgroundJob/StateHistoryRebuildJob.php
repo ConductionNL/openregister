@@ -36,8 +36,8 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\History\StateHistoryRebuildInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -103,23 +103,35 @@ class StateHistoryRebuildJob extends TimedJob {
 	private readonly SchemaMapperInterface $schemas;
 
 	/**
+	 * AppConfig, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Logger, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory        $time      Time factory for TimedJob.
+	 * @param ConfiguredJobRuntime $runtime The job runtime: scheduler clock, app settings and run log.
 	 * @param StateHistoryRebuildSources $sources The rebuild, the audit trail and the schemas.
-	 * @param IAppConfig          $appConfig Holds the flag and the cursor.
-	 * @param LoggerInterface     $logger    Diagnostics.
 	 */
 	public function __construct(
-		ITimeFactory $time,
+		ConfiguredJobRuntime $runtime,
 		StateHistoryRebuildSources $sources,
-		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
 	) {
+		$this->logger = $runtime->logger;
+		$this->appConfig = $runtime->appConfig;
 		$this->rebuild = $sources->rebuild;
 		$this->audit = $sources->audit;
 		$this->schemas = $sources->schemas;
-		parent::__construct(time: $time);
+		parent::__construct(time: $runtime->time);
 		$this->setInterval(seconds: self::INTERVAL_SECONDS);
 	}//end __construct()
 
@@ -193,11 +205,9 @@ class StateHistoryRebuildJob extends TimedJob {
 			return 0;
 		}
 
-		return $this->rebuild->rebuildObject(
-			objectUuid: $objectUuid,
-			property: $context['property'],
-			register: $context['register'],
-			schema: $context['schema']
+		return $this->rebuild->rebuild(
+			ref: new ObjectRef(register: $context['register'], schema: $context['schema'], id: $objectUuid),
+			property: $context['property']
 		);
 	}//end rebuildOne()
 

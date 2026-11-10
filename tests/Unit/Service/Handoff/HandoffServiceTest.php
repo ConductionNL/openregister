@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Handoff;
 
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\HandoffQueueEntry;
 use OCA\OpenRegister\Db\HandoffQueueEntryMapper;
@@ -47,16 +48,17 @@ use OCA\OpenRegister\Event\HandoffExecutedEvent;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Handoff\HandoffLedger;
 use OCA\OpenRegister\Service\Handoff\HandoffMappingEvaluator;
 use OCA\OpenRegister\Service\Handoff\HandoffObjectAccess;
 use OCA\OpenRegister\Service\Handoff\HandoffProviders;
 use OCA\OpenRegister\Service\Handoff\HandoffRequesters;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
+use OCA\OpenRegister\Service\Handoff\HandoffSourceRef;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\RegisterSchemaMappers;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
 use OCP\App\IAppManager;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -125,7 +127,7 @@ class HandoffServiceTest extends TestCase {
 		$appManager->method('isInstalled')->willReturn(true);
 
 		$resolver = new SemanticTypeResolver(
-			mappers: new RegisterSchemaMappers($this->registerMapper, $this->schemaMapper),
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)),
 			jsonLdContextService: new JsonLdContextService($this->createMock(IURLGenerator::class)),
 			logger: $this->createMock(LoggerInterface::class),
 			appManager: $appManager
@@ -608,6 +610,38 @@ class HandoffServiceTest extends TestCase {
 	}//end testDrainSuccessIsDeferredExecution()
 
 	/**
+	 * A drain reached inside a system-operation scope leaves every entry
+	 * parked: the requester's rights cannot be re-evaluated there.
+	 *
+	 * @return void
+	 */
+	public function testDrainInsideASystemScopeLeavesEntriesParked(): void {
+		$this->wireSourceSchema(whenUnavailable: 'queue');
+		$this->wireProvider();
+		$this->objectService->method('find')->willReturn($this->sourceObject());
+		$this->objectService->method('saveObject')->willReturn($this->targetObject());
+		$this->objectMapper->method('find')->willReturnCallback(fn ($identifier) => $this->rawEntity(uuid: (string)$identifier));
+		$this->objectMapper->method('update')->willReturnArgument(0);
+
+		$entry = $this->queueEntry();
+		$this->queueMapper->method('findParked')->willReturn([$entry]);
+
+		$requester = $this->createMock(originalClassName: IUser::class);
+		$requester->method('getUID')->willReturn('alice');
+		$this->userManager->method('get')->willReturn($requester);
+
+		$this->objectService->expects($this->never())->method('saveObject');
+		$this->permissionHandler->expects($this->never())->method('checkPermission');
+		$this->queueMapper->expects($this->never())->method('update');
+
+		$summary = SystemOperationContext::run(fn () => $this->service->drainParked());
+
+		$this->assertSame(expected: ['drained' => 0, 'failed' => 0, 'skipped' => 1], actual: $summary);
+		$this->assertSame(expected: HandoffQueueEntry::STATUS_PARKED, actual: $entry->getStatus());
+
+	}//end testDrainInsideASystemScopeLeavesEntriesParked()
+
+	/**
 	 * Availability lists an installed provider as `available`, with the
 	 * record keys in their documented order.
 	 *
@@ -630,7 +664,7 @@ class HandoffServiceTest extends TestCase {
 					'provider' => ['schema' => 'case', 'title' => 'Case'],
 				],
 			],
-			$this->service->listAvailability(register: '7', schema: '12', id: 'src-uuid')
+			$this->service->listAvailability(new HandoffSourceRef(register: '7', schema: '12', id: 'src-uuid'))
 		);
 
 	}//end testListAvailabilityReportsAvailableProvider()
@@ -658,7 +692,7 @@ class HandoffServiceTest extends TestCase {
 					'reason' => HandoffException::PROVIDER_UNAVAILABLE,
 				],
 			],
-			$this->service->listAvailability(register: '7', schema: '12', id: 'src-uuid')
+			$this->service->listAvailability(new HandoffSourceRef(register: '7', schema: '12', id: 'src-uuid'))
 		);
 
 	}//end testListAvailabilityReportsUnavailableProvider()
@@ -687,7 +721,7 @@ class HandoffServiceTest extends TestCase {
 					'queueEntry' => $parked->jsonSerialize(),
 				],
 			],
-			$this->service->listAvailability(register: '7', schema: '12', id: 'src-uuid')
+			$this->service->listAvailability(new HandoffSourceRef(register: '7', schema: '12', id: 'src-uuid'))
 		);
 
 	}//end testListAvailabilityReportsQueuedEntry()
@@ -707,7 +741,7 @@ class HandoffServiceTest extends TestCase {
 		foreach (['list', 'execute'] as $call) {
 			try {
 				if ($call === 'list') {
-					$this->service->listAvailability(register: '7', schema: '12', id: 'gone');
+					$this->service->listAvailability(new HandoffSourceRef(register: '7', schema: '12', id: 'gone'));
 				} else {
 					$this->service->execute(register: '7', schema: '12', id: 'gone', handoffId: 'request-to-case');
 				}
@@ -783,8 +817,8 @@ class HandoffServiceTest extends TestCase {
 
 		$log = [];
 		$this->permissionHandler->method('checkPermission')->willReturnCallback(
-			static function (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $rbac = true, ?ObjectEntity $object = null) use (&$log): bool {
-				$log[] = ['check', $action, (int)$schema->getId(), $objectOwner, $object?->getUuid()];
+			static function (Schema $schema, string $action, PermissionCheckOptions $options = new PermissionCheckOptions()) use (&$log): bool {
+				$log[] = ['check', $action, (int)$schema->getId(), $options->objectOwner, $options->object?->getUuid()];
 				return true;
 			}
 		);
@@ -1005,7 +1039,7 @@ class HandoffServiceTest extends TestCase {
 		$register->setSchemas([50]);
 		$this->registerMapper->method('findAll')->willReturn([$register]);
 
-		return $this->service->listAvailability(register: '7', schema: '12', id: 'src-uuid')[0]['state'];
+		return $this->service->listAvailability(new HandoffSourceRef(register: '7', schema: '12', id: 'src-uuid'))[0]['state'];
 	}//end availabilityWithBinding()
 
 	/**

@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BulkAction;
 
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\BulkAction\BulkObjectAccess;
 use InvalidArgumentException;
 use OCA\OpenRegister\BulkAction\RestorePriorValuesAction;
 use OCA\OpenRegister\Db\BulkJobMember;
@@ -51,7 +53,7 @@ class RestorePriorValuesActionBehaviourTest extends TestCase {
 	}
 
 	private function action(): RestorePriorValuesAction {
-		return new RestorePriorValuesAction($this->memberMapper, $this->objectService, $this->logger);
+		return new RestorePriorValuesAction($this->memberMapper, new BulkObjectAccess($this->objectService, $this->createMock(SchemaMapperInterface::class), $this->logger));
 	}
 
 	private function object(array $data): ObjectEntity {

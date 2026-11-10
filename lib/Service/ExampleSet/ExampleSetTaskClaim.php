@@ -112,15 +112,14 @@ class ExampleSetTaskClaim {
 	/**
 	 * Append the task's claim to its audit, when it declares one.
 	 *
-	 * @param Task                 $task   The written task.
-	 * @param array<string, mixed> $data   The filled task fields.
-	 * @param DateTime|null        $moment The claim's moment, null for now.
+	 * @param Task                 $task The written task.
+	 * @param array<string, mixed> $data The filled task fields; `claimedAt` dates the claim, now when absent.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-task-may-name-the-run-it-waits-in-and-carry-its-claim
 	 */
-	public function write(Task $task, array $data, ?DateTime $moment): void {
+	public function write(Task $task, array $data): void {
 		if ((string) ($data['claimedBy'] ?? '') === '') {
 			return;
 		}
@@ -132,7 +131,7 @@ class ExampleSetTaskClaim {
 		$entry->setActor((string) $data['claimedBy']);
 		$entry->setPerformerType($task->getPerformerType());
 		$entry->setAuthorized(true);
-		$entry->setCreated(($moment ?? new DateTime()));
+		$entry->setCreated((ExampleSetTaskDates::moment(value: ($data['claimedAt'] ?? null)) ?? new DateTime()));
 		$this->container->get(TaskAuditMapperInterface::class)->insert($entry);
 	}//end write()
 }//end class

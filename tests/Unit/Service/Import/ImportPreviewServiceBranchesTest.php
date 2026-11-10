@@ -28,6 +28,7 @@ namespace Unit\Service\Import;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\ImportPreview;
@@ -188,7 +189,8 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 			}
 		);
 		$rowMapper->method('findByPreview')->willReturnCallback(
-			function (int $previewId, ?string $decision = null): array {
+			function (int $previewId, ListQuery $query): array {
+				$decision = ($query->filters['decision'] ?? null);
 				return array_values(
 					array_filter(
 						$this->rows,
@@ -280,7 +282,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 	}
 
 	private function transformAsIs(): void {
-		$this->importService->method('transformCsvRowToObject')->willReturnCallback(
+		$this->importService->method('transformCsvRow')->willReturnCallback(
 			static fn (array $rowData): array => $rowData
 		);
 	}
@@ -422,7 +424,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 				],
 			]
 		);
-		$this->importService->expects($this->never())->method('transformCsvRowToObject');
+		$this->importService->expects($this->never())->method('transformCsvRow');
 
 		$preview = $this->service->preview($this->params($path, ['packSlug' => 'zaken-v1']));
 
@@ -452,7 +454,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 
 	public function testATransformThatThrowsRefusesTheRow(): void {
 		$path = $this->file("bsn\n1\n");
-		$this->importService->method('transformCsvRowToObject')->willThrowException(new RuntimeException('bad date'));
+		$this->importService->method('transformCsvRow')->willThrowException(new RuntimeException('bad date'));
 
 		$this->service->preview($this->params($path));
 

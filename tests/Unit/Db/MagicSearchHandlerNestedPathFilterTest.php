@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\NestedPathFilter;
+use OCA\OpenRegister\Db\MagicMapper\NestedPathTarget;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
@@ -42,6 +43,9 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
 
 /**
  * Nested-path filters on the QueryBuilder path, the raw UNION path and in the helper.
@@ -150,7 +154,7 @@ class MagicSearchHandlerNestedPathFilterTest extends TestCase {
 		$this->captured = [];
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applyObjectFilters');
-		$method->invoke($this->handler(), $this->queryBuilder(), $filters, $schema);
+		$method->invoke($this->handler(), new TableFilterRun(qb: $this->queryBuilder(), query: [], table: new MagicReadTable(schema: $schema)), $filters);
 
 		return $this->captured;
 	}//end applyObject()
@@ -169,7 +173,7 @@ class MagicSearchHandlerNestedPathFilterTest extends TestCase {
 		$connection->method('quote')->willReturnCallback(static fn ($v) => "'{$v}'");
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildObjectFilterConditionsSql');
-		return $method->invoke($this->handler(), $query, $schema, $connection, true);
+		return $method->invoke($this->handler(), new ConditionSqlRun(query: $query, table: new MagicReadTable(schema: $schema), connection: $connection, isPostgres: true));
 	}//end rawObject()
 
 	/**
@@ -186,7 +190,7 @@ class MagicSearchHandlerNestedPathFilterTest extends TestCase {
 		$this->captured = [];
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applyObjectFilters');
-		$method->invoke($this->handler(mayReadProperties: false), $this->queryBuilder(), ['dunning.currentStage' => 2], $schema);
+		$method->invoke($this->handler(mayReadProperties: false), new TableFilterRun(qb: $this->queryBuilder(), query: [], table: new MagicReadTable(schema: $schema)), ['dunning.currentStage' => 2]);
 		$this->assertSame(['1 = 0'], $this->captured);
 
 		$connection = $this->createMock(IDBConnection::class);
@@ -194,7 +198,7 @@ class MagicSearchHandlerNestedPathFilterTest extends TestCase {
 		$raw = new ReflectionMethod(MagicSearchHandler::class, 'buildObjectFilterConditionsSql');
 		$this->assertSame(
 			['1=0'],
-			$raw->invoke($this->handler(mayReadProperties: false), ['dunning' => ['currentStage' => 2]], $schema, $connection, true)
+			$raw->invoke($this->handler(mayReadProperties: false), new ConditionSqlRun(query: ['dunning' => ['currentStage' => 2]], table: new MagicReadTable(schema: $schema), connection: $connection, isPostgres: true))
 		);
 	}//end testAPathIntoAnUnreadablePropertyMatchesNothing()
 
@@ -257,7 +261,7 @@ class MagicSearchHandlerNestedPathFilterTest extends TestCase {
 	public function testAPathThatCannotBeReadMatchesNothing(): void {
 		$this->assertSame(['1 = 0'], $this->applyObject(['invoiceNumber.x' => 'a']));
 		$this->assertSame(['1 = 0'], $this->applyObject(["dunning.current'Stage" => 'a']));
-		$this->assertNull((new NestedPathFilter())->expression(column: 't.dunning', path: ["a'}') OR 1=1 --"], isPostgres: true));
+		$this->assertNull((new NestedPathFilter())->expression(column: new NestedPathTarget(expression: 't.dunning', bind: static fn (string $v): string => $v, isPostgres: true), path: ["a'}') OR 1=1 --"]));
 	}//end testAPathThatCannotBeReadMatchesNothing()
 
 	/**
@@ -289,14 +293,12 @@ class MagicSearchHandlerNestedPathFilterTest extends TestCase {
 	 * @return void
 	 */
 	public function testMariaDbReadsThePathWithJsonExtract(): void {
-		$expression = (new NestedPathFilter())->expression(column: 't.dunning', path: ['currentStage'], isPostgres: false);
+		$expression = (new NestedPathFilter())->expression(column: new NestedPathTarget(expression: 't.dunning', bind: static fn (string $v): string => $v, isPostgres: false), path: ['currentStage']);
 
 		$this->assertSame("JSON_UNQUOTE(JSON_EXTRACT(t.dunning, '$.currentStage'))", $expression);
 		$conditions = (new NestedPathFilter())->conditions(
-			expression: $expression,
-			value: ['lt' => 3, 'ne' => '1', 'like' => 'Her'],
-			bind: static fn (string $v): string => "'{$v}'",
-			isPostgres: false
+			target: new NestedPathTarget(expression: $expression, bind: static fn (string $v): string => "'{$v}'", isPostgres: false),
+			value: ['lt' => 3, 'ne' => '1', 'like' => 'Her']
 		);
 		$this->assertSame(
 			[
@@ -345,11 +347,11 @@ class MagicSearchHandlerNestedPathFilterTest extends TestCase {
 		$filter = new NestedPathFilter();
 
 		foreach (["a\n", "currentStage\n", "\n", "a\r\n"] as $segment) {
-			$this->assertNull($filter->expression(column: 't.dunning', path: [$segment], isPostgres: true), json_encode($segment));
-			$this->assertNull($filter->expression(column: 't.dunning', path: ['ok', $segment], isPostgres: false), json_encode($segment));
+			$this->assertNull($filter->expression(column: new NestedPathTarget(expression: 't.dunning', bind: static fn (string $v): string => $v, isPostgres: true), path: [$segment]), json_encode($segment));
+			$this->assertNull($filter->expression(column: new NestedPathTarget(expression: 't.dunning', bind: static fn (string $v): string => $v, isPostgres: false), path: ['ok', $segment]), json_encode($segment));
 		}
 
-		$this->assertNotNull($filter->expression(column: 't.dunning', path: ['currentStage'], isPostgres: true));
+		$this->assertNotNull($filter->expression(column: new NestedPathTarget(expression: 't.dunning', bind: static fn (string $v): string => $v, isPostgres: true), path: ['currentStage']));
 		$this->assertSame(['1 = 0'], $this->applyObject(["dunning.current\nStage" => 'a']));
 		$this->assertSame(['1 = 0'], $this->applyObject(['dunning' => ["currentStage\n" => 'a']]));
 	}//end testASegmentWithATrailingNewlineIsRefused()

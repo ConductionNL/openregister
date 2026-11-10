@@ -50,27 +50,6 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 class ViewPresentationService {
 
 	/**
-	 * Schema mapper, used to resolve enum order for the groupByField.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Object service, used to run the existing paginated/faceted object query.
-	 *
-	 * @var ObjectOperationsInterface
-	 */
-	private readonly ObjectOperationsInterface $objectService;
-
-	/**
-	 * Logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for enum/property discovery
@@ -83,18 +62,15 @@ class ViewPresentationService {
 	 * @return void
 	 */
 	public function __construct(
-		SchemaMapperInterface $schemaMapper,
-		ObjectOperationsInterface $objectService,
-		LoggerInterface $logger,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly ObjectOperationsInterface $objectService,
+		private readonly LoggerInterface $logger,
 		// LAST AND NULLABLE so every existing construction keeps working. The
 		// container always supplies it; null happens only in a hand-built test,
 		// and then a GOVERNED grouping property is refused, which is the safe
 		// direction.
 		private readonly ?PropertyRbacHandlerInterface $propertyRbac = null,
 	) {
-		$this->schemaMapper = $schemaMapper;
-		$this->objectService = $objectService;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -177,12 +153,10 @@ class ViewPresentationService {
 
 		$baseQuery = $this->buildBaseObjectQuery(query: $query);
 
-		$columnValues = $this->deriveColumnValues(
-			properties: $properties,
-			groupByField: $groupByField,
+		$columnValues = $this->declaredColumnValues(
 			columnOrder: $columnOrder,
-			baseQuery: $baseQuery
-		);
+			enum: ($properties[$groupByField]['enum'] ?? null)
+		) ?? $this->discoverDistinctValues(groupByField: $groupByField, baseQuery: $baseQuery);
 
 		$limit = (int)($requestParams['_limit'] ?? 20);
 		$offset = (int)($requestParams['_offset'] ?? 0);
@@ -217,9 +191,8 @@ class ViewPresentationService {
 	 * visible range, spanning to `endDateField` when configured
 	 * (REQ-VIEW-CAL-04).
 	 *
-	 * @param View $view The calendar view
-	 * @param string $rangeStart Inclusive range start (ISO 8601 date/datetime)
-	 * @param string $rangeEnd Inclusive range end (ISO 8601 date/datetime)
+	 * @param View          $view  The calendar view
+	 * @param CalendarRange $range The visible range, both ends inclusive
 	 *
 	 * @return array{viewType: string, dateField: string, endDateField: string|null,
 	 *     rangeStart: string, rangeEnd: string, objects: array<int, mixed>, total: int}
@@ -228,10 +201,10 @@ class ViewPresentationService {
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md#requirement-calendar-plots-objects-by-a-date-field-over-a-range-req-view-cal-04
 	 */
-	public function getCalendarObjects(View $view, string $rangeStart, string $rangeEnd): array {
+	public function getCalendarObjects(View $view, CalendarRange $range): array {
 		$calendar = $this->calendarSpec(view: $view);
 		$baseQuery = $this->calendarBaseQuery(query: ($view->getQuery() ?? []));
-		$calendar += ['rangeStart' => $rangeStart, 'rangeEnd' => $rangeEnd];
+		$calendar += ['rangeStart' => $range->start, 'rangeEnd' => $range->end];
 
 		$objectsById = $this->mergeByIdentity(queries: $this->calendarQueries(baseQuery: $baseQuery, calendar: $calendar));
 
@@ -345,31 +318,28 @@ class ViewPresentationService {
 	}//end mergeByIdentity()
 
 	/**
-	 * Derive the ordered list of kanban column values.
+	 * The declared column values of a kanban board, or null when none are declared.
 	 *
-	 * Precedence: explicit `columnOrder` > schema enum order > distinct
-	 * observed values (discovered via the existing facet/object-query
-	 * machinery, never by loading the whole table).
+	 * Precedence: explicit `columnOrder` > schema enum order. Without either
+	 * the caller discovers the distinct observed values (via the existing
+	 * facet/object-query machinery, never by loading the whole table).
 	 *
-	 * @param array<string, mixed> $properties The schema's properties
-	 * @param string $groupByField The property grouped on
 	 * @param array|null $columnOrder Explicit column order, if configured
-	 * @param array<string, mixed> $baseQuery Base object query (filters/sort) to scope discovery
+	 * @param mixed      $enum        The grouped property's `enum`, if any
 	 *
-	 * @return array<int, mixed> The ordered column values
+	 * @return array<int, mixed>|null The ordered column values, or null when none are declared
 	 */
-	private function deriveColumnValues(array $properties, string $groupByField, ?array $columnOrder, array $baseQuery): array {
+	private function declaredColumnValues(?array $columnOrder, mixed $enum): ?array {
 		if ($columnOrder !== null && empty($columnOrder) === false) {
 			return array_values($columnOrder);
 		}
 
-		$enumValues = $properties[$groupByField]['enum'] ?? null;
-		if (is_array($enumValues) === true && empty($enumValues) === false) {
-			return array_values($enumValues);
+		if (is_array($enum) === true && empty($enum) === false) {
+			return array_values($enum);
 		}
 
-		return $this->discoverDistinctValues(groupByField: $groupByField, baseQuery: $baseQuery);
-	}//end deriveColumnValues()
+		return null;
+	}//end declaredColumnValues()
 
 	/**
 	 * Discover the distinct observed values of a field via the existing
@@ -474,7 +444,7 @@ class ViewPresentationService {
 			return (string) $id;
 		}
 
-		return md5(serialize($row));
+		return hash(algo: 'xxh128', data: serialize($row));
 	}//end rowIdentity()
 
 	/**

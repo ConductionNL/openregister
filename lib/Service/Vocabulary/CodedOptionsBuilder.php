@@ -38,7 +38,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Vocabulary;
 
 use DateTimeImmutable;
-use DateTimeInterface;
 
 /**
  * Produces the options and the option tree for a coded property.
@@ -48,14 +47,10 @@ class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConceptRepository $concepts Reads the scheme's concepts.
-	 * @param ConceptHierarchy $hierarchy Walks broader and narrower.
-	 * @param ConceptLifecycle $lifecycle Answers the validity window.
+	 * @param ConceptSchemeAccess $scheme Reads the scheme's concepts, hierarchy and validity windows.
 	 */
 	public function __construct(
-		private readonly ConceptRepository $concepts,
-		private readonly ConceptHierarchy $hierarchy,
-		private readonly ConceptLifecycle $lifecycle,
+		private readonly ConceptSchemeAccess $scheme,
 	) {
 
 	}//end __construct()
@@ -68,26 +63,14 @@ class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 	 * picker stops offering a retired resultaattype the day it is retired.
 	 *
 	 * @param CodedPropertyDeclaration $declaration The property's declaration.
-	 * @param string $language The BCP-47 tag to read labels in.
-	 * @param string|null $context The context value in play, when the subset is bound.
-	 * @param DateTimeInterface|null $asOf The instant to judge windows at; now when null.
+	 * @param CodedOptionScope         $scope       The label language, the context value in play and the instant to judge windows at.
 	 *
 	 * @return array<int,array<string,mixed>> The options.
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function options(
-		CodedPropertyDeclaration $declaration,
-		string $language = 'nl',
-		?string $context = null,
-		?DateTimeInterface $asOf = null,
-	): array {
-		$query = $this->query(declaration: $declaration, scope: [$language, $context, $asOf]);
-		if ($query === null) {
-			return [];
-		}
-
-		return $this->optionsFor(query: $query);
+	public function options(CodedPropertyDeclaration $declaration, CodedOptionScope $scope=new CodedOptionScope()): array {
+		return $this->optionsFor(query: $this->query(declaration: $declaration, scope: $scope));
 	}//end options()
 
 	/**
@@ -99,19 +82,24 @@ class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 	 * having to name a root.
 	 *
 	 * @param CodedPropertyDeclaration $declaration The property's declaration.
-	 * @param string $language The BCP-47 tag to read labels in.
-	 * @param DateTimeInterface|null $asOf The instant to judge windows at; now when null.
+	 * @param CodedOptionScope         $scope       The label language and the instant to judge windows at; its context is not read.
 	 *
 	 * @return array<int,array<string,mixed>> The roots of the tree.
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function tree(
-		CodedPropertyDeclaration $declaration,
-		string $language = 'nl',
-		?DateTimeInterface $asOf = null,
-	): array {
-		$query = $this->query(declaration: $declaration, scope: [$language, null, $asOf]);
+	public function tree(CodedPropertyDeclaration $declaration, CodedOptionScope $scope=new CodedOptionScope()): array {
+		return $this->treeFor(query: $this->query(declaration: $declaration, scope: new CodedOptionScope(language: $scope->language, asOf: $scope->asOf)));
+	}//end tree()
+
+	/**
+	 * The option tree of the query, one root per tree root uri.
+	 *
+	 * @param CodedOptionQuery|null $query The call's inputs, or null when the scheme holds no concepts.
+	 *
+	 * @return array<int,array<string,mixed>> The roots of the tree.
+	 */
+	private function treeFor(?CodedOptionQuery $query): array {
 		if ($query === null) {
 			return [];
 		}
@@ -120,16 +108,20 @@ class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 			fn (string $uri): array => $this->subtree(query: $query, uri: $uri),
 			$this->treeRootUris(query: $query)
 		);
-	}//end tree()
+	}//end treeFor()
 
 	/**
 	 * Every offerable option of the query, in candidate order.
 	 *
-	 * @param CodedOptionQuery $query The call's inputs.
+	 * @param CodedOptionQuery|null $query The call's inputs, or null when the scheme holds no concepts.
 	 *
 	 * @return array<int,array<string,mixed>> The options.
 	 */
-	private function optionsFor(CodedOptionQuery $query): array {
+	private function optionsFor(?CodedOptionQuery $query): array {
+		if ($query === null) {
+			return [];
+		}
+
 		$options = array_map(
 			fn ($uri): ?array => $this->optionFor(query: $query, uri: (string) $uri),
 			$this->candidateUris(query: $query)
@@ -147,25 +139,23 @@ class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 	 * @return array<string,mixed> The root's tree node.
 	 */
 	private function subtree(CodedOptionQuery $query, string $uri): array {
-		return $this->hierarchy->tree(
-			rootUri: $uri,
-			conceptsByUri: $query->conceptsByUri,
-			reading: $query->reading,
-			maxDepth: $query->declaration->maxDepth
+		return $this->scheme->hierarchy->tree(
+			branch: new ConceptBranch(rootUri: $uri, conceptsByUri: $query->conceptsByUri, maxDepth: $query->declaration->maxDepth),
+			reading: $query->reading
 		);
 	}//end subtree()
 
 	/**
 	 * Read the declaration's scheme and bundle it with the call's inputs.
 	 *
-	 * @param CodedPropertyDeclaration                                $declaration The property's declaration.
-	 * @param array{0: string, 1: string|null, 2: DateTimeInterface|null} $scope   Language, context and instant (now when null).
+	 * @param CodedPropertyDeclaration $declaration The property's declaration.
+	 * @param CodedOptionScope         $scope       Language, context and instant (now when null).
 	 *
 	 * @return CodedOptionQuery|null The query, or null when the scheme holds no concepts.
 	 */
-	private function query(CodedPropertyDeclaration $declaration, array $scope): ?CodedOptionQuery {
-		$instant = ($scope[2] ?? new DateTimeImmutable());
-		$conceptsByUri = $this->concepts->conceptsOf(schemeUri: $declaration->scheme);
+	private function query(CodedPropertyDeclaration $declaration, CodedOptionScope $scope): ?CodedOptionQuery {
+		$instant = ($scope->asOf ?? new DateTimeImmutable());
+		$conceptsByUri = $this->scheme->concepts->conceptsOf(schemeUri: $declaration->scheme);
 		if ($conceptsByUri === []) {
 			return null;
 		}
@@ -173,8 +163,8 @@ class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 		return new CodedOptionQuery(
 			declaration: $declaration,
 			conceptsByUri: $conceptsByUri,
-			context: $scope[1],
-			reading: new ConceptReading(language: $scope[0], instant: $instant)
+			context: $scope->context,
+			reading: new ConceptReading(language: $scope->language, instant: $instant)
 		);
 	}//end query()
 
@@ -191,10 +181,8 @@ class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 			return array_keys($query->conceptsByUri);
 		}
 
-		return $this->hierarchy->branchUris(
-			rootUri: $branch,
-			conceptsByUri: $query->conceptsByUri,
-			maxDepth: $query->declaration->maxDepth
+		return $this->scheme->hierarchy->branchUris(
+			branch: new ConceptBranch(rootUri: $branch, conceptsByUri: $query->conceptsByUri, maxDepth: $query->declaration->maxDepth)
 		);
 	}//end candidateUris()
 
@@ -247,7 +235,11 @@ class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 	private function isOffered(CodedOptionQuery $query, string $uri): bool {
 		$declaration = $query->declaration;
 		$concept = $query->concept(uri: $uri);
-		if ($this->lifecycle->isOfferable(concept: $concept, at: $query->reading->instant, allowDeprecated: $declaration->allowDeprecated) === false) {
+		$lifecycle = $this->scheme->lifecycle;
+		$offerable = ($declaration->allowDeprecated === true)
+			? $lifecycle->isWithinWindow(concept: $concept, at: $query->reading->instant)
+			: $lifecycle->isOfferable(concept: $concept, at: $query->reading->instant);
+		if ($offerable === false) {
 			return false;
 		}
 
@@ -255,7 +247,7 @@ class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 			return false;
 		}
 
-		return $declaration->leafOnly === false || $this->hierarchy->isLeaf(uri: $uri, conceptsByUri: $query->conceptsByUri) === true;
+		return $declaration->leafOnly === false || $this->scheme->hierarchy->isLeaf(uri: $uri, conceptsByUri: $query->conceptsByUri) === true;
 	}//end isOffered()
 
 	/**
@@ -292,10 +284,10 @@ class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 
 		return [
 			'uri' => $uri,
-			'label' => $this->hierarchy->labelOf(concept: $concept, language: $query->reading->language),
+			'label' => $this->scheme->hierarchy->labelOf(concept: $concept, language: $query->reading->language),
 			'notation' => ($concept['notation'] ?? null),
-			'weight' => $this->lifecycle->weightOf(concept: $concept),
-			'leaf' => $this->hierarchy->isLeaf(uri: $uri, conceptsByUri: $query->conceptsByUri),
+			'weight' => $this->scheme->lifecycle->weightOf(concept: $concept),
+			'leaf' => $this->scheme->hierarchy->isLeaf(uri: $uri, conceptsByUri: $query->conceptsByUri),
 			'fields' => ($concept[ConceptLifecycle::FIELD_FIELDS] ?? null),
 		];
 	}//end optionFields()

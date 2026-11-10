@@ -34,9 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\Gdpr\Retention\RetentionSweepInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
-use Psr\Log\LoggerInterface;
 
 /**
  * Daily DSAR-case retention sweep.
@@ -81,20 +79,16 @@ class DsarRetentionSweepJob extends AbstractRetentionJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Time factory required by parent.
-	 * @param IAppConfig $appConfig App-config reader.
+	 * @param ConfiguredJobRuntime $runtime The job runtime: scheduler clock, app settings and run log.
 	 * @param RetentionSweepInterface $sweepService Domain sweep service.
-	 * @param LoggerInterface $logger Logger.
 	 *
 	 * @spec openspec/specs/dsar-retention-sweep/spec.md
 	 */
 	public function __construct(
-		ITimeFactory $time,
-		IAppConfig $appConfig,
+		ConfiguredJobRuntime $runtime,
 		private readonly RetentionSweepInterface $sweepService,
-		LoggerInterface $logger,
 	) {
-		parent::__construct(time: $time, appConfig: $appConfig, logger: $logger);
+		parent::__construct(runtime: $runtime);
 	}//end __construct()
 
 	/**

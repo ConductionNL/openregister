@@ -15,6 +15,8 @@ namespace OCA\OpenRegister\Tests\Db;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -216,7 +218,7 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 	public function testFindAllReturnsArray(): void {
 		$this->createTestAuditTrail();
 
-		$results = $this->mapper->findAll();
+		$results = $this->mapper->findTrail(ListQuery::unbounded([], ['created' => 'DESC']));
 		$this->assertIsArray($results);
 		$this->assertGreaterThanOrEqual(1, count($results));
 	}
@@ -225,7 +227,7 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$this->createTestAuditTrail();
 		$this->createTestAuditTrail();
 
-		$results = $this->mapper->findAll(1);
+		$results = $this->mapper->findTrail(new ListQuery(1, null, [], ['created' => 'DESC']));
 		$this->assertCount(1, $results);
 	}
 
@@ -234,8 +236,8 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$this->createTestAuditTrail();
 
 		// Use a specific user filter to isolate our test data
-		$allResults = $this->mapper->findAll(null, null, ['user' => 'phpunit-test-user']);
-		$offsetResults = $this->mapper->findAll(null, 1, ['user' => 'phpunit-test-user']);
+		$allResults = $this->mapper->findTrail(ListQuery::unbounded(['user' => 'phpunit-test-user'], ['created' => 'DESC']));
+		$offsetResults = $this->mapper->findTrail(new ListQuery(ListQuery::UNBOUNDED, 1, ['user' => 'phpunit-test-user'], ['created' => 'DESC']));
 
 		if (count($allResults) >= 2) {
 			$this->assertCount(count($allResults) - 1, $offsetResults);
@@ -246,7 +248,7 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$this->createTestAuditTrail(null, null, 'create');
 		$this->createTestAuditTrail(null, null, 'update');
 
-		$results = $this->mapper->findAll(null, null, ['action' => 'create']);
+		$results = $this->mapper->findTrail(ListQuery::unbounded(['action' => 'create'], ['created' => 'DESC']));
 		$this->assertIsArray($results);
 		foreach ($results as $trail) {
 			$this->assertSame('create', $trail->getAction());
@@ -257,7 +259,7 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$this->createTestAuditTrail(null, null, 'create');
 		$this->createTestAuditTrail(null, null, 'update');
 
-		$results = $this->mapper->findAll(null, null, ['action' => 'create,update']);
+		$results = $this->mapper->findTrail(ListQuery::unbounded(['action' => 'create,update'], ['created' => 'DESC']));
 		$this->assertIsArray($results);
 		foreach ($results as $trail) {
 			$this->assertContains($trail->getAction(), ['create', 'update']);
@@ -265,12 +267,12 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 	}
 
 	public function testFindAllWithIsNullFilter(): void {
-		$results = $this->mapper->findAll(null, null, ['version' => 'IS NULL']);
+		$results = $this->mapper->findTrail(ListQuery::unbounded(['version' => 'IS NULL'], ['created' => 'DESC']));
 		$this->assertIsArray($results);
 	}
 
 	public function testFindAllWithIsNotNullFilter(): void {
-		$results = $this->mapper->findAll(null, null, ['action' => 'IS NOT NULL']);
+		$results = $this->mapper->findTrail(ListQuery::unbounded(['action' => 'IS NOT NULL'], ['created' => 'DESC']));
 		$this->assertIsArray($results);
 	}
 
@@ -280,7 +282,7 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		// Search is applied to the 'changed' JSON field via LIKE.
 		// On PostgreSQL, LIKE on json columns fails; skip if that's the case.
 		try {
-			$results = $this->mapper->findAll(null, null, [], ['created' => 'DESC'], 'before');
+			$results = $this->mapper->findTrail(new ListQuery(ListQuery::UNBOUNDED, null, [], ['created' => 'DESC'], 'before'));
 			$this->assertIsArray($results);
 		} catch (\Exception $e) {
 			// PostgreSQL does not support LIKE on json columns - known limitation
@@ -292,10 +294,10 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$this->createTestAuditTrail();
 
 		// _system prefix filters and invalid column filters should be ignored
-		$results = $this->mapper->findAll(null, null, [
+		$results = $this->mapper->findTrail(ListQuery::unbounded([
 			'_systemField' => 'ignored',
 			'nonexistent_column' => 'also_ignored',
-		]);
+		], ['created' => 'DESC']));
 		$this->assertIsArray($results);
 	}
 
@@ -393,7 +395,7 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 	// =========================================================================
 
 	public function testGetDetailedStatisticsReturnsExpectedKeys(): void {
-		$stats = $this->mapper->getDetailedStatistics();
+		$stats = $this->mapper->detailedStatistics(new AuditStatisticsScope());
 		$this->assertIsArray($stats);
 		$this->assertArrayHasKey('total', $stats);
 		$this->assertArrayHasKey('creates', $stats);
@@ -407,7 +409,7 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$this->createTestAuditTrail(null, null, 'create', $register->getId(), $schema->getId());
 
-		$stats = $this->mapper->getDetailedStatistics($register->getId(), $schema->getId(), 24);
+		$stats = $this->mapper->detailedStatistics(new AuditStatisticsScope($register->getId(), $schema->getId()));
 		$this->assertIsArray($stats);
 		$this->assertArrayHasKey('total', $stats);
 	}
@@ -419,7 +421,9 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 	public function testGetActionDistributionReturnsExpectedStructure(): void {
 		$this->createTestAuditTrail(null, null, 'create');
 
-		$result = $this->mapper->getActionDistribution(null, null, 9999);
+		$scope = new AuditStatisticsScope(null, null);
+		$scope->hours = 9999;
+		$result = $this->mapper->actionDistribution($scope);
 		$this->assertIsArray($result);
 		$this->assertArrayHasKey('actions', $result);
 		$this->assertIsArray($result['actions']);
@@ -430,7 +434,9 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$this->createTestAuditTrail(null, null, 'update', $register->getId(), $schema->getId());
 
-		$result = $this->mapper->getActionDistribution($register->getId(), $schema->getId(), 9999);
+		$scope = new AuditStatisticsScope($register->getId(), $schema->getId());
+		$scope->hours = 9999;
+		$result = $this->mapper->actionDistribution($scope);
 		$this->assertIsArray($result);
 		$this->assertArrayHasKey('actions', $result);
 	}
@@ -477,7 +483,10 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$this->createTestAuditTrail(42);
 		$this->createTestAuditTrail(43);
 
-		$result = $this->mapper->getMostActiveObjects(null, null, 5, 9999);
+		$scope = new AuditStatisticsScope(null, null);
+		$scope->limit = 5;
+		$scope->hours = 9999;
+		$result = $this->mapper->mostActiveObjects($scope);
 		$this->assertIsArray($result);
 		$this->assertArrayHasKey('objects', $result);
 		$this->assertIsArray($result['objects']);
@@ -488,7 +497,10 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$this->createTestAuditTrail(44, null, 'update', $register->getId(), $schema->getId());
 
-		$result = $this->mapper->getMostActiveObjects($register->getId(), $schema->getId(), 3, 9999);
+		$scope = new AuditStatisticsScope($register->getId(), $schema->getId());
+		$scope->limit = 3;
+		$scope->hours = 9999;
+		$result = $this->mapper->mostActiveObjects($scope);
 		$this->assertIsArray($result);
 		$this->assertArrayHasKey('objects', $result);
 	}

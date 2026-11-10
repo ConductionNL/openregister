@@ -31,6 +31,7 @@ use OCA\OpenRegister\BackgroundJob\SubjectExportJob;
 use OCA\OpenRegister\Db\SubjectExport;
 use OCA\OpenRegister\Db\SubjectExportMapper;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
+use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportRequest;
 use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportService;
 use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportQueue;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -150,7 +151,7 @@ final class SubjectExportServiceTest extends TestCase {
 	public function testArticle20IsAnsweredWithoutADatabaseExport(): void {
 		$service = $this->service();
 
-		$export = $service->request(self::SUBJECT, 'email', 'DSR-2026-14');
+		$export = $service->requestFor(new SubjectExportRequest(self::SUBJECT, 'email', 'DSR-2026-14'));
 
 		self::assertSame(self::SUBJECT, $export->getSubject());
 		self::assertSame('email', $export->getSubjectType());
@@ -164,6 +165,17 @@ final class SubjectExportServiceTest extends TestCase {
 		self::assertSame(SubjectExportJob::class, $this->queued[0][0]);
 		self::assertSame(['uuid' => 'export-new'], $this->queued[0][1]);
 	}//end testArticle20IsAnsweredWithoutADatabaseExport()
+
+	public function testRequestByNamedPartsStillRecordsTheExport(): void {
+		$service = $this->service();
+
+		$export = $service->request(subject: ' ' . self::SUBJECT . ' ', type: 'email', requestId: 'DSR-2026-14');
+
+		self::assertSame(self::SUBJECT, $export->getSubject());
+		self::assertSame('email', $export->getSubjectType());
+		self::assertSame('DSR-2026-14', $export->getRequestId());
+		self::assertCount(1, $this->queued);
+	}//end testRequestByNamedPartsStillRecordsTheExport()
 
 	public function testAssemblyMakesItReadyWithAnExpiryAndACount(): void {
 		$row = $this->export(SubjectExport::STATUS_PENDING);

@@ -23,12 +23,16 @@ use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowMessagingService;
 use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\InAppNotice;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\PushRideAlong;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicy;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
+use OCA\OpenRegister\Notifications\Service\Notification\PlaceholderValues;
 use OCA\OpenRegister\Notifications\Service\Notification\RateLimiter;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkMessage;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
@@ -43,9 +47,10 @@ use OCA\OpenRegister\Service\Flow\FlowMessagingChannels;
 use OCA\OpenRegister\Service\Flow\FlowMessagingOverrides;
 use OCA\OpenRegister\Service\Flow\FlowMessagingPlatform;
 use OCA\OpenRegister\Service\Flow\FlowMessagingRecipients;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion;
 
 /**
- * Runs sendEmail(), sendNotification() and sendTalkMessage() over a fixed
+ * Runs email(), notify() and talk() over a fixed
  * corpus and compares every collaborator call, the report and the outcome
  * with `fixtures/flow-messaging-golden.json`. Set `OR_GOLDEN_WRITE=1` to
  * regenerate it.
@@ -105,19 +110,19 @@ class FlowMessagingServiceGoldenTest extends TestCase {
 		$ghosts = ['recipients' => array_map(fn (int $n): string => "ghost$n", range(1, 7)), 'title' => 'T', 'message' => 'M'];
 		$talkItems = array_map(fn (string $room): array => [FlowItems::JSON => ['room' => $room, 'name' => $room]], ['room-ok', 'room-ks', 'room-err', 'room-limit', '']);
 		return [
-			'email' => ['sendEmail', $email, $items, true, 50, 'actor'],
-			'email-object-mode' => ['sendEmail', ['externalRecipients' => 'object'] + $email, $items, true, 50, 'actor'],
-			'email-closed' => ['sendEmail', ['externalRecipients' => 'none'] + $email, $items, true, 50, 'actor'],
-			'email-kill-switch' => ['sendEmail', $email, $items, false, 50, 'actor'],
-			'email-over-bound' => ['sendEmail', $email, $items, true, 3, 'actor'],
-			'email-no-actor' => ['sendEmail', $email, $items, true, 50, null],
-			'email-disabled-actor' => ['sendEmail', $email, $items, true, 50, 'disabled'],
-			'notification' => ['sendNotification', $note, $items, true, 50, 'actor'],
-			'notification-kill-switch' => ['sendNotification', $note, $items, false, 50, 'actor'],
-			'notification-unknowns' => ['sendNotification', $ghosts, $items, true, 50, 'actor'],
-			'notification-delivered-only' => ['sendNotification', ['recipients' => ['alice']] + $note, $items, true, 50, 'actor'],
-			'talk' => ['sendTalkMessage', ['conversation' => '{{ room }}', 'message' => 'Hi {{ name }}'], $talkItems, true, 50, 'actor'],
-			'talk-literal' => ['sendTalkMessage', ['conversation' => 'room-ok', 'message' => 'Hi'], $talkItems, true, 50, 'actor'],
+			'email' => ['email', $email, $items, true, 50, 'actor'],
+			'email-object-mode' => ['email', ['externalRecipients' => 'object'] + $email, $items, true, 50, 'actor'],
+			'email-closed' => ['email', ['externalRecipients' => 'none'] + $email, $items, true, 50, 'actor'],
+			'email-kill-switch' => ['email', $email, $items, false, 50, 'actor'],
+			'email-over-bound' => ['email', $email, $items, true, 3, 'actor'],
+			'email-no-actor' => ['email', $email, $items, true, 50, null],
+			'email-disabled-actor' => ['email', $email, $items, true, 50, 'disabled'],
+			'notification' => ['notify', $note, $items, true, 50, 'actor'],
+			'notification-kill-switch' => ['notify', $note, $items, false, 50, 'actor'],
+			'notification-unknowns' => ['notify', $ghosts, $items, true, 50, 'actor'],
+			'notification-delivered-only' => ['notify', ['recipients' => ['alice']] + $note, $items, true, 50, 'actor'],
+			'talk' => ['talk', ['conversation' => '{{ room }}', 'message' => 'Hi {{ name }}'], $talkItems, true, 50, 'actor'],
+			'talk-literal' => ['talk', ['conversation' => 'room-ok', 'message' => 'Hi'], $talkItems, true, 50, 'actor'],
 		];
 	}//end corpus()
 
@@ -182,7 +187,7 @@ class FlowMessagingServiceGoldenTest extends TestCase {
 		}
 
 		try {
-			$this->calls[] = ['returned' => $service->$method($config, $items, $context, 'step-x')];
+			$this->calls[] = ['returned' => $service->$method(new \OCA\OpenRegister\Service\Flow\MessageSend(config: $config, items: $items, context: $context, stepName: 'step-x'))];
 		} catch (\Throwable $e) {
 			$this->calls[] = ['threw' => get_class($e), 'message' => $e->getMessage()];
 		}
@@ -215,8 +220,8 @@ class FlowMessagingServiceGoldenTest extends TestCase {
 		$policy = $this->createMock(NotificationChannelPolicy::class);
 		$policy->method('isChannelEnabled')->willReturn($enabled);
 		$templating = $this->createMock(NotificationTemplating::class);
-		$templating->method('interpolate')->willReturnCallback(
-			fn (string $template, array $data): string => (string)preg_replace_callback('/\{\{\s*(\w+)\s*\}\}/', fn ($m) => (string)($data[$m[1]] ?? ''), $template)
+		$templating->method('render')->willReturnCallback(
+			fn (string $template, PlaceholderValues $values): string => (string)preg_replace_callback('/\{\{\s*(\w+)\s*\}\}/', fn ($m) => (string)($values->data[$m[1]] ?? ''), $template)
 		);
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueInt')->willReturn($bound);
@@ -265,7 +270,8 @@ class FlowMessagingServiceGoldenTest extends TestCase {
 		$resolver = $this->createMock(NotificationRecipientResolver::class);
 		$resolver->method('userExists')->willReturnCallback(fn (string $uid): bool => in_array($uid, $users, true));
 		$resolver->method('groupExists')->willReturnCallback(fn (string $gid): bool => $gid === 'team');
-		$resolver->method('resolveWithDiagnostics')->willReturnCallback(function (array $recipientsSpec, array $data) use ($users): array {
+		$resolver->method('resolveFromSource')->willReturnCallback(function (array $recipientsSpec, RecipientSource $source) use ($users): array {
+			$data = $source->data;
 			if (($recipientsSpec[0]['kind'] ?? '') === 'groups') {
 				return ['uids' => ['alice', 'bob'], 'unresolved' => []];
 			}
@@ -290,6 +296,13 @@ class FlowMessagingServiceGoldenTest extends TestCase {
 		$sender->method('enqueueWebPush')->willReturnCallback(function (array $recipients, string $ruleId, string $originApp, string $subject, string $message, array $actions, $object): void {
 			$this->record(call: 'nc.webPush', args: [$recipients, $ruleId, $subject, $message, $object->getUuid()]);
 		});
+		$sender->method('notify')->willReturnCallback(function (InAppNotice $notice) {
+			$this->record(call: 'nc.send', args: [$notice->uid, $notice->object->getUuid(), $notice->object->getName(), $notice->rule->name, $notice->content->subject, $notice->content->message]);
+			return self::outcome(recipient: $notice->uid);
+		});
+		$sender->method('enqueuePush')->willReturnCallback(function (PushRideAlong $push): void {
+			$this->record(call: 'nc.webPush', args: [$push->recipients, $push->rule->name, $push->content->subject, $push->content->message, $push->object->getUuid()]);
+		});
 		return $sender;
 	}//end ncSender()
 
@@ -304,9 +317,9 @@ class FlowMessagingServiceGoldenTest extends TestCase {
 			$this->record(call: 'email.send', args: [$uid, $subject, $body]);
 			return self::outcome(recipient: $uid);
 		});
-		$sender->method('sendToAddress')->willReturnCallback(function (string $address, string $displayName, string $subject, string $body): string {
-			$this->record(call: 'email.sendToAddress', args: [$address, $displayName, $subject, $body]);
-			return self::outcome(recipient: $address);
+		$sender->method('sendMailTo')->willReturnCallback(function (\OCA\OpenRegister\Notifications\Service\Notification\MailAddressee $to, \OCA\OpenRegister\Notifications\Service\Notification\MailContent $mail): string {
+			$this->record(call: 'email.sendToAddress', args: [$to->address, $to->displayName, $mail->subject, $mail->body]);
+			return self::outcome(recipient: $to->address);
 		});
 		return $sender;
 	}//end emailSender()
@@ -404,10 +417,10 @@ class FlowMessagingServiceGoldenTest extends TestCase {
 	 */
 	private function optOut(): OptOutAuthority {
 		$optOut = $this->createMock(OptOutAuthority::class);
-		$optOut->method('ask')->willReturnCallback(function (string $channel, string $category, array $addresses, string $correlationId): array {
-			$this->record(call: 'optOut.ask', args: [$channel, $category, $addresses, $correlationId]);
+		$optOut->method('askQuestion')->willReturnCallback(function (OptOutQuestion $question): array {
+			$this->record(call: 'optOut.ask', args: [$question->channel, $question->category, $question->addresses, $question->correlationId]);
 			$decisions = [];
-			foreach ($addresses as $address) {
+			foreach ($question->addresses as $address) {
 				$decisions[$address] = match ($address) {
 					'optout@x.example' => ['send' => false, 'code' => 'opted-out', 'unsubscribe' => null],
 					'auth@x.example' => ['send' => false, 'code' => OptOutAuthority::CODE_AUTHORITY_UNAVAILABLE, 'unsubscribe' => null],

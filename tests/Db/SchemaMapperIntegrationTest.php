@@ -12,6 +12,7 @@
 
 namespace OCA\OpenRegister\Tests\Db;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use PHPUnit\Framework\TestCase;
@@ -213,14 +214,14 @@ class SchemaMapperIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$slug = $schema->getSlug();
 
-		$results = $this->mapper->findBySlug($slug, 10, 0, _rbac: false, _multitenancy: false);
+		$results = $this->mapper->findBySlug($slug, new ListQuery(limit: 10, offset: 0), _rbac: false, _multitenancy: false);
 		$this->assertIsArray($results);
 		$this->assertNotEmpty($results);
 		$this->assertSame($slug, $results[0]->getSlug());
 	}
 
 	public function testFindBySlugNoResults(): void {
-		$results = $this->mapper->findBySlug('nonexistent-slug-' . uniqid(), 10, 0, _rbac: false, _multitenancy: false);
+		$results = $this->mapper->findBySlug('nonexistent-slug-' . uniqid(), new ListQuery(limit: 10, offset: 0), _rbac: false, _multitenancy: false);
 		$this->assertIsArray($results);
 		$this->assertEmpty($results);
 	}
@@ -846,9 +847,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 
 		$result = $this->mapper->hasReferenceToSchema(
 			$schema->getProperties() ?? [],
-			(string)$otherSchema->getId(),
-			$otherSchema->getUuid() ?? '',
-			$otherSchema->getSlug() ?? ''
+			$otherSchema
 		);
 		$this->assertIsBool($result);
 	}
@@ -865,9 +864,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 
 		$result = $this->mapper->hasReferenceToSchema(
 			$properties,
-			(string)$targetSchema->getId(),
-			$targetSchema->getUuid() ?? '',
-			$targetSchema->getSlug() ?? ''
+			$targetSchema
 		);
 		$this->assertTrue($result);
 	}
@@ -884,9 +881,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 
 		$result = $this->mapper->hasReferenceToSchema(
 			$properties,
-			(string)$targetSchema->getId(),
-			$targetSchema->getUuid() ?? '',
-			$targetSchema->getSlug() ?? ''
+			$targetSchema
 		);
 		$this->assertTrue($result);
 	}
@@ -903,9 +898,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 
 		$result = $this->mapper->hasReferenceToSchema(
 			$properties,
-			(string)$targetSchema->getId(),
-			$targetSchema->getUuid() ?? '',
-			$targetSchema->getSlug() ?? ''
+			$targetSchema
 		);
 		$this->assertTrue($result);
 	}
@@ -923,9 +916,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 
 		$result = $this->mapper->hasReferenceToSchema(
 			$properties,
-			(string)$targetSchema->getId(),
-			$targetSchema->getUuid() ?? '',
-			$slug ?? ''
+			$targetSchema
 		);
 		$this->assertTrue($result);
 	}
@@ -948,9 +939,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 
 		$result = $this->mapper->hasReferenceToSchema(
 			$properties,
-			(string)$targetSchema->getId(),
-			$targetSchema->getUuid() ?? '',
-			$targetSchema->getSlug() ?? ''
+			$targetSchema
 		);
 		$this->assertTrue($result);
 	}
@@ -970,9 +959,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 
 		$result = $this->mapper->hasReferenceToSchema(
 			$properties,
-			(string)$targetSchema->getId(),
-			$targetSchema->getUuid() ?? '',
-			$targetSchema->getSlug() ?? ''
+			$targetSchema
 		);
 		$this->assertTrue($result);
 	}
@@ -988,9 +975,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 
 		$result = $this->mapper->hasReferenceToSchema(
 			$properties,
-			(string)$targetSchema->getId(),
-			$targetSchema->getUuid() ?? '',
-			$targetSchema->getSlug() ?? ''
+			$targetSchema
 		);
 		$this->assertFalse($result);
 	}
@@ -1008,9 +993,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 
 		$result = $this->mapper->hasReferenceToSchema(
 			$properties,
-			(string)$targetSchema->getId(),
-			$targetSchema->getUuid() ?? '',
-			$targetSchema->getSlug() ?? ''
+			$targetSchema
 		);
 		$this->assertTrue($result);
 	}
@@ -1027,9 +1010,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 
 		$result = $this->mapper->hasReferenceToSchema(
 			$properties,
-			(string)$targetSchema->getId(),
-			$uuid ?? '',
-			$targetSchema->getSlug() ?? ''
+			$targetSchema
 		);
 		$this->assertTrue($result);
 	}
@@ -1279,7 +1260,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 		$this->assertSame($first->getSlug(), $second->getSlug());
 		$this->assertNotSame($first->getId(), $second->getId());
 
-		$bySlug = $this->mapper->findBySlug($first->getSlug(), 10, 0, _rbac: false, _multitenancy: false);
+		$bySlug = $this->mapper->findBySlug($first->getSlug(), new ListQuery(limit: 10, offset: 0), _rbac: false, _multitenancy: false);
 		$ids = array_map(static fn ($schema): int => (int)$schema->getId(), $bySlug);
 		$this->assertContains((int)$first->getId(), $ids);
 		$this->assertContains((int)$second->getId(), $ids);
@@ -1308,7 +1289,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$slug = $schema->getSlug();
 
-		$results = $this->mapper->findBySlug($slug, 1, 0, _rbac: false, _multitenancy: false);
+		$results = $this->mapper->findBySlug($slug, new ListQuery(limit: 1, offset: 0), _rbac: false, _multitenancy: false);
 		$this->assertIsArray($results);
 		$this->assertLessThanOrEqual(1, count($results));
 	}
@@ -1317,7 +1298,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$slug = $schema->getSlug();
 
-		$results = $this->mapper->findBySlug($slug, 10, 1, _rbac: false, _multitenancy: false);
+		$results = $this->mapper->findBySlug($slug, new ListQuery(limit: 10, offset: 1), _rbac: false, _multitenancy: false);
 		$this->assertIsArray($results);
 		$this->assertEmpty($results);
 	}
@@ -1428,9 +1409,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 
 		$result = $this->mapper->hasReferenceToSchema(
 			$properties,
-			(string)$targetSchema->getId(),
-			$targetSchema->getUuid() ?? '',
-			$targetSchema->getSlug() ?? ''
+			$targetSchema
 		);
 		$this->assertTrue($result);
 	}

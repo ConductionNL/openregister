@@ -212,10 +212,27 @@ class BulkJobService implements BulkJobServiceInterface {
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function create(BulkJobActionCall $call, BulkJobSelection $selection, string $actorUid, ?string $justification): BulkJob {
-		return $this->preview(
+		return $this->createFromRequest(
 			request: new BulkJobRequest(call: $call, selection: $selection, actorUid: $actorUid, justification: $justification)
 		);
 	}//end create()
+
+	/**
+	 * Create a job from what the operator asked for, rehearse it, and write nothing.
+	 *
+	 * @param BulkJobRequest $request The action, the selection, the actor and the reason.
+	 *
+	 * @return BulkJob The previewed job.
+	 *
+	 * @throws InvalidArgumentException When the action, its parameters or the
+	 *                                  register and schema do not resolve.
+	 * @throws BulkJobRefusedException When the ceiling or a guard refuses the selection.
+	 *
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
+	 */
+	public function createFromRequest(BulkJobRequest $request): BulkJob {
+		return $this->preview(request: $request);
+	}//end createFromRequest()
 
 	/**
 	 * Resolve, guard and rehearse a request, and write the previewed job.
@@ -241,7 +258,7 @@ class BulkJobService implements BulkJobServiceInterface {
 
 		$objects = $this->actions->resolver->hydrate(uuids: $uuids, scope: $request->selection);
 		$this->actions->executor->assertGuards(action: $action, objects: $objects);
-		$this->guards()->assertUndoCeiling(action: $action, objects: $objects, parameters: $request->call->parameters);
+		$this->guards()->assertUndoCeiling(job: new RehearsedJob(action: $action, objects: $objects, parameters: $request->call->parameters));
 
 		$job = $this->store->jobMapper->createFromArray(
 			array_merge(
@@ -548,19 +565,15 @@ class BulkJobService implements BulkJobServiceInterface {
 	 * A page of a job's per-object outcomes.
 	 *
 	 * @param BulkJob $job The job.
-	 * @param string|null $outcome Optional outcome filter.
-	 * @param int $limit Page size.
-	 * @param int $offset Page offset.
+	 * @param OutcomeFilter|null $filter The outcome to keep (any when null) and the page; the first 100 when null.
 	 *
 	 * @return BulkJobMember[] The members.
 	 *
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
-	public function members(BulkJob $job, ?string $outcome = null, int $limit = 100, int $offset = 0): array {
-		return $this->store->memberMapper->findByJob(
-			jobId: (int)$job->getId(),
-			filter: new OutcomeFilter(outcome: $outcome, page: new QueryPage(limit: $limit, offset: $offset))
-		);
+	public function members(BulkJob $job, ?OutcomeFilter $filter=null): array {
+		$filter ??= new OutcomeFilter(outcome: null, page: new QueryPage(limit: 100, offset: 0));
+		return $this->store->memberMapper->findByJob(jobId: (int)$job->getId(), filter: $filter);
 	}//end members()
 
 	/**

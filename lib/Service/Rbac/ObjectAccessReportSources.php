@@ -23,8 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 
 /**
  * The register, schema and trail lookups of ObjectAccessReport.
@@ -36,13 +35,11 @@ final class ObjectAccessReportSources {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapperInterface   $registerMapper   Register lookup.
-	 * @param SchemaMapperInterface     $schemaMapper     Schema lookup.
+	 * @param SchemaCatalogInterface    $catalog          Register and schema lookup.
 	 * @param AuditTrailMapperInterface $auditTrailMapper The trail the history is read from.
 	 */
 	public function __construct(
-		public readonly RegisterMapperInterface $registerMapper,
-		public readonly SchemaMapperInterface $schemaMapper,
+		public readonly SchemaCatalogInterface $catalog,
 		public readonly AuditTrailMapperInterface $auditTrailMapper,
 	) {
 	}//end __construct()

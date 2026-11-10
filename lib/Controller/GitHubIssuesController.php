@@ -155,14 +155,14 @@ class GitHubIssuesController extends Controller {
 		$perPage = (int)$this->request->getParam('per_page', 30);
 		$labelArray = $this->labelsParam(labels: (string)$this->request->getParam('labels', ''));
 
+		$listing = new GitHubIssueListing(repo: $repo, state: $state, sort: $sort, perPage: $perPage);
 		$guardError = $this->guards->runGuards(
-			$this->readGuardPipeline(repo: $repo, sort: $sort, perPage: $perPage, labels: $labelArray)
+			$this->readGuardPipeline(listing: $listing, labels: $labelArray)
 		);
 		if ($guardError !== null) {
 			return $guardError;
 		}
 
-		$listing = new GitHubIssueListing(repo: $repo, state: $state, sort: $sort, perPage: $perPage);
 		$cacheKey = $this->buildReadCacheKey(listing: $listing, labels: $labelArray);
 
 		$cached = $this->readCache->get($cacheKey);
@@ -172,7 +172,7 @@ class GitHubIssuesController extends Controller {
 			return $resp;
 		}
 
-		return $this->listFromGitHub(listing: $listing, labels: $labelArray, cacheKey: $cacheKey);
+		return $this->listFromGitHub(listing: $listing, labels: $labelArray);
 	}//end index()
 
 	/**
@@ -193,13 +193,14 @@ class GitHubIssuesController extends Controller {
 	/**
 	 * Ask GitHub on a cache miss, and cache what it answers.
 	 *
-	 * @param GitHubIssueListing $listing  The listing asked for.
-	 * @param array|null         $labels   The labels filter.
-	 * @param string             $cacheKey The read-cache key.
+	 * @param GitHubIssueListing $listing The listing asked for.
+	 * @param array|null         $labels  The labels filter.
 	 *
 	 * @return JSONResponse The issues, the miss rate limit, or the mapped GitHub failure.
 	 */
-	private function listFromGitHub(GitHubIssueListing $listing, array|null $labels, string $cacheKey): JSONResponse {
+	private function listFromGitHub(GitHubIssueListing $listing, array|null $labels): JSONResponse {
+		$cacheKey = $this->buildReadCacheKey(listing: $listing, labels: $labels);
+
 		// Cache-miss rate-limit (task 1.19) — only enforce when we're about to hit GitHub.
 		$missRateLimit = $this->guards->enforceGetRateLimit(cacheKey: $cacheKey);
 		if ($missRateLimit !== null) {
@@ -248,7 +249,7 @@ class GitHubIssuesController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function create(): JSONResponse {
-		$user = $this->services->platform->userSession->getUser();
+		$user = $this->services->platform->session->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(['error' => 'unauthenticated'], Http::STATUS_UNAUTHORIZED);
 		}
@@ -323,22 +324,20 @@ class GitHubIssuesController extends Controller {
 	 * Build the ordered guard pipeline for the GET (read) path. Extracted from `index()` so the
 	 * inline closures do not inflate that method's cyclomatic complexity past PHPMD's threshold.
 	 *
-	 * @param string $repo Caller-supplied `<owner>/<repo>` slug.
-	 * @param string $sort Caller-supplied sort key.
-	 * @param int $perPage Caller-supplied page size.
+	 * @param GitHubIssueListing $listing Caller-supplied repository slug, state, sort key and page size.
 	 * @param array<string>|null $labels Parsed label filter, or null when absent.
 	 *
 	 * @return array<callable(): ?JSONResponse> Ordered guard closures.
 	 *
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-5
 	 */
-	private function readGuardPipeline(string $repo, string $sort, int $perPage, ?array $labels): array {
+	private function readGuardPipeline(GitHubIssueListing $listing, ?array $labels): array {
 		return [
 			fn () => $this->guards->enforceFeatureFlag(),
-			fn () => $this->validator->validateRepoFormat(repo: $repo),
-			fn () => $this->guards->enforceRepoAllowlist(repo: $repo, isRead: true),
-			fn () => $this->validator->validatePerPage(perPage: $perPage),
-			fn () => $this->validator->validateSort(sort: $sort),
+			fn () => $this->validator->validateRepoFormat(repo: $listing->repo),
+			fn () => $this->guards->enforceRepoAllowlist(repo: $listing->repo, isRead: true),
+			fn () => $this->validator->validatePerPage(perPage: $listing->perPage),
+			fn () => $this->validator->validateSort(sort: $listing->sort),
 			fn () => $this->validator->validateLabels(labels: $labels),
 		];
 	}//end readGuardPipeline()
@@ -467,7 +466,7 @@ class GitHubIssuesController extends Controller {
 			}
 		}
 
-		$this->services->platform->logger->error(
+		$this->services->platform->session->logger->error(
 			message: '[GitHubIssuesController] GitHub proxy error',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'error_class' => $exception::class]
 		);

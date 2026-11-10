@@ -223,23 +223,15 @@ interface TaskServiceInterface {
 	public function resolve(string $uuid, ?string $resultText, ?string $comment, ?string $actor): Task;
 
 	/**
-	 * Complete: the assignee finishes the work with an explicit outcome.
+	 * Complete, with the answer as separate values; builds the answer and delegates to completeWithAnswer().
 	 *
-	 * A rejecting or returning outcome REQUIRES a non-empty comment; without
-	 * one the verb is refused and the task keeps its pre-call state.
-	 *
-	 * @param string $uuid The task uuid.
-	 * @param string $outcome The outcome (`approved`, `done`, `rejected`, ...).
-	 * @param string|null $resultText Free-text result.
-	 * @param string|null $comment Completion comment.
-	 * @param string|null $actor The completing identity — must be the assignee.
-	 * @param array<string, mixed>|null $responses The submitted answer fields,
-	 *                                             when the completion carries
-	 *                                             any (a portal task's form).
-	 * @param array<int, array<string, mixed>>|null $evidence References to the
-	 *                                                        files ALREADY stored
-	 *                                                        for this completion;
-	 *                                                        never bytes.
+	 * @param string                                $uuid       The task uuid.
+	 * @param string                                $outcome    The outcome (`approved`, `done`, `rejected`, ...).
+	 * @param string|null                           $resultText Free-text result.
+	 * @param string|null                           $comment    Completion comment.
+	 * @param string|null                           $actor      The completing identity — must be the assignee.
+	 * @param array<string, mixed>|null             $responses  The submitted answer fields, if any.
+	 * @param array<int, array<string, mixed>>|null $evidence   References to the files ALREADY stored; never bytes.
 	 *
 	 * @return Task The completed task.
 	 *
@@ -249,6 +241,24 @@ interface TaskServiceInterface {
 		string $uuid, string $outcome, ?string $resultText, ?string $comment, ?string $actor, ?array $responses = null,
 		?array $evidence = null
 	): Task;
+
+	/**
+	 * Complete: the assignee finishes the work with an explicit outcome.
+	 *
+	 * A rejecting or returning outcome REQUIRES a non-empty comment; without
+	 * one the verb is refused and the task keeps its pre-call state.
+	 *
+	 * @param string      $uuid   The task uuid.
+	 * @param TaskAnswer  $answer The outcome (`approved`, `done`, `rejected`, ...), free-text result,
+	 *                            comment and, when the completion carries them, the submitted answer
+	 *                            fields and references to the files ALREADY stored for it (never bytes).
+	 * @param string|null $actor  The completing identity — must be the assignee.
+	 *
+	 * @return Task The completed task.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 */
+	public function completeWithAnswer(string $uuid, TaskAnswer $answer, ?string $actor): Task;
 
 	/**
 	 * Cancel: the requester (or an administrator) terminates the task.
@@ -301,16 +311,15 @@ interface TaskServiceInterface {
 	/**
 	 * Explicit propagation: a branch decision made this task moot.
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string $reason What made it moot — recorded, because "why did
-	 *                       this disappear from my inbox" must stay answerable.
-	 * @param string $source The propagation source recorded as actor.
+	 * @param string      $uuid    The task uuid.
+	 * @param TaskTrigger $trigger The propagation source recorded as actor, and what made it moot: recorded,
+	 *                             because "why did this disappear from my inbox" must stay answerable.
 	 *
 	 * @return Task The terminated task, or the task untouched when already terminal.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-that-has-become-moot-is-terminated-not-orphaned
 	 */
-	public function terminateAsMoot(string $uuid, string $reason, string $source): Task;
+	public function terminateAsMoot(string $uuid, TaskTrigger $trigger): Task;
 
 	/**
 	 * Consume an approving decision: record that the work it authorized ran.
@@ -328,9 +337,8 @@ interface TaskServiceInterface {
 	 * task declares none; a completion that neither approves nor rejects is
 	 * refused as undecided.
 	 *
-	 * @param string $uuid The decided task's uuid.
-	 * @param string $source The consuming identity recorded as actor.
-	 * @param string $reason What relied on the approval.
+	 * @param string      $uuid    The decided task's uuid.
+	 * @param TaskTrigger $trigger The consuming identity recorded as actor, and what relied on the approval.
 	 *
 	 * @return Task The task with its consumption recorded.
 	 *
@@ -339,7 +347,7 @@ interface TaskServiceInterface {
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
 	 * @spec openspec/changes/consume-follows-the-approving-rule/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
 	 */
-	public function consume(string $uuid, string $source, string $reason): Task;
+	public function consume(string $uuid, TaskTrigger $trigger): Task;
 
 	/**
 	 * Enable a position: the sequence's own promotion verb.
@@ -355,9 +363,8 @@ interface TaskServiceInterface {
 	 * Refused on a terminal task (the reason names its terminal state) and a
 	 * no-op on a task that is already enabled or active.
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string $source The enabling identity recorded as actor.
-	 * @param string $reason Why, recorded on the audit.
+	 * @param string      $uuid    The task uuid.
+	 * @param TaskTrigger $trigger The enabling identity recorded as actor, and why, recorded on the audit.
 	 *
 	 * @return Task The enabled task.
 	 *
@@ -365,7 +372,7 @@ interface TaskServiceInterface {
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
-	public function enable(string $uuid, string $source, string $reason): Task;
+	public function enable(string $uuid, TaskTrigger $trigger): Task;
 
 	/**
 	 * A business timer's ENFORCING outcome, applied as a named task action.
@@ -382,10 +389,9 @@ interface TaskServiceInterface {
 	 * concurrent completion surfaces as {@see TaskConflictException}, which
 	 * the sweep treats as "nothing to do".
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string $outcome `skip`, `error`, `dead_letter` or `transition:<action>`.
-	 * @param string $source The timer identity recorded as actor (`flow-timer:<uuid>`).
-	 * @param string $reason Why, recorded on the audit.
+	 * @param string       $uuid    The task uuid.
+	 * @param TimerOutcome $outcome `skip`, `error`, `dead_letter` or `transition:<action>`, and the timer identity
+	 *                              recorded as actor (`flow-timer:<uuid>`) with why, recorded on the audit.
 	 *
 	 * @return Task The task as left by the outcome, or untouched when already terminal.
 	 *
@@ -394,7 +400,7 @@ interface TaskServiceInterface {
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-advisory-due-date-notifies-an-enforcing-expiry-transitions
 	 */
-	public function applyTimerOutcome(string $uuid, string $outcome, string $source, string $reason): Task;
+	public function applyTimerOutcome(string $uuid, TimerOutcome $outcome): Task;
 
 	/**
 	 * Fetch a task by uuid.
@@ -433,9 +439,8 @@ interface TaskServiceInterface {
 	 * checks in the same order as every verb (exists, authorized, open), so a
 	 * denial here reads in the audit exactly as a denial from the verb would.
 	 *
-	 * @param string $verb The verb about to be attempted.
-	 * @param string $uuid The task uuid.
-	 * @param string|null $actor The acting identity.
+	 * @param TaskAct $act  The verb about to be attempted and the acting identity.
+	 * @param string  $uuid The task uuid.
 	 *
 	 * @return Task The open, authorized task.
 	 *
@@ -445,7 +450,7 @@ interface TaskServiceInterface {
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-only-the-matched-party-completes-fail-closed
 	 */
-	public function openFor(string $verb, string $uuid, ?string $actor): Task;
+	public function openFor(TaskAct $act, string $uuid): Task;
 
 	/**
 	 * Append an audit entry that records a FACT about the task without

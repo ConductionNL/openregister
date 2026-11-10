@@ -60,13 +60,38 @@ class TalkProvider extends AbstractIntegrationProvider {
 
 	private const REQUIRED_APP = 'spreed';
 
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param ContainerInterface           $container      Resolves Talk's room manager lazily.
+	 * @param AppProviderDescription       $description    The app manager (isEnabled check) and localisation.
+	 * @param IUserSession                 $userSession    The signed-in user.
+	 * @param TalkLinkMapperInterface|null $talkLinkMapper Local link table, when wired.
+	 *
+	 * @return void
+	 */
 	public function __construct(
 		private ContainerInterface $container,
-		private IAppManager $appManager,
+		AppProviderDescription $description,
 		private IUserSession $userSession,
-		private IL10N $l10n,
 		private ?TalkLinkMapperInterface $talkLinkMapper = null,
 	) {
+		$this->appManager = $description->appManager;
+		$this->l10n       = $description->l10n;
 	}//end __construct()
 
 	public function getId(): string {
@@ -121,12 +146,23 @@ class TalkProvider extends AbstractIntegrationProvider {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The IntegrationProvider contract fixes the signature.
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+		return $this->rowsForSignedIn(objectId: $objectId);
+	}//end list()
+
+	/**
+	 * The object's conversation rows; none without a signed-in user.
+	 *
+	 * @param string $objectId Owning object uuid.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function rowsForSignedIn(string $objectId): array {
 		if ($this->userSession->getUser() === null) {
 			return [];
 		}
 
 		return $this->objectRows(objectId: $objectId);
-	}//end list()
+	}//end rowsForSignedIn()
 
 	/**
 	 * The object's link rows; none when no link mapper is wired or the link

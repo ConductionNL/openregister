@@ -36,9 +36,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\DelegationGrant;
-use OCA\OpenRegister\Db\DelegationGrantMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCP\IUserSession;
 use Throwable;
@@ -63,27 +61,6 @@ class ReachRevocationService implements ReachRevocationServiceInterface {
 	public const RULE = 'reach-revoked-in-one-act';
 
 	/**
-	 * Schema authorization blocks.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Grants derived from sign-in claims.
-	 *
-	 * @var DerivedGrantStore
-	 */
-	private readonly DerivedGrantStore $derived;
-
-	/**
-	 * Delegations held.
-	 *
-	 * @var DelegationGrantMapperInterface
-	 */
-	private readonly DelegationGrantMapperInterface $delegations;
-
-	/**
 	 * Wire the act.
 	 *
 	 * @param PrincipalReachService     $reach       The listing the act runs from.
@@ -93,13 +70,10 @@ class ReachRevocationService implements ReachRevocationServiceInterface {
 	 */
 	public function __construct(
 		private readonly PrincipalReachService $reach,
-		ReachSources $sources,
+		private readonly ReachSources $sources,
 		private readonly ReachRevocationLog $log,
 		private readonly IUserSession $userSession,
 	) {
-		$this->schemaMapper = $sources->schemaMapper;
-		$this->derived = $sources->derived;
-		$this->delegations = $sources->delegations;
 	}//end __construct()
 
 	/**
@@ -184,7 +158,7 @@ class ReachRevocationService implements ReachRevocationServiceInterface {
 
 			try {
 				$schema->setAuthorization($after);
-				$this->schemaMapper->update($schema);
+				$this->sources->schemaMapper->update($schema);
 				$this->log->audit->logSchemaAuthorizationChange(
 					schemaId: (int)$schema->getId(),
 					schemaTitle: (string)$schema->getTitle(),
@@ -281,7 +255,7 @@ class ReachRevocationService implements ReachRevocationServiceInterface {
 	 */
 	private function removeDerived(string $principal, array &$record): void {
 		try {
-			$held = $this->derived->grantsFor(userId: $principal);
+			$held = $this->sources->derived->grantsFor(userId: $principal);
 		} catch (Throwable $e) {
 			$record['failed'][] = ['source' => PrincipalReach::SOURCE_DERIVED, 'error' => $e->getMessage()];
 			return;
@@ -292,7 +266,7 @@ class ReachRevocationService implements ReachRevocationServiceInterface {
 		}
 
 		try {
-			$this->derived->forget(userId: $principal);
+			$this->sources->derived->forget(userId: $principal);
 			$record['removed'][] = [
 				'source' => PrincipalReach::SOURCE_DERIVED,
 				'grants' => $held,
@@ -314,7 +288,7 @@ class ReachRevocationService implements ReachRevocationServiceInterface {
 		$now = new DateTime();
 
 		try {
-			$held = $this->delegations->findHeldBy(principal: $principal);
+			$held = $this->sources->delegations->findHeldBy(principal: $principal);
 		} catch (Throwable $e) {
 			$record['failed'][] = ['source' => PrincipalReach::SOURCE_DELEGATION, 'error' => $e->getMessage()];
 			return;
@@ -328,7 +302,7 @@ class ReachRevocationService implements ReachRevocationServiceInterface {
 			try {
 				$grant->setStatus(DelegationGrant::STATUS_REVOKED);
 				$grant->setRevokedAt(new DateTime());
-				$this->delegations->update($grant);
+				$this->sources->delegations->update($grant);
 
 				$record['removed'][] = [
 					'source' => PrincipalReach::SOURCE_DELEGATION,
@@ -352,7 +326,7 @@ class ReachRevocationService implements ReachRevocationServiceInterface {
 	 */
 	private function schemas(): array {
 		try {
-			return $this->schemaMapper->findAll();
+			return $this->sources->schemaMapper->findAll();
 		} catch (Throwable $e) {
 			$this->log->logger->error(
 				message: '[ReachRevocation] Could not list the schemas, so nothing was revoked from them',

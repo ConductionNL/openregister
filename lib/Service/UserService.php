@@ -28,10 +28,11 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\AuditTrail\ActionWindow;
+use OCA\OpenRegister\Db\AuditTrail\ActorTrailQuery;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Event\UserProfileUpdatedEvent;
 use OCA\OpenRegister\Service\User\AccountPropertyChange;
-use OCA\OpenRegister\Service\User\ActivityPeriod;
 use OCA\OpenRegister\Service\User\ActivityQuery;
 use OCA\OpenRegister\Service\User\ApiTokenRequest;
 use OCA\OpenRegister\Service\User\AvatarUpload;
@@ -1142,28 +1143,7 @@ class UserService implements UserServiceInterface {
 	}//end getDefaultPropertyScope()
 
 	/**
-	 * Change password for the current user
-	 *
-	 * Validates the current password, checks backend capability,
-	 * and sets the new password.
-	 *
-	 * @param IUser $user The user changing their password
-	 * @param string $currentPassword The current password for verification
-	 * @param string $newPassword The new password to set
-	 *
-	 * @return array Result array with success status
-	 *
-	 * @throws InvalidArgumentException If inputs are invalid
-	 * @throws RuntimeException If password change fails
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
-	 */
-	public function changePassword(IUser $user, string $currentPassword, string $newPassword): array {
-		return $this->applyPasswordChange(user: $user, change: new PasswordChange(currentPassword: $currentPassword, newPassword: $newPassword));
-	}//end changePassword()
-
-	/**
-	 * Change the user's password after verifying the current one (value-object form of changePassword()).
+	 * Change the user's password after verifying the current one.
 	 *
 	 * @param IUser          $user   The user changing their password.
 	 * @param PasswordChange $change The current password and the new one.
@@ -1205,27 +1185,7 @@ class UserService implements UserServiceInterface {
 	}//end applyPasswordChange()
 
 	/**
-	 * Upload a new avatar for the user
-	 *
-	 * Validates file type and size, then sets via IAvatarManager.
-	 *
-	 * @param IUser $user The user uploading an avatar
-	 * @param string $data The raw image data
-	 * @param string $mimeType The MIME type of the uploaded file
-	 * @param int $size The file size in bytes
-	 *
-	 * @return array Result array with success status and avatar URL
-	 *
-	 * @throws RuntimeException If upload fails
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
-	 */
-	public function uploadAvatar(IUser $user, string $data, string $mimeType, int $size): array {
-		return $this->setAvatar(user: $user, upload: new AvatarUpload(data: $data, mimeType: $mimeType, size: $size));
-	}//end uploadAvatar()
-
-	/**
-	 * Store an uploaded image as the user's avatar (value-object form of uploadAvatar()).
+	 * Store an uploaded image as the user's avatar.
 	 *
 	 * @param IUser        $user   The user uploading an avatar.
 	 * @param AvatarUpload $upload The image, its MIME type and its size.
@@ -1340,7 +1300,7 @@ class UserService implements UserServiceInterface {
 		$profile = $this->buildUserDataArray(user: $user);
 
 		// Get audit trail entries.
-		$auditData = $this->auditTrailMapper->findByActor($userId, 1000, 0);
+		$auditData = $this->auditTrailMapper->findActorTrail(query: new ActorTrailQuery(userId: $userId, limit: 1000));
 		$auditTrail = array_map(
 			function ($entry) {
 				return $entry->jsonSerialize();
@@ -1439,36 +1399,7 @@ class UserService implements UserServiceInterface {
 	}//end setNotificationPreferences()
 
 	/**
-	 * Get activity history for the current user
-	 *
-	 * Queries audit trail entries where the user is the actor.
-	 *
-	 * @param IUser $user The user to get activity for
-	 * @param int $limit Maximum results to return
-	 * @param int $offset Results to skip
-	 * @param string|null $type Optional action type filter
-	 * @param string|null $from Optional start date (Y-m-d)
-	 * @param string|null $to Optional end date (Y-m-d)
-	 *
-	 * @return array Activity results with total count
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
-	 */
-	public function getUserActivity(
-		IUser $user,
-		int $limit = 25,
-		int $offset = 0,
-		?string $type = null,
-		?string $from = null,
-		?string $to = null,
-	): array {
-		$query = new ActivityQuery(limit: $limit, offset: $offset, type: $type, period: new ActivityPeriod(from: $from, to: $to));
-
-		return $this->activity(user: $user, query: $query);
-	}//end getUserActivity()
-
-	/**
-	 * Get one page of a user's activity (value-object form of getUserActivity()).
+	 * Get one page of a user's activity.
 	 *
 	 * @param IUser         $user  The user to get activity for.
 	 * @param ActivityQuery $query The page, the type filter and the period.
@@ -1478,13 +1409,9 @@ class UserService implements UserServiceInterface {
 	 * @spec openspec/specs/profile-actions/spec.md
 	 */
 	public function activity(IUser $user, ActivityQuery $query): array {
-		$data = $this->auditTrailMapper->findByActor(
-			$user->getUID(),
-			$query->limit,
-			$query->offset,
-			$query->type,
-			$query->period->from,
-			$query->period->to
+		$window = new ActionWindow(action: $query->type, from: $query->period->from, to: $query->period->to);
+		$data = $this->auditTrailMapper->findActorTrail(
+			query: new ActorTrailQuery(userId: $user->getUID(), limit: $query->limit, offset: $query->offset, window: $window)
 		);
 
 		return [
@@ -1513,26 +1440,7 @@ class UserService implements UserServiceInterface {
 	}//end activityRow()
 
 	/**
-	 * Create a new API token for the user
-	 *
-	 * Generates a cryptographically secure token and stores it in IConfig.
-	 *
-	 * @param IUser $user The user creating a token
-	 * @param string $name The token name
-	 * @param string|null $expiresIn Optional expiration (e.g., "90d")
-	 *
-	 * @return array The created token data (full value shown only once)
-	 *
-	 * @throws RuntimeException If maximum tokens reached
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
-	 */
-	public function createApiToken(IUser $user, string $name, ?string $expiresIn = null): array {
-		return $this->issueApiToken(user: $user, request: new ApiTokenRequest(name: $name, expiresIn: $expiresIn));
-	}//end createApiToken()
-
-	/**
-	 * Mint a personal API token (value-object form of createApiToken()).
+	 * Mint a personal API token.
 	 *
 	 * @param IUser           $user    The user creating a token.
 	 * @param ApiTokenRequest $request The token name and its optional lifetime.

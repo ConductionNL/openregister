@@ -38,8 +38,10 @@ namespace OCA\OpenRegister\Service\Archival;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -60,13 +62,11 @@ class SelectielijstResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param SelectielijstStores             $stores          Read the stored rows, the schema and the register.
-	 * @param ArchivalSettingsReaderInterface $settingsHandler Names the register, the schema and the version in use.
-	 * @param LoggerInterface                 $logger          Reports a lookup that found nothing applicable.
+	 * @param SelectielijstStorage $storage Names the register, the schema and the version in use, and reads the stored rows.
+	 * @param LoggerInterface      $logger  Reports a lookup that failed.
 	 */
 	public function __construct(
-		private readonly SelectielijstStores $stores,
-		private readonly ArchivalSettingsReaderInterface $settingsHandler,
+		private readonly SelectielijstStorage $storage,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -134,7 +134,7 @@ class SelectielijstResolver {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	private function findSelectielijstEntry(string $category): ?ObjectEntity {
-		$settings = $this->settingsHandler->getArchivalSettingsOnly();
+		$settings = $this->storage->settings->getArchivalSettingsOnly();
 
 		$registerId = $settings['selectielijstRegister'] ?? null;
 		$schemaId = $settings['selectielijstSchema'] ?? null;
@@ -144,7 +144,9 @@ class SelectielijstResolver {
 		}
 
 		try {
-			$results = $this->rowsFor(category: $category, registerId: (int)$registerId, schemaId: (int)$schemaId);
+			$catalog = $this->storage->catalog;
+			$table = new RegisterSchema(register: $catalog->registers()->find((int)$registerId), schema: $catalog->schemas()->find((int)$schemaId));
+			$results = $this->rowsFor(category: $category, table: $table);
 
 			return $this->pickApplicableRow(results: $results);
 		} catch (Exception $e) {
@@ -165,23 +167,19 @@ class SelectielijstResolver {
 	 * filter would report "no such category" on an instance that holds it, and
 	 * every nomination would fall back to the schema default without saying so.
 	 *
-	 * @param string $category   The selectielijst category code.
-	 * @param int    $registerId The selectielijst register.
-	 * @param int    $schemaId   The selectielijst schema.
+	 * @param string         $category The selectielijst category code.
+	 * @param RegisterSchema $table    The selectielijst register and schema.
 	 *
 	 * @return array<int, ObjectEntity> The rows.
 	 *
 	 * @throws Exception When the register, the schema or the rows cannot be read.
 	 */
-	private function rowsFor(string $category, int $registerId, int $schemaId): array {
-		$register = $this->stores->registerMapper->find($registerId);
-		$schema = $this->stores->schemaMapper->find($schemaId);
-
-		return $this->stores->objectMapper->findAll(
-			limit: self::SELECTION_LIST_ROW_CAP,
-			filters: ['object->categorie' => $category],
-			register: $register,
-			schema: $schema
+	private function rowsFor(string $category, RegisterSchema $table): array {
+		return $this->storage->catalog->tables()->findAllListed(
+			request: new MagicListRequest(
+				table: $table,
+				query: new ListQuery(limit: self::SELECTION_LIST_ROW_CAP, filters: ['object->categorie' => $category])
+			)
 		);
 	}//end rowsFor()
 
@@ -208,7 +206,7 @@ class SelectielijstResolver {
 			return null;
 		}
 
-		$settings = $this->settingsHandler->getArchivalSettingsOnly();
+		$settings = $this->storage->settings->getArchivalSettingsOnly();
 		$applied = ArchivalText::fromString(value: ($settings['selectielijstVersion'] ?? null));
 		if ($applied === null) {
 			return $results[0];

@@ -166,14 +166,9 @@ abstract class ExampleSetEngineRows {
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-access-links-on-its-objects
 	 */
 	protected function dateRefusal(string $field, mixed $value, array $context, bool $isEnd): string {
-		if ($this->isBlank(value: $value) === true) {
-			return $field.' is not a date';
-		}
-
-		try {
-			$moment = new DateTimeImmutable($value);
-		} catch (Throwable) {
-			return $field.' "'.$value.'" is not a date';
+		$moment = $this->momentOf(value: $value);
+		if ($moment === null) {
+			return $this->notADate(field: $field, value: $value);
 		}
 
 		if ($isEnd === true && $this->beforeDay(moment: $moment, today: ($context['today'] ?? null)) === true) {
@@ -182,6 +177,41 @@ abstract class ExampleSetEngineRows {
 
 		return '';
 	}//end dateRefusal()
+
+	/**
+	 * The moment a declared date names, or null when it names none.
+	 *
+	 * @param mixed $value The declared value.
+	 *
+	 * @return DateTimeImmutable|null
+	 */
+	private function momentOf(mixed $value): ?DateTimeImmutable {
+		if ($this->isBlank(value: $value) === true) {
+			return null;
+		}
+
+		try {
+			return new DateTimeImmutable($value);
+		} catch (Throwable) {
+			return null;
+		}
+	}//end momentOf()
+
+	/**
+	 * The refusal for a value that is not a date: blank, or not parseable.
+	 *
+	 * @param string $field The field.
+	 * @param mixed  $value The declared value.
+	 *
+	 * @return string
+	 */
+	private function notADate(string $field, mixed $value): string {
+		if ($this->isBlank(value: $value) === true) {
+			return $field.' is not a date';
+		}
+
+		return $field.' "'.$value.'" is not a date';
+	}//end notADate()
 
 	/**
 	 * Whether a filled value is no text, or only blanks.
@@ -285,25 +315,18 @@ abstract class ExampleSetEngineRows {
 	/**
 	 * Check the rows of one fragment: each fills and passes refusal().
 	 *
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param array<string, mixed> $context  The context placeholders draw on.
-	 * @param array<int, string>   $users    The account ids the set creates or adopts.
-	 * @param ExampleSetValues     $values   Fills placeholders.
+	 * @param array<string, mixed>    $fragment The fragment.
+	 * @param ExampleSetFragmentCheck $check    The context placeholders draw on, the account ids the set creates or
+	 *                                          adopts, and the filler.
 	 *
 	 * @return array<int, string> Refusals.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
-	public function checkFragment(array $fragment, array $context, array $users, ExampleSetValues $values): array {
+	public function checkFragment(array $fragment, ExampleSetFragmentCheck $check): array {
 		$refusals = [];
 		foreach (($fragment[$this->part()] ?? []) as $entry) {
-			$gaps = [];
-			$data = (array) $values->fill(value: $entry['data'], context: $this->fillContext(context: $context), gaps: $gaps);
-			$why  = $this->refusalIn(data: $data, users: $users, context: $context);
-			if ($gaps !== []) {
-				$why = 'cannot resolve '.implode(', ', array_unique($gaps));
-			}
-
+			$why = $this->entryRefusal(entry: $entry, check: $check);
 			if ($why !== '') {
 				$refusals[] = $fragment['file'].': '.$this->noun().' "'.$entry['key'].'": '.$why;
 			}
@@ -313,11 +336,31 @@ abstract class ExampleSetEngineRows {
 	}//end checkFragment()
 
 	/**
+	 * Why one row of a fragment cannot be written, or ''. A placeholder the
+	 * set cannot resolve outranks the row's own refusal.
+	 *
+	 * @param array<string, mixed>    $entry The declared row.
+	 * @param ExampleSetFragmentCheck $check The context, accounts and filler.
+	 *
+	 * @return string
+	 */
+	private function entryRefusal(array $entry, ExampleSetFragmentCheck $check): string {
+		$gaps = [];
+		$data = (array) $check->values->fill(value: $entry['data'], context: $this->fillContext(context: $check->context), gaps: $gaps);
+		$why  = $this->refusalIn(data: $data, users: $check->users, context: $check->context);
+		if ($gaps !== []) {
+			return 'cannot resolve '.implode(', ', array_unique($gaps));
+		}
+
+		return $why;
+	}//end entryRefusal()
+
+	/**
 	 * Write the rows of one fragment that the record does not hold, and let go of the held ones it no longer declares.
 	 *
 	 * @param ExampleSetFragmentWrite $write  The fragment, the context placeholders draw on and their filler.
-	 * @param array<string, mixed>    $report The report; gains the outcomes under part() and `dropped`.
-	 * @param array<string, mixed>    $record The record; gains the rows written under part().
+	 * @param RecordLedger            $ledger The report (gains the outcomes under part() and `dropped`) and the record
+	 *                                        (gains the rows written under part()), held by reference.
 	 *
 	 * @return bool Whether the record changed and is to be written.
 	 *
@@ -326,12 +369,12 @@ abstract class ExampleSetEngineRows {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) ExampleSetRecord::letGoUndeclared() is a pure function of its arguments, shared by every part.
 	 */
-	public function installFragment(ExampleSetFragmentWrite $write, array &$report, array &$record): bool {
+	public function installFragment(ExampleSetFragmentWrite $write, RecordLedger $ledger): bool {
 		$fragment = $write->fragment;
 		$install  = new ExampleSetRowInstall(rows: $this, refusal: $this->refusalIn(...), fill: $this->fillContext(...), values: $write->values);
-		$changed  = $install->fragment(fragment: $fragment, context: $write->context, report: $report, record: $record);
+		$changed  = $install->fragment(fragment: $fragment, context: $write->context, report: $ledger->report, record: $ledger->record);
 		$part     = new ExampleSetRecordPart(part: $this->part(), noun: $this->noun());
-		if (ExampleSetRecord::letGoUndeclared(part: $part, fragment: $fragment, report: $report, record: $record) === true) {
+		if (ExampleSetRecord::letGoUndeclared(part: $part, fragment: $fragment, report: $ledger->report, record: $ledger->record) === true) {
 			$changed = true;
 		}
 

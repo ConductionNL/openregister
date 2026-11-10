@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Search\Service\Reporting;
 
 use DateTime;
+use OCA\OpenRegister\Search\Service\Reporting\ReportContent;
 use OCA\OpenRegister\Search\Service\Reporting\SpreadsheetReportWriter;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -139,11 +140,11 @@ class SpreadsheetReportWriterGoldenTest extends TestCase {
 		$writer = new SpreadsheetReportWriter();
 		$actual = [];
 		foreach (self::cases() as $name => [$dashboard, $widgets]) {
-			$actual[$name . ' xlsx'] = $this->readBack('xlsx', $writer->write($dashboard, $widgets, 'xlsx'));
-			$actual[$name . ' ods']  = $this->readBack('ods', $writer->write($dashboard, $widgets, 'ods'));
-			$actual[$name . ' unknown format'] = $this->readBack('xlsx', $writer->write($dashboard, $widgets, 'pdf'));
+			$actual[$name . ' xlsx'] = $this->readBack('xlsx', $writer->write(new ReportContent($dashboard, $widgets), 'xlsx'));
+			$actual[$name . ' ods']  = $this->readBack('ods', $writer->write(new ReportContent($dashboard, $widgets), 'ods'));
+			$actual[$name . ' unknown format'] = $this->readBack('xlsx', $writer->write(new ReportContent($dashboard, $widgets), 'pdf'));
 
-			$csv = $writer->write($dashboard, $widgets, 'csv');
+			$csv = $writer->write(new ReportContent($dashboard, $widgets), 'csv');
 			$this->assertSame(1, preg_match('/"Generated","([^"]+)"/', $csv, $match));
 			$this->assertNotFalse(DateTime::createFromFormat(DateTime::ATOM, $match[1]), $match[1]);
 			$actual[$name . ' csv'] = explode("\n", str_replace($match[1], self::MASK, $csv));

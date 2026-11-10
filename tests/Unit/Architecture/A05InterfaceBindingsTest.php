@@ -55,7 +55,6 @@ final class A05InterfaceBindingsTest extends TestCase {
 		'Service/Object/BulkSaveStores.php',
 		'Service/Object/CascadingHandler.php',
 		'Service/Object/SaveObject.php',
-		'Service/Object/SaveObjects.php',
 		'Service/ObjectService.php',
 	];
 

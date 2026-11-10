@@ -22,13 +22,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Calendar;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * The shared collaborators of every RegisterCalendar the provider builds:
- * object lookup, register lookup, event transformation and logging.
+ * The shared collaborators of the calendar provider and every RegisterCalendar
+ * it builds: schema, register and object lookup, event transformation and logging.
  *
  * @spec openspec/specs/calendar-integration/spec.md
  */
@@ -36,14 +35,12 @@ final class RegisterCalendarSources {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param MagicMapperInterface     $magicMapper    Queries the schema's objects per register.
-	 * @param RegisterMapperInterface  $registerMapper Finds the registers using a schema.
-	 * @param CalendarEventTransformer $transformer    Turns an object into a VEVENT array.
-	 * @param LoggerInterface          $logger         Logs failed lookups.
+	 * @param SchemaCatalogInterface   $catalog     The schema, register and object mappers.
+	 * @param CalendarEventTransformer $transformer Turns an object into a VEVENT array.
+	 * @param LoggerInterface          $logger      Logs failed lookups.
 	 */
 	public function __construct(
-		public readonly MagicMapperInterface $magicMapper,
-		public readonly RegisterMapperInterface $registerMapper,
+		public readonly SchemaCatalogInterface $catalog,
 		public readonly CalendarEventTransformer $transformer,
 		public readonly LoggerInterface $logger,
 	) {

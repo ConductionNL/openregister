@@ -33,17 +33,42 @@ use OCA\OpenRegister\Db\ObjectRelation;
  */
 final class RelationRowFields {
 	/**
-	 * The ends, kind and origin of a row that links one object to another.
+	 * The ends, kind and origin of a row a split writes from the new object back to its source.
 	 *
-	 * @param ObjectEntity $from   The object the row starts at.
-	 * @param ObjectEntity $to     The object it points at.
-	 * @param string       $origin One of the ObjectRelation::ORIGIN_* constants.
+	 * @param ObjectEntity $from The object the split created.
+	 * @param ObjectEntity $to   The object it was split from.
 	 *
 	 * @return array<string, mixed> The row's first fields.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	public function objectLink(ObjectEntity $from, ObjectEntity $to, string $origin): array {
+	public function splitLink(ObjectEntity $from, ObjectEntity $to): array {
+		return $this->objectLink(from: $from, to: $to) + ['origin' => ObjectRelation::ORIGIN_SPLIT];
+	}//end splitLink()
+
+	/**
+	 * The ends, kind and origin of a row a derivation writes from the child to its parent.
+	 *
+	 * @param ObjectEntity $from The derived child.
+	 * @param ObjectEntity $to   The parent it was derived from.
+	 *
+	 * @return array<string, mixed> The row's first fields.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	public function derivedLink(ObjectEntity $from, ObjectEntity $to): array {
+		return $this->objectLink(from: $from, to: $to) + ['origin' => ObjectRelation::ORIGIN_DERIVE];
+	}//end derivedLink()
+
+	/**
+	 * The ends and kind of a row that links one object to another.
+	 *
+	 * @param ObjectEntity $from The object the row starts at.
+	 * @param ObjectEntity $to   The object it points at.
+	 *
+	 * @return array<string, mixed> The ends and the kind.
+	 */
+	private function objectLink(ObjectEntity $from, ObjectEntity $to): array {
 		return [
 			'sourceUuid' => (string)$from->getUuid(),
 			'sourceRegister' => $this->asInt(value: $from->getRegister()),
@@ -52,7 +77,6 @@ final class RelationRowFields {
 			'targetRegister' => $this->asInt(value: $to->getRegister()),
 			'targetSchema' => $this->asInt(value: $to->getSchema()),
 			'kind' => ObjectRelation::KIND_OBJECT,
-			'origin' => $origin,
 		];
 	}//end objectLink()
 

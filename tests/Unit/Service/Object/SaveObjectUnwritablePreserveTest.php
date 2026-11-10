@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\ProtectedCarryForward;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -28,6 +29,7 @@ use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
 use OCA\OpenRegister\Service\Object\BulkRowRules;
 use OCA\OpenRegister\Service\Object\BulkSafeguardRun;
 use OCA\OpenRegister\Service\Object\SaveObject;
@@ -93,10 +95,8 @@ class SaveObjectUnwritablePreserveTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $this->createMock(MagicMapper::class),
-						unifiedObjectMapper: $this->createMock(MagicMapper::class),
-						schemaMapper: $this->schemaMapper,
-						registerMapper: $this->createMock(RegisterMapper::class)
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->schemaMapper, tables: $this->createMock(MagicMapper::class)),
+						unifiedObjectMapper: $this->createMock(MagicMapper::class)
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->createMock(AuditTrailMapper::class),
@@ -233,7 +233,8 @@ class SaveObjectUnwritablePreserveTest extends TestCase {
 		$schema = $this->orgPinnedSchema();
 		$bulk = (new ReflectionClass(SaveObjects::class))->newInstanceWithoutConstructor();
 		$rules = new BulkRowRules(propertyRbac: $this->rbac);
-		(fn () => $this->rowRules = $rules)->call($bulk);
+		$checks = new BulkRowChecks(rowRules: $rules);
+		(fn () => $this->checks = $checks)->call($bulk);
 		$apply = new ReflectionMethod(SaveObjects::class, 'applyPropertyAuthorization');
 		$apply->setAccessible(true);
 
@@ -313,11 +314,11 @@ class SaveObjectUnwritablePreserveTest extends TestCase {
 
 		$this->assertSame(
 			['restricted'],
-			$this->rbac->collectOmittedProtectedProperties(schema: $schema, incoming: ['title' => 'x'], stored: ['title' => 'x', 'restricted' => true])
+			$this->rbac->collectOmittedProtectedProperties(update: new ProtectedCarryForward(schema: $schema, incoming: ['title' => 'x'], stored: ['title' => 'x', 'restricted' => true]))
 		);
 		$this->assertSame(
 			[],
-			$this->rbac->collectOmittedProtectedProperties(schema: $schema, incoming: ['title' => 'x', 'restricted' => true], stored: ['restricted' => true])
+			$this->rbac->collectOmittedProtectedProperties(update: new ProtectedCarryForward(schema: $schema, incoming: ['title' => 'x', 'restricted' => true], stored: ['restricted' => true]))
 		);
 	}//end testTheHandlerNamesOnlyStoredPropertiesTheCallerMayNotUpdate()
 }//end class

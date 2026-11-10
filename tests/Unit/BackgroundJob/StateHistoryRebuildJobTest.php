@@ -17,11 +17,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime;
 use OCA\OpenRegister\BackgroundJob\StateHistoryRebuildJob;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\History\StateHistoryRebuildInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
@@ -83,10 +85,8 @@ class StateHistoryRebuildJobTest extends TestCase {
 	 */
 	private function runJob(): void {
 		$job = new StateHistoryRebuildJob(
-			$this->createMock(ITimeFactory::class),
-			new StateHistoryRebuildSources($this->rebuild, $this->audit, $this->schemas),
-			$this->appConfig,
-			$this->createMock(LoggerInterface::class)
+			new ConfiguredJobRuntime($this->createMock(ITimeFactory::class), $this->appConfig, $this->createMock(LoggerInterface::class)),
+			new StateHistoryRebuildSources($this->rebuild, $this->audit, $this->schemas)
 		);
 		$method = (new \ReflectionClass($job))->getMethod('run');
 		$method->invoke($job, null);
@@ -146,8 +146,8 @@ class StateHistoryRebuildJobTest extends TestCase {
 			}
 		);
 		$this->schemas->method('find')->willReturn($schema);
-		$this->rebuild->expects($this->once())->method('rebuildObject')
-			->with('o-1', 'status', 'reg-1', 'cases')->willReturn(2);
+		$this->rebuild->expects($this->once())->method('rebuild')
+			->with(new ObjectRef(register: 'reg-1', schema: 'cases', id: 'o-1'), 'status')->willReturn(2);
 		$this->appConfig->expects($this->once())->method('setValueString')
 			->with('openregister', StateHistoryRebuildJob::CURSOR, 'o-2');
 		$this->runJob();

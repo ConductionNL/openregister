@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Rbac;
 
+use OCA\OpenRegister\Tests\Support\AuditTrailListing;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\AuditTrailControllerFactory;
 use OCA\OpenRegister\Controller\AuditTrailController;
 use OCA\OpenRegister\Db\AuditTrail;
@@ -30,6 +31,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Audit\AuditTrailPageService;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
@@ -38,6 +40,7 @@ use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
 use OCA\OpenRegister\Service\Audit\ReadEventVisibility;
 use OCA\OpenRegister\Service\Audit\HistoryEntryRedactor;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
+use OCA\OpenRegister\Service\Audit\TrailPageOptions;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -127,9 +130,7 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 
 		return new LogService(
 			$trails,
-			$this->createMock(originalClassName: MagicMapper::class),
-			$this->createMock(originalClassName: RegisterMapper::class),
-			$schemas
+			new SchemaCatalog($this->createMock(originalClassName: RegisterMapper::class), $schemas, $this->createMock(originalClassName: MagicMapper::class))
 		);
 	}//end logService()
 
@@ -195,7 +196,7 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 	 */
 	public function testTheListExportShowsItMasked(): void {
 		$trails = $this->createMock(originalClassName: AuditTrailMapper::class);
-		$trails->method('findAll')->willReturn([$this->entry()]);
+		$trails->method('findTrail')->willReturn([$this->entry()]);
 
 		$file = $this->logService(trails: $trails)->exportLogs(format: 'json', config: ['includeChanges' => true]);
 
@@ -254,7 +255,7 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 		$entry = $this->entry();
 		$entry->setObjectUuid('obj-1');
 		$trails = $this->createMock(originalClassName: AuditTrailMapper::class);
-		$trails->method('findAll')->willReturnCallback(
+		$trails->method('findTrail')->willReturnCallback(AuditTrailListing::positional(
 			static function (?int $limit = null, ?int $offset = null) use ($entry): array {
 				if (($offset ?? 0) > 0) {
 					return [];
@@ -262,7 +263,7 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 
 				return [$entry];
 			}
-		);
+		));
 		$object = new ObjectEntity();
 		$object->setUuid('obj-1');
 		$object->setRegister('5');
@@ -295,7 +296,7 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 			),
 			cursors: $this->auditCursors()
 		);
-		$encoded = (string)json_encode(value: $lister->page(userId: 'alice', limit: 20));
+		$encoded = (string)json_encode(value: $lister->page(userId: 'alice', options: new TrailPageOptions(limit: 20)));
 
 		$this->assertStringContainsString(needle: 'obj-1', haystack: $encoded);
 		$this->assertStringNotContainsString(needle: self::BSN, haystack: $encoded);

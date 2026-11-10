@@ -22,10 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Db;
 
-use OCA\OpenRegister\Db\OrganisationMapperInterface;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCP\IAppConfig;
-use OCP\IGroupManager;
-use OCP\IUserSession;
 
 /**
  * The multi-tenancy and RBAC services the view mapper checks every read and write against.
@@ -36,18 +34,14 @@ final class ViewMapperAccess {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper for multi-tenancy.
-	 * @param IAppConfig                  $appConfig          App configuration for multitenancy settings.
-	 * @param IUserSession                $userSession        User session for RBAC.
-	 * @param IGroupManager               $groupManager       Group manager for RBAC.
+	 * @param TenancyServices $tenancy   The organisation mapper, user session and group manager for multi-tenancy and RBAC.
+	 * @param IAppConfig      $appConfig App configuration for multitenancy settings.
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function __construct(
-		public readonly OrganisationMapperInterface $organisationMapper,
+		public readonly TenancyServices $tenancy,
 		public readonly IAppConfig $appConfig,
-		public readonly IUserSession $userSession,
-		public readonly IGroupManager $groupManager,
 	) {
 	}//end __construct()
 }//end class

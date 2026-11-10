@@ -29,11 +29,14 @@ namespace Unit\Service\Export;
 
 use OCA\OpenRegister\Db\ExportProfile;
 use OCA\OpenRegister\Db\ExportProfileMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Export\ExportAuditRecorder;
+use OCA\OpenRegister\Service\Export\ExportProfileCaller;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportProfileValidator;
 use OCA\OpenRegister\Service\Export\ExportProfileWriter;
@@ -74,8 +77,7 @@ final class ExportProfileServiceTest extends TestCase {
 		return new ExportProfileService(
 			new ExportProfileStores(
 				$this->mapper,
-				$registers,
-				$schemas,
+				new SchemaCatalog($registers, $schemas, $this->createMock(MagicMapperInterface::class)),
 			),
 			new ExportProfileSteps(
 				$this->exportService,
@@ -247,11 +249,11 @@ final class ExportProfileServiceTest extends TestCase {
 	public function testSomebodyElsesProfileIsRefused(): void {
 		$this->expectException(ExportRefusedException::class);
 
-		$this->service()->assertOwnerOrAdmin($this->profile(), 'andere-gebruiker', false);
+		$this->service()->assertOwnerOrAdmin($this->profile(), new ExportProfileCaller('andere-gebruiker', false));
 	}//end testSomebodyElsesProfileIsRefused()
 
 	public function testAnAdministratorMayTouchAnyProfile(): void {
-		$this->service()->assertOwnerOrAdmin($this->profile(), 'andere-gebruiker', true);
+		$this->service()->assertOwnerOrAdmin($this->profile(), new ExportProfileCaller('andere-gebruiker', true));
 
 		self::assertTrue(true);
 	}//end testAnAdministratorMayTouchAnyProfile()

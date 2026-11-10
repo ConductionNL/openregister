@@ -507,7 +507,7 @@ class FlowRunController extends Controller {
 		);
 		$total = $this->mapper->countActive(organisation: $organisation, subject: $subject);
 
-		return $this->page(runs: $runs, total: $total, limit: $limit);
+		return $this->page(runs: $runs, total: $total);
 
 	}//end active()
 
@@ -562,7 +562,7 @@ class FlowRunController extends Controller {
 		);
 		$total = $this->mapper->countCompletedForSubject(organisation: $organisation, subject: $subject);
 
-		return $this->page(runs: $runs, total: $total, limit: $limit);
+		return $this->page(runs: $runs, total: $total);
 
 	}//end completedForSubject()
 
@@ -609,20 +609,21 @@ class FlowRunController extends Controller {
 	 * Shared by the live read and the completed read so the two cannot drift
 	 * apart on shape: the spec makes one row contract a requirement.
 	 *
-	 * @param array<int, FlowRun> $runs The page of runs.
-	 * @param integer $total How many runs matched in all.
-	 * @param integer $limit The page size that was applied.
+	 * The limit is the page size `pageLimit()` applied to the read.
+	 *
+	 * @param array<int, FlowRun> $runs  The page of runs.
+	 * @param integer             $total How many runs matched in all.
 	 *
 	 * @return JSONResponse `{results, total, limit}`.
 	 *
 	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
 	 */
-	private function page(array $runs, int $total, int $limit): JSONResponse {
+	private function page(array $runs, int $total): JSONResponse {
 		return new JSONResponse(
 			[
 				'results' => array_map(fn (FlowRun $run): array => $this->summarise(run: $run), $runs),
 				'total' => $total,
-				'limit' => $limit,
+				'limit' => $this->pageLimit(),
 			]
 		);
 	}//end page()
@@ -958,7 +959,7 @@ class FlowRunController extends Controller {
 		try {
 			$signalled = $this->signals()->signalRunAs(run: $run, payload: $payload, actorUid: $this->callerUid());
 		} catch (FlowSignalRefused $refused) {
-			return $this->refusalResponse(refused: $refused, run: $run, verb: 'resumed');
+			return $this->refusalResponse(refused: $refused, conflict: $this->notSuspended(run: $run, verb: 'resumed'));
 		}
 
 		return new JSONResponse($signalled->jsonSerialize());
@@ -1016,7 +1017,7 @@ class FlowRunController extends Controller {
 		try {
 			$signalled = $this->signals()->signalRunAs(run: $run, payload: $payload, actorUid: $this->callerUid());
 		} catch (FlowSignalRefused $refused) {
-			return $this->refusalResponse(refused: $refused, run: $run, verb: 'signalled');
+			return $this->refusalResponse(refused: $refused, conflict: $this->notSuspended(run: $run, verb: 'signalled'));
 		}
 
 		return new JSONResponse($signalled->jsonSerialize());
@@ -1066,15 +1067,14 @@ class FlowRunController extends Controller {
 	 * because tightening that would break every existing webhook and child-run
 	 * signal, which are not human decisions at all.
 	 *
-	 * @param FlowSignalRefused $refused The seam's refusal.
-	 * @param FlowRun $run The run the signal addressed.
-	 * @param string $verb This endpoint's verb for the 409 wording ('resumed' or 'signalled').
+	 * @param FlowSignalRefused $refused  The seam's refusal.
+	 * @param string            $conflict The 409 wording when the run is not suspended.
 	 *
 	 * @return JSONResponse The 403 or 409 the refusal maps to.
 	 *
 	 * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
 	 */
-	private function refusalResponse(FlowSignalRefused $refused, FlowRun $run, string $verb): JSONResponse {
+	private function refusalResponse(FlowSignalRefused $refused, string $conflict): JSONResponse {
 		if ($refused->getReason() === FlowSignalRefused::NOT_ASSIGNEE) {
 			if ($refused->getActorUid() === null) {
 				return new JSONResponse(
@@ -1089,11 +1089,22 @@ class FlowRunController extends Controller {
 			);
 		}
 
-		return new JSONResponse(
-			['error' => 'Only a suspended run can be ' . $verb . '; this one is ' . $run->getStatus() . '.'],
-			Http::STATUS_CONFLICT
-		);
+		return new JSONResponse(['error' => $conflict], Http::STATUS_CONFLICT);
 	}//end refusalResponse()
+
+	/**
+	 * The 409 wording for a signal that addressed a run which is not suspended.
+	 *
+	 * @param FlowRun $run  The run the signal addressed.
+	 * @param string  $verb This endpoint's verb ('resumed' or 'signalled').
+	 *
+	 * @return string The wording, naming the run's status.
+	 *
+	 * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
+	 */
+	private function notSuspended(FlowRun $run, string $verb): string {
+		return 'Only a suspended run can be ' . $verb . '; this one is ' . $run->getStatus() . '.';
+	}//end notSuspended()
 
 	/**
 	 * The guarded signal seam, made on demand when none was injected.

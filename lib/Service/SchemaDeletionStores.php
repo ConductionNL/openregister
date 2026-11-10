@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
@@ -34,20 +35,40 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
  */
 final class SchemaDeletionStores {
 	/**
+	 * Object mapper.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	public readonly MagicMapperInterface $magicMapper;
+
+	/**
+	 * Register mapper.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	public readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	public readonly SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param MagicMapperInterface      $magicMapper      Object mapper.
-	 * @param RegisterMapperInterface   $registerMapper   Register mapper.
-	 * @param SchemaMapperInterface     $schemaMapper     Schema mapper.
+	 * @param SchemaCatalogInterface    $catalog          Register, schema and magic-table mappers.
 	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper.
 	 *
 	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
 	 */
 	public function __construct(
-		public readonly MagicMapperInterface $magicMapper,
-		public readonly RegisterMapperInterface $registerMapper,
-		public readonly SchemaMapperInterface $schemaMapper,
+		SchemaCatalogInterface $catalog,
 		public readonly AuditTrailMapperInterface $auditTrailMapper,
 	) {
+		$this->magicMapper    = $catalog->tables();
+		$this->registerMapper = $catalog->registers();
+		$this->schemaMapper   = $catalog->schemas();
 	}//end __construct()
 }//end class

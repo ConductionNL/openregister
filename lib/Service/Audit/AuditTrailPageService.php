@@ -26,9 +26,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Audit;
 
+use OCA\OpenRegister\BackgroundJob\AuditExportSource;
 use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\Db\AuditTrailPageQueryInterface;
-use OCA\OpenRegister\Service\LogService;
 use OCP\BackgroundJob\IJobList;
 
 /**
@@ -41,13 +41,11 @@ class AuditTrailPageService implements AuditTrailPageServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailPageQueryInterface $pageQuery  The keyset query.
-	 * @param LogService          $logService Renders an export.
-	 * @param IJobList            $jobList    Queues a large export.
+	 * @param AuditExportSource $source  The keyset query, and the renderer of an export.
+	 * @param IJobList          $jobList Queues a large export.
 	 */
 	public function __construct(
-		private readonly AuditTrailPageQueryInterface $pageQuery,
-		private readonly LogService $logService,
+		private readonly AuditExportSource $source,
 		private readonly IJobList $jobList,
 	) {
 	}//end __construct()
@@ -66,7 +64,7 @@ class AuditTrailPageService implements AuditTrailPageServiceInterface {
 	 * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-an-instance-wide-audit-list-with-filters
 	 */
 	public function page(AuditTrailQuery $query, int $limit, int $cursor): array {
-		$page = $this->pageQuery->page(filters: $query->filters, search: $query->search, limit: $limit, beforeId: $cursor);
+		$page = $this->source->pageQuery->page(filters: $query->filters, search: $query->search, limit: $limit, beforeId: $cursor);
 
 		return [
 			'results' => $page['results'],
@@ -91,31 +89,49 @@ class AuditTrailPageService implements AuditTrailPageServiceInterface {
 	 * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-the-filtered-audit-list-exports-with-its-hash-chain
 	 */
 	public function export(AuditTrailQuery $query, string $format, bool $includeChanges, ?string $actor): array {
-		$collected = $this->pageQuery->collect(filters: $query->filters, search: $query->search, ceiling: JobHandles::AUDIT_TRAIL_EXPORT_INLINE_LIMIT);
+		return $this->exportRows(export: new AuditTrailExport(query: $query, format: $format, includeChanges: $includeChanges, actor: $actor));
+	}//end export()
+
+	/**
+	 * Export inline under the ceiling, or queue the export for the requester above it.
+	 *
+	 * @param AuditTrailExport $export The query, format, change-summary flag and requester.
+	 *
+	 * @return array{queued: bool, rows: int, file: array{content: string, filename: string, contentType: string}|null} The outcome.
+	 *
+	 * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-the-filtered-audit-list-exports-with-its-hash-chain
+	 */
+	private function exportRows(AuditTrailExport $export): array {
+		$query = $export->query;
+		$collected = $this->source->pageQuery->collect(
+			filters: $query->filters,
+			search: $query->search,
+			ceiling: JobHandles::AUDIT_TRAIL_EXPORT_INLINE_LIMIT
+		);
 
 		if ($collected['truncated'] === true) {
 			$this->jobList->add(
 				JobHandles::AUDIT_TRAIL_EXPORT,
 				[
-					'actor' => $actor,
+					'actor' => $export->actor,
 					'filters' => $query->filters,
 					'search' => $query->search,
-					'format' => $format,
-					'includeChanges' => $includeChanges,
+					'format' => $export->format,
+					'includeChanges' => $export->includeChanges,
 				]
 			);
 
 			return ['queued' => true, 'rows' => count($collected['results']), 'file' => null];
 		}
 
-		$file = $this->logService->exportRows(
-			format: $format,
+		$file = $this->source->logService->exportRows(
+			format: $export->format,
 			logs: $collected['results'],
-			config: ['includeChanges' => $includeChanges]
+			config: ['includeChanges' => $export->includeChanges]
 		);
 
 		return ['queued' => false, 'rows' => count($collected['results']), 'file' => $file];
-	}//end export()
+	}//end exportRows()
 
 	/**
 	 * The query a page or an export is selected under.

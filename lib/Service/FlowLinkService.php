@@ -49,10 +49,8 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\FlowLink;
-use OCA\OpenRegister\Db\FlowLinkMapperInterface;
 use OCP\App\IAppManager;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -74,43 +72,19 @@ class FlowLinkService implements FlowLinkServiceInterface {
 	private const REQUIRED_APP = 'workflowengine';
 
 	/**
-	 * Persistence for link rows.
-	 *
-	 * @var FlowLinkMapperInterface
-	 */
-	private readonly FlowLinkMapperInterface $flowLinkMapper;
-
-	/**
-	 * Database connection.
-	 *
-	 * @var IDBConnection
-	 */
-	private readonly IDBConnection $db;
-
-	/**
-	 * NC app manager.
-	 *
-	 * @var IAppManager
-	 */
-	private readonly IAppManager $appManager;
-
-	/**
 	 * Constructor.
 	 *
-	 * @param FlowLinkPlatform $platform Link-row mapper, database connection and app manager.
-	 * @param IUserSession $userSession Active session.
-	 * @param IGroupManager $groupManager Group manager (for admin checks).
-	 * @param LoggerInterface $logger Logger.
+	 * @param FlowLinkPlatform $platform     Link-row mapper, database connection and app manager.
+	 * @param IUserSession     $userSession  Active session.
+	 * @param IGroupManager    $groupManager Group manager (for admin checks).
+	 * @param LoggerInterface  $logger       Logger.
 	 */
 	public function __construct(
-		FlowLinkPlatform $platform,
+		private readonly FlowLinkPlatform $platform,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->flowLinkMapper = $platform->flowLinkMapper;
-		$this->db             = $platform->db;
-		$this->appManager     = $platform->appManager;
 	}//end __construct()
 
 	/**
@@ -119,7 +93,7 @@ class FlowLinkService implements FlowLinkServiceInterface {
 	 * @return bool
 	 */
 	public function isFlowAvailable(): bool {
-		return $this->appManager->isInstalled(self::REQUIRED_APP);
+		return $this->platform->appManager->isInstalled(self::REQUIRED_APP);
 	}//end isFlowAvailable()
 
 	/**
@@ -146,10 +120,8 @@ class FlowLinkService implements FlowLinkServiceInterface {
 	 *
 	 * Admin-only. Idempotent: a duplicate link raises a 409 Exception.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
-	 * @param int $operationId workflowengine operation id.
+	 * @param LinkTarget $target      The parent OR object: its uuid, register id and schema id.
+	 * @param int        $operationId workflowengine operation id.
 	 *
 	 * @return FlowLink The persisted link row.
 	 *
@@ -158,23 +130,7 @@ class FlowLinkService implements FlowLinkServiceInterface {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function linkOperation(string $objectUuid, int $registerId, int $schemaId, int $operationId): FlowLink {
-		$target = (new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))->inSchema(schemaId: $schemaId);
-		return $this->linkToTarget(target: $target, operationId: $operationId);
-	}//end linkOperation()
-
-	/**
-	 * Link a Flow operation to the target object once the caller may and the operation exists.
-	 *
-	 * @param LinkTarget $target      The object, register and schema to link to.
-	 * @param int        $operationId workflowengine operation id.
-	 *
-	 * @return FlowLink The persisted link row.
-	 *
-	 * @throws Exception On missing user, non-admin (403), missing operation (404),
-	 *                   duplicate (409), Flow unavailable (503).
-	 */
-	private function linkToTarget(LinkTarget $target, int $operationId): FlowLink {
+	public function linkOperation(LinkTarget $target, int $operationId): FlowLink {
 		$user  = $this->requireLinkingAdmin();
 		$onRow = $this->requireUnlinkedOperation(objectUuid: $target->objectUuid, operationId: $operationId);
 
@@ -190,8 +146,8 @@ class FlowLinkService implements FlowLinkServiceInterface {
 		$link->setLinkedBy($user->getUID());
 		$link->setLinkedAt(new DateTime());
 
-		return $this->flowLinkMapper->insert($link);
-	}//end linkToTarget()
+		return $this->platform->flowLinkMapper->insert($link);
+	}//end linkOperation()
 
 	/**
 	 * The logged-in administrator, when Flow is available to link against.
@@ -228,7 +184,7 @@ class FlowLinkService implements FlowLinkServiceInterface {
 	 * @throws Exception On duplicate (409) or missing operation (404).
 	 */
 	private function requireUnlinkedOperation(string $objectUuid, int $operationId): array {
-		$existing = $this->flowLinkMapper->findByObjectAndOperation($objectUuid, $operationId);
+		$existing = $this->platform->flowLinkMapper->findByObjectAndOperation($objectUuid, $operationId);
 		if ($existing !== null) {
 			throw new Exception('Operation already linked to this object', 409);
 		}
@@ -261,7 +217,7 @@ class FlowLinkService implements FlowLinkServiceInterface {
 			throw new Exception('Only administrators can unlink Flow operations', 403);
 		}
 
-		$deleted = $this->flowLinkMapper->deleteByObjectAndOperation($objectUuid, $operationId);
+		$deleted = $this->platform->flowLinkMapper->deleteByObjectAndOperation($objectUuid, $operationId);
 		if ($deleted === 0) {
 			throw new Exception('Flow link not found', 404);
 		}
@@ -283,7 +239,7 @@ class FlowLinkService implements FlowLinkServiceInterface {
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function getLinkedOperations(string $objectUuid): array {
-		$links = $this->flowLinkMapper->findByObjectUuid($objectUuid);
+		$links = $this->platform->flowLinkMapper->findByObjectUuid($objectUuid);
 		$available = $this->isFlowAvailable();
 
 		$results = [];
@@ -369,7 +325,7 @@ class FlowLinkService implements FlowLinkServiceInterface {
 	 */
 	private function operationRows(string $search): array {
 		try {
-			$qb = $this->db->getQueryBuilder();
+			$qb = $this->platform->db->getQueryBuilder();
 			$qb->select('id', 'class', 'name', 'entity', 'operation', 'events', 'checks')
 				->from('flow_operations')
 				->orderBy('id', 'DESC');
@@ -416,7 +372,7 @@ class FlowLinkService implements FlowLinkServiceInterface {
 	 */
 	private function fetchOperationRow(int $operationId): ?array {
 		try {
-			$qb = $this->db->getQueryBuilder();
+			$qb = $this->platform->db->getQueryBuilder();
 			$qb->select('id', 'class', 'name', 'entity', 'operation', 'events', 'checks')
 				->from('flow_operations')
 				->where($qb->expr()->eq('id', $qb->createNamedParameter($operationId, IQueryBuilder::PARAM_INT)));
@@ -463,13 +419,9 @@ class FlowLinkService implements FlowLinkServiceInterface {
 	 * @return array<int|string,mixed>
 	 */
 	private function decodeJsonText(string $text): array {
-		try {
-			$decoded = json_decode($text, true);
-			if (is_array($decoded) === true) {
-				return $decoded;
-			}
-		} catch (Throwable $e) {
-			// Fall through.
+		$decoded = json_decode($text, true);
+		if (is_array($decoded) === true) {
+			return $decoded;
 		}
 
 		return [];

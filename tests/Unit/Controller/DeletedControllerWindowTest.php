@@ -42,6 +42,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCA\OpenRegister\Service\Deletion\DeletionRetention;
 use OCA\OpenRegister\Service\Deletion\DeletionServiceBundle;
 use OCA\OpenRegister\Service\Deletion\DestructionServices;
@@ -164,8 +165,7 @@ final class DeletedControllerWindowTest extends TestCase {
 
 		$authorizer = new DeletedObjectAuthorizer(
 			$this->schemaMapper,
-			$session,
-			$groups,
+			new CallerContext($session, $groups),
 			$this->createMock(PermissionHandler::class),
 		);
 
@@ -204,7 +204,7 @@ final class DeletedControllerWindowTest extends TestCase {
 		$this->request->method('getParams')->willReturn([]);
 		$this->objectMapper->method('findDeletedAcrossAllMagicTables')->willReturn([$this->trashed()]);
 		$this->objectMapper->method('countDeletedAcrossAllMagicTables')->willReturn(1);
-		$this->windows->method('windowFor')->willReturn($this->window(30));
+		$this->windows->method('windowOf')->willReturn($this->window(30));
 
 		$data = $this->controller->index()->getData();
 		$row = $data['results'][0];
@@ -218,7 +218,7 @@ final class DeletedControllerWindowTest extends TestCase {
 		$object = $this->trashed();
 		$this->objectMapper->method('find')->willReturn($object);
 		$this->objectMapper->expects(self::once())->method('restoreObject')->willReturn($object);
-		$this->windows->method('windowFor')->willReturn($this->window(30));
+		$this->windows->method('windowOf')->willReturn($this->window(30));
 
 		$recorded = [];
 		$this->auditTrails->expects(self::once())
@@ -243,7 +243,7 @@ final class DeletedControllerWindowTest extends TestCase {
 	public function testADestroyInsideTheWindowRefusesAndSaysHowLongIsLeft(): void {
 		$this->objectMapper->method('find')->willReturn($this->trashed());
 		$this->request->method('getParam')->willReturn(false);
-		$this->windows->method('windowFor')->willReturn($this->window(12));
+		$this->windows->method('windowOf')->willReturn($this->window(12));
 
 		// Spies rather than never() expectations: an unmet expectation raises
 		// inside the controller's own try/catch and comes back as a 500, which
@@ -260,7 +260,7 @@ final class DeletedControllerWindowTest extends TestCase {
 		$this->scopes->method('destroy')->willReturn(
 			['scope' => [], 'destroyed' => [], 'total' => 0, 'failed' => []]
 		);
-		$this->recorder->method('record')->willReturn([]);
+		$this->recorder->method('recordDestruction')->willReturn([]);
 
 		$response = $this->controller->destroy('zaak-100');
 		$body = $response->getData();
@@ -276,7 +276,7 @@ final class DeletedControllerWindowTest extends TestCase {
 		$object = $this->trashed();
 		$this->objectMapper->method('find')->willReturn($object);
 		$this->request->method('getParam')->willReturn(false);
-		$this->windows->method('windowFor')->willReturn($this->window(0));
+		$this->windows->method('windowOf')->willReturn($this->window(0));
 
 		$this->scopes->method('destroy')->willReturn(
 			[
@@ -289,7 +289,7 @@ final class DeletedControllerWindowTest extends TestCase {
 
 		$order = [];
 		$this->recorder->expects(self::once())
-			->method('record')
+			->method('recordDestruction')
 			->willReturnCallback(
 				static function () use (&$order): array {
 					$order[] = 'record';
@@ -339,7 +339,7 @@ final class DeletedControllerWindowTest extends TestCase {
 	public function testThePreviewReportsTheScopeWithCountsAndDestroysNothing(): void {
 		$this->objectMapper->method('find')->willReturn($this->trashed());
 		$this->rights->method('refusalFor')->willReturn(null);
-		$this->windows->method('windowFor')->willReturn($this->window(7));
+		$this->windows->method('windowOf')->willReturn($this->window(7));
 		$this->clocks->method('clocksFor')->willReturn(
 			[
 				'avg'      => ['date' => null, 'rule' => 'no-processing-activity'],

@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Service\Flow\Timer;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
+use OCA\OpenRegister\Db\FlowTimer\TimerSubject;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerEvent;
@@ -56,6 +57,8 @@ use OCA\OpenRegister\Exception\FlowTimerStateException;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
+use OCA\OpenRegister\Service\Task\TimerOutcome;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
@@ -161,11 +164,10 @@ class FlowTimerService implements FlowTimerControlInterface {
 		// Arm-time validation is AUTHORITATIVE: resolve the ladder and check
 		// every preBreach rung on the timeline before anything is written.
 		$this->deadlines()->recompute(scope: new FlowTimerScope(timer: $timer, calendar: $calendar), firedKeys: []);
+		$rungs = $this->arithmetic->ladder->resolveLadder(timer: $timer)['rungs'];
 		$this->arithmetic->ladder->validateAgainstTimeline(
-			rungs: $this->arithmetic->ladder->resolveLadder(timer: $timer)['rungs'],
-			anchorAt: $timer->getAnchorAt(),
-			fireAt: $timer->getFireAt(),
-			calendar: $calendar
+			timeline: new RungTimeline(rungs: $rungs, fireAt: $timer->getFireAt(), firedKeys: [], calendar: $calendar),
+			anchorAt: $timer->getAnchorAt()
 		);
 
 		return $this->transactional(mutation: fn (): FlowTimer => $this->insertArmed(timer: $timer, act: $act));
@@ -229,10 +231,8 @@ class FlowTimerService implements FlowTimerControlInterface {
 		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
 		$priorFireAt = $timer->getFireAt();
 		$consumed = $this->arithmetic->calculator->measure(
-			from: $timer->getRunningSince(),
-			to: $act->now,
-			unit: (string)$timer->getBudgetUnit(),
-			calendar: $calendar
+			span: new CalendarSpan(from: $timer->getRunningSince(), to: $act->now, calendar: $calendar),
+			unit: (string)$timer->getBudgetUnit()
 		);
 
 		return $this->transactional(
@@ -480,7 +480,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function cancelForSubject(string $subjectType, string $subjectUuid, string $reason, ?string $actor, ?DateTimeInterface $now = null): int {
-		$open = $this->storage->timers->findBySubject(subjectType: $subjectType, subjectUuid: $subjectUuid, states: self::OPEN_STATES);
+		$open = $this->storage->timers->findBySubject(subject: new TimerSubject(type: $subjectType, uuid: $subjectUuid), states: self::OPEN_STATES);
 		$cancellation = new FlowTimerLedgerEntry(type: FlowTimerEvent::TYPE_CANCELLED, actor: $actor, reason: $reason, moment: $this->instant(now: $now));
 		return $this->cancelAll(timers: $open, cancellation: $cancellation);
 	}//end cancelForSubject()
@@ -568,7 +568,8 @@ class FlowTimerService implements FlowTimerControlInterface {
 			return null;
 		}
 
-		return $this->arithmetic->calculator->measure(from: $fireAt, to: $now, unit: (string)$timer->getBudgetUnit(), calendar: $scope->calendar);
+		$span = new CalendarSpan(from: $fireAt, to: $now, calendar: $scope->calendar);
+		return $this->arithmetic->calculator->measure(span: $span, unit: (string)$timer->getBudgetUnit());
 	}//end overdueBy()
 
 	/**
@@ -671,7 +672,8 @@ class FlowTimerService implements FlowTimerControlInterface {
 		);
 		foreach ($due as $entry) {
 			$rung = $entry['rung'];
-			$recipients = $this->arithmetic->ladder->resolveRecipients(rung: $rung, subject: $subject, roleBindings: $ladder['roleBindings']);
+			$audience = new EscalationAudience(subject: $subject, roleBindings: $ladder['roleBindings']);
+			$recipients = $this->arithmetic->ladder->resolveRecipients(rung: $rung, audience: $audience);
 			$transition = 'escalation:' . (string)$rung['key'];
 
 			$row = new FlowTimerFire();
@@ -760,10 +762,12 @@ class FlowTimerService implements FlowTimerControlInterface {
 
 		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
 		$added = $this->arithmetic->calculator->convert(
-			value: (float)$extension->amount,
-			fromUnit: $this->arithmetic->calculator->validateUnit(unit: $extension->unit),
-			toUnit: (string)$timer->getBudgetUnit(),
-			calendar: $calendar
+			conversion: new UnitConversion(
+				value: (float)$extension->amount,
+				fromUnit: $this->arithmetic->calculator->validateUnit(unit: $extension->unit),
+				toUnit: (string)$timer->getBudgetUnit(),
+				calendar: $calendar
+			)
 		);
 
 		return $this->transactional(
@@ -805,9 +809,10 @@ class FlowTimerService implements FlowTimerControlInterface {
 			$byKey[(string)$rung['key']] = $rung;
 		}
 
+		$timeline = new RungTimeline(rungs: array_values($byKey), fireAt: $fireAt, firedKeys: [], calendar: $scope->calendar);
 		$passed = [];
 		foreach ($byKey as $key => $rung) {
-			if ($this->arithmetic->ladder->rungInstant(rung: $rung, fireAt: $fireAt, calendar: $scope->calendar) <= $now) {
+			if ($this->arithmetic->ladder->rungInstant(rung: $rung, timeline: $timeline) <= $now) {
 				$passed[] = (string)$key;
 			}
 		}
@@ -924,9 +929,13 @@ class FlowTimerService implements FlowTimerControlInterface {
 		try {
 			$this->subjects->taskService->applyTimerOutcome(
 				uuid: (string)$timer->getSubjectUuid(),
-				outcome: $outcome,
-				source: 'flow-timer:' . (string)$timer->getUuid(),
-				reason: sprintf("Expiry timer '%s' (%s) reached its deadline.", (string)$timer->getUuid(), $basis)
+				outcome: new TimerOutcome(
+					outcome: $outcome,
+					trigger: new TaskTrigger(
+						source: 'flow-timer:' . (string)$timer->getUuid(),
+						reason: sprintf("Expiry timer '%s' (%s) reached its deadline.", (string)$timer->getUuid(), $basis)
+					)
+				)
 			);
 		} catch (TaskConflictException $race) {
 			// The task closed concurrently: nothing to do, the timer is cancelled by that close.
@@ -1057,7 +1066,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * @return FlowTimerFactory The factory.
 	 */
 	private function factory(): FlowTimerFactory {
-		return new FlowTimerFactory(calendars: $this->arithmetic->calendars, calculator: $this->arithmetic->calculator, ladder: $this->arithmetic->ladder);
+		return new FlowTimerFactory(arithmetic: $this->arithmetic);
 	}//end factory()
 
 	/**

@@ -31,6 +31,8 @@ use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\Task\TaskAct;
+use OCA\OpenRegister\Service\Task\TaskAnswer;
+use OCA\OpenRegister\Service\Task\TaskAnswerPayload;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
 use OCA\OpenRegister\Service\Task\TaskCommit;
@@ -39,6 +41,8 @@ use OCA\OpenRegister\Service\Task\TaskLifecycleServices;
 use OCA\OpenRegister\Service\Task\TaskPerformerResolver;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskTables;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
+use OCA\OpenRegister\Service\Task\TimerOutcome;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -227,7 +231,7 @@ class TaskServiceVerbGoldenTest extends TestCase {
 		$task->setEvidence(['kept' => true]);
 		$this->stored($task);
 
-		$done = $this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: null, comment: null, actor: 'alice');
+		$done = $this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'alice');
 
 		$this->assertSame(['kept' => true], $done->getResponses());
 		$this->assertSame(['kept' => true], $done->getEvidence());
@@ -253,7 +257,7 @@ class TaskServiceVerbGoldenTest extends TestCase {
 		$this->db->expects($this->never())->method('beginTransaction');
 
 		try {
-			$this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: null, comment: null, actor: 'mallory');
+			$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'mallory');
 			$this->fail('Expected a denial');
 		} catch (TaskAccessDeniedException $thrown) {
 			$this->assertSame($denial, $thrown);
@@ -312,7 +316,7 @@ class TaskServiceVerbGoldenTest extends TestCase {
 		$this->db->expects($this->never())->method('beginTransaction');
 
 		$this->expectRefusal(
-			fn () => $this->service()->complete(uuid: 't-7', outcome: 'Rejected', resultText: null, comment: '  ', actor: 'alice'),
+			fn () => $this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'Rejected', comment: '  '), actor: 'alice'),
 			TaskValidationException::class,
 			"Outcome 'Rejected' rejects or returns the work, so a non-empty comment is mandatory."
 		);
@@ -323,7 +327,7 @@ class TaskServiceVerbGoldenTest extends TestCase {
 		$task->setOnReject('dead_letter');
 		$this->stored($task);
 
-		$done = $this->service()->complete(uuid: 't-7', outcome: 'denied', resultText: null, comment: 'bad', actor: 'alice');
+		$done = $this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'denied', comment: 'bad'), actor: 'alice');
 
 		$this->assertSame(Task::STATE_DISABLED, $done->getState());
 		$this->assertSame('dead_letter', $done->getOutcome());
@@ -339,7 +343,7 @@ class TaskServiceVerbGoldenTest extends TestCase {
 		$task->setOnReject('skip');
 		$this->stored($task);
 
-		$done = $this->service()->complete(uuid: 't-7', outcome: 'rejected', resultText: null, comment: 'bad', actor: 'alice');
+		$done = $this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: 'bad'), actor: 'alice');
 
 		$this->assertSame(Task::STATE_COMPLETED, $done->getState());
 		$this->assertSame('rejected', $done->getOutcome());
@@ -351,7 +355,7 @@ class TaskServiceVerbGoldenTest extends TestCase {
 		$this->openWrites = [false];
 
 		$this->expectRefusal(
-			fn () => $this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: null, comment: null, actor: 'alice'),
+			fn () => $this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'alice'),
 			TaskConflictException::class,
 			"Task 't-7' was closed concurrently; this change was not applied."
 		);
@@ -544,13 +548,13 @@ class TaskServiceVerbGoldenTest extends TestCase {
 		$this->stored($closed);
 		$this->db->expects($this->never())->method('beginTransaction');
 
-		$this->assertSame($closed, $this->service()->terminateAsMoot(uuid: 't-7', reason: 'r', source: 'flow'));
+		$this->assertSame($closed, $this->service()->terminateAsMoot(uuid: 't-7', trigger: new TaskTrigger(source: 'flow', reason: 'r')));
 	}//end testTerminateAsMootSkipsATerminalTask()
 
 	public function testTerminateAsMootTerminates(): void {
 		$this->stored($this->task());
 
-		$done = $this->service()->terminateAsMoot(uuid: 't-7', reason: 'moot', source: 'flow:x');
+		$done = $this->service()->terminateAsMoot(uuid: 't-7', trigger: new TaskTrigger(source: 'flow:x', reason: 'moot'));
 
 		$this->assertSame(['terminated', Task::STATE_TERMINATED, 'terminate'], [$done->getOutcome(), $done->getState(), $done->getLastAction()]);
 		$this->assertSame(['terminate', 'flow:x', 'moot'], [$this->onlyAudit()['action'], $this->onlyAudit()['actor'], $this->onlyAudit()['reason']]);
@@ -563,7 +567,7 @@ class TaskServiceVerbGoldenTest extends TestCase {
 		$this->stored($task);
 		$this->db->expects($this->once())->method('commit');
 
-		$done = $this->service()->consume(uuid: 't-7', source: 'flow:a', reason: 'used');
+		$done = $this->service()->consume(uuid: 't-7', trigger: new TaskTrigger(source: 'flow:a', reason: 'used'));
 
 		$metadata = $done->getMetadata();
 		$this->assertSame(1, $metadata['keep']);
@@ -574,7 +578,7 @@ class TaskServiceVerbGoldenTest extends TestCase {
 		$metadata['consumedAt'] = '2020-01-01T00:00:00+00:00';
 		$task->setMetadata($metadata);
 		$this->expectRefusal(
-			fn () => $this->service()->consume(uuid: 'T-7', source: 'flow:b', reason: 'again'),
+			fn () => $this->service()->consume(uuid: 'T-7', trigger: new TaskTrigger(source: 'flow:b', reason: 'again')),
 			TaskConflictException::class,
 			"Verb 'consume' refused: the approval on task 'T-7' was already consumed at 2020-01-01T00:00:00+00:00 by flow:a, and an approval authorizes exactly once."
 		);
@@ -587,7 +591,7 @@ class TaskServiceVerbGoldenTest extends TestCase {
 		$this->stored($task);
 
 		$this->expectRefusal(
-			fn () => $this->service()->consume(uuid: 't-7', source: 'flow:b', reason: 'again'),
+			fn () => $this->service()->consume(uuid: 't-7', trigger: new TaskTrigger(source: 'flow:b', reason: 'again')),
 			TaskConflictException::class,
 			"Verb 'consume' refused: the approval on task 't-7' was already consumed at yesterday by an unrecorded consumer, and an approval authorizes exactly once."
 		);
@@ -605,7 +609,7 @@ class TaskServiceVerbGoldenTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('db down');
-		$this->service()->consume(uuid: 't-7', source: 'flow:a', reason: 'used');
+		$this->service()->consume(uuid: 't-7', trigger: new TaskTrigger(source: 'flow:a', reason: 'used'));
 	}//end testConsumeRollsBackWhenTheAuditFails()
 
 	public function testConsumeRefusesARejectionAndAnUndecidedOutcome(): void {
@@ -614,14 +618,14 @@ class TaskServiceVerbGoldenTest extends TestCase {
 		$this->stored($task);
 
 		$this->expectRefusal(
-			fn () => $this->service()->consume(uuid: 't-7', source: 's', reason: 'r'),
+			fn () => $this->service()->consume(uuid: 't-7', trigger: new TaskTrigger(source: 's', reason: 'r')),
 			TaskConflictException::class,
 			"Verb 'consume' refused: task 't-7' is not an approving decision (state 'completed', outcome 'rejected')."
 		);
 
 		$task->setOutcome('noted');
 		$this->expectRefusal(
-			fn () => $this->service()->consume(uuid: 't-7', source: 's', reason: 'r'),
+			fn () => $this->service()->consume(uuid: 't-7', trigger: new TaskTrigger(source: 's', reason: 'r')),
 			TaskConflictException::class,
 			"Verb 'consume' refused: task 't-7' is undecided: outcome 'noted' neither approves nor rejects."
 		);
@@ -631,18 +635,18 @@ class TaskServiceVerbGoldenTest extends TestCase {
 		$task = $this->task(state: Task::STATE_TERMINATED);
 		$this->stored($task);
 		$this->expectRefusal(
-			fn () => $this->service()->enable(uuid: 'T-7', source: 's', reason: 'r'),
+			fn () => $this->service()->enable(uuid: 'T-7', trigger: new TaskTrigger(source: 's', reason: 'r')),
 			TaskConflictException::class,
 			"Verb 'enable' refused: task 'T-7' is already in terminal state 'terminated'."
 		);
 
 		$task->setState(Task::STATE_ACTIVE);
 		$task->setIsTerminal(false);
-		$this->assertSame($task, $this->service()->enable(uuid: 't-7', source: 's', reason: 'r'));
+		$this->assertSame($task, $this->service()->enable(uuid: 't-7', trigger: new TaskTrigger(source: 's', reason: 'r')));
 		$this->assertSame([], $this->written);
 
 		$task->setState(Task::STATE_AVAILABLE);
-		$done = $this->service()->enable(uuid: 't-7', source: 'timer', reason: 'due');
+		$done = $this->service()->enable(uuid: 't-7', trigger: new TaskTrigger(source: 'timer', reason: 'due'));
 		$this->assertSame([Task::STATE_ENABLED, 'enable'], [$done->getState(), $done->getLastAction()]);
 		$this->assertSame(['enable', 'timer', 'due'], [$this->onlyAudit()['action'], $this->onlyAudit()['actor'], $this->onlyAudit()['reason']]);
 	}//end testEnableRefusesTerminalSkipsOpenAndEnablesAvailable()
@@ -669,7 +673,7 @@ class TaskServiceVerbGoldenTest extends TestCase {
 		$task->setBlockedReason('b');
 		$this->stored($task);
 
-		$done = $this->service()->applyTimerOutcome(uuid: 't-7', outcome: $outcome, source: 'timer', reason: 'expired');
+		$done = $this->service()->applyTimerOutcome(uuid: 't-7', outcome: new TimerOutcome(outcome: $outcome, trigger: new TaskTrigger(source: 'timer', reason: 'expired')));
 
 		$this->assertSame([$state, $recorded, $action, null], [$done->getState(), $done->getOutcome(), $done->getLastAction(), $done->getBlockedReason()]);
 		$this->assertSame($completed, $done->getCompletedBy() === 'timer');
@@ -700,7 +704,7 @@ class TaskServiceVerbGoldenTest extends TestCase {
 		$this->tasks->expects($this->never())->method('findByUuid');
 
 		$this->expectRefusal(
-			fn () => $this->service()->applyTimerOutcome(uuid: 't-7', outcome: $outcome, source: 's', reason: 'r'),
+			fn () => $this->service()->applyTimerOutcome(uuid: 't-7', outcome: new TimerOutcome(outcome: $outcome, trigger: new TaskTrigger(source: 's', reason: 'r'))),
 			TaskValidationException::class,
 			$message
 		);
@@ -711,7 +715,7 @@ class TaskServiceVerbGoldenTest extends TestCase {
 		$this->stored($closed);
 		$this->db->expects($this->never())->method('beginTransaction');
 
-		$this->assertSame($closed, $this->service()->applyTimerOutcome(uuid: 't-7', outcome: 'skip', source: 's', reason: 'r'));
+		$this->assertSame($closed, $this->service()->applyTimerOutcome(uuid: 't-7', outcome: new TimerOutcome(outcome: 'skip', trigger: new TaskTrigger(source: 's', reason: 'r'))));
 	}//end testATimerOutcomeOnATerminalTaskChangesNothing()
 
 	public function testRecordAppendsAnAuthorizedEntryOnAnyTask(): void {

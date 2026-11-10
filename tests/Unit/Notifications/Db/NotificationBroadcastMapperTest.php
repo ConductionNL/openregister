@@ -25,6 +25,7 @@ use OCA\OpenRegister\Notifications\Db\BroadcastMessage;
 use OCA\OpenRegister\Notifications\Db\BroadcastWindow;
 use OCA\OpenRegister\Notifications\Db\NotificationBroadcast;
 use OCA\OpenRegister\Notifications\Db\NotificationBroadcastMapper;
+use OCA\OpenRegister\Notifications\Service\Notification\OutgoingBroadcast;
 use OCA\OpenRegister\Tests\Unit\Db\RecordingQueryBuilderTrait;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
@@ -57,7 +58,7 @@ final class NotificationBroadcastMapperTest extends TestCase {
 		$starts = new DateTime('2026-01-01 00:00:00');
 		$ends = new DateTime('2026-01-31 00:00:00');
 
-		$entity = $mapper->record('b-1', 'admin', new BroadcastMessage('Maintenance', 'Tonight'), new BroadcastWindow($starts, $ends));
+		$entity = $mapper->record('b-1', new OutgoingBroadcast(new BroadcastMessage('Maintenance', 'Tonight'), 'admin', new BroadcastWindow($starts, $ends)));
 
 		$this->assertSame('b-1', $entity->getUuid());
 		$this->assertSame('Maintenance', $entity->getSubject());
