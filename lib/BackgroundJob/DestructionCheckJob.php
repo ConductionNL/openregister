@@ -145,11 +145,9 @@ class DestructionCheckJob extends TimedJob {
 	 * @return DestructionCheckRun
 	 */
 	private function startCheck(LoggerInterface $logger): DestructionCheckRun {
-		$check            = new DestructionCheckRun();
-		$check->logger    = $logger;
-		$check->retention = $this->container->get(RetentionServiceInterface::class);
-		$settingsHandler  = $this->container->get(ArchivalSettingsReaderInterface::class);
-		$check->settings  = $settingsHandler->getArchivalSettingsOnly();
+		$check           = new DestructionCheckRun(logger: $logger, retention: $this->container->get(RetentionServiceInterface::class));
+		$settingsHandler = $this->container->get(ArchivalSettingsReaderInterface::class);
+		$check->settings = $settingsHandler->getArchivalSettingsOnly();
 		return $check;
 	}//end startCheck()
 

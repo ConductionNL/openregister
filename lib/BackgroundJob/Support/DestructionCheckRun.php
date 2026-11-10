@@ -34,23 +34,23 @@ use Psr\Log\LoggerInterface;
 final class DestructionCheckRun {
 
 	/**
-	 * The run's logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	public LoggerInterface $logger;
-
-	/**
-	 * The retention service the run asks for eligible objects and the list.
-	 *
-	 * @var RetentionServiceInterface
-	 */
-	public RetentionServiceInterface $retention;
-
-	/**
 	 * The archival settings, read once at the start of the run.
 	 *
 	 * @var array<string, mixed>
 	 */
 	public array $settings = [];
+
+	/**
+	 * Constructor.
+	 *
+	 * @param LoggerInterface           $logger    The run's logger.
+	 * @param RetentionServiceInterface $retention The retention service the run asks for eligible objects and the list.
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function __construct(
+		public readonly LoggerInterface $logger,
+		public readonly RetentionServiceInterface $retention,
+	) {
+	}//end __construct()
 }//end class
