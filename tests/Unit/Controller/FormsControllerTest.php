@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Service\Form\FormDestination;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FormsControllerFactory;
 use OCA\OpenRegister\Controller\FormsController;
 use OCA\OpenRegister\Db\Schema;
@@ -251,7 +252,7 @@ class FormsControllerTest extends TestCase {
 		$this->params = ['mapping' => ['fields' => []], 'destination' => ['register' => 'dossiq', 'schema' => 'case'], 'audience' => 'public'];
 		$this->schemas->method('find')->with('case')->willReturn($schema);
 		$findings = [['property' => 'caseType', 'code' => 'required-unmapped', 'message' => 'm']];
-		$this->validator->expects($this->exactly(2))->method('validate')->with(['fields' => []], $schema, ['audience' => 'public'])
+		$this->validator->expects($this->exactly(2))->method('validate')->with(['fields' => []], new FormDestination(schema: $schema, audience: 'public'))
 			->willReturnOnConsecutiveCalls($findings, []);
 
 		$refused = $this->controller->validate();

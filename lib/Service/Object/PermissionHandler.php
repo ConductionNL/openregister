@@ -3009,8 +3009,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 				array_filter(
 					$resolver->groupsFor(
 						grants: $grants,
-						area: $this->areaOf(schema: $schema),
-						constraints: $this->grantConstraints()
+						area: $this->areaOf(schema: $schema)
 					),
 					static fn (string $group): bool => in_array($group, $reserved, true) === false
 				)

@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Service\BulkJob;
 use DateTime;
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
 use OCA\OpenRegister\BulkAction\BulkActionOutcomeInterface;
+use OCA\OpenRegister\BulkAction\BulkStep;
 use OCA\OpenRegister\BulkAction\ReversibleBulkActionInterface;
 use OCA\OpenRegister\Db\AuditTrail\NamedActor;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
@@ -290,10 +291,12 @@ class BulkJobExecutor {
 		}
 
 		return $pass->action->apply(
-			object: $object,
-			parameters: ($pass->job->getParameters() ?? []),
-			commit: false,
-			actor: $pass->actor
+			step: new BulkStep(
+				object: $object,
+				parameters: ($pass->job->getParameters() ?? []),
+				commit: false,
+				actor: $pass->actor
+			)
 		);
 	}//end rehearse()
 
@@ -329,10 +332,12 @@ class BulkJobExecutor {
 		$plan = $this->reversalPlanOf(pass: $pass, object: $object);
 
 		$result = $pass->action->apply(
-			object: $object,
-			parameters: ($job->getParameters() ?? []),
-			commit: true,
-			actor: $pass->actor
+			step: new BulkStep(
+				object: $object,
+				parameters: ($job->getParameters() ?? []),
+				commit: true,
+				actor: $pass->actor
+			)
 		);
 
 		if ($result->isApplied() === true) {
