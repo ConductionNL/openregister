@@ -124,6 +124,50 @@ import {
 } from '@conduction/nextcloud-vue'
 import { NcButton, NcDialog } from '@nextcloud/vue'
 
+/**
+ * The schema an `allOf` entry names, by id, uuid or slug.
+ *
+ * @param {object|string} ref The entry: a reference object or the identifier
+ * @return {object|undefined} The schema, when the list holds it
+ */
+function findParentSchema(ref) {
+	const schemaId = typeof ref === 'object' ? ref.id : ref
+	return schemaStore.schemaList.find(
+		(s) => s.id === schemaId || s.uuid === schemaId || s.slug === schemaId,
+	)
+}
+
+/**
+ * The ids of the Nextcloud groups, read through the OCS API.
+ *
+ * @return {Promise<Array<string>|null>} The ids, or null when the answer has none
+ */
+async function fetchGroupIds() {
+	const response = await fetch('/ocs/v1.php/cloud/groups?format=json', {
+		headers: { 'OCS-APIRequest': 'true' },
+	})
+	if (!response.ok) {
+		return null
+	}
+	const data = await response.json()
+	return data.ocs?.data?.groups || null
+}
+
+/**
+ * Why a draft save failed: the API's error, the request's message, or the
+ * default.
+ *
+ * @param {object} error The failure
+ * @return {string} The message
+ */
+function draftSaveError(error) {
+	return (
+		error?.response?.data?.error
+		|| error.message
+		|| 'An error occurred while saving the draft'
+	)
+}
+
 export default {
 	name: 'EditSchema',
 	components: {
@@ -190,13 +234,7 @@ export default {
 
 			const merged = {}
 			for (const ref of allOf) {
-				const schemaId = typeof ref === 'object' ? ref.id : ref
-				const parentSchema = schemaStore.schemaList.find(
-					(s) =>
-						s.id === schemaId
-						|| s.uuid === schemaId
-						|| s.slug === schemaId,
-				)
+				const parentSchema = findParentSchema(ref)
 				if (parentSchema?.properties) {
 					Object.assign(merged, parentSchema.properties)
 				}
@@ -237,23 +275,12 @@ export default {
 		async loadUserGroups() {
 			this.loadingGroups = true
 			try {
-				const response = await fetch(
-					'/ocs/v1.php/cloud/groups?format=json',
-					{
-						headers: { 'OCS-APIRequest': 'true' },
-					},
-				)
-
-				if (response.ok) {
-					const data = await response.json()
-					if (data.ocs?.data?.groups) {
-						this.userGroups = data.ocs.data.groups.map((groupId) => ({
-							id: groupId,
-							displayname: groupId,
-						}))
-					} else {
-						this.setFallbackGroups()
-					}
+				const groups = await fetchGroupIds()
+				if (groups) {
+					this.userGroups = groups.map((groupId) => ({
+						id: groupId,
+						displayname: groupId,
+					}))
 				} else {
 					this.setFallbackGroups()
 				}
@@ -321,26 +348,39 @@ export default {
 					error: response.ok ? undefined : 'Failed to save schema',
 				})
 			} catch (error) {
-				// A breaking change is a QUESTION, not a failure: show what the server
-				// objected to and let the user decide. Never acknowledge on their behalf —
-				// the first save always goes without the flag.
-				//
-				// The shared contract only raises this when the attempt was NOT already
-				// acknowledged, so an acknowledged save that is still refused falls through
-				// to the error branch instead of re-opening this prompt forever.
-				if (error instanceof SchemaBreakingChangeError) {
-					this.pendingBreaking = {
-						schema: schemaData,
-						changes: error.changes,
-					}
-					return
-				}
-				this.pendingBreaking = null
-				this.$refs.schemaFormDialog.setResult({
-					error:
-						error.message || 'An error occurred while saving the schema',
-				})
+				this.showSaveRefusal(schemaData, error)
 			}
+		},
+
+		/**
+		 * Show why a save did not go through: a breaking change becomes a
+		 * question, anything else the dialog's error.
+		 *
+		 * @param {object} schemaData - The schema payload that was saved.
+		 * @param {Error} error - Why the save failed.
+		 * @return {void}
+		 * @spec exclude modal submit handler delegating to schemaStore.saveSchema
+		 */
+		showSaveRefusal(schemaData, error) {
+			// A breaking change is a QUESTION, not a failure: show what the server
+			// objected to and let the user decide. Never acknowledge on their behalf —
+			// the first save always goes without the flag.
+			//
+			// The shared contract only raises this when the attempt was NOT already
+			// acknowledged, so an acknowledged save that is still refused falls through
+			// to the error branch instead of re-opening this prompt forever.
+			if (error instanceof SchemaBreakingChangeError) {
+				this.pendingBreaking = {
+					schema: schemaData,
+					changes: error.changes,
+				}
+				return
+			}
+			this.pendingBreaking = null
+			this.$refs.schemaFormDialog.setResult({
+				error:
+					error.message || 'An error occurred while saving the schema',
+			})
 		},
 
 		/**
@@ -359,10 +399,7 @@ export default {
 				this.$refs.schemaFormDialog.setResult({ success: true })
 			} catch (error) {
 				this.$refs.schemaFormDialog.setResult({
-					error:
-						error?.response?.data?.error
-						|| error.message
-						|| 'An error occurred while saving the draft',
+					error: draftSaveError(error),
 				})
 			}
 		},
