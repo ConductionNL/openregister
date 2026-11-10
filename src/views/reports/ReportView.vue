@@ -234,6 +234,23 @@ const ICON_MAP = {
 }
 
 /**
+ * Ask the server to render a report in a format, as a blob.
+ *
+ * @param {string} id The report id
+ * @param {string} format The export format (e.g. pdf, xlsx)
+ * @return {Promise<object>} The response; its data is the file
+ */
+function requestRender(id, format) {
+	return axios.post(
+		generateUrl(
+			`/apps/openregister/api/reports/${encodeURIComponent(id)}/render`,
+		),
+		null,
+		{ params: { format }, responseType: 'blob' },
+	)
+}
+
+/**
  * Let the browser save a blob under a file name.
  *
  * @param {Blob} blob The file
@@ -432,13 +449,7 @@ export default {
 			const id = this.$route.params.id
 			if (!id) return
 			try {
-				const response = await axios.post(
-					generateUrl(
-						`/apps/openregister/api/reports/${encodeURIComponent(id)}/render`,
-					),
-					null,
-					{ params: { format }, responseType: 'blob' },
-				)
+				const response = await requestRender(id, format)
 				const filename =
 					this._extractFilename(response)
 					|| `${this.dashboard?.titel || 'dashboard'}.${format}`
