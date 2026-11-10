@@ -217,48 +217,115 @@ class HierarchyAnnotationValidator implements HierarchyAnnotationValidatorInterf
 	 * @return array<int, array{code: string, message: string, severity: string}> The findings.
 	 */
 	private function checkParentProperty(string $parent, array $schema): array {
-		$property = null;
-		if (is_array($schema['properties'] ?? null) === true) {
-			$property = ($schema['properties'][$parent] ?? null);
-		}
-
+		$property = self::declaredProperty(name: $parent, schema: $schema);
 		if (is_array($property) === false) {
-			return [
-				$this->error(
-					code: 'hierarchy.unknown-property',
-					message: 'The parent property "' . $parent . '" is not a property of this schema.'
-				),
-			];
+			return [$this->unknownPropertyError(parent: $parent)];
 		}
 
-		// `$ref` is how this app declares a reference, and it carries the
-		// target's SLUG. `objectConfiguration.schema` is the older spelling and
-		// is read too, for the same reason both parent spellings are: a schema
-		// saved before the newer one existed would otherwise read as declaring
-		// no reference at all and be refused on upgrade.
-		$target = trim((string)($property['$ref'] ?? ($property['objectConfiguration']['schema'] ?? '')));
+		$target = self::referenceTarget(property: $property);
 		if ($target === '') {
-			return [
-				$this->error(
-					code: 'hierarchy.not-a-reference',
-					message: 'The parent property "' . $parent . '" is not declared as a reference to another object.'
-				),
-			];
+			return [$this->notAReferenceError(parent: $parent)];
 		}
 
-		$identities = self::identitiesOf(schema: $schema);
-		if ($identities !== [] && $this->targetsSelf(target: $target, identities: $identities) === false) {
-			return [
-				$this->error(
-					code: 'hierarchy.foreign-reference',
-					message: 'The parent property "' . $parent . '" references "' . $target
-						. '" rather than this schema; a hierarchy edge must point at the same schema.'
-				),
-			];
+		if ($this->pointsElsewhere(target: $target, schema: $schema) === true) {
+			return [$this->foreignReferenceError(parent: $parent, target: $target)];
 		}
 
 		return [];
 	}//end checkParentProperty()
+
+	/**
+	 * The schema's declaration of a property, or null when it has none.
+	 *
+	 * @param string               $name   The property name.
+	 * @param array<string, mixed> $schema The schema shape being validated.
+	 *
+	 * @return mixed The declaration (an array when it is a usable one).
+	 */
+	private static function declaredProperty(string $name, array $schema): mixed {
+		if (is_array($schema['properties'] ?? null) === false) {
+			return null;
+		}
+
+		return ($schema['properties'][$name] ?? null);
+	}//end declaredProperty()
+
+	/**
+	 * The schema a property declares a reference to, or '' when it declares none.
+	 *
+	 * `$ref` is how this app declares a reference, and it carries the
+	 * target's SLUG. `objectConfiguration.schema` is the older spelling and
+	 * is read too, for the same reason both parent spellings are: a schema
+	 * saved before the newer one existed would otherwise read as declaring
+	 * no reference at all and be refused on upgrade.
+	 *
+	 * @param array<string, mixed> $property The property declaration.
+	 *
+	 * @return string The target, trimmed.
+	 */
+	private static function referenceTarget(array $property): string {
+		return trim((string)($property['$ref'] ?? ($property['objectConfiguration']['schema'] ?? '')));
+	}//end referenceTarget()
+
+	/**
+	 * Whether a reference target names some other schema than this one.
+	 *
+	 * A schema shape carrying no identity at all cannot be compared, and is not refused.
+	 *
+	 * @param string               $target The referenced schema.
+	 * @param array<string, mixed> $schema The schema shape being validated.
+	 *
+	 * @return bool True when the target is not this schema.
+	 */
+	private function pointsElsewhere(string $target, array $schema): bool {
+		$identities = self::identitiesOf(schema: $schema);
+
+		return ($identities !== [] && $this->targetsSelf(target: $target, identities: $identities) === false);
+	}//end pointsElsewhere()
+
+	/**
+	 * The finding for a parent property the schema does not declare.
+	 *
+	 * @param string $parent The declared parent property.
+	 *
+	 * @return array{code: string, message: string, severity: string}
+	 */
+	private function unknownPropertyError(string $parent): array {
+		return $this->error(
+			code: 'hierarchy.unknown-property',
+			message: 'The parent property "' . $parent . '" is not a property of this schema.'
+		);
+	}//end unknownPropertyError()
+
+	/**
+	 * The finding for a parent property that is not a reference.
+	 *
+	 * @param string $parent The declared parent property.
+	 *
+	 * @return array{code: string, message: string, severity: string}
+	 */
+	private function notAReferenceError(string $parent): array {
+		return $this->error(
+			code: 'hierarchy.not-a-reference',
+			message: 'The parent property "' . $parent . '" is not declared as a reference to another object.'
+		);
+	}//end notAReferenceError()
+
+	/**
+	 * The finding for a parent property that references another schema.
+	 *
+	 * @param string $parent The declared parent property.
+	 * @param string $target The schema it references.
+	 *
+	 * @return array{code: string, message: string, severity: string}
+	 */
+	private function foreignReferenceError(string $parent, string $target): array {
+		return $this->error(
+			code: 'hierarchy.foreign-reference',
+			message: 'The parent property "' . $parent . '" references "' . $target
+				. '" rather than this schema; a hierarchy edge must point at the same schema.'
+		);
+	}//end foreignReferenceError()
 
 	/**
 	 * Every spelling by which a `$ref` can name this schema.
