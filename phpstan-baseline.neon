@@ -3900,6 +3900,16 @@ parameters:
 			path: lib/Service/Edepot/TransferListService.php
 
 		-
+			message: "#^Call to method getServerPublicHostKey\\(\\) on an unknown class phpseclib3\\\\Net\\\\SFTP\\.$#"
+			count: 1
+			path: lib/Service/Edepot/Transport/SftpTransport.php
+
+		-
+			message: "#^Parameter \\$sftp of method OCA\\\\OpenRegister\\\\Service\\\\Edepot\\\\Transport\\\\SftpTransport\\:\\:assertHostKey\\(\\) has invalid type phpseclib3\\\\Net\\\\SFTP\\.$#"
+			count: 2
+			path: lib/Service/Edepot/Transport/SftpTransport.php
+
+		-
 			message: "#^Call to method login\\(\\) on an unknown class phpseclib3\\\\Net\\\\SFTP\\.$#"
 			count: 2
 			path: lib/Service/Edepot/Transport/SftpTransport.php
