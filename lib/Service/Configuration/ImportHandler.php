@@ -3372,7 +3372,8 @@ class ImportHandler {
 			$remembered = $this->seedHashes()->shipped(appId: (string)$seed->appId, seed: $seedKey);
 		}
 
-		$follow = $this->shippedContent->update(stored: $listed['existing'], shipped: $listed['data'], remembered: $remembered);
+		$shipped = new ShippedSeed(content: $listed['data'], remembered: $remembered);
+		$follow  = $this->shippedContent->updateFrom(stored: $listed['existing'], shipped: $shipped);
 		if ($follow !== null) {
 			$object = $this->saveListedObject(seed: $seed, save: ['data' => $follow, 'uuid' => $listed['uuid']]);
 			$this->rememberShippedContent(seed: $seed, shipped: $listed['data']);
@@ -3442,7 +3443,7 @@ class ImportHandler {
 			return;
 		}
 
-		$this->seedHashes()->record(appId: (string)$seed->appId, seed: $seedKey, version: $this->shippedContent->hash(shipped: $shipped));
+		$this->seedHashes()->recordVersions(appId: (string)$seed->appId, versions: [$seedKey => $this->shippedContent->hash(shipped: $shipped)]);
 	}//end rememberShippedContent()
 
 	/**
@@ -3459,7 +3460,7 @@ class ImportHandler {
 			return;
 		}
 
-		$this->seedVersions()->record(appId: (string)$seed->appId, seed: $seedKey, version: $version);
+		$this->seedVersions()->recordVersions(appId: (string)$seed->appId, versions: [$seedKey => $version]);
 	}//end rememberShippedVersion()
 
 	/**
@@ -3987,11 +3988,13 @@ class ImportHandler {
 			$this->importJobRecorder->end();
 		}
 
-		$recorded = $this->importJobRecorder->record(
-			appId: $import->appId,
-			importJobId: $importJobId,
-			version: $import->version,
-			objectsWritten: count((array)($result['objects'] ?? []))
+		$recorded = $this->importJobRecorder->recordFinished(
+			job: new FinishedImportJob(
+				appId: $import->appId,
+				importJobId: $importJobId,
+				version: $import->version,
+				objectsWritten: count((array)($result['objects'] ?? []))
+			)
 		);
 		$result['importJobId'] = null;
 		if ($recorded === true) {
