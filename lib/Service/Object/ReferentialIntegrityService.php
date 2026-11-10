@@ -205,11 +205,9 @@ class ReferentialIntegrityService {
 	 *
 	 * Execution order: SET_NULL → SET_DEFAULT → CASCADE (deepest first).
 	 *
-	 * @param DeletionAnalysis $analysis The pre-computed deletion analysis.
-	 * @param string $userId The user performing the deletion.
-	 * @param string $cascadeSource The UUID of the root object being deleted.
-	 * @param string|null $organisationId The active organisation ID.
-	 * @param string|null $triggerSchemaSlug Slug of the schema of the deleted object (for audit trail).
+	 * @param DeletionAnalysis    $analysis The pre-computed deletion analysis.
+	 * @param CascadeDeleteOrigin $origin   The deleting user, the root object, the slug of its schema
+	 *                                      (for the audit trail) and the active organisation.
 	 *
 	 * @return array{retained: array<int, array<string, mixed>>} The cascade targets the
 	 *               archival obligation kept live, each naming the record and the ground.
@@ -219,20 +217,7 @@ class ReferentialIntegrityService {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function applyDeletionActions(
-		DeletionAnalysis $analysis,
-		string $userId,
-		string $cascadeSource,
-		?string $organisationId = null,
-		?string $triggerSchemaSlug = null,
-	): array {
-		$origin = new CascadeDeleteOrigin(
-			userId: $userId,
-			cascadeSource: $cascadeSource,
-			triggerSchemaSlug: $triggerSchemaSlug,
-			organisationId: $organisationId
-		);
-
+	public function applyDeletionActions(DeletionAnalysis $analysis, CascadeDeleteOrigin $origin): array {
 		return ['retained' => $this->applyInOrder(analysis: $analysis, origin: $origin)];
 	}//end applyDeletionActions()
 

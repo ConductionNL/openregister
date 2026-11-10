@@ -48,6 +48,7 @@ use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Integration\Providers\ActivityProvider;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * Builds the merged activity feed for one object.
@@ -200,9 +201,7 @@ class ActivityFeedService {
 	 */
 	private function auditRows(ActivityFeedObject $object, int $bound): array {
 		$page = $this->history->page(
-			register: $object->register,
-			schema: $object->schema,
-			id: $object->id,
+			ref: new ObjectRef(register: $object->register, schema: $object->schema, id: $object->id),
 			params: ['limit' => $bound]
 		);
 		if ($page === null) {
