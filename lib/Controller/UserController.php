@@ -30,6 +30,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\UserControllerServices;
 use OCA\OpenRegister\Controller\Support\UserResponses;
+use OCA\OpenRegister\Service\FailedAttempt;
 use OCA\OpenRegister\Service\LoginSecurityInterface;
 use OCA\OpenRegister\Service\User\ActivityPeriod;
 use OCA\OpenRegister\Service\User\ActivityQuery;
@@ -384,7 +385,7 @@ class UserController extends Controller {
 			return null;
 		}
 
-		$this->securityService->recordFailedLoginAttempt(username: $attempt['username'], ipAddress: $attempt['ipAddress'], reason: $reason);
+		$this->securityService->recordFailedLoginAttempt(attempt: new FailedAttempt(subject: $attempt['username'], ipAddress: $attempt['ipAddress'], reason: $reason));
 		return $this->responses->error(message: $message, statusCode: 401);
 	}//end refusedLogin()
 
@@ -509,9 +510,7 @@ class UserController extends Controller {
 		if ($this->responses->runtimeStatus(exception: $exception) === 403) {
 			$clientIp = $this->securityService->getClientIpAddress(request: $this->request);
 			$this->securityService->recordFailedLoginAttempt(
-				username: $user->getUID(),
-				ipAddress: $clientIp,
-				reason: 'password_change_incorrect'
+				attempt: new FailedAttempt(subject: $user->getUID(), ipAddress: $clientIp, reason: 'password_change_incorrect')
 			);
 		}
 

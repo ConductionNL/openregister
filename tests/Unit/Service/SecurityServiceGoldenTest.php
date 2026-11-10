@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\FailedAttempt;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
 use OCA\OpenRegister\Service\SecurityService;
 use OCP\ICache;
@@ -244,7 +245,7 @@ final class SecurityServiceGoldenTest extends TestCase {
 	public function testTheFifthFailedLoginLocksTheUserOut(): void {
 		$this->store['openregister_login_attempts_bob'] = 4;
 		$before = time();
-		$this->service->recordFailedLoginAttempt('bob', '1.2.3.4');
+		$this->service->recordFailedLoginAttempt(new FailedAttempt('bob', '1.2.3.4', 'invalid_credentials'));
 		$until = $this->store['openregister_user_lockout_bob'];
 		$this->assertGreaterThanOrEqual($before + 3600, $until);
 		$this->assertLessThanOrEqual(time() + 3600, $until);
@@ -283,7 +284,7 @@ final class SecurityServiceGoldenTest extends TestCase {
 	public function testBothCountersCrossingLockOutUserAndIp(): void {
 		$this->store['openregister_login_attempts_bob'] = 4;
 		$this->store['openregister_ip_attempts_1.2.3.4'] = 4;
-		$this->service->recordFailedLoginAttempt('bob', '1.2.3.4', 'bad');
+		$this->service->recordFailedLoginAttempt(new FailedAttempt('bob', '1.2.3.4', 'bad'));
 		$this->assertArrayHasKey('openregister_user_lockout_bob', $this->store);
 		$this->assertArrayHasKey('openregister_ip_lockout_1.2.3.4', $this->store);
 		$this->assertSame(
@@ -299,7 +300,7 @@ final class SecurityServiceGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFailureBelowTheLimitSetsNoLockout(): void {
-		$this->service->recordFailedLoginAttempt('bob', '1.2.3.4');
+		$this->service->recordFailedLoginAttempt(new FailedAttempt('bob', '1.2.3.4', 'invalid_credentials'));
 		$this->assertSame(
 			['openregister_login_attempts_bob' => 1, 'openregister_ip_attempts_1.2.3.4' => 1],
 			$this->store

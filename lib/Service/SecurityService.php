@@ -297,22 +297,7 @@ class SecurityService implements LoginSecurityInterface, RateLimitResetInterface
 	}//end nextProgressiveDelay()
 
 	/**
-	 * Record a failed login attempt
-	 *
-	 * @param string $username The username that failed authentication
-	 * @param string $ipAddress The IP address of the failed attempt
-	 * @param string $reason The reason for login failure
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
-	 */
-	public function recordFailedLoginAttempt(string $username, string $ipAddress, string $reason = 'invalid_credentials'): void {
-		$this->recordFailedLogin(attempt: new FailedAttempt(subject: $username, ipAddress: $ipAddress, reason: $reason));
-	}//end recordFailedLoginAttempt()
-
-	/**
-	 * Record a failed login attempt, as {@see recordFailedLoginAttempt()} describes.
+	 * Record a failed login attempt.
 	 *
 	 * @param FailedAttempt $attempt The username, client address and failure reason.
 	 *
@@ -320,7 +305,7 @@ class SecurityService implements LoginSecurityInterface, RateLimitResetInterface
 	 *
 	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
 	 */
-	public function recordFailedLogin(FailedAttempt $attempt): void {
+	public function recordFailedLoginAttempt(FailedAttempt $attempt): void {
 		$who          = $this->loginIdentity(username: $attempt->subject, ipAddress: $attempt->ipAddress);
 		$userAttempts = $this->countAttempt(key: self::CACHE_PREFIX_LOGIN_ATTEMPTS . $who['username'], ttl: self::LOGIN_RATE_LIMIT_WINDOW);
 		$ipAttempts   = $this->countAttempt(key: self::CACHE_PREFIX_IP_ATTEMPTS . $who['ip_address'], ttl: self::LOGIN_RATE_LIMIT_WINDOW);
@@ -338,7 +323,7 @@ class SecurityService implements LoginSecurityInterface, RateLimitResetInterface
 			event: 'failed_login_attempt',
 			context: $who + ['reason' => $attempt->reason, 'user_attempts' => $userAttempts, 'ip_attempts' => $ipAttempts]
 		);
-	}//end recordFailedLogin()
+	}//end recordFailedLoginAttempt()
 
 
 	/**
