@@ -35,6 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Task;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Db\PortalTaskDeliveryMapper;
@@ -124,7 +125,7 @@ class TaskInboxService implements TaskInboxServiceInterface {
 			return $page->envelope(results: [], total: 0);
 		}
 
-		$tasks = $this->tasks->findInbox(criteria: $criteria, limit: $page->limit, offset: $page->offset);
+		$tasks = $this->tasks->findInbox(criteria: $criteria, page: new ListQuery(limit: $page->limit, offset: $page->offset));
 		$total = $this->tasks->countInbox(criteria: $criteria);
 		$subjects = $this->subjectContexts(tasks: $tasks);
 		$openBlockers = $this->openBlockers(tasks: $tasks);

@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Notifications\BackgroundJob;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
 use DateTime;
 use OCA\OpenRegister\Db\Schema;
@@ -176,7 +177,8 @@ class TaskScheduledNotificationJobCharacterisationTest extends TestCase
             200 => [$this->task('t-200', 'keep'), $this->task('t-201', 'keep'), $this->task('t-202', 'keep')],
         ];
         $this->tasks->method('findInbox')->willReturnCallback(
-            function ($criteria, int $limit, int $offset) use (&$offsets, $pages): array {
+            function ($criteria, ListQuery $page) use (&$offsets, $pages): array {
+                [$limit, $offset] = [$page->limit, $page->offset];
                 $offsets[] = [$limit, $offset];
                 return $pages[$offset] ?? [];
             }
