@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Rbac\AuthorizationEdit;
 use OCA\OpenRegister\Service\Rbac\RbacChecks;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -99,7 +100,7 @@ class UnknownMetadataConditionsCommand extends Command {
 			$subject = sprintf('register "%s"', (string)($register->getSlug() ?? $register->getTitle() ?? $register->getId()));
 			$authorization = $register->getAuthorization();
 			foreach (array_merge(
-				$conditions->findings(authorization: $authorization, context: $subject),
+				$conditions->findings(edit: new AuthorizationEdit(authorization: $authorization), context: $subject),
 				$keys->registerFindings(authorization: $authorization, context: $subject)
 			) as $finding) {
 				$output->writeln(sprintf('register %s: %s', (string)$register->getId(), $finding));
