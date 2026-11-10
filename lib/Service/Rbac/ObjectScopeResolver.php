@@ -269,16 +269,17 @@ class ObjectScopeResolver implements ObjectScopeResolverInterface {
 	 * the common row, whose `_authorization` was never written, is decided
 	 * without touching the JSON at all.
 	 *
-	 * @param string $columnName The `_authorization` column, qualified by the caller.
-	 * @param bool $defaultPrivate Whether the schema makes its objects private by default.
-	 * @param bool $isPostgres Whether the connected platform is PostgreSQL.
+	 * @param AuthorizationColumn $column         The `_authorization` column (qualified by the caller) and whether the
+	 *                                            connected platform is PostgreSQL.
+	 * @param bool                $defaultPrivate Whether the schema makes its objects private by default.
 	 *
 	 * @return string A SQL predicate that is true for rows that are not private.
 	 *
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md
 	 */
-	public function notPrivateSql(string $columnName, bool $defaultPrivate, bool $isPostgres): string {
-		$scope = $this->jsonKeySql(column: new AuthorizationColumn(name: $columnName, isPostgres: $isPostgres), key: self::SCOPE_KEY);
+	public function notPrivateSql(AuthorizationColumn $column, bool $defaultPrivate): string {
+		$columnName = $column->name;
+		$scope      = $this->jsonKeySql(column: $column, key: self::SCOPE_KEY);
 
 		$organisation = "'" . self::SCOPE_ORGANISATION . "'";
 
@@ -334,20 +335,20 @@ class ObjectScopeResolver implements ObjectScopeResolverInterface {
 	 * it regardless on a single read — a principal honoured differently per path,
 	 * which is exactly what this class exists to prevent.
 	 *
-	 * @param string $authColumn The `_authorization` column, qualified by the caller.
-	 * @param bool $isPostgres Whether the connected platform is PostgreSQL.
-	 * @param string[] $quotedUserGroups The caller's group ids, ALREADY quoted as SQL literals.
+	 * @param AuthorizationColumn $column           The `_authorization` column (qualified by the caller) and whether
+	 *                                              the connected platform is PostgreSQL.
+	 * @param string[]            $quotedUserGroups The caller's group ids, ALREADY quoted as SQL literals.
 	 *
 	 * @return string|null The predicate, or null when the caller is in no group.
 	 *
 	 * @spec openspec/specs/object-ownership/spec.md
 	 */
-	public function ownedByMyGroupSql(string $authColumn, bool $isPostgres, array $quotedUserGroups): ?string {
+	public function ownedByMyGroupSql(AuthorizationColumn $column, array $quotedUserGroups): ?string {
 		if ($quotedUserGroups === []) {
 			return null;
 		}
 
-		$group = $this->jsonKeySql(column: new AuthorizationColumn(name: $authColumn, isPostgres: $isPostgres), key: self::OWNER_GROUP_KEY);
+		$group = $this->jsonKeySql(column: $column, key: self::OWNER_GROUP_KEY);
 
 		return '(' . $group . ' IN (' . implode(', ', $quotedUserGroups) . '))';
 	}//end ownedByMyGroupSql()
