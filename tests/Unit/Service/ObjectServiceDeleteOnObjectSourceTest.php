@@ -136,12 +136,10 @@ class ObjectServiceDeleteOnObjectSourceTest extends TestCase {
 		$deleteHandler = new DeleteObject(
 			objectEntityMapper: $this->objectMapper,
 			cacheHandler: $this->createMock(CacheHandler::class),
-			userSession: $this->createMock(IUserSession::class),
 			audit: new \OCA\OpenRegister\Service\Object\AuditRecording(trail: $this->createMock(AuditTrailMapper::class), logger: $this->createMock(LoggerInterface::class)),
 			settingsService: $this->createMock(SettingsService::class),
-			integrityService: $this->createMock(ReferentialIntegrityService::class),
-			db: $this->createMock(IDBConnection::class),
-			organisationMapper: $this->organisationMapper,
+			integrity: new \OCA\OpenRegister\Service\Object\DeletionIntegrity($this->createMock(ReferentialIntegrityService::class), $this->createMock(IDBConnection::class)),
+			attribution: new \OCA\OpenRegister\Service\Object\DeletionAttribution($this->createMock(IUserSession::class), $this->organisationMapper, $this->createMock(LoggerInterface::class)),
 			objectSourceRegistry: $this->registry,
 			registerMapper: $this->createMock(RegisterMapper::class)
 		);

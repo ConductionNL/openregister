@@ -34,26 +34,20 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
-use DateTime;
-use DateTimeImmutable;
 use Exception;
 use JsonSerializable;
 use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
-use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCA\OpenRegister\Service\FileFolderServiceInterface;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\IDBConnection;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
@@ -129,34 +123,17 @@ class DeleteObject {
 	private LoggerInterface $logger;
 
 	/**
-	 * Referential integrity service
-	 *
-	 * @var ReferentialIntegrityService
-	 */
-	private ReferentialIntegrityService $integrityService;
-
-	/**
-	 * Database connection for transaction management.
-	 *
-	 * @var IDBConnection
-	 */
-	private IDBConnection $db;
-
-	/**
 	 * Constructor for DeleteObject handler.
 	 *
 	 * @param MagicMapperInterface $objectEntityMapper Object entity data mapper.
 	 * @param CacheHandlerInterface $cacheHandler Object entity and query cache
-	 * @param IUserSession $userSession User session service
 	 * @param AuditRecording $audit Audit trail mapper for logs, and the logger for error handling
 	 * @param SettingsServiceInterface $settingsService Settings service for trail settings
-	 * @param ReferentialIntegrityService $integrityService Referential integrity service
-	 * @param IDBConnection $db Database connection for transactions
-	 * @param OrganisationMapperInterface $organisationMapper Resolves the deleting user's active organisation for the audit trail
+	 * @param DeletionIntegrity $integrity The onDelete analysis, refusal and actions, in one transaction
+	 * @param DeletionAttribution $attribution The deleting user and organisation, and the deleted metadata
 	 * @param FileFolderServiceInterface|null $fileService File service for object folder cleanup
 	 * @param \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry|null $objectSourceRegistry Writable object-source provider registry
 	 * @param \OCA\OpenRegister\Db\RegisterMapperInterface|null $registerMapper Register mapper for register lookups
-	 * @param DeletionWindowService|null $windowService Resolves and states the recovery window
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 *
@@ -165,22 +142,17 @@ class DeleteObject {
 	public function __construct(
 		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly CacheHandlerInterface $cacheHandler,
-		private readonly IUserSession $userSession,
 		AuditRecording $audit,
 		SettingsServiceInterface $settingsService,
-		ReferentialIntegrityService $integrityService,
-		IDBConnection $db,
-		private readonly OrganisationMapperInterface $organisationMapper,
+		private readonly DeletionIntegrity $integrity,
+		private readonly DeletionAttribution $attribution,
 		private readonly ?FileFolderServiceInterface $fileService = null,
 		private readonly ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry $objectSourceRegistry = null,
 		private readonly ?\OCA\OpenRegister\Db\RegisterMapperInterface $registerMapper = null,
-		private readonly ?DeletionWindowService $windowService = null,
 	) {
 		$this->auditTrailMapper = $audit->trail;
 		$this->settingsService = $settingsService;
 		$this->logger = $audit->logger;
-		$this->integrityService = $integrityService;
-		$this->db = $db;
 	}//end __construct()
 
 	/**
@@ -354,7 +326,7 @@ class DeleteObject {
 	 */
 	private function softDelete(DeletionTarget $target, ?array $cascadeContext): void {
 		$objectEntity = $target->object;
-		$deletionData = $this->deletionMetadata(target: $target);
+		$deletionData = $this->attribution->deletedMetadata(target: $target);
 
 		// PERF: the pre-delete snapshot is the update's old entity, which skips the
 		// mapper's internal pre-update re-find.
@@ -402,60 +374,6 @@ class DeleteObject {
 
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.audit');
 	}//end softDelete()
-
-	/**
-	 * The deleted metadata of a soft delete: the session user, the moment, the user's active
-	 * organisation and, when a window service is wired, the stated recovery window.
-	 *
-	 * @param DeletionTarget $target The object being deleted.
-	 *
-	 * @return array<string, mixed> The deleted metadata.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function deletionMetadata(DeletionTarget $target): array {
-		$user = $this->userSession->getUser();
-		$userId = 'system';
-		if ($user !== null) {
-			$userId = $user->getUID();
-		}
-
-		// The active organisation of the deleting user. Error is caught too, so a missing
-		// database never aborts the delete.
-		$activeOrganisation = null;
-		if ($user !== null) {
-			try {
-				$activeOrganisation = $this->organisationMapper->getActiveOrganisationWithFallback($user->getUID());
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					message: '[DeleteObject] Failed to get active organisation during delete',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-				);
-			}
-		}
-
-		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.org');
-
-		$deletedAt = new DateTime();
-		$deletionData = [
-			'deletedBy' => $userId,
-			'deletedAt' => $deletedAt->format(DateTime::ATOM),
-			'objectId' => $target->object->getUuid(),
-			'organisation' => $activeOrganisation,
-		];
-
-		if ($this->windowService === null) {
-			return $deletionData;
-		}
-
-		return array_merge(
-			$deletionData,
-			$this->windowService->openWindow(
-				schema: $target->schema,
-				deletedAt: DateTimeImmutable::createFromMutable($deletedAt)
-			)
-		);
-	}//end deletionMetadata()
 
 	/**
 	 * Delete the Nextcloud folder bound to an object (BUG-OBJ-2).
@@ -524,7 +442,7 @@ class DeleteObject {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	public function canDelete(ObjectEntity $object): DeletionAnalysis {
-		return $this->integrityService->canDelete($object);
+		return $this->integrity->analyse(object: $object);
 	}//end canDelete()
 
 	/**
@@ -771,8 +689,7 @@ class DeleteObject {
 		$this->guardsAsked[(string)$object->getUuid()] = true;
 
 		$schemaId = $object->getSchema();
-		$hasIntegrityAction = $schemaId !== null
-			&& $this->integrityService->hasIncomingOnDeleteReferences($schemaId) === true;
+		$hasIntegrityAction = $this->integrity->governs(schemaId: $schemaId);
 
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.relindex');
 
@@ -783,7 +700,7 @@ class DeleteObject {
 			return null;
 		}
 
-		$analysis = $this->integrityService->canDelete($object);
+		$analysis = $this->integrity->analyse(object: $object);
 		if ($analysis->deletable === false) {
 			$this->logAndThrowRestrict(run: $run, analysis: $analysis);
 		}
@@ -797,21 +714,19 @@ class DeleteObject {
 	 * @param DeletionRun      $run      The resolved context and the uuid asked for.
 	 * @param DeletionAnalysis $analysis The analysis result
 	 *
-	 * @return void
+	 * @return never
 	 *
 	 * @throws ReferentialIntegrityException Always thrown
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function logAndThrowRestrict(DeletionRun $run, DeletionAnalysis $analysis): void {
-		[$userId] = $this->resolveUserContext();
+	private function logAndThrowRestrict(DeletionRun $run, DeletionAnalysis $analysis): never {
+		[$userId] = $this->attribution->actingUser();
 
-		$this->integrityService->logRestrictBlock(
+		$this->integrity->refuse(
 			refused: new RefusedDeletion(objectUuid: $run->uuid, schemaId: $run->object()->getSchema(), userId: $userId),
 			analysis: $analysis
 		);
-
-		throw new ReferentialIntegrityException(analysis: $analysis);
 	}//end logAndThrowRestrict()
 
 	/**
@@ -827,40 +742,11 @@ class DeleteObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function executeIntegrityTransaction(DeletionRun $run, DeletionAnalysis $analysis): bool {
-		$this->db->beginTransaction();
 		try {
-			[$userId, $activeOrg] = $this->resolveUserContext();
-
-			$integrityResult = $this->integrityService->applyDeletionActions(
-				$analysis,
-				new CascadeDeleteOrigin(userId: $userId, cascadeSource: $run->uuid, triggerSchemaSlug: $run->triggerSlug(), organisationId: $activeOrg)
+			return $this->integrity->atomically(
+				work: fn (): bool => $this->applyIntegrityAndDeleteRoot(run: $run, analysis: $analysis)
 			);
-
-			// A RETAINED RECORD STAYS LIVE EVEN WHEN ITS PARENT GOES, so it is not
-			// a cascade casualty and must not be counted as one. The count used to
-			// be `count($analysis->cascadeTargets)`, the number of rows the
-			// analysis WANTED to delete, which is now a different number from the
-			// rows the cascade actually took. Reporting the analysis figure would
-			// tell a bulk caller that a record it can still see was deleted.
-			$this->lastRetainedTargets = $integrityResult['retained'];
-
-			$cCount = (count($analysis->cascadeTargets) - count($this->lastRetainedTargets));
-			$nCount = count($analysis->nullifyTargets);
-			$dCount = count($analysis->defaultTargets);
-			$this->lastCascadeCount = (max(0, $cCount) + $nCount + $dCount);
-
-			$this->runLegacyCascade(context: $run->context, object: $run->object(), uuid: $run->uuid);
-
-			$rootCascadeCtx = self::buildCascadeContext(run: $run, analysis: $analysis);
-
-			$result = $this->delete(
-				object: $run->object(),
-				options: new RemovalOptions(cascadeContext: $rootCascadeCtx, table: $run->table())
-			);
-			$this->db->commit();
-			return $result;
 		} catch (Exception $e) {
-			$this->db->rollBack();
 			$this->logger->error(
 				message: '[DeleteObject] Transaction rolled back: cascade or delete failed',
 				context: [
@@ -874,6 +760,47 @@ class DeleteObject {
 		}//end try
 
 	}//end executeIntegrityTransaction()
+
+	/**
+	 * Apply the integrity actions, run the legacy cascade and delete the root, counting the cascade.
+	 *
+	 * @param DeletionRun      $run      The resolved context and the uuid asked for.
+	 * @param DeletionAnalysis $analysis The deletion analysis
+	 *
+	 * @return bool True if deletion succeeded
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function applyIntegrityAndDeleteRoot(DeletionRun $run, DeletionAnalysis $analysis): bool {
+		[$userId, $activeOrg] = $this->attribution->actingUser();
+
+		$integrityResult = $this->integrity->apply(
+			analysis: $analysis,
+			origin: new CascadeDeleteOrigin(userId: $userId, cascadeSource: $run->uuid, triggerSchemaSlug: $run->triggerSlug(), organisationId: $activeOrg)
+		);
+
+		// A RETAINED RECORD STAYS LIVE EVEN WHEN ITS PARENT GOES, so it is not
+		// a cascade casualty and must not be counted as one. The count used to
+		// be `count($analysis->cascadeTargets)`, the number of rows the
+		// analysis WANTED to delete, which is now a different number from the
+		// rows the cascade actually took. Reporting the analysis figure would
+		// tell a bulk caller that a record it can still see was deleted.
+		$this->lastRetainedTargets = $integrityResult['retained'];
+
+		$cCount = (count($analysis->cascadeTargets) - count($this->lastRetainedTargets));
+		$nCount = count($analysis->nullifyTargets);
+		$dCount = count($analysis->defaultTargets);
+		$this->lastCascadeCount = (max(0, $cCount) + $nCount + $dCount);
+
+		$this->runLegacyCascade(context: $run->context, object: $run->object(), uuid: $run->uuid);
+
+		$rootCascadeCtx = self::buildCascadeContext(run: $run, analysis: $analysis);
+
+		return $this->delete(
+			object: $run->object(),
+			options: new RemovalOptions(cascadeContext: $rootCascadeCtx, table: $run->table())
+		);
+	}//end applyIntegrityAndDeleteRoot()
 
 	/**
 	 * Run legacy cascade: true deletion if register and schema are available.
@@ -928,30 +855,6 @@ class DeleteObject {
 		];
 
 	}//end buildCascadeContext()
-
-	/**
-	 * Resolve the current user ID and active organisation.
-	 *
-	 * @return array{0: string, 1: mixed} [userId, activeOrganisation]
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function resolveUserContext(): array {
-		$user = $this->userSession->getUser();
-		$userId = 'system';
-		$org = null;
-
-		if ($user !== null) {
-			$userId = $user->getUID();
-			try {
-				$org = $this->organisationMapper->getActiveOrganisationWithFallback($user->getUID());
-			} catch (\Exception $e) {
-				$org = null;
-			}
-		}
-
-		return [$userId, $org];
-	}//end resolveUserContext()
 
 	/**
 	 * Handles cascading deletes for related objects (legacy cascade: true).
@@ -1091,7 +994,7 @@ class DeleteObject {
 			return [];
 		}
 
-		[$userId, $activeOrganisation] = $this->resolveUserContext();
+		[$userId, $activeOrganisation] = $this->attribution->actingUser();
 		[$handled, $oldEntities] = (new SoftDeleteStamp(deletedBy: $userId, organisation: $activeOrganisation))->apply(targets: $targets);
 
 		try {
