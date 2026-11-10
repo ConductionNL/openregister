@@ -320,14 +320,27 @@ export default {
 				)
 				this.showInventory(response.data)
 			} catch (e) {
-				this.error = this.t(
-					'openregister',
-					'Could not read the descriptor inventory: {reason}',
-					{ reason: e?.response?.data?.error ?? e.message },
-				)
+				this.error = this.inventoryFailure(e)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Why the inventory could not be read, in the server's words or the
+		 * request's own.
+		 *
+		 * @param {Error} e The failure.
+		 * @return {string} The message.
+		 *
+		 * @spec openspec/specs/register-descriptor-admin/spec.md
+		 */
+		inventoryFailure(e) {
+			return this.t(
+				'openregister',
+				'Could not read the descriptor inventory: {reason}',
+				{ reason: e?.response?.data?.error ?? e.message },
+			)
 		},
 
 		/**
