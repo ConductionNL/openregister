@@ -119,8 +119,8 @@ class ExampleSetAppointments extends ExampleSetEngineRows {
 		$rules = new ExampleSetFieldRules();
 		return $rules->firstRefusal(
 			checks: [
-				fn (): string => $rules->unknownRefusal(data: $data, fields: self::FIELDS, row: 'an appointment'),
-				fn (): string => $rules->missingRefusal(data: $data, required: self::REQUIRED, row: 'an appointment'),
+				fn (): string => $rules->unknownRefusal(data: $data, shape: new ExampleSetRowShape(row: 'an appointment', fields: self::FIELDS)),
+				fn (): string => $rules->missingRefusal(data: $data, shape: new ExampleSetRowShape(row: 'an appointment', required: self::REQUIRED)),
 				fn (): string => $this->ownerRefusal(owner: (string) $data['owner'], users: $users),
 				fn (): string => $rules->datesRefusal(data: $data, fields: ['start', 'end']),
 				fn (): string => $this->attendeesRefusal(attendees: ($data['attendees'] ?? [])),

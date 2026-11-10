@@ -86,6 +86,12 @@ use RuntimeException;
 use Stringable;
 use Throwable;
 use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Service\Case\CaseAdHocRequest;
+use OCA\OpenRegister\Service\Case\CaseCompletion;
+use OCA\OpenRegister\Service\Case\CaseItemTransition;
+use OCA\OpenRegister\Service\Case\CasePlanCreation;
+use OCA\OpenRegister\Service\Case\CasePlanTrigger;
 
 /**
  * Golden recordings of the case layer's observable outcomes.
@@ -651,61 +657,29 @@ class CaseUnitsGoldenTest extends TestCase {
 		$obj = CaseFixtures::OBJECT;
 		$out = [];
 		$out['create'] = self::attempt(
-			static fn (): array => $service->createPlan(
-				objectUuid: $obj,
-				registerId: 1,
-				schemaId: 2,
-				definition: CasePlanDefinitionTest::permitDefinition(),
-				uid: 'alice',
-				flowUuid: 'flow-x',
-				flowVersion: 3
-			)
+			static fn (): array => $service->createPlan(creation: new CasePlanCreation(anchor: new CaseAnchor(objectUuid: $obj, registerId: 1, schemaId: 2), definition: CasePlanDefinitionTest::permitDefinition(), actor: 'alice', provenance: new CasePlanProvenance(flowUuid: 'flow-x', flowVersion: 3)))
 		);
 		$out['create again'] = self::attempt(
-			static fn (): array => $service->createPlan(
-				objectUuid: $obj,
-				registerId: 1,
-				schemaId: 2,
-				definition: CasePlanDefinitionTest::permitDefinition(),
-				uid: 'alice'
-			)
+			static fn (): array => $service->createPlan(creation: new CasePlanCreation(anchor: new CaseAnchor(objectUuid: $obj, registerId: 1, schemaId: 2), definition: CasePlanDefinitionTest::permitDefinition(), actor: 'alice'))
 		);
 		$out['create invalid'] = self::attempt(
-			static fn (): array => $service->createPlan(
-				objectUuid: self::OTHER,
-				registerId: 1,
-				schemaId: 2,
-				definition: ['items' => []],
-				uid: 'alice'
-			)
+			static fn (): array => $service->createPlan(creation: new CasePlanCreation(anchor: new CaseAnchor(objectUuid: self::OTHER, registerId: 1, schemaId: 2), definition: ['items' => []], actor: 'alice'))
 		);
 		$out['create denied'] = self::attempt(
-			static fn (): array => $service->createPlan(
-				objectUuid: self::OTHER,
-				registerId: 1,
-				schemaId: 2,
-				definition: CasePlanDefinitionTest::permitDefinition(),
-				uid: 'mallory'
-			)
+			static fn (): array => $service->createPlan(creation: new CasePlanCreation(anchor: new CaseAnchor(objectUuid: self::OTHER, registerId: 1, schemaId: 2), definition: CasePlanDefinitionTest::permitDefinition(), actor: 'mallory'))
 		);
 		$out['create anonymous'] = self::attempt(
-			static fn (): array => $service->createPlan(
-				objectUuid: self::OTHER,
-				registerId: 1,
-				schemaId: 2,
-				definition: CasePlanDefinitionTest::permitDefinition(),
-				uid: null
-			)
+			static fn (): array => $service->createPlan(creation: new CasePlanCreation(anchor: new CaseAnchor(objectUuid: self::OTHER, registerId: 1, schemaId: 2), definition: CasePlanDefinitionTest::permitDefinition(), actor: null))
 		);
 		$out['read stranger'] = self::attempt(static fn (): array => $service->getPlan(objectUuid: self::OTHER, uid: 'alice'));
 		$check = $this->uuidOf(object: $obj, key: 'completeness-check');
 		$out['transition denied'] = self::attempt(
-			static fn (): CaseItem => $service->transition(itemUuid: $check, to: 'completed', uid: 'mallory', reason: 'x')
+			static fn (): CaseItem => $service->transition(transition: new CaseItemTransition(itemUuid: $check, to: 'completed', actor: 'mallory', reason: 'x'))
 		);
-		$out['transition bogus'] = self::attempt(static fn (): CaseItem => $service->transition(itemUuid: $check, to: 'bogus', uid: 'alice'));
-		$out['transition illegal'] = self::attempt(static fn (): CaseItem => $service->transition(itemUuid: $check, to: 'enabled', uid: 'alice'));
+		$out['transition bogus'] = self::attempt(static fn (): CaseItem => $service->transition(transition: new CaseItemTransition(itemUuid: $check, to: 'bogus', actor: 'alice')));
+		$out['transition illegal'] = self::attempt(static fn (): CaseItem => $service->transition(transition: new CaseItemTransition(itemUuid: $check, to: 'enabled', actor: 'alice')));
 		$out['transition'] = self::attempt(
-			static fn (): CaseItem => $service->transition(itemUuid: $check, to: 'completed', uid: 'alice', reason: 'Volledig')
+			static fn (): CaseItem => $service->transition(transition: new CaseItemTransition(itemUuid: $check, to: 'completed', actor: 'alice', reason: 'Volledig'))
 		);
 		$out['enableable bob'] = self::attempt(static fn (): array => $service->enableableItems(objectUuid: $obj, uid: 'bob'));
 		$advice = $this->uuidOf(object: $obj, key: 'external-advice');
@@ -715,85 +689,61 @@ class CaseUnitsGoldenTest extends TestCase {
 		$out['enable'] = self::attempt(static fn (): CaseItem => $service->enableDiscretionary(itemUuid: $advice, uid: 'bob'));
 		$out['enable again'] = self::attempt(static fn (): CaseItem => $service->enableDiscretionary(itemUuid: $advice, uid: 'bob'));
 		$out['attach'] = self::attempt(
-			static fn (): CaseItem => $service->attachAdHoc(
-				objectUuid: $obj,
-				data: ['key' => 'extra', 'type' => 'humanTask', 'name' => 'Extra', 'parent' => 'assessment', 'candidateUsers' => ['bob']],
-				uid: 'alice'
-			)
+			static fn (): CaseItem => $service->attachAdHoc(request: new CaseAdHocRequest(objectUuid: $obj, data: ['key' => 'extra', 'type' => 'humanTask', 'name' => 'Extra', 'parent' => 'assessment', 'candidateUsers' => ['bob']], actor: 'alice'))
 		);
 		$out['attach root'] = self::attempt(
-			static fn (): CaseItem => $service->attachAdHoc(objectUuid: $obj, data: ['key' => 'loose', 'type' => 'milestone'], uid: 'alice')
+			static fn (): CaseItem => $service->attachAdHoc(request: new CaseAdHocRequest(objectUuid: $obj, data: ['key' => 'loose', 'type' => 'milestone'], actor: 'alice'))
 		);
 		$out['attach duplicate'] = self::attempt(
-			static fn (): CaseItem => $service->attachAdHoc(objectUuid: $obj, data: ['key' => 'extra', 'type' => 'humanTask'], uid: 'alice')
+			static fn (): CaseItem => $service->attachAdHoc(request: new CaseAdHocRequest(objectUuid: $obj, data: ['key' => 'extra', 'type' => 'humanTask'], actor: 'alice'))
 		);
 		$out['attach under task'] = self::attempt(
-			static fn (): CaseItem => $service->attachAdHoc(
-				objectUuid: $obj,
-				data: ['key' => 'x2', 'type' => 'humanTask', 'parent' => 'decide'],
-				uid: 'alice'
-			)
+			static fn (): CaseItem => $service->attachAdHoc(request: new CaseAdHocRequest(objectUuid: $obj, data: ['key' => 'x2', 'type' => 'humanTask', 'parent' => 'decide'], actor: 'alice'))
 		);
 		$out['attach unknown parent'] = self::attempt(
-			static fn (): CaseItem => $service->attachAdHoc(
-				objectUuid: $obj,
-				data: ['key' => 'x3', 'type' => 'humanTask', 'parent' => 'nope'],
-				uid: 'alice'
-			)
+			static fn (): CaseItem => $service->attachAdHoc(request: new CaseAdHocRequest(objectUuid: $obj, data: ['key' => 'x3', 'type' => 'humanTask', 'parent' => 'nope'], actor: 'alice'))
 		);
 		$out['attach inactive parent'] = self::attempt(
-			static fn (): CaseItem => $service->attachAdHoc(
-				objectUuid: $obj,
-				data: ['key' => 'x4', 'type' => 'humanTask', 'parent' => 'intake'],
-				uid: 'alice'
-			)
+			static fn (): CaseItem => $service->attachAdHoc(request: new CaseAdHocRequest(objectUuid: $obj, data: ['key' => 'x4', 'type' => 'humanTask', 'parent' => 'intake'], actor: 'alice'))
 		);
 		$out['attach denied'] = self::attempt(
-			static fn (): CaseItem => $service->attachAdHoc(
-				objectUuid: $obj,
-				data: ['key' => 'x5', 'type' => 'humanTask', 'parent' => 'assessment'],
-				uid: 'mallory'
-			)
+			static fn (): CaseItem => $service->attachAdHoc(request: new CaseAdHocRequest(objectUuid: $obj, data: ['key' => 'x5', 'type' => 'humanTask', 'parent' => 'assessment'], actor: 'mallory'))
 		);
 		$out['attach denied at root'] = self::attempt(
-			static fn (): CaseItem => $service->attachAdHoc(objectUuid: $obj, data: ['key' => 'x8', 'type' => 'humanTask'], uid: 'mallory')
+			static fn (): CaseItem => $service->attachAdHoc(request: new CaseAdHocRequest(objectUuid: $obj, data: ['key' => 'x8', 'type' => 'humanTask'], actor: 'mallory'))
 		);
 		$out['attach invalid'] = self::attempt(
-			static fn (): CaseItem => $service->attachAdHoc(
-				objectUuid: $obj,
-				data: ['key' => 'x6', 'type' => 'humanTask', 'discretionary' => true],
-				uid: 'alice'
-			)
+			static fn (): CaseItem => $service->attachAdHoc(request: new CaseAdHocRequest(objectUuid: $obj, data: ['key' => 'x6', 'type' => 'humanTask', 'discretionary' => true], actor: 'alice'))
 		);
 		$out['attach no plan'] = self::attempt(
-			static fn (): CaseItem => $service->attachAdHoc(objectUuid: self::OTHER, data: ['key' => 'x7', 'type' => 'humanTask'], uid: 'alice')
+			static fn (): CaseItem => $service->attachAdHoc(request: new CaseAdHocRequest(objectUuid: self::OTHER, data: ['key' => 'x7', 'type' => 'humanTask'], actor: 'alice'))
 		);
 		$out[
 			'complete unknown result'
-		] = self::attempt(static fn (): array => $service->completeCase(objectUuid: $obj, result: 'nope', uid: 'alice'));
-		$out['complete open'] = self::attempt(static fn (): array => $service->completeCase(objectUuid: $obj, result: 'verleend', uid: 'alice'));
-		$out['complete denied'] = self::attempt(static fn (): array => $service->completeCase(objectUuid: $obj, result: 'verleend', uid: 'mallory'));
+		] = self::attempt(static fn (): array => $service->completeCase(completion: new CaseCompletion(objectUuid: $obj, result: 'nope', actor: 'alice')));
+		$out['complete open'] = self::attempt(static fn (): array => $service->completeCase(completion: new CaseCompletion(objectUuid: $obj, result: 'verleend', actor: 'alice')));
+		$out['complete denied'] = self::attempt(static fn (): array => $service->completeCase(completion: new CaseCompletion(objectUuid: $obj, result: 'verleend', actor: 'mallory')));
 		$out['stuck boss'] = self::attempt(
-			static fn (): array => $service->findStuck(type: null, state: 'active', limit: 10, offset: 0, uid: 'boss')
+			static fn (): array => $service->findStuck(query: new ListQuery(limit: 10, offset: 0, filters: ['type' => null, 'state' => 'active']), uid: 'boss')
 		);
-		$out['stuck alice'] = self::attempt(static fn (): array => $service->findStuck(type: null, state: null, limit: 10, offset: 0, uid: 'alice'));
+		$out['stuck alice'] = self::attempt(static fn (): array => $service->findStuck(query: new ListQuery(limit: 10, offset: 0, filters: ['type' => null, 'state' => null]), uid: 'alice'));
 		$out['evaluate'] = self::attempt(static fn (): array => $service->evaluate(objectUuid: $obj, uid: 'alice'));
 		$out['timer gone'] = self::attempt(static fn (): bool => $service->onTimerExpired(itemUuid: 'nope', timerUuid: 't-0'));
 		$out['timer'] = self::attempt(static fn (): bool => $service->onTimerExpired(itemUuid: $decide, timerUuid: 't-1'));
 		$out['timer terminal'] = self::attempt(static fn (): bool => $service->onTimerExpired(itemUuid: $decide, timerUuid: 't-2'));
 		$out['realisation'] = self::attempt(static fn (): mixed => $service->onRealisationTerminal(taskUuid: 'task-for-extra'));
 		$out['object event'] = self::attempt(
-			static fn (): mixed => $service->onObjectEvent(objectUuid: $obj, event: 'object.updated', payload: ['automate' => true])
+			static fn (): mixed => $service->onObjectEvent(trigger: new CasePlanTrigger(objectUuid: $obj, event: 'object.updated', payload: ['automate' => true]))
 		);
 		$out[
 			'object event no plan'
-		] = self::attempt(static fn (): mixed => $service->onObjectEvent(objectUuid: self::OTHER, event: 'object.updated', payload: []));
+		] = self::attempt(static fn (): mixed => $service->onObjectEvent(trigger: new CasePlanTrigger(objectUuid: self::OTHER, event: 'object.updated', payload: [])));
 		foreach (['extra', 'loose', 'external-advice'] as $key) {
 			$uuid = $this->uuidOf(object: $obj, key: $key);
-			$out['finish ' . $key] = self::attempt(static fn (): CaseItem => $service->transition(itemUuid: $uuid, to: 'completed', uid: 'boss'));
+			$out['finish ' . $key] = self::attempt(static fn (): CaseItem => $service->transition(transition: new CaseItemTransition(itemUuid: $uuid, to: 'completed', actor: 'boss')));
 		}
 
-		$out['complete'] = self::attempt(static fn (): array => $service->completeCase(objectUuid: $obj, result: 'verleend', uid: 'boss'));
+		$out['complete'] = self::attempt(static fn (): array => $service->completeCase(completion: new CaseCompletion(objectUuid: $obj, result: 'verleend', actor: 'boss')));
 		$out['system bad app'] = self::attempt(
 			static fn (): array => $service->createPlanAsSystem(
 				objectUuid: self::OTHER,
@@ -1072,13 +1022,13 @@ class CaseUnitsGoldenTest extends TestCase {
 		];
 		$out = [];
 		foreach ($rows as $label => $row) {
-			$out['entered'][$label] = $timers->onEntered(item: $row, actor: 'alice', now: $now);
+			$out['entered'][$label] = $timers->onEntered(item: $row, act: new FlowTimerAct(actor: 'alice', now: DateTimeImmutable::createFromInterface($now)));
 			$out['rearm'][$label] = $timers->rearmStatutoryExpiry(item: $row, act: new FlowTimerAct(actor: null, now: $now));
 			$out['mark'][$label] = $timers->markIfStatutory(item: $row);
 		}
 
 		$refuse = true;
-		$out['refused'] = $timers->onEntered(item: $rows['both statutory'], actor: null, now: $now);
+		$out['refused'] = $timers->onEntered(item: $rows['both statutory'], act: new FlowTimerAct(actor: null, now: DateTimeImmutable::createFromInterface($now)));
 		$out['refused rearm'] = $timers->rearmStatutoryExpiry(item: $rows['both statutory'], act: new FlowTimerAct(actor: 'bob', now: $now));
 		$out['armed'] = $armed;
 		$out['marked'] = array_keys($markers->all());

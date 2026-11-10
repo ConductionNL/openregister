@@ -64,9 +64,7 @@ interface CalendarLinkServiceInterface {
 	 * to {@see CalendarEventService::createEvent()} then mirrors the
 	 * linkage in the link table with `taggedWithXor=true`.
 	 *
-	 * @param string $objectUuid Object UUID.
-	 * @param int $registerId Register id.
-	 * @param int $schemaId Schema id.
+	 * @param LinkTarget          $target    The object, register and schema to link to.
 	 * @param array<string,mixed> $eventData Event data (summary, dtstart, dtend, location, ...).
 	 *
 	 * @return CalendarLink The persisted link row.
@@ -75,12 +73,7 @@ interface CalendarLinkServiceInterface {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function createAndLinkEvent(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
-		array $eventData,
-	): CalendarLink;
+	public function createLinkedEvent(LinkTarget $target, array $eventData): CalendarLink;
 
 	/**
 	 * Unlink an event from an object.

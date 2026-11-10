@@ -77,6 +77,10 @@ use OCP\IUserSession;
 use OCP\Security\Bruteforce\IThrottler;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Service\Credential\OAuth2ClientRegistration;
+use OCA\OpenRegister\Service\Credential\OAuth2CodeGrant;
+use OCA\OpenRegister\Service\Credential\OAuth2Revocation;
+use OCA\OpenRegister\Service\Credential\TokenSetAddress;
 
 /**
  * Connects, reconnects and disconnects a tenant's OAuth2 accounts.
@@ -312,9 +316,7 @@ class CredentialOauth2Controller extends Controller {
 			// built. The client secret it issues goes straight to the broker as its own
 			// credential; only the non-secret client id travels on in the claims.
 			$claims = $this->connect->ensureInstanceClient(
-				provider: $provider,
-				claims: $claims,
-				redirectUri: $this->endpoints->callbackUrl()
+				registration: new OAuth2ClientRegistration(provider: $provider, claims: $claims, redirectUri: $this->endpoints->callbackUrl())
 			);
 			$minted = (string)($claims[OAuth2InstanceClientInterface::MINTED_KEY] ?? '');
 			unset($claims[OAuth2InstanceClientInterface::MINTED_KEY]);
@@ -483,9 +485,7 @@ class CredentialOauth2Controller extends Controller {
 		try {
 			$this->connect->complete(
 				claims: $redeemed['claims'],
-				code: $code,
-				verifier: $redeemed['verifier'],
-				redirectUri: $this->endpoints->callbackUrl()
+				grant: new OAuth2CodeGrant(code: $code, verifier: $redeemed['verifier'], redirectUri: $this->endpoints->callbackUrl())
 			);
 		} catch (Throwable $failure) {
 			// Nothing was written: complete() mints only once the token response is
@@ -528,10 +528,11 @@ class CredentialOauth2Controller extends Controller {
 		$lastError = '';
 		try {
 			$lastError = $this->connect->revokeUpstream(
-				provider: $this->connect->oauth2Provider(providerId: (string)($data['provider'] ?? '')),
-				credential: $data,
-				credentialId: $uuid,
-				scope: (string)($data['scope'] ?? 'personal')
+				revocation: new OAuth2Revocation(
+					provider: $this->connect->oauth2Provider(providerId: (string)($data['provider'] ?? '')),
+					credential: $data,
+					address: new TokenSetAddress(credentialId: $uuid, scope: (string)($data['scope'] ?? 'personal'))
+				)
 			);
 		} catch (Throwable $failure) {
 			// An unreachable or unknown provider must not keep a tenant connected.

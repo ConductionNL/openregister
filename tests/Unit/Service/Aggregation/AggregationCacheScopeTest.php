@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Unit\Service\Aggregation;
 
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationSlot;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -91,12 +92,12 @@ class AggregationCacheScopeTest extends TestCase {
 	public function testEvictingSchemaADoesNotClearSchemaBsCachedAggregate(): void {
 		$cache = $this->makeCache();
 
-		$cache->set('reg', 'schema-a', 'totalOpen', [], ['value' => 1]);
-		$cache->set('reg', 'schema-b', 'totalOpen', [], ['value' => 2]);
+		$cache->set(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'schema-a', name: 'totalOpen', filter: []), result: ['value' => 1]);
+		$cache->set(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'schema-b', name: 'totalOpen', filter: []), result: ['value' => 2]);
 
 		// Sanity: both are cached before any eviction.
-		$this->assertSame(['value' => 1], $cache->get('reg', 'schema-a', 'totalOpen', []));
-		$this->assertSame(['value' => 2], $cache->get('reg', 'schema-b', 'totalOpen', []));
+		$this->assertSame(['value' => 1], $cache->get(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'schema-a', name: 'totalOpen', filter: [])));
+		$this->assertSame(['value' => 2], $cache->get(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'schema-b', name: 'totalOpen', filter: [])));
 
 		$cache->evictForSchema('reg', 'schema-a');
 
@@ -104,7 +105,7 @@ class AggregationCacheScopeTest extends TestCase {
 		// the old cache->clear() implementation would have wiped it too.
 		$this->assertSame(
 			['value' => 2],
-			$cache->get('reg', 'schema-b', 'totalOpen', []),
+			$cache->get(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'schema-b', name: 'totalOpen', filter: [])),
 			'evicting schema A must not clear schema B\'s cached aggregate'
 		);
 	}
@@ -112,8 +113,8 @@ class AggregationCacheScopeTest extends TestCase {
 	public function testEvictForSchemaInvalidatesTheEvictedSchema(): void {
 		$cache = $this->makeCache();
 
-		$cache->set('reg', 'schema-a', 'totalOpen', [], ['value' => 1]);
-		$this->assertSame(['value' => 1], $cache->get('reg', 'schema-a', 'totalOpen', []));
+		$cache->set(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'schema-a', name: 'totalOpen', filter: []), result: ['value' => 1]);
+		$this->assertSame(['value' => 1], $cache->get(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'schema-a', name: 'totalOpen', filter: [])));
 
 		$cache->evictForSchema('reg', 'schema-a');
 
@@ -121,7 +122,7 @@ class AggregationCacheScopeTest extends TestCase {
 		// unreachable: the version bump means get() computes a new key
 		// that was never set(), so it's a miss.
 		$this->assertNull(
-			$cache->get('reg', 'schema-a', 'totalOpen', []),
+			$cache->get(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'schema-a', name: 'totalOpen', filter: [])),
 			'evictForSchema(A) must invalidate A\'s own cached aggregate'
 		);
 	}
@@ -131,15 +132,15 @@ class AggregationCacheScopeTest extends TestCase {
 
 		// Same schema slug under two different registers must be
 		// independent eviction scopes.
-		$cache->set('reg-1', 'schema-a', 'totalOpen', [], ['value' => 10]);
-		$cache->set('reg-2', 'schema-a', 'totalOpen', [], ['value' => 20]);
+		$cache->set(slot: new AggregationSlot(registerSlug: 'reg-1', schemaSlug: 'schema-a', name: 'totalOpen', filter: []), result: ['value' => 10]);
+		$cache->set(slot: new AggregationSlot(registerSlug: 'reg-2', schemaSlug: 'schema-a', name: 'totalOpen', filter: []), result: ['value' => 20]);
 
 		$cache->evictForSchema('reg-1', 'schema-a');
 
-		$this->assertNull($cache->get('reg-1', 'schema-a', 'totalOpen', []));
+		$this->assertNull($cache->get(slot: new AggregationSlot(registerSlug: 'reg-1', schemaSlug: 'schema-a', name: 'totalOpen', filter: [])));
 		$this->assertSame(
 			['value' => 20],
-			$cache->get('reg-2', 'schema-a', 'totalOpen', []),
+			$cache->get(slot: new AggregationSlot(registerSlug: 'reg-2', schemaSlug: 'schema-a', name: 'totalOpen', filter: [])),
 			'evicting (reg-1, schema-a) must not clear (reg-2, schema-a)'
 		);
 	}
@@ -147,16 +148,16 @@ class AggregationCacheScopeTest extends TestCase {
 	public function testRepeatedEvictionsKeepBumpingTheVersionCounter(): void {
 		$cache = $this->makeCache();
 
-		$cache->set('reg', 'schema-a', 'totalOpen', [], ['value' => 1]);
+		$cache->set(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'schema-a', name: 'totalOpen', filter: []), result: ['value' => 1]);
 		$cache->evictForSchema('reg', 'schema-a');
 
 		// Re-populate after the first eviction, then evict again — the
 		// second eviction must also invalidate the fresh entry (the
 		// version counter must keep incrementing, not toggle/reset).
-		$cache->set('reg', 'schema-a', 'totalOpen', [], ['value' => 2]);
-		$this->assertSame(['value' => 2], $cache->get('reg', 'schema-a', 'totalOpen', []));
+		$cache->set(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'schema-a', name: 'totalOpen', filter: []), result: ['value' => 2]);
+		$this->assertSame(['value' => 2], $cache->get(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'schema-a', name: 'totalOpen', filter: [])));
 
 		$cache->evictForSchema('reg', 'schema-a');
-		$this->assertNull($cache->get('reg', 'schema-a', 'totalOpen', []));
+		$this->assertNull($cache->get(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'schema-a', name: 'totalOpen', filter: [])));
 	}
 }//end class

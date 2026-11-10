@@ -63,36 +63,6 @@ class OAuth2RefreshExchange {
 	}//end __construct()
 
 	/**
-	 * Spend a refresh token and return the decoded token response.
-	 *
-	 * @param array<string, mixed> $credential The credential object's serialised data.
-	 * @param array<string, mixed> $provider The catalogue provider entry.
-	 * @param string $credentialId The credential UUID.
-	 * @param string $refreshToken The refresh token being spent.
-	 * @param string|null $actingUserId The asserted user for a sessionless caller.
-	 *
-	 * @return array<string, mixed> The decoded token response.
-	 *
-	 * @throws CredentialAccessDeniedException When the catalogue or the credential names no usable token endpoint.
-	 * @throws CredentialRelinkRequiredException When the provider answered `invalid_grant`.
-	 * @throws CredentialUpstreamException On any other failure.
-	 *
-	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
-	 */
-	public function redeem(
-		array $credential,
-		array $provider,
-		string $credentialId,
-		#[\SensitiveParameter] string $refreshToken,
-		?string $actingUserId,
-	): array {
-		$address = new TokenSetAddress(credentialId: $credentialId, scope: (string)($credential['scope'] ?? 'personal'));
-		$target  = new OAuth2RefreshTarget(credential: $credential, provider: $provider, address: $address, actingUserId: $actingUserId);
-
-		return $this->redeemFor(target: $target, refreshToken: $refreshToken);
-	}//end redeem()
-
-	/**
 	 * Spend a refresh token for a refresh target and return the decoded token response.
 	 *
 	 * @param OAuth2RefreshTarget $target       The credential's data, its provider entry, its UUID and the acting user.

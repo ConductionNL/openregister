@@ -16,6 +16,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -131,7 +133,7 @@ class ObjectSlugHandlerTest extends TestCase {
 		$this->magicMapper->expects($this->never())->method('findSlugHolders');
 		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World'], 'old');
 
-		$this->handler->applyOnSave($entity, $this->schema([]), 'old', 'sent-by-client');
+		$this->handler->applyOnSave(new SlugRequest($entity, $this->schema([]), 'sent-by-client'), 'old');
 
 		$this->assertSame('sent-by-client', $entity->getSlug());
 		$this->assertSame([], $this->warnings);
@@ -141,7 +143,7 @@ class ObjectSlugHandlerTest extends TestCase {
 		$this->magicMapper->expects($this->never())->method('findSlugHolders');
 		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World']);
 
-		$this->handler->applyOnSave($entity, $this->schema([]), null, null);
+		$this->handler->applyOnSave(new SlugRequest($entity, $this->schema([]), null), null);
 
 		$this->assertNull($entity->getSlug());
 	}
@@ -150,7 +152,7 @@ class ObjectSlugHandlerTest extends TestCase {
 		$this->magicMapper->method('findSlugHolders')->willReturn([]);
 		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World']);
 
-		$this->handler->applyOnSave($entity, $this->schema(['objectSlugField' => 'title']), null, null);
+		$this->handler->applyOnSave(new SlugRequest($entity, $this->schema(['objectSlugField' => 'title']), null), null);
 
 		$this->assertSame('hello-world', $entity->getSlug());
 	}
@@ -161,7 +163,7 @@ class ObjectSlugHandlerTest extends TestCase {
 			->willReturn([self::UUID_A]);
 		$entity = $this->entity(self::UUID_B, ['title' => 'Hello World']);
 
-		$this->handler->applyOnSave($entity, $this->schema(['objectSlugField' => 'title']), null, null);
+		$this->handler->applyOnSave(new SlugRequest($entity, $this->schema(['objectSlugField' => 'title']), null), null);
 
 		$this->assertNull($entity->getSlug());
 		$this->assertCount(1, $this->warnings);
@@ -178,12 +180,7 @@ class ObjectSlugHandlerTest extends TestCase {
 		);
 		$entity = $this->entity(self::UUID_B, ['title' => 'Hello World']);
 
-		$this->handler->applyOnSave(
-			$entity,
-			$this->schema(['objectSlugField' => 'title', 'objectSlugSuffix' => true]),
-			null,
-			null
-		);
+		$this->handler->applyOnSave(new SlugRequest($entity, $this->schema(['objectSlugField' => 'title', 'objectSlugSuffix' => true]), null), null);
 
 		$this->assertSame('hello-world-20261022120000', $entity->getSlug());
 		$this->assertSame([], $this->warnings);
@@ -193,12 +190,7 @@ class ObjectSlugHandlerTest extends TestCase {
 		$this->magicMapper->method('findSlugHolders')->willReturn([self::UUID_A]);
 		$entity = $this->entity(self::UUID_B, ['title' => 'Hello World']);
 
-		$this->handler->applyOnSave(
-			$entity,
-			$this->schema(['objectSlugField' => 'title', 'objectSlugSuffix' => true]),
-			null,
-			null
-		);
+		$this->handler->applyOnSave(new SlugRequest($entity, $this->schema(['objectSlugField' => 'title', 'objectSlugSuffix' => true]), null), null);
 
 		$this->assertNull($entity->getSlug());
 		$this->assertCount(1, $this->warnings);
@@ -220,7 +212,7 @@ class ObjectSlugHandlerTest extends TestCase {
 		$schema = $this->schema(['objectSlugField' => ObjectSlugHandler::SCHEMA_NAME_SOURCE, 'objectNameField' => 'title']);
 		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World']);
 
-		$this->handler->applyOnSave(entity: $entity, schema: $schema, originalSlug: null, clientSlug: null);
+		$this->handler->applyOnSave(new SlugRequest($entity, $schema, null), null);
 
 		$this->assertSame('convenanten-hello-world', $entity->getSlug());
 	}
@@ -262,15 +254,16 @@ class ObjectSlugHandlerTest extends TestCase {
 			)
 		);
 
-		// "convenanten-abcdefgh-ijk" cut at 21 ends on the hyphen before "ijk".
-		$this->assertSame('convenanten-abcdefgh', $source->candidate(objectData: ['title' => 'abcdefgh ijk'], schema: $schema, maxLength: 21));
+		// "convenanten-" plus 242 letters is 254 characters, so the 255-character cut ends on the hyphen before "ijk".
+		$name = str_repeat('a', 242);
+		$this->assertSame('convenanten-' . $name, $source->candidate(objectData: ['title' => $name . ' ijk'], schema: $schema));
 	}
 
 	public function testAStoredSlugIsFrozenWhenTheSourceFieldIsRenamed(): void {
 		$this->magicMapper->expects($this->never())->method('findSlugHolders');
 		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World Renamed'], 'hello-world');
 
-		$this->handler->applyOnSave($entity, $this->schema(['objectSlugField' => 'title']), 'hello-world', null);
+		$this->handler->applyOnSave(new SlugRequest($entity, $this->schema(['objectSlugField' => 'title']), null), 'hello-world');
 
 		$this->assertSame('hello-world', $entity->getSlug());
 		$this->assertSame([], $this->warnings);
@@ -283,9 +276,9 @@ class ObjectSlugHandlerTest extends TestCase {
 		$schema = $this->schema(['objectSlugField' => 'title']);
 
 		$timestamped = $this->entity(self::UUID_A, ['title' => 'Hello World'], 'hello-world-1700000000');
-		$this->handler->applyOnSave($timestamped, $schema, 'hello-world-1700000000', null);
+		$this->handler->applyOnSave(new SlugRequest($timestamped, $schema, null), 'hello-world-1700000000');
 		$duplicate = $this->entity(self::UUID_B, ['title' => 'Hello World'], 'hello-world');
-		$this->handler->applyOnSave($duplicate, $schema, 'hello-world', null);
+		$this->handler->applyOnSave(new SlugRequest($duplicate, $schema, null), 'hello-world');
 
 		$this->assertSame('hello-world-1700000000', $timestamped->getSlug());
 		$this->assertSame('hello-world', $duplicate->getSlug());
@@ -294,7 +287,7 @@ class ObjectSlugHandlerTest extends TestCase {
 	public function testADifferingClientSlugOnAFrozenObjectIsIgnoredWithAWarning(): void {
 		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World'], 'hello-world');
 
-		$this->handler->applyOnSave($entity, $this->schema(['objectSlugField' => 'title']), 'hello-world', 'other');
+		$this->handler->applyOnSave(new SlugRequest($entity, $this->schema(['objectSlugField' => 'title']), 'other'), 'hello-world');
 
 		$this->assertSame('hello-world', $entity->getSlug());
 		$this->assertCount(1, $this->warnings);
@@ -305,7 +298,7 @@ class ObjectSlugHandlerTest extends TestCase {
 		// Review finding r2save-f2: created with `Zaak_2026-0042`, stored `zaak-2026-0042`.
 		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World'], 'zaak-2026-0042');
 
-		$this->handler->applyOnSave($entity, $this->schema(['objectSlugField' => 'title']), 'zaak-2026-0042', 'Zaak_2026-0042');
+		$this->handler->applyOnSave(new SlugRequest($entity, $this->schema(['objectSlugField' => 'title']), 'Zaak_2026-0042'), 'zaak-2026-0042');
 
 		$this->assertSame('zaak-2026-0042', $entity->getSlug());
 		$this->assertSame([], $this->warnings);
@@ -335,7 +328,7 @@ class ObjectSlugHandlerTest extends TestCase {
 		$this->magicMapper->method('findSlugHolders')->willReturn([]);
 		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World']);
 
-		$this->handler->applyOnSave($entity, $this->schema(['objectSlugField' => 'title']), null, 'Zaak_2026-0042');
+		$this->handler->applyOnSave(new SlugRequest($entity, $this->schema(['objectSlugField' => 'title']), 'Zaak_2026-0042'), null);
 
 		$this->assertSame('zaak-2026-0042', $entity->getSlug());
 	}
@@ -345,7 +338,7 @@ class ObjectSlugHandlerTest extends TestCase {
 		$this->magicMapper->method('findSlugHolders')->willReturn([]);
 		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World']);
 
-		$this->handler->applyOnSave($entity, $this->schema(['objectSlugField' => 'title']), null, str_repeat('a', 300));
+		$this->handler->applyOnSave(new SlugRequest($entity, $this->schema(['objectSlugField' => 'title']), str_repeat('a', 300)), null);
 
 		$this->assertSame(str_repeat('a', 255), $entity->getSlug());
 	}
@@ -354,7 +347,7 @@ class ObjectSlugHandlerTest extends TestCase {
 		$this->magicMapper->method('findSlugHolders')->willReturn([]);
 		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World']);
 
-		$this->handler->applyOnSave($entity, $this->schema(['objectSlugField' => 'title']), null, '!!!');
+		$this->handler->applyOnSave(new SlugRequest($entity, $this->schema(['objectSlugField' => 'title']), '!!!'), null);
 
 		$this->assertSame('hello-world', $entity->getSlug());
 	}
@@ -365,7 +358,7 @@ class ObjectSlugHandlerTest extends TestCase {
 		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World']);
 		$entity->setRegister(null);
 
-		$this->handler->applyOnSave($entity, $this->schema(['objectSlugField' => 'title']), null, 'my-slug');
+		$this->handler->applyOnSave(new SlugRequest($entity, $this->schema(['objectSlugField' => 'title']), 'my-slug'), null);
 
 		$this->assertNull($entity->getSlug());
 		$this->assertCount(1, $this->warnings);
@@ -410,7 +403,7 @@ class ObjectSlugHandlerTest extends TestCase {
 		$this->magicMapper->method('findSlugHolders')->willReturn([]);
 		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World'], 'hello-world');
 
-		$slug = $this->handler->slugForRestore($entity, $this->register, $this->schema(['objectSlugField' => 'title']));
+		$slug = $this->handler->slugForRestore($entity, new RegisterSchema($this->register, $this->schema(['objectSlugField' => 'title'])));
 
 		$this->assertSame('hello-world', $slug);
 		$this->assertSame([], $this->warnings);
@@ -420,7 +413,7 @@ class ObjectSlugHandlerTest extends TestCase {
 		$this->magicMapper->method('findSlugHolders')->willReturn([self::UUID_B]);
 		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World'], 'hello-world');
 
-		$slug = $this->handler->slugForRestore($entity, $this->register, $this->schema(['objectSlugField' => 'title']));
+		$slug = $this->handler->slugForRestore($entity, new RegisterSchema($this->register, $this->schema(['objectSlugField' => 'title'])));
 
 		$this->assertNull($slug);
 		$this->assertCount(1, $this->warnings);
@@ -433,7 +426,7 @@ class ObjectSlugHandlerTest extends TestCase {
 		$this->magicMapper->expects($this->never())->method('findSlugHolders');
 		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World'], 'hello-world');
 
-		$this->assertSame('hello-world', $this->handler->slugForRestore($entity, $this->register, $this->schema([])));
+		$this->assertSame('hello-world', $this->handler->slugForRestore($entity, new RegisterSchema($this->register, $this->schema([]))));
 	}
 
 	public function testMoveKeepsTheSlugWhenTheTargetHasNoHolder(): void {
@@ -441,7 +434,7 @@ class ObjectSlugHandlerTest extends TestCase {
 		$this->magicMapper->method('findSlugHolders')->willReturn([]);
 		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World'], 'hello-world');
 
-		$this->assertSame('hello-world', $this->handler->slugForMove($entity, $this->register, $this->schema(['objectSlugField' => 'title'])));
+		$this->assertSame('hello-world', $this->handler->slugForMove($entity, new RegisterSchema($this->register, $this->schema(['objectSlugField' => 'title']))));
 		$this->assertSame([], $this->warnings);
 	}
 
@@ -449,7 +442,7 @@ class ObjectSlugHandlerTest extends TestCase {
 		$this->magicMapper->method('findSlugHolders')->willReturn([self::UUID_B]);
 		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World'], 'hello-world');
 
-		$this->assertNull($this->handler->slugForMove($entity, $this->register, $this->schema(['objectSlugField' => 'title'])));
+		$this->assertNull($this->handler->slugForMove($entity, new RegisterSchema($this->register, $this->schema(['objectSlugField' => 'title']))));
 		$this->assertCount(1, $this->warnings);
 		$this->assertStringContainsString('was moved without a slug', $this->warnings[0]);
 		$this->assertStringContainsString(self::UUID_B, $this->warnings[0]);
@@ -461,7 +454,7 @@ class ObjectSlugHandlerTest extends TestCase {
 		);
 		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World'], 'hello-world');
 
-		$slug = $this->handler->slugForMove($entity, $this->register, $this->schema(['objectSlugField' => 'title', 'objectSlugSuffix' => true]));
+		$slug = $this->handler->slugForMove($entity, new RegisterSchema($this->register, $this->schema(['objectSlugField' => 'title', 'objectSlugSuffix' => true])));
 
 		$this->assertMatchesRegularExpression('/^hello-world-\d{14}$/', (string)$slug);
 		$this->assertCount(1, $this->warnings);
@@ -472,14 +465,14 @@ class ObjectSlugHandlerTest extends TestCase {
 		$this->magicMapper->expects($this->never())->method('findSlugHolders');
 		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World'], 'hello-world');
 
-		$this->assertSame('hello-world', $this->handler->slugForMove($entity, $this->register, $this->schema([])));
+		$this->assertSame('hello-world', $this->handler->slugForMove($entity, new RegisterSchema($this->register, $this->schema([]))));
 	}
 
 	public function testAnEmptySourceFieldGivesNoSlug(): void {
 		$this->magicMapper->expects($this->never())->method('findSlugHolders');
 		$entity = $this->entity(self::UUID_A, ['title' => '']);
 
-		$this->handler->applyOnSave($entity, $this->schema(['objectSlugField' => 'title']), null, null);
+		$this->handler->applyOnSave(new SlugRequest($entity, $this->schema(['objectSlugField' => 'title']), null), null);
 
 		$this->assertNull($entity->getSlug());
 	}
@@ -489,7 +482,7 @@ class ObjectSlugHandlerTest extends TestCase {
 		$this->magicMapper->method('findSlugHolders')->willReturn([]);
 		$entity = $this->entity(self::UUID_B, ['title' => 'Hello World']);
 
-		$this->handler->applyOnSave($entity, $this->schema(['objectSlugField' => 'title']), null, null);
+		$this->handler->applyOnSave(new SlugRequest($entity, $this->schema(['objectSlugField' => 'title']), null), null);
 
 		$this->assertSame('hello-world', $entity->getSlug());
 	}

@@ -100,17 +100,14 @@ interface FlowRunServiceInterface {
 	 * `$budget` is `0` (nothing; the run is left queued), a count, or `"all"`
 	 * (bounded by the same three things a worker is).
 	 *
-	 * @param FlowRun $run The run, already resolved and pinned.
-	 * @param array $flow The pinned flow document.
-	 * @param object $subject The subject.
-	 * @param string $streamId The completing branch.
-	 * @param int|string $budget `0`, `N`, or `"all"`.
+	 * @param FlowRunPass       $pass    The run, already resolved and pinned, its flow document and subject.
+	 * @param FlowStreamAdvance $advance The completing branch and its budget (`0`, `N`, or `"all"`).
 	 *
 	 * @return FlowRun The run as it stands after the advance.
 	 *
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-completions-advance-budget-must-apply-to-the-completing-branch
 	 */
-	public function advanceStream(FlowRun $run, array $flow, object $subject, string $streamId, int|string $budget): FlowRun;
+	public function advanceBranch(FlowRunPass $pass, FlowStreamAdvance $advance): FlowRun;
 
 	/**
 	 * Queue a run without executing it.

@@ -52,16 +52,9 @@ use DateTime;
 use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\BackgroundJob\RecordsItsRuns;
 use OCA\OpenRegister\Db\BulkJob;
-use OCA\OpenRegister\Db\BulkJobMapperInterface;
-use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapperInterface;
-use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapperInterface;
 use OCA\OpenRegister\Db\RuleRun;
-use OCA\OpenRegister\Db\RuleRunMapperInterface;
 use OCA\OpenRegister\Db\RuleRunSummary;
-use OCA\OpenRegister\Db\RuleRunSummaryMapperInterface;
-use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
 use OCP\BackgroundJob\IJob;
-use OCP\BackgroundJob\IJobList;
 use Throwable;
 
 /**
@@ -149,55 +142,6 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 	private const CANCELLABLE_STATES = [BulkJob::STATE_RUNNING, BulkJob::STATE_PREVIEWED, BulkJob::STATE_PAUSED];
 
 	/**
-	 * The bulk job records.
-	 *
-	 * @var BulkJobMapperInterface
-	 */
-	private readonly BulkJobMapperInterface $bulkJobs;
-
-	/**
-	 * Nextcloud's registered background jobs.
-	 *
-	 * @var IJobList
-	 */
-	private readonly IJobList $jobList;
-
-	/**
-	 * The notification dispatch history.
-	 *
-	 * @var NotificationHistoryMapperInterface
-	 */
-	private readonly NotificationHistoryMapperInterface $dispatches;
-
-	/**
-	 * The notifications waiting to go out.
-	 *
-	 * @var QueuedNotificationMapperInterface
-	 */
-	private readonly QueuedNotificationMapperInterface $queue;
-
-	/**
-	 * The shipped notification texts.
-	 *
-	 * @var NotificationTemplateRegistry
-	 */
-	private readonly NotificationTemplateRegistry $templates;
-
-	/**
-	 * The rules engine's run log.
-	 *
-	 * @var RuleRunMapperInterface
-	 */
-	private readonly RuleRunMapperInterface $ruleRuns;
-
-	/**
-	 * One row per rule, with its last error.
-	 *
-	 * @var RuleRunSummaryMapperInterface
-	 */
-	private readonly RuleRunSummaryMapperInterface $ruleSummaries;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param OperationsConsoleJobs          $jobs          The bulk job records and Nextcloud's background job list
@@ -205,17 +149,10 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 	 * @param OperationsConsoleRules         $rules         The rules engine's run log and per-rule summaries
 	 */
 	public function __construct(
-		OperationsConsoleJobs $jobs,
-		OperationsConsoleNotifications $notifications,
-		OperationsConsoleRules $rules,
+		private readonly OperationsConsoleJobs $jobs,
+		private readonly OperationsConsoleNotifications $notifications,
+		private readonly OperationsConsoleRules $rules,
 	) {
-		$this->bulkJobs = $jobs->bulkJobs;
-		$this->jobList = $jobs->jobList;
-		$this->dispatches = $notifications->dispatches;
-		$this->queue = $notifications->queue;
-		$this->templates = $notifications->templates;
-		$this->ruleRuns = $rules->ruleRuns;
-		$this->ruleSummaries = $rules->ruleSummaries;
 	}//end __construct()
 
 	/**
@@ -256,7 +193,7 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	private function jobsPane(): array {
-		$states = $this->bulkJobs->countByState();
+		$states = $this->jobs->bulkJobs->countByState();
 		$inventory = $this->backgroundJobs();
 		$unobserved = count(array_filter($inventory, static fn (array $job): bool => $job['observed'] === false));
 
@@ -280,10 +217,10 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	private function notificationsPane(DateTime $since): array {
-		$statuses = $this->dispatches->countByStatus(since: $since);
+		$statuses = $this->notifications->dispatches->countByStatus(since: $since);
 		$delivered = (int)($statuses[self::STATUS_DISPATCHED] ?? 0);
 		$total = array_sum($statuses);
-		$gaps = $this->templates->gaps();
+		$gaps = $this->notifications->templates->gaps();
 
 		return [
 			'id' => 'notifications',
@@ -309,8 +246,8 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	private function ruleRunsPane(DateTime $since): array {
-		$runs = $this->ruleRuns->findRecent(since: $since, limit: self::MAX_ROWS);
-		$failing = $this->ruleSummaries->findHoldingAnError(limit: self::MAX_ROWS);
+		$runs = $this->rules->ruleRuns->findRecent(since: $since, limit: self::MAX_ROWS);
+		$failing = $this->rules->ruleSummaries->findHoldingAnError(limit: self::MAX_ROWS);
 
 		return [
 			'id' => 'rule-runs',
@@ -353,7 +290,7 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	public function jobs(?string $state = null, int $limit = 50): array {
-		$jobs = $this->bulkJobs->findAllJobs(
+		$jobs = $this->jobs->bulkJobs->findAllJobs(
 			state: $state,
 			limit: max(1, min($limit, self::MAX_ROWS)),
 			offset: 0
@@ -381,13 +318,13 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	public function ruleRuns(int $windowHours = self::DEFAULT_WINDOW_HOURS, int $limit = 50): array {
-		$runs = $this->ruleRuns->findRecent(
+		$runs = $this->rules->ruleRuns->findRecent(
 			since: $this->windowStart(windowHours: $windowHours),
 			limit: max(1, min($limit, self::MAX_ROWS))
 		);
 
 		$failing = [];
-		foreach ($this->ruleSummaries->findHoldingAnError(limit: self::MAX_ROWS) as $summary) {
+		foreach ($this->rules->ruleSummaries->findHoldingAnError(limit: self::MAX_ROWS) as $summary) {
 			$failing[] = $this->describeFailingRule(summary: $summary);
 		}
 
@@ -536,7 +473,7 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 	 */
 	private function jobListPage(): iterable {
 		try {
-			return $this->jobList->getJobsIterator(null, self::JOB_INVENTORY_LIMIT, 0);
+			return $this->jobs->jobList->getJobsIterator(null, self::JOB_INVENTORY_LIMIT, 0);
 		} catch (Throwable $exception) {
 			return [];
 		}
@@ -548,7 +485,7 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 	 * @return int The queue depth.
 	 */
 	private function queueDepth(): int {
-		return count($this->queue->findAll());
+		return count($this->notifications->queue->findAll());
 	}//end queueDepth()
 
 	/**

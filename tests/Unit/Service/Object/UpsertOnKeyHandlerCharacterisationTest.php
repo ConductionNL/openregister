@@ -23,6 +23,7 @@ use OCA\OpenRegister\Listener\UniqueConstraintListener;
 use OCA\OpenRegister\Service\Import\MatchResolver;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyHandler;
+use OCA\OpenRegister\Service\Object\UpsertOnKeyRequest;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
 use OCP\Lock\ILockingProvider;
@@ -128,7 +129,7 @@ class UpsertOnKeyHandlerCharacterisationTest extends TestCase {
 	 */
 	private function answer(string $name, array $body, callable $save): array {
 		try {
-			$this->handler->upsert($name, $body, $this->register, $this->schema, $save);
+			$this->handler->upsert(new UpsertOnKeyRequest($name, $body, $this->register, $this->schema), $save);
 		} catch (UpsertOnKeyException $e) {
 			return [$e->getStatusCode(), $e->getBody(), $e->getHeaders(), $e->getPrevious() === null ? null : get_class($e->getPrevious())];
 		}
@@ -143,7 +144,7 @@ class UpsertOnKeyHandlerCharacterisationTest extends TestCase {
 
 	public function testCreateAndUpdatePinLockLookupSaveAndRelease(): void {
 		$this->storeFinds([]);
-		$created = $this->handler->upsert('zaaksleutel', $this->body(), $this->register, $this->schema, $this->saver());
+		$created = $this->handler->upsert(new UpsertOnKeyRequest('zaaksleutel', $this->body(), $this->register, $this->schema), $this->saver());
 		$this->assertSame(true, $created['created']);
 		$this->assertSame('new-uuid', $created['object']->getUuid());
 		$this->assertSame(
@@ -154,7 +155,7 @@ class UpsertOnKeyHandlerCharacterisationTest extends TestCase {
 
 	public function testOneMatchUpdatesIt(): void {
 		$this->storeFinds(['u-1']);
-		$updated = $this->handler->upsert('zaaksleutel', $this->body(), $this->register, $this->schema, $this->saver());
+		$updated = $this->handler->upsert(new UpsertOnKeyRequest('zaaksleutel', $this->body(), $this->register, $this->schema), $this->saver());
 		$this->assertSame(['created' => false], ['created' => $updated['created']]);
 		$this->assertSame('u-1', $updated['object']->getUuid());
 		$this->assertSame(['acquire:' . self::LOCK . ':2:an upsert key', 'lookup', 'save:u-1', 'release:' . self::LOCK . ':2'], $this->events);

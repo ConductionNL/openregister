@@ -59,6 +59,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunStores;
 use OCA\OpenRegister\Service\Flow\FlowRunStreamStores;
 use OCA\OpenRegister\Service\Flow\FlowRunWalkServices;
+use OCA\OpenRegister\Service\Flow\FlowStreamAdvance;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
@@ -403,7 +404,7 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 		$this->complete(uuid: (string)$slots['askA']['taskUuid'], completedBy: 'bob');
 		$woken = $this->service->signal($run, []);
 		$this->assertNotNull($woken);
-		$run = $this->service->advanceStream($woken, $this->flow(), new HeartbeatSubject(), $this->streamOn('askA'), 'all');
+		$run = $this->service->advanceBranch(new \OCA\OpenRegister\Service\Flow\FlowRunPass(run: $woken, flow: $this->flow(), subject: new HeartbeatSubject()), new FlowStreamAdvance(streamId: $this->streamOn('askA'), budget: 'all'));
 
 		$this->assertSame(FlowRun::STATUS_QUEUED, $run->getStatus());
 		$kept = ($run->getContext()['resumeState'] ?? []);

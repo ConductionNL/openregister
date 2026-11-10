@@ -263,7 +263,7 @@ class DestructionServiceTest extends TestCase {
 	 * D2 (openregister#393): the approval MUST be recorded under the canonical
 	 * `userId` key.
 	 *
-	 * Both readers of the approvals list — RetentionService::generateDestructionCertificate()
+	 * Both readers of the approvals list — RetentionService::certify()
 	 * and DestructionExecutionJob — do array_column($approvals, 'userId'). approveList()
 	 * previously wrote `approvedBy`, so the certificate's approver list came out EMPTY:
 	 * a legally worthless "verklaring van vernietiging" that does not record who

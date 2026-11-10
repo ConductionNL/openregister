@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Notifications\Service\Timeline;
 
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Interaction\AddressedObject;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -211,10 +212,8 @@ class EntryMentionService {
 
 		try {
 			$this->principals->watchers->subscribeMentioned(
-				object: $object,
-				userId: $uid,
-				register: $run->register,
-				schema: $run->schema
+				target: new AddressedObject(object: $object, register: $run->register, schema: $run->schema),
+				userId: $uid
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(

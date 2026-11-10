@@ -41,7 +41,7 @@ class FlowTriggerServiceTest extends TestCase {
 	 */
 	private function locatorReturning(array $ids): FlowLocator {
 		$locator = $this->createMock(FlowLocator::class);
-		$locator->method('flowsForTrigger')->willReturn($ids);
+		$locator->method('flowsForEvent')->willReturn($ids);
 
 		return $locator;
 	}//end locatorReturning()
@@ -161,7 +161,7 @@ class FlowTriggerServiceTest extends TestCase {
 	 */
 	public function testALocatorFailureIsSwallowedAsZero(): void {
 		$locator = $this->createMock(FlowLocator::class);
-		$locator->method('flowsForTrigger')->willThrowException(new \RuntimeException('index gone'));
+		$locator->method('flowsForEvent')->willThrowException(new \RuntimeException('index gone'));
 		$runner = $this->createMock(FlowRunService::class);
 		$runner->expects($this->never())->method('queueRun');
 
@@ -177,9 +177,9 @@ class FlowTriggerServiceTest extends TestCase {
 	 */
 	public function testAnInlineFailureKeepsTheQueuedRunCounted(): void {
 		$locator = $this->createMock(FlowLocator::class);
-		$locator->method('flowsForTrigger')->willReturn(['sync-1']);
+		$locator->method('flowsForEvent')->willReturn(['sync-1']);
 		$locator->method('resolveFlow')->willReturn(['id' => 'sync-1', 'executionMode' => 'sync']);
-		$locator->method('resolveSubject')->willReturn(new \stdClass());
+		$locator->method('resolveObject')->willReturn(new \stdClass());
 
 		$runner = $this->createMock(FlowRunService::class);
 		$run = new FlowRun();
@@ -202,7 +202,7 @@ class FlowTriggerServiceTest extends TestCase {
 	 */
 	public function testASubjectlessSyncFlowSeedsFromThePayload(): void {
 		$locator = $this->createMock(FlowLocator::class);
-		$locator->method('flowsForTrigger')->willReturn(['sync-1']);
+		$locator->method('flowsForEvent')->willReturn(['sync-1']);
 		$locator->method('resolveFlow')->willReturn(['id' => 'sync-1', 'executionMode' => 'sync']);
 
 		$run = new FlowRun();
@@ -232,9 +232,9 @@ class FlowTriggerServiceTest extends TestCase {
 	 */
 	public function testAnUnresolvableSubjectLeavesTheSyncRunToTheWorker(): void {
 		$locator = $this->createMock(FlowLocator::class);
-		$locator->method('flowsForTrigger')->willReturn(['sync-1']);
+		$locator->method('flowsForEvent')->willReturn(['sync-1']);
 		$locator->method('resolveFlow')->willReturn(['id' => 'sync-1', 'executionMode' => 'sync']);
-		$locator->method('resolveSubject')->willReturn(null);
+		$locator->method('resolveObject')->willReturn(null);
 
 		$runner = $this->createMock(FlowRunService::class);
 		$runner->method('queueRun')->willReturn(new FlowRun());

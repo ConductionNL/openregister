@@ -247,7 +247,7 @@ final class FlowServiceRunAccessGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testADeclaredActionRunsAsTheActingUserWithoutTheOwnerCheck(): void {
-		$run = $this->service(uid: 'bram')->runForAction('flow-1', ['uuid' => 'o-2'], ['a' => 1], false);
+		$run = $this->service(uid: 'bram')->runForAction('flow-1', new \OCA\OpenRegister\Service\Flow\FlowRunOptions(subject: ['uuid' => 'o-2'], context: ['a' => 1], sync: false, trigger: Flow::TRIGGER_MANUAL));
 
 		$this->assertSame('run-1', $run->getUuid());
 		$this->assertSame(
@@ -256,7 +256,7 @@ final class FlowServiceRunAccessGoldenTest extends TestCase {
 		);
 		$this->assertSame([], $this->advanced);
 
-		$this->service(uid: 'bram')->runForAction('flow-1', [], [], true);
+		$this->service(uid: 'bram')->runForAction('flow-1', new \OCA\OpenRegister\Service\Flow\FlowRunOptions(subject: [], context: [], sync: true, trigger: Flow::TRIGGER_MANUAL));
 		$this->assertCount(1, $this->advanced);
 		$this->assertTrue($this->advanced[0]['rethrow']);
 	}//end testADeclaredActionRunsAsTheActingUserWithoutTheOwnerCheck()
