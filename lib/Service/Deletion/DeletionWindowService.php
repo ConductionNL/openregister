@@ -161,27 +161,6 @@ class DeletionWindowService {
 	/**
 	 * The window of a soft-deleted object, or null when it is not in the trash.
 	 *
-	 * Facade over {@see self::windowOf()} for callers that pass the parts.
-	 *
-	 * @param ObjectEntity           $object The object to describe.
-	 * @param Schema|null            $schema The object's schema, when it resolves.
-	 * @param DateTimeImmutable|null $now    Reference moment, now when omitted.
-	 *
-	 * @return DeletionWindow|null The window, or null when the object is live.
-	 *
-	 * @spec openspec/specs/deletion-audit-trail/spec.md
-	 */
-	public function windowFor(
-		ObjectEntity $object,
-		?Schema $schema=null,
-		?DateTimeImmutable $now=null,
-	): ?DeletionWindow {
-		return $this->windowOf(query: new DeletionWindowQuery(object: $object, schema: $schema, now: $now));
-	}//end windowFor()
-
-	/**
-	 * The window of a soft-deleted object, or null when it is not in the trash.
-	 *
 	 * Reads the stored `destroyableFrom`/`purgeDate` first, so an object keeps
 	 * the window it was deleted under even if the setting changes afterwards.
 	 * An object soft-deleted before this change carries neither, and its
@@ -257,7 +236,7 @@ class DeletionWindowService {
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function refusalBody(ObjectEntity $object, ?Schema $schema = null): array {
-		$window = $this->windowFor(object: $object, schema: $schema);
+		$window = $this->windowOf(query: new DeletionWindowQuery(object: $object, schema: $schema));
 		if ($window === null) {
 			return [
 				'error' => 'Object with id ' . (string)$object->getUuid() . ' not found',
