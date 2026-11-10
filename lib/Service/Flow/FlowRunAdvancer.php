@@ -166,7 +166,10 @@ class FlowRunAdvancer implements FlowRunAdvancerInterface {
 				}
 			}
 
-			return $this->runner->execute(run: $run, flow: $flow, subject: $subject, seedItems: $seed);
+			return $this->runner->executePass(
+				pass: new FlowRunPass(run: $run, flow: $flow, subject: $subject),
+				origin: new FlowRunOrigin(items: $seed)
+			);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: '[FlowRunAdvancer] Failed to advance a run',
