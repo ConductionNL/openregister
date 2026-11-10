@@ -1864,28 +1864,25 @@ class MagicSearchHandler {
 				continue;
 			}
 
-			$expression = $this->nestedPaths->expression(
-				column: $this->quoteIdentifier(name: $this->sanitizeColumnName(name: $filter['root']), isPostgres: $isPostgres),
-				path: $filter['path'],
+			$quote  = static fn (string $value): string => (string)$connection->quote($value);
+			$column = new NestedPathTarget(
+				expression: $this->quoteIdentifier(name: $this->sanitizeColumnName(name: $filter['root']), isPostgres: $isPostgres),
+				bind: $quote,
 				isPostgres: $isPostgres
 			);
+			$expression = $this->nestedPaths->expression(column: $column, path: $filter['path']);
 			if ($expression === null) {
 				$conditions[] = '1=0';
 				continue;
 			}
 
-			$quote = static fn (string $value): string => (string)$connection->quote($value);
+			$target = new NestedPathTarget(expression: $expression, bind: $quote, isPostgres: $isPostgres);
 			array_push(
 				$conditions,
 				...NullFilter::conditionsFor(
 					criterion: $filter['value'],
 					column: $expression,
-					build: fn (mixed $criterion): array => $this->nestedPaths->conditions(
-						expression: $expression,
-						value: $criterion,
-						bind: $quote,
-						isPostgres: $isPostgres
-					)
+					build: fn (mixed $criterion): array => $this->nestedPaths->conditions(target: $target, value: $criterion)
 				)
 			);
 		}
@@ -3343,26 +3340,20 @@ class MagicSearchHandler {
 				continue;
 			}
 
-			$expression = $this->nestedPaths->expression(
-				column: 't.' . $this->sanitizeColumnName(name: $filter['root']),
-				path: $filter['path'],
-				isPostgres: $isPostgres
-			);
+			$bind       = static fn (string $value): string => (string)$qb->createNamedParameter($value);
+			$column     = new NestedPathTarget(expression: 't.' . $this->sanitizeColumnName(name: $filter['root']), bind: $bind, isPostgres: $isPostgres);
+			$expression = $this->nestedPaths->expression(column: $column, path: $filter['path']);
 			if ($expression === null) {
 				$this->ignoredFilters[] = $filter['root'] . '.' . implode('.', $filter['path']);
 				$qb->andWhere('1 = 0');
 				continue;
 			}
 
+			$target     = new NestedPathTarget(expression: $expression, bind: $bind, isPostgres: $isPostgres);
 			$conditions = NullFilter::conditionsFor(
 				criterion: $filter['value'],
 				column: $expression,
-				build: fn (mixed $criterion): array => $this->nestedPaths->conditions(
-					expression: $expression,
-					value: $criterion,
-					bind: static fn (string $value): string => (string)$qb->createNamedParameter($value),
-					isPostgres: $isPostgres
-				)
+				build: fn (mixed $criterion): array => $this->nestedPaths->conditions(target: $target, value: $criterion)
 			);
 			foreach ($conditions as $condition) {
 				$qb->andWhere($condition);
