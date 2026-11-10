@@ -88,7 +88,7 @@ class MapperPagingGoldenTest extends TestCase {
 			'chunk file source summaries' => [ChunkMapper::class, 'getFileSourceSummaries', ['search' => 'abc']],
 			'webhook all' => [WebhookMapper::class, 'findAll', ['filters' => ['a' => 1]]],
 			'bulk job member by job' => [BulkJobMemberMapper::class, 'findByJob', ['jobId' => 8, 'outcome' => 'failed']],
-			'import preview row by preview' => [ImportPreviewRowMapper::class, 'findByPreview', ['previewId' => 9, 'decision' => 'skip']],
+			'import preview row by preview' => [ImportPreviewRowMapper::class, 'findByPreview', ['previewId' => 9, 'query' => ListQuery::class, 'filters' => ['decision' => 'skip']]],
 		];
 	}//end sites()
 
@@ -141,7 +141,9 @@ class MapperPagingGoldenTest extends TestCase {
 		}
 
 		if (($args['query'] ?? null) === ListQuery::class) {
-			return ['query' => new ListQuery(limit: ($page['limit'] ?? ListQuery::UNBOUNDED), offset: ($page['offset'] ?? null))] + $args;
+			$filters = ($args['filters'] ?? []);
+			unset($args['filters']);
+			return ['query' => new ListQuery(limit: ($page['limit'] ?? ListQuery::UNBOUNDED), offset: ($page['offset'] ?? null), filters: $filters)] + $args;
 		}
 
 		if (array_key_exists('outcome', $args) === false) {
