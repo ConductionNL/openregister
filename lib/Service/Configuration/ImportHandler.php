@@ -2358,7 +2358,7 @@ class ImportHandler {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function isUnchangedConfiguration(ImportRun $run): bool {
-		if ($run->appId === null || $run->version === null || $run->force === true) {
+		if ($this->alwaysReimports(run: $run) === true) {
 			return false;
 		}
 
@@ -2374,6 +2374,17 @@ class ImportHandler {
 		);
 		return true;
 	}//end isUnchangedConfiguration()
+
+	/**
+	 * Whether an import is never skipped as unchanged: no app, no version, or forced.
+	 *
+	 * @param ImportRun $run The import.
+	 *
+	 * @return bool True when the stored hash is not consulted.
+	 */
+	private function alwaysReimports(ImportRun $run): bool {
+		return $run->appId === null || $run->version === null || $run->force === true;
+	}//end alwaysReimports()
 
 	/**
 	 * Log that a forced import bypasses the version check.
@@ -2902,6 +2913,18 @@ class ImportHandler {
 		}
 
 		$run->slugsAndIdsMap = $this->mappingMapper->getSlugToIdMap(includeNullOrg: true);
+		$this->logMappingImportStart(run: $run);
+		$this->importEachMapping(run: $run);
+	}//end importMappingComponents()
+
+	/**
+	 * Log how many mappings the import lists, and their keys.
+	 *
+	 * @param ImportRun $run The import.
+	 *
+	 * @return void
+	 */
+	private function logMappingImportStart(ImportRun $run): void {
 		$this->logger->debug(
 			message: '[ImportHandler] Starting mapping import',
 			context: [
@@ -2911,7 +2934,16 @@ class ImportHandler {
 				'mappingKeys' => array_keys($run->data['components']['mappings']),
 			]
 		);
+	}//end logMappingImportStart()
 
+	/**
+	 * Import every listed mapping, named after its key when it has no name, and log the count.
+	 *
+	 * @param ImportRun $run The import.
+	 *
+	 * @return void
+	 */
+	private function importEachMapping(ImportRun $run): void {
 		foreach ($run->data['components']['mappings'] as $key => $mappingData) {
 			if (isset($mappingData['name']) === false && is_string($key) === true) {
 				$mappingData['name'] = $key;
@@ -2924,7 +2956,7 @@ class ImportHandler {
 			message: '[ImportHandler] Mapping import completed',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'importedCount' => count($run->result['mappings'])]
 		);
-	}//end importMappingComponents()
+	}//end importEachMapping()
 
 	/**
 	 * Import one mapping, logging and skipping it when it fails.
@@ -4176,24 +4208,47 @@ class ImportHandler {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function findAppConfigurationByApp(AppImport $import): ?Configuration {
-		$appId = $import->appId;
-		try {
-			$configurations = $this->configurationMapper->findByApp($appId, systemLookup: true);
-		} catch (Exception $e) {
-			$this->logger->debug(
-				message: "[ImportHandler] No existing configuration found for app {$appId}, will create new one",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return null;
-		}
-
+		$configurations = $this->storedAppConfigurations(appId: $import->appId);
 		if (count($configurations) === 0) {
 			return null;
 		}
 
 		$configuration = $configurations[0];
+		$this->logFoundAppConfiguration(import: $import, configuration: $configuration);
+
+		return $configuration;
+	}//end findAppConfigurationByApp()
+
+	/**
+	 * The configurations stored for an app; a failing lookup is logged and gives none.
+	 *
+	 * @param string $appId The app id.
+	 *
+	 * @return array The stored configurations.
+	 */
+	private function storedAppConfigurations(string $appId): array {
+		try {
+			return $this->configurationMapper->findByApp($appId, systemLookup: true);
+		} catch (Exception $e) {
+			$this->logger->debug(
+				message: "[ImportHandler] No existing configuration found for app {$appId}, will create new one",
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return [];
+		}
+	}//end storedAppConfigurations()
+
+	/**
+	 * Log the configuration found for an app, and whether its version is already up to date.
+	 *
+	 * @param AppImport     $import        The app import.
+	 * @param Configuration $configuration The configuration found.
+	 *
+	 * @return void
+	 */
+	private function logFoundAppConfiguration(AppImport $import, Configuration $configuration): void {
 		$this->logger->debug(
-			message: "[ImportHandler] Found existing configuration for app {$appId}",
+			message: "[ImportHandler] Found existing configuration for app {$import->appId}",
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
@@ -4202,16 +4257,26 @@ class ImportHandler {
 			]
 		);
 
+		$this->logUpToDateAppConfiguration(import: $import, configuration: $configuration);
+	}//end logFoundAppConfiguration()
+
+	/**
+	 * Log that a found configuration is up to date, unless the import is forced or newer.
+	 *
+	 * @param AppImport     $import        The app import.
+	 * @param Configuration $configuration The configuration found.
+	 *
+	 * @return void
+	 */
+	private function logUpToDateAppConfiguration(AppImport $import, Configuration $configuration): void {
 		$existingVersion = $configuration->getVersion() ?? '0.0.0';
 		if ($import->force === false && version_compare($import->version, $existingVersion, '<=') === true) {
 			$this->logger->debug(
 				message: "[ImportHandler] Config version ({$existingVersion}) up-to-date, checking seedData",
-				context: ['file' => __FILE__, 'line' => __LINE__, 'app' => $appId, 'force' => $import->force]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'app' => $import->appId, 'force' => $import->force]
 			);
 		}
-
-		return $configuration;
-	}//end findAppConfigurationByApp()
+	}//end logUpToDateAppConfiguration()
 
 	/**
 	 * The steps every app import ends with: an application register when the
@@ -4514,9 +4579,63 @@ class ImportHandler {
 		$schemas = $update->result['schemas'];
 		$configuration = $update->configuration;
 
+		$details = $this->withImportedSchemas(details: $details, schemas: $schemas);
+		$register = $this->applicationRegister(details: $details);
+
+		// Surface the auto-created register in the import result so callers
+		// see a complete (Configuration, Schemas, Register) triple.
+		$update->result['registers'] = self::withRegister(registers: ($update->result['registers'] ?? []), register: $register);
+		$this->linkConfigurationRegister(configuration: $configuration, register: $register);
+
+		if ($this->magicMapper !== null) {
+			$this->ensureApplicationMagicTables(register: $register, schemas: $schemas);
+		}
+	}//end autoCreateRegisterIfApplication()
+
+	/**
+	 * The application register details with the imported schemas and their saved ids.
+	 *
+	 * @param array<string, mixed> $details The register details.
+	 * @param array                $schemas The imported schemas.
+	 *
+	 * @return array<string, mixed> The details.
+	 */
+	private function withImportedSchemas(array $details, array $schemas): array {
 		$details['schemas'] = $schemas;
 		$details['schemaIds'] = self::savedSchemaIds(schemas: $schemas);
+		return $details;
+	}//end withImportedSchemas()
 
+	/**
+	 * The application register: the existing one reconciled, else a new one.
+	 *
+	 * @param array<string, mixed> $details The register slug, schemas and schema ids.
+	 *
+	 * @return Register The register.
+	 */
+	private function applicationRegister(array $details): Register {
+		$existingRegister = $this->existingApplicationRegister(slug: $details['slug']);
+
+		$register = null;
+		if ($existingRegister !== null) {
+			$register = $this->reconcileApplicationRegister(register: $existingRegister, details: $details);
+		}
+
+		if ($register === null) {
+			$register = $this->createApplicationRegister(details: $details);
+		}
+
+		return $register;
+	}//end applicationRegister()
+
+	/**
+	 * The register with the application register's slug in the active organisation, if any.
+	 *
+	 * @param mixed $slug The application register slug.
+	 *
+	 * @return Register|null The existing register, or null.
+	 */
+	private function existingApplicationRegister(mixed $slug): ?Register {
 		// Idempotent lookup on (slug, organisationId). The find cache on
 		// RegisterMapper already keys by slug, so this is cheap.
 		// Use findAll with filters so we can scope to organisation explicitly
@@ -4525,38 +4644,36 @@ class ImportHandler {
 		$existingRegisters = $this->registerMapper->findAll(
 			limit: 1,
 			offset: 0,
-			filters: ['slug' => $details['slug']],
+			filters: ['slug' => $slug],
 			_rbac: false,
 			_multitenancy: true
 		);
-
-		$register = null;
 		if (count($existingRegisters) > 0) {
-			$register = $this->reconcileApplicationRegister(register: $existingRegisters[0], details: $details);
+			return $existingRegisters[0];
 		}
 
-		if ($register === null) {
-			$register = $this->createApplicationRegister(details: $details);
-		}
+		return null;
+	}//end existingApplicationRegister()
 
-		// Surface the auto-created register in the import result so callers
-		// see a complete (Configuration, Schemas, Register) triple.
-		$update->result['registers'] = self::withRegister(registers: ($update->result['registers'] ?? []), register: $register);
-
-		// Keep the Configuration entity's registers[] field in sync so the
-		// triple stays consistent and a follow-up `_extend=registers` GET
-		// serializes the new ID without an extra round-trip.
+	/**
+	 * Keep the Configuration entity's registers[] field in sync with the application register.
+	 *
+	 * The triple stays consistent and a follow-up `_extend=registers` GET
+	 * serializes the new ID without an extra round-trip.
+	 *
+	 * @param Configuration $configuration The app's configuration.
+	 * @param Register      $register      The application register.
+	 *
+	 * @return void
+	 */
+	private function linkConfigurationRegister(Configuration $configuration, Register $register): void {
 		$configRegisterIds = $configuration->getRegisters() ?? [];
 		if (in_array($register->getId(), $configRegisterIds, true) === false) {
 			$configRegisterIds[] = $register->getId();
 			$configuration->setRegisters($configRegisterIds);
 			$this->configurationMapper->update($configuration);
 		}
-
-		if ($this->magicMapper !== null) {
-			$this->ensureApplicationMagicTables(register: $register, schemas: $schemas);
-		}
-	}//end autoCreateRegisterIfApplication()
+	}//end linkConfigurationRegister()
 
 	/**
 	 * The slug, title and description of the register an `application` configuration declares.
