@@ -151,6 +151,7 @@ use OCA\OpenRegister\Service\Object\SearchTrailRecorder;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\Object\BulkCacheInvalidator;
+use OCA\OpenRegister\Service\Object\DraftSubject;
 use OCA\OpenRegister\Service\Object\ObjectCacheInvalidator;
 use OCA\OpenRegister\Service\Object\SavedObjectScope;
 use OCA\OpenRegister\Service\Object\SavedScopeIds;
@@ -3039,8 +3040,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         $user = $this->userSession->getUser();
         $kept = (new DraftCallerRule())->keptFromCaller(
-            object: $stored,
-            schema: $this->currentSchema,
+            subject: new DraftSubject(object: $stored, schema: $this->currentSchema),
             caller: new DraftCaller(
                 userId: $user?->getUID(),
                 isAdmin: ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true)
@@ -4398,8 +4398,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $deleter = ($request->currentUser ?? $this->userSession->getUser());
         if ($request->rbac === true && $object !== null && $this->currentSchema !== null
             && (new DraftCallerRule())->keptFromCaller(
-                object: $object,
-                schema: $this->currentSchema,
+                subject: new DraftSubject(object: $object, schema: $this->currentSchema),
                 caller: $this->draftCaller(user: $deleter)
             ) === true
         ) {
@@ -6960,8 +6959,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     {
         if ($scope['draft'] === true && $run['_rbac'] === true
             && (new DraftCallerRule())->keptFromCaller(
-                object: $scope['row'],
-                schema: $scope['gateSchema'],
+                subject: new DraftSubject(object: $scope['row'], schema: $scope['gateSchema']),
                 caller: $this->draftCaller(user: $this->userSession->getUser())
             ) === true
         ) {
