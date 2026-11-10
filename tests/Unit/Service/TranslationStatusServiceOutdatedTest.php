@@ -45,7 +45,7 @@ class TranslationStatusServiceOutdatedTest extends TestCase {
 			$this->createMock(IUserSession::class)
 		);
 
-		$count = $service->markDerivedTranslationsOutdated('obj-uuid', 'title', 'nl');
+		$count = $service->markDerivedTranslationsOutdated(new TranslationSlot('obj-uuid', 'title', 'nl'));
 		$this->assertSame(3, $count);
 	}//end testFlipsDerivedRowsAndReturnsCount()
 
@@ -62,8 +62,8 @@ class TranslationStatusServiceOutdatedTest extends TestCase {
 			$this->createMock(IUserSession::class)
 		);
 
-		$this->assertSame(0, $service->markDerivedTranslationsOutdated('', 'title', 'nl'));
-		$this->assertSame(0, $service->markDerivedTranslationsOutdated('uuid', '', 'nl'));
-		$this->assertSame(0, $service->markDerivedTranslationsOutdated('uuid', 'title', ''));
+		$this->assertSame(0, $service->markDerivedTranslationsOutdated(new TranslationSlot('', 'title', 'nl')));
+		$this->assertSame(0, $service->markDerivedTranslationsOutdated(new TranslationSlot('uuid', '', 'nl')));
+		$this->assertSame(0, $service->markDerivedTranslationsOutdated(new TranslationSlot('uuid', 'title', '')));
 	}//end testEmptyArgumentsReturnZero()
 }//end class

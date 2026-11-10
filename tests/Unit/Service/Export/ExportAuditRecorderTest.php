@@ -28,6 +28,7 @@ namespace Unit\Service\Export;
 
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\ExportOutcome;
 use OCA\OpenRegister\Service\Export\ExportAuditRecorder;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -37,20 +38,21 @@ final class ExportAuditRecorderTest extends TestCase {
 	public function testACompletedExportIsOneEntryNamingActorProfileAndRowCount(): void {
 		$mapper = $this->createMock(AuditTrailMapper::class);
 		$mapper->expects(self::once())
-			->method('createExportEntry')
+			->method('recordExport')
 			->with(
-				self::equalTo(ExportAuditRecorder::OUTCOME_COMPLETED),
 				self::callback(
-					static function (array $summary): bool {
-						return $summary['profile'] === 'Maandelijkse aanlevering'
+					static function (ExportOutcome $export): bool {
+						$summary = $export->summary;
+						return $export->outcome === ExportAuditRecorder::OUTCOME_COMPLETED
+							&& $summary['profile'] === 'Maandelijkse aanlevering'
 							&& $summary['rowCount'] === 412
 							&& $summary['format'] === 'csv'
-							&& $summary['valueMode'] === 'rendered';
+							&& $summary['valueMode'] === 'rendered'
+							&& $export->target->register === 7
+							&& $export->target->schema === 19
+							&& $export->actorId === 'eigenaar-1';
 					}
-				),
-				self::equalTo(7),
-				self::equalTo(19),
-				self::equalTo('eigenaar-1')
+				)
 			)
 			->willReturn(new AuditTrail());
 
@@ -69,10 +71,10 @@ final class ExportAuditRecorderTest extends TestCase {
 		$captured = [];
 		$mapper = $this->createMock(AuditTrailMapper::class);
 		$mapper->expects(self::once())
-			->method('createExportEntry')
+			->method('recordExport')
 			->willReturnCallback(
-				function (...$args) use (&$captured): AuditTrail {
-					$captured = ['outcome' => $args[0], 'summary' => $args[1]];
+				function (ExportOutcome $export) use (&$captured): AuditTrail {
+					$captured = ['outcome' => $export->outcome, 'summary' => $export->summary];
 
 					return new AuditTrail();
 				}
@@ -96,7 +98,7 @@ final class ExportAuditRecorderTest extends TestCase {
 
 	public function testALedgerThatThrowsDoesNotFailTheExport(): void {
 		$mapper = $this->createMock(AuditTrailMapper::class);
-		$mapper->expects(self::once())->method('createExportEntry')->willThrowException(new \RuntimeException('chain busy'));
+		$mapper->expects(self::once())->method('recordExport')->willThrowException(new \RuntimeException('chain busy'));
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects(self::once())->method('error')
 			->with('[ExportAudit] Could not record the export', self::callback(static fn (array $context): bool => $context['error'] === 'chain busy'));

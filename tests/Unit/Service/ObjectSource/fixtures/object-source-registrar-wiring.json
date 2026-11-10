@@ -17,16 +17,25 @@
             "logger": "Psr\\Log\\LoggerInterface"
         }
     },
-    "OCA\\OpenRegister\\Service\\ObjectSource\\CalDavVtodoObjectSourceProvider": {
+    "OCA\\OpenRegister\\Service\\ObjectSource\\OptionalAppBridge": {
         "asked": [
-            "OCA\\OpenRegister\\Service\\TaskService",
             "OCP\\App\\IAppManager",
             "Psr\\Log\\LoggerInterface"
         ],
         "params": {
-            "taskService": "OCA\\OpenRegister\\Service\\TaskService",
             "appManager": "OCP\\App\\IAppManager",
+            "container": "(container)",
             "logger": "Psr\\Log\\LoggerInterface"
+        }
+    },
+    "OCA\\OpenRegister\\Service\\ObjectSource\\CalDavVtodoObjectSourceProvider": {
+        "asked": [
+            "OCA\\OpenRegister\\Service\\TaskService",
+            "OCA\\OpenRegister\\Service\\ObjectSource\\OptionalAppBridge"
+        ],
+        "params": {
+            "taskService": "OCA\\OpenRegister\\Service\\TaskService",
+            "app": "(no property)"
         }
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\UserDirectoryObjectSourceProvider": {
@@ -46,13 +55,11 @@
     "OCA\\OpenRegister\\Service\\ObjectSource\\GroupObjectSourceProvider": {
         "asked": [
             "OCP\\IGroupManager",
-            "OCP\\IUserSession",
-            "Psr\\Log\\LoggerInterface"
+            "OCA\\OpenRegister\\Service\\LinkSessionRuntime"
         ],
         "params": {
             "groupManager": "OCP\\IGroupManager",
-            "userSession": "OCP\\IUserSession",
-            "logger": "Psr\\Log\\LoggerInterface"
+            "session": "(no property)"
         }
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\OrganisationActingUser": {
@@ -82,63 +89,51 @@
     "OCA\\OpenRegister\\Service\\ObjectSource\\ContactsObjectSourceProvider": {
         "asked": [
             "OCP\\Contacts\\IManager",
-            "OCP\\App\\IAppManager",
-            "Psr\\Log\\LoggerInterface"
+            "OCA\\OpenRegister\\Service\\ObjectSource\\OptionalAppBridge"
         ],
         "params": {
             "contactsManager": "OCP\\Contacts\\IManager",
-            "appManager": "OCP\\App\\IAppManager",
-            "logger": "Psr\\Log\\LoggerInterface"
+            "app": "(no property)"
         }
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\CalendarEventObjectSourceProvider": {
         "asked": [
             "OCA\\OpenRegister\\Service\\CalendarEventService",
-            "OCP\\App\\IAppManager",
-            "Psr\\Log\\LoggerInterface"
+            "OCA\\OpenRegister\\Service\\ObjectSource\\OptionalAppBridge"
         ],
         "params": {
             "calendarEventService": "OCA\\OpenRegister\\Service\\CalendarEventService",
-            "appManager": "OCP\\App\\IAppManager",
-            "logger": "Psr\\Log\\LoggerInterface"
+            "app": "(no property)"
         }
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\FilesObjectSourceProvider": {
         "asked": [
             "OCP\\Files\\IRootFolder",
-            "OCP\\IUserSession",
-            "Psr\\Log\\LoggerInterface"
+            "OCA\\OpenRegister\\Service\\LinkSessionRuntime"
         ],
         "params": {
             "rootFolder": "OCP\\Files\\IRootFolder",
-            "userSession": "OCP\\IUserSession",
-            "logger": "Psr\\Log\\LoggerInterface"
+            "session": "(no property)"
         }
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\DeckObjectSourceProvider": {
         "asked": [
-            "OCP\\App\\IAppManager",
-            "OCP\\IUserSession",
-            "Psr\\Log\\LoggerInterface"
+            "OCA\\OpenRegister\\Service\\ObjectSource\\OptionalAppBridge",
+            "OCP\\IUserSession"
         ],
         "params": {
-            "appManager": "OCP\\App\\IAppManager",
-            "userSession": "OCP\\IUserSession",
-            "container": "(container)",
-            "logger": "Psr\\Log\\LoggerInterface"
+            "app": "(no property)",
+            "userSession": "OCP\\IUserSession"
         }
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\TalkObjectSourceProvider": {
         "asked": [
-            "OCP\\App\\IAppManager",
-            "OCP\\IUserSession",
-            "Psr\\Log\\LoggerInterface"
+            "OCA\\OpenRegister\\Service\\ObjectSource\\OptionalAppBridge",
+            "OCP\\IUserSession"
         ],
         "params": {
-            "appManager": "OCP\\App\\IAppManager",
-            "userSession": "OCP\\IUserSession",
-            "container": "(container)",
-            "logger": "Psr\\Log\\LoggerInterface"
+            "app": "(no property)",
+            "userSession": "OCP\\IUserSession"
         }
     },
     "OCA\\OpenRegister\\Service\\Dbal\\DbalConnectionFactory": {
@@ -191,13 +186,10 @@
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\TablesTableReader": {
         "asked": [
-            "OCP\\App\\IAppManager",
-            "Psr\\Log\\LoggerInterface"
+            "OCA\\OpenRegister\\Service\\ObjectSource\\OptionalAppBridge"
         ],
         "params": {
-            "appManager": "OCP\\App\\IAppManager",
-            "container": "(container)",
-            "logger": "Psr\\Log\\LoggerInterface"
+            "app": "(no property)"
         }
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\TablesColumnMapper": {
@@ -241,13 +233,11 @@
     "OCA\\OpenRegister\\Service\\ObjectSource\\TablesObjectSourceProvider": {
         "asked": [
             "OCA\\OpenRegister\\Service\\ObjectSource\\TablesProviderParts",
-            "OCP\\IUserSession",
-            "Psr\\Log\\LoggerInterface"
+            "OCA\\OpenRegister\\Service\\LinkSessionRuntime"
         ],
         "params": {
             "parts": "OCA\\OpenRegister\\Service\\ObjectSource\\TablesProviderParts",
-            "userSession": "OCP\\IUserSession",
-            "logger": "Psr\\Log\\LoggerInterface"
+            "session": "(no property)"
         }
     }
 }

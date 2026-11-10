@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
+use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Register;
@@ -40,17 +42,31 @@ use Throwable;
 class ObjectSlugBackfillLedger {
 
 	/**
+	 * Records the audit entry of a run that changed slugs.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrail;
+
+	/**
+	 * Receives the overflow lines and the failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectCacheInvalidationInterface     $cacheHandler Object cache, evicted after writing.
-	 * @param AuditTrailMapperInterface $auditTrail   Records the audit entry of a run that changed slugs.
-	 * @param LoggerInterface  $logger       Receives the overflow lines and the failures.
+	 * @param ObjectCacheInvalidationInterface $cacheHandler Object cache, evicted after writing.
+	 * @param AuditRecording                   $audit        The audit trail and the log for overflow lines and failures.
 	 */
 	public function __construct(
 		private readonly ObjectCacheInvalidationInterface $cacheHandler,
-		private readonly AuditTrailMapperInterface $auditTrail,
-		private readonly LoggerInterface $logger,
+		AuditRecording $audit,
 	) {
+		$this->auditTrail = $audit->trail;
+		$this->logger = $audit->logger;
 	}//end __construct()
 
 	/**
@@ -101,11 +117,9 @@ class ObjectSlugBackfillLedger {
 		$schema = $applied->schema;
 		$this->logLargeRun(applied: $applied);
 		try {
-			$this->auditTrail->createSlugBackfillEntry(
-				changes: $applied->changes,
-				summary: $applied->summary,
-				register: (int)$register->getId(),
-				schema: (int)$schema->getId()
+			$target = new AuditedObject(register: (int)$register->getId(), schema: (int)$schema->getId());
+			$this->auditTrail->recordSlugBackfill(
+				backfill: new SlugBackfill(changes: $applied->changes, summary: $applied->summary, target: $target)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(

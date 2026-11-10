@@ -95,7 +95,7 @@ class FlowRunContext implements FlowRunContextInterface {
 	 * Enter a step: everything written from here until the matching pop is
 	 * attributed to this run, node and step.
 	 *
-	 * A null or empty `$runUuid` pushes an explicit NON-attributing frame
+	 * A null or empty run uuid pushes an explicit NON-attributing frame
 	 * rather than pushing nothing. Two reasons, both about failure modes:
 	 *
 	 * - It keeps push and pop unconditionally paired, so the caller cannot
@@ -105,24 +105,23 @@ class FlowRunContext implements FlowRunContextInterface {
 	 *   ENCLOSING run's attribution, which would file a sub-flow's writes
 	 *   under its parent — wrong, and wrong in a way that reads as correct.
 	 *
-	 * @param string|null $runUuid  The uuid of the executing run, or null when the caller has no run (the flow tester, node unit tests).
-	 * @param string      $nodeId   The id of the node being dispatched.
-	 * @param integer     $sequence The step's sequence number within the run.
+	 * @param FlowRunFrame $frame The uuid of the executing run (null when the caller has no run: the flow tester,
+	 *                            node unit tests), the id of the node being dispatched and the step's sequence number.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
 	 */
-	public function push(?string $runUuid, string $nodeId, int $sequence): void {
-		if ($runUuid === null || trim($runUuid) === '') {
+	public function push(FlowRunFrame $frame): void {
+		if ($frame->runUuid === null || trim($frame->runUuid) === '') {
 			$this->frames[] = null;
 			return;
 		}
 
 		$this->frames[] = [
-			'run' => $runUuid,
-			'node' => $nodeId,
-			'step' => $sequence,
+			'run' => $frame->runUuid,
+			'node' => $frame->nodeId,
+			'step' => $frame->sequence,
 		];
 	}//end push()
 

@@ -44,16 +44,15 @@ interface PdokGeocoderInterface {
 	 * failure (OpenConnector down, upstream error, malformed payload)
 	 * an empty list is returned — geocoding is non-blocking (REQ-GEO-005).
 	 *
-	 * @param string $query The free-text address.
-	 * @param int $maxItems Maximum suggestions to return.
-	 * @param bool $bagOnly Restrict to BAG `type:adres` results.
+	 * @param string              $query   The free-text address.
+	 * @param GeocodeOptions|null $options How many suggestions, and whether only BAG addresses count; defaults when null.
 	 *
 	 * @return array<int, array<string, mixed>> Suggestions (possibly empty).
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-006
 	 */
-	public function geocodeFree(string $query, int $maxItems = 5, bool $bagOnly = false): array;
+	public function geocodeFree(string $query, ?GeocodeOptions $options = null): array;
 
 	/**
 	 * Reverse geocoding: coordinates -> nearest address (or null).

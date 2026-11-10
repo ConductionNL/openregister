@@ -95,46 +95,40 @@ final class OasValidationReport implements OasValidationReportInterface {
 	/**
 	 * Record a hard error.
 	 *
-	 * @param string $path JSON Pointer path identifying the offending location.
-	 * @param string $message Human-readable description of the failure.
-	 * @param string $code Stable machine code (one of the CODE_* constants).
+	 * @param OasIssue $issue The location (JSON Pointer path), the description and the machine code (a CODE_* constant).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-9
 	 */
-	public function addError(string $path, string $message, string $code): void {
-		$this->add(issue: new OasIssue(path: $path, message: $message, code: $code), severity: self::SEVERITY_ERROR);
+	public function addError(OasIssue $issue): void {
+		$this->add(issue: $issue, severity: self::SEVERITY_ERROR);
 	}//end addError()
 
 	/**
 	 * Record a non-blocking warning.
 	 *
-	 * @param string $path JSON Pointer path identifying the offending location.
-	 * @param string $message Human-readable description.
-	 * @param string $code Stable machine code (one of the CODE_* constants).
+	 * @param OasIssue $issue The location (JSON Pointer path), the description and the machine code (a CODE_* constant).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-9
 	 */
-	public function addWarning(string $path, string $message, string $code): void {
-		$this->add(issue: new OasIssue(path: $path, message: $message, code: $code), severity: self::SEVERITY_WARNING);
+	public function addWarning(OasIssue $issue): void {
+		$this->add(issue: $issue, severity: self::SEVERITY_WARNING);
 	}//end addWarning()
 
 	/**
 	 * Record an auto-correction the validator applied to keep the document valid.
 	 *
-	 * @param string $path JSON Pointer path identifying the corrected location.
-	 * @param string $message Human-readable description of the correction.
-	 * @param string $code Stable machine code (one of the CODE_* constants).
+	 * @param OasIssue $issue The location (JSON Pointer path), the description and the machine code (a CODE_* constant).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-9
 	 */
-	public function addAutoCorrection(string $path, string $message, string $code): void {
-		$this->add(issue: new OasIssue(path: $path, message: $message, code: $code), severity: self::SEVERITY_AUTO_CORRECTED);
+	public function addAutoCorrection(OasIssue $issue): void {
+		$this->add(issue: $issue, severity: self::SEVERITY_AUTO_CORRECTED);
 	}//end addAutoCorrection()
 
 	/**

@@ -36,9 +36,6 @@ interface TextExtractionHandlerInterface {
 	 *
 	 * @param int $sourceId Source identifier.
 	 * @param array<string, mixed> $sourceMeta Source metadata.
-	 * @param bool $force Force re-extraction even if up-to-date.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force parameter is required for extraction control
 	 *
 	 * @return array{
 	 *     source_type: string,
@@ -60,7 +57,7 @@ interface TextExtractionHandlerInterface {
 	 *
 	 * @spec openspec/specs/text-extraction/spec.md
 	 */
-	public function extractText(int $sourceId, array $sourceMeta, bool $force = false): array;
+	public function extractText(int $sourceId, array $sourceMeta): array;
 
 	/**
 	 * Get source metadata for a given source ID.

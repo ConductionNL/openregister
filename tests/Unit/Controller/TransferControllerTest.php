@@ -140,7 +140,7 @@ class TransferControllerTest extends TestCase {
 	 */
 	public function testRejectingWithoutAReasonIsRefused(): void {
 		$this->request->method('getParam')->willReturn('');
-		$this->listService->expects($this->never())->method('rejectTransferList');
+		$this->listService->expects($this->never())->method('reject');
 
 		$response = $this->controller->reject(id: 'tl-1');
 
@@ -156,8 +156,8 @@ class TransferControllerTest extends TestCase {
 		$this->request->method('getParam')->willReturn('incomplete metadata');
 		$this->recordService->method('loadTransferList')->willReturn(['uuid' => 'tl-1', 'status' => 'in_review']);
 		$this->listService->expects($this->once())
-			->method('rejectTransferList')
-			->with($this->anything(), 'archivist-1', 'incomplete metadata')
+			->method('reject')
+			->with($this->anything(), new \OCA\OpenRegister\Service\Edepot\TransferRejection(archivistId: 'archivist-1', reason: 'incomplete metadata'))
 			->willReturn(['uuid' => 'tl-1', 'status' => 'rejected']);
 
 		$this->assertSame('rejected', $this->controller->reject(id: 'tl-1')->getData()['status']);

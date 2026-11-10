@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Handoff;
 
 use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Handoff\HandoffKindBinding;
 
 /**
  * @no-named-arguments
@@ -122,7 +123,7 @@ class HandoffContractBindingValidatorGoldenTest extends TestCase {
 
 		$actual = [];
 		foreach ($cases as [$kind, $binding, $properties]) {
-			$actual[] = HandoffContractBindingValidator::isCompleteBinding($kind, $binding, $properties);
+			$actual[] = HandoffContractBindingValidator::isCompleteBinding(new HandoffKindBinding(kindUri: $kind, fieldMap: ($binding[$kind] ?? null), properties: $properties));
 		}
 
 		$this->assertSame([true, true, false, false, false, false, false, false, false, false, false, false, true], $actual);

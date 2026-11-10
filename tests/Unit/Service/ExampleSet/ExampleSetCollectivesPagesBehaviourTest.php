@@ -23,6 +23,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 
+use OCA\OpenRegister\Service\ExampleSet\CollectivePageText;
+use OCA\OpenRegister\Service\ExampleSet\CollectiveSeat;
+use OCA\OpenRegister\Service\ExampleSet\CollectiveTeam;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesPages;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesStore;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
@@ -54,14 +57,14 @@ class ExampleSetCollectivesPagesBehaviourTest extends TestCase {
 
 	public function testWriteIsRefusedWhenCollectivesIsNotInstalled(): void {
 		$this->store->method('available')->willReturn(false);
-		$this->store->expects($this->never())->method('collective');
+		$this->store->expects($this->never())->method('collectiveOf');
 
 		$this->assertSame(['error' => 'Collectives is not installed', 'entry' => null], $this->pages()->write(self::row()));
 	}
 
 	public function testWriteReportsAStoreFailure(): void {
 		$this->store->method('available')->willReturn(true);
-		$this->store->method('collective')->willThrowException(new \RuntimeException('circles down'));
+		$this->store->method('collectiveOf')->willThrowException(new \RuntimeException('circles down'));
 		$this->store->expects($this->never())->method('page');
 
 		$this->assertSame(['error' => 'circles down', 'entry' => null], $this->pages()->write(self::row()));
@@ -69,8 +72,8 @@ class ExampleSetCollectivesPagesBehaviourTest extends TestCase {
 
 	public function testWriteRecordsWhatItCreated(): void {
 		$this->store->method('available')->willReturn(true);
-		$this->store->expects($this->once())->method('collective')->with('alice', 'Kennis', [])->willReturn(['id' => 3, 'created' => false]);
-		$this->store->expects($this->once())->method('page')->with(3, 'alice', 'Welkom', 'Hoi')->willReturn(['id' => 9, 'created' => true]);
+		$this->store->expects($this->once())->method('collectiveOf')->with(new CollectiveTeam('alice', []), 'Kennis')->willReturn(['id' => 3, 'created' => false]);
+		$this->store->expects($this->once())->method('page')->with(new CollectiveSeat(3, 'alice'), new CollectivePageText('Welkom', 'Hoi'))->willReturn(['id' => 9, 'created' => true]);
 
 		$this->assertSame(
 			['error' => '', 'entry' => ['collective' => 3, 'createdCollective' => false, 'page' => 9, 'createdPage' => true, 'owner' => 'alice']],
@@ -79,13 +82,13 @@ class ExampleSetCollectivesPagesBehaviourTest extends TestCase {
 	}
 
 	public function testLostIsTrueWhenTheStoreFails(): void {
-		$this->store->method('pageExists')->willThrowException(new \RuntimeException('down'));
+		$this->store->method('pageFound')->willThrowException(new \RuntimeException('down'));
 
 		$this->assertTrue($this->pages()->lost(['collective' => 3, 'page' => 9, 'owner' => 'alice']));
 	}
 
 	public function testLostFollowsWhetherThePageExists(): void {
-		$this->store->method('pageExists')->with(3, 9, 'alice')->willReturn(true);
+		$this->store->method('pageFound')->with(new CollectiveSeat(3, 'alice'), 9)->willReturn(true);
 
 		$this->assertFalse($this->pages()->lost(['collective' => 3, 'page' => 9, 'owner' => 'alice']));
 	}
@@ -99,7 +102,7 @@ class ExampleSetCollectivesPagesBehaviourTest extends TestCase {
 
 	public function testRevertOfAReusedCollectiveDeletesOnlyACreatedPage(): void {
 		$this->store->expects($this->never())->method('deleteCollective');
-		$this->store->expects($this->once())->method('deletePage')->with(3, 9, 'alice');
+		$this->store->expects($this->once())->method('deletePage')->with(new CollectiveSeat(3, 'alice'), 9);
 
 		$this->assertSame('removed', $this->pages()->revert(['collective' => 3, 'createdCollective' => false, 'page' => 9, 'createdPage' => true, 'owner' => 'alice']));
 	}

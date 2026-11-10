@@ -33,6 +33,7 @@ use OCA\OpenRegister\Notifications\Controller\TimelineEntriesController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Notifications\Service\Timeline\EntrySearch;
 use OCA\OpenRegister\Notifications\Service\Timeline\ReferenceService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntrySearchService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryService;
@@ -44,6 +45,7 @@ use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\ListQuery;
 
 /**
  * TimelineEntriesControllerTest.
@@ -131,7 +133,7 @@ class TimelineEntriesControllerTest extends TestCase {
 		// The filter reaches the READ, so it cannot be dropped by omitting a
 		// query parameter.
 		$this->entries->expects($this->once())->method('listForObject')
-			->with($this->anything(), 'public', 50, 0)
+			->with($this->anything(), $this->callback(static fn (ListQuery $q): bool => [$q->filters['visibility'] ?? null, $q->limit, $q->offset ?? 0] === ['public', 50, 0]))
 			->willReturn([]);
 
 		$data = $this->controller->index('zaken', 'zaak', 'case-1')->getData();
@@ -254,15 +256,15 @@ class TimelineEntriesControllerTest extends TestCase {
 
 	public function testASearchWithoutATermIsABadRequest(): void {
 		$this->request->method('getParams')->willReturn([]);
-		$this->search->expects($this->never())->method('searchAsArrays');
+		$this->search->expects($this->never())->method('findHitsAsArrays');
 
 		$this->assertSame(400, $this->controller->searchEntries()->getStatus());
 	}
 
 	public function testASearchPassesOnlyAKnownVisibility(): void {
 		$this->request->method('getParams')->willReturn(['q' => 'Jansen', 'visibility' => 'intern']);
-		$this->search->expects($this->once())->method('searchAsArrays')
-			->with('Jansen', null, null, 25)
+		$this->search->expects($this->once())->method('findHitsAsArrays')
+			->with(new EntrySearch('Jansen', null, null, 25))
 			->willReturn([]);
 
 		$this->controller->searchEntries();
@@ -270,8 +272,8 @@ class TimelineEntriesControllerTest extends TestCase {
 
 	public function testASearchHandsBackTheHitsAndTheirCount(): void {
 		$this->request->method('getParams')->willReturn(['q' => 'Jansen', 'visibility' => 'public', 'kind' => 'contactmoment']);
-		$this->search->expects($this->once())->method('searchAsArrays')
-			->with('Jansen', 'public', 'contactmoment', 25)
+		$this->search->expects($this->once())->method('findHitsAsArrays')
+			->with(new EntrySearch('Jansen', 'public', 'contactmoment', 25))
 			->willReturn([['id' => 'e1'], ['id' => 'e2']]);
 
 		$data = $this->controller->searchEntries()->getData();

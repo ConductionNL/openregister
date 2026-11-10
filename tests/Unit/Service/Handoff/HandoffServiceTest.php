@@ -53,10 +53,10 @@ use OCA\OpenRegister\Service\Handoff\HandoffObjectAccess;
 use OCA\OpenRegister\Service\Handoff\HandoffProviders;
 use OCA\OpenRegister\Service\Handoff\HandoffRequesters;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
+use OCA\OpenRegister\Service\Handoff\HandoffSourceRef;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\RegisterSchemaMappers;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
 use OCP\App\IAppManager;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -125,7 +125,7 @@ class HandoffServiceTest extends TestCase {
 		$appManager->method('isInstalled')->willReturn(true);
 
 		$resolver = new SemanticTypeResolver(
-			mappers: new RegisterSchemaMappers($this->registerMapper, $this->schemaMapper),
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)),
 			jsonLdContextService: new JsonLdContextService($this->createMock(IURLGenerator::class)),
 			logger: $this->createMock(LoggerInterface::class),
 			appManager: $appManager
@@ -630,7 +630,7 @@ class HandoffServiceTest extends TestCase {
 					'provider' => ['schema' => 'case', 'title' => 'Case'],
 				],
 			],
-			$this->service->listAvailability(register: '7', schema: '12', id: 'src-uuid')
+			$this->service->listAvailability(new HandoffSourceRef(register: '7', schema: '12', id: 'src-uuid'))
 		);
 
 	}//end testListAvailabilityReportsAvailableProvider()
@@ -658,7 +658,7 @@ class HandoffServiceTest extends TestCase {
 					'reason' => HandoffException::PROVIDER_UNAVAILABLE,
 				],
 			],
-			$this->service->listAvailability(register: '7', schema: '12', id: 'src-uuid')
+			$this->service->listAvailability(new HandoffSourceRef(register: '7', schema: '12', id: 'src-uuid'))
 		);
 
 	}//end testListAvailabilityReportsUnavailableProvider()
@@ -687,7 +687,7 @@ class HandoffServiceTest extends TestCase {
 					'queueEntry' => $parked->jsonSerialize(),
 				],
 			],
-			$this->service->listAvailability(register: '7', schema: '12', id: 'src-uuid')
+			$this->service->listAvailability(new HandoffSourceRef(register: '7', schema: '12', id: 'src-uuid'))
 		);
 
 	}//end testListAvailabilityReportsQueuedEntry()
@@ -707,7 +707,7 @@ class HandoffServiceTest extends TestCase {
 		foreach (['list', 'execute'] as $call) {
 			try {
 				if ($call === 'list') {
-					$this->service->listAvailability(register: '7', schema: '12', id: 'gone');
+					$this->service->listAvailability(new HandoffSourceRef(register: '7', schema: '12', id: 'gone'));
 				} else {
 					$this->service->execute(register: '7', schema: '12', id: 'gone', handoffId: 'request-to-case');
 				}
@@ -1005,7 +1005,7 @@ class HandoffServiceTest extends TestCase {
 		$register->setSchemas([50]);
 		$this->registerMapper->method('findAll')->willReturn([$register]);
 
-		return $this->service->listAvailability(register: '7', schema: '12', id: 'src-uuid')[0]['state'];
+		return $this->service->listAvailability(new HandoffSourceRef(register: '7', schema: '12', id: 'src-uuid'))[0]['state'];
 	}//end availabilityWithBinding()
 
 	/**

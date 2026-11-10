@@ -44,6 +44,8 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\OrganisationContext;
+use OCA\OpenRegister\Service\Rbac\GrantLookup;
+use OCA\OpenRegister\Service\Rbac\AuthorizationColumn;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\GrantedRows;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolverInterface;
@@ -444,8 +446,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 */
 	private function ownedByMyGroupSql(RbacAccessCall $call): ?string {
 		return $this->objectScope()->ownedByMyGroupSql(
-			authColumn: $call->authorizationColumn(),
-			isPostgres: $this->isPostgres(),
+			column: new AuthorizationColumn(name: $call->authorizationColumn(), isPostgres: $this->isPostgres()),
 			quotedUserGroups: $this->quotedCallerGroups()
 		);
 	}//end ownedByMyGroupSql()
@@ -496,9 +497,8 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 */
 	private function notPrivateSqlFor(RbacAccessCall $call): string {
 		return $this->objectScope()->notPrivateSql(
-			columnName: $call->authorizationColumn(),
-			defaultPrivate: $this->objectScope()->schemaDefaultIsPrivate(schemaAuthorization: $call->authorization),
-			isPostgres: $this->isPostgres()
+			column: new AuthorizationColumn(name: $call->authorizationColumn(), isPostgres: $this->isPostgres()),
+			defaultPrivate: $this->objectScope()->schemaDefaultIsPrivate(schemaAuthorization: $call->authorization)
 		);
 	}//end notPrivateSqlFor()
 
@@ -1561,7 +1561,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return false;
 		}
 
-		return $this->objectGrants()?->isGranted(userId: $check->userId, objectUuid: $check->objectUuid, action: $check->action) !== true;
+		return $this->objectGrants()?->isGranted(lookup: new GrantLookup(userId: $check->userId, objectUuid: $check->objectUuid), action: $check->action) !== true;
 	}//end privateObjectRefuses()
 
 	/**
@@ -1858,10 +1858,8 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * - no conditions at all is DENY ALL and becomes `FALSE`, never `TRUE` and
 	 *   never omitted.
 	 *
-	 * @param Schema $schema The schema of the rows the subquery reads.
-	 * @param string $alias  The alias those rows carry in the subquery.
-	 * @param string $action The CRUD action being filtered.
-	 * @param string|null $tableName The bare magic table of the aliased rows; a `_status` column it lacks is left out of the draft predicate.
+	 * @param Schema      $schema The schema of the rows the subquery reads.
+	 * @param AliasedRows $rows   The alias the rows carry, the CRUD action and their bare magic table.
 	 *
 	 * @return string A predicate, always non-empty, safe to AND into a WHERE.
 	 *
@@ -1869,9 +1867,9 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 *
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
 	 */
-	public function buildRbacPredicateForAlias(Schema $schema, string $alias, string $action = 'read', ?string $tableName = null): string {
-		$this->assertPredicateAlias(alias: $alias);
-		$result = $this->buildRbacConditionsSql(schema: $schema, action: $action, columnPrefix: $alias . '.', tableName: $tableName);
+	public function buildRbacPredicateForAlias(Schema $schema, AliasedRows $rows): string {
+		$this->assertPredicateAlias(alias: $rows->alias);
+		$result = $this->buildRbacConditionsSql(schema: $schema, action: $rows->action, columnPrefix: $rows->alias . '.', tableName: $rows->tableName);
 		if (($result['bypass'] ?? false) === true) {
 			return 'TRUE';
 		}

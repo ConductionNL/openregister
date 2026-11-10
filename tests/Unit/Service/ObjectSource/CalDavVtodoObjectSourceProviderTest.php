@@ -52,7 +52,7 @@ class CalDavVtodoObjectSourceProviderTest extends TestCase {
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('isInstalled')->willReturn($appsThere);
 
-		return new CalDavVtodoObjectSourceProvider($taskService, $appManager, new NullLogger());
+		return new CalDavVtodoObjectSourceProvider(taskService: $taskService, app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $appManager, container: $this->createMock(\Psr\Container\ContainerInterface::class), logger: new NullLogger()));
 	}//end provider()
 
 	/**

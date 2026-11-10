@@ -90,10 +90,8 @@ interface RelatedRowRbacInterface {
 	/**
 	 * The RBAC row predicate for rows carried under an alias in a subquery.
 	 *
-	 * @param Schema      $schema    The schema of the rows the subquery reads.
-	 * @param string      $alias     The alias those rows carry in the subquery.
-	 * @param string      $action    The CRUD action being filtered.
-	 * @param string|null $tableName The bare magic table of the aliased rows.
+	 * @param Schema      $schema The schema of the rows the subquery reads.
+	 * @param AliasedRows $rows   The alias, action and bare magic table of those rows.
 	 *
 	 * @return string A predicate, always non-empty, safe to AND into a WHERE.
 	 *
@@ -103,5 +101,5 @@ interface RelatedRowRbacInterface {
 	 *
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
 	 */
-	public function buildRbacPredicateForAlias(Schema $schema, string $alias, string $action = 'read', ?string $tableName = null): string;
+	public function buildRbacPredicateForAlias(Schema $schema, AliasedRows $rows): string;
 }//end interface

@@ -37,6 +37,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Throwable;
+use OCA\OpenRegister\Service\MigrationPack\PackRevision;
 
 final class MigrationPackServiceGuardOrderGoldenTest extends TestCase {
 	use PassThroughL10nTrait;
@@ -263,7 +264,7 @@ final class MigrationPackServiceGuardOrderGoldenTest extends TestCase {
 			$definition = $this->definition($definition);
 		}
 
-		$this->assertSame($case['want'], $this->outcome(fn () => $service->update(1, $definition, $case['expected'])));
+		$this->assertSame($case['want'], $this->outcome(fn () => $service->revise(1, new PackRevision($definition, $case['expected']))));
 	}
 
 	/**
@@ -325,7 +326,7 @@ final class MigrationPackServiceGuardOrderGoldenTest extends TestCase {
 	public function testCreateGuards(array $case): void {
 		$service = $this->service(stored: null, takenSlugs: $case['taken'], deletedSlugs: $case['deleted']);
 
-		$this->assertSame($case['want'], $this->outcome(fn () => $service->create($this->definition($case['slug']), 'admin', $case['builtin'])));
+		$this->assertSame($case['want'], $this->outcome(fn () => $case['builtin'] === true ? $service->seedBuiltin($this->definition($case['slug'])) : $service->create($this->definition($case['slug']), 'admin')));
 	}
 
 	public function testImportUpdatesThroughTheSameGuards(): void {

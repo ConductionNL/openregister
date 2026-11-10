@@ -207,7 +207,7 @@ class LinkedEntityEnricher {
 			return null;
 		}
 
-		$row = $this->lookup(id: $id, sql: self::CALENDAR_SQL, params: [(int)$parts[0], $parts[1]]);
+		$row = $this->lookup(id: $id, query: new LinkedEntityQuery(sql: self::CALENDAR_SQL, params: [(int)$parts[0], $parts[1]]));
 		if ($row === false) {
 			return null;
 		}
@@ -263,21 +263,19 @@ class LinkedEntityEnricher {
 	/**
 	 * Run one foreign-table query and fetch its first row.
 	 *
-	 * @param mixed       $id      The linked id, for the failure log.
-	 * @param string      $sql     The query, with `?` placeholders.
-	 * @param array       $params  The bound parameters.
-	 * @param string|null $failure The debug message to log when the query fails, or null to log nothing.
+	 * @param mixed             $id    The linked id, for the failure log.
+	 * @param LinkedEntityQuery $query The query, its parameters and its failure line.
 	 *
 	 * @return mixed The row, or false when there is none or the query failed.
 	 */
-	private function lookup(mixed $id, string $sql, array $params, ?string $failure = null): mixed {
+	private function lookup(mixed $id, LinkedEntityQuery $query): mixed {
 		try {
-			$stmt = $this->db->prepare($sql);
-			$stmt->execute($params);
+			$stmt = $this->db->prepare($query->sql);
+			$stmt->execute($query->params);
 			return $stmt->fetch();
 		} catch (\Exception $e) {
-			if ($failure !== null) {
-				$this->logger->debug($failure, ['id' => $id, 'error' => $e->getMessage()]);
+			if ($query->failure !== null) {
+				$this->logger->debug($query->failure, ['id' => $id, 'error' => $e->getMessage()]);
 			}
 
 			return false;
@@ -297,7 +295,12 @@ class LinkedEntityEnricher {
 			return $this->notFoundResult(id: $id);
 		}
 
-		$row = $this->lookup(id: $id, sql: self::MAIL_SQL, params: [(int)$parts[1]], failure: '[LinkedEntityEnricher] Mail enrichment failed');
+		$query = new LinkedEntityQuery(
+			sql: self::MAIL_SQL,
+			params: [(int)$parts[1]],
+			failure: '[LinkedEntityEnricher] Mail enrichment failed'
+		);
+		$row = $this->lookup(id: $id, query: $query);
 		if ($row === false) {
 			return $this->notFoundResult(id: $id);
 		}
@@ -313,7 +316,12 @@ class LinkedEntityEnricher {
 	 * @return array The contact entry, or the not-found entry.
 	 */
 	private function contactEntry(mixed $id): array {
-		$row = $this->lookup(id: $id, sql: self::CONTACT_SQL, params: [$id], failure: '[LinkedEntityEnricher] Contact enrichment failed');
+		$query = new LinkedEntityQuery(
+			sql: self::CONTACT_SQL,
+			params: [$id],
+			failure: '[LinkedEntityEnricher] Contact enrichment failed'
+		);
+		$row = $this->lookup(id: $id, query: $query);
 		if ($row === false) {
 			return $this->notFoundResult(id: $id);
 		}
@@ -413,7 +421,7 @@ class LinkedEntityEnricher {
 	 * @return array The Talk entry, or the not-found entry.
 	 */
 	private function talkEntry(mixed $id): array {
-		$row = $this->lookup(id: $id, sql: self::TALK_SQL, params: [$id]);
+		$row = $this->lookup(id: $id, query: new LinkedEntityQuery(sql: self::TALK_SQL, params: [$id]));
 		if ($row === false) {
 			return $this->notFoundResult(id: $id);
 		}
@@ -434,7 +442,7 @@ class LinkedEntityEnricher {
 			return $this->notFoundResult(id: $id);
 		}
 
-		$row = $this->lookup(id: $id, sql: self::DECK_SQL, params: [(int)$parts[1], (int)$parts[0]]);
+		$row = $this->lookup(id: $id, query: new LinkedEntityQuery(sql: self::DECK_SQL, params: [(int)$parts[1], (int)$parts[0]]));
 		if ($row === false) {
 			return $this->notFoundResult(id: $id);
 		}

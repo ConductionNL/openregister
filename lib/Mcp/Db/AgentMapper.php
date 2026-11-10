@@ -71,27 +71,6 @@ class AgentMapper extends QBMapper implements AgentMapperInterface {
 	 */
 
 	/**
-	 * Organisation mapper for organisation-related operations.
-	 *
-	 * @var OrganisationMapperInterface
-	 */
-	protected OrganisationMapperInterface $organisationMapper;
-
-	/**
-	 * User session for current user
-	 *
-	 * @var IUserSession
-	 */
-	private IUserSession $userSession;
-
-	/**
-	 * Group manager for RBAC
-	 *
-	 * @var IGroupManager
-	 */
-	private IGroupManager $groupManager;
-
-	/**
 	 * Event dispatcher for dispatching agent events
 	 *
 	 * @var IEventDispatcher
@@ -101,21 +80,22 @@ class AgentMapper extends QBMapper implements AgentMapperInterface {
 	/**
 	 * Constructor
 	 *
-	 * @param AgentMapperPlatform $platform Database connection and event dispatcher
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
-	 * @param IUserSession $userSession User session
-	 * @param IGroupManager $groupManager Group manager
+	 * The organisation mapper, user session and group manager are the
+	 * multi-tenancy and RBAC inputs MultiTenancyTrait reads; they stay direct
+	 * parameters (access guards are never bundled) and are promoted.
+	 *
+	 * @param AgentMapperPlatform         $platform           Database connection and event dispatcher
+	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper, for multi-tenancy
+	 * @param IUserSession                $userSession        User session, for the current user
+	 * @param IGroupManager               $groupManager       Group manager, for RBAC
 	 */
 	public function __construct(
 		AgentMapperPlatform $platform,
-		OrganisationMapperInterface $organisationMapper,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
+		protected OrganisationMapperInterface $organisationMapper,
+		private IUserSession $userSession,
+		private IGroupManager $groupManager,
 	) {
 		parent::__construct(db: $platform->db, tableName: 'openregister_agents', entityClass: Agent::class);
-		$this->organisationMapper = $organisationMapper;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
 		$this->eventDispatcher = $platform->eventDispatcher;
 	}//end __construct()
 

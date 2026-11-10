@@ -59,7 +59,7 @@ final class GroupObjectSourceVisibilityTest extends TestCase {
 	}
 
 	private function provider(): GroupObjectSourceProvider {
-		return new GroupObjectSourceProvider($this->groups, $this->session, $this->logger);
+		return new GroupObjectSourceProvider(groupManager: $this->groups, session: new \OCA\OpenRegister\Service\LinkSessionRuntime(userSession: $this->session, logger: $this->logger));
 	}
 
 	private function group(string $gid, string $name): IGroup&MockObject {

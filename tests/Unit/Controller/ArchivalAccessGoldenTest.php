@@ -48,6 +48,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Archival\NominationRecompute;
 
 /**
  * Golden allowed / refused outcomes of ArchivalController.
@@ -492,7 +493,7 @@ class ArchivalAccessGoldenTest extends TestCase {
 		$this->objectMapper->method('find')->willReturn($object);
 		$this->schemaMapper->method('find')->willReturn(new Schema());
 		$this->nominations->expects($this->once())->method('recompute')
-			->with($object, $this->isInstanceOf(Schema::class), 'els', 'new list')
+			->with($this->callback(static fn (NominationRecompute $request): bool => $request->object === $object && $request->schema instanceof Schema && $request->actor === 'els' && $request->reason === 'new list'))
 			->willReturn(['status' => 'nominated', 'rule' => 'r-1']);
 		$this->objectMapper->expects($this->once())->method('update')->with($object);
 		$this->audit->expects($this->once())->method('createAuditTrailEntry')

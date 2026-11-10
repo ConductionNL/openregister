@@ -115,7 +115,7 @@ class CalDavSourcesGoldenTest extends TestCase {
 				return ['results' => array_slice($rows, $offset, $limit, true), 'total' => count($rows)];
 			}
 		);
-		return new CalDavVtodoObjectSourceProvider($service, $this->apps($apps), $this->logger());
+		return new CalDavVtodoObjectSourceProvider(taskService: $service, app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $this->apps($apps), container: $this->createMock(\Psr\Container\ContainerInterface::class), logger: $this->logger()));
 	}//end vtodo()
 
 	/**
@@ -137,7 +137,7 @@ class CalDavSourcesGoldenTest extends TestCase {
 				return ['results' => array_slice($rows, $offset, $limit, true), 'total' => count($rows)];
 			}
 		);
-		return new CalendarEventObjectSourceProvider($service, $this->apps($apps), $this->logger());
+		return new CalendarEventObjectSourceProvider(calendarEventService: $service, app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $this->apps($apps), container: $this->createMock(\Psr\Container\ContainerInterface::class), logger: $this->logger()));
 	}//end vevent()
 
 	/**

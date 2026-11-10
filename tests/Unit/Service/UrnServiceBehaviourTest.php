@@ -33,7 +33,6 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\RegisterSchemaMappers;
 use OCA\OpenRegister\Service\UrnService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -89,7 +88,7 @@ class UrnServiceBehaviourTest extends TestCase {
 
 	private function service(?IURLGenerator $urls = null, ?IAppConfig $config = null): UrnService {
 		return new UrnService(
-			new RegisterSchemaMappers($this->registers, $this->schemas),
+			new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registers, schemas: $this->schemas, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)),
 			$urls ?? $this->urls,
 			$config ?? $this->config,
 			$this->logger

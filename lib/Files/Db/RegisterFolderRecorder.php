@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Db;
 
+use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
@@ -78,15 +79,26 @@ class RegisterFolderRecorder {
 		$qb->update(self::TABLE)
 			->set('folder', $qb->createNamedParameter($folderId))
 			->where($qb->expr()->eq('id', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)))
-			->andWhere(
-				$qb->expr()->orX(
-					$qb->expr()->isNull('folder'),
-					$qb->expr()->eq('folder', $qb->createNamedParameter((string)$expected))
-				)
-			);
+			->andWhere(self::unclaimedOr(qb: $qb, expected: $expected));
 
 		return $qb->executeStatement() > 0;
 	}//end record()
+
+	/**
+	 * The guard that makes the write a claim: the column is still empty, or
+	 * still holds what the caller read.
+	 *
+	 * @param IQueryBuilder $qb       The update.
+	 * @param string|null   $expected The folder value the caller read.
+	 *
+	 * @return ICompositeExpression The condition.
+	 */
+	private static function unclaimedOr(IQueryBuilder $qb, ?string $expected): ICompositeExpression {
+		return $qb->expr()->orX(
+			$qb->expr()->isNull('folder'),
+			$qb->expr()->eq('folder', $qb->createNamedParameter((string)$expected))
+		);
+	}//end unclaimedOr()
 
 	/**
 	 * Whether a register other than the given one records this folder id.
