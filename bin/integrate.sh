@@ -208,7 +208,7 @@ phase_build() {
 	rm -f "$RUN/verdict" "$W/tree.env"
 	git merge --abort 2>/dev/null; git fetch -q origin main
 	git checkout -q -f -B int origin/main && git clean -fdq
-	local d0 n head ref review now new t inc=0
+	local d0 n head ref review now new t bad f inc=0
 	d0=$(git rev-parse HEAD)
 	: > "$W/tree.tsv"; : > "$W/included.txt"
 	while IFS=$'\t' read -r -u 3 n head ref review; do
@@ -224,6 +224,15 @@ phase_build() {
 			fi
 		fi
 		if git merge -q --no-ff --no-edit -m "int: merge #$n" "$head" >/dev/null 2>&1; then
+			bad=""
+			while IFS= read -r f; do
+				php -l "$f" >/dev/null 2>&1 </dev/null || bad="$bad $f"
+			done < <(git diff --name-only --diff-filter=AM HEAD^1 HEAD -- '*.php')
+			if [ -n "$bad" ]; then
+				git reset -q --hard HEAD^1
+				say "BUILD-LINT #$n ${head:0:8} does not compile on this tree:$bad"; st_log "BUILD-LINT #$n ${head:0:8} does not compile on this tree:$bad"
+				continue
+			fi
 			t=$(git rev-parse HEAD)
 			printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$n" "$head" "$ref" "$review" "$t" "$(git rev-parse "$t^{tree}")" >> "$W/tree.tsv"
 			echo "openregister#$n $head" >> "$W/included.txt"; inc=$((inc + 1))
