@@ -12,7 +12,9 @@ declare(strict_types=1);
 
 namespace Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\ObjectSelection;
 use OCA\OpenRegister\Service\Object\QueryHandler;
+use OCA\OpenRegister\Service\Object\SearchOptions;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -46,10 +48,7 @@ class QueryHandlerSearchObjectsPaginatedTest extends TestCase {
 			['_search' => 'x'],
 			true,
 			false,
-			false,
-			['id-1'],
-			'uses-1',
-			['v-1']
+			new SearchOptions(selection: new ObjectSelection(ids: ['id-1'], uses: 'uses-1'), views: ['v-1'])
 		);
 
 		$query = ['_search' => 'x', 'viewed' => ['v-1']];
@@ -70,7 +69,12 @@ class QueryHandlerSearchObjectsPaginatedTest extends TestCase {
 	 */
 	private function handler(?array $views, ?string $source = 'magic_mapper'): QueryHandler {
 		$searchQueries = $this->createMock(SearchQueryHandler::class);
-		$searchQueries->expects($views === null ? $this->never() : $this->once())
+		$expected = $this->once();
+		if ($views === null) {
+			$expected = $this->never();
+		}
+
+		$searchQueries->expects($expected)
 			->method('applyViewsToQuery')
 			->willReturnCallback(fn (array $query, array $viewIds): array => $query + ['viewed' => $viewIds]);
 

@@ -101,6 +101,8 @@ use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
+use OCA\OpenRegister\Service\Object\ObjectSelection;
+use OCA\OpenRegister\Service\Object\SearchOptions;
 use OCA\OpenRegister\Service\Object\LockRequest;
 use OCA\OpenRegister\Service\Object\LockRunStep;
 use OCA\OpenRegister\Service\Object\RevertHandler;
@@ -4782,10 +4784,11 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             query: $query,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
-            ids: $ids,
-            uses: $uses,
-            views: $views,
-            _viewScopeRequired: $_viewScopeRequired
+            options: new SearchOptions(
+                selection: new ObjectSelection(ids: $ids, uses: $uses),
+                views: $views,
+                viewScopeRequired: $_viewScopeRequired
+            )
         );
     }//end searchObjects()
 
@@ -4966,8 +4969,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             query: $query,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
-            ids: $ids,
-            uses: $uses
+            selection: new ObjectSelection(ids: $ids, uses: $uses)
         );
     }//end countSearchObjects()
 
