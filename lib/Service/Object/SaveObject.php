@@ -2328,8 +2328,8 @@ class SaveObject implements SaveObjectInterface {
 		$this->permissionHandler->checkPermission(
 			schema: $schema,
 			action: 'create',
-			_rbac: in_array(needle: false, haystack: $this->cascadeScopes, strict: true) === false,
-			register: $register
+			options: new PermissionCheckOptions(register: $register),
+			_rbac: in_array(needle: false, haystack: $this->cascadeScopes, strict: true) === false
 		);
 	}//end assertMayCascadeCreate()
 

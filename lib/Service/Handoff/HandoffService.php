@@ -49,6 +49,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\HandoffExecutedEvent;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
 use OCA\OpenRegister\Service\WriteCause;
 use Symfony\Component\Uid\Uuid;
@@ -282,8 +283,7 @@ class HandoffService implements HandoffServiceInterface {
 		$this->objects->permissionHandler->checkPermission(
 			schema: $plan->sourceSchema,
 			action: 'update',
-			objectOwner: $plan->source->getOwner(),
-			object: $plan->source
+			options: new PermissionCheckOptions(objectOwner: $plan->source->getOwner(), object: $plan->source)
 		);
 
 		// 3. Resolve the provider (complete-binding filter on the resolver result).

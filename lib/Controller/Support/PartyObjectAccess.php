@@ -26,6 +26,7 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -166,10 +167,8 @@ final class PartyObjectAccess {
 		$this->permissions->checkPermission(
 			schema: $schemaEntity,
 			action: 'update',
-			userId: null,
-			objectOwner: $object->getOwner(),
-			_rbac: true,
-			object: $object
+			options: new PermissionCheckOptions(objectOwner: $object->getOwner(), object: $object),
+			_rbac: true
 		);
 	}//end assertMayUpdate()
 

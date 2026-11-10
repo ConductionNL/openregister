@@ -321,8 +321,6 @@ final class ArchiveHandlerTest extends TestCase {
 				$this->anything(),
 				'update',
 				$this->anything(),
-				$this->anything(),
-				$this->anything(),
 				$this->anything()
 			);
 

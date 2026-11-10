@@ -1018,8 +1018,7 @@ class ObjectHandlersIntegrationTest extends TestCase {
 			$this->permissionHandler->checkPermission(
 				$restrictedSchema,
 				'delete',
-				'admin',
-				null,
+				new PermissionCheckOptions(userId: 'admin'),
 				true
 			);
 			$this->assertTrue(true, 'Admin can delete');
