@@ -37,6 +37,8 @@ use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapperInterface;
 use OCA\OpenRegister\Db\WebhookMapperInterface;
+use OCA\OpenRegister\Service\WebhookDelivery;
+use OCA\OpenRegister\Service\WebhookEvent;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -991,10 +993,7 @@ class WebhooksController extends Controller {
 			];
 
 			$success = $this->webhookService->deliverWebhook(
-				webhook: $webhook,
-				eventName: 'OCA\OpenRegister\Event\TestEvent',
-				payload: $testPayload,
-				attempt: 1
+				new WebhookDelivery(webhook: $webhook, event: new WebhookEvent(name: 'OCA\OpenRegister\Event\TestEvent', payload: $testPayload), attempt: 1)
 			);
 
 			if ($success === true) {
@@ -1412,10 +1411,11 @@ class WebhooksController extends Controller {
 		}
 
 		$success = $this->webhookService->deliverWebhook(
-			webhook: $webhook,
-			eventName: $log->getEventClass(),
-			payload: $payload['data'] ?? $payload,
-			attempt: $log->getAttempt() + 1
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: $log->getEventClass(), payload: $payload['data'] ?? $payload),
+				attempt: $log->getAttempt() + 1
+			)
 		);
 		if ($success === true) {
 			return new JSONResponse(data: ['success' => true, 'message' => 'Webhook retry delivered successfully']);

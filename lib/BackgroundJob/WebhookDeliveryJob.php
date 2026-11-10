@@ -28,6 +28,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Db\WebhookMapperInterface;
+use OCA\OpenRegister\Service\WebhookDelivery;
+use OCA\OpenRegister\Service\WebhookEvent;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
@@ -163,10 +165,7 @@ class WebhookDeliveryJob extends QueuedJob {
 
 			// Deliver webhook.
 			$success = $this->webhookService->deliverWebhook(
-				webhook: $webhook,
-				eventName: $eventName,
-				payload: $payload,
-				attempt: $attempt
+				new WebhookDelivery(webhook: $webhook, event: new WebhookEvent(name: $eventName, payload: $payload), attempt: $attempt)
 			);
 
 			if ($success === true) {

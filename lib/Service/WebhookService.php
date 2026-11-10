@@ -610,34 +610,7 @@ class WebhookService {
 	}//end webhooksForEvent()
 
 	/**
-	 * Deliver webhook to target URL
-	 *
-	 * @param Webhook $webhook Webhook configuration
-	 * @param string $eventName Event name
-	 * @param array $payload Payload data
-	 * @param int $attempt Current attempt number (for retries)
-	 * @param int|null $timeoutCapSeconds Optional hard cap on connect + total timeout;
-	 *                                    used by the synchronous interception path
-	 *                                    (INTERCEPTION_TIMEOUT_SECONDS). Null keeps the
-	 *                                    per-webhook timeout (async deliveries).
-	 *
-	 * @return bool Success status
-	 *
-	 * @spec openspec/specs/webhook-payload-mapping/spec.md
-	 */
-	public function deliverWebhook(
-		Webhook $webhook,
-		string $eventName,
-		array $payload,
-		int $attempt = 1,
-		?int $timeoutCapSeconds = null,
-	): bool {
-		$event = new WebhookEvent(name: $eventName, payload: $payload);
-		return $this->deliver(delivery: new WebhookDelivery(webhook: $webhook, event: $event, attempt: $attempt, timeoutCapSeconds: $timeoutCapSeconds));
-	}//end deliverWebhook()
-
-	/**
-	 * Deliver one event to one webhook and log the outcome (value-object form of deliverWebhook()).
+	 * Deliver one event to one webhook and log the outcome.
 	 *
 	 * @param WebhookDelivery $delivery The webhook, event, attempt number and optional timeout cap.
 	 *
@@ -645,7 +618,7 @@ class WebhookService {
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
-	public function deliver(WebhookDelivery $delivery): bool {
+	public function deliverWebhook(WebhookDelivery $delivery): bool {
 		$webhook = $delivery->webhook;
 		$eventName = $delivery->event->name;
 		$skipReason = $this->deliverySkipReason(webhook: $webhook, payload: $delivery->event->payload);
@@ -672,7 +645,7 @@ class WebhookService {
 		} catch (\Exception $e) {
 			return $recorder->recordUnexpectedFailure(delivery: $attempt, exception: $e);
 		}
-	}//end deliver()
+	}//end deliverWebhook()
 
 	/**
 	 * Why a delivery is skipped: the webhook is disabled or its filters do not match.
@@ -1083,7 +1056,7 @@ class WebhookService {
 				// Deliver webhook. Interception blocks the object write, so the
 				// delivery timeout is capped hard — see INTERCEPTION_TIMEOUT_SECONDS.
 				$event = new WebhookEvent(name: $eventType, payload: $webhookPayload);
-				$success = $this->deliver(
+				$success = $this->deliverWebhook(
 					delivery: new WebhookDelivery(webhook: $webhook, event: $event, timeoutCapSeconds: self::INTERCEPTION_TIMEOUT_SECONDS)
 				);
 
