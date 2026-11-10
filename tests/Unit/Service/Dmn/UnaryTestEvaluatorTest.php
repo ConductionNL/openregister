@@ -29,6 +29,7 @@ namespace Unit\Service\Dmn;
 use OCA\OpenRegister\Service\Dmn\DecisionEvaluationException;
 use OCA\OpenRegister\Service\Dmn\UnaryTestEvaluator;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Dmn\UnaryTestValue;
 
 /**
  * @covers \OCA\OpenRegister\Service\Dmn\UnaryTestEvaluator
@@ -60,22 +61,22 @@ class UnaryTestEvaluatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testEmptyExpressionIsWildcard(): void {
-		self::assertTrue($this->evaluator->matches(expression: '', value: 'anything', type: 'string'));
+		self::assertTrue($this->evaluator->matchesValue(expression: '', subject: new UnaryTestValue(value: 'anything', type: 'string')));
 	}//end testEmptyExpressionIsWildcard()
 
 	/**
 	 * @return void
 	 */
 	public function testDashExpressionIsWildcard(): void {
-		self::assertTrue($this->evaluator->matches(expression: '-', value: 12345.0, type: 'number'));
+		self::assertTrue($this->evaluator->matchesValue(expression: '-', subject: new UnaryTestValue(value: 12345.0, type: 'number')));
 	}//end testDashExpressionIsWildcard()
 
 	/**
 	 * @return void
 	 */
 	public function testQuotedDashIsLiteralNotWildcard(): void {
-		self::assertTrue($this->evaluator->matches(expression: '"-"', value: '-', type: 'string'));
-		self::assertFalse($this->evaluator->matches(expression: '"-"', value: 'anything-else', type: 'string'));
+		self::assertTrue($this->evaluator->matchesValue(expression: '"-"', subject: new UnaryTestValue(value: '-', type: 'string')));
+		self::assertFalse($this->evaluator->matchesValue(expression: '"-"', subject: new UnaryTestValue(value: 'anything-else', type: 'string')));
 	}//end testQuotedDashIsLiteralNotWildcard()
 
 	// ------------------------------------------------------------------
@@ -86,48 +87,48 @@ class UnaryTestEvaluatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testLessThan(): void {
-		self::assertTrue($this->evaluator->matches(expression: '< 10', value: 5.0, type: 'number'));
-		self::assertFalse($this->evaluator->matches(expression: '< 10', value: 10.0, type: 'number'));
+		self::assertTrue($this->evaluator->matchesValue(expression: '< 10', subject: new UnaryTestValue(value: 5.0, type: 'number')));
+		self::assertFalse($this->evaluator->matchesValue(expression: '< 10', subject: new UnaryTestValue(value: 10.0, type: 'number')));
 	}//end testLessThan()
 
 	/**
 	 * @return void
 	 */
 	public function testLessThanOrEqual(): void {
-		self::assertTrue($this->evaluator->matches(expression: '<= 10', value: 10.0, type: 'number'));
-		self::assertFalse($this->evaluator->matches(expression: '<= 10', value: 10.5, type: 'number'));
+		self::assertTrue($this->evaluator->matchesValue(expression: '<= 10', subject: new UnaryTestValue(value: 10.0, type: 'number')));
+		self::assertFalse($this->evaluator->matchesValue(expression: '<= 10', subject: new UnaryTestValue(value: 10.5, type: 'number')));
 	}//end testLessThanOrEqual()
 
 	/**
 	 * @return void
 	 */
 	public function testGreaterThan(): void {
-		self::assertTrue($this->evaluator->matches(expression: '> 10', value: 11.0, type: 'number'));
-		self::assertFalse($this->evaluator->matches(expression: '> 10', value: 10.0, type: 'number'));
+		self::assertTrue($this->evaluator->matchesValue(expression: '> 10', subject: new UnaryTestValue(value: 11.0, type: 'number')));
+		self::assertFalse($this->evaluator->matchesValue(expression: '> 10', subject: new UnaryTestValue(value: 10.0, type: 'number')));
 	}//end testGreaterThan()
 
 	/**
 	 * @return void
 	 */
 	public function testGreaterThanOrEqual(): void {
-		self::assertTrue($this->evaluator->matches(expression: '>= 10', value: 10.0, type: 'number'));
-		self::assertFalse($this->evaluator->matches(expression: '>= 10', value: 9.999, type: 'number'));
+		self::assertTrue($this->evaluator->matchesValue(expression: '>= 10', subject: new UnaryTestValue(value: 10.0, type: 'number')));
+		self::assertFalse($this->evaluator->matchesValue(expression: '>= 10', subject: new UnaryTestValue(value: 9.999, type: 'number')));
 	}//end testGreaterThanOrEqual()
 
 	/**
 	 * @return void
 	 */
 	public function testEquals(): void {
-		self::assertTrue($this->evaluator->matches(expression: '= gold', value: 'gold', type: 'string'));
-		self::assertFalse($this->evaluator->matches(expression: '= gold', value: 'silver', type: 'string'));
+		self::assertTrue($this->evaluator->matchesValue(expression: '= gold', subject: new UnaryTestValue(value: 'gold', type: 'string')));
+		self::assertFalse($this->evaluator->matchesValue(expression: '= gold', subject: new UnaryTestValue(value: 'silver', type: 'string')));
 	}//end testEquals()
 
 	/**
 	 * @return void
 	 */
 	public function testNotEquals(): void {
-		self::assertTrue($this->evaluator->matches(expression: '!= gold', value: 'silver', type: 'string'));
-		self::assertFalse($this->evaluator->matches(expression: '!= gold', value: 'gold', type: 'string'));
+		self::assertTrue($this->evaluator->matchesValue(expression: '!= gold', subject: new UnaryTestValue(value: 'silver', type: 'string')));
+		self::assertFalse($this->evaluator->matchesValue(expression: '!= gold', subject: new UnaryTestValue(value: 'gold', type: 'string')));
 	}//end testNotEquals()
 
 	/**
@@ -136,7 +137,7 @@ class UnaryTestEvaluatorTest extends TestCase {
 	public function testOperatorWithNoOperandIsInvalidExpression(): void {
 		$this->expectException(DecisionEvaluationException::class);
 		try {
-			$this->evaluator->matches(expression: '>=   ', value: 1.0, type: 'number');
+			$this->evaluator->matchesValue(expression: '>=   ', subject: new UnaryTestValue(value: 1.0, type: 'number'));
 		} catch (DecisionEvaluationException $e) {
 			self::assertSame('invalid_expression', $e->getErrorCode());
 			throw $e;
@@ -151,29 +152,29 @@ class UnaryTestEvaluatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testInclusiveRangeBoundsMatch(): void {
-		self::assertTrue($this->evaluator->matches(expression: '[0..25000]', value: 0.0, type: 'number'));
-		self::assertTrue($this->evaluator->matches(expression: '[0..25000]', value: 25000.0, type: 'number'));
-		self::assertTrue($this->evaluator->matches(expression: '[0..25000]', value: 12500.0, type: 'number'));
-		self::assertFalse($this->evaluator->matches(expression: '[0..25000]', value: 25000.01, type: 'number'));
+		self::assertTrue($this->evaluator->matchesValue(expression: '[0..25000]', subject: new UnaryTestValue(value: 0.0, type: 'number')));
+		self::assertTrue($this->evaluator->matchesValue(expression: '[0..25000]', subject: new UnaryTestValue(value: 25000.0, type: 'number')));
+		self::assertTrue($this->evaluator->matchesValue(expression: '[0..25000]', subject: new UnaryTestValue(value: 12500.0, type: 'number')));
+		self::assertFalse($this->evaluator->matchesValue(expression: '[0..25000]', subject: new UnaryTestValue(value: 25000.01, type: 'number')));
 	}//end testInclusiveRangeBoundsMatch()
 
 	/**
 	 * @return void
 	 */
 	public function testExclusiveRangeBoundsDoNotMatch(): void {
-		self::assertFalse($this->evaluator->matches(expression: '(25000..40000)', value: 25000.0, type: 'number'));
-		self::assertFalse($this->evaluator->matches(expression: '(25000..40000)', value: 40000.0, type: 'number'));
-		self::assertTrue($this->evaluator->matches(expression: '(25000..40000)', value: 30000.0, type: 'number'));
+		self::assertFalse($this->evaluator->matchesValue(expression: '(25000..40000)', subject: new UnaryTestValue(value: 25000.0, type: 'number')));
+		self::assertFalse($this->evaluator->matchesValue(expression: '(25000..40000)', subject: new UnaryTestValue(value: 40000.0, type: 'number')));
+		self::assertTrue($this->evaluator->matchesValue(expression: '(25000..40000)', subject: new UnaryTestValue(value: 30000.0, type: 'number')));
 	}//end testExclusiveRangeBoundsDoNotMatch()
 
 	/**
 	 * @return void
 	 */
 	public function testMixedRangeBoundaries(): void {
-		self::assertFalse($this->evaluator->matches(expression: '(25000..40000]', value: 25000.0, type: 'number'));
-		self::assertTrue($this->evaluator->matches(expression: '(25000..40000]', value: 40000.0, type: 'number'));
-		self::assertTrue($this->evaluator->matches(expression: '[25000..40000)', value: 25000.0, type: 'number'));
-		self::assertFalse($this->evaluator->matches(expression: '[25000..40000)', value: 40000.0, type: 'number'));
+		self::assertFalse($this->evaluator->matchesValue(expression: '(25000..40000]', subject: new UnaryTestValue(value: 25000.0, type: 'number')));
+		self::assertTrue($this->evaluator->matchesValue(expression: '(25000..40000]', subject: new UnaryTestValue(value: 40000.0, type: 'number')));
+		self::assertTrue($this->evaluator->matchesValue(expression: '[25000..40000)', subject: new UnaryTestValue(value: 25000.0, type: 'number')));
+		self::assertFalse($this->evaluator->matchesValue(expression: '[25000..40000)', subject: new UnaryTestValue(value: 40000.0, type: 'number')));
 	}//end testMixedRangeBoundaries()
 
 	/**
@@ -182,7 +183,7 @@ class UnaryTestEvaluatorTest extends TestCase {
 	public function testUnbalancedRangeIsInvalidExpression(): void {
 		$this->expectException(DecisionEvaluationException::class);
 		try {
-			$this->evaluator->matches(expression: '[1..', value: 5.0, type: 'number');
+			$this->evaluator->matchesValue(expression: '[1..', subject: new UnaryTestValue(value: 5.0, type: 'number'));
 		} catch (DecisionEvaluationException $e) {
 			// No `..` match at all falls through to bare-literal coercion,
 			// which for a non-numeric literal like "[1.." on a number type
@@ -199,7 +200,7 @@ class UnaryTestEvaluatorTest extends TestCase {
 	public function testMissingRangeBoundIsInvalidExpression(): void {
 		$this->expectException(DecisionEvaluationException::class);
 		try {
-			$this->evaluator->matches(expression: '[1..]', value: 5.0, type: 'number');
+			$this->evaluator->matchesValue(expression: '[1..]', subject: new UnaryTestValue(value: 5.0, type: 'number'));
 		} catch (DecisionEvaluationException $e) {
 			self::assertSame('invalid_expression', $e->getErrorCode());
 			throw $e;
@@ -212,7 +213,7 @@ class UnaryTestEvaluatorTest extends TestCase {
 	public function testNonNumericRangeBoundIsTypeMismatch(): void {
 		$this->expectException(DecisionEvaluationException::class);
 		try {
-			$this->evaluator->matches(expression: '[abc..100]', value: 5.0, type: 'number');
+			$this->evaluator->matchesValue(expression: '[abc..100]', subject: new UnaryTestValue(value: 5.0, type: 'number'));
 		} catch (DecisionEvaluationException $e) {
 			self::assertSame('type_mismatch', $e->getErrorCode());
 			throw $e;
@@ -227,23 +228,23 @@ class UnaryTestEvaluatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testSetMembershipUnquoted(): void {
-		self::assertTrue($this->evaluator->matches(expression: 'in (gold, silver, bronze)', value: 'silver', type: 'string'));
-		self::assertFalse($this->evaluator->matches(expression: 'in (gold, silver, bronze)', value: 'platinum', type: 'string'));
+		self::assertTrue($this->evaluator->matchesValue(expression: 'in (gold, silver, bronze)', subject: new UnaryTestValue(value: 'silver', type: 'string')));
+		self::assertFalse($this->evaluator->matchesValue(expression: 'in (gold, silver, bronze)', subject: new UnaryTestValue(value: 'platinum', type: 'string')));
 	}//end testSetMembershipUnquoted()
 
 	/**
 	 * @return void
 	 */
 	public function testSetMembershipQuotedWithCommas(): void {
-		self::assertTrue($this->evaluator->matches(expression: 'in ("a b", "c,d")', value: 'c,d', type: 'string'));
-		self::assertTrue($this->evaluator->matches(expression: 'in ("a b", "c,d")', value: 'a b', type: 'string'));
+		self::assertTrue($this->evaluator->matchesValue(expression: 'in ("a b", "c,d")', subject: new UnaryTestValue(value: 'c,d', type: 'string')));
+		self::assertTrue($this->evaluator->matchesValue(expression: 'in ("a b", "c,d")', subject: new UnaryTestValue(value: 'a b', type: 'string')));
 	}//end testSetMembershipQuotedWithCommas()
 
 	/**
 	 * @return void
 	 */
 	public function testSetMembershipCaseInsensitivePrefix(): void {
-		self::assertTrue($this->evaluator->matches(expression: 'IN (1, 2, 3)', value: 2.0, type: 'number'));
+		self::assertTrue($this->evaluator->matchesValue(expression: 'IN (1, 2, 3)', subject: new UnaryTestValue(value: 2.0, type: 'number')));
 	}//end testSetMembershipCaseInsensitivePrefix()
 
 	// ------------------------------------------------------------------
@@ -254,30 +255,30 @@ class UnaryTestEvaluatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testBareLiteralString(): void {
-		self::assertTrue($this->evaluator->matches(expression: 'gold', value: 'gold', type: 'string'));
-		self::assertFalse($this->evaluator->matches(expression: 'gold', value: 'silver', type: 'string'));
+		self::assertTrue($this->evaluator->matchesValue(expression: 'gold', subject: new UnaryTestValue(value: 'gold', type: 'string')));
+		self::assertFalse($this->evaluator->matchesValue(expression: 'gold', subject: new UnaryTestValue(value: 'silver', type: 'string')));
 	}//end testBareLiteralString()
 
 	/**
 	 * @return void
 	 */
 	public function testBareLiteralNumber(): void {
-		self::assertTrue($this->evaluator->matches(expression: '42', value: 42.0, type: 'number'));
+		self::assertTrue($this->evaluator->matchesValue(expression: '42', subject: new UnaryTestValue(value: 42.0, type: 'number')));
 	}//end testBareLiteralNumber()
 
 	/**
 	 * @return void
 	 */
 	public function testBareLiteralBooleanTrue(): void {
-		self::assertTrue($this->evaluator->matches(expression: 'true', value: true, type: 'boolean'));
-		self::assertFalse($this->evaluator->matches(expression: 'true', value: false, type: 'boolean'));
+		self::assertTrue($this->evaluator->matchesValue(expression: 'true', subject: new UnaryTestValue(value: true, type: 'boolean')));
+		self::assertFalse($this->evaluator->matchesValue(expression: 'true', subject: new UnaryTestValue(value: false, type: 'boolean')));
 	}//end testBareLiteralBooleanTrue()
 
 	/**
 	 * @return void
 	 */
 	public function testBareLiteralBooleanFalse(): void {
-		self::assertTrue($this->evaluator->matches(expression: 'false', value: false, type: 'boolean'));
+		self::assertTrue($this->evaluator->matchesValue(expression: 'false', subject: new UnaryTestValue(value: false, type: 'boolean')));
 	}//end testBareLiteralBooleanFalse()
 
 	// ------------------------------------------------------------------
@@ -358,7 +359,7 @@ class UnaryTestEvaluatorTest extends TestCase {
 	 */
 	public function testDateRangeComparison(): void {
 		$value = $this->evaluator->coerce(value: '2026-06-15', type: 'date');
-		self::assertTrue($this->evaluator->matches(expression: '[2026-01-01..2026-12-31]', value: $value, type: 'date'));
-		self::assertFalse($this->evaluator->matches(expression: '[2027-01-01..2027-12-31]', value: $value, type: 'date'));
+		self::assertTrue($this->evaluator->matchesValue(expression: '[2026-01-01..2026-12-31]', subject: new UnaryTestValue(value: $value, type: 'date')));
+		self::assertFalse($this->evaluator->matchesValue(expression: '[2027-01-01..2027-12-31]', subject: new UnaryTestValue(value: $value, type: 'date')));
 	}//end testDateRangeComparison()
 }//end class

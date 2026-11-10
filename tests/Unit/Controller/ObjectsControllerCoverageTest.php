@@ -101,7 +101,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		// Entities resolved by ObjectService::setRegister()/setSchema() default
-		// to null on the mock, so resolveRegisterSchemaIds() returns null
+		// to null on the mock, so resolveRegisterSchemaRef() returns null
 		// entities unless a test wires the getters explicitly.
 		$this->controller = ObjectsControllerFactory::create(
 			'openregister',
@@ -173,7 +173,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 
 	/**
 	 * Wire the resolved register/schema entities into the ObjectService mock
-	 * (resolveRegisterSchemaIds() reuses the entities that setRegister()/
+	 * (resolveRegisterSchemaRef() reuses the entities that setRegister()/
 	 * setSchema() already resolved instead of re-fetching them) and the
 	 * constructor-injected mappers, then re-create the controller.
 	 */
@@ -1387,7 +1387,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 	 * called with only the raw request params — the register/schema slugs
 	 * were never resolved to numeric IDs before being used as the '@self'
 	 * metadata filter. This asserts the resolved numeric IDs (from
-	 * resolveRegisterSchemaIds()) are passed through to buildSearchQuery(),
+	 * resolveRegisterSchemaRef()) are passed through to buildSearchQuery(),
 	 * matching the path-style index() route's behavior.
 	 */
 	public function testObjectsWithRegisterSchemaQueryParamsResolvesSlugToNumericId(): void {
@@ -1469,7 +1469,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$registerEntity = $this->createMagicMappedRegister(1, 'reg', []);
 		$schemaEntity = $this->createSchemaMock(2, 'sch');
 
-		// resolveRegisterSchemaIds() reuses the entities already resolved by
+		// resolveRegisterSchemaRef() reuses the entities already resolved by
 		// ObjectService::setRegister()/setSchema().
 		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
 		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);

@@ -30,8 +30,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use Throwable;
@@ -64,21 +62,19 @@ class DraftFinder {
 	/**
 	 * The owner's draft with this id, or null when it is unknown, not a draft, or someone else's.
 	 *
-	 * @param Register        $register The destination register.
-	 * @param Schema          $schema   The destination schema.
-	 * @param string          $draftId  The draft's uuid.
-	 * @param DraftOwner|null $owner    The asserted owner; null finds nothing.
+	 * @param DraftAddress    $address The destination register and schema and the draft's uuid.
+	 * @param DraftOwner|null $owner   The asserted owner; null finds nothing.
 	 *
 	 * @return ObjectEntity|null The draft.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
 	 */
-	public function own(Register $register, Schema $schema, string $draftId, ?DraftOwner $owner): ?ObjectEntity {
+	public function own(DraftAddress $address, ?DraftOwner $owner): ?ObjectEntity {
 		if ($owner === null) {
 			return null;
 		}
 
-		return $this->ownedBy(draft: $this->findDraft(address: new DraftAddress(register: $register, schema: $schema, draftId: $draftId)), owner: $owner);
+		return $this->ownedBy(draft: $this->findDraft(address: $address), owner: $owner);
 	}//end own()
 
 	/**
@@ -122,23 +118,7 @@ class DraftFinder {
 	}//end ownedBy()
 
 	/**
-	 * The owner's most recently changed draft in a destination whose data holds each `$match` value exactly.
-	 *
-	 * @param Register             $register The destination register.
-	 * @param Schema               $schema   The destination schema.
-	 * @param DraftOwner           $owner    The asserted owner.
-	 * @param array<string, mixed> $match    Values the draft's data must hold, such as a form's fixed values.
-	 *
-	 * @return ObjectEntity|null The draft, or null.
-	 *
-	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
-	 */
-	public function newest(Register $register, Schema $schema, DraftOwner $owner, array $match = []): ?ObjectEntity {
-		return $this->newestFor(search: new OwnDraftSearch(register: $register, schema: $schema, owner: $owner, match: $match));
-	}//end newest()
-
-	/**
-	 * The newest draft one search finds, or null.
+	 * The owner's most recently changed draft in a destination whose data holds each of the search's match values exactly.
 	 *
 	 * @param OwnDraftSearch $search The destination, the owner and the values to match.
 	 *
@@ -146,14 +126,14 @@ class DraftFinder {
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
 	 */
-	private function newestFor(OwnDraftSearch $search): ?ObjectEntity {
+	public function newest(OwnDraftSearch $search): ?ObjectEntity {
 		$found = $this->searchOwnDrafts(search: $search);
 		if ($found === null) {
 			return null;
 		}
 
 		return $this->newestOf(found: $found, search: $search);
-	}//end newestFor()
+	}//end newest()
 
 	/**
 	 * List the owner's drafts of a schema, or null when the list cannot be read.

@@ -80,6 +80,8 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Throwable;
+use OCA\OpenRegister\Service\Flow\FlowRunPass;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 /**
  * `POST /api/flows/{id}/nodes/{nodeId}/run` and its GET description sibling.
@@ -299,10 +301,8 @@ class FlowNodeRunController extends Controller {
 		// The caller's config goes in explicitly: executeNode() re-pins the
 		// PUBLISHED graph, which replaces every node in $flowDocument, so a
 		// $mergedStep placed there alone never reached the node.
-		$run = $this->runner->executeNode(
-			run: $run,
-			flow: $flowDocument,
-			subject: $object,
+		$run = $this->runner->runNode(
+			pass: new FlowRunPass(run: $run, flow: $flowDocument, subject: $object),
 			config: $callerConfig
 		);
 
@@ -323,12 +323,14 @@ class FlowNodeRunController extends Controller {
 		$callerUid = $this->callerUid();
 
 		try {
-			return $this->runner->queue(
+			return $this->runner->queueRun(
 				flowId: $call->flowId,
-				subject: $ref,
-				trigger: FlowRunServiceInterface::TRIGGER_DIRECT_NODE,
-				context: [FlowRunServiceInterface::NODE_ID_CONTEXT_KEY => $call->nodeId],
-				user: $callerUid
+				options: new FlowRunQueueOptions(
+					subject: $ref,
+					trigger: FlowRunServiceInterface::TRIGGER_DIRECT_NODE,
+					context: [FlowRunServiceInterface::NODE_ID_CONTEXT_KEY => $call->nodeId],
+					user: $callerUid
+				)
 			);
 		} catch (FlowLifecycleRefusedInterface $e) {
 			return new JSONResponse(

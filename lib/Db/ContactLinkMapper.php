@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Service\PersonLinkRef;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -130,17 +131,15 @@ class ContactLinkMapper extends QBMapper implements ContactLinkMapperInterface {
 	 * The upsert key since people-on-objects: a person may hold several
 	 * roles on an object, one row each.
 	 *
-	 * @param string $objectUuid The object uuid.
-	 * @param string $contactUid The contact uid, `user:<uid>` for a user.
-	 * @param string|null $role The role, null for a link without one.
+	 * @param PersonLinkRef $ref The object, the contact uid (`user:<uid>` for a user), and the role, null for a link without one.
 	 *
 	 * @return ContactLink|null The link.
 	 *
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
 	 */
-	public function findByObjectContactAndRole(string $objectUuid, string $contactUid, string|null $role): ContactLink|null {
-		$qb = $this->objectContactQuery(objectUuid: $objectUuid, contactUid: $contactUid);
-		$this->applyRoleCondition(qb: $qb, role: $role);
+	public function findByObjectContactAndRole(PersonLinkRef $ref): ContactLink|null {
+		$qb = $this->objectContactQuery(objectUuid: $ref->objectUuid, contactUid: $ref->contactUid);
+		$this->applyRoleCondition(qb: $qb, role: $ref->role);
 
 		return $this->findOneOrNull(qb: $qb);
 	}//end findByObjectContactAndRole()

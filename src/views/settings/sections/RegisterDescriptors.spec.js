@@ -26,7 +26,6 @@ jest.mock('@nextcloud/router', () => ({
 jest.mock(
 	'vue-material-design-icons/Download.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock('../../../components/shared/SettingsSection.vue', () => {
 	const { h } = jest.requireActual('vue')

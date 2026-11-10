@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Survivorship\MasterRecord;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -146,13 +147,13 @@ class SourceRecordResolverBranchesGoldenTest extends TestCase {
 
 		$this->assertSame(
 			[['id' => null, 'master' => 'm-1', 'sourceSystem' => 'a']],
-			$this->resolver->resolveSources(masterData: [], masterUuid: 'm-1', config: $this->reverseFk(), masterRegister: 'masterReg')
+			$this->resolver->resolveSources(master: new MasterRecord(data: [], uuid: 'm-1', register: 'masterReg'), config: $this->reverseFk())
 		);
 		$this->assertSame(
 			[['id' => null, 'master' => 'm-1', 'sourceSystem' => 'a']],
-			$this->resolver->resolveSources(masterData: [], masterUuid: 'm-1', config: $this->reverseFk(['sourceRegister' => 'own']))
+			$this->resolver->resolveSources(master: new MasterRecord(data: [], uuid: 'm-1'), config: $this->reverseFk(['sourceRegister' => 'own']))
 		);
-		$this->resolver->resolveSources(masterData: [], masterUuid: 'm-1', config: $this->reverseFk());
+		$this->resolver->resolveSources(master: new MasterRecord(data: [], uuid: 'm-1'), config: $this->reverseFk());
 
 		$this->assertSame(
 			[
@@ -171,7 +172,7 @@ class SourceRecordResolverBranchesGoldenTest extends TestCase {
 			'Reverse-FK source resolution failed for master "m-1": boom'
 		);
 
-		$this->assertSame([], $this->resolver->resolveSources(masterData: [], masterUuid: 'm-1', config: $this->reverseFk()));
+		$this->assertSame([], $this->resolver->resolveSources(master: new MasterRecord(data: [], uuid: 'm-1'), config: $this->reverseFk()));
 	}//end testAFailingReverseFkQueryWarnsAndReturnsNothing()
 
 	public function testEmbeddedEntryBranches(): void {
@@ -190,15 +191,11 @@ class SourceRecordResolverBranchesGoldenTest extends TestCase {
 		);
 
 		$config = ['sourceLinkField' => 'sources'];
-		$this->assertSame([], $this->resolver->resolveSources(masterData: ['sources' => 'x'], masterUuid: 'm', config: $config));
-		$this->assertSame([], $this->resolver->resolveSources(masterData: [], masterUuid: 'm', config: $config));
+		$this->assertSame([], $this->resolver->resolveSources(master: new MasterRecord(data: ['sources' => 'x'], uuid: 'm'), config: $config));
+		$this->assertSame([], $this->resolver->resolveSources(master: new MasterRecord(data: [], uuid: 'm'), config: $config));
 		$this->assertSame(
 			[['inline' => true], ['id' => null, 'sourceSystem' => 'ref'], ['id' => null]],
-			$this->resolver->resolveSources(
-				masterData: ['sources' => [['inline' => true], '', 7, null, 'found', 'missing', 'denied', 'empty']],
-				masterUuid: 'm',
-				config: $config
-			)
+			$this->resolver->resolveSources(master: new MasterRecord(data: ['sources' => [['inline' => true], '', 7, null, 'found', 'missing', 'denied', 'empty']], uuid: 'm'), config: $config)
 		);
 		$this->assertSame(
 			[['found', true, true], ['missing', true, true], ['denied', true, true], ['empty', true, true]],

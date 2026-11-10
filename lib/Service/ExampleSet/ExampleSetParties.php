@@ -33,8 +33,10 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Party\PartyHolding;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Service\PersonLinkRef;
 use Psr\Container\ContainerInterface;
 use Throwable;
 
@@ -183,9 +185,11 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	public function lost(array $entry): bool {
 		try {
 			return $this->links()->findByObjectContactAndRole(
-				objectUuid: (string) $entry['objectUuid'],
-				contactUid: ContactLink::partyUid(partyUuid: (string) $entry['partyUuid']),
-				role: (string) $entry['role']
+				ref: new PersonLinkRef(
+					objectUuid: (string) $entry['objectUuid'],
+					contactUid: ContactLink::partyUid(partyUuid: (string) $entry['partyUuid']),
+					role: (string) $entry['role']
+				)
 			) === null;
 		} catch (Throwable) {
 			return true;
@@ -209,8 +213,7 @@ class ExampleSetParties extends ExampleSetEngineRows {
 		try {
 			$this->roles()->removeParty(
 				objectUuid: (string) $entry['objectUuid'],
-				partyUuid: (string) $entry['partyUuid'],
-				role: (string) $entry['role']
+				holding: new PartyHolding(partyUuid: (string) $entry['partyUuid'], role: (string) $entry['role'])
 			);
 		} catch (Throwable) {
 			return 'failed';

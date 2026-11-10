@@ -34,6 +34,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 /**
  * Unit tests for ObjectsController
@@ -44,27 +45,6 @@ use Psr\Log\LoggerInterface;
  * @package Unit\Controller
  */
 class ObjectsControllerTest extends TestCase {
-
-	/**
-	 * Why the four logs() schema-shape tests are skipped.
-	 *
-	 * They mock `ObjectEntity::getSchema()` returning an array or a stdClass, to
-	 * cover the `is_array()` / `is_object()` branches in ObjectsController::logs().
-	 * `schema` is an `addType(…, 'string')` field backed by a `?string` property,
-	 * so a real entity CANNOT return either shape — the tests' own comments said
-	 * as much ("real entity is typed ?string") while still asserting it.
-	 *
-	 * That was possible only while the getter was magic and therefore untyped.
-	 * Declaring it for ObjectEntityInterface (ADR-084) makes PHPUnit enforce the
-	 * return type, and the mock becomes impossible to build.
-	 *
-	 * Which means those production branches are UNREACHABLE, and these tests
-	 * were covering dead code — coverage that read as safety. Removing the
-	 * branches is a behavioural change and belongs in its own PR with its own
-	 * reasoning, so the tests are skipped rather than deleted, and the finding
-	 * is recorded here where whoever picks it up will find it. openregister#2501
-	 */
-	private const SCHEMA_SHAPE_SKIP = 'logs() array/object schema branches are unreachable: ObjectEntity::getSchema() is ?string. Tracked in openregister#2501.';
 
 	private ObjectsController $controller;
 	private IRequest&MockObject $request;
@@ -102,7 +82,7 @@ class ObjectsControllerTest extends TestCase {
 		$this->webhookService = $this->createMock(WebhookService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		// resolveRegisterSchemaIds() reuses the entities resolved by
+		// resolveRegisterSchemaRef() reuses the entities resolved by
 		// ObjectService::setRegister()/setSchema(); the ObjectService mock
 		// returns null from the entity getters by default, so entities stay
 		// null (same as the old throwing-DI-stub behavior).
@@ -803,7 +783,7 @@ class ObjectsControllerTest extends TestCase {
 	public function testIndexReturns404WhenRegisterNotFound(): void {
 		$this->request->method('getParams')->willReturn([]);
 
-		// resolveRegisterSchemaIds calls objectService->setRegister which throws
+		// resolveRegisterSchemaRef calls objectService->setRegister which throws
 		$this->objectService->method('setRegister')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
 
@@ -2120,7 +2100,7 @@ class ObjectsControllerTest extends TestCase {
 
 	/**
 	 * Test objects() with register and schema query params that resolve (but no magic mapping).
-	 * When resolveRegisterSchemaIds resolves but entities are null (DI mapper throws),
+	 * When resolveRegisterSchemaRef resolves but entities are null (DI mapper throws),
 	 * falls through to normal searchObjectsPaginated path.
 	 */
 	public function testObjectsWithRegisterSchemaParamsResolvesToNormalSearch(): void {
@@ -4339,7 +4319,7 @@ class ObjectsControllerTest extends TestCase {
 		]);
 		$this->objectService->method('getExtendedObjects')->willReturn([]);
 
-		// resolveRegisterSchemaIds needs to return the register entity
+		// resolveRegisterSchemaRef needs to return the register entity
 		// Since it accesses \OC::$server, we test that the show path handles null entities gracefully
 		$result = $this->controller->show('uuid-123', '1', '2', $this->objectService);
 
@@ -4719,35 +4699,6 @@ class ObjectsControllerTest extends TestCase {
 	// logs() — schema match via object/array format
 	// =========================================================================
 
-	public function testLogsMatchesSchemaBySlug(): void {
-		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
-		$this->setupAdminUser();
-		$this->markTestSkipped(self::SCHEMA_SHAPE_SKIP);
-		// Use a mock to return an array from getSchema (real entity is typed ?string)
-		$objectEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\ObjectEntity::class)
-			->onlyMethods(['getObject'])
-			->onlyMethods(['getSchema', 'getRegister', 'getUuid'])
-			->getMock();
-		$objectEntity->method('getUuid')->willReturn('uuid-123');
-		$objectEntity->method('getRegister')->willReturn('1');
-		$objectEntity->method('getSchema')->willReturn(['id' => '2', 'slug' => 'my-schema']);
-		$objectEntity->method('getObject')->willReturn(['title' => 'Test']);
-
-		$this->request->method('getParams')->willReturn([]);
-		$this->request->method('getRequestUri')->willReturn('/api/objects/1/my-schema/uuid-123/logs');
-
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('getSchema')->willReturn(1);
-		$this->objectService->method('getRegister')->willReturn(1);
-		$this->objectService->method('find')->willReturn($objectEntity);
-		$this->objectService->method('getLogs')->willReturn([]);
-
-		$result = $this->controller->logs('uuid-123', '1', 'my-schema', $this->objectService);
-
-		$this->assertSame(200, $result->getStatus());
-	}
-
 	/**
 	 * logs() returns 200 when the schema matches, on a REAL entity.
 	 *
@@ -4836,107 +4787,13 @@ class ObjectsControllerTest extends TestCase {
 	// logs() — with schema as stdClass object
 	// =========================================================================
 
-	public function testLogsMatchesSchemaAsObject(): void {
-		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
-		$this->setupAdminUser();
-		$this->markTestSkipped(self::SCHEMA_SHAPE_SKIP);
-		$schemaObj = new \stdClass();
-		$schemaObj->id = '2';
-		$schemaObj->slug = 'test-schema';
-
-		// Use a mock to return a stdClass from getSchema (real entity is typed ?string)
-		$objectEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\ObjectEntity::class)
-			->onlyMethods(['getObject'])
-			->onlyMethods(['getSchema', 'getRegister', 'getUuid'])
-			->getMock();
-		$objectEntity->method('getUuid')->willReturn('uuid-123');
-		$objectEntity->method('getRegister')->willReturn('1');
-		$objectEntity->method('getSchema')->willReturn($schemaObj);
-		$objectEntity->method('getObject')->willReturn(['title' => 'Test']);
-
-		$this->request->method('getParams')->willReturn([]);
-		$this->request->method('getRequestUri')->willReturn('/api/objects/1/test-schema/uuid-123/logs');
-
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('getSchema')->willReturn(1);
-		$this->objectService->method('getRegister')->willReturn(1);
-		$this->objectService->method('find')->willReturn($objectEntity);
-		$this->objectService->method('getLogs')->willReturn([]);
-
-		$result = $this->controller->logs('uuid-123', '1', 'test-schema', $this->objectService);
-
-		$this->assertSame(200, $result->getStatus());
-	}
-
 	// =========================================================================
 	// logs() — with schema as stdClass without slug
 	// =========================================================================
 
-	public function testLogsMatchesSchemaAsObjectById(): void {
-		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
-		$this->setupAdminUser();
-		$this->markTestSkipped(self::SCHEMA_SHAPE_SKIP);
-		$schemaObj = new \stdClass();
-		$schemaObj->id = '2';
-
-		// Use a mock to return a stdClass from getSchema (real entity is typed ?string)
-		$objectEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\ObjectEntity::class)
-			->onlyMethods(['getObject'])
-			->onlyMethods(['getSchema', 'getRegister', 'getUuid'])
-			->getMock();
-		$objectEntity->method('getUuid')->willReturn('uuid-123');
-		$objectEntity->method('getRegister')->willReturn('1');
-		$objectEntity->method('getSchema')->willReturn($schemaObj);
-		$objectEntity->method('getObject')->willReturn(['title' => 'Test']);
-
-		$this->request->method('getParams')->willReturn([]);
-		$this->request->method('getRequestUri')->willReturn('/api/objects/1/2/uuid-123/logs');
-
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('getSchema')->willReturn(1);
-		$this->objectService->method('getRegister')->willReturn(1);
-		$this->objectService->method('find')->willReturn($objectEntity);
-		$this->objectService->method('getLogs')->willReturn([]);
-
-		$result = $this->controller->logs('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertSame(200, $result->getStatus());
-	}
-
 	// =========================================================================
 	// logs() — with schema as array without slug
 	// =========================================================================
-
-	public function testLogsMatchesSchemaAsArrayById(): void {
-		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
-		$this->setupAdminUser();
-		$this->markTestSkipped(self::SCHEMA_SHAPE_SKIP);
-		// Use a mock to return an array from getSchema (real entity is typed ?string)
-		$objectEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\ObjectEntity::class)
-			->onlyMethods(['getObject'])
-			->onlyMethods(['getSchema', 'getRegister', 'getUuid'])
-			->getMock();
-		$objectEntity->method('getUuid')->willReturn('uuid-123');
-		$objectEntity->method('getRegister')->willReturn('1');
-		$objectEntity->method('getSchema')->willReturn(['id' => '2']);
-		$objectEntity->method('getObject')->willReturn(['title' => 'Test']);
-
-		$this->request->method('getParams')->willReturn([]);
-		$this->request->method('getRequestUri')->willReturn('/api/objects/1/2/uuid-123/logs');
-
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('getSchema')->willReturn(1);
-		$this->objectService->method('getRegister')->willReturn(1);
-		$this->objectService->method('find')->willReturn($objectEntity);
-		$this->objectService->method('getLogs')->willReturn([]);
-
-		$result = $this->controller->logs('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertSame(200, $result->getStatus());
-	}
 
 	// =========================================================================
 	// logs() — with pagination params
@@ -5347,7 +5204,7 @@ class ObjectsControllerTest extends TestCase {
 
 		$this->assertSame(200, $result->getStatus());
 		$data = $result->getData();
-		// resolveRegisterSchemaIds accesses \OC::$server which throws in unit tests,
+		// resolveRegisterSchemaRef accesses \OC::$server which throws in unit tests,
 		// entities are null, so registers/schemas are empty arrays which get stripped
 		// by stripEmptyValues. The key @self should still exist.
 		$this->assertArrayHasKey('@self', $data);
@@ -6754,6 +6611,153 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	/**
+	 * An administrator's object log reads through the explicit-reveal masker.
+	 *
+	 * @return void
+	 */
+	public function testLogsAreMaskedForAnAdministrator(): void {
+		$this->setupAdminUser();
+		$object = new \OCA\OpenRegister\Db\ObjectEntity();
+		$object->setRegister('1');
+		$object->setSchema('2');
+		$this->objectService->method('find')->willReturn($object);
+		$this->objectService->method('getLogs')->willReturn(['plain']);
+		$this->request->method('getParams')->willReturn([]);
+
+		$masker = $this->createMock(\OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker::class);
+		$masker->expects($this->once())->method('mask')->with(['plain'])->willReturn(['masked']);
+		$this->container->method('get')->willReturn($masker);
+
+		$result = $this->controller->logs('uuid', '1', '2', $this->objectService);
+
+		$this->assertSame(['masked'], $result->getData()['results']);
+	}
+
+	/**
+	 * A delete carries the route's register and schema, so the URL's scope is enforced.
+	 *
+	 * @return void
+	 */
+	public function testDestroyPassesTheRouteScope(): void {
+		$this->setupAdminUser();
+		$this->objectService->expects($this->once())->method('deleteObject')->with('id', 'r', 's', false, false)->willReturn(true);
+
+		$this->assertSame(204, $this->controller->destroy('id', 'r', 's', $this->objectService)->getStatus());
+	}
+
+	/**
+	 * A non-admin's delete runs in the caller's scope.
+	 *
+	 * @return void
+	 */
+	public function testDestroyScopesANonAdmin(): void {
+		$this->userSession->method('getUser')->willReturn($this->createMock(\OCP\IUser::class));
+		$this->objectService->expects($this->once())->method('deleteObject')->with('id', 'r', 's', true, true)->willReturn(true);
+
+		$this->assertSame(204, $this->controller->destroy('id', 'r', 's', $this->objectService)->getStatus());
+	}
+
+	/**
+	 * What a delete that throws answers.
+	 *
+	 * @return array<string, array{0: \Throwable, 1: int, 2: mixed}>
+	 */
+	public static function deleteFailures(): array {
+		$hook = \OCA\OpenRegister\Exception\HookStoppedException::class;
+		$dbal = \OCA\OpenRegister\Service\ObjectSource\DbalWriteException::class;
+
+		return [
+			'append only'       => [new \OCA\OpenRegister\Exception\AppendOnlyException('s', 'delete'), 405, null],
+			'not found'         => [new \OCP\AppFramework\Db\DoesNotExistException('x'), 404, ['error' => 'Not Found']],
+			'hook'              => [new $hook('stop', ['a' => 'b']), 422, ['error' => 'stop', 'errors' => ['a' => 'b']]],
+			'hook with status'  => [new $hook('stop', ['status' => 409]), 409, ['error' => 'stop', 'errors' => ['status' => 409]]],
+			'hook, odd status'  => [new $hook('stop', ['status' => '409']), 422, ['error' => 'stop', 'errors' => ['status' => '409']]],
+			'external write'    => [new $dbal('nope', 418), 418, ['error' => 'nope']],
+			'any other failure' => [new \RuntimeException('no right'), 403, ['error' => 'no right']],
+			'fatal'             => [new \TypeError('bad'), 500, ['error' => 'An unexpected error occurred while deleting the object']],
+		];
+	}
+
+	/**
+	 * Every delete failure keeps its status and body.
+	 *
+	 * @dataProvider deleteFailures
+	 *
+	 * @param \Throwable $failure  The failure.
+	 * @param int        $status   The status.
+	 * @param mixed      $expected The body, or null when only the status is pinned.
+	 *
+	 * @return void
+	 */
+	public function testDestroyFailureAnswers(\Throwable $failure, int $status, mixed $expected): void {
+		$this->objectService->method('deleteObject')->willThrowException($failure);
+
+		$result = $this->controller->destroy('id', 'r', 's', $this->objectService);
+
+		$this->assertSame($status, $result->getStatus());
+		if ($expected !== null) {
+			$this->assertSame($expected, $result->getData());
+		}
+	}
+
+	/**
+	 * Contracts paging: the plain name wins over the `_` form, and the limit defaults to 20.
+	 *
+	 * @return void
+	 */
+	public function testContractsPagingParameters(): void {
+		$this->request->method('getParams')->willReturn(['_offset' => '1', 'offset' => '2', '_page' => '3', 'page' => '4']);
+		$this->objectService->expects($this->once())->method('getObjectContracts')
+			->with('id', ['limit' => 20, 'offset' => 2, 'page' => 4])
+			->willReturn(['results' => [], 'total' => 0]);
+
+		$this->assertSame(200, $this->controller->contracts('id', 'r', 's', $this->objectService)->getStatus());
+	}
+
+	/**
+	 * An object stored in a register and schema, on a route that names them by slug.
+	 *
+	 * @param int $registerId The id the route's register resolves to.
+	 *
+	 * @return \OCP\AppFramework\Http\JSONResponse The answer.
+	 */
+	private function logsBySlug(int $registerId): \OCP\AppFramework\Http\JSONResponse {
+		$this->setupAdminUser();
+		$object = new \OCA\OpenRegister\Db\ObjectEntity();
+		$object->setRegister('1');
+		$object->setSchema('2');
+		$register = new \OCA\OpenRegister\Db\Register();
+		$register->setId($registerId);
+		$schema = new \OCA\OpenRegister\Db\Schema();
+		$schema->setId(2);
+		$this->objectService->method('find')->willReturn($object);
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn($register);
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schema);
+		$this->objectService->method('getLogs')->willReturn([]);
+		$this->request->method('getParams')->willReturn([]);
+
+		return $this->controller->logs('uuid', 'zaken', 'persoon', $this->objectService);
+	}
+
+	/**
+	 * An administrator reads an object's log through the slugs of its register and schema.
+	 *
+	 * @return void
+	 */
+	public function testLogsAnswerAnAdministratorOnASlugRoute(): void {
+		$this->assertSame(200, $this->logsBySlug(1)->getStatus());
+	}
+
+	/**
+	 * A slug route of another register still answers that the object is not there.
+	 *
+	 * @return void
+	 */
+	public function testLogsRefuseASlugRouteOfAnotherRegister(): void {
+		$this->assertSame(404, $this->logsBySlug(9)->getStatus());
+	}
+
+	/**
 	 * A JSON export is recorded with the format it was asked in.
 	 *
 	 * @return void
@@ -6821,9 +6825,7 @@ class ObjectsControllerTest extends TestCase {
 			static fn (string $key, $default = null) => ($key === 'type') ? 'json' : $default
 		);
 		$this->exportService->expects($this->once())->method('exportToJson')->with(
-			$registerEntity,
-			$schemaEntity,
-			['status' => 'open']
+			new ObjectExportRequest(register: $registerEntity, schema: $schemaEntity, filters: ['status' => 'open'])
 		)->willReturn('{"results":[1,2]}');
 
 		$result = $this->controller->export('1', '2', $this->objectService);

@@ -56,6 +56,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
+use OCA\OpenRegister\Service\Flow\FlowRunPass;
 
 /**
  * Characterisation of FlowNodeRunController::run() and its two resolutions.
@@ -351,12 +353,12 @@ class FlowNodeRunCharacterisationTest extends TestCase {
 		$lifecycle = new FlowLifecycleRefused(reason: FlowLifecycleRefused::REASON_NOT_PUBLISHED, flowId: 'f1', state: 'draft');
 		$deadEnd = new FlowDeadEnd(nodeIds: ['n9']);
 		$unattributed = new FlowUnattributed(flowId: 'f1', trigger: 'direct-node');
-		$this->runner->method('queue')->willReturnOnConsecutiveCalls(
+		$this->runner->method('queueRun')->willReturnOnConsecutiveCalls(
 			$this->throwException($lifecycle),
 			$this->throwException($deadEnd),
 			$this->throwException($unattributed)
 		);
-		$this->runner->expects($this->never())->method('executeNode');
+		$this->runner->expects($this->never())->method('runNode');
 
 		$answers = [];
 		for ($i = 0; $i < 3; $i++) {
@@ -383,7 +385,7 @@ class FlowNodeRunCharacterisationTest extends TestCase {
 		$this->invokableStep();
 		$this->permittedSubject();
 		$refusal = $this->getMockBuilder(DelegationRefused::class)->disableOriginalConstructor()->getMock();
-		$this->runner->method('queue')->willThrowException($refusal);
+		$this->runner->method('queueRun')->willThrowException($refusal);
 
 		$response = $this->controller->run(id: 'f1', nodeId: 'n2');
 
@@ -399,17 +401,19 @@ class FlowNodeRunCharacterisationTest extends TestCase {
 		$this->invokableStep();
 		$object = $this->permittedSubject();
 		$queued = new FlowRun();
-		$this->runner->expects($this->once())->method('queue')
-			->with('f1', ['uuid' => 'obj-1', 'register' => 'cases', 'schema' => 'case'], FlowRunService::TRIGGER_DIRECT_NODE, ['nodeId' => 'n2'], 'alice')
+		$this->runner->expects($this->once())->method('queueRun')
+			->with('f1', $this->equalTo(new FlowRunQueueOptions(subject: ['uuid' => 'obj-1', 'register' => 'cases', 'schema' => 'case'], trigger: FlowRunService::TRIGGER_DIRECT_NODE, context: ['nodeId' => 'n2'], user: 'alice')))
 			->willReturn($queued);
 		$this->subjects->method('resolveFlow')->with('f1')->willReturn(null);
 		$done = new FlowRun();
 		$done->setStatus('completed');
-		$this->runner->expects($this->once())->method('executeNode')
+		$this->runner->expects($this->once())->method('runNode')
 			->with(
-				$queued,
-				['id' => 'f1', 'nodes' => [['id' => 'n2', 'type' => 'merge', 'config' => ['a' => 1, 'b' => 2]]], 'edges' => []],
-				$object,
+				new FlowRunPass(
+					run: $queued,
+					flow: ['id' => 'f1', 'nodes' => [['id' => 'n2', 'type' => 'merge', 'config' => ['a' => 1, 'b' => 2]]], 'edges' => []],
+					subject: $object
+				),
 				['b' => 2]
 			)
 			->willReturn($done);

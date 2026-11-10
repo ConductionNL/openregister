@@ -7,6 +7,7 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Task;
 
+use OCA\OpenRegister\Service\TaskLocation;
 use OCA\OpenRegister\Service\Task\VtodoReader;
 use PHPUnit\Framework\TestCase;
 use Sabre\VObject\Reader;
@@ -34,7 +35,7 @@ class VtodoReaderTest extends TestCase {
 				'priority' => 0, 'due' => null, 'completed' => null, 'created' => null,
 				'objectUuid' => null, 'registerId' => null, 'schemaId' => null, 'fields' => [],
 			],
-			(new VtodoReader())->taskArray(self::vtodo(''), '5', 'x.ics')
+			(new VtodoReader())->taskArray(self::vtodo(''), new TaskLocation('5', 'x.ics'))
 		);
 	}
 
@@ -42,8 +43,7 @@ class VtodoReaderTest extends TestCase {
 		$data = base64_encode((string)json_encode(['kenmerk' => 'Z-1']));
 		$task = (new VtodoReader())->taskArray(
 			self::vtodo("UID:t\r\nSTATUS:COMPLETED\r\nPRIORITY:2\r\nDUE:20260301T090000Z\r\nX-OPENREGISTER-OBJECT:o-1\r\nX-OPENREGISTER-REGISTER:3\r\nX-OPENREGISTER-DATA:" . $data . "\r\n"),
-			'5',
-			't.ics'
+			new TaskLocation('5', 't.ics')
 		);
 
 		$this->assertSame(['completed', 2, '2026-03-01T09:00:00+00:00'], [$task['status'], $task['priority'], $task['due']]);
@@ -51,7 +51,7 @@ class VtodoReaderTest extends TestCase {
 	}
 
 	public function testIgnoresADataBlobThatIsNotBase64Json(): void {
-		$task = (new VtodoReader())->taskArray(self::vtodo("X-OPENREGISTER-DATA:@@@\r\n"), '5', 'x.ics');
+		$task = (new VtodoReader())->taskArray(self::vtodo("X-OPENREGISTER-DATA:@@@\r\n"), new TaskLocation('5', 'x.ics'));
 
 		$this->assertSame([], $task['fields']);
 	}

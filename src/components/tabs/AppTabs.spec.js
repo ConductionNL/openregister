@@ -117,6 +117,27 @@ describe('AppTabs', () => {
 		expect(wrapper.emitted('update:modelValue')).toBeUndefined()
 	})
 
+	it('marks up each tab with its ids, selection and focus order', async () => {
+		const wrapper = await mountTabs({}, { disabled: true })
+		const [first, locked] = tabs(wrapper)
+		const uid = first.attributes('id').replace('app-tab-', '')
+		expect(first.attributes()).toEqual(
+			expect.objectContaining({
+				type: 'button',
+				role: 'tab',
+				'aria-selected': 'true',
+				'aria-controls': `app-tabpanel-${uid}`,
+				tabindex: '0',
+			}),
+		)
+		expect(first.classes()).toEqual(['app-tabs__tab', 'app-tabs__tab--active'])
+		expect(first.attributes('disabled')).toBeUndefined()
+		expect(locked.attributes('aria-selected')).toBe('false')
+		expect(locked.attributes('tabindex')).toBe('-1')
+		expect(locked.classes()).toEqual(['app-tabs__tab', 'app-tabs__tab--disabled'])
+		expect(wrapper.find('[role="tablist"]').classes()).toEqual(['app-tabs__list'])
+	})
+
 	it('applies the layout classes', async () => {
 		const wrapper = await mountTabs({ justified: true, pills: true, contentClass: 'pad' })
 		const list = wrapper.find('[role="tablist"]')

@@ -20,6 +20,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
@@ -347,7 +348,10 @@ class ObjectServiceFindGoldenTest extends TestCase {
 
 		$permissionHandler = $this->createMock(PermissionHandler::class);
 		$permissionHandler->method('checkPermission')->willReturnCallback(
-			function (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true, ?ObjectEntity $object = null): void {
+			function (Schema $schema, string $action, PermissionCheckOptions $options = new PermissionCheckOptions(), bool $_rbac = true): void {
+				$userId = $options->userId;
+				$objectOwner = $options->objectOwner;
+				$object = $options->object;
 				$this->calls[] = ['checkPermission' => $action, 'schema' => $schema->getId(), 'userId' => $userId, 'owner' => $objectOwner, 'rbac' => $_rbac, 'object' => $object?->getUuid()];
 				if ($this->denyRead === true) {
 					throw new Exception('read denied');
