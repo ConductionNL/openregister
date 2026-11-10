@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\NativeAggregationRequest;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -52,7 +53,7 @@ use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
 /**
- * Each case calls tryNativeAggregation() with a request and gives each
+ * Each case calls tryNativeWithSpec() with a request and gives each
  * prepared statement its own rows. The statements with their bindings and
  * the result are compared with fixtures/native-multi-metric-golden.json.
  * Set UPDATE_GOLDEN=1 to rewrite the fixture.
@@ -164,19 +165,23 @@ class AggregationRunnerNativeMultiMetricGoldenTest extends TestCase {
 	 */
 	private function observe(array $case): array {
 		$this->statements = [];
-		$method = new ReflectionMethod(AggregationRunner::class, 'tryNativeAggregation');
+		$method = new ReflectionMethod(AggregationRunner::class, 'tryNativeWithSpec');
 		$result = $method->invoke(
 			$this->runner(case: $case),
-			$this->register(),
-			$this->schema(),
-			$case['metric'] ?? 'count',
-			$case['field'] ?? null,
-			$case['filter'] ?? [],
-			$case['groupBy'] ?? null,
-			$case['dateBucket'] ?? null,
-			$case['metrics'] ?? null,
-			$case['cumulative'] ?? false,
-			$case['rowRbac'] ?? true
+			new NativeAggregationRequest(
+				register: $this->register(),
+				schema: $this->schema(),
+				spec: [
+					'metric'     => $case['metric'] ?? 'count',
+					'field'      => $case['field'] ?? null,
+					'filter'     => $case['filter'] ?? [],
+					'groupBy'    => $case['groupBy'] ?? null,
+					'dateBucket' => $case['dateBucket'] ?? null,
+					'metrics'    => $case['metrics'] ?? null,
+					'cumulative' => $case['cumulative'] ?? false,
+					'rowRbac'    => $case['rowRbac'] ?? true,
+				]
+			)
 		);
 
 		return ['statements' => $this->statements, 'result' => $result];
