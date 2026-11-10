@@ -82,15 +82,14 @@ interface SharedMasterDataServiceInterface {
 	 * declaring it on the schema is how one case type or party definition is
 	 * shared across the registers that carry it.
 	 *
-	 * @param integer|null $registerId The register being read, when known.
-	 * @param integer|null $schemaId The schema being read, when known.
+	 * @param DeclaredPair       $pair             The register and schema being read, each when known.
 	 * @param array<int, string> $consumerOrgUuids The reading organisation and its parents.
 	 *
 	 * @return array<int, string> The holder organisation UUIDs to widen by.
 	 *
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
-	public function holdersForResource(?int $registerId, ?int $schemaId, array $consumerOrgUuids): array;
+	public function holdersForResource(DeclaredPair $pair, array $consumerOrgUuids): array;
 
 	/**
 	 * Refuse a write to shared master data the acting organisation only consumes.

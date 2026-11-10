@@ -35,6 +35,7 @@ use OCP\ICache;
 use OCP\ICacheFactory;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Consumer\DecodedJwt;
 
 /**
  * Times are relative to the real clock with margins far beyond the 60 s skew,
@@ -146,7 +147,7 @@ class JwtValidatorBehaviourTest extends TestCase
     {
         $token = self::hs256(['iss' => 'app-1']);
 
-        $e = $this->refusal(static fn() => (new JwtValidator())->verifyPinned($token, $header, $configuration));
+        $e = $this->refusal(static fn() => (new JwtValidator())->verifyPinned(new DecodedJwt($token, $header), $configuration));
 
         $this->assertSame(['reason' => $reason], $e->getDetails());
     }//end testVerifyPinnedRefusesWithTheReason()
@@ -154,7 +155,7 @@ class JwtValidatorBehaviourTest extends TestCase
     public function testVerifyPinnedRefusesAnUnsupportedAlgorithmByName(): void
     {
         $e = $this->refusal(
-            static fn() => (new JwtValidator())->verifyPinned('a.b.c', ['alg' => 'ES256'], ['algorithm' => 'ES256', 'publicKey' => 'k'])
+            static fn() => (new JwtValidator())->verifyPinned(new DecodedJwt('a.b.c', ['alg' => 'ES256']), ['algorithm' => 'ES256', 'publicKey' => 'k'])
         );
 
         $this->assertSame(['The token algorithm is not supported', ['algorithm' => 'ES256']], [$e->getMessage(), $e->getDetails()]);
@@ -164,8 +165,8 @@ class JwtValidatorBehaviourTest extends TestCase
     {
         $validator = new JwtValidator();
 
-        $validator->verifyPinned(self::hs256(['iss' => 'a']), ['alg' => 'HS256'], ['algorithm' => 'HS256', 'publicKey' => self::SECRET]);
-        $validator->verifyPinned(self::rs256(['iss' => 'a']), ['alg' => 'RS256'], ['algorithm' => 'RS256', 'publicKey' => self::$publicPem]);
+        $validator->verifyPinned(new DecodedJwt(self::hs256(['iss' => 'a']), ['alg' => 'HS256']), ['algorithm' => 'HS256', 'publicKey' => self::SECRET]);
+        $validator->verifyPinned(new DecodedJwt(self::rs256(['iss' => 'a']), ['alg' => 'RS256']), ['algorithm' => 'RS256', 'publicKey' => self::$publicPem]);
 
         $this->assertTrue($validator->verifySignature(self::rs256(['iss' => 'a']), new JwsKey('RS256', base64_encode(self::$publicPem))));
     }//end testVerifyPinnedAcceptsMatchingHmacAndRsaSignatures()

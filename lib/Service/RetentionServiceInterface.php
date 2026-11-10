@@ -74,9 +74,7 @@ interface RetentionServiceInterface {
 	 * alone never re-derives or refuses, even when the schema's own category
 	 * has moved since the record was created.
 	 *
-	 * @param ObjectEntity         $object       The record, with its updated data
-	 * @param Schema               $schema       Its schema
-	 * @param array<string, mixed> $previousData The record's data before this update
+	 * @param RecordUpdate $update The record with its updated data, its schema and its data before this update
 	 *
 	 * @return ObjectEntity The record, re-derived when its category changed
 	 *
@@ -84,7 +82,7 @@ interface RetentionServiceInterface {
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function applyClassificationOnUpdate(ObjectEntity $object, Schema $schema, array $previousData): ObjectEntity;
+	public function applyClassification(RecordUpdate $update): ObjectEntity;
 
 	/**
 	 * Calculate archiefactiedatum based on the schema's afleidingswijze.
@@ -94,16 +92,14 @@ interface RetentionServiceInterface {
 	 * when it cannot be answered. Kept here because callers and the spec both
 	 * name this method.
 	 *
-	 * @param ObjectEntity $object The object to calculate for
-	 * @param Schema $schema The schema with afleidingswijze config
-	 * @param string $retentionPeriod ISO 8601 duration (e.g., P5Y, P20Y)
+	 * @param RetentionClock $clock The object, its schema (with the afleidingswijze config) and the ISO 8601 retention period
 	 *
 	 * @return string|null ISO 8601 date string or null if calculation not possible
 	 *
 	 * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-calculate-archiefactiedatum-using-configurable-afleidingswijzen
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
-	public function calculateArchiveActionDate(ObjectEntity $object, Schema $schema, string $retentionPeriod): ?string;
+	public function calculateArchiveActionDate(RetentionClock $clock): ?string;
 
 	/**
 	 * Recalculate archiefactiedatum when a source property changes.
@@ -113,16 +109,14 @@ interface RetentionServiceInterface {
 	 * relation methods, `bronEigenschap` under `eigenschap` and the closure
 	 * field under `afgehandeld` and `termijn`.
 	 *
-	 * @param ObjectEntity $object The object being updated
-	 * @param Schema $schema The schema
-	 * @param array $oldObject The previous object data
+	 * @param RecordUpdate $update The object being updated, its schema and its previous data
 	 *
 	 * @return ObjectEntity The object with recalculated dates
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
 	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
 	 */
-	public function recalculateArchiveActionDate(ObjectEntity $object, Schema $schema, array $oldObject): ObjectEntity;
+	public function recalculateActionDate(RecordUpdate $update): ObjectEntity;
 
 	/**
 	 * Recalculate a record's archiefactiedatum from its current source date.
@@ -264,9 +258,8 @@ interface RetentionServiceInterface {
 	 * and by an app that asks for a list of its own (DestructionListCreator),
 	 * so the two cannot drift apart.
 	 *
-	 * @param ObjectEntity $object       The object to judge.
-	 * @param string       $today        Today, as Y-m-d.
-	 * @param array        $excludeUuids UUIDs already on a pending destruction list.
+	 * @param ObjectEntity  $object The object to judge.
+	 * @param DisposalSweep $sweep  Today (as Y-m-d) and the UUIDs already on a pending destruction list.
 	 *
 	 * @return string|null One of the REFUSAL_* reasons, or null when the object may be destroyed.
 	 *
@@ -275,7 +268,7 @@ interface RetentionServiceInterface {
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function destructionRefusal(ObjectEntity $object, string $today, array $excludeUuids): ?string;
+	public function destructionRefusalIn(ObjectEntity $object, DisposalSweep $sweep): ?string;
 
 	/**
 	 * Find objects eligible for transfer to an e-Depot.
@@ -316,9 +309,7 @@ interface RetentionServiceInterface {
 	/**
 	 * Generate a destruction certificate after execution.
 	 *
-	 * @param array $destructionList The destruction list data
-	 * @param int $destroyedCount Number of objects destroyed
-	 * @param string $executedAt ISO 8601 timestamp of execution
+	 * @param ExecutedDestruction $execution The destruction list data, the number destroyed and the ISO 8601 execution time
 	 *
 	 * @return array The destruction certificate data
 	 *
@@ -326,5 +317,5 @@ interface RetentionServiceInterface {
 	 * @spec openspec/specs/retention-management/spec.md
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function generateDestructionCertificate(array $destructionList, int $destroyedCount, string $executedAt): array;
+	public function certify(ExecutedDestruction $execution): array;
 }//end interface

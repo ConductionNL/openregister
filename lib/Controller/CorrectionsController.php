@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\CorrectionsControllerServices;
 use OCA\OpenRegister\Exception\CorrectionRefusedException;
@@ -118,7 +119,9 @@ class CorrectionsController extends Controller {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function correct(string $register, string $schema, string $id): JSONResponse {
-		return $this->correctionOf(target: $this->targets->forRecord(register: $register, schema: $schema, id: $id));
+		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
+
+		return $this->correctionOf(target: $this->targets->forRecord(ref: $ref));
 	}//end correct()
 
 	/**

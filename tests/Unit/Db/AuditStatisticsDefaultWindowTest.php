@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Tests\Support\MigratedSqliteDatabase;
 use OCP\IRequest;
@@ -69,19 +70,25 @@ final class AuditStatisticsDefaultWindowTest extends TestCase {
 	}//end row()
 
 	public function testActionDistributionCountsTheDefaultWindow(): void {
-		$actions = $this->mapper->getActionDistribution(hours: null)['actions'];
+		$scope = new AuditStatisticsScope();
+		$scope->hours = null;
+		$actions = $this->mapper->actionDistribution(scope: $scope)['actions'];
 
 		$this->assertSame(1, $actions[0]['count']);
 	}//end testActionDistributionCountsTheDefaultWindow()
 
 	public function testMostActiveObjectsCountsTheDefaultWindow(): void {
-		$objects = $this->mapper->getMostActiveObjects(hours: null)['objects'];
+		$scope = new AuditStatisticsScope();
+		$scope->hours = null;
+		$objects = $this->mapper->mostActiveObjects(scope: $scope)['objects'];
 
 		$this->assertSame(1, $objects[0]['count']);
 	}//end testMostActiveObjectsCountsTheDefaultWindow()
 
 	public function testAnExplicitWindowStillDecides(): void {
-		$actions = $this->mapper->getActionDistribution(hours: 72)['actions'];
+		$scope = new AuditStatisticsScope();
+		$scope->hours = 72;
+		$actions = $this->mapper->actionDistribution(scope: $scope)['actions'];
 
 		$this->assertSame(2, $actions[0]['count']);
 	}//end testAnExplicitWindowStillDecides()

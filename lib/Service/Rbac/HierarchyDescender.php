@@ -254,24 +254,23 @@ class HierarchyDescender {
 	/**
 	 * The children of a set of parents, as child uuid => parent uuid.
 	 *
-	 * With a `$limit` the read itself is bounded: at most that many rows leave
+	 * With a limit the read itself is bounded: at most that many rows leave
 	 * the database, so a caller that stops at a node cap does not first fetch
 	 * a level of a hundred thousand rows to find out it is over it. A row
 	 * naming itself as its parent is then left out in SQL, so it does not use
 	 * up the limit.
 	 *
-	 * @param string $table The magic table.
-	 * @param string $parentColumn The column naming the parent.
-	 * @param string[] $parentUuids The parents to read children of.
-	 * @param int|null $limit The most rows to read, or null for the whole level.
+	 * @param HierarchyLevel $level       The magic table, the column naming the parent and the most rows to read
+	 *                                    (null for the whole level).
+	 * @param string[]       $parentUuids The parents to read children of.
 	 *
 	 * @return array<string, string> Child UUID => parent UUID.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function childrenOf(string $table, string $parentColumn, array $parentUuids, ?int $limit = null): array {
+	public function childrenOf(HierarchyLevel $level, array $parentUuids): array {
 		return $this->readChildren(
-			read: new ChildrenRead(table: $table, parentColumn: $parentColumn, limit: $limit),
+			read: new ChildrenRead(table: $level->table, parentColumn: $level->parentColumn, limit: $level->limit),
 			parentUuids: $parentUuids
 		);
 	}//end childrenOf()

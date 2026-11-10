@@ -28,7 +28,7 @@ use DateTime;
  * A pass's last word on a run: whose pass ends, whether work stays enabled,
  * the run-level terminal that overrides the projection, and when it ended.
  *
- * Built by {@see FlowRunCommit::finalize()}; the moment is shared by every
+ * Built by {@see FlowStreamWalk::finalize()}; the moment is shared by every
  * stream a forced terminal ends and by the run row itself.
  *
  * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-runs-status-must-stay-derivable-from-its-streams-with-no-new-value

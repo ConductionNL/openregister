@@ -27,6 +27,7 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\HardeningStatementControllerServices;
 use OCA\OpenRegister\Service\Hardening\ElevationRequiredExceptionInterface;
 use OCA\OpenRegister\Service\Hardening\ElevationServiceInterface;
+use OCA\OpenRegister\Service\Hardening\StatementPublication;
 use OCA\OpenRegister\Service\Hardening\StatementServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -188,10 +189,12 @@ class HardeningStatementController extends Controller {
 
 			return new JSONResponse(
 				data: $this->statements->publish(
-					version: (string)($this->request->getParam('version') ?? ''),
-					body: (string)($this->request->getParam('body') ?? ''),
-					title: (string)($this->request->getParam('title') ?? ''),
-					userId: ($this->userSession->getUser()?->getUID() ?? '')
+					publication: new StatementPublication(
+						version: (string)($this->request->getParam('version') ?? ''),
+						body: (string)($this->request->getParam('body') ?? ''),
+						title: (string)($this->request->getParam('title') ?? ''),
+						publishedBy: ($this->userSession->getUser()?->getUID() ?? '')
+					)
 				)
 			);
 		} catch (ElevationRequiredExceptionInterface $stale) {

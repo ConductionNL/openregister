@@ -25,6 +25,7 @@ use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicColumnDrift;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
@@ -239,17 +240,17 @@ class MagicMapperUpdateTableStructureGoldenTest extends TestCase {
 			'missing' => static fn (MagicMapper $m) => $m->findMissingColumns($current, $required),
 			'jsonb' => static fn (MagicMapper $m) => $m->findJsonbColumnsNeedingRetype($current, $required),
 			'relation' => static fn (MagicMapper $m) => $m->findRelationColumnsNeedingRetype($current, $required),
-			'relation retype' => static fn (MagicMapper $m) => $m->migrateRelationColumnsToVarchar($table, $current, $required),
+			'relation retype' => static fn (MagicMapper $m) => $m->migrateRelationColumnsToVarchar($table, new MagicColumnDrift($current, $required)),
 			'decimal' => static fn (MagicMapper $m) => $m->findDecimalColumnsNeedingWiden($current, $required),
-			'widen' => static fn (MagicMapper $m) => $m->widenDecimalColumns($table, $current, $numbers),
+			'widen' => static fn (MagicMapper $m) => $m->widenDecimalColumns($table, new MagicColumnDrift($current, $numbers)),
 			'decimal retyped to text' => static fn (MagicMapper $m) => $m->findDecimalColumnsNeedingWiden($current, ['amount' => ['name' => 'amount', 'type' => 'string']]),
 			'metadata camelCase kept' => static fn (MagicMapper $m) => $m->updateTableStructure(
 				$table,
 				['_fooBar' => ['name' => '_fooBar', 'type' => 'varchar'], '_foo_bar' => ['name' => '_foo_bar', 'type' => 'varchar']],
 				['fooBar' => ['name' => '_foo_bar', 'type' => 'string']]
 			),
-			'widen nothing' => static fn (MagicMapper $m) => $m->widenDecimalColumns($table, ['title' => $current['title']], []),
-			'widen fails' => static fn (MagicMapper $m) => $m->widenDecimalColumns($table, $failingLive, $failing),
+			'widen nothing' => static fn (MagicMapper $m) => $m->widenDecimalColumns($table, new MagicColumnDrift(['title' => $current['title']], [])),
+			'widen fails' => static fn (MagicMapper $m) => $m->widenDecimalColumns($table, new MagicColumnDrift($failingLive, $failing)),
 			'widen to default' => static fn (MagicMapper $m) => $m->widenNumberColumnsToDefault($table),
 			'add column plain' => static fn (MagicMapper $m) => $m->buildAddColumnSql($table, ['name' => 'plain', 'type' => 'string']),
 			'add column text' => static fn (MagicMapper $m) => $m->buildAddColumnSql($table, ['name' => 'who', 'type' => 'string', 'default' => "O'Brien", 'nullable' => false]),

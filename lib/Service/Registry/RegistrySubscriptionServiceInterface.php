@@ -54,17 +54,10 @@ interface RegistrySubscriptionServiceInterface {
 	/**
 	 * Apply an inbound registry update to every object actively subscribed to it.
 	 *
-	 * @param string               $registry       The registry id posting the update.
-	 * @param string               $identityValue  The identity value the update is for.
-	 * @param array<string, mixed> $properties     The changed properties the registry is offering.
-	 * @param string               $eventReference The registry's own event reference for this change.
+	 * @param InboundUpdate $update The registry and identity value the update is for, the changed properties the
+	 *                              registry is offering and its own event reference for this change.
 	 *
 	 * @return array{matched: int, applied: array<int, string>, rejected: array<int, array{objectUuid: string, properties: array<int, string>}>}
 	 */
-	public function applyInboundUpdate(
-		string $registry,
-		string $identityValue,
-		array $properties,
-		string $eventReference,
-	): array;
+	public function applyInboundUpdate(InboundUpdate $update): array;
 }//end interface

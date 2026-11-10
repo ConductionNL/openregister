@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\ApiCall\ApiCallPeriod;
 use DateTime;
 use OCA\OpenRegister\Db\ApiCallKey;
 use OCA\OpenRegister\Db\ApiCallRecordMapper;
@@ -59,7 +60,7 @@ class ApiCallRecordMapperPeriodQueriesTest extends TestCase {
 		$to              = new DateTime('2026-01-31T00:00:00+00:00');
 		$this->results[] = [['id' => 1, 'route' => '/api/a', 'call_count' => 9]];
 
-		$records = $this->mapper->findInPeriod($from, $to);
+		$records = $this->mapper->findInPeriod(new ApiCallPeriod($from, $to));
 
 		$this->assertSame('/api/a', $records[0]->getRoute());
 		$this->assertSame(
@@ -79,8 +80,8 @@ class ApiCallRecordMapperPeriodQueriesTest extends TestCase {
 		$from = new DateTime('2026-01-01T00:00:00+00:00');
 		$to   = new DateTime('2026-01-02T00:00:00+00:00');
 
-		$this->mapper->findInPeriod($from, $to, 'v2', 10);
-		$this->mapper->findInPeriod($from, $to, '', 10);
+		$this->mapper->findInPeriod(new ApiCallPeriod($from, $to, 'v2', 10));
+		$this->mapper->findInPeriod(new ApiCallPeriod($from, $to, '', 10));
 
 		$this->assertStringEndsWith('setMaxResults(10) andWhere(eq(api_version, :p2)) executeQuery()', $this->sql(0));
 		$this->assertSame('v2', $this->bound(':p2'));
@@ -95,8 +96,8 @@ class ApiCallRecordMapperPeriodQueriesTest extends TestCase {
 	public function testFindInPeriodNeverAsksForZeroRows(): void {
 		$from = new DateTime('2026-01-01T00:00:00+00:00');
 
-		$this->mapper->findInPeriod($from, $from, null, 0);
-		$this->mapper->findInPeriod($from, $from, null, -5);
+		$this->mapper->findInPeriod(new ApiCallPeriod($from, $from, null, 0));
+		$this->mapper->findInPeriod(new ApiCallPeriod($from, $from, null, -5));
 
 		$this->assertStringContainsString('setMaxResults(1)', $this->sql(0));
 		$this->assertStringContainsString('setMaxResults(1)', $this->sql(1));

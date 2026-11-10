@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -251,7 +252,9 @@ class SaveObjectSystemOwnerTest extends TestCase {
 		$entity = new ObjectEntity();
 		$method = new ReflectionMethod(SaveObject::class, 'applyOwnerAttribution');
 		$method->setAccessible(true);
-		$method->invoke($this->handler, $entity, false, 'portal:subject-1');
+		$flags        = new ObjectSaveFlags();
+		$flags->owner = 'portal:subject-1';
+		$method->invoke($this->handler, $entity, $flags);
 
 		$this->assertSame('portal:subject-1', $entity->getOwner());
 	}//end testAnExplicitOwnerWinsOverTheSession()

@@ -34,7 +34,7 @@ class FormWriteReferencesTest extends TestCase {
 	public function testAPendingReferenceBecomesThePlaceholderId(): void {
 		$object = ['case' => ['$write' => 'case'], 'name' => 'Ada'];
 
-		$resolved = $this->references()->resolveWriteReferences($object, [], true);
+		$resolved = $this->references()->withPlaceholders($object);
 
 		$this->assertSame(['case' => FormSubmitService::PENDING_ID, 'name' => 'Ada'], $resolved);
 	}//end testAPendingReferenceBecomesThePlaceholderId()
@@ -42,14 +42,14 @@ class FormWriteReferencesTest extends TestCase {
 	public function testAReferenceToAnEarlierWriteBecomesItsId(): void {
 		$object = ['case' => ['$write' => 'case'], 'other' => ['$write' => 'x', 'y' => 1]];
 
-		$resolved = $this->references()->resolveWriteReferences($object, ['case' => 'uuid-1'], false);
+		$resolved = $this->references()->withEarlierIds($object, ['case' => 'uuid-1']);
 
 		$this->assertSame(['case' => 'uuid-1', 'other' => ['$write' => 'x', 'y' => 1]], $resolved);
 	}//end testAReferenceToAnEarlierWriteBecomesItsId()
 
 	public function testAReferenceToNoEarlierWriteIsRefused(): void {
 		try {
-			$this->references()->resolveWriteReferences(['case' => ['$write' => 'case']], [], false);
+			$this->references()->withEarlierIds(['case' => ['$write' => 'case']], []);
 			$this->fail('Expected a refusal');
 		} catch (FormSubmitRefusedException $exception) {
 			$this->assertSame(422, $exception->getStatus());

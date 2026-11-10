@@ -64,14 +64,12 @@ class CredentialOAuth2MintTest extends TestCase {
 
 	public function testAnOAuth2MintWritesConnectionMetadataAndNoToken(): void {
 		$broker = $this->makeBroker();
-		$tokenSet = OAuth2TokenSet::fromTokenResponse(
-			response: [
+		$tokenSet = OAuth2TokenSet::fromResponse(response: [
 				'access_token' => 'ACCESS_TOKEN_HERE',
 				'refresh_token' => 'REFRESH_TOKEN_HERE',
 				'expires_in' => 3600,
 				'scope' => 'read:accounts write:statuses',
-			]
-		)->withAccount(id: '42', handle: '@example@mastodon.example', displayName: 'Example');
+			])->withAccount(id: '42', handle: '@example@mastodon.example', displayName: 'Example');
 
 		$broker->mint(
 			name: 'Mastodon company account',

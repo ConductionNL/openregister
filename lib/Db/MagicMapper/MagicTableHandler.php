@@ -306,7 +306,7 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 		$retypeColumns = $this->magicMapper->findJsonbColumnsNeedingRetype(currentColumns: $current, requiredColumns: $required);
 		$relationRetype = $this->magicMapper->findRelationColumnsNeedingRetype(currentColumns: $current, requiredColumns: $required);
 		if (empty($relationRetype) === false) {
-			$this->magicMapper->migrateRelationColumnsToVarchar(tableName: $tableName, currentColumns: $current, requiredColumns: $required);
+			$this->magicMapper->migrateRelationColumnsToVarchar(tableName: $tableName, columns: new MagicColumnDrift(current: $current, required: $required));
 			$retypeColumns = array_merge($retypeColumns, $relationRetype);
 		}
 

@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\History\StateHistoryRebuildInterface;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
@@ -204,11 +205,9 @@ class StateHistoryRebuildJob extends TimedJob {
 			return 0;
 		}
 
-		return $this->rebuild->rebuildObject(
-			objectUuid: $objectUuid,
-			property: $context['property'],
-			register: $context['register'],
-			schema: $context['schema']
+		return $this->rebuild->rebuild(
+			ref: new ObjectRef(register: $context['register'], schema: $context['schema'], id: $objectUuid),
+			property: $context['property']
 		);
 	}//end rebuildOne()
 
