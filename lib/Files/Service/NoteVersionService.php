@@ -83,17 +83,16 @@ class NoteVersionService {
 	 * that silently failed to write would leave an edit with no history and
 	 * a note claiming, through its own `versionCount`, that there is none.
 	 *
-	 * @param integer  $noteId   The note being rewritten.
-	 * @param IComment $previous The note as it stands, before its text is replaced: its text, actor and actor type.
+	 * @param IComment $previous The note as it stands, before its text is replaced: its id, text, actor and actor type.
 	 * @param string   $editedBy The user replacing the text.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	public function record(int $noteId, IComment $previous, string $editedBy): void {
+	public function record(IComment $previous, string $editedBy): void {
 		$version = $this->versionOf(previous: $previous, editedBy: $editedBy);
-		$version->setCommentId($noteId);
+		$version->setCommentId((int)$previous->getId());
 		$this->mapper->insert($version);
 	}//end record()
 
