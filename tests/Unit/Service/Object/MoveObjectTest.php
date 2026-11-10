@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ObjectLeavingEvent;
 use OCA\OpenRegister\Service\Object\MoveObject;
@@ -413,7 +414,7 @@ final class MoveObjectTest extends TestCase {
 		$seen = 'unset';
 		$objects = $this->createMock(MagicMapper::class);
 		$objects->expects(self::once())->method('slugForMove')
-			->with($object, self::callback(fn (Register $r) => (int)$r->getId() === 2), self::callback(fn (Schema $s) => (int)$s->getId() === 20))
+			->with($object, self::callback(fn (RegisterSchema $t) => (int)$t->register->getId() === 2 && (int)$t->schema->getId() === 20))
 			->willReturn(null);
 		$objects->method('update')->willReturnCallback(
 			function (ObjectEntity $entity) use (&$seen): ObjectEntity {
