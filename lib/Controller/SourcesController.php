@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Doctrine\DBAL\Connection;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\SourcePayload;
 use OCA\OpenRegister\Controller\Support\SourcesControllerServices;
@@ -92,18 +93,16 @@ class SourcesController extends Controller {
 	/**
 	 * Constructor for the SourcesController
 	 *
-	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
 	 * @param SourcesControllerServices $services The sources controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		SourcesControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->services = $services;
 		$this->sourceMapper = $services->mappers->sourceMapper;
 		$this->l10n = $services->platform->l10n;

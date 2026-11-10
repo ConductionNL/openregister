@@ -13,7 +13,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ObjectAction;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
+use OCA\OpenRegister\Service\ObjectAction\DefaultScope;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionInputs;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionInvocation;
 use PHPUnit\Framework\TestCase;
 
 class ObjectActionInputsTest extends TestCase {
@@ -26,6 +29,25 @@ class ObjectActionInputsTest extends TestCase {
 	private function inputs(): ObjectActionInputs {
 		return new ObjectActionInputs(new OasRequestValidator());
 	}//end inputs()
+
+	/**
+	 * The inputs with the declared defaults of an action with this input schema filled in.
+	 *
+	 * @param array<string, mixed>|null $schema The declared input schema.
+	 * @param array<string, mixed>      $given  The inputs the caller sent.
+	 * @param ObjectEntity|null         $object The object.
+	 * @param string|null               $userId The acting user.
+	 *
+	 * @return array<string, mixed> The inputs.
+	 */
+	private function withDefaults(?array $schema, array $given, ?ObjectEntity $object, ?string $userId): array {
+		$definition = ObjectActionDefinition::fromDeclaration(key: 'act', definition: ['transition' => 'act', 'inputs' => $schema]);
+
+		return $this->inputs()->withDefaults(
+			invocation: new ObjectActionInvocation(definition: $definition, inputs: $given),
+			scope: new DefaultScope(object: $object, userId: $userId)
+		);
+	}//end withDefaults()
 
 	public function testDefaultsFillOnlyWhatTheCallerLeftOut(): void {
 		$object = new ObjectEntity();
@@ -44,20 +66,20 @@ class ObjectActionInputsTest extends TestCase {
 
 		$this->assertSame(
 			['given' => 'kept', 'who' => 'alice', 'state' => 'open', 'name' => 'An', 'plain' => 7],
-			$this->inputs()->withDefaults($schema, ['given' => 'kept'], $object, 'alice')
+			$this->withDefaults($schema, ['given' => 'kept'], $object, 'alice')
 		);
 	}//end testDefaultsFillOnlyWhatTheCallerLeftOut()
 
 	public function testObjectDefaultsWithoutAnObjectAndUserWithoutAUserAreNull(): void {
 		$schema = ['properties' => ['who' => ['default' => '@user'], 'state' => ['default' => '@object.status']]];
 
-		$this->assertSame(['who' => null, 'state' => null], $this->inputs()->withDefaults($schema, [], null, null));
-		$this->assertSame([], $this->inputs()->withDefaults(null, [], null, null));
+		$this->assertSame(['who' => null, 'state' => null], $this->withDefaults($schema, [], null, null));
+		$this->assertSame([], $this->withDefaults(null, [], null, null));
 	}//end testObjectDefaultsWithoutAnObjectAndUserWithoutAUserAreNull()
 
 	public function testNowIsADateOrATimestampByFormat(): void {
 		$schema = ['properties' => ['day' => ['default' => '@now', 'format' => 'date'], 'at' => ['default' => '@now']]];
-		$filled = $this->inputs()->withDefaults($schema, [], null, null);
+		$filled = $this->withDefaults($schema, [], null, null);
 
 		$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}$/', $filled['day']);
 		$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $filled['at']);

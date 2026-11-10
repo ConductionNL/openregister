@@ -46,43 +46,42 @@ class MappingTransformer {
 	/**
 	 * Apply one transform to a resolved source value.
 	 *
-	 * @param mixed                     $value     The resolved source value (null/'' only for `const`).
-	 * @param array<string, mixed>|null $transform The transform block, or null for identity passthrough.
-	 * @param array<string, mixed>      $sourceRow The full source row (needed by `concat` to resolve extra fields).
+	 * @param TransformRequest $request The resolved source value, the transform block (null for
+	 *                                  identity passthrough) and the full source row.
 	 *
 	 * @return array{value: mixed, error: ?string}
 	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md#the-mapping-engine-must-apply-pack-transforms-per-row-and-never-leak-unresolved-references
 	 */
-	public function apply(mixed $value, ?array $transform, array $sourceRow): array {
+	public function apply(TransformRequest $request): array {
+		$transform = $request->transform;
 		if ($transform === null) {
-			return ['value' => $value, 'error' => null];
+			return ['value' => $request->value, 'error' => null];
 		}
 
 		$kind = $this->transformKind(transform: $transform);
 		if ($kind === 'const' || $kind === 'trim') {
-			return $this->applyValueTransform(value: $value, transform: $transform, kind: $kind);
+			return $this->applyValueTransform(request: $request, kind: $kind);
 		}
 
-		return $this->applyLookupTransform(value: $value, transform: $transform, sourceRow: $sourceRow);
+		return $this->applyLookupTransform(request: $request, transform: $transform);
 	}//end apply()
 
 	/**
 	 * Apply a `const` transform (its `value`, whatever the source) or a
 	 * `trim` transform.
 	 *
-	 * @param mixed                $value     The resolved source value.
-	 * @param array<string, mixed> $transform The transform block.
-	 * @param string               $kind      `const` or `trim`.
+	 * @param TransformRequest $request The value and its (non-null) transform block.
+	 * @param string           $kind    `const` or `trim`.
 	 *
 	 * @return array{value: mixed, error: ?string}
 	 */
-	private function applyValueTransform(mixed $value, array $transform, string $kind): array {
+	private function applyValueTransform(TransformRequest $request, string $kind): array {
 		if ($kind === 'const') {
-			return ['value' => ($transform['value'] ?? null), 'error' => null];
+			return ['value' => ($request->transform['value'] ?? null), 'error' => null];
 		}
 
-		return ['value' => trim((string)$value), 'error' => null];
+		return ['value' => trim((string)$request->value), 'error' => null];
 	}//end applyValueTransform()
 
 	/**
@@ -106,38 +105,36 @@ class MappingTransformer {
 	/**
 	 * Apply a `bool-map` or `lookup` transform; otherwise see applyOtherTransform().
 	 *
-	 * @param mixed                $value     The resolved source value.
-	 * @param array<string, mixed> $transform The transform block.
-	 * @param array<string, mixed> $sourceRow The full source row.
+	 * @param TransformRequest     $request   The value and the source row.
+	 * @param array<string, mixed> $transform The request's transform block.
 	 *
 	 * @return array{value: mixed, error: ?string}
 	 */
-	private function applyLookupTransform(mixed $value, array $transform, array $sourceRow): array {
+	private function applyLookupTransform(TransformRequest $request, array $transform): array {
 		$type = ($transform['type'] ?? null);
 		if ($type === 'bool-map' || $type === 'lookup') {
-			return $this->applyMapTransform(value: $value, transform: $transform, coerceBool: $type === 'bool-map');
+			return $this->applyMapTransform(request: $request, coerceBool: $type === 'bool-map');
 		}
 
-		return $this->applyOtherTransform(value: $value, transform: $transform, sourceRow: $sourceRow);
+		return $this->applyOtherTransform(request: $request, transform: $transform);
 	}//end applyLookupTransform()
 
 	/**
 	 * Apply a `date` or `concat` transform; any other type is unknown.
 	 *
-	 * @param mixed                $value     The resolved source value.
-	 * @param array<string, mixed> $transform The transform block.
-	 * @param array<string, mixed> $sourceRow The full source row.
+	 * @param TransformRequest     $request   The value and the source row.
+	 * @param array<string, mixed> $transform The request's transform block.
 	 *
 	 * @return array{value: mixed, error: ?string}
 	 */
-	private function applyOtherTransform(mixed $value, array $transform, array $sourceRow): array {
+	private function applyOtherTransform(TransformRequest $request, array $transform): array {
 		$type = ($transform['type'] ?? null);
 		if ($type === 'date') {
-			return $this->applyDateTransform(value: $value, transform: $transform);
+			return $this->applyDateTransform(value: $request->value, transform: $transform);
 		}
 
 		if ($type === 'concat') {
-			return $this->applyConcatTransform(value: $value, transform: $transform, sourceRow: $sourceRow);
+			return $this->applyConcatTransform(request: $request, transform: $transform);
 		}
 
 		return ['value' => null, 'error' => $this->l10n->t('Unknown transform type "%s"', [(string)($type ?? '')])];
@@ -195,15 +192,15 @@ class MappingTransformer {
 	 * must see and fix, never a value that silently passes through unmapped
 	 * into the target schema property.
 	 *
-	 * @param mixed                $value      The resolved source value.
-	 * @param array<string, mixed> $transform  The transform block.
-	 * @param bool                 $coerceBool Whether to cast the mapped value to bool (bool-map) or return it as-is (lookup).
+	 * @param TransformRequest $request    The value and its (non-null) transform block.
+	 * @param bool             $coerceBool Whether to cast the mapped value to bool (bool-map) or return it as-is (lookup).
 	 *
 	 * @return array{value: mixed, error: ?string}
 	 */
-	private function applyMapTransform(mixed $value, array $transform, bool $coerceBool): array {
+	private function applyMapTransform(TransformRequest $request, bool $coerceBool): array {
+		$transform = (array)$request->transform;
 		$map = ($transform['map'] ?? []);
-		$key = (string)$value;
+		$key = (string)$request->value;
 		if (array_key_exists($key, $map) === true) {
 			return ['value' => $this->coerced(value: $map[$key], toBool: $coerceBool), 'error' => null];
 		}
@@ -238,16 +235,15 @@ class MappingTransformer {
 	 * missing *optional* extra field is not itself a literal-leak case, since
 	 * there is no map lookup involved.
 	 *
-	 * @param mixed                $value     The resolved primary source value.
-	 * @param array<string, mixed> $transform The transform block.
-	 * @param array<string, mixed> $sourceRow The full source row.
+	 * @param TransformRequest     $request   The primary source value and the full source row.
+	 * @param array<string, mixed> $transform The request's transform block.
 	 *
 	 * @return array{value: mixed, error: ?string}
 	 */
-	private function applyConcatTransform(mixed $value, array $transform, array $sourceRow): array {
-		$parts = [(string)$value];
+	private function applyConcatTransform(TransformRequest $request, array $transform): array {
+		$parts = [(string)$request->value];
 		foreach (($transform['fields'] ?? []) as $extraSource) {
-			$extraValue = $this->resolveSource(row: $sourceRow, pointer: (string)$extraSource);
+			$extraValue = $this->resolveSource(row: $request->sourceRow, pointer: (string)$extraSource);
 			$parts[] = (string)($extraValue ?? '');
 		}
 

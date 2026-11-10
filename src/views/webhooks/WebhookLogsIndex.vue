@@ -53,26 +53,21 @@
 			</ListActionsBar>
 
 			<!-- Logs Table -->
-			<div class="tableContainer" :class="{ 'is-loading': loading }">
-				<div v-if="loading" class="loadingWrapper">
-					<NcLoadingIcon :size="64" />
-				</div>
+			<ListTableStates
+				:loading="loading"
+				:empty="!logsList.length"
+				:emptyName="t('openregister', 'No log entries found')"
+				:emptyDescription="
+					t(
+						'openregister',
+						'There are no webhook log entries matching your filters.',
+					)
+				">
+				<template #emptyIcon>
+					<FileDocumentOutline :size="64" />
+				</template>
 
-				<NcEmptyContent
-					v-else-if="!logsList.length"
-					:name="t('openregister', 'No log entries found')"
-					:description="
-						t(
-							'openregister',
-							'There are no webhook log entries matching your filters.',
-						)
-					">
-					<template #icon>
-						<FileDocumentOutline :size="64" />
-					</template>
-				</NcEmptyContent>
-
-				<CnDataTable v-else :columns="logColumns" :rows="logsList">
+				<CnDataTable :columns="logColumns" :rows="logsList">
 					<template #column-webhookId="{ row }">
 						{{ getWebhookName(row.webhookId) }}
 					</template>
@@ -121,14 +116,16 @@
 					</template>
 				</CnDataTable>
 
-				<!-- Pagination -->
-				<OffsetPager
-					:offset="offset"
-					:limit="limit"
-					:total="totalLogs"
-					@previous="previousPage"
-					@next="nextPage" />
-			</div>
+				<template #footer>
+					<!-- Pagination -->
+					<OffsetPager
+						:offset="offset"
+						:limit="limit"
+						:total="totalLogs"
+						@previous="previousPage"
+						@next="nextPage" />
+				</template>
+			</ListTableStates>
 		</div>
 	</NcAppContent>
 </template>
@@ -143,8 +140,6 @@ import {
 	NcActions,
 	NcAppContent,
 	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
 	NcSelect,
 } from '@nextcloud/vue'
 import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
@@ -153,6 +148,7 @@ import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.v
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import ListActionsBar from '../../components/shared/ListActionsBar.vue'
 import OffsetPager from '../../components/shared/OffsetPager.vue'
+import ListTableStates from '../ListTableStates.vue'
 import { displayDateTime } from '../../services/displayDateTime.js'
 import { navigationStore } from '../../store/store.js'
 
@@ -169,8 +165,7 @@ export default {
 		NcActions,
 		NcActionButton,
 		NcButton,
-		NcLoadingIcon,
-		NcEmptyContent,
+		ListTableStates,
 		NcSelect,
 		ArrowLeft,
 		Refresh,

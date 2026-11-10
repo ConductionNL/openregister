@@ -150,28 +150,26 @@ class BackfillCalendarLinksJob extends QueuedJob {
 			return;
 		}
 
-		$inserted = 0;
-		$skipped = 0;
+		$run = new CalendarLinkBackfillRun();
 
 		$this->userManager->callForSeenUsers(
-			function ($user) use (&$inserted, &$skipped): void {
-				$this->backfillUser(user: $user, inserted: $inserted, skipped: $skipped);
+			function ($user) use ($run): void {
+				$this->backfillUser(user: $user, run: $run);
 			}
 		);
 
-		$this->logger->info('BackfillCalendarLinksJob finished. Inserted=' . $inserted . ', skipped=' . $skipped);
+		$this->logger->info('BackfillCalendarLinksJob finished. Inserted=' . $run->inserted . ', skipped=' . $run->skipped);
 	}//end run()
 
 	/**
 	 * Backfill calendar link rows for a single user.
 	 *
-	 * @param mixed $user NC user object from callForSeenUsers.
-	 * @param int $inserted Running count of inserted rows (passed by reference).
-	 * @param int $skipped Running count of skipped rows (passed by reference).
+	 * @param mixed                   $user NC user object from callForSeenUsers.
+	 * @param CalendarLinkBackfillRun $run  The run, counting inserted and skipped rows.
 	 *
 	 * @return void
 	 */
-	private function backfillUser(mixed $user, int &$inserted, int &$skipped): void {
+	private function backfillUser(mixed $user, CalendarLinkBackfillRun $run): void {
 		try {
 			$this->userSession->setUser($user);
 			$events = $this->calendarEventService->getEventsForObject(objectUuid: '');
@@ -182,8 +180,8 @@ class BackfillCalendarLinksJob extends QueuedJob {
 
 		foreach ($events as $event) {
 			$outcome = $this->backfillEntry(event: $event);
-			$inserted += (int)($outcome === 'inserted');
-			$skipped += (int)($outcome === 'skipped');
+			$run->inserted += (int)($outcome === 'inserted');
+			$run->skipped += (int)($outcome === 'skipped');
 		}
 	}//end backfillUser()
 
@@ -201,19 +199,19 @@ class BackfillCalendarLinksJob extends QueuedJob {
 			return null;
 		}
 
-		return $this->backfillEvent(event: $event, objectUuid: $objectUuid, eventUid: $eventUid);
+		return $this->backfillEvent(event: $event);
 	}//end backfillEntry()
 
 	/**
 	 * Insert a calendar link row for one event, unless the row already exists.
 	 *
-	 * @param array<string,mixed> $event      Raw event data array.
-	 * @param string              $objectUuid OR object uuid.
-	 * @param string              $eventUid   CalDAV event UID.
+	 * @param array<string,mixed> $event Raw event data array, carrying a non-empty `objectUuid` and `uid`.
 	 *
 	 * @return string|null 'inserted', 'skipped' (row exists), or null when the insert failed.
 	 */
-	private function backfillEvent(array $event, string $objectUuid, string $eventUid): ?string {
+	private function backfillEvent(array $event): ?string {
+		$objectUuid = (string)$event['objectUuid'];
+		$eventUid = (string)$event['uid'];
 		try {
 			$this->linkMapper->findByObjectAndEvent(
 				objectUuid: $objectUuid,
@@ -225,7 +223,7 @@ class BackfillCalendarLinksJob extends QueuedJob {
 		}
 
 		try {
-			$link = $this->buildLink(event: $event, objectUuid: $objectUuid, eventUid: $eventUid);
+			$link = $this->buildLink(event: $event);
 			$this->linkMapper->insert(entity: $link);
 			return 'inserted';
 		} catch (Throwable $e) {
@@ -239,15 +237,13 @@ class BackfillCalendarLinksJob extends QueuedJob {
 	/**
 	 * Build the link row for one event.
 	 *
-	 * @param array<string,mixed> $event      Raw event data array.
-	 * @param string              $objectUuid OR object uuid.
-	 * @param string              $eventUid   CalDAV event UID.
+	 * @param array<string,mixed> $event Raw event data array, carrying a non-empty `objectUuid` and `uid`.
 	 *
 	 * @return CalendarLink The link, not yet persisted.
 	 */
-	private function buildLink(array $event, string $objectUuid, string $eventUid): CalendarLink {
+	private function buildLink(array $event): CalendarLink {
 		$link = new CalendarLink();
-		$link->setObjectUuid($objectUuid);
+		$link->setObjectUuid((string)$event['objectUuid']);
 		$link->setRegisterId((int)($event['registerId'] ?? 0));
 		$link->setSchemaId((int)($event['schemaId'] ?? 0));
 		$link->setCalendarUri('');
@@ -268,7 +264,7 @@ class BackfillCalendarLinksJob extends QueuedJob {
 		}
 
 		$link->setCalendarId($calendarId);
-		$link->setEventUid($eventUid);
+		$link->setEventUid((string)$event['uid']);
 		$link->setEventUri((string)($event['id'] ?? ''));
 		$link->setSummary($summary);
 		$link->setLocation($location);

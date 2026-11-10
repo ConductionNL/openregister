@@ -40,6 +40,7 @@ use OCP\IDBConnection;
 use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Aggregation\RowAggregation;
 use ReflectionMethod;
 use Throwable;
 
@@ -187,6 +188,18 @@ class AggregationRunnerPhpComputeGoldenTest extends TestCase {
 	 */
 	private function observe(string $method, array $args): array {
 		$args['rows'] = ($args['rows'] ?? self::ROWS);
+		if ($method === 'computeGrouped') {
+			$args = [
+				'rows'        => $args['rows'],
+				'aggregation' => new RowAggregation(
+					metric: $args['metric'],
+					field: $args['field'],
+					groupFields: $args['groupFields'],
+					metrics: ($args['metrics'] ?? null)
+				),
+			];
+		}
+
 		$reflection = new ReflectionMethod(AggregationRunner::class, $method);
 		try {
 			return ['result' => $reflection->invoke($this->runner(), ...$args)];

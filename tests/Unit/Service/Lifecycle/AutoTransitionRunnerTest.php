@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace Unit\Service\Lifecycle;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\BackgroundJob\AutoTransitionJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -220,7 +221,7 @@ class AutoTransitionRunnerTest extends TestCase {
 	public function testAnUnresolvableObjectDecidesNothing(): void {
 		$this->resolver->method('resolve')->willReturn(null);
 
-		$this->assertNull($this->runner->decide(uuid: 'obj-1', register: '1', schema: '2', previous: []));
+		$this->assertNull($this->runner->decide(ref: new ObjectRef(register: '1', schema: '2', id: 'obj-1'), previous: []));
 	}//end testAnUnresolvableObjectDecidesNothing()
 
 	/**
@@ -230,7 +231,7 @@ class AutoTransitionRunnerTest extends TestCase {
 		$this->storedObject(['status' => 'open', 'motivering' => 'ja']);
 		$this->schemaMapper->method('find')->willReturn(new Schema());
 
-		$this->assertNull($this->runner->decide(uuid: 'obj-1', register: '1', schema: '2', previous: []));
+		$this->assertNull($this->runner->decide(ref: new ObjectRef(register: '1', schema: '2', id: 'obj-1'), previous: []));
 	}//end testASchemaWithoutALifecycleDecidesNothing()
 
 	/**
@@ -242,7 +243,7 @@ class AutoTransitionRunnerTest extends TestCase {
 		$this->storedObject(['status' => 'open', 'motivering' => 'Ongegrond.']);
 		$this->schemaWithAutoWhen();
 
-		$decision = $this->runner->decide(uuid: 'obj-1', register: '1', schema: '2', previous: []);
+		$decision = $this->runner->decide(ref: new ObjectRef(register: '1', schema: '2', id: 'obj-1'), previous: []);
 
 		$this->assertNotNull($decision);
 		$this->assertSame('beslissen', $decision->candidate->action);
@@ -260,7 +261,7 @@ class AutoTransitionRunnerTest extends TestCase {
 		$this->storedObject(['status' => 'open', 'motivering' => '']);
 		$this->schemaWithAutoWhen();
 
-		$this->assertNull($this->runner->decide(uuid: 'obj-1', register: '1', schema: '2', previous: []));
+		$this->assertNull($this->runner->decide(ref: new ObjectRef(register: '1', schema: '2', id: 'obj-1'), previous: []));
 	}//end testTheDecisionIsMadeAgainstTheObjectAsStored()
 
 	/**

@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ShippedBaseline;
 
 use OCA\OpenRegister\Service\ShippedBaseline\DescriptorParts;
+use OCA\OpenRegister\Service\ShippedBaseline\DescriptorRevisions;
 use OCA\OpenRegister\Service\ShippedBaseline\DivergenceComparator;
 use OCA\OpenRegister\Service\ShippedBaseline\GuardedDescriptorMerge;
 use PHPUnit\Framework\TestCase;
@@ -47,7 +48,7 @@ class GuardedDescriptorMergeAppliedGoldenTest extends TestCase {
 		$parts = new DescriptorParts();
 		$merge = new GuardedDescriptorMerge(parts: $parts, comparator: new DivergenceComparator(parts: $parts));
 
-		return $merge->merge(baseline: $this->shipped(), live: $live, incoming: $incoming, decisions: $decisions);
+		return $merge->mergeRevisions(revisions: new DescriptorRevisions(baseline: $this->shipped(), live: $live, incoming: $incoming), decisions: $decisions);
 	}//end merge()
 
 	/**

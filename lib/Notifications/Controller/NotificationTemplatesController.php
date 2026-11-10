@@ -41,9 +41,10 @@ namespace OCA\OpenRegister\Notifications\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Kernel\Contracts\NotificationTemplatesInterface;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationTemplatesControllerServices;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationRequestTrait;
@@ -52,20 +53,41 @@ class NotificationTemplatesController extends Controller {
 	use NotificationRequestTrait;
 
 	/**
+	 * The catalogue of platform events and their texts.
+	 *
+	 * @var NotificationTemplatesInterface
+	 */
+	private readonly NotificationTemplatesInterface $registry;
+
+	/**
+	 * The user session and the authority on who is an administrator.
+	 *
+	 * @var ControllerSession
+	 */
+	private readonly ControllerSession $session;
+
+	/**
+	 * Current-user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IRequest $request Request.
-	 * @param NotificationTemplatesInterface $registry The catalogue of platform events and their texts.
-	 * @param IGroupManager $groupManager The authority on who is an administrator.
-	 * @param IUserSession $userSession Current-user session.
+	 * @param IRequest                                 $request  Request.
+	 * @param NotificationTemplatesControllerServices $services The template registry and the session.
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly NotificationTemplatesInterface $registry,
-		private readonly IGroupManager $groupManager,
-		private readonly IUserSession $userSession,
+		NotificationTemplatesControllerServices $services,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
+
+		$this->registry = $services->registry;
+		$this->session = $services->session;
+		$this->userSession = $services->session->userSession;
 	}//end __construct()
 
 	/**
@@ -139,7 +161,7 @@ class NotificationTemplatesController extends Controller {
 			return $this->authenticationRequired();
 		}
 
-		if ($this->groupManager->isAdmin($userId) === false) {
+		if ($this->session->groupManager->isAdmin($userId) === false) {
 			return new JSONResponse(data: ['error' => 'Administrator required'], statusCode: 403);
 		}
 

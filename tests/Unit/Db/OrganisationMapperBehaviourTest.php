@@ -34,6 +34,7 @@ use OCA\OpenRegister\Event\OrganisationCreatedEvent;
 use OCA\OpenRegister\Event\OrganisationDeletedEvent;
 use OCA\OpenRegister\Event\OrganisationUpdatedEvent;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
@@ -91,7 +92,7 @@ class OrganisationMapperBehaviourTest extends TestCase {
 		$config->method('getSystemValue')->willReturnMap([['dbtableprefix', 'oc_', 'nc_']]);
 		$this->logger ??= $this->createMock(LoggerInterface::class);
 
-		return new OrganisationMapper($db, $this->logger, $dispatcher, new ConfigServices($appConfig, $config));
+		return new OrganisationMapper($db, $this->logger, new EntityEventPublisher(dispatcher: $dispatcher), new ConfigServices($appConfig, $config));
 	}
 
 	private function prepared(string $sql): IPreparedStatement {
