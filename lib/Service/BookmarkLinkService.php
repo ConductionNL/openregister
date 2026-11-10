@@ -688,19 +688,30 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 			return null;
 		}
 
-		try {
-			$bookmark = $mapper->find($bookmarkId);
-		} catch (Throwable $e) {
-			$this->runtime->logger()->debug('fetchBookmarkDetails find failed: ' . $e->getMessage());
-			return null;
-		}
-
-		if ((string)$bookmark->getUserId() !== $userId) {
+		$bookmark = $this->findBookmark(mapper: $mapper, bookmarkId: $bookmarkId);
+		if ($bookmark === null || (string)$bookmark->getUserId() !== $userId) {
 			return null;
 		}
 
 		return $bookmark;
 	}//end ownedBookmark()
+
+	/**
+	 * A bookmark by id.
+	 *
+	 * @param object $mapper     The NC Bookmarks BookmarkMapper.
+	 * @param int    $bookmarkId NC Bookmarks bookmark id.
+	 *
+	 * @return object|null The NC Bookmarks entity, or null when it cannot be found (logged at debug).
+	 */
+	private function findBookmark(object $mapper, int $bookmarkId): ?object {
+		try {
+			return $mapper->find($bookmarkId);
+		} catch (Throwable $e) {
+			$this->runtime->logger()->debug('fetchBookmarkDetails find failed: ' . $e->getMessage());
+			return null;
+		}
+	}//end findBookmark()
 
 	/**
 	 * The details a link row caches of a bookmark.
