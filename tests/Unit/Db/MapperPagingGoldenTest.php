@@ -82,7 +82,7 @@ class MapperPagingGoldenTest extends TestCase {
 			'schema changelog by schema' => [SchemaChangelogMapper::class, 'findBySchema', ['schemaId' => 3, 'query' => ListQuery::class]],
 			'schema run entry by run' => [SchemaRunEntryMapper::class, 'findByRun', ['runId' => 5, 'outcome' => 'failed']],
 			'schema run by schema' => [SchemaRunMapper::class, 'findBySchema', ['schemaId' => 6, 'query' => ListQuery::class]],
-			'search trail all' => [SearchTrailMapper::class, 'findAll', []],
+			'search trail all' => [SearchTrailMapper::class, 'findAll', ['query' => ListQuery::class]],
 			'webhook log by webhook' => [WebhookLogMapper::class, 'findByWebhook', ['webhookId' => 7, 'page' => null]],
 			'chunk unvectorized' => [ChunkMapper::class, 'findUnvectorized', []],
 			'chunk file source summaries' => [ChunkMapper::class, 'getFileSourceSummaries', ['search' => 'abc']],
