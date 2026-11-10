@@ -1800,21 +1800,14 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	/**
 	 * Recursively check if properties contain a reference to the target schema.
 	 *
-	 * @param array  $properties       The properties array to search through.
-	 * @param string $targetSchemaId   The target schema ID to look for.
-	 * @param string $targetSchemaUuid The target schema UUID to look for.
-	 * @param string $targetSchemaSlug The target schema slug to look for.
+	 * @param array  $properties The properties array to search through.
+	 * @param Schema $target     The schema whose id, uuid or slug a reference names.
 	 *
 	 * @return bool True if a reference to the target schema is found
 	 */
-	public function hasReferenceToSchema(
-		array $properties,
-		string $targetSchemaId,
-		string $targetSchemaUuid,
-		string $targetSchemaSlug,
-	): bool {
+	public function hasReferenceToSchema(array $properties, Schema $target): bool {
 		$search = new SchemaReferenceSearch(
-			target: ['id' => $targetSchemaId, 'uuid' => $targetSchemaUuid, 'slug' => $targetSchemaSlug]
+			target: ['id' => (string)$target->getId(), 'uuid' => $target->getUuid() ?? '', 'slug' => $target->getSlug() ?? '']
 		);
 
 		return $search->foundIn(properties: $properties);

@@ -311,10 +311,10 @@ class SchemaMapperCompositionGoldenTest extends TestCase {
 		];
 		$actual = [];
 		foreach ($cases as $name => $properties) {
-			$actual[$name] = $this->makeMapper()->hasReferenceToSchema($properties, ...$target);
+			$actual[$name] = $this->makeMapper()->hasReferenceToSchema($properties, Schema::fromRow(['id' => (int)$target[0], 'uuid' => $target[1], 'slug' => $target[2]]));
 		}
 
-		$actual['empty slug and uuid'] = $this->makeMapper()->hasReferenceToSchema(['a' => ['$ref' => 'schemas/anything']], '12', '', '');
+		$actual['empty slug and uuid'] = $this->makeMapper()->hasReferenceToSchema(['a' => ['$ref' => 'schemas/anything']], Schema::fromRow(['id' => 12, 'uuid' => '', 'slug' => '']));
 		$this->assertGolden($actual, 'schema-mapper-reference-search-golden.json');
 	}//end testReferenceSearchMatchesGolden()
 

@@ -2297,12 +2297,7 @@ class SchemasController extends Controller {
 				}
 
 				// Use the same reference logic as getRelated, but reversed.
-				if ($this->schemaMapper->hasReferenceToSchema(
-					properties: $properties,
-					targetSchemaId: (string)$schema->getId(),
-					targetSchemaUuid: $schema->getUuid() ?? '',
-					targetSchemaSlug: $schema->getSlug() ?? ''
-				) === true
+				if ($this->schemaMapper->hasReferenceToSchema(properties: $properties, target: $schema) === true
 				) {
 					$outgoingSchemas[$schema->getId()] = $schema;
 				}
