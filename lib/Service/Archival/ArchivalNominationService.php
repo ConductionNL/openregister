@@ -335,7 +335,8 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 		// row 48). The same resolver decides it at creation, so a record is
 		// created and nominated under one category.
 		$archive = $run->archive;
-		$classification = (new ClassificationOverride())->effective(declaration: new CategoryDeclaration(archive: $archive), data: ($run->object->getObject() ?? []));
+		$declaration = new CategoryDeclaration(archive: $archive);
+		$classification = (new ClassificationOverride())->effective(declaration: $declaration, data: ($run->object->getObject() ?? []));
 		$run->classification = $classification;
 
 		$found = $this->fromSelectionList(classification: $classification);
