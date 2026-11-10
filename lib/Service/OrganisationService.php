@@ -747,7 +747,9 @@ class OrganisationService implements OrganisationServiceInterface {
 			$this->assertUserExists(userId: $targetUserId);
 		}
 
-		return $this->addMembership(organisationUuid: $organisationUuid, userId: $userId);
+		$this->addMembership(organisationUuid: $organisationUuid, userId: $userId);
+
+		return true;
 	}//end joinOrganisation()
 
 	/**
@@ -771,18 +773,16 @@ class OrganisationService implements OrganisationServiceInterface {
 	 * @param string $organisationUuid The organisation.
 	 * @param string $userId           The user to add.
 	 *
-	 * @return bool Always true; a failure throws.
+	 * @return void
 	 *
 	 * @throws Exception When the organisation does not exist.
 	 */
-	private function addMembership(string $organisationUuid, string $userId): bool {
+	private function addMembership(string $organisationUuid, string $userId): void {
 		try {
 			$this->organisationMapper->addUserToOrganisation(organisationUuid: $organisationUuid, userId: $userId);
 
 			// Clear cached organisations to force refresh for the affected user.
 			$this->forgetCachedUserOrganisations(userId: $userId);
-
-			return true;
 		} catch (DoesNotExistException $e) {
 			throw new Exception('Organisation not found');
 		}
@@ -827,7 +827,9 @@ class OrganisationService implements OrganisationServiceInterface {
 			$this->assertNotLastOrganisation();
 		}
 
-		return $this->removeMembership(organisationUuid: $organisationUuid, userId: $userId);
+		$this->removeMembership(organisationUuid: $organisationUuid, userId: $userId);
+
+		return true;
 	}//end leaveOrganisation()
 
 	/**
@@ -851,19 +853,17 @@ class OrganisationService implements OrganisationServiceInterface {
 	 * @param string $organisationUuid The organisation.
 	 * @param string $userId           The user to remove.
 	 *
-	 * @return bool Always true; a failure throws.
+	 * @return void
 	 *
 	 * @throws Exception When the organisation does not exist.
 	 */
-	private function removeMembership(string $organisationUuid, string $userId): bool {
+	private function removeMembership(string $organisationUuid, string $userId): void {
 		try {
 			$this->organisationMapper->removeUserFromOrganisation(organisationUuid: $organisationUuid, userId: $userId);
 			$this->resetActiveOrganisationIfLeft(organisationUuid: $organisationUuid, userId: $userId);
 
 			// Clear cached organisations to force refresh.
 			$this->forgetCachedUserOrganisations(userId: $userId);
-
-			return true;
 		} catch (DoesNotExistException $e) {
 			throw new Exception('Organisation not found');
 		}
