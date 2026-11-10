@@ -1887,3 +1887,4 @@
 2026-11-10T10:58:28Z integrator-20261110T063231-6925b57a GREEN tree 5e5faada87 on dev 6d85d5f369 prs 1 front=ok: Tests: 54829, Assertions: 181100, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 17.
 2026-11-10T11:13:41Z coordinator RELEASED all leases: old cloud account stopped at 10:58Z (weekly limit); work resumes on a new account
 2026-11-10T11:32:00Z precheck-20261110T113020-1bfa0787 CONFLICT-DEV #8787 5891333e
+2026-11-10T11:32:13Z precheck-20261110T113020-1bfa0787 CONFLICT-DEV #8919 becd001d
