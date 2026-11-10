@@ -122,6 +122,24 @@ interface ApplicationMapperInterface {
 	): array;
 
 	/**
+	 * Find the applications of a listing
+	 *
+	 * Results are ordered by creation date (newest first). The listing's
+	 * limit (unbounded for all rows), offset and equality filters apply; its
+	 * sort and search do not. Automatically applies organisation filtering
+	 * for multi-tenancy.
+	 *
+	 * @param ListQuery $query The listing.
+	 *
+	 * @return Application[]
+	 *
+	 * @throws \Exception If user doesn't have read permission
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Application>
+	 */
+	public function findAllBy(ListQuery $query): array;
+
+	/**
 	 * Find an application by its UUID
 	 *
 	 * Retrieves a single application entity by UUID.

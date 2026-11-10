@@ -214,10 +214,9 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 		$this->pseudonymise(match: $match, subjectId: $subjectId);
 		$this->records->writer->attribute(object: $match->object);
 
-		return $this->records->writer->persist(
+		return $this->records->writer->persistAs(
 			object: $match->object,
-			op: 'erase',
-			identifier: (string)($match->object->getUuid() ?? '')
+			label: new SubjectWriteLabel(op: 'erase', identifier: (string)($match->object->getUuid() ?? ''))
 		);
 	}//end pseudonymiseObject()
 
