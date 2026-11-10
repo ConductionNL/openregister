@@ -33,9 +33,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
-use OCA\OpenRegister\Service\Interaction\WatcherService;
-use OCP\EventDispatcher\Event;
+use OCA\OpenRegister\Listener\Support\HandlesObjectDeletion;
+use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
 
@@ -45,44 +46,46 @@ use Psr\Log\LoggerInterface;
  * @template-implements IEventListener<ObjectDeletedEvent>
  */
 final class WatcherPruneListener implements IEventListener {
+	use HandlesObjectDeletion;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param WatcherService $watchers The subscription primitive, which owns the cleanup.
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param WatcherServiceInterface $watchers The subscription primitive, which owns the cleanup.
+	 * @param LoggerInterface         $logger   PSR logger.
 	 */
 	public function __construct(
-		private readonly WatcherService $watchers,
+		private readonly WatcherServiceInterface $watchers,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
 	/**
-	 * Handle the event by deleting every watcher row tied to the object uuid.
+	 * Delete every watcher row tied to the object uuid.
 	 *
-	 * @param Event $event Dispatched event.
+	 * @param ObjectEntity $object The deleted object.
+	 * @param string       $uuid   Its uuid.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-deleting-an-object-removes-its-watchers
 	 */
-	public function handle(Event $event): void {
-		if (($event instanceof ObjectDeletedEvent) === false) {
-			return;
-		}
+	private function onObjectDeleted(ObjectEntity $object, string $uuid): void {
+		$this->watchers->cleanupForObject(objectUuid: $uuid);
+	}//end onObjectDeleted()
 
-		try {
-			$uuid = (string)$event->getObject()->getUuid();
-			if ($uuid === '') {
-				return;
-			}
-
-			$this->watchers->cleanupForObject(objectUuid: $uuid);
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				sprintf('[WatcherPruneListener] prune skipped: %s', $e->getMessage())
-			);
-		}
-	}//end handle()
+	/**
+	 * Log the skipped prune; the deletion itself stands.
+	 *
+	 * @param \Throwable $error The failure.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-deleting-an-object-removes-its-watchers
+	 */
+	private function onDeletionFailure(\Throwable $error): void {
+		$this->logger->debug(
+			sprintf('[WatcherPruneListener] prune skipped: %s', $error->getMessage())
+		);
+	}//end onDeletionFailure()
 }//end class

@@ -25,12 +25,16 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
+use OCA\OpenRegister\Service\Notification\AddressDeliveryServices;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
+use OCA\OpenRegister\Service\Notification\ReferenceLookupServices;
+use OCA\OpenRegister\Service\Notification\ReferenceOrigin;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion;
 
 /**
  * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-email-recipient-reads-its-address-through-a-reference-req-ero-007
@@ -107,9 +111,9 @@ class ReferencedAddressNotifierTest extends TestCase {
 			fn (int|string $id): Schema => $this->schema(['next' => ['type' => 'string', '$ref' => '#/components/schemas/supplier']])
 		);
 		$this->email = $this->createMock(EmailSender::class);
-		$this->email->method('sendToAddress')->willReturnCallback(
-			function (string $address, string $displayName, string $subject, string $body, ?array $unsubscribe = null): string {
-				$this->sent[] = ['address' => $address, 'subject' => $subject, 'body' => $body, 'unsubscribe' => $unsubscribe];
+		$this->email->method('sendMailTo')->willReturnCallback(
+			function (\OCA\OpenRegister\Notifications\Service\Notification\MailAddressee $to, \OCA\OpenRegister\Notifications\Service\Notification\MailContent $mail): string {
+				$this->sent[] = ['address' => $to->address, 'subject' => $mail->subject, 'body' => $mail->body, 'unsubscribe' => $mail->unsubscribe];
 				return EmailSender::OUTCOME_DISPATCHED;
 			}
 		);
@@ -134,12 +138,9 @@ class ReferencedAddressNotifierTest extends TestCase {
 	 */
 	private function notifier(): ReferencedAddressNotifier {
 		return new ReferencedAddressNotifier(
-			objects: $this->objects,
-			email: $this->email,
-			optOut: $this->optOut,
-			logger: $this->createMock(LoggerInterface::class),
-			schemas: $this->schemas,
-			refs: $this->refs
+			lookups: new ReferenceLookupServices(objects: $this->objects, schemas: $this->schemas, refs: $this->refs),
+			delivery: new AddressDeliveryServices(email: $this->email, optOut: $this->optOut),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 	}//end notifier()
 
@@ -197,10 +198,10 @@ class ReferencedAddressNotifierTest extends TestCase {
 	 * @return void
 	 */
 	private function integriqAllows(): void {
-		$this->optOut->method('ask')->willReturnCallback(
-			static function (string $channel, string $category, array $addresses): array {
+		$this->optOut->method('askQuestion')->willReturnCallback(
+			static function (OptOutQuestion $question): array {
 				$decisions = [];
-				foreach ($addresses as $address) {
+				foreach ($question->addresses as $address) {
 					$decisions[$address] = ['send' => true, 'code' => 'allowed', 'unsubscribe' => ['url' => 'https://nc.example/u/1']];
 				}
 
@@ -249,10 +250,10 @@ class ReferencedAddressNotifierTest extends TestCase {
 		$object = $this->object('x-1', ['email' => 'a@example.org', 'supplier' => ['id' => 'sup-2']]);
 
 		$notifier = $this->notifier();
-		$this->assertSame('a@example.org', $notifier->resolveAddress(object: $object, data: $object->getObject(), path: 'email')['address']);
+		$this->assertSame('a@example.org', $notifier->resolveAddress(origin: new ReferenceOrigin(object: $object, data: $object->getObject()), path: 'email')['address']);
 		$this->assertSame(
 			'b@example.org',
-			$notifier->resolveAddress(object: $object, data: $object->getObject(), path: 'supplier.contactEmail', schema: $this->referencing(['supplier']))['address']
+			$notifier->resolveAddress(origin: new ReferenceOrigin(object: $object, data: $object->getObject(), schema: $this->referencing(['supplier'])), path: 'supplier.contactEmail')['address']
 		);
 	}//end testAPlainFieldAndAnObjectShapedReferenceBothResolve()
 
@@ -277,7 +278,7 @@ class ReferencedAddressNotifierTest extends TestCase {
 			'nothing' => ReferencedAddressNotifier::REASON_NO_REFERENCE,
 		];
 		foreach ($cases as $path => $reason) {
-			$resolved = $notifier->resolveAddress(object: $object, data: $object->getObject(), path: $path, schema: $schema);
+			$resolved = $notifier->resolveAddress(origin: new ReferenceOrigin(object: $object, data: $object->getObject(), schema: $schema), path: $path);
 			$this->assertNull($resolved['address'], $path);
 			$this->assertSame($reason, $resolved['reason'], $path);
 		}
@@ -286,8 +287,8 @@ class ReferencedAddressNotifierTest extends TestCase {
 		// any object may read a referenced object that has no organisation.
 		$this->store['global'] = $this->object('global', ['contactEmail' => 'g@example.org'], null);
 		$untenanted = $this->object('u', ['ref' => 'sup-other', 'glob' => 'global'], null);
-		$this->assertSame(ReferencedAddressNotifier::REASON_OTHER_TENANT, $notifier->resolveAddress(object: $untenanted, data: $untenanted->getObject(), path: 'ref.contactEmail', schema: $schema)['reason']);
-		$this->assertSame('g@example.org', $notifier->resolveAddress(object: $object, data: ['glob' => 'global'], path: 'glob.contactEmail', schema: $schema)['address']);
+		$this->assertSame(ReferencedAddressNotifier::REASON_OTHER_TENANT, $notifier->resolveAddress(origin: new ReferenceOrigin(object: $untenanted, data: $untenanted->getObject(), schema: $schema), path: 'ref.contactEmail')['reason']);
+		$this->assertSame('g@example.org', $notifier->resolveAddress(origin: new ReferenceOrigin(object: $object, data: ['glob' => 'global'], schema: $schema), path: 'glob.contactEmail')['address']);
 
 		$outcomes = $notifier->notify(
 			object: $object,
@@ -309,8 +310,8 @@ class ReferencedAddressNotifierTest extends TestCase {
 	 * @return void
 	 */
 	public function testIntegriqRefusalsAreRespected(): void {
-		$this->optOut->method('ask')->willReturnCallback(
-			static fn (string $channel, string $category, array $addresses): array => [
+		$this->optOut->method('askQuestion')->willReturnCallback(
+			static fn (OptOutQuestion $question): array => [
 				'out@example.org' => ['send' => false, 'code' => 'opted-out', 'unsubscribe' => null],
 			]
 		);
@@ -348,7 +349,7 @@ class ReferencedAddressNotifierTest extends TestCase {
 	 * @return void
 	 */
 	public function testARuleWithoutEmailEntriesDoesNothing(): void {
-		$this->optOut->expects($this->never())->method('ask');
+		$this->optOut->expects($this->never())->method('askQuestion');
 		$object = $this->object('m', []);
 		$this->assertSame(
 			[],
@@ -365,9 +366,9 @@ class ReferencedAddressNotifierTest extends TestCase {
 	 * @return void
 	 */
 	public function testAReferenceToAnObjectOfAnotherSchemaIsRefusedAndNothingIsSent(): void {
-		$this->optOut->method('ask')->willReturnCallback(
-			function (string $channel, string $category, array $addresses): array {
-				$this->assertSame([], $addresses, 'no address of the wrong object may be put to integriq');
+		$this->optOut->method('askQuestion')->willReturnCallback(
+			function (OptOutQuestion $question): array {
+				$this->assertSame([], $question->addresses, 'no address of the wrong object may be put to integriq');
 				return [];
 			}
 		);
@@ -402,13 +403,13 @@ class ReferencedAddressNotifierTest extends TestCase {
 		$plain = $this->schema(['supplierRef' => ['type' => 'string', 'format' => 'uuid']]);
 		$this->assertSame(
 			ReferencedAddressNotifier::REASON_REFERENCE_NOT_FOUND,
-			$notifier->resolveAddress(object: $message, data: $message->getObject(), path: 'supplierRef.contactEmail', schema: $plain)['reason']
+			$notifier->resolveAddress(origin: new ReferenceOrigin(object: $message, data: $message->getObject(), schema: $plain), path: 'supplierRef.contactEmail')['reason']
 		);
 		$this->assertSame(
 			ReferencedAddressNotifier::REASON_REFERENCE_NOT_FOUND,
-			$notifier->resolveAddress(object: $message, data: $message->getObject(), path: 'supplierRef.contactEmail')['reason']
+			$notifier->resolveAddress(origin: new ReferenceOrigin(object: $message, data: $message->getObject()), path: 'supplierRef.contactEmail')['reason']
 		);
-		$this->assertNull($notifier->resolveAddress(object: $message, data: $message->getObject(), path: 'supplierRef.contactEmail', schema: $plain)['address']);
+		$this->assertNull($notifier->resolveAddress(origin: new ReferenceOrigin(object: $message, data: $message->getObject(), schema: $plain), path: 'supplierRef.contactEmail')['address']);
 	}//end testAReferencePropertyWithoutARefIsNotFollowed()
 
 	/**
@@ -425,12 +426,57 @@ class ReferencedAddressNotifierTest extends TestCase {
 		$schema = $this->referencing(['first']);
 
 		$ok = $this->object('m-1', ['first' => 'sup-1']);
-		$this->assertSame('deep@example.org', $notifier->resolveAddress(object: $ok, data: $ok->getObject(), path: 'first.next.contactEmail', schema: $schema)['address']);
+		$this->assertSame('deep@example.org', $notifier->resolveAddress(origin: new ReferenceOrigin(object: $ok, data: $ok->getObject(), schema: $schema), path: 'first.next.contactEmail')['address']);
 
 		$this->store['sup-1'] = $this->object('sup-1', ['next' => 'other']);
 		$this->assertSame(
 			ReferencedAddressNotifier::REASON_REFERENCE_NOT_FOUND,
-			$notifier->resolveAddress(object: $ok, data: $ok->getObject(), path: 'first.next.contactEmail', schema: $schema)['reason']
+			$notifier->resolveAddress(origin: new ReferenceOrigin(object: $ok, data: $ok->getObject(), schema: $schema), path: 'first.next.contactEmail')['reason']
 		);
 	}//end testEveryHopOfALongerPathIsCheckedAgainstItsOwnSchema()
+
+	/**
+	 * integriq is asked once, about the resolved addresses only, under the
+	 * rule's category and the triggering object's correlation id; entries
+	 * that are not `email` entries, or not entries at all, are skipped.
+	 *
+	 * @return void
+	 */
+	public function testIntegriqIsAskedOnceAboutResolvedAddressesOnly(): void {
+		$asked = [];
+		$this->optOut->method('askQuestion')->willReturnCallback(
+			static function (OptOutQuestion $question) use (&$asked): array {
+				$asked[] = [$question->channel, $question->category, $question->addresses, $question->correlationId];
+				return ['ok@example.org' => ['send' => true, 'code' => 'allowed', 'unsubscribe' => null]];
+			}
+		);
+		$this->store['a'] = $this->object('a', ['contactEmail' => 'ok@example.org']);
+		$object = $this->object('msg-9', ['refA' => 'a', 'missing' => 'gone']);
+
+		$outcomes = $this->notifier()->notify(
+			object: $object,
+			data: $object->getObject(),
+			recipientsSpec: [
+				'not-an-entry',
+				['kind' => 'email', 'field' => ' refA.contactEmail '],
+				['kind' => 'users', 'users' => ['x']],
+				['kind' => 'email', 'field' => 'missing.contactEmail'],
+			],
+			subject: 'Onderwerp',
+			body: 'Tekst',
+			category: 'marketing',
+			schema: $this->referencing(['refA', 'missing'])
+		);
+
+		$this->assertSame([['email', 'marketing', ['ok@example.org'], 'openregister-email:msg-9']], $asked);
+		$this->assertSame(
+			[
+				['field' => 'refA.contactEmail', 'outcome' => EmailSender::OUTCOME_DISPATCHED],
+				['field' => 'missing.contactEmail', 'outcome' => ReferencedAddressNotifier::REASON_REFERENCE_NOT_FOUND],
+			],
+			$outcomes
+		);
+		$this->assertCount(1, $this->sent);
+		$this->assertSame(['address' => 'ok@example.org', 'subject' => 'Onderwerp', 'body' => 'Tekst', 'unsubscribe' => null], $this->sent[0]);
+	}//end testIntegriqIsAskedOnceAboutResolvedAddressesOnly()
 }//end class

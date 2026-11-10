@@ -41,27 +41,7 @@ use Throwable;
  *
  * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
  */
-class DedupCreatePolicy {
-
-	/**
-	 * The payload key a caller sets to save through a blocking match.
-	 *
-	 * `SaveObject` strips it from the body before anything reads the body as
-	 * data, so it never reaches schema validation, never lands in the stored
-	 * object, and never has to be declared as a schema property. The constant
-	 * lives here, beside the policy it belongs to, so the two spellings cannot
-	 * drift apart.
-	 *
-	 * @var string
-	 */
-	public const OVERRIDE_KEY = '_dedupOverride';
-
-	/**
-	 * Audit action recorded when an override is exercised.
-	 *
-	 * @var string
-	 */
-	public const OVERRIDE_ACTION = 'dedup.overridden';
+class DedupCreatePolicy implements DedupCreatePolicyInterface {
 
 	/**
 	 * The policy a schema gets when it declares none.
@@ -83,8 +63,7 @@ class DedupCreatePolicy {
 	 * @param DuplicateDetectionServiceInterface $duplicates The one scorer, reused rather than reimplemented.
 	 * @param IUserSession $userSession Current session, to name the caller.
 	 * @param IGroupManager $groupManager Group membership, to evaluate `overrideGroups`.
-	 * @param AuditTrailMapperInterface $auditTrailMapper Audit writer for the override record.
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param DedupOverrideAudit $audit Audit writer for the override record, and the logger for its failure.
 	 *
 	 * @return void
 	 */
@@ -92,8 +71,7 @@ class DedupCreatePolicy {
 		private readonly DuplicateDetectionServiceInterface $duplicates,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly LoggerInterface $logger,
+		private readonly DedupOverrideAudit $audit,
 	) {
 	}//end __construct()
 
@@ -110,10 +88,8 @@ class DedupCreatePolicy {
 	 * match" are the same statement here, and re-testing the score against
 	 * the threshold a second time would only invite the two to drift.
 	 *
-	 * @param int|string $register Register reference — the boundary the schema resolves inside.
-	 * @param int|string $schema Schema reference.
-	 * @param array<string, mixed> $data The candidate body, override flag already removed.
-	 * @param bool $overrideRequested Whether the caller asked to save anyway.
+	 * @param CreateCandidate $candidate The register and schema, the body (override flag already removed),
+	 *                                   and whether the caller asked to save anyway.
 	 *
 	 * @return array<int, array<string, mixed>> Matches overridden, for the audit entry; empty otherwise.
 	 *
@@ -121,20 +97,38 @@ class DedupCreatePolicy {
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
-	public function guardCreate($register, $schema, array $data, bool $overrideRequested): array {
-		$annotation = $this->duplicates->dedupAnnotation(register: $register, schema: $schema);
-
-		$onCreate = (string)($annotation['onCreate'] ?? self::DEFAULT_ON_CREATE);
-		if ($onCreate !== self::BLOCK) {
+	public function guardCreate(CreateCandidate $candidate): array {
+		$annotation = $this->duplicates->dedupAnnotation(register: $candidate->register, schema: $candidate->schema);
+		if ((string)($annotation['onCreate'] ?? self::DEFAULT_ON_CREATE) !== self::BLOCK) {
 			return [];
 		}
 
-		$matches = $this->duplicates->checkCandidate(register: $register, schema: $schema, candidate: $data);
+		$matches = $this->duplicates->checkCandidate(
+			register: $candidate->register,
+			schema: $candidate->schema,
+			candidate: $candidate->data
+		);
+		$overridden = count($matches) > 0 && $candidate->overrideRequested === true && $this->mayOverride(annotation: $annotation);
+		return $this->admitted(matches: $matches, overridden: $overridden);
+	}//end guardCreate()
+
+	/**
+	 * What a blocking schema lets through: nothing to report without matches, the matches when
+	 * an allowed override was requested, and a refusal otherwise.
+	 *
+	 * @param array<int, array<string, mixed>> $matches    The stored objects the body matches.
+	 * @param bool                             $overridden Whether an allowed override was requested.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @throws DuplicateBlockedException When there are matches and no allowed override.
+	 */
+	private function admitted(array $matches, bool $overridden): array {
 		if (count($matches) === 0) {
 			return [];
 		}
 
-		if ($overrideRequested === true && $this->mayOverride(annotation: $annotation) === true) {
+		if ($overridden === true) {
 			return $matches;
 		}
 
@@ -176,7 +170,7 @@ class DedupCreatePolicy {
 		}
 
 		try {
-			$this->auditTrailMapper->createAuditTrailEntry(
+			$this->audit->auditTrailMapper->createAuditTrailEntry(
 				object: $object,
 				action: self::OVERRIDE_ACTION,
 				context: [
@@ -185,7 +179,7 @@ class DedupCreatePolicy {
 				]
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning(
+			$this->audit->logger->warning(
 				'[DedupCreatePolicy] duplicate override could not be audited: ' . $e->getMessage(),
 				['objectUuid' => (string)$object->getUuid(), 'matchedObjects' => $uuids]
 			);

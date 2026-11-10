@@ -79,6 +79,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
+use OCA\OpenRegister\Service\Flow\TaskAuditEntry;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -102,7 +103,8 @@ use RuntimeException;
  * to the portal side (party resolver, delivery seam); every import is one of
  * the two halves it exists to connect.
  */
-class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
+class PortalTaskNode implements IFlowNode, PortalTaskNodeInterface, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
+	use FormFieldsTrait;
 
 	/**
 	 * The configuration boundary: validation and templating.
@@ -112,24 +114,58 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	private readonly PortalTaskConfig $config;
 
 	/**
+	 * Creates and reads the node's task.
+	 *
+	 * @var FlowTaskBridge
+	 */
+	private readonly FlowTaskBridge $bridge;
+
+	/**
+	 * Resolves the party role against the case.
+	 *
+	 * @var PortalPartyResolver
+	 */
+	private readonly PortalPartyResolver $parties;
+
+	/**
+	 * Records the ask for the portal seam.
+	 *
+	 * @var PortalTaskDeliveryService
+	 */
+	private readonly PortalTaskDeliveryService $delivery;
+
+	/**
+	 * Translations.
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
+
+	/**
+	 * Resolves the palette icon.
+	 *
+	 * @var IURLGenerator
+	 */
+	private readonly IURLGenerator $urls;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowTaskBridge $bridge Creates and reads the node's task.
-	 * @param PortalPartyResolver $parties Resolves the party role against the case.
-	 * @param PortalTaskDeliveryService $delivery Records the ask for the portal seam.
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
+	 * @param PortalTaskServices   $services     The task bridge, party resolver and delivery seam.
+	 * @param FlowNodePresentation $presentation Translations and the palette icon.
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-a-portal-task-step-creates-one-external-task-and-suspends-the-run
 	 */
 	public function __construct(
-		private readonly FlowTaskBridge $bridge,
-		private readonly PortalPartyResolver $parties,
-		private readonly PortalTaskDeliveryService $delivery,
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
+		PortalTaskServices $services,
+		FlowNodePresentation $presentation,
 	) {
-		$this->config = new PortalTaskConfig(l10n: $l10n);
+		$this->bridge   = $services->bridge;
+		$this->parties  = $services->parties;
+		$this->delivery = $services->delivery;
+		$this->l10n     = $presentation->l10n;
+		$this->urls     = $presentation->urls;
+		$this->config   = new PortalTaskConfig(l10n: $this->l10n);
 
 	}//end __construct()
 
@@ -202,21 +238,9 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 */
 	public function configKeys(): array {
 		return [
-			'title',
-			'description',
-			'partyRole',
-			'uploadRequired',
-			'uploadMaxFiles',
-			'uploadAcceptedTypes',
-			'uploadMaxSizeMb',
-			'outcomeKey',
-			'reasonField',
-			'dueAt',
-			'expiresAt',
-			'onTimeout',
-			'onReject',
-			'heartbeatMinutes',
-			'advance',
+			'title', 'description', 'partyRole',
+			'uploadRequired', 'uploadMaxFiles', 'uploadAcceptedTypes', 'uploadMaxSizeMb',
+			'outcomeKey', 'reasonField', 'dueAt', 'expiresAt', 'onTimeout', 'onReject', 'heartbeatMinutes', 'advance',
 		];
 	}//end configKeys()
 
@@ -233,7 +257,9 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			$this->whatFields(),
 			$this->whoFields(),
 			$this->uploadFields(),
+			$this->uploadLimitFields(),
 			$this->whenFields(),
+			$this->timeoutFields(),
 			$this->continuationFields()
 		);
 	}//end configForm()
@@ -279,19 +305,137 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			return $items;
 		}
 
+		return $this->pass(round: new PortalTaskRound(items: $items, config: $config), context: $context);
+	}//end execute()
+
+	/**
+	 * One pass over a non-empty branch: ask, wait, place the answer, or re-ask.
+	 *
+	 * @param PortalTaskRound      $round   The ask: its items and configuration.
+	 * @param array<string, mixed> $context Run-level metadata.
+	 *
+	 * @return array The items, each carrying the outcome bag.
+	 *
+	 * @throws FlowSuspension While the task is not terminal.
+	 * @throws RuntimeException When the node has no slot, its task is gone,
+	 *                          the case names nobody, or a re-ask has no reason.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-a-portal-task-step-creates-one-external-task-and-suspends-the-run
+	 */
+	private function pass(PortalTaskRound $round, array $context): array {
+		$resume = $this->resumeSlot(context: $context);
+		$round = $round->atNode(nodeId: $resume->nodeId());
+		if ($this->taskUuidIn(resume: $resume) === '') {
+			$resume->merge(values: $this->ask(round: $round, context: $context));
+
+			throw $this->suspension(round: $round);
+		}
+
+		if ($resume->get(key: PortalTaskConfig::SLOT_PASSED_AT, default: null) === null) {
+			return $this->firstPass(round: $round, context: $context);
+		}
+
+		throw $this->reAsk(round: $round, context: $context);
+	}//end pass()
+
+	/**
+	 * The node's resume slot, which a portal task cannot run without.
+	 *
+	 * @param array<string, mixed> $context Run-level metadata.
+	 *
+	 * @return FlowNodeResumeState The slot.
+	 *
+	 * @throws RuntimeException When the run gave the node no slot.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-suspension-is-heartbeat-safe-and-continues-on-task-terminality
+	 */
+	private function resumeSlot(array $context): FlowNodeResumeState {
 		$resume = ($context[FlowNodeResumeState::CONTEXT_KEY] ?? null);
 		if ($resume instanceof FlowNodeResumeState === false) {
 			throw new RuntimeException('openregister.portal-task needs a node resume slot; without one every heartbeat would create a task.');
 		}
 
-		$round = (new PortalTaskRound(items: $items, config: $config))->atNode(nodeId: $resume->nodeId());
-		$taskUuid = trim((string)$resume->get(key: FlowTaskBridge::SLOT_TASK_UUID, default: ''));
-		if ($taskUuid === '') {
-			$resume->merge(values: $this->ask(round: $round, context: $context));
+		return $resume;
+	}//end resumeSlot()
 
-			throw $this->suspension(config: $config, items: $items);
-		}
+	/**
+	 * The task uuid this node's slot holds, empty before the first ask.
+	 *
+	 * @param FlowNodeResumeState $resume The node's slot.
+	 *
+	 * @return string The task uuid, or ''.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-suspension-is-heartbeat-safe-and-continues-on-task-terminality
+	 */
+	private function taskUuidIn(FlowNodeResumeState $resume): string {
+		return trim((string)$resume->get(key: FlowTaskBridge::SLOT_TASK_UUID, default: ''));
+	}//end taskUuidIn()
 
+	/**
+	 * The first pass over a terminal task: the answer travels on.
+	 *
+	 * @param PortalTaskRound      $round   The ask, at this node.
+	 * @param array<string, mixed> $context Run-level metadata.
+	 *
+	 * @return array The items, each carrying the outcome bag.
+	 *
+	 * @throws FlowSuspension   While the task is not terminal.
+	 * @throws RuntimeException When the task is gone.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-suspension-is-heartbeat-safe-and-continues-on-task-terminality
+	 */
+	private function firstPass(PortalTaskRound $round, array $context): array {
+		$resume = $this->resumeSlot(context: $context);
+		$task = $this->awaitedTask(round: $round, taskUuid: $this->taskUuidIn(resume: $resume));
+		$this->recordRecoveryUnlessSignalled(task: $task, context: $context);
+
+		// Marked ONCE, so the next firing of this node in this run is a re-entry.
+		$resume->set(key: PortalTaskConfig::SLOT_PASSED_AT, value: (new DateTime())->format('c'));
+
+		return $this->placeOutcome(round: $round, task: $task);
+	}//end firstPass()
+
+	/**
+	 * Re-entry: the graph routed back into this node after it continued, so
+	 * the party is asked again, with a reason, in the next cycle.
+	 *
+	 * @param PortalTaskRound      $round   The ask, at this node.
+	 * @param array<string, mixed> $context Run-level metadata.
+	 *
+	 * @return FlowSuspension The suspension to throw once the new task is asked.
+	 *
+	 * @throws FlowSuspension   While the previous task is not terminal.
+	 * @throws RuntimeException When the task is gone or the items carry no reason.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-a-re-ask-creates-a-new-task-carrying-a-mandatory-reason
+	 */
+	private function reAsk(PortalTaskRound $round, array $context): FlowSuspension {
+		$resume = $this->resumeSlot(context: $context);
+		$taskUuid = $this->taskUuidIn(resume: $resume);
+		$this->awaitedTask(round: $round, taskUuid: $taskUuid);
+		$reason = $this->reasonForReAsk(round: $round, taskUuid: $taskUuid);
+
+		$cycle = ((int)$resume->get(key: PortalTaskConfig::SLOT_CYCLE, default: 1) + 1);
+		$round = $round->inCycle(cycle: $cycle, previousTaskUuid: $taskUuid)->because(reason: $reason);
+		$resume->merge(values: $this->ask(round: $round, context: $context));
+
+		return $this->suspension(round: $round);
+	}//end reAsk()
+
+	/**
+	 * The task this step is waiting on, once it is terminal.
+	 *
+	 * @param PortalTaskRound $round    The ask: its items and configuration.
+	 * @param string          $taskUuid The task held in this node's slot.
+	 *
+	 * @return Task The terminal task.
+	 *
+	 * @throws RuntimeException When the task no longer exists.
+	 * @throws FlowSuspension   While the task is not terminal.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-a-portal-task-step-creates-one-external-task-and-suspends-the-run
+	 */
+	private function awaitedTask(PortalTaskRound $round, string $taskUuid): Task {
 		$task = $this->bridge->taskOrNull(uuid: $taskUuid);
 		if ($task === null) {
 			throw new RuntimeException(sprintf('Task %s, which this step was waiting on, no longer exists.', $taskUuid));
@@ -300,44 +444,61 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		if ($task->isInTerminalState() === false) {
 			// A heartbeat wake, a reminder, a nudge: none is an answer. Suspend
 			// again and do NOT touch the slot: askedAt stays what it was.
-			throw $this->suspension(config: $config, items: $items);
+			throw $this->suspension(round: $round);
 		}
 
-		if ($resume->get(key: PortalTaskConfig::SLOT_PASSED_AT, default: null) === null) {
-			// A terminal read with no signal in hand means the completion's
-			// wake never arrived — refused or lost — and the heartbeat is what
-			// recovered it. Recorded before the outcome is applied, which is
-			// identical on both paths; the user-task node makes the same call.
-			if (array_key_exists(FlowRunServiceInterface::SIGNAL_CONTEXT_KEY, $context) === false) {
-				$this->bridge->recordHeartbeatRecovery(task: $task);
-			}
+		return $task;
+	}//end awaitedTask()
 
-			// The first pass over a terminal task: the answer travels on. Marked
-			// ONCE, so the next firing of this node in this run is a re-entry.
-			$resume->set(key: PortalTaskConfig::SLOT_PASSED_AT, value: (new DateTime())->format('c'));
-
-			return $this->placeOutcome(items: $items, config: $config, task: $task);
+	/**
+	 * Audit a heartbeat-recovered answer on the task.
+	 *
+	 * A terminal read with no signal in hand means the completion's wake never
+	 * arrived — refused or lost — and the heartbeat is what recovered it.
+	 * Recorded before the outcome is applied, which is identical on both
+	 * paths; the user-task node makes the same call.
+	 *
+	 * @param Task                 $task    The terminal task.
+	 * @param array<string, mixed> $context Run-level metadata.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-a-portal-task-step-creates-one-external-task-and-suspends-the-run
+	 */
+	private function recordRecoveryUnlessSignalled(Task $task, array $context): void {
+		if (array_key_exists(FlowRunServiceInterface::SIGNAL_CONTEXT_KEY, $context) === false) {
+			$this->bridge->recordHeartbeatRecovery(task: $task);
 		}
 
-		// Re-entry: the graph routed back into this node after it continued.
-		$reason = $this->config->reasonFrom(config: $config, items: $items);
+	}//end recordRecoveryUnlessSignalled()
+
+	/**
+	 * The reason a re-entered step asks the party again.
+	 *
+	 * @param PortalTaskRound $round    The ask: its items and configuration.
+	 * @param string          $taskUuid The task that already ended.
+	 *
+	 * @return string The non-empty reason.
+	 *
+	 * @throws RuntimeException When the items carry no reason.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-a-re-ask-creates-a-new-task-carrying-a-mandatory-reason
+	 */
+	private function reasonForReAsk(PortalTaskRound $round, string $taskUuid): string {
+		$reason = $this->config->reasonFrom(config: $round->config, items: $round->items);
 		if ($reason === '') {
 			throw new RuntimeException(
 				sprintf(
 					'openregister.portal-task re-entered after task %s ended, but the items carry no reason under "%s"; '
 					. 'a party is not asked the same thing twice without an explanation.',
 					$taskUuid,
-					$this->config->reasonField(config: $config)
+					$this->config->reasonField(config: $round->config)
 				)
 			);
 		}
 
-		$cycle = ((int)$resume->get(key: PortalTaskConfig::SLOT_CYCLE, default: 1) + 1);
-		$round = $round->inCycle(cycle: $cycle, previousTaskUuid: $taskUuid)->because(reason: $reason);
-		$resume->merge(values: $this->ask(round: $round, context: $context));
-
-		throw $this->suspension(config: $config, items: $items);
-	}//end execute()
+		return $reason;
+	}//end reasonForReAsk()
 
 	/**
 	 * One ask: match the party on the case, create the external task, record
@@ -382,10 +543,12 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		);
 
 		$this->bridge->record(
-			uuid: (string)$task->getUuid(),
-			action: 'match',
-			actor: $actor,
-			reason: sprintf("Matched party role '%s' on case '%s' to '%s' (cycle %d).", $role, $caseUuid, $round->partyReference(), $round->cycle())
+			entry: new TaskAuditEntry(
+				uuid: (string)$task->getUuid(),
+				action: 'match',
+				actor: $actor,
+				reason: sprintf("Matched party role '%s' on case '%s' to '%s' (cycle %d).", $role, $caseUuid, $round->partyReference(), $round->cycle())
+			)
 		);
 
 		$this->deliver(round: $round, task: $task);
@@ -423,15 +586,14 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * cycle, and an explicit `expired` flag so an expiry-terminated ask is
 	 * never read as an answer downstream.
 	 *
-	 * @param array $items The items to pass on.
-	 * @param array $config The step configuration.
-	 * @param Task $task The terminal task.
+	 * @param PortalTaskRound $round The ask: the items to pass on and the configuration.
+	 * @param Task            $task  The terminal task.
 	 *
 	 * @return array The items, each carrying the bag.
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-suspension-is-heartbeat-safe-and-continues-on-task-terminality
 	 */
-	private function placeOutcome(array $items, array $config, Task $task): array {
+	private function placeOutcome(PortalTaskRound $round, Task $task): array {
 		$bag = FlowTaskBridge::outcomeBagFor(task: $task);
 		$metadata = ($task->getMetadata() ?? []);
 		// `answers` now comes from the bridge, which is where it always
@@ -443,7 +605,8 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		$bag['reason'] = ($metadata['reaskReason'] ?? null);
 		$bag['expired'] = ($bag['decided'] === false && str_starts_with((string)$bag['outcome'], 'expir') === true);
 
-		$key = $this->config->outcomeKey(config: $config);
+		$key = $this->config->outcomeKey(config: $round->config);
+		$items = $round->items;
 		foreach ($items as $index => $item) {
 			if (is_array($item) === false) {
 				continue;
@@ -462,21 +625,20 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * The suspension this node parks on: a non-null heartbeat, and a reason
 	 * that names what is being waited for.
 	 *
-	 * @param array $config The step configuration.
-	 * @param array $items The input items.
+	 * @param PortalTaskRound $round The ask: its items and configuration.
 	 *
 	 * @return FlowSuspension The suspension to throw.
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-suspension-is-heartbeat-safe-and-continues-on-task-terminality
 	 */
-	private function suspension(array $config, array $items): FlowSuspension {
-		$title = $this->config->renderedTitle(config: $config, items: $items);
+	private function suspension(PortalTaskRound $round): FlowSuspension {
+		$title = $this->config->renderedTitle(config: $round->config, items: $round->items);
 		if ($title === '') {
 			$title = 'a portal task';
 		}
 
 		return new FlowSuspension(
-			resumeAt: $this->config->heartbeatAt(config: $config),
+			resumeAt: $this->config->heartbeatAt(config: $round->config),
 			reason: sprintf('waiting for a party outside the organisation: %s', $title)
 		);
 	}//end suspension()
@@ -506,19 +668,12 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 */
 	private function whatFields(): array {
 		return [
-			[
-				'key' => 'title',
-				'label' => $this->l10n->t('What is being asked'),
-				'type' => 'text',
-				'help' => $this->l10n->t('The task title, shown in the portal. Fields of the item can be used, like {{ name }}.'),
-				'required' => true,
-			],
-			[
-				'key' => 'description',
-				'label' => $this->l10n->t('Details'),
-				'type' => 'textarea',
-				'help' => $this->l10n->t('What the party needs to know to do it. Templates work here too.'),
-			],
+			$this->requiredField(key: 'title', label: $this->l10n->t('What is being asked'), type: 'text', help: $this->l10n->t(
+				'The task title, shown in the portal. Fields of the item can be used, like {{ name }}.'
+			)),
+			$this->field(key: 'description', label: $this->l10n->t('Details'), type: 'textarea', help: $this->l10n->t(
+				'What the party needs to know to do it. Templates work here too.'
+			)),
 		];
 	}//end whatFields()
 
@@ -529,15 +684,10 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 */
 	private function whoFields(): array {
 		return [
-			[
-				'key' => 'partyRole',
-				'label' => $this->l10n->t('Party role on the case'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'Which party on the case is asked, by role. Defaults to "initiator". The party is matched once, when the task is created, '
-					. 'and a case that names nobody for the role fails the step.'
-				),
-			],
+			$this->field(key: 'partyRole', label: $this->l10n->t('Party role on the case'), type: 'text', help: $this->l10n->t(
+				'Which party on the case is asked, by role. Defaults to "initiator". The party is matched once, when the task is created, '
+				. 'and a case that names nobody for the role fails the step.'
+			)),
 		];
 	}//end whoFields()
 
@@ -548,34 +698,32 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 */
 	private function uploadFields(): array {
 		return [
-			[
-				'key' => 'uploadRequired',
-				'label' => $this->l10n->t('Upload required'),
-				'type' => 'boolean',
-				'help' => $this->l10n->t('When on, the party must hand in at least one file. Every file lands on the case object.'),
-			],
-			[
-				'key' => 'uploadMaxFiles',
-				'label' => $this->l10n->t('Maximum number of files'),
-				'type' => 'number',
-				'help' => $this->l10n->t('How many files one answer may carry. Defaults to 1.'),
-			],
-			[
-				'key' => 'uploadAcceptedTypes',
-				'label' => $this->l10n->t('Accepted file types'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'Media types or extensions, comma separated, like "application/pdf, image/*, docx". Leave empty to accept any type.'
-				),
-			],
-			[
-				'key' => 'uploadMaxSizeMb',
-				'label' => $this->l10n->t('Maximum file size (MB)'),
-				'type' => 'number',
-				'help' => $this->l10n->t('Per file. Leave empty for the instance default.'),
-			],
+			$this->field(key: 'uploadRequired', label: $this->l10n->t('Upload required'), type: 'boolean', help: $this->l10n->t(
+				'When on, the party must hand in at least one file. Every file lands on the case object.'
+			)),
+			$this->field(key: 'uploadMaxFiles', label: $this->l10n->t('Maximum number of files'), type: 'number', help: $this->l10n->t(
+				'How many files one answer may carry. Defaults to 1.'
+			)),
 		];
 	}//end uploadFields()
+
+	/**
+	 * Which file types and sizes an answer may carry.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	private function uploadLimitFields(): array {
+		return [
+			$this->field(key: 'uploadAcceptedTypes', label: $this->l10n->t('Accepted file types'), type: 'text', help: $this->l10n->t(
+				'Media types or extensions, comma separated, like "application/pdf, image/*, docx". Leave empty to accept any type.'
+			)),
+			$this->field(key: 'uploadMaxSizeMb', label: $this->l10n->t('Maximum file size (MB)'), type: 'number', help: $this->l10n->t(
+				'Per file. Leave empty for the instance default.'
+			)),
+		];
+	}//end uploadLimitFields()
 
 	/**
 	 * When.
@@ -584,45 +732,36 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 */
 	private function whenFields(): array {
 		return [
-			[
-				'key' => 'dueAt',
-				'label' => $this->l10n->t('Due'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'When the party should have answered: a date, a field like {{ deadline }}, or a relative time like "+14 days". '
-					. 'Reminders are business timer rungs on this date.'
-				),
-			],
-			[
-				'key' => 'expiresAt',
-				'label' => $this->l10n->t('Expires'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'When the ask stops being answerable. Same shapes as "Due". Expiry is enforced by the business timers, not by this step.'
-				),
-			],
-			[
-				'key' => 'onTimeout',
-				'label' => $this->l10n->t('On timeout'),
-				'type' => 'text',
-				'help' => $this->l10n->t('What happens when the ask expires: skip, error or dead_letter. Empty means the deadline enforces nothing.'),
-			],
-			[
-				'key' => 'onReject',
-				'label' => $this->l10n->t('On rejection'),
-				'type' => 'text',
-				'help' => $this->l10n->t('Only dead_letter changes the record; skip and error are read by whatever resumes the flow.'),
-			],
-			[
-				'key' => 'heartbeatMinutes',
-				'label' => $this->l10n->t('Re-check every (minutes)'),
-				'type' => 'number',
-				'help' => $this->l10n->t(
-					'Safety net for a wake that never arrives. Lower is not faster: a completed task wakes the run immediately either way.'
-				),
-			],
+			$this->field(key: 'dueAt', label: $this->l10n->t('Due'), type: 'text', help: $this->l10n->t(
+				'When the party should have answered: a date, a field like {{ deadline }}, or a relative time like "+14 days". '
+				. 'Reminders are business timer rungs on this date.'
+			)),
+			$this->field(key: 'expiresAt', label: $this->l10n->t('Expires'), type: 'text', help: $this->l10n->t(
+				'When the ask stops being answerable. Same shapes as "Due". Expiry is enforced by the business timers, not by this step.'
+			)),
 		];
 	}//end whenFields()
+
+	/**
+	 * What a deadline or a rejection does, and how often the run re-checks.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	private function timeoutFields(): array {
+		return [
+			$this->field(key: 'onTimeout', label: $this->l10n->t('On timeout'), type: 'text', help: $this->l10n->t(
+				'What happens when the ask expires: skip, error or dead_letter. Empty means the deadline enforces nothing.'
+			)),
+			$this->field(key: 'onReject', label: $this->l10n->t('On rejection'), type: 'text', help: $this->l10n->t(
+				'Only dead_letter changes the record; skip and error are read by whatever resumes the flow.'
+			)),
+			$this->field(key: 'heartbeatMinutes', label: $this->l10n->t('Re-check every (minutes)'), type: 'number', help: $this->l10n->t(
+				'Safety net for a wake that never arrives. Lower is not faster: a completed task wakes the run immediately either way.'
+			)),
+		];
+	}//end timeoutFields()
 
 	/**
 	 * How the flow continues once answered, and how it asks again.
@@ -631,32 +770,17 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 */
 	private function continuationFields(): array {
 		return [
-			[
-				'key' => 'outcomeKey',
-				'label' => $this->l10n->t('Field to store the answer in'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'The answer, the uploaded files and the matched party are written onto every item under this field. Defaults to "portalTask".'
-				),
-			],
-			[
-				'key' => 'reasonField',
-				'label' => $this->l10n->t('Field carrying the reason to ask again'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'When the flow routes back into this step, the party is asked again with the reason read from this item field, like "review.comment". '
-					. 'Without a reason the step fails rather than asking twice unexplained. Defaults to "reason".'
-				),
-			],
-			[
-				'key' => 'advance',
-				'label' => $this->l10n->t('Continue after the answer'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'How far the run continues inside the request that completes the task: 0 leaves it to the background worker (default), '
-					. 'a number runs that many steps, "all" runs to the next pause or the end.'
-				),
-			],
+			$this->field(key: 'outcomeKey', label: $this->l10n->t('Field to store the answer in'), type: 'text', help: $this->l10n->t(
+				'The answer, the uploaded files and the matched party are written onto every item under this field. Defaults to "portalTask".'
+			)),
+			$this->field(key: 'reasonField', label: $this->l10n->t('Field carrying the reason to ask again'), type: 'text', help: $this->l10n->t(
+				'When the flow routes back into this step, the party is asked again with the reason read from this item field, like "review.comment". '
+				. 'Without a reason the step fails rather than asking twice unexplained. Defaults to "reason".'
+			)),
+			$this->field(key: 'advance', label: $this->l10n->t('Continue after the answer'), type: 'text', help: $this->l10n->t(
+				'How far the run continues inside the request that completes the task: 0 leaves it to the background worker (default), '
+				. 'a number runs that many steps, "all" runs to the next pause or the end.'
+			)),
 		];
 	}//end continuationFields()
 

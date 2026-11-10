@@ -34,10 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Timer;
 
-use DateTimeImmutable;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
-use DateTimeInterface;
-use DateTimeZone;
 
 /**
  * Walks an hours term through a calendar's declared windows.
@@ -55,131 +52,20 @@ class ServiceHoursClock {
 	public const MAX_WALK_DAYS = 3650;
 
 	/**
-	 * The moment an hours term armed at `$from` is due.
+	 * The frame a term is walked in: the calendar deciding the days and the
+	 * windows deciding the hours. Its `due()` and `elapsed()` are the two
+	 * halves of one measurement and always run on the same frame.
 	 *
-	 * @param DateTimeInterface $from     When the term was armed.
-	 * @param float             $hours    How many service hours it runs for.
-	 * @param WorkingCalendar   $calendar The calendar deciding the days.
-	 * @param ServiceHours      $windows  Its declared windows.
+	 * @param WorkingCalendar $calendar The calendar deciding the days.
+	 * @param ServiceHours    $windows  Its declared windows.
 	 *
-	 * @return DateTimeImmutable The moment it is due, in the calendar's zone.
-	 *
-	 * @throws FlowTimerValidationException When the calendar never opens.
+	 * @return ServiceHoursFrame The frame.
 	 *
 	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
 	 */
-	public function due(DateTimeInterface $from, float $hours, WorkingCalendar $calendar, ServiceHours $windows): DateTimeImmutable {
-		$zone = new DateTimeZone($calendar->getTimezone());
-		$moment = (new DateTimeImmutable('@'.$from->getTimestamp()))->setTimezone($zone);
-		$remaining = (int)round($hours * 60);
-
-		if ($remaining <= 0) {
-			return $moment;
-		}
-
-		$day = $moment;
-
-		// Only the day the term was armed on starts partway through. The cursor
-		// is held across the loop and reset once the day rolls, so that reset is
-		// load-bearing: reading the minute off each day would make it redundant,
-		// and a redundant guard is one a later edit can delete without any test
-		// noticing.
-		$cursor = $this->minuteOfDay(moment: $moment);
-
-		for ($crossed = 0; $crossed <= self::MAX_WALK_DAYS; $crossed++) {
-			if ($calendar->isWorkingDay($day) === true) {
-				foreach ($windows->forWeekday(iso: (int)$day->format('N')) as $window) {
-					$start = max($cursor, $window['start']);
-					if ($start >= $window['end']) {
-						continue;
-					}
-
-					$available = ($window['end'] - $start);
-					if ($remaining <= $available) {
-						return $this->atMinute(day: $day, minute: ($start + $remaining));
-					}
-
-					$remaining -= $available;
-				}
-			}//end if
-
-			$day = $day->modify('+1 day')->setTime(0, 0);
-			$cursor = 0;
-		}//end for
-
-		// 🔴 NOT A BEST GUESS. A calendar that never opens has no answer to
-		// "when are four hours up", and returning the cap's date would put a
-		// deadline on a case that nobody could tell from a real one.
-		throw new FlowTimerValidationException(
-			message: sprintf(
-				"Working calendar '%s' has no open service hours in the next %d days, so an hours term cannot be computed against it.",
-				$calendar->getSlug(),
-				self::MAX_WALK_DAYS
-			)
-		);
-	}//end due()
-
-	/**
-	 * How much open service time lies between two instants.
-	 *
-	 * The mirror of {@see due()}, and it exists for the same reason the two
-	 * halves of every other unit live side by side: a deadline computed
-	 * inside the windows and an elapsed figure measured across one unbroken
-	 * block disagree by the length of the lunch break, and the report and the
-	 * badge then say different things about one case. Whoever reads them
-	 * cannot tell which is wrong.
-	 *
-	 * @param DateTimeInterface $from     The earlier instant.
-	 * @param DateTimeInterface $to       The later instant; equal or earlier yields 0.0.
-	 * @param WorkingCalendar   $calendar The calendar deciding the days.
-	 * @param ServiceHours      $windows  Its declared windows.
-	 *
-	 * @return float The open hours between the two.
-	 *
-	 * @throws FlowTimerValidationException When the span exceeds the bounded walk.
-	 *
-	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
-	 */
-	public function elapsed(DateTimeInterface $from, DateTimeInterface $to, WorkingCalendar $calendar, ServiceHours $windows): float {
-		$zone = new DateTimeZone($calendar->getTimezone());
-		$start = (new DateTimeImmutable('@'.$from->getTimestamp()))->setTimezone($zone);
-		$end = (new DateTimeImmutable('@'.$to->getTimestamp()))->setTimezone($zone);
-
-		if ($end <= $start) {
-			return 0.0;
-		}
-
-		$day = $start->setTime(0, 0);
-		$minutes = 0;
-
-		for ($crossed = 0; $crossed <= self::MAX_WALK_DAYS; $crossed++) {
-			if ($day > $end) {
-				return round(($minutes / 60), 4);
-			}
-
-			if ($calendar->isWorkingDay($day) === true) {
-				foreach ($windows->forWeekday(iso: (int)$day->format('N')) as $window) {
-					$opens = $this->atMinute(day: $day, minute: $window['start']);
-					$closes = $this->atMinute(day: $day, minute: $window['end']);
-					$overlap = (min($closes->getTimestamp(), $end->getTimestamp()) - max($opens->getTimestamp(), $start->getTimestamp()));
-					if ($overlap > 0) {
-						$minutes += intdiv($overlap, 60);
-					}
-				}
-			}
-
-			$day = $day->modify('+1 day')->setTime(0, 0);
-		}//end for
-
-		throw new FlowTimerValidationException(
-			message: sprintf(
-				'Measuring service hours between %s and %s exceeds %d calendar days.',
-				$from->format('c'),
-				$to->format('c'),
-				self::MAX_WALK_DAYS
-			)
-		);
-	}//end elapsed()
+	public function frame(WorkingCalendar $calendar, ServiceHours $windows): ServiceHoursFrame {
+		return new ServiceHoursFrame(calendar: $calendar, windows: $windows);
+	}//end frame()
 
 	/**
 	 * The diagnostic that explains one computed term.
@@ -214,29 +100,6 @@ class ServiceHoursClock {
 			'windows' => $applied,
 		];
 	}//end diagnostic()
-
-	/**
-	 * Minutes past midnight of one moment.
-	 *
-	 * @param DateTimeImmutable $moment The moment.
-	 *
-	 * @return int The minutes.
-	 */
-	private function minuteOfDay(DateTimeImmutable $moment): int {
-		return (((int)$moment->format('G') * 60) + (int)$moment->format('i'));
-	}//end minuteOfDay()
-
-	/**
-	 * One minute of one day, as a moment.
-	 *
-	 * @param DateTimeImmutable $day    The day.
-	 * @param int               $minute Minutes past midnight.
-	 *
-	 * @return DateTimeImmutable The moment.
-	 */
-	private function atMinute(DateTimeImmutable $day, int $minute): DateTimeImmutable {
-		return $day->setTime(intdiv($minute, 60), ($minute % 60));
-	}//end atMinute()
 
 	/**
 	 * One minute as `HH:MM`, for the diagnostic.

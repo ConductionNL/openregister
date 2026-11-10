@@ -15,6 +15,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Listener\SchemaFlowImportListener;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
+use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 
@@ -378,7 +379,7 @@ class SchemaFlowImportListenerTest extends TestCase {
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			fn (string $id) => ($id === FlowVersionService::class ? $versions : throw new \RuntimeException('not registered'))
+			fn (string $id) => ($id === FlowVersionServiceInterface::class ? $versions : throw new \RuntimeException('not registered'))
 		);
 
 		$listener = $this->listener([$existing], $container);
@@ -433,7 +434,7 @@ class SchemaFlowImportListenerTest extends TestCase {
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			fn (string $id) => ($id === FlowVersionService::class ? $versions : throw new \RuntimeException('not registered'))
+			fn (string $id) => ($id === FlowVersionServiceInterface::class ? $versions : throw new \RuntimeException('not registered'))
 		);
 
 		$listener = $this->listener([], $container);

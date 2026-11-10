@@ -24,7 +24,9 @@ namespace OCA\OpenRegister\Files\Service;
 
 use Exception;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Exception\NoteEditForbiddenException;
 use OCA\OpenRegister\Exception\NoteLockedException;
 use OCP\Comments\IComment;
@@ -44,28 +46,6 @@ use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
  * @package  OCA\OpenRegister\Service
  */
 class NoteService implements NoteServiceInterface {
-
-	/**
-	 * Comments manager for note operations.
-	 *
-	 * @var ICommentsManager
-	 */
-	private readonly ICommentsManager $commentsManager;
-
-	/**
-	 * User session for getting current user.
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * User manager for resolving display names.
-	 *
-	 * @var IUserManager
-	 */
-	private readonly IUserManager $userManager;
-
 
 	/**
 	 * The objectType used for OpenRegister comments.
@@ -112,24 +92,19 @@ class NoteService implements NoteServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param ICommentsManager $commentsManager Comments manager for CRUD operations
-	 * @param IUserSession $userSession User session for current user context
-	 * @param IUserManager $userManager User manager for display name resolution
-	 * @param TimelineVisibilityServiceInterface $visibility Normalises the internal/public flag
-	 * @param NoteVersionService $versions Keeps and reads what a note said before
+	 * @param ICommentsManager                   $commentsManager Comments manager for CRUD operations
+	 * @param NoteAccounts                       $accounts        User session and user manager
+	 * @param TimelineVisibilityServiceInterface $visibility      Normalises the internal/public flag
+	 * @param NoteVersionService                 $versions        Keeps and reads what a note said before
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		ICommentsManager $commentsManager,
-		IUserSession $userSession,
-		IUserManager $userManager,
+		private readonly ICommentsManager $commentsManager,
+		private readonly NoteAccounts $accounts,
 		private readonly TimelineVisibilityServiceInterface $visibility,
 		private readonly NoteVersionService $versions,
 	) {
-		$this->commentsManager = $commentsManager;
-		$this->userSession = $userSession;
-		$this->userManager = $userManager;
 	}//end __construct()
 
 	/**
@@ -144,17 +119,26 @@ class NoteService implements NoteServiceInterface {
 	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
 	 */
-	public function getNotesForObject(
-		string $objectUuid,
-		int $limit = 50,
-		int $offset = 0,
-		?string $visibility = null,
-	): array {
+	public function getNotesForObject(string $objectUuid, int $limit = 50, int $offset = 0, ?string $visibility = null): array {
+		$page = new ListQuery(limit: $limit, offset: $offset);
+		return $this->listNotes(query: new ObjectNotesQuery(objectUuid: $objectUuid, page: $page, visibility: $visibility));
+	}//end getNotesForObject()
+
+	/**
+	 * One page of the notes on an object, with their edit summaries, filtered by visibility.
+	 *
+	 * @param ObjectNotesQuery $query The object, the page and the visibility filter.
+	 *
+	 * @return array<int, array<string, mixed>> The notes.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function listNotes(ObjectNotesQuery $query): array {
 		$comments = $this->commentsManager->getForObject(
 			self::OBJECT_TYPE,
-			$objectUuid,
-			$limit,
-			$offset
+			$query->objectUuid,
+			$query->page->limit,
+			($query->page->offset ?? 0)
 		);
 
 		$notes = [];
@@ -167,8 +151,8 @@ class NoteService implements NoteServiceInterface {
 		// round trips to draw.
 		$notes = $this->withEditSummaries(notes: $notes);
 
-		return $this->visibility->filterRows(rows: $notes, filter: $visibility);
-	}//end getNotesForObject()
+		return $this->visibility->filterRows(rows: $notes, filter: $query->visibility);
+	}//end listNotes()
 
 	/**
 	 * Read one note by its id.
@@ -228,7 +212,7 @@ class NoteService implements NoteServiceInterface {
 	 * {@see updateNote()}: the controller holds the object, this service holds
 	 * the history, and the audit entry needs both.
 	 *
-	 * @param ObjectEntity $object The object the note hangs on
+	 * @param ObjectEntityInterface $object The object the note hangs on
 	 * @param int $noteId The note that was rewritten
 	 * @param int $versions The number of versions the note now has
 	 *
@@ -236,8 +220,8 @@ class NoteService implements NoteServiceInterface {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	public function auditEdit(ObjectEntity $object, int $noteId, int $versions): bool {
-		return $this->versions->auditEdit(object: $object, noteId: $noteId, versions: $versions);
+	public function auditEdit(ObjectEntityInterface $object, int $noteId, int $versions): bool {
+		return $this->versions->auditEdit(object: StoredEntity::object(object: $object), noteId: $noteId, versions: $versions);
 	}//end auditEdit()
 
 	/**
@@ -280,18 +264,8 @@ class NoteService implements NoteServiceInterface {
 	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
 	 */
 	public function createNote(string $objectUuid, string $message, ?string $visibility = null): array {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			throw new Exception('No user logged in');
-		}
-
-		return $this->createNoteAs(
-			objectUuid: $objectUuid,
-			message: $message,
-			actorType: 'users',
-			actorId: $user->getUID(),
-			visibility: $visibility
-		);
+		$author = $this->sessionAuthor();
+		return $this->postNote(draft: new NoteDraft(objectUuid: $objectUuid, message: $message, visibility: $visibility), author: $author);
 	}//end createNote()
 
 	/**
@@ -318,31 +292,53 @@ class NoteService implements NoteServiceInterface {
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
 	 */
-	public function createNoteAs(
-		string $objectUuid,
-		string $message,
-		string $actorType,
-		string $actorId,
-		?string $visibility = null,
-	): array {
-		if (trim($actorType) === '' || trim($actorId) === '') {
+	public function createNoteAs(string $objectUuid, string $message, string $actorType, string $actorId, ?string $visibility = null): array {
+		$draft = new NoteDraft(objectUuid: $objectUuid, message: $message, visibility: $visibility);
+		return $this->postNote(draft: $draft, author: new NoteAuthor(type: $actorType, id: $actorId));
+	}//end createNoteAs()
+
+	/**
+	 * Write a note on an object under the given author.
+	 *
+	 * @param NoteDraft  $draft  The object, the text and the requested visibility.
+	 * @param NoteAuthor $author The actor the note is filed under.
+	 *
+	 * @throws Exception If the author is blank.
+	 *
+	 * @return array<string, mixed> The created note.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function postNote(NoteDraft $draft, NoteAuthor $author): array {
+		if (trim($author->type) === '' || trim($author->id) === '') {
 			throw new Exception('A note needs an actor');
 		}
 
-		$comment = $this->commentsManager->create(
-			trim($actorType),
-			trim($actorId),
-			self::OBJECT_TYPE,
-			$objectUuid
-		);
+		$comment = $this->commentsManager->create(trim($author->type), trim($author->id), self::OBJECT_TYPE, $draft->objectUuid);
 
-		$comment->setMessage($message);
+		$comment->setMessage($draft->message);
 		$comment->setVerb('comment');
-		$this->applyVisibility(comment: $comment, visibility: $visibility);
+		$this->applyVisibility(comment: $comment, visibility: $draft->visibility);
 		$this->commentsManager->save($comment);
 
 		return $this->commentToArray(comment: $comment);
-	}//end createNoteAs()
+	}//end postNote()
+
+	/**
+	 * The session user as a note author.
+	 *
+	 * @throws Exception If no user is logged in.
+	 *
+	 * @return NoteAuthor The author.
+	 */
+	private function sessionAuthor(): NoteAuthor {
+		$user = $this->accounts->userSession->getUser();
+		if ($user === null) {
+			throw new Exception('No user logged in');
+		}
+
+		return new NoteAuthor(type: 'users', id: $user->getUID());
+	}//end sessionAuthor()
 
 	/**
 	 * Update an existing note's message.
@@ -372,13 +368,29 @@ class NoteService implements NoteServiceInterface {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	public function updateNote(
-		int $noteId,
-		?string $message = null,
-		?string $visibility = null,
-		bool $mayManage = false,
-	): array {
-		$user = $this->userSession->getUser();
+	public function updateNote(int $noteId, ?string $message = null, ?string $visibility = null, bool $mayManage = false): array {
+		return $this->editNote(noteId: $noteId, edit: new NoteEdit(message: $message, visibility: $visibility, mayManage: $mayManage));
+	}//end updateNote()
+
+	/**
+	 * Edit a note's text and/or visibility.
+	 *
+	 * A text edit by anyone but the author needs the manage right and keeps
+	 * the previous text as a version; a locked note refuses every edit.
+	 *
+	 * @param int      $noteId The note to edit.
+	 * @param NoteEdit $edit   The new text, the new visibility and the manage right.
+	 *
+	 * @throws Exception If no user is logged in or the note does not exist.
+	 * @throws NoteLockedException If the note is locked.
+	 * @throws NoteEditForbiddenException If the editor may not rewrite the text.
+	 *
+	 * @return array<string, mixed> The updated note.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function editNote(int $noteId, NoteEdit $edit): array {
+		$user = $this->accounts->userSession->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
 		}
@@ -393,24 +405,18 @@ class NoteService implements NoteServiceInterface {
 			throw new NoteLockedException(noteId: $noteId);
 		}
 
-		if ($message !== null) {
-			if ($comment->getActorId() !== $user->getUID() && $mayManage === false) {
+		if ($edit->message !== null) {
+			if ($comment->getActorId() !== $user->getUID() && $edit->mayManage === false) {
 				throw new NoteEditForbiddenException();
 			}
 
-			$this->versions->record(
-				noteId: $noteId,
-				previousMessage: $comment->getMessage(),
-				author: $comment->getActorId(),
-				authorType: $comment->getActorType(),
-				editedBy: $user->getUID()
-			);
+			$this->versions->record(noteId: $noteId, previous: $comment, editedBy: $user->getUID());
 
-			$comment->setMessage($message);
+			$comment->setMessage($edit->message);
 		}
 
-		if ($visibility !== null) {
-			$this->applyVisibility(comment: $comment, visibility: $visibility);
+		if ($edit->visibility !== null) {
+			$this->applyVisibility(comment: $comment, visibility: $edit->visibility);
 		}
 
 		$this->commentsManager->save($comment);
@@ -418,7 +424,7 @@ class NoteService implements NoteServiceInterface {
 		$notes = $this->withEditSummaries(notes: [$this->commentToArray(comment: $comment)]);
 
 		return $notes[0];
-	}//end updateNote()
+	}//end editNote()
 
 	/**
 	 * Write the flag onto a comment, leaving the rest of its metadata alone.
@@ -593,14 +599,14 @@ class NoteService implements NoteServiceInterface {
 		$actorDisplayName = $actorId;
 
 		// Resolve the display name from the user manager.
-		$actorUser = $this->userManager->get($actorId);
+		$actorUser = $this->accounts->userManager->get($actorId);
 		if ($actorUser !== null) {
 			$actorDisplayName = $actorUser->getDisplayName();
 		}
 
 		// Check if the current user is the author.
 		$isCurrentUser = false;
-		$currentUser = $this->userSession->getUser();
+		$currentUser = $this->accounts->userSession->getUser();
 		if ($currentUser !== null) {
 			$isCurrentUser = $currentUser->getUID() === $actorId;
 		}

@@ -8,8 +8,10 @@ declare(strict_types=1);
 namespace Unit\Service;
 
 use OCA\DAV\CardDAV\CardDavBackend;
+use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Service\ContactService;
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -82,13 +84,22 @@ class ContactServiceVcardFieldsTest extends TestCase {
 		$service = new ContactService(
 			$this->createMock(ContactLinkMapper::class),
 			$cardDav,
-			$this->createMock(IUserSession::class),
-			$this->createMock(LoggerInterface::class),
+			new LinkSessionRuntime($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class)),
 			$this->createMock(IURLGenerator::class)
 		);
 
+		$link = new ContactLink();
+		if ($addressbookId !== null) {
+			$link->setAddressbookId($addressbookId);
+		}
+
+		if ($contactUri !== null) {
+			$link->setContactUri($contactUri);
+		}
+
+		$card = (new ReflectionMethod(ContactService::class, 'cardRefOf'))->invoke($service, $link);
 		$method = new ReflectionMethod(ContactService::class, 'extractVcardFields');
-		$actual = $method->invoke($service, $addressbookId, $contactUri, $contactUid);
+		$actual = $method->invoke($service, $card, $contactUid);
 
 		$this->assertSame($expected, $actual);
 	}//end testExtractVcardFields()

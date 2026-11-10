@@ -18,6 +18,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RelationHandlerStores;
 use OCA\OpenRegister\Service\Object\RelationLookup;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use PHPUnit\Framework\TestCase;
@@ -319,11 +320,13 @@ class RelationHandlerLookupsGoldenTest extends TestCase {
 		$rbac = $this->createMock(MagicRbacHandler::class);
 		$rbac->method('isAdmin')->willReturnCallback(fn (): bool => in_array($this->uid, $this->admins, true));
 		$rbac->method('getCurrentUserId')->willReturnCallback(fn (): ?string => $this->uid);
-		$rbac->method('hasPermission')->willReturnCallback(
-			function (...$args): bool {
-				$this->record(name: 'hasPermission', args: $args);
-				$uuid = $args[5] ?? null;
-				return $this->uid !== null && in_array($uuid, ($this->readableByUser[$this->uid] ?? []), true) === true;
+		$rbac->method('hasRowPermission')->willReturnCallback(
+			function (Schema $schema, string $action, ObjectEntity $row): bool {
+				// The row's facts are recorded as the old six-argument call passed
+				// them, so the golden shows the same facts reach the verdict.
+				$facts = [$schema, $action, $row->getOwner(), $row->getMatchEnvelope(), $row->getAuthorization(), $row->getUuid()];
+				$this->record(name: 'hasRowPermission', args: $facts);
+				return $this->uid !== null && in_array($row->getUuid(), ($this->readableByUser[$this->uid] ?? []), true) === true;
 			}
 		);
 
@@ -356,12 +359,14 @@ class RelationHandlerLookupsGoldenTest extends TestCase {
 		}
 
 		return new RelationHandler(
-			objectEntityMapper: $magic,
-			schemaMapper: $schemaMapper,
+			stores: new RelationHandlerStores(
+				objects: $magic,
+				schemas: $schemaMapper,
+				registers: $registerMapper,
+				relationTypes: $resolver
+			),
 			rbacHandler: $rbac,
-			logger: $logger,
-			registerMapper: $registerMapper,
-			relationTypes: $resolver
+			logger: $logger
 		);
 	}//end handler()
 

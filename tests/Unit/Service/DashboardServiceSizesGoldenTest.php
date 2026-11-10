@@ -28,6 +28,7 @@ use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -142,7 +143,7 @@ class DashboardServiceSizesGoldenTest extends TestCase {
 		$logger = $this->logger();
 		$sizes = new DashboardSizes($objects, $audit, new RegisterSchemaLookup($registers, $this->schemas()), $logger);
 
-		return new DashboardService($objects, $audit, $webhooks, $registers, $sizes, $logger);
+		return new DashboardService(new \OCA\OpenRegister\Search\Service\DashboardMappers(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registers, schemas: $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), tables: $objects), $audit, $webhooks), $sizes, $logger);
 	}//end service()
 
 	private function note(string $call, array $args): void {
@@ -178,7 +179,8 @@ class DashboardServiceSizesGoldenTest extends TestCase {
 			}
 		);
 		$mapper->method('getStatistics')->willReturnCallback(
-			function (mixed ...$args): array {
+			function (StatisticsScope $scope): array {
+				$args = [$scope->registerId, $scope->schemaId, $scope->exclude];
 				$this->note('objects.getStatistics', $args);
 				return ['total' => 11, 'size' => 12, 'invalid' => 13, 'deleted' => 14, 'locked' => 15, 'published' => 16];
 			}

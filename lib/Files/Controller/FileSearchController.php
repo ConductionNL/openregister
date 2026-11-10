@@ -23,13 +23,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller;
 
-use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Files\Controller\Support\FileSearchControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCA\OpenRegister\Files\Service\File\FileReadScope;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\HybridSearchRequest;
 
 /**
  * FileSearchController
@@ -45,24 +48,48 @@ use Psr\Log\LoggerInterface;
  */
 class FileSearchController extends Controller {
 	/**
+	 * Vectorization service.
+	 *
+	 * @var VectorizationServiceInterface
+	 */
+	private readonly VectorizationServiceInterface $vectorService;
+
+	/**
+	 * Chunk mapper (ranked keyword arm).
+	 *
+	 * @var ChunkMapperInterface
+	 */
+	private readonly ChunkMapperInterface $chunkMapper;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Keeps only the hits on files the caller may open.
+	 *
+	 * @var FileReadScope
+	 */
+	private readonly FileReadScope $readScope;
+
+	/**
 	 * Constructor
 	 *
-	 * @param string $appName App name
-	 * @param IRequest $request Request object
-	 * @param VectorizationServiceInterface $vectorService Vectorization service
-	 * @param ChunkMapper $chunkMapper Chunk mapper (ranked keyword arm)
-	 * @param LoggerInterface $logger Logger
-	 * @param FileReadScope $readScope Keeps only the hits on files the caller may open
+	 * @param IRequest                     $request  Request object
+	 * @param FileSearchControllerServices $services Vectorization service, chunk mapper, the read scope and the logger
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly VectorizationServiceInterface $vectorService,
-		private readonly ChunkMapper $chunkMapper,
-		private readonly LoggerInterface $logger,
-		private readonly FileReadScope $readScope,
+		FileSearchControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->vectorService = $services->vectorService;
+		$this->chunkMapper = $services->chunkMapper;
+		$this->readScope = $services->readScope;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
@@ -189,10 +216,12 @@ class FileSearchController extends Controller {
 			);
 
 			$serviceResponse = $this->vectorService->hybridSearch(
-				query: $query,
-				keywordResults: $keywordResults,
-				limit: $limit,
-				weights: ['keyword' => $keywordWeight, 'vector' => $semanticWeight]
+				request: new HybridSearchRequest(
+					query: $query,
+					keywordResults: $keywordResults,
+					limit: $limit,
+					weights: ['keyword' => $keywordWeight, 'vector' => $semanticWeight]
+				)
 			);
 
 			$results = $this->readScope->readableResults(results: ($serviceResponse['results'] ?? []));

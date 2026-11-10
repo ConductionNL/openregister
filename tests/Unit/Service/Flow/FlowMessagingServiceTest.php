@@ -32,6 +32,9 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowMessagingService;
 use OCA\OpenRegister\Service\Flow\FlowStepReport;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
+use OCA\OpenRegister\Service\Flow\MessageSend;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityFactory;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicy;
@@ -39,6 +42,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceSe
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Notifications\Service\Notification\RateLimiter;
+use OCA\OpenRegister\Notifications\Service\Notification\TalkMessage;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSendException;
 use OCP\BackgroundJob\IJobList;
@@ -59,6 +63,10 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Flow\FlowMessagingChannels;
+use OCA\OpenRegister\Service\Flow\FlowMessagingOverrides;
+use OCA\OpenRegister\Service\Flow\FlowMessagingPlatform;
+use OCA\OpenRegister\Service\Flow\FlowMessagingRecipients;
 
 /**
  * A tiny in-memory ICache for the rate limiter, so bucket state is real
@@ -107,14 +115,14 @@ class RecordingTalkSender extends TalkSender {
 
 	public ?TalkSendException $throwOnPost = null;
 
-	protected function postViaTalkApp(string $token, string $message, string $actorUid): void {
+	protected function postViaTalkApp(TalkMessage $talkMessage, string $actorUid): void {
 		if ($this->throwOnPost !== null) {
 			throw $this->throwOnPost;
 		}
 
 		$this->posts[] = [
-			'token' => $token,
-			'message' => $message,
+			'token' => $talkMessage->token,
+			'message' => $talkMessage->message,
 			'actor' => $actorUid,
 		];
 	}
@@ -239,37 +247,50 @@ class FlowMessagingServiceTest extends TestCase {
 		$cacheFactory->method('createDistributed')->willReturn($this->cache);
 
 		return new FlowMessagingService(
-			channelPolicy: $this->channelPolicy(),
-			recipientResolver: new NotificationRecipientResolver(
-				userManager: $this->userManager,
-				groupManager: $this->groupManager,
-				logger: $logger
+			channels: new FlowMessagingChannels(
+				channelPolicy: $this->channelPolicy(),
+				ncSender: new NcNotificationSender(
+					notificationManager: $this->notificationManager,
+					logger: $logger,
+					userManager: $this->userManager,
+					jobList: $this->jobList,
+					channelPolicy: $this->channelPolicy()
+				),
+				emailSender: new EmailSender(
+					userManager: $this->userManager,
+					mailer: $this->mailer,
+					logger: $logger,
+					channelPolicy: $this->channelPolicy()
+				),
+				talkSender: $this->talkSender
 			),
-			templating: new NotificationTemplating(logger: $logger),
-			ncSender: new NcNotificationSender(
-				notificationManager: $this->notificationManager,
+			recipients: new FlowMessagingRecipients(
+				recipientResolver: new NotificationRecipientResolver(
+					userManager: $this->userManager,
+					groupManager: $this->groupManager,
+					logger: $logger
+				),
+				preferences: new NotificationPreferenceService(
+					config: $this->config,
+					schemaMapper: $this->createMock(SchemaMapper::class),
+					logger: $logger
+				),
+				rateLimiter: $this->rateLimiter(),
+				userManager: $this->userManager
+			),
+			platform: new FlowMessagingPlatform(
+				templating: new NotificationTemplating(logger: $logger),
+				appConfig: $this->appConfig,
 				logger: $logger,
-				userManager: $this->userManager,
-				jobList: $this->jobList,
-				channelPolicy: $this->channelPolicy()
+				eventDispatcher: $this->createMock(\OCP\EventDispatcher\IEventDispatcher::class)
 			),
-			emailSender: new EmailSender(
-				userManager: $this->userManager,
-				mailer: $this->mailer,
-				logger: $logger,
-				channelPolicy: $this->channelPolicy()
-			),
-			talkSender: $this->talkSender,
-			rateLimiter: $this->rateLimiter(),
-			preferences: new NotificationPreferenceService(
-				config: $this->config,
-				schemaMapper: $this->createMock(SchemaMapper::class),
-				logger: $logger
-			),
-			userManager: $this->userManager,
-			appConfig: $this->appConfig,
-			logger: $logger,
-			eventDispatcher: $this->createMock(\OCP\EventDispatcher\IEventDispatcher::class)
+			overrides: new FlowMessagingOverrides(
+				optOut: new OptOutAuthority(
+					eventDispatcher: $this->createMock(\OCP\EventDispatcher\IEventDispatcher::class),
+					appConfig: $this->appConfig,
+					logger: $logger
+				)
+			)
 		);
 	}//end makeService()
 
@@ -374,6 +395,25 @@ class FlowMessagingServiceTest extends TestCase {
 		self::assertSame([], $this->talkSender->posts);
 	}//end testTalkPreviewNamesTheConversationAndPostsNothing()
 
+	/**
+	 * The MessageSend preview composes exactly what the four-argument preview composes.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
+	 *
+	 * @return void
+	 */
+	public function testPreviewFromAMessageSendMatchesThePreviewFromItsParts(): void {
+		$config = ['recipients' => ['bob'], 'subject' => 'About {{ name }}', 'body' => 'Hello'];
+		$items  = $this->itemsOf(['name' => 'Case 7']);
+
+		$messages = $this->makeService()->preview(
+			channel: 'email',
+			step: new MessageSend(config: $config, items: $items, context: $this->contextFor())
+		);
+
+		self::assertSame([['channel' => 'email', 'to' => ['bob'], 'subject' => 'About Case 7', 'body' => 'Hello']], $messages);
+	}//end testPreviewFromAMessageSendMatchesThePreviewFromItsParts()
+
 	// ---- Attribution -------------------------------------------------------
 
 	public function testMissingActingUserFailsTheStepAndSendsNothing(): void {
@@ -382,12 +422,7 @@ class FlowMessagingServiceTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/runAs/');
 
-		$this->makeService()->sendNotification(
-			config: ['recipients' => ['bob'], 'message' => 'hi'],
-			items: $this->itemsOf(),
-			context: $this->contextFor(runAs: null),
-			stepName: 'openregister.send-notification'
-		);
+		$this->makeService()->notify(request: new \OCA\OpenRegister\Service\Flow\MessageSend(config: ['recipients' => ['bob'], 'message' => 'hi'], items: $this->itemsOf(), context: $this->contextFor(runAs: null), stepName: 'openregister.send-notification'));
 	}//end testMissingActingUserFailsTheStepAndSendsNothing()
 
 	public function testDisabledActingUserFailsTheStepAndSendsNothing(): void {
@@ -397,21 +432,11 @@ class FlowMessagingServiceTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/disabled/');
 
-		$this->makeService()->sendNotification(
-			config: ['recipients' => ['bob'], 'message' => 'hi'],
-			items: $this->itemsOf(),
-			context: $this->contextFor(runAs: 'ghosted'),
-			stepName: 'openregister.send-notification'
-		);
+		$this->makeService()->notify(request: new \OCA\OpenRegister\Service\Flow\MessageSend(config: ['recipients' => ['bob'], 'message' => 'hi'], items: $this->itemsOf(), context: $this->contextFor(runAs: 'ghosted'), stepName: 'openregister.send-notification'));
 	}//end testDisabledActingUserFailsTheStepAndSendsNothing()
 
 	public function testTalkPostIsAttributedToTheActingUser(): void {
-		$report = $this->makeService()->sendTalkMessage(
-			config: ['conversation' => 'room-token', 'message' => 'Case {{ name }} moved'],
-			items: $this->itemsOf(json: ['name' => 'Case 7']),
-			context: $this->contextFor(runAs: 'alice'),
-			stepName: 'openregister.send-talk-message'
-		);
+		$report = $this->makeService()->talk(request: new \OCA\OpenRegister\Service\Flow\MessageSend(config: ['conversation' => 'room-token', 'message' => 'Case {{ name }} moved'], items: $this->itemsOf(json: ['name' => 'Case 7']), context: $this->contextFor(runAs: 'alice'), stepName: 'openregister.send-talk-message'));
 
 		$this->assertCount(1, $this->talkSender->posts);
 		$this->assertSame('alice', $this->talkSender->posts[0]['actor']);
@@ -429,12 +454,7 @@ class FlowMessagingServiceTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/not a participant/');
 
-		$this->makeService()->sendTalkMessage(
-			config: ['conversation' => 'room-token', 'message' => 'hello'],
-			items: $this->itemsOf(),
-			context: $this->contextFor(runAs: 'alice'),
-			stepName: 'openregister.send-talk-message'
-		);
+		$this->makeService()->talk(request: new \OCA\OpenRegister\Service\Flow\MessageSend(config: ['conversation' => 'room-token', 'message' => 'hello'], items: $this->itemsOf(), context: $this->contextFor(runAs: 'alice'), stepName: 'openregister.send-talk-message'));
 	}//end testTalkNonParticipantIsAStepFailureNotAnAutoJoin()
 
 	// ---- Kill switches -----------------------------------------------------
@@ -447,22 +467,12 @@ class FlowMessagingServiceTest extends TestCase {
 
 		$service = $this->makeService();
 		$context = $this->contextFor();
-		$service->sendNotification(
-			config: ['recipients' => ['bob'], 'message' => 'hi'],
-			items: $this->itemsOf(),
-			context: $context,
-			stepName: 'openregister.send-notification'
-		);
+		$service->notify(request: new \OCA\OpenRegister\Service\Flow\MessageSend(config: ['recipients' => ['bob'], 'message' => 'hi'], items: $this->itemsOf(), context: $context, stepName: 'openregister.send-notification'));
 
 		// Now the guard: switch thrown, nothing may leave, and the outcome is
 		// a SKIP in the report — not a failure, not silence.
 		$this->appValues['notification_channel_nc_notification_enabled'] = 'false';
-		$report = $service->sendNotification(
-			config: ['recipients' => ['bob'], 'message' => 'hi'],
-			items: $this->itemsOf(),
-			context: $context,
-			stepName: 'openregister.send-notification'
-		);
+		$report = $service->notify(request: new \OCA\OpenRegister\Service\Flow\MessageSend(config: ['recipients' => ['bob'], 'message' => 'hi'], items: $this->itemsOf(), context: $context, stepName: 'openregister.send-notification'));
 
 		$this->assertSame(1, $report['skippedByKillSwitch']['count']);
 		$this->assertSame(['bob'], $report['skippedByKillSwitch']['sample']);
@@ -473,12 +483,7 @@ class FlowMessagingServiceTest extends TestCase {
 		$this->mailer->expects($this->never())->method('send');
 		$this->appValues['notification_channel_email_enabled'] = 'false';
 
-		$report = $this->makeService()->sendEmail(
-			config: ['recipients' => ['bob'], 'subject' => 's', 'body' => 'b'],
-			items: $this->itemsOf(),
-			context: $this->contextFor(),
-			stepName: 'openregister.send-email'
-		);
+		$report = $this->makeService()->email(request: new \OCA\OpenRegister\Service\Flow\MessageSend(config: ['recipients' => ['bob'], 'subject' => 's', 'body' => 'b'], items: $this->itemsOf(), context: $this->contextFor(), stepName: 'openregister.send-email'));
 
 		$this->assertSame(1, $report['skippedByKillSwitch']['count']);
 	}//end testEmailKillSwitchStopsTheMailer()
@@ -496,12 +501,7 @@ class FlowMessagingServiceTest extends TestCase {
 		$this->mailer->method('createMessage')->willReturn($message);
 		$this->mailer->expects($this->exactly(1))->method('send');
 
-		$report = $this->makeService()->sendEmail(
-			config: ['recipients' => ['bob', 'carol'], 'subject' => 's', 'body' => 'b'],
-			items: $this->itemsOf(),
-			context: $this->contextFor(),
-			stepName: 'openregister.send-email'
-		);
+		$report = $this->makeService()->email(request: new \OCA\OpenRegister\Service\Flow\MessageSend(config: ['recipients' => ['bob', 'carol'], 'subject' => 's', 'body' => 'b'], items: $this->itemsOf(), context: $this->contextFor(), stepName: 'openregister.send-email'));
 
 		$this->assertSame(1, $report['skippedByPreference']['count']);
 		$this->assertSame(['bob'], $report['skippedByPreference']['sample']);
@@ -531,12 +531,7 @@ class FlowMessagingServiceTest extends TestCase {
 		$this->notificationManager->expects($this->never())->method('notify');
 
 		try {
-			$this->makeService()->sendNotification(
-				config: ['recipients' => ['everyone'], 'message' => 'hi'],
-				items: $this->itemsOf(),
-				context: $this->contextFor(),
-				stepName: 'openregister.send-notification'
-			);
+			$this->makeService()->notify(request: new \OCA\OpenRegister\Service\Flow\MessageSend(config: ['recipients' => ['everyone'], 'message' => 'hi'], items: $this->itemsOf(), context: $this->contextFor(), stepName: 'openregister.send-notification'));
 			$this->fail('The exploding recipient list must be refused.');
 		} catch (RuntimeException $e) {
 			// The failure names the resolved count and the bound.
@@ -551,12 +546,7 @@ class FlowMessagingServiceTest extends TestCase {
 		$this->notificationManager->expects($this->exactly(2))->method('notify');
 
 		// Two recipients under a bound of two: sends proceed.
-		$this->makeService()->sendNotification(
-			config: ['recipients' => ['bob', 'carol'], 'message' => 'hi'],
-			items: $this->itemsOf(),
-			context: $this->contextFor(),
-			stepName: 'openregister.send-notification'
-		);
+		$this->makeService()->notify(request: new \OCA\OpenRegister\Service\Flow\MessageSend(config: ['recipients' => ['bob', 'carol'], 'message' => 'hi'], items: $this->itemsOf(), context: $this->contextFor(), stepName: 'openregister.send-notification'));
 	}//end testRecipientBoundIsAppConfigRaisable()
 
 	// ---- Rate limiting -----------------------------------------------------
@@ -574,12 +564,7 @@ class FlowMessagingServiceTest extends TestCase {
 		$this->notificationManager->method('createNotification')->willReturn($this->fluentNotification());
 		$this->notificationManager->expects($this->exactly(1))->method('notify');
 
-		$report = $this->makeService()->sendNotification(
-			config: ['recipients' => ['bob', 'carol'], 'message' => 'hi'],
-			items: $this->itemsOf(),
-			context: $this->contextFor(),
-			stepName: 'openregister.send-notification'
-		);
+		$report = $this->makeService()->notify(request: new \OCA\OpenRegister\Service\Flow\MessageSend(config: ['recipients' => ['bob', 'carol'], 'message' => 'hi'], items: $this->itemsOf(), context: $this->contextFor(), stepName: 'openregister.send-notification'));
 
 		$this->assertSame(1, $report['rateLimited']['count']);
 		$this->assertSame(['bob'], $report['rateLimited']['sample']);
@@ -593,12 +578,7 @@ class FlowMessagingServiceTest extends TestCase {
 
 		$context = $this->contextFor();
 		try {
-			$this->makeService()->sendEmail(
-				config: ['recipients' => ['bob'], 'subject' => 's', 'body' => 'b'],
-				items: $this->itemsOf(),
-				context: $context,
-				stepName: 'openregister.send-email'
-			);
+			$this->makeService()->email(request: new \OCA\OpenRegister\Service\Flow\MessageSend(config: ['recipients' => ['bob'], 'subject' => 's', 'body' => 'b'], items: $this->itemsOf(), context: $context, stepName: 'openregister.send-email'));
 			$this->fail('A failed handoff must fail the step.');
 		} catch (RuntimeException $e) {
 			$this->assertStringContainsString('email', $e->getMessage());
@@ -616,12 +596,7 @@ class FlowMessagingServiceTest extends TestCase {
 		$this->notificationManager->method('createNotification')->willReturn($this->fluentNotification());
 
 		$context = $this->contextFor();
-		$report = $this->makeService()->sendNotification(
-			config: ['recipients' => ['bob', 'nobody-here'], 'message' => 'hi'],
-			items: $this->itemsOf(),
-			context: $context,
-			stepName: 'openregister.send-notification'
-		);
+		$report = $this->makeService()->notify(request: new \OCA\OpenRegister\Service\Flow\MessageSend(config: ['recipients' => ['bob', 'nobody-here'], 'message' => 'hi'], items: $this->itemsOf(), context: $context, stepName: 'openregister.send-notification'));
 
 		$this->assertSame(1, $report['unknownRecipients']['count']);
 		$this->assertSame(['nobody-here'], $report['unknownRecipients']['sample']);
@@ -631,12 +606,7 @@ class FlowMessagingServiceTest extends TestCase {
 		$this->notificationManager->method('createNotification')->willReturn($this->fluentNotification());
 		$this->notificationManager->expects($this->exactly(1))->method('notify');
 
-		$report = $this->makeService()->sendNotification(
-			config: ['recipients' => ['{{ item.assignee }}'], 'message' => 'hi'],
-			items: $this->itemsOf(json: ['assignee' => 'carol']),
-			context: $this->contextFor(),
-			stepName: 'openregister.send-notification'
-		);
+		$report = $this->makeService()->notify(request: new \OCA\OpenRegister\Service\Flow\MessageSend(config: ['recipients' => ['{{ item.assignee }}'], 'message' => 'hi'], items: $this->itemsOf(json: ['assignee' => 'carol']), context: $this->contextFor(), stepName: 'openregister.send-notification'));
 
 		$this->assertSame(['carol'], $report['delivered']['sample']);
 	}//end testTemplateRecipientResolvesAFieldOnTheItem()
@@ -647,11 +617,6 @@ class FlowMessagingServiceTest extends TestCase {
 		// configuration asking for it.
 		$this->jobList->expects($this->exactly(1))->method('add');
 
-		$this->makeService()->sendNotification(
-			config: ['recipients' => ['bob'], 'message' => 'hi'],
-			items: $this->itemsOf(),
-			context: $this->contextFor(),
-			stepName: 'openregister.send-notification'
-		);
+		$this->makeService()->notify(request: new \OCA\OpenRegister\Service\Flow\MessageSend(config: ['recipients' => ['bob'], 'message' => 'hi'], items: $this->itemsOf(), context: $this->contextFor(), stepName: 'openregister.send-notification'));
 	}//end testWebPushRidesAlongWithADeliveredNotification()
 }//end class

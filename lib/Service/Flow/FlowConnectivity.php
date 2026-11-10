@@ -49,6 +49,42 @@ namespace OCA\OpenRegister\Service\Flow;
  * @spec openspec/specs/flow-engine/spec.md
  */
 class FlowConnectivity {
+
+	/**
+	 * The dead-end warning, given the node id.
+	 *
+	 * @var string
+	 */
+	private const DEAD_END_DETAIL = 'Node "%s" has no outgoing edge and does not end the flow, so its token would '
+		. 'arrive, run, and stop with the run reported as completed. Connect it, give it '
+		. 'a terminal step type, or mark it "exit": true if stopping there is deliberate.';
+
+	/**
+	 * The warning for a flow with no trigger node.
+	 *
+	 * @var string
+	 */
+	private const NO_TRIGGER_DETAIL = 'This flow has no trigger node, so nothing can ever start it. '
+		. 'Add a trigger — an object change, a schedule, or someone running it by hand.';
+
+	/**
+	 * The warning for a flow with no end node.
+	 *
+	 * @var string
+	 */
+	private const NO_END_DETAIL = 'This flow has no end node, so no path finishes deliberately. '
+		. 'Add an End node — it may end in success or in error, but the flow must say where it stops.';
+
+	/**
+	 * What to report when a role is missing, trigger first.
+	 *
+	 * @var array<string, array{reason: string, detail: string}>
+	 */
+	private const MISSING_ROLE = [
+		'trigger' => ['reason' => FlowNodePreflight::REASON_NO_TRIGGER, 'detail' => self::NO_TRIGGER_DETAIL],
+		'end' => ['reason' => FlowNodePreflight::REASON_NO_END, 'detail' => self::NO_END_DETAIL],
+	];
+
 	/**
 	 * Reads edge endpoints the one way the document defines them.
 	 *
@@ -59,12 +95,12 @@ class FlowConnectivity {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowNodeRegistry $registry Resolves whether a type ends a path.
+	 * @param FlowNodeCatalogueInterface $registry Resolves whether a type ends a path.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function __construct(
-		private readonly FlowNodeRegistry $registry,
+		private readonly FlowNodeCatalogueInterface $registry,
 	) {
 		$this->graph = new FlowGraph();
 
@@ -80,38 +116,38 @@ class FlowConnectivity {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function deadEnds(array $flow): array {
-		$nodes = ($flow['nodes'] ?? []);
-		if (is_array($nodes) === false || $nodes === []) {
+		$nodes = $this->nodesOf(flow: $flow);
+		if ($nodes === []) {
 			return [];
 		}
 
 		$hasOutgoing = $this->nodeIdsWithAnExit(flow: $flow);
+		$deadEnds = array_filter($nodes, fn (mixed $node): bool => $this->isDeadEnd(node: $node, hasOutgoing: $hasOutgoing));
 
-		$warnings = [];
-		foreach ($nodes as $node) {
-			if ($this->isDeadEnd(node: $node, hasOutgoing: $hasOutgoing) === false) {
-				continue;
-			}
-
-			$id = trim((string)$node['id']);
-			$type = trim((string)($node['type'] ?? ''));
-
-			$warnings[] = [
-				'type' => $type,
-				'app' => $this->ownerOf(type: $type),
-				'step' => $id,
-				'reason' => FlowNodePreflight::REASON_DEAD_END,
-				'detail' => sprintf(
-					'Node "%s" has no outgoing edge and does not end the flow, so its token would '
-					. 'arrive, run, and stop with the run reported as completed. Connect it, give it '
-					. 'a terminal step type, or mark it "exit": true if stopping there is deliberate.',
-					$id
-				),
-			];
-		}//end foreach
-
-		return $warnings;
+		return array_values(array_map(fn (array $node): array => $this->deadEndFinding(node: $node), $deadEnds));
 	}//end deadEnds()
+
+	/**
+	 * The warning for one dead-end node.
+	 *
+	 * @param array $node The node entry, known to be a dead end.
+	 *
+	 * @return array<string, string> The finding.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	private function deadEndFinding(array $node): array {
+		$id = trim((string)$node['id']);
+		$type = $this->typeOf(node: $node);
+
+		return [
+			'type' => $type,
+			'app' => $this->ownerOf(type: $type),
+			'step' => $id,
+			'reason' => FlowNodePreflight::REASON_DEAD_END,
+			'detail' => sprintf(self::DEAD_END_DETAIL, $id),
+		];
+	}//end deadEndFinding()
 
 	/**
 	 * Whether the flow has a way IN and a way OUT.
@@ -133,7 +169,9 @@ class FlowConnectivity {
 	 * deliberately.
 	 *
 	 * WARNINGS, never blocking — same reasoning as {@see deadEnds()}: a flow
-	 * mid-authoring is legitimately missing both.
+	 * mid-authoring is legitimately missing both. An empty document is not a
+	 * flow missing its ends; it is a flow with nothing in it, which the author
+	 * can see perfectly well, so it gets no findings.
 	 *
 	 * @param array $flow The flow document.
 	 *
@@ -142,48 +180,78 @@ class FlowConnectivity {
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-must-have-a-trigger-and-an-end
 	 */
 	public function entryAndExit(array $flow): array {
-		$nodes = ($flow['nodes'] ?? []);
-		if (is_array($nodes) === false || $nodes === []) {
-			// An empty document is not a flow missing its ends; it is a flow
-			// with nothing in it, which the author can see perfectly well.
+		$nodes = $this->nodesOf(flow: $flow);
+		if ($nodes === []) {
 			return [];
 		}
 
-		$rolesPresent = $this->rolesPresent(nodes: $nodes);
+		return $this->missingRoleFindings(roles: $this->rolesPresent(nodes: $nodes));
+	}//end entryAndExit()
+
+	/**
+	 * One finding per role the document lacks, trigger first.
+	 *
+	 * @param array{trigger: bool, end: bool} $roles Which roles are present.
+	 *
+	 * @return array<int, array<string, string>> The findings.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-must-have-a-trigger-and-an-end
+	 */
+	private function missingRoleFindings(array $roles): array {
 		$findings = [];
-
-		if ($rolesPresent['trigger'] === false) {
-			$findings[] = [
-				'type' => '',
-				'app' => '',
-				'step' => '',
-				'reason' => FlowNodePreflight::REASON_NO_TRIGGER,
-				'detail' => 'This flow has no trigger node, so nothing can ever start it. '
-					. 'Add a trigger — an object change, a schedule, or someone running it by hand.',
-			];
-		}
-
-		if ($rolesPresent['end'] === false) {
-			$findings[] = [
-				'type' => '',
-				'app' => '',
-				'step' => '',
-				'reason' => FlowNodePreflight::REASON_NO_END,
-				'detail' => 'This flow has no end node, so no path finishes deliberately. '
-					. 'Add an End node — it may end in success or in error, but the flow must say where it stops.',
-			];
+		foreach (self::MISSING_ROLE as $role => $missing) {
+			if ($roles[$role] === false) {
+				$findings[] = $this->flowFinding(reason: $missing['reason'], detail: $missing['detail']);
+			}
 		}
 
 		return $findings;
-	}//end entryAndExit()
+	}//end missingRoleFindings()
+
+	/**
+	 * A finding about the document as a whole, naming no node.
+	 *
+	 * @param string $reason The reason constant.
+	 * @param string $detail The message.
+	 *
+	 * @return array<string, string> The finding.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-must-have-a-trigger-and-an-end
+	 */
+	private function flowFinding(string $reason, string $detail): array {
+		return [
+			'type' => '',
+			'app' => '',
+			'step' => '',
+			'reason' => $reason,
+			'detail' => $detail,
+		];
+	}//end flowFinding()
+
+	/**
+	 * The document's node list, or an empty list when it carries none.
+	 *
+	 * @param array $flow The flow document.
+	 *
+	 * @return array<int|string, mixed> The nodes.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	private function nodesOf(array $flow): array {
+		$nodes = ($flow['nodes'] ?? []);
+		if (is_array($nodes) === false) {
+			return [];
+		}
+
+		return $nodes;
+	}//end nodesOf()
 
 	/**
 	 * Which of the two ROLES the document actually contains.
 	 *
-	 * Extracted from `entryAndExit()`, which sat exactly on the configured
-	 * thresholds (Cyclomatic 10 of 10, NPath 204 of 200). The split is along a
-	 * real seam rather than an arbitrary one: this method answers "what is in
-	 * the document", and its caller answers "what should the author be told".
+	 * The split from `entryAndExit()` is along a real seam: this method
+	 * answers "what is in the document", and its caller answers "what should
+	 * the author be told".
 	 *
 	 * `exit: true` is deliberately NOT consulted. That flag marks a node as
 	 * ending this PATH, which is what the dead-end check honours; it does not
@@ -196,34 +264,54 @@ class FlowConnectivity {
 	 * @return array{trigger: bool, end: bool} Which roles are present.
 	 */
 	private function rolesPresent(array $nodes): array {
-		$hasTrigger = false;
-		$hasEnd = false;
-
+		$roles = ['trigger' => false, 'end' => false];
 		foreach ($nodes as $node) {
-			if (is_array($node) === false) {
-				continue;
+			$type = $this->typeOf(node: $node);
+			if ($type !== '') {
+				$roles = $this->withRolesOf(type: $type, roles: $roles);
 			}
+		}
 
-			$type = trim((string)($node['type'] ?? ''));
-			if ($type === '') {
-				continue;
-			}
-
-			if ($this->registry->isTrigger(type: $type) === true) {
-				$hasTrigger = true;
-			}
-
-			if ($this->registry->isEnd(type: $type) === true) {
-				$hasEnd = true;
-			}
-		}//end foreach
-
-		return [
-			'trigger' => $hasTrigger,
-			'end' => $hasEnd,
-		];
+		return $roles;
 
 	}//end rolesPresent()
+
+	/**
+	 * The roles found so far, plus whichever ones this type plays.
+	 *
+	 * @param string                          $type  The node type.
+	 * @param array{trigger: bool, end: bool} $roles The roles found so far.
+	 *
+	 * @return array{trigger: bool, end: bool} The roles found.
+	 */
+	private function withRolesOf(string $type, array $roles): array {
+		if ($this->registry->isTrigger(type: $type) === true) {
+			$roles['trigger'] = true;
+		}
+
+		if ($this->registry->isEnd(type: $type) === true) {
+			$roles['end'] = true;
+		}
+
+		return $roles;
+	}//end withRolesOf()
+
+	/**
+	 * A node entry's trimmed type, or an empty string when it is not a record.
+	 *
+	 * @param mixed $node The node entry.
+	 *
+	 * @return string The type.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	private function typeOf(mixed $node): string {
+		if (is_array($node) === false) {
+			return '';
+		}
+
+		return trim((string)($node['type'] ?? ''));
+	}//end typeOf()
 
 	/**
 	 * Every node id that some edge leaves from.
@@ -275,26 +363,37 @@ class FlowConnectivity {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function isDeadEnd(mixed $node, array $hasOutgoing): bool {
-		if (is_array($node) === false) {
+		if ($this->isExempt(node: $node, hasOutgoing: $hasOutgoing) === true) {
 			return false;
+		}
+
+		$type = $this->typeOf(node: $node);
+
+		return ($type !== '' && $this->registry->isEnd(type: $type) === false);
+	}//end isDeadEnd()
+
+	/**
+	 * Whether a node entry is out of the dead-end check's reach.
+	 *
+	 * It is when it is not a record, carries no id, has an outgoing edge, or
+	 * says `exit: true`.
+	 *
+	 * @param mixed $node The node entry.
+	 * @param array<string, boolean> $hasOutgoing Node ids that have an exit.
+	 *
+	 * @return boolean True when the node cannot be a dead end.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	private function isExempt(mixed $node, array $hasOutgoing): bool {
+		if (is_array($node) === false) {
+			return true;
 		}
 
 		$id = trim((string)($node['id'] ?? ''));
-		if ($id === '' || isset($hasOutgoing[$id]) === true) {
-			return false;
-		}
 
-		if (($node['exit'] ?? false) === true) {
-			return false;
-		}
-
-		$type = trim((string)($node['type'] ?? ''));
-		if ($type === '') {
-			return false;
-		}
-
-		return ($this->registry->isEnd(type: $type) === false);
-	}//end isDeadEnd()
+		return ($id === '' || isset($hasOutgoing[$id]) === true || ($node['exit'] ?? false) === true);
+	}//end isExempt()
 
 	/**
 	 * The app id a namespaced node type belongs to.

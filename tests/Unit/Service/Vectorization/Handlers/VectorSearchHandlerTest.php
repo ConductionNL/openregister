@@ -23,6 +23,9 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\RankedResults;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorQuery;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\KeywordFusion;
 
 /**
  * Unit tests for VectorSearchHandler.
@@ -148,7 +151,7 @@ class VectorSearchHandlerTest extends TestCase {
 		$qb = $this->buildQueryBuilderMock([]);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
-		$result = $this->handler->semanticSearch([1.0, 0.0], 10, []);
+		$result = $this->handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10, filters: []));
 
 		$this->assertSame([], $result);
 	}//end testSemanticSearchPhpBackendReturnsEmptyWhenNoVectors()
@@ -187,7 +190,7 @@ class VectorSearchHandlerTest extends TestCase {
 		$qb = $this->buildQueryBuilderMock($rows);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
-		$results = $this->handler->semanticSearch([1.0, 0.0], 10, []);
+		$results = $this->handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10, filters: []));
 
 		$this->assertCount(2, $results);
 		$this->assertSame('uuid-2', $results[0]['entity_id']);
@@ -217,7 +220,7 @@ class VectorSearchHandlerTest extends TestCase {
 		$qb = $this->buildQueryBuilderMock($rows);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
-		$results = $this->handler->semanticSearch([1.0, 0.0], 3, []);
+		$results = $this->handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 3, filters: []));
 
 		$this->assertCount(3, $results);
 	}//end testSemanticSearchPhpBackendRespectsLimit()
@@ -253,7 +256,7 @@ class VectorSearchHandlerTest extends TestCase {
 		$qb = $this->buildQueryBuilderMock($rows);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
-		$results = $this->handler->semanticSearch([1.0, 0.0], 10, []);
+		$results = $this->handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10, filters: []));
 
 		$this->assertCount(1, $results);
 		$this->assertSame('good', $results[0]['entity_id']);
@@ -280,7 +283,7 @@ class VectorSearchHandlerTest extends TestCase {
 		$qb = $this->buildQueryBuilderMock($rows);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
-		$results = $this->handler->semanticSearch([1.0, 0.0], 10, []);
+		$results = $this->handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10, filters: []));
 
 		$this->assertSame($meta, $results[0]['metadata']);
 		$this->assertSame('model-x', $results[0]['model']);
@@ -297,7 +300,7 @@ class VectorSearchHandlerTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Semantic search failed');
 
-		$this->handler->semanticSearch([1.0, 0.0], 10, []);
+		$this->handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10, filters: []));
 	}//end testSemanticSearchPhpBackendPropagatesDbException()
 
 	public function testSemanticSearchPhpBackendWithEntityTypeStringFilter(): void {
@@ -322,7 +325,7 @@ class VectorSearchHandlerTest extends TestCase {
 
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
-		$this->handler->semanticSearch([1.0, 0.0], 5, ['entity_type' => 'object']);
+		$this->handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 5, filters: ['entity_type' => 'object']));
 	}//end testSemanticSearchPhpBackendWithEntityTypeStringFilter()
 
 	public function testSemanticSearchPhpBackendWithEntityTypeArrayFilter(): void {
@@ -347,7 +350,7 @@ class VectorSearchHandlerTest extends TestCase {
 
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
-		$this->handler->semanticSearch([1.0, 0.0], 5, ['entity_type' => ['object', 'file']]);
+		$this->handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 5, filters: ['entity_type' => ['object', 'file']]));
 	}//end testSemanticSearchPhpBackendWithEntityTypeArrayFilter()
 
 	// -- hybridSearch / Reciprocal Rank Fusion -------------------------------
@@ -368,7 +371,7 @@ class VectorSearchHandlerTest extends TestCase {
 			],
 		];
 
-		$result = $this->handler->hybridSearch([1.0, 0.0], $solrResults, 10, ['keyword' => 0.5, 'vector' => 0.5]);
+		$result = $this->handler->hybridSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10), new KeywordFusion(results: $solrResults, weights: ['keyword' => 0.5, 'vector' => 0.5]));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertArrayHasKey('total', $result);
@@ -385,7 +388,7 @@ class VectorSearchHandlerTest extends TestCase {
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
 		// Weights sum to 2 -> normalised to 0.5 each.
-		$result = $this->handler->hybridSearch([1.0, 0.0], [], 10, ['keyword' => 1.0, 'vector' => 1.0]);
+		$result = $this->handler->hybridSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10), new KeywordFusion(results: [], weights: ['keyword' => 1.0, 'vector' => 1.0]));
 
 		$this->assertEqualsWithDelta(0.5, $result['weights']['keyword'], 0.001);
 		$this->assertEqualsWithDelta(0.5, $result['weights']['vector'], 0.001);
@@ -432,7 +435,7 @@ class VectorSearchHandlerTest extends TestCase {
 			],
 		];
 
-		$result = $this->handler->hybridSearch([1.0, 0.0], $solrResults, 20, ['keyword' => 0.5, 'vector' => 0.5]);
+		$result = $this->handler->hybridSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 20), new KeywordFusion(results: $solrResults, weights: ['keyword' => 0.5, 'vector' => 0.5]));
 
 		$breakdown = $result['source_breakdown'];
 		$this->assertSame(1, $breakdown['both']);
@@ -455,7 +458,7 @@ class VectorSearchHandlerTest extends TestCase {
 			],
 		];
 
-		$result = $this->handler->hybridSearch([1.0, 0.0], $solrResults, 5, ['keyword' => 1.0, 'vector' => 0.0]);
+		$result = $this->handler->hybridSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 5), new KeywordFusion(results: $solrResults, weights: ['keyword' => 1.0, 'vector' => 0.0]));
 
 		$this->assertSame(1, $result['total']);
 	}//end testHybridSearchWithZeroVectorWeightSkipsSemanticSearch()
@@ -476,7 +479,7 @@ class VectorSearchHandlerTest extends TestCase {
 			range(0, 9)
 		);
 
-		$result = $this->handler->hybridSearch([1.0, 0.0], $solrResults, 3, ['keyword' => 0.5, 'vector' => 0.5]);
+		$result = $this->handler->hybridSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 3), new KeywordFusion(results: $solrResults, weights: ['keyword' => 0.5, 'vector' => 0.5]));
 
 		$this->assertSame(3, $result['total']);
 		$this->assertCount(3, $result['results']);
@@ -503,7 +506,7 @@ class VectorSearchHandlerTest extends TestCase {
 			],
 		];
 
-		$result = $this->handler->hybridSearch([1.0, 0.0], $solrResults, 5, ['keyword' => 0.5, 'vector' => 0.5]);
+		$result = $this->handler->hybridSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 5), new KeywordFusion(results: $solrResults, weights: ['keyword' => 0.5, 'vector' => 0.5]));
 
 		$this->assertSame(1, $result['total']);
 		$this->assertTrue($result['results'][0]['in_keyword']);
@@ -521,7 +524,7 @@ class VectorSearchHandlerTest extends TestCase {
 			['entity_type' => 'object', 'entity_id' => 'second', 'score' => 0.5, 'chunk_index' => 0, 'chunk_text' => null, 'metadata' => []],
 		];
 
-		$result = $this->handler->hybridSearch([1.0, 0.0], $solrResults, 10, ['keyword' => 1.0, 'vector' => 0.0]);
+		$result = $this->handler->hybridSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10), new KeywordFusion(results: $solrResults, weights: ['keyword' => 1.0, 'vector' => 0.0]));
 
 		$this->assertSame('first', $result['results'][0]['entity_id']);
 		$this->assertSame('second', $result['results'][1]['entity_id']);
@@ -554,7 +557,7 @@ class VectorSearchHandlerTest extends TestCase {
 		$qb = $this->buildQueryBuilderMock($rows);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
-		$results = $this->handler->semanticSearch([0.6, 0.8], 10, []);
+		$results = $this->handler->semanticSearch(new VectorQuery(embedding: [0.6, 0.8], limit: 10, filters: []));
 
 		$this->assertEqualsWithDelta(1.0, $results[0]['similarity'], 0.0001);
 	}//end testCosineSimilarityIdenticalVectorsReturnsOne()
@@ -580,7 +583,7 @@ class VectorSearchHandlerTest extends TestCase {
 		$qb = $this->buildQueryBuilderMock($rows);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
-		$results = $this->handler->semanticSearch([1.0, 0.0], 10, []);
+		$results = $this->handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10, filters: []));
 
 		$this->assertEqualsWithDelta(0.0, $results[0]['similarity'], 0.0001);
 	}//end testCosineSimilarityOrthogonalVectorsReturnsZero()
@@ -607,7 +610,7 @@ class VectorSearchHandlerTest extends TestCase {
 
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
-		$this->handler->semanticSearch([1.0, 0.0], 10, []);
+		$this->handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10, filters: []));
 	}//end testSemanticSearchPhpBackendUsesDefaultMaxVectors()
 
 	public function testSemanticSearchPhpBackendUsesCustomMaxVectors(): void {
@@ -629,7 +632,7 @@ class VectorSearchHandlerTest extends TestCase {
 
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
-		$this->handler->semanticSearch([1.0, 0.0], 10, ['max_vectors' => 100]);
+		$this->handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10, filters: ['max_vectors' => 100]));
 	}//end testSemanticSearchPhpBackendUsesCustomMaxVectors()
 
 	// -- result structure ----------------------------------------------------
@@ -653,7 +656,7 @@ class VectorSearchHandlerTest extends TestCase {
 		$qb = $this->buildQueryBuilderMock($rows);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
-		$results = $this->handler->semanticSearch([1.0, 0.0], 10, []);
+		$results = $this->handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10, filters: []));
 
 		$expected = ['vector_id', 'entity_type', 'entity_id', 'similarity', 'chunk_index', 'total_chunks', 'chunk_text', 'metadata', 'model', 'dimensions'];
 		foreach ($expected as $key) {
@@ -672,7 +675,7 @@ class VectorSearchHandlerTest extends TestCase {
 		$qb = $this->buildQueryBuilderMock([]);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
-		$result = $this->handler->hybridSearch([], [], 5, ['keyword' => 0.5, 'vector' => 0.5]);
+		$result = $this->handler->hybridSearch(new VectorQuery(embedding: [], limit: 5), new KeywordFusion(results: [], weights: ['keyword' => 0.5, 'vector' => 0.5]));
 
 		foreach (['results', 'total', 'search_time_ms', 'source_breakdown', 'weights'] as $key) {
 			$this->assertArrayHasKey($key, $result, "Missing key: {$key}");
@@ -702,7 +705,7 @@ class VectorSearchHandlerTest extends TestCase {
 		// The mismatch should be caught internally and the vector skipped (logged as warning).
 		$this->logger->expects($this->atLeastOnce())->method('warning');
 
-		$results = $this->handler->semanticSearch([1.0, 0.0], 10, []);
+		$results = $this->handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10, filters: []));
 
 		// The mismatched vector should be skipped.
 		$this->assertCount(0, $results);
@@ -719,7 +722,7 @@ class VectorSearchHandlerTest extends TestCase {
 		$qb = $this->buildQueryBuilderMock($rows);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
-		$results = $this->handler->semanticSearch([1.0, 0.0], 10, []);
+		$results = $this->handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10, filters: []));
 
 		// Zero magnitude returns 0.0 similarity.
 		$this->assertCount(1, $results);
@@ -737,7 +740,7 @@ class VectorSearchHandlerTest extends TestCase {
 		$qb = $this->buildQueryBuilderMock($rows);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
-		$results = $this->handler->semanticSearch([1.0, 0.0], 10, []);
+		$results = $this->handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10, filters: []));
 
 		$this->assertCount(1, $results);
 		$this->assertEqualsWithDelta(-1.0, $results[0]['similarity'], 0.0001);
@@ -756,7 +759,7 @@ class VectorSearchHandlerTest extends TestCase {
 		$qb = $this->buildQueryBuilderMock($rows);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
-		$results = $this->handler->semanticSearch([1.0, 0.0, 0.0, 0.0], 10, []);
+		$results = $this->handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0, 0.0, 0.0], limit: 10, filters: []));
 
 		$this->assertCount(1, $results);
 		$this->assertEqualsWithDelta(0.5, $results[0]['similarity'], 0.0001);
@@ -794,11 +797,7 @@ class VectorSearchHandlerTest extends TestCase {
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
 		// We test fetchVectors indirectly via semanticSearch with entity_id filter.
-		$this->handler->semanticSearch(
-			[1.0, 0.0],
-			10,
-			['entity_type' => 'object', 'entity_id' => 'specific-uuid']
-		);
+		$this->handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10, filters: ['entity_type' => 'object', 'entity_id' => 'specific-uuid']));
 	}//end testFetchVectorsWithEntityIdStringFilter()
 
 	/**
@@ -829,11 +828,7 @@ class VectorSearchHandlerTest extends TestCase {
 
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
-		$this->handler->semanticSearch(
-			[1.0, 0.0],
-			10,
-			['entity_id' => ['uuid-1', 'uuid-2']]
-		);
+		$this->handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10, filters: ['entity_id' => ['uuid-1', 'uuid-2']]));
 	}//end testFetchVectorsWithEntityIdArrayFilter()
 
 	// =========================================================================
@@ -855,7 +850,7 @@ class VectorSearchHandlerTest extends TestCase {
 			['entity_type' => 'object', 'entity_id' => 'v2', 'chunk_index' => 0, 'chunk_text' => 't2', 'metadata' => [], 'similarity' => 0.5],
 		];
 
-		$result = $method->invoke($this->handler, $vectorResults, [], 0.5, 0.5);
+		$result = $method->invoke($this->handler, new RankedResults($vectorResults, 0.5), new RankedResults([], 0.5));
 
 		$this->assertCount(2, $result);
 		$this->assertTrue($result[0]['in_vector']);
@@ -879,7 +874,7 @@ class VectorSearchHandlerTest extends TestCase {
 			['entity_type' => 'object', 'entity_id' => 's2', 'score' => 0.5, 'chunk_index' => 0, 'chunk_text' => null, 'metadata' => []],
 		];
 
-		$result = $method->invoke($this->handler, [], $solrResults, 0.5, 0.5);
+		$result = $method->invoke($this->handler, new RankedResults([], 0.5), new RankedResults($solrResults, 0.5));
 
 		$this->assertCount(2, $result);
 		$this->assertTrue($result[0]['in_keyword']);
@@ -903,7 +898,7 @@ class VectorSearchHandlerTest extends TestCase {
 			['entity_type' => 'object', 'entity_id' => 'shared', 'score' => 0.9, 'chunk_index' => 0, 'chunk_text' => null, 'metadata' => []],
 		];
 
-		$result = $method->invoke($this->handler, $vectorResults, $solrResults, 0.5, 0.5);
+		$result = $method->invoke($this->handler, new RankedResults($vectorResults, 0.5), new RankedResults($solrResults, 0.5));
 
 		$this->assertCount(1, $result);
 		$this->assertTrue($result[0]['in_vector']);
@@ -922,7 +917,7 @@ class VectorSearchHandlerTest extends TestCase {
 		$method = $ref->getMethod('reciprocalRankFusion');
 		$method->setAccessible(true);
 
-		$result = $method->invoke($this->handler, [], [], 0.5, 0.5);
+		$result = $method->invoke($this->handler, new RankedResults([], 0.5), new RankedResults([], 0.5));
 
 		$this->assertSame([], $result);
 	}//end testReciprocalRankFusionEmptyInputs()
@@ -943,7 +938,7 @@ class VectorSearchHandlerTest extends TestCase {
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
 		// Verify DB is queried and results are returned.
-		$results = $this->handler->semanticSearch([1.0, 0.0], 10, []);
+		$results = $this->handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10, filters: []));
 
 		$this->assertCount(1, $results);
 		$this->assertSame('uuid-db', $results[0]['entity_id']);
@@ -960,7 +955,7 @@ class VectorSearchHandlerTest extends TestCase {
 		$qb = $this->buildQueryBuilderMock($rows);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
-		$results = $this->handler->semanticSearch([1.0, 0.0], 10, []);
+		$results = $this->handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10, filters: []));
 
 		$this->assertSame([], $results[0]['metadata']);
 	}//end testSemanticSearchNullMetadataReturnsEmptyArray()
@@ -977,7 +972,7 @@ class VectorSearchHandlerTest extends TestCase {
 		$qb = $this->buildQueryBuilderMock([$row]);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
-		$results = $this->handler->semanticSearch([1.0, 0.0], 10, []);
+		$results = $this->handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10, filters: []));
 
 		$this->assertSame([], $results[0]['metadata']);
 	}//end testSemanticSearchEmptyMetadataReturnsEmptyArray()
@@ -997,12 +992,7 @@ class VectorSearchHandlerTest extends TestCase {
 		$qb = $this->buildQueryBuilderMock($rows);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
-		$result = $this->handler->hybridSearch(
-			[1.0, 0.0],
-			[],
-			10,
-			['keyword' => 0.0, 'vector' => 1.0]
-		);
+		$result = $this->handler->hybridSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10), new KeywordFusion(results: [], weights: ['keyword' => 0.0, 'vector' => 1.0]));
 
 		$this->assertSame(1, $result['total']);
 		$this->assertSame(1, $result['source_breakdown']['vector_only']);
@@ -1018,12 +1008,7 @@ class VectorSearchHandlerTest extends TestCase {
 	public function testHybridSearchBothWeightsZero(): void {
 		$this->db->expects($this->never())->method('getQueryBuilder');
 
-		$result = $this->handler->hybridSearch(
-			[1.0, 0.0],
-			[],
-			10,
-			['keyword' => 0.0, 'vector' => 0.0]
-		);
+		$result = $this->handler->hybridSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10), new KeywordFusion(results: [], weights: ['keyword' => 0.0, 'vector' => 0.0]));
 
 		$this->assertSame(0, $result['total']);
 	}//end testHybridSearchBothWeightsZero()
@@ -1037,7 +1022,7 @@ class VectorSearchHandlerTest extends TestCase {
 		$qb = $this->buildQueryBuilderMock([]);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
-		$result = $this->handler->hybridSearch([1.0, 0.0], [], 10, []);
+		$result = $this->handler->hybridSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10), new KeywordFusion(results: [], weights: []));
 
 		$this->assertEqualsWithDelta(0.5, $result['weights']['keyword'], 0.001);
 		$this->assertEqualsWithDelta(0.5, $result['weights']['vector'], 0.001);
@@ -1052,7 +1037,7 @@ class VectorSearchHandlerTest extends TestCase {
 		$qb = $this->buildQueryBuilderMock([]);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
-		$result = $this->handler->hybridSearch([1.0, 0.0], [], 5, ['keyword' => 0.5, 'vector' => 0.5]);
+		$result = $this->handler->hybridSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 5), new KeywordFusion(results: [], weights: ['keyword' => 0.5, 'vector' => 0.5]));
 
 		$this->assertGreaterThanOrEqual(0.0, $result['search_time_ms']);
 	}//end testHybridSearchSearchTimeIsPositive()
@@ -1110,7 +1095,7 @@ class VectorSearchHandlerTest extends TestCase {
 		// The PHP fallback's getQueryBuilder must NOT be touched on the KNN path.
 		$db->expects($this->never())->method('getQueryBuilder');
 
-		$results = $handler->semanticSearch([1.0, 0.0], 10, ['entity_type' => 'file']);
+		$results = $handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10, filters: ['entity_type' => 'file']));
 
 		$this->assertCount(1, $results);
 		$this->assertStringContainsString('FROM openregister_vec_ann a', $capturedSql);
@@ -1138,7 +1123,7 @@ class VectorSearchHandlerTest extends TestCase {
 		);
 		$db->method('executeQuery')->willReturn($stmt);
 
-		$results = $handler->semanticSearch([1.0, 0.0], 10, []);
+		$results = $handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10, filters: []));
 
 		$this->assertCount(2, $results);
 
@@ -1173,7 +1158,7 @@ class VectorSearchHandlerTest extends TestCase {
 				}
 			);
 
-		$handler->semanticSearch([1.0, 0.0], 5, ['entity_type' => ['file', 'object'], 'entity_id' => 'x']);
+		$handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 5, filters: ['entity_type' => ['file', 'object'], 'entity_id' => 'x']));
 
 		$this->assertStringContainsString('v.entity_type IN (:entityTypes)', $capturedSql);
 		$this->assertStringContainsString('v.entity_id = :entityId', $capturedSql);
@@ -1194,7 +1179,7 @@ class VectorSearchHandlerTest extends TestCase {
 		$db->expects($this->never())->method('executeQuery');
 
 		// Query embedding has 2 dims, column is 1536 → mismatch → fallback.
-		$results = $handler->semanticSearch([1.0, 0.0], 10, []);
+		$results = $handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10, filters: []));
 
 		$this->assertSame([], $results);
 	}//end testSemanticSearchKnnPathSkippedOnDimensionMismatch()
@@ -1212,7 +1197,7 @@ class VectorSearchHandlerTest extends TestCase {
 		$qb = $this->buildQueryBuilderMock($rows);
 		$db->method('getQueryBuilder')->willReturn($qb);
 
-		$results = $handler->semanticSearch([1.0, 0.0], 10, []);
+		$results = $handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10, filters: []));
 
 		$this->assertCount(1, $results);
 		$this->assertSame('fallback-hit', $results[0]['entity_id']);
@@ -1233,7 +1218,7 @@ class VectorSearchHandlerTest extends TestCase {
 		$qb = $this->buildQueryBuilderMock($rows);
 		$db->method('getQueryBuilder')->willReturn($qb);
 
-		$results = $handler->semanticSearch([1.0, 0.0], 10, []);
+		$results = $handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10, filters: []));
 
 		$this->assertCount(1, $results);
 		$this->assertSame('blob-only', $results[0]['entity_id']);
@@ -1269,7 +1254,7 @@ class VectorSearchHandlerTest extends TestCase {
 
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
-		$this->handler->semanticSearch([1.0, 0.0], 10, []);
+		$this->handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10, filters: []));
 	}//end testFetchVectorsFallbackOrdersByIdAscNotRecency()
 
 }//end class

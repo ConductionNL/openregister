@@ -27,6 +27,7 @@ use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
 use OCA\OpenRegister\Event\ObjectEventSubscription;
+use OCA\OpenRegister\Event\ObjectLeavingEvent;
 use OCA\OpenRegister\Event\ObjectLockedEvent;
 use OCA\OpenRegister\Event\ObjectRevertedEvent;
 use OCA\OpenRegister\Event\ObjectsMergedEvent;
@@ -162,6 +163,7 @@ class ObjectEventProxyEveryEventTest extends TestCase {
 			'updating'     => [ObjectUpdatingEvent::class, fn (ObjectEntity $o): Event => new ObjectUpdatingEvent($o, clone $o)],
 			'updated'      => [ObjectUpdatedEvent::class, fn (ObjectEntity $o): Event => new ObjectUpdatedEvent($o, clone $o)],
 			'deleting'     => [ObjectDeletingEvent::class, fn (ObjectEntity $o): Event => new ObjectDeletingEvent($o)],
+			'leaving'      => [ObjectLeavingEvent::class, fn (ObjectEntity $o): Event => new ObjectLeavingEvent($o)],
 			'deleted'      => [ObjectDeletedEvent::class, fn (ObjectEntity $o): Event => new ObjectDeletedEvent($o)],
 			'locked'       => [ObjectLockedEvent::class, fn (ObjectEntity $o): Event => new ObjectLockedEvent($o)],
 			'unlocked'     => [ObjectUnlockedEvent::class, fn (ObjectEntity $o): Event => new ObjectUnlockedEvent($o)],
@@ -281,7 +283,7 @@ class ObjectEventProxyEveryEventTest extends TestCase {
 		}
 
 		$this->assertSame([], $missing, 'object event classes not covered by the filter tests');
-		$this->assertCount(11, $listed);
+		$this->assertCount(12, $listed);
 
 	}//end testProviderCoversEveryObjectEventClass()
 

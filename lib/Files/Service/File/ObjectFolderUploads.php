@@ -24,7 +24,6 @@ namespace OCA\OpenRegister\Files\Service\File;
 
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ObjectFolderConflictException;
 use OCP\Files\NotFoundException;
 
@@ -54,8 +53,7 @@ class ObjectFolderUploads {
 	 * whole batch (it could leave the folder, or is no folder of the object)
 	 * is thrown, since no file of the batch can land.
 	 *
-	 * @param ObjectEntity                                              $object  The object, already known to be changeable.
-	 * @param string                                                    $path    The target folder, relative to the object folder.
+	 * @param ObjectFolderPath                                          $folder  The object, already known to be changeable, and the target folder.
 	 * @param list<array{name: string, tmp_name: string, error: int}> $uploads The uploads, as PHP received them.
 	 *
 	 * @return array{stored: list<array<string, mixed>>, rejected: list<array{name: string, error: string, conflict: bool}>} The outcome.
@@ -65,12 +63,12 @@ class ObjectFolderUploads {
 	 *
 	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
 	 */
-	public function uploadAll(ObjectEntity $object, string $path, array $uploads): array {
+	public function uploadAll(ObjectFolderPath $folder, array $uploads): array {
 		$stored = [];
 		$rejected = [];
 		foreach ($uploads as $upload) {
 			try {
-				$stored[] = $this->uploadOne(object: $object, path: $path, upload: $upload);
+				$stored[] = $this->uploadOne(folder: $folder, upload: $upload);
 			} catch (ObjectFolderConflictException $e) {
 				$rejected[] = ['name' => $upload['name'], 'error' => $e->getMessage(), 'conflict' => true];
 			} catch (InvalidArgumentException $e) {
@@ -94,15 +92,14 @@ class ObjectFolderUploads {
 	 * string path of the pipeline guesses at data URIs and base64, a stream
 	 * skips that.
 	 *
-	 * @param ObjectEntity                                    $object The object.
-	 * @param string                                          $path   The target folder.
+	 * @param ObjectFolderPath                                  $folder The target folder of the object.
 	 * @param array{name: string, tmp_name: string, error: int} $upload The upload.
 	 *
 	 * @return array<string, mixed> The stored file, as a listing entry.
 	 *
 	 * @throws Exception When the upload failed or the pipeline refused it.
 	 */
-	private function uploadOne(ObjectEntity $object, string $path, array $upload): array {
+	private function uploadOne(ObjectFolderPath $folder, array $upload): array {
 		if ($upload['error'] !== UPLOAD_ERR_OK || is_readable($upload['tmp_name']) === false) {
 			throw new Exception('The upload failed');
 		}
@@ -113,7 +110,7 @@ class ObjectFolderUploads {
 		}
 
 		try {
-			return $this->browser->upload(object: $object, path: $path, name: $upload['name'], content: $stream);
+			return $this->browser->upload(upload: new FolderUpload(folder: $folder, name: $upload['name'], content: $stream));
 		} finally {
 			if (is_resource($stream) === true) {
 				fclose($stream);

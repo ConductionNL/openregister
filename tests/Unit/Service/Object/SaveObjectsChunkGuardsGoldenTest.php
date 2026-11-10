@@ -15,6 +15,10 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
+use OCA\OpenRegister\Service\Object\BulkSaveReporting;
+use OCA\OpenRegister\Service\Object\BulkSaveSession;
+use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
@@ -145,15 +149,10 @@ class SaveObjectsChunkGuardsGoldenTest extends TestCase {
 		}
 
 		$handler = new SaveObjects(
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			schemaMapper: $this->createMock(SchemaMapperInterface::class),
-			registerMapper: $this->createMock(RegisterMapperInterface::class),
-			saveHandler: $this->createMock(SaveObject::class),
-			userSession: $session,
-			organisationService: $this->createMock(OrganisationServiceInterface::class),
-			logger: $this->createMock(LoggerInterface::class),
-			permissionHandler: $permissions,
-			validateHandler: $validator
+			stores: new BulkSaveStores(objectEntityMapper: $this->createMock(MagicMapper::class), schemaMapper: $this->createMock(SchemaMapperInterface::class), registerMapper: $this->createMock(RegisterMapperInterface::class), saveHandler: $this->createMock(SaveObject::class)),
+			session: new BulkSaveSession(userSession: $session, organisationService: $this->createMock(OrganisationServiceInterface::class)),
+			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class)),
+			checks: new BulkRowChecks(permissionHandler: $permissions, validateHandler: $validator)
 		);
 
 		$cache = [1 => $this->schema(id: 1), 2 => $this->schema(id: 2), 3 => $this->schema(id: 3), 'odd' => ['not' => 'a schema']];

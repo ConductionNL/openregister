@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace Unit\Service\Merge;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -32,7 +34,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\MergeDecisionException;
 use OCA\OpenRegister\Exception\MergeNotFullyReadableException;
+use OCA\OpenRegister\Service\Merge\MergeReportingServices;
 use OCA\OpenRegister\Service\Merge\MergeService;
+use OCA\OpenRegister\Service\Merge\MergeSurvivorshipServices;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
@@ -94,14 +98,9 @@ class MergeFieldDecisionTest extends TestCase {
 
 		$this->service = new MergeService(
 			$this->objectService,
-			$this->schemaMapper,
-			new SurvivorshipResolver(),
-			new TrustTierResolver(),
-			new SourceRecordResolver($this->objectService, $this->schemaMapper, $logger),
-			$this->createMock(IEventDispatcher::class),
-			$logger,
 			$this->propertyRbac,
-			$this->auditTrailMapper
+			new MergeSurvivorshipServices($this->schemaMapper, new SurvivorshipResolver(), new TrustTierResolver(), new SourceRecordResolver($this->objectService, $this->schemaMapper, $logger)),
+			new MergeReportingServices($this->createMock(IEventDispatcher::class), $this->auditTrailMapper, $logger)
 		);
 	}//end setUp()
 
@@ -421,7 +420,7 @@ class MergeFieldDecisionTest extends TestCase {
 		$this->objectService->method('findAll')->willReturn([]);
 
 		$this->propertyRbac->method('canReadProperty')->willReturnCallback(
-			static fn (...$args): bool => (($args[1] ?? '') !== 'medicalNote')
+			static fn (SchemaProperty $read, PropertyAccessRequest $request): bool => ($read->name !== 'medicalNote')
 		);
 
 		$audited = [];
@@ -483,7 +482,7 @@ class MergeFieldDecisionTest extends TestCase {
 		);
 		$this->objectService->method('findAll')->willReturn([]);
 		$this->propertyRbac->method('canReadProperty')->willReturnCallback(
-			static fn (...$args): bool => (($args[1] ?? '') !== 'medicalNote')
+			static fn (SchemaProperty $read, PropertyAccessRequest $request): bool => ($read->name !== 'medicalNote')
 		);
 
 		$this->objectService->method('saveObject')->willReturnCallback(
@@ -532,7 +531,7 @@ class MergeFieldDecisionTest extends TestCase {
 		);
 		$this->objectService->method('findAll')->willReturn([]);
 		$this->propertyRbac->method('canReadProperty')->willReturnCallback(
-			static fn (...$args): bool => (($args[2]['@self']['organisation'] ?? null) === 'org-a')
+			static fn (SchemaProperty $read, PropertyAccessRequest $request): bool => (($request->object['@self']['organisation'] ?? null) === 'org-a')
 		);
 		$this->auditTrailMapper->method('createAuditTrailEntry')->willReturn(new AuditTrail());
 		$this->objectService->expects($this->never())->method('saveObject');

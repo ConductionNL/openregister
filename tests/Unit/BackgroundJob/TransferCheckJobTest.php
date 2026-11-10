@@ -30,6 +30,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\BackgroundJob\Support\TransferCheckServices;
 
 /**
  * Tests for the e-Depot transfer check job.
@@ -62,11 +63,9 @@ class TransferCheckJobTest extends TestCase {
 
 		$this->job = new TransferCheckJob(
 			$this->createMock(ITimeFactory::class),
-			$this->retentionService,
-			$this->transferListService,
-			$this->transferRecordService,
+			new TransferCheckServices($this->retentionService, $this->transferListService, $this->transferRecordService),
 			$this->appConfig,
-			$this->createMock(LoggerInterface::class),
+			$this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()
 
@@ -130,11 +129,9 @@ class TransferCheckJobTest extends TestCase {
 
 		$job = new TransferCheckJob(
 			$this->createMock(ITimeFactory::class),
-			$this->retentionService,
-			$this->transferListService,
-			$this->transferRecordService,
+			new TransferCheckServices($this->retentionService, $this->transferListService, $this->transferRecordService),
 			$appConfig,
-			$this->createMock(LoggerInterface::class),
+			$this->createMock(LoggerInterface::class)
 		);
 
 		$this->retentionService->expects($this->never())->method('findEligibleForTransfer');

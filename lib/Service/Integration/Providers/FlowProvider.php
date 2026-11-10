@@ -36,7 +36,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
 use OCA\OpenRegister\Db\FlowLink;
-use OCA\OpenRegister\Db\FlowLinkMapper;
+use OCA\OpenRegister\Db\FlowLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -50,12 +50,40 @@ class FlowProvider extends AbstractIntegrationProvider {
 
 	private const REQUIRED_APP = 'workflowengine';
 
+	/**
+	 * NC DB connection.
+	 *
+	 * @var IDBConnection
+	 */
+	private IDBConnection $db;
+
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param LeafProviderPlatform    $platform       The DB connection, app manager and localisation.
+	 * @param FlowLinkMapperInterface $flowLinkMapper Flow-link mapper (Tier-2 link table).
+	 */
 	public function __construct(
-		private FlowLinkMapper $flowLinkMapper,
-		private IDBConnection $db,
-		private IAppManager $appManager,
-		private IL10N $l10n,
+		LeafProviderPlatform $platform,
+		private FlowLinkMapperInterface $flowLinkMapper,
 	) {
+		$this->db = $platform->db;
+		$this->appManager = $platform->appManager;
+		$this->l10n = $platform->l10n;
 	}//end __construct()
 
 	public function getId(): string {
@@ -77,9 +105,9 @@ class FlowProvider extends AbstractIntegrationProvider {
 	/**
 	 * The link mapper this provider reads.
 	 *
-	 * @return FlowLinkMapper
+	 * @return FlowLinkMapperInterface
 	 */
-	protected function linkMapper(): FlowLinkMapper {
+	protected function linkMapper(): FlowLinkMapperInterface {
 		return $this->flowLinkMapper;
 	}//end linkMapper()
 

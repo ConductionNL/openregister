@@ -34,13 +34,14 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Listener\NotifyPushListener;
+use OCA\OpenRegister\Listener\Support\PushSlugResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Listener\Support\NotifyPushPlatform;
 
 /**
  * End-to-end integration test for notify_push delivery.
@@ -65,12 +66,6 @@ class NotifyPushEndToEndTest extends TestCase {
 		if (class_exists('OCA\\NotifyPush\\Queue\\IQueue') === false) {
 			$this->markTestSkipped('notify_push is not installed; skipping end-to-end push test.');
 		}
-
-		/*
-		 * @var IAppManager&MockObject $appManager
-		 */
-		$appManager = $this->createMock(IAppManager::class);
-		$appManager->method('isInstalled')->willReturn(true);
 
 		/*
 		 * @var LoggerInterface&MockObject $logger
@@ -135,13 +130,9 @@ class NotifyPushEndToEndTest extends TestCase {
 		NotifyPushListener::resetStaticState();
 
 		$listener = new NotifyPushListener(
-			appManager: $appManager,
-			logger: $logger,
-			container: $container,
+			platform: new NotifyPushPlatform(logger: $logger, container: $container, appConfig: $appConfig),
 			permissionHandler: $permissionHandler,
-			appConfig: $appConfig,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
+			slugs: new PushSlugResolver($registerMapper, $schemaMapper)
 		);
 
 		$object = new ObjectEntity();

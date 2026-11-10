@@ -23,9 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Audit;
 
 use DateTime;
-use OCP\IGroupManager;
 use OCP\IUserSession;
-use OCP\Notification\IManager as INotificationManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -68,15 +66,13 @@ class SecuritySettingAnnouncer {
 	 * Constructor.
 	 *
 	 * @param SecuritySettingRegistry $registry      The marker and the snapshot.
-	 * @param INotificationManager    $notifications Delivers the announcement.
-	 * @param IGroupManager           $groupManager  Finds the administrators.
+	 * @param AnnouncementRecipients $recipients The notification manager and the administrators it notifies.
 	 * @param IUserSession            $userSession   Names the actor.
 	 * @param LoggerInterface         $logger        Reports a delivery failure.
 	 */
 	public function __construct(
 		private readonly SecuritySettingRegistry $registry,
-		private readonly INotificationManager $notifications,
-		private readonly IGroupManager $groupManager,
+		private readonly AnnouncementRecipients $recipients,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
@@ -132,9 +128,10 @@ class SecuritySettingAnnouncer {
 		$actor = $this->actor();
 		$sent = 0;
 		foreach ($changes as $path => $change) {
-			$parameters = $this->parameters(path: $path, change: $change, actor: $actor);
+			$setting = new SettingChange(path: (string)$path, old: $change['old'], new: $change['new']);
+			$parameters = $this->parameters(change: $setting, actor: $actor);
 			foreach ($recipients as $uid) {
-				$sent += $this->deliver(uid: $uid, path: $path, parameters: $parameters);
+				$sent += $this->deliver(uid: $uid, parameters: $parameters);
 			}
 		}
 
@@ -180,28 +177,27 @@ class SecuritySettingAnnouncer {
 	/**
 	 * The notification parameters for one change.
 	 *
-	 * @param string                        $path   The setting path.
-	 * @param array{old: mixed, new: mixed} $change The old and new value.
-	 * @param string                        $actor  Who made the change.
+	 * @param SettingChange $change The setting path and its old and new value.
+	 * @param string        $actor  Who made the change.
 	 *
 	 * @return array<string, string|bool> The parameters, with no values for a secret.
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	public function parameters(string $path, array $change, string $actor): array {
+	public function parameters(SettingChange $change, string $actor): array {
 		$parameters = [
-			'setting' => $path,
-			'label' => $this->registry->label(path: $path),
+			'setting' => $change->path,
+			'label' => $this->registry->label(path: $change->path),
 			'actor' => $actor,
-			'secret' => $this->registry->isSecret(path: $path),
+			'secret' => $this->registry->isSecret(path: $change->path),
 		];
 
 		if ($parameters['secret'] === true) {
 			return $parameters;
 		}
 
-		$parameters['oldValue'] = self::render(value: $change['old']);
-		$parameters['newValue'] = self::render(value: $change['new']);
+		$parameters['oldValue'] = self::render(value: $change->old);
+		$parameters['newValue'] = self::render(value: $change->new);
 
 		return $parameters;
 	}//end parameters()
@@ -243,7 +239,7 @@ class SecuritySettingAnnouncer {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function administrators(): array {
-		$group = $this->groupManager->get(self::ADMIN_GROUP);
+		$group = $this->recipients->groupManager->get(self::ADMIN_GROUP);
 		if ($group === null) {
 			return [];
 		}
@@ -286,22 +282,22 @@ class SecuritySettingAnnouncer {
 	 * Deliver one notification.
 	 *
 	 * @param string                     $uid        The recipient.
-	 * @param string                     $path       The setting path, used as the object id.
-	 * @param array<string, string|bool> $parameters The subject parameters.
+	 * @param array<string, string|bool> $parameters The subject parameters; their `setting` path is the object id.
 	 *
 	 * @return int 1 when delivered, 0 when not.
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	private function deliver(string $uid, string $path, array $parameters): int {
+	private function deliver(string $uid, array $parameters): int {
+		$path = (string)$parameters['setting'];
 		try {
-			$notification = $this->notifications->createNotification();
+			$notification = $this->recipients->notifications->createNotification();
 			$notification->setApp('openregister')
 				->setUser($uid)
 				->setDateTime(new DateTime())
 				->setObject('security_setting', $path)
 				->setSubject(self::SUBJECT, $parameters);
-			$this->notifications->notify($notification);
+			$this->recipients->notifications->notify($notification);
 		} catch (Throwable $deliveryFailed) {
 			$this->logger->warning(
 				message: '[SecuritySettingAnnouncer] Could not announce a security setting change: '

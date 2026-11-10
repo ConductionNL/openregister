@@ -108,6 +108,7 @@
   <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/BackgroundJob/FlowScheduleWorker.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/BackgroundJob/SyncDataJob.php"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Db/ConfigurationMapper.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Db/ConfigurationMapperInterface.php"/>
   <violation rule="PHPMD\Rule\Design\TooManyPublicMethods" file="lib/Db/EntityRelationMapper.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Db/EntityRelationMapper.php"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Db/EntityRelationMapper.php"/>
@@ -134,8 +135,6 @@
   <violation rule="PHPMD\Rule\Design\TooManyFields" file="lib/Db/Source.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Db/SourceMapper.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Db/SyncRecordMapper.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Db/TranslationMapper.php" method="search"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Db/TranslationMapper.php" method="search"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Db/TranslationMapper.php"/>
   <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Event/AgentRunRequestedEvent.php" method="__construct"/>
   <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Event/HandoffExecutedEvent.php" method="__construct"/>
@@ -350,6 +349,8 @@
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/Object/SaveObject.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/Object/SaveObject.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/Object/SaveObject/FilePropertyHandler.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/Object/SaveObjectWriterInterface.php"/>
+  <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Service/Object/SaveObjectWriterInterface.php" method="saveObject"/>
   <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Service/Object/SaveObjects.php" method="__construct"/>
   <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Service/Object/SaveObjects.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/Object/TranslationHandler.php"/>
@@ -457,15 +458,10 @@
   <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/WebhookService.php" method="isPrivateHost"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/WebhookService.php" method="isPrivateHost"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/WebhookService.php" method="isPrivateHost"/>
-  <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/WritePhaseProbe.php" method="count"/>
-  <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/WritePhaseProbe.php" method="stamp"/>
-  <violation rule="PHPMD\Rule\Controversial\Superglobals" file="lib/Service/WritePhaseProbe.php" method="stamp"/>
-  <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/WritePhaseProbe.php" method="mark"/>
+  <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/WritePhaseProbe.php" method="enabled"/>
+  <violation rule="PHPMD\Rule\Controversial\Superglobals" file="lib/Service/WritePhaseProbe.php" method="elapsedMs"/>
   <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/WritePhaseProbe.php" method="flush"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/WritePhaseProbe.php" method="flush"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/WritePhaseProbe.php" method="flush"/>
-  <violation rule="PHPMD\Rule\Controversial\Superglobals" file="lib/Service/WritePhaseProbe.php" method="flush"/>
-  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Service/WritePhaseProbe.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/WritePhaseProbe.php" method="opcacheSegment"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/CaseTypeAuthorizationService.php"/>
   <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/WorkflowEngine/RegisterObjectEntity.php"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/WorkflowEngine/RunFlowOperation.php"/>

@@ -4,9 +4,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
+use OCA\OpenRegister\Service\Object\BulkSaveOptions;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
+use OCA\OpenRegister\Service\Object\BulkSaveReporting;
+use OCA\OpenRegister\Service\Object\BulkSaveSession;
+use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -48,13 +54,10 @@ class SaveObjectsBranchCoverageTest extends TestCase {
 		}
 
 		$this->service = new SaveObjects(
-			$this->objectMapper,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->saveHandler,
-			$this->userSession,
-			$this->organisationService,
-			$this->logger
+			stores: new BulkSaveStores(objectEntityMapper: $this->objectMapper, schemaMapper: $this->schemaMapper, registerMapper: $this->registerMapper, saveHandler: $this->saveHandler),
+			session: new BulkSaveSession(userSession: $this->userSession, organisationService: $this->organisationService),
+			reporting: new BulkSaveReporting(logger: $this->logger),
+			checks: new BulkRowChecks()
 		);
 	}
 
@@ -83,8 +86,7 @@ class SaveObjectsBranchCoverageTest extends TestCase {
 		$this->expectException(\Exception::class);
 		$this->service->saveObjects(
 			[['id' => '1', 'name' => 'test']],
-			null,
-			null
+			new BulkSaveOptions(new BulkBatchDefaults(null, null), validation: false, events: false, audit: true)
 		);
 	}
 
@@ -102,7 +104,7 @@ class SaveObjectsBranchCoverageTest extends TestCase {
 			['id' => 'unique-id', 'name' => 'third'],
 		];
 
-		$this->service->saveObjects($objects, null, null);
+		$this->service->saveObjects($objects, new BulkSaveOptions(new BulkBatchDefaults(null, null), validation: false, events: false, audit: true));
 	}
 
 	// =========================================================================
@@ -119,8 +121,10 @@ class SaveObjectsBranchCoverageTest extends TestCase {
 		];
 
 		$this->service->saveObjects(
-			$objects, null, null,
-			true, true, false, false, false
+			$objects,
+			new BulkSaveOptions(new BulkBatchDefaults(null, null), validation: false, events: false, audit: true),
+			_rbac: true,
+			_multitenancy: true
 		);
 	}
 }

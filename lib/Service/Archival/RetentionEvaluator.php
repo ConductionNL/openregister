@@ -52,7 +52,7 @@ use Psr\Log\NullLogger;
  *
  * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-4
  */
-final class RetentionEvaluator {
+final class RetentionEvaluator implements RetentionEvaluatorInterface {
 
 	/**
 	 * Condition DSL evaluator used to match rules against a row.
@@ -109,6 +109,46 @@ final class RetentionEvaluator {
 	 * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-4
 	 */
 	public function evaluate(array $annotation, array $row, DateTimeInterface $createdAt): array {
+		return $this->evaluated(subject: new AnnotatedRow(annotation: $annotation, row: $row, createdAt: $createdAt));
+	}//end evaluate()
+
+	/**
+	 * The effective retention of one annotated row, and the archival facts it establishes.
+	 *
+	 * @param AnnotatedRow $subject The annotation, the row and its creation moment.
+	 *
+	 * @return array<string, mixed> The evaluation, as {@see evaluate()} describes it.
+	 *
+	 * @throws InvalidArgumentException When the annotation has no usable retention.
+	 */
+	private function evaluated(AnnotatedRow $subject): array {
+		[$annotation, $row, $createdAt] = [$subject->annotation, $subject->row, $subject->createdAt];
+		$retention = $this->retentionBlock(annotation: $annotation);
+		$matched = $this->firstMatchingRule(rules: ($retention['rules'] ?? []), row: $row);
+
+		$matchedRule = null;
+		$effectiveDur = $retention['default'];
+		if ($matched !== null) {
+			$matchedRule = $matched['index'];
+			$effectiveDur = $matched['retention'];
+		}
+
+		$expiresAt = $this->addDuration(createdAt: $createdAt, duration: $effectiveDur)->format(DateTimeInterface::ATOM);
+		$evaluation = ['effectiveRetention' => $effectiveDur, 'matchedRule' => $matchedRule, 'expiresAt' => $expiresAt];
+
+		return array_merge($evaluation, $this->declaredFacts(annotation: $annotation, row: $row));
+	}//end evaluated()
+
+	/**
+	 * The annotation's retention block, refused when it has no usable default.
+	 *
+	 * @param array<string, mixed> $annotation Full `x-openregister-archival` block.
+	 *
+	 * @return array<string, mixed> The retention block, its `default` a non-empty string.
+	 *
+	 * @throws InvalidArgumentException When the annotation has no usable retention.
+	 */
+	private function retentionBlock(array $annotation): array {
 		$retention = ($annotation['retention'] ?? null);
 		if (is_array($retention) === false) {
 			throw new InvalidArgumentException(
@@ -123,54 +163,87 @@ final class RetentionEvaluator {
 			);
 		}
 
-		$rules = ($retention['rules'] ?? []);
-		$matchedRule = null;
-		$effectiveDur = $default;
+		return $retention;
+	}//end retentionBlock()
 
-		if (is_array($rules) === true) {
-			foreach ($rules as $index => $rule) {
-				if (is_array($rule) === false) {
-					continue;
-				}
+	/**
+	 * The first rule whose condition matches the row.
+	 *
+	 * @param mixed                $rules The annotation's `retention.rules`.
+	 * @param array<string, mixed> $row   Row data keyed by field name.
+	 *
+	 * @return array{index: int, retention: string}|null The matching rule, or null when none matches.
+	 */
+	private function firstMatchingRule(mixed $rules, array $row): ?array {
+		if (is_array($rules) === false) {
+			return null;
+		}
 
-				$condition = ($rule['condition'] ?? null);
-				$ruleRet = ($rule['retention'] ?? null);
-				if (is_string($condition) === false || is_string($ruleRet) === false) {
-					continue;
-				}
+		foreach ($rules as $index => $rule) {
+			$usable = $this->usableRule(index: $index, rule: $rule);
+			if ($usable !== null && $this->conditionMatches(rule: $usable, row: $row) === true) {
+				return ['index' => (int)$index, 'retention' => $usable->retention];
+			}
+		}
 
-				try {
-					$matches = $this->conditionEvaluator->evaluate($condition, $row);
-				} catch (InvalidArgumentException $error) {
-					// Cron must not crash on a single malformed rule.
-					// Spec D-Scenario "Malformed condition" of the
-					// RetentionConditionEvaluator requirement.
-					$this->logger->warning(
-						'Skipping malformed retention condition: ' . $error->getMessage(),
-						['rule_index' => $index]
-					);
-					continue;
-				}
+		return null;
+	}//end firstMatchingRule()
 
-				if ($matches === true) {
-					$matchedRule = (int)$index;
-					$effectiveDur = $ruleRet;
-					break;
-				}
-			}//end foreach
-		}//end if
+	/**
+	 * A rule with a string condition and a string retention, or null.
+	 *
+	 * A rule that is not an array, or lacks a string condition or retention, is
+	 * skipped. A malformed condition is skipped with a warning: the cron must not
+	 * crash on a single malformed rule (spec D-Scenario "Malformed condition" of
+	 * the RetentionConditionEvaluator requirement).
+	 *
+	 * @param int|string $index The rule's index, for the warning.
+	 * @param mixed      $rule  The rule.
+	 *
+	 * @return IndexedRule|null The usable rule, or null when it is skipped.
+	 */
+	private function usableRule(int|string $index, mixed $rule): ?IndexedRule {
+		$condition = $this->ruleField(rule: $rule, field: 'condition');
+		$ruleRet = $this->ruleField(rule: $rule, field: 'retention');
+		if ($condition === null || $ruleRet === null) {
+			return null;
+		}
 
-		$expiresAt = $this->addDuration(createdAt: $createdAt, duration: $effectiveDur)->format(DateTimeInterface::ATOM);
+		return new IndexedRule(index: $index, condition: $condition, retention: $ruleRet);
+	}//end usableRule()
 
-		$evaluation = [
-			'effectiveRetention' => $effectiveDur,
-			'matchedRule' => $matchedRule,
-			'expiresAt' => $expiresAt,
-		];
+	/**
+	 * Whether a rule's condition matches the row; a malformed one is logged and does not.
+	 *
+	 * @param IndexedRule          $rule The rule: its index, for the warning, and its condition.
+	 * @param array<string, mixed> $row  Row data keyed by field name.
+	 *
+	 * @return bool True when it matches.
+	 */
+	private function conditionMatches(IndexedRule $rule, array $row): bool {
+		try {
+			return $this->conditionEvaluator->evaluate($rule->condition, $row);
+		} catch (InvalidArgumentException $error) {
+			$this->logger->warning('Skipping malformed retention condition: ' . $error->getMessage(), ['rule_index' => $rule->index]);
+			return false;
+		}
+	}//end conditionMatches()
 
-		return array_merge($evaluation, $this->declaredFacts(annotation: $annotation, row: $row));
+	/**
+	 * One string field of a rule, or null when the rule or the field is not usable.
+	 *
+	 * @param mixed  $rule  The rule.
+	 * @param string $field The field name.
+	 *
+	 * @return string|null The field's value.
+	 */
+	private function ruleField(mixed $rule, string $field): string|null {
+		if (is_array($rule) === false || is_string(($rule[$field] ?? null)) === false) {
+			return null;
+		}
 
-	}//end evaluate()
+		return $rule[$field];
+	}//end ruleField()
 
 	/**
 	 * The archival facts the schema declares, resolved for this row.
@@ -195,28 +268,39 @@ final class RetentionEvaluator {
 	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-a-schema-may-declare-the-archival-facts-mdto-asks-for
 	 */
 	private function declaredFacts(array $annotation, array $row): array {
-		$facts = [];
-
 		$level = ($annotation['aggregationLevel'] ?? null);
-		if (is_string($level) === true && $level !== '') {
-			$facts['aggregationLevel'] = $level;
+		if ($this->isText(value: $level) === false) {
+			$level = null;
 		}
 
-		$restriction = ($annotation['useRestriction'] ?? null);
-		if (is_array($restriction) === true && is_string(($restriction['type'] ?? null)) === true) {
-			$facts['useRestriction'] = ['type' => $restriction['type']];
-			if (is_string(($restriction['description'] ?? null)) === true && $restriction['description'] !== '') {
-				$facts['useRestriction']['description'] = $restriction['description'];
-			}
-		}
+		$facts = [
+			'aggregationLevel' => $level,
+			'useRestriction' => $this->useRestriction(restriction: ($annotation['useRestriction'] ?? null)),
+			'temporalCoverage' => $this->coverageForRow(coverage: ($annotation['temporalCoverage'] ?? null), row: $row),
+		];
 
-		$coverage = $this->coverageForRow(coverage: ($annotation['temporalCoverage'] ?? null), row: $row);
-		if ($coverage !== null) {
-			$facts['temporalCoverage'] = $coverage;
-		}
-
-		return $facts;
+		return array_filter($facts, static fn (mixed $fact): bool => $fact !== null);
 	}//end declaredFacts()
+
+	/**
+	 * The declared use restriction, its description kept only when it says something.
+	 *
+	 * @param mixed $restriction The annotation's `useRestriction` block.
+	 *
+	 * @return array{type: string, description?: string}|null The restriction, or null when none is declared.
+	 */
+	private function useRestriction(mixed $restriction): array|null {
+		if (is_array($restriction) === false || is_string(($restriction['type'] ?? null)) === false) {
+			return null;
+		}
+
+		$resolved = ['type' => $restriction['type']];
+		if (is_string(($restriction['description'] ?? null)) === true && $restriction['description'] !== '') {
+			$resolved['description'] = $restriction['description'];
+		}
+
+		return $resolved;
+	}//end useRestriction()
 
 	/**
 	 * Read the declared temporal coverage off this row.
@@ -228,26 +312,32 @@ final class RetentionEvaluator {
 	 *
 	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-a-schema-may-declare-the-archival-facts-mdto-asks-for
 	 */
-	private function coverageForRow(mixed $coverage, array $row): ?array {
+	private function coverageForRow(mixed $coverage, array $row): array|null {
 		if (is_array($coverage) === false) {
 			return null;
 		}
 
 		$type = ($coverage['type'] ?? null);
 		$start = $this->rowDate(row: $row, property: ($coverage['startProperty'] ?? null));
-		if (is_string($type) === false || $type === '' || $start === null) {
+		if ($this->isText(value: $type) === false || $start === null) {
 			return null;
 		}
 
-		$resolved = ['type' => $type, 'start' => $start];
-
 		$end = $this->rowDate(row: $row, property: ($coverage['endProperty'] ?? null));
-		if ($end !== null) {
-			$resolved['end'] = $end;
-		}
 
-		return $resolved;
+		return array_filter(['type' => $type, 'start' => $start, 'end' => $end], static fn (mixed $value): bool => $value !== null);
 	}//end coverageForRow()
+
+	/**
+	 * Whether a value is a non-empty string.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool True for a non-empty string.
+	 */
+	private function isText(mixed $value): bool {
+		return is_string($value) === true && $value !== '';
+	}//end isText()
 
 	/**
 	 * Read a named property off the row as a date MDTO accepts.
@@ -264,12 +354,12 @@ final class RetentionEvaluator {
 	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-a-schema-may-declare-the-archival-facts-mdto-asks-for
 	 */
 	private function rowDate(array $row, mixed $property): ?string {
-		if (is_string($property) === false || $property === '') {
+		if ($this->isText(value: $property) === false) {
 			return null;
 		}
 
 		$value = ($row[$property] ?? null);
-		if (is_string($value) === false || $value === '') {
+		if ($this->isText(value: $value) === false) {
 			return null;
 		}
 

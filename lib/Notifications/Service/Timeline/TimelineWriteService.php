@@ -58,21 +58,17 @@ class TimelineWriteService {
 	/**
 	 * Constructor.
 	 *
-	 * @param NoteServiceInterface          $notes      Writes the comment that carries the text.
-	 * @param TimelineEntryService $entries    Writes the record.
-	 * @param ReferenceService     $references Records what the text points at.
-	 * @param EntryMentionService  $mentions   Notifies and subscribes whoever was named.
-	 * @param TextBlockService     $blocks     Inserts administered canned text.
-	 * @param LoggerInterface      $logger     Logger for the derived steps that fail soft.
+	 * @param NoteServiceInterface     $notes   Writes the comment that carries the text.
+	 * @param TimelineEntryService     $entries Writes the record.
+	 * @param TimelineEntryDerivations $derived The references, mentions and text blocks of the text.
+	 * @param LoggerInterface          $logger  Logger for the derived steps that fail soft.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly NoteServiceInterface $notes,
 		private readonly TimelineEntryService $entries,
-		private readonly ReferenceService $references,
-		private readonly EntryMentionService $mentions,
-		private readonly TextBlockService $blocks,
+		private readonly TimelineEntryDerivations $derived,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -219,7 +215,7 @@ class TimelineWriteService {
 	public function forgetNote(int $commentId, ?string $entryUuid = null): void {
 		if ($entryUuid !== null) {
 			try {
-				$this->references->forget(entryUuid: $entryUuid);
+				$this->derived->references->forget(entryUuid: $entryUuid);
 			} catch (Throwable $e) {
 				$this->logger->warning(
 					'[TimelineWriteService] References of entry '.$entryUuid.' could not be removed',
@@ -254,10 +250,8 @@ class TimelineWriteService {
 	 */
 	private function applyMentions(WrittenEntry $written, array $data): void {
 		try {
-			$this->mentions->apply(
-				object: $written->object,
-				entryUuid: $written->uuid(),
-				text: $written->message,
+			$this->derived->mentions->apply(
+				written: $written,
 				register: $this->stringOrNull(data: $data, key: 'register'),
 				schema: $this->stringOrNull(data: $data, key: 'schema')
 			);
@@ -275,7 +269,7 @@ class TimelineWriteService {
 	 */
 	private function recordReferences(WrittenEntry $written): void {
 		try {
-			$this->references->record(source: $written->referenceSource());
+			$this->derived->references->record(source: $written->referenceSource());
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'[TimelineWriteService] References of entry '.$written->uuid().' could not be recorded',
@@ -310,7 +304,7 @@ class TimelineWriteService {
 			throw new TimelineValidationException(['message' => 'An entry needs a message or a text block']);
 		}
 
-		return $this->blocks->insert(slug: $slug, variables: $this->blockVariables(object: $object, data: $data));
+		return $this->derived->blocks->insert(slug: $slug, variables: $this->blockVariables(object: $object, data: $data));
 	}//end resolveMessage()
 
 	/**

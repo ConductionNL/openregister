@@ -84,16 +84,10 @@ class TransitionEngineProviderTest extends TestCase {
 			);
 
 		$this->engine = new TransitionEngine(
-			$this->objectService,
-			$this->schemaMapper,
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(IUserSession::class),
-			$permission,
-			$this->createMock(RegisterMapper::class),
-			$appConfig,
-			$this->logger,
-			new LifecycleWriteBoundary(new LifecycleActionContext()),
-			$this->registry
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($this->objectService, $this->schemaMapper, $this->createMock(RegisterMapper::class)),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionDispatch($this->createMock(IEventDispatcher::class), new LifecycleWriteBoundary(new LifecycleActionContext()), $this->registry),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionPlatform($this->createMock(IUserSession::class), $appConfig, $this->logger),
+			$permission
 		);
 	}//end setUp()
 
@@ -401,16 +395,10 @@ class TransitionEngineProviderTest extends TestCase {
 			);
 
 		$engine = new TransitionEngine(
-			$this->objectService,
-			$this->schemaMapper,
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(IUserSession::class),
-			$permission,
-			$this->createMock(RegisterMapper::class),
-			$appConfig,
-			$this->logger,
-			new LifecycleWriteBoundary(new LifecycleActionContext()),
-			new LifecycleActionProviderRegistry($container, $serverContainer, $this->logger)
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($this->objectService, $this->schemaMapper, $this->createMock(RegisterMapper::class)),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionDispatch($this->createMock(IEventDispatcher::class), new LifecycleWriteBoundary(new LifecycleActionContext()), new LifecycleActionProviderRegistry(new \OCA\OpenRegister\Service\Lifecycle\ContainerLookup($container, $serverContainer, $this->logger))),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionPlatform($this->createMock(IUserSession::class), $appConfig, $this->logger),
+			$permission
 		);
 
 		$this->wire($this->caseObject(), $this->providerAnnotation());

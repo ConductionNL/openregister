@@ -31,7 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\Configuration\DescriptorConfigIds;
+use OCA\OpenRegister\Service\Configuration\DescriptorConfigIdsInterface;
 
 /**
  * Import the destruction-list register from lib/Settings.
@@ -77,7 +77,7 @@ class ImportDestructionListRegister extends AbstractRegisterImportStep {
 	 *
 	 * @var string
 	 */
-	protected const CONFIG_APP_ID = DescriptorConfigIds::DESTRUCTION_LISTS;
+	protected const CONFIG_APP_ID = DescriptorConfigIdsInterface::DESTRUCTION_LISTS;
 
 	/**
 	 * Get the name of this repair step.

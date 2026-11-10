@@ -38,7 +38,6 @@ namespace OCA\OpenRegister\Notifications\Db;
 
 use DateTime;
 use OCA\OpenRegister\Db\DeleteByObjectTrait;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -56,6 +55,7 @@ use OCP\IDBConnection;
  * @psalm-suppress PossiblyUnusedMethod
  */
 class WatcherMapper extends QBMapper implements WatcherMapperInterface {
+	use NotificationQueryTrait;
 	use DeleteByObjectTrait;
 
 	/**
@@ -83,19 +83,12 @@ class WatcherMapper extends QBMapper implements WatcherMapperInterface {
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function findOne(string $userId, string $objectUuid): ?Watcher {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)))
-			->andWhere($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->setMaxResults(1);
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$found = $this->findFirstOrNull(qb: $this->selectWhereEquals(columns: ['user_id' => $userId, 'object_uuid' => $objectUuid]));
+		if ($found instanceof Watcher) {
+			return $found;
 		}
 
+		return null;
 	}//end findOne()
 
 	/**
@@ -108,14 +101,10 @@ class WatcherMapper extends QBMapper implements WatcherMapperInterface {
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function findByObject(string $objectUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->orderBy('created', 'ASC');
+		$qb = $this->selectWhereEquals(columns: ['object_uuid' => $objectUuid]);
+		$qb->orderBy('created', 'ASC');
 
 		return $this->findEntities(query: $qb);
-
 	}//end findByObject()
 
 	/**
@@ -164,24 +153,12 @@ class WatcherMapper extends QBMapper implements WatcherMapperInterface {
 			->from($this->getTableName())
 			->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)));
 
-		$result = $qb->executeQuery();
-		$map = [];
-		while (($row = $result->fetch()) !== false) {
-			$uuid = (string)($row['object_uuid'] ?? '');
-			if ($uuid === '') {
-				continue;
-			}
-
-			// Null is a row from before the column: on. Anything else is the
-			// database's boolean spelling (1, '1', true, 't'), read strictly.
-			$notify = $row['notify'] ?? null;
-			$map[$uuid] = ($notify === null || in_array($notify, [true, 1, '1', 't', 'true'], true) === true);
-		}
-
-		$result->closeCursor();
-
-		return $map;
-
+		// Null is a row from before the column: on. Anything else is the
+		// database's boolean spelling (1, '1', true, 't'), read strictly.
+		return $this->mapByObject(
+			qb: $qb,
+			value: static fn (array $row): bool => (($row['notify'] ?? null) === null || in_array($row['notify'], [true, 1, '1', 't', 'true'], true) === true)
+		);
 	}//end notifyMapForUser()
 
 	/**
@@ -201,20 +178,33 @@ class WatcherMapper extends QBMapper implements WatcherMapperInterface {
 			->groupBy('object_uuid')
 			->setMaxResults($limit);
 
+		return $this->mapByObject(qb: $qb, value: static fn (array $row): int => (int)($row['watcher_count'] ?? 0));
+	}//end countsByObject()
+
+
+	/**
+	 * Run a query and key one value per row by its object, skipping rows without one.
+	 *
+	 * @param IQueryBuilder                          $qb    The query; it selects `object_uuid`.
+	 * @param callable(array<string, mixed>): mixed $value Reads the value from a row.
+	 *
+	 * @return array<string, mixed> Object uuid => value.
+	 */
+	private function mapByObject(IQueryBuilder $qb, callable $value): array {
 		$result = $qb->executeQuery();
-		$counts = [];
+		$map = [];
 		while (($row = $result->fetch()) !== false) {
 			$uuid = (string)($row['object_uuid'] ?? '');
 			if ($uuid !== '') {
-				$counts[$uuid] = (int)($row['watcher_count'] ?? 0);
+				$map[$uuid] = $value($row);
 			}
 		}
 
 		$result->closeCursor();
 
-		return $counts;
+		return $map;
 
-	}//end countsByObject()
+	}//end mapByObject()
 
 	/**
 	 * How many users watch one object.
@@ -247,43 +237,47 @@ class WatcherMapper extends QBMapper implements WatcherMapperInterface {
 	 * duplicate. `$notify` null means "leave it": a new row notifies, an
 	 * existing row keeps its setting. A bool sets it either way.
 	 *
-	 * @param string $userId The subscribing user's uid.
-	 * @param string $objectUuid The watched object's uuid.
-	 * @param string|null $register The object's register, as the caller addressed it.
-	 * @param string|null $schema The object's schema, as the caller addressed it.
+	 * @param Watcher $watcher The unsaved follow: the subscribing user's uid, the watched
+	 *                         object's uuid, and its register and schema as the caller
+	 *                         addressed it. It is inserted only when no row exists yet.
 	 * @param bool|null $notify The notification switch, or null to keep it.
 	 *
 	 * @return Watcher The stored row.
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
-	public function subscribe(
-		string $userId,
-		string $objectUuid,
-		?string $register = null,
-		?string $schema = null,
-		?bool $notify = null,
-	): Watcher {
-		$existing = $this->findOne(userId: $userId, objectUuid: $objectUuid);
+	public function subscribe(Watcher $watcher, ?bool $notify = null): Watcher {
+		$existing = $this->findOne(userId: $watcher->getUserId(), objectUuid: $watcher->getObjectUuid());
 		if ($existing !== null) {
 			return $this->applyNotify(watcher: $existing, notify: $notify);
 		}
 
-		$watcher = new Watcher();
-		$watcher->setUserId($userId);
-		$watcher->setObjectUuid($objectUuid);
-		$watcher->setRegister($register);
-		$watcher->setSchema($schema);
 		$watcher->setNotify($notify ?? true);
 		$watcher->setCreated(new DateTime());
 
+		return $this->insertOrReadWinner(watcher: $watcher, notify: $notify);
+	}//end subscribe()
+
+
+	/**
+	 * Insert the watcher, or settle on the row a concurrent subscribe wrote.
+	 *
+	 * A concurrent subscribe lost the race on the unique index. The caller
+	 * asked for "this user watches this object", which is now true, so the
+	 * winner is read back rather than failing the request.
+	 *
+	 * @param Watcher   $watcher The watcher to insert.
+	 * @param bool|null $notify  The notify flag asked for, or null to leave it.
+	 *
+	 * @return Watcher The stored watcher.
+	 *
+	 * @throws \Throwable When the insert fails and no winning row exists.
+	 */
+	private function insertOrReadWinner(Watcher $watcher, ?bool $notify): Watcher {
 		try {
 			return $this->insert(entity: $watcher);
 		} catch (\Throwable $e) {
-			// A concurrent subscribe lost the race on the unique index. The
-			// caller asked for "this user watches this object", which is now
-			// true, so read the winner back rather than failing the request.
-			$winner = $this->findOne(userId: $userId, objectUuid: $objectUuid);
+			$winner = $this->findOne(userId: (string)$watcher->getUserId(), objectUuid: (string)$watcher->getObjectUuid());
 			if ($winner !== null) {
 				return $this->applyNotify(watcher: $winner, notify: $notify);
 			}
@@ -291,7 +285,7 @@ class WatcherMapper extends QBMapper implements WatcherMapperInterface {
 			throw $e;
 		}
 
-	}//end subscribe()
+	}//end insertOrReadWinner()
 
 	/**
 	 * Set an existing row's notify switch when the caller named one.
@@ -323,12 +317,6 @@ class WatcherMapper extends QBMapper implements WatcherMapperInterface {
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function unsubscribe(string $userId, string $objectUuid): bool {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)))
-			->andWhere($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return ($qb->executeStatement() > 0);
-
+		return ($this->deleteWhereEquals(columns: ['user_id' => $userId, 'object_uuid' => $objectUuid])->executeStatement() > 0);
 	}//end unsubscribe()
 }//end class

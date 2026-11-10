@@ -25,10 +25,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\ListQuery;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Db\TaskInboxAudience;
+use OCA\OpenRegister\Db\TaskInboxAnchor;
+use OCA\OpenRegister\Db\TaskInboxDueWindow;
+use OCA\OpenRegister\Db\TaskInboxFilter;
+use OCA\OpenRegister\Db\TaskInboxOrder;
+use OCA\OpenRegister\Db\TaskInboxSelection;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -234,9 +241,9 @@ class TaskMapperQueriesTest extends TestCase {
 	 */
 	public function testFindInboxAssignedScopeForANonAdmin(): void {
 		$mapper = new TaskMapper(db: $this->connectionWith(rows: [$this->row()]));
-		$criteria = new TaskInboxCriteria(uid: 'alice', groupIds: ['reviewers'], isAdmin: false);
+		$criteria = new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice', groupIds: ['reviewers'], isAdmin: false));
 
-		$page = $mapper->findInbox(criteria: $criteria, limit: 25, offset: 50);
+		$page = $mapper->findInbox(criteria: $criteria, page: new ListQuery(limit: 25, offset: 50));
 
 		$this->assertCount(1, $page);
 		// An IN, not an eq: a typed assignee is stored as `type:id`, so the
@@ -261,13 +268,13 @@ class TaskMapperQueriesTest extends TestCase {
 	public function testFindInboxScopesForAnAdmin(): void {
 		$mapper = new TaskMapper(db: $this->connectionWith());
 
-		$mapper->findInbox(criteria: new TaskInboxCriteria(uid: 'root', isAdmin: true, scope: TaskInboxCriteria::SCOPE_POOLED));
+		$mapper->findInbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'root', isAdmin: true, scope: TaskInboxCriteria::SCOPE_POOLED)));
 		$this->assertTrue($this->saw('expr.isNull', 'assignee'));
 		$this->assertFalse($this->saw('expr.eq', 'requester'), 'an admin is not narrowed by visibility');
 
 		$this->calls = [];
 		$this->functions = [];
-		$mapper->findInbox(criteria: new TaskInboxCriteria(uid: 'root', isAdmin: true, scope: TaskInboxCriteria::SCOPE_WATCHED));
+		$mapper->findInbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'root', isAdmin: true, scope: TaskInboxCriteria::SCOPE_WATCHED)));
 		// The blocked-task subquery is a function too; the watcher match is
 		// the one function besides it.
 		$watched = array_values(array_filter($this->functions, static fn (string $sql): bool => $sql !== 'SELECT subquery'));
@@ -275,7 +282,7 @@ class TaskMapperQueriesTest extends TestCase {
 		$this->assertStringContainsString('LIKE', $watched[0]);
 
 		$this->calls = [];
-		$mapper->findInbox(criteria: new TaskInboxCriteria(uid: 'root', isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL));
+		$mapper->findInbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'root', isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL)));
 		$this->assertFalse($this->saw('expr.in', 'assignee'));
 	}//end testFindInboxScopesForAnAdmin()
 
@@ -287,18 +294,7 @@ class TaskMapperQueriesTest extends TestCase {
 	 */
 	public function testFindInboxFiltersAndSortsInTheDatastore(): void {
 		$mapper = new TaskMapper(db: $this->connectionWith());
-		$criteria = new TaskInboxCriteria(
-			uid: 'root',
-			isAdmin: true,
-			scope: TaskInboxCriteria::SCOPE_ALL,
-			states: [Task::STATE_ACTIVE, Task::STATE_ENABLED],
-			isTerminal: false,
-			priority: 'high',
-			objectUuid: 'obj-1',
-			overdueAt: new DateTime('2026-09-01T00:00:00+00:00'),
-			sort: TaskInboxCriteria::SORT_PRIORITY,
-			sortDescending: true
-		);
+		$criteria = new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'root', isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL), selection: new TaskInboxSelection(filter: new TaskInboxFilter(states: [Task::STATE_ACTIVE, Task::STATE_ENABLED], isTerminal: false, priority: 'high'), window: new TaskInboxDueWindow(overdueAt: new DateTime('2026-09-01T00:00:00+00:00')), anchor: new TaskInboxAnchor(objectUuid: 'obj-1'), order: new TaskInboxOrder(sort: TaskInboxCriteria::SORT_PRIORITY, sortDescending: true)));
 
 		$mapper->findInbox(criteria: $criteria);
 
@@ -310,7 +306,7 @@ class TaskMapperQueriesTest extends TestCase {
 		$this->assertTrue((bool)array_filter($this->functions, static fn (string $f): bool => str_starts_with($f, 'CASE `priority` WHEN')));
 
 		$this->calls = [];
-		$mapper->findInbox(criteria: new TaskInboxCriteria(uid: 'root', isAdmin: true, sort: TaskInboxCriteria::SORT_CREATED));
+		$mapper->findInbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'root', isAdmin: true), selection: new TaskInboxSelection(order: new TaskInboxOrder(sort: TaskInboxCriteria::SORT_CREATED))));
 		$this->assertTrue($this->saw('orderBy', 'created'));
 	}//end testFindInboxFiltersAndSortsInTheDatastore()
 
@@ -325,13 +321,13 @@ class TaskMapperQueriesTest extends TestCase {
 	public function testFindInboxCanPutOpenTasksFirst(): void {
 		$mapper = new TaskMapper(db: $this->connectionWith());
 
-		$mapper->findInbox(criteria: new TaskInboxCriteria(uid: 'root', isAdmin: true, openFirst: true));
+		$mapper->findInbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'root', isAdmin: true), selection: new TaskInboxSelection(order: new TaskInboxOrder(openFirst: true))));
 		$this->assertTrue($this->saw('orderBy', 'is_terminal'));
 		$this->assertTrue($this->saw('addOrderBy', 'due_at'));
 		$this->assertFalse($this->saw('orderBy', 'due_at'));
 
 		$this->calls = [];
-		$mapper->findInbox(criteria: new TaskInboxCriteria(uid: 'root', isAdmin: true));
+		$mapper->findInbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'root', isAdmin: true)));
 		$this->assertFalse($this->saw('orderBy', 'is_terminal'));
 		$this->assertTrue($this->saw('orderBy', 'due_at'));
 	}//end testFindInboxCanPutOpenTasksFirst()
@@ -350,13 +346,7 @@ class TaskMapperQueriesTest extends TestCase {
 	public function testFindInboxFiltersOnADueWindow(): void {
 		$mapper = new TaskMapper(db: $this->connectionWith());
 
-		$mapper->findInbox(criteria: new TaskInboxCriteria(
-			uid: 'root',
-			isAdmin: true,
-			scope: TaskInboxCriteria::SCOPE_ALL,
-			dueAfter: new DateTime('2026-09-01T00:00:00+00:00'),
-			dueBefore: new DateTime('2026-09-08T00:00:00+00:00'),
-		));
+		$mapper->findInbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'root', isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL), selection: new TaskInboxSelection(window: new TaskInboxDueWindow(dueAfter: new DateTime('2026-09-01T00:00:00+00:00'), dueBefore: new DateTime('2026-09-08T00:00:00+00:00')))));
 
 		$ge = array_filter($this->functions, static fn (string $f): bool => str_starts_with($f, 'COALESCE(`due_at`, `expires_at`) >='));
 		$lt = array_filter($this->functions, static fn (string $f): bool => str_starts_with($f, 'COALESCE(`due_at`, `expires_at`) <'));
@@ -373,16 +363,12 @@ class TaskMapperQueriesTest extends TestCase {
 	public function testEachEndOfTheDueWindowStandsAlone(): void {
 		$mapper = new TaskMapper(db: $this->connectionWith());
 
-		$mapper->findInbox(criteria: new TaskInboxCriteria(
-			uid: 'root',
-			isAdmin: true,
-			dueAfter: new DateTime('2026-09-01T00:00:00+00:00'),
-		));
+		$mapper->findInbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'root', isAdmin: true), selection: new TaskInboxSelection(window: new TaskInboxDueWindow(dueAfter: new DateTime('2026-09-01T00:00:00+00:00')))));
 		$this->assertNotEmpty(array_filter($this->functions, static fn (string $f): bool => str_contains($f, '>=')));
 
 		$this->calls = [];
 		$this->functions = [];
-		$mapper->findInbox(criteria: new TaskInboxCriteria(uid: 'root', isAdmin: true));
+		$mapper->findInbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'root', isAdmin: true)));
 		$this->assertEmpty(
 			array_filter($this->functions, static fn (string $f): bool => str_contains($f, 'COALESCE')),
 			'no window and no overdue means no deadline predicate at all'
@@ -396,13 +382,13 @@ class TaskMapperQueriesTest extends TestCase {
 	 */
 	public function testCountInboxReadsTheTotal(): void {
 		$counted = new TaskMapper(db: $this->connectionWith(rows: [['total' => '120']]));
-		$this->assertSame(120, $counted->countInbox(criteria: new TaskInboxCriteria(uid: 'alice')));
+		$this->assertSame(120, $counted->countInbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice'))));
 		// An IN, not an eq: a typed assignee is stored as `type:id`, so the
 		// caller's identity expands to the few strings that mean them.
 		$this->assertTrue($this->saw('expr.in', 'assignee'));
 
 		$empty = new TaskMapper(db: $this->connectionWith(rows: []));
-		$this->assertSame(0, $empty->countInbox(criteria: new TaskInboxCriteria(uid: 'alice')));
+		$this->assertSame(0, $empty->countInbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice'))));
 	}//end testCountInboxReadsTheTotal()
 
 	/**

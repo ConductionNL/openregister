@@ -36,7 +36,9 @@ use OCA\OpenRegister\Service\Archival\AnonymisationPlan;
 use OCA\OpenRegister\Service\Archival\AnonymisationProfile;
 use OCA\OpenRegister\Service\Archival\AnonymisationRefusedException;
 use OCA\OpenRegister\Service\Archival\AnonymisationRun;
+use OCA\OpenRegister\Service\Archival\AnonymisationSubject;
 use OCA\OpenRegister\Service\Archival\AnonymisationTarget;
+use OCA\OpenRegister\Service\Archival\AnonymisationClearance;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -145,11 +147,8 @@ class AnonymisationRunTest extends TestCase {
 	 */
 	private function plan(): AnonymisationPlan {
 		return $this->run->plan(
-			objectUuid: 'obj-1',
-			payload: $this->payload(),
-			annotation: $this->annotation(),
-			salt: 'instance-salt',
-			profileName: 'zaak-statistiek'
+			subject: new AnonymisationSubject(objectUuid: 'obj-1', payload: $this->payload(), annotation: $this->annotation(), profileName: 'zaak-statistiek'),
+			salt: 'instance-salt'
 		);
 	}//end plan()
 
@@ -161,12 +160,7 @@ class AnonymisationRunTest extends TestCase {
 	 * @return void
 	 */
 	public function testARecordUnderALegalHoldIsNotAnonymised(): void {
-		$refusal = $this->run->refuse(
-			marker: [],
-			hasLegalHold: true,
-			holdReason: 'bezwaarprocedure 2026-114',
-			saltFingerprint: 'abc'
-		);
+		$refusal = $this->run->refuse(new AnonymisationClearance(marker: [], hasLegalHold: true, holdReason: 'bezwaarprocedure 2026-114', saltFingerprint: 'abc'));
 
 		$this->assertNotNull($refusal);
 		$this->assertStringContainsString('bezwaarprocedure 2026-114', $refusal);
@@ -179,7 +173,7 @@ class AnonymisationRunTest extends TestCase {
 	 * @return void
 	 */
 	public function testAHoldWithoutAReasonStillRefuses(): void {
-		$refusal = $this->run->refuse(marker: [], hasLegalHold: true, holdReason: '  ', saltFingerprint: 'abc');
+		$refusal = $this->run->refuse(new AnonymisationClearance(marker: [], hasLegalHold: true, holdReason: '  ', saltFingerprint: 'abc'));
 
 		$this->assertStringContainsString('no reason was recorded', (string)$refusal);
 	}//end testAHoldWithoutAReasonStillRefuses()
@@ -191,16 +185,11 @@ class AnonymisationRunTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAlreadyAnonymisedRecordIsRefusedWithWhenAndWhy(): void {
-		$refusal = $this->run->refuse(
-			marker: [
+		$refusal = $this->run->refuse(new AnonymisationClearance(marker: [
 				'state' => AnonymisationRun::COMPLETE,
 				'anonymisedAt' => '2026-09-01T10:00:00+00:00',
 				'profile' => 'zaak-statistiek',
-			],
-			hasLegalHold: false,
-			holdReason: '',
-			saltFingerprint: 'abc'
-		);
+			], hasLegalHold: false, holdReason: '', saltFingerprint: 'abc'));
 
 		$this->assertNotNull($refusal);
 		$this->assertStringContainsString('2026-09-01', $refusal);
@@ -217,12 +206,7 @@ class AnonymisationRunTest extends TestCase {
 	 */
 	public function testAHalfFinishedRunMayBeResumedUnderTheSameSalt(): void {
 		$this->assertNull(
-			$this->run->refuse(
-				marker: ['state' => AnonymisationRun::IN_PROGRESS, 'saltFingerprint' => 'abc'],
-				hasLegalHold: false,
-				holdReason: '',
-				saltFingerprint: 'abc'
-			)
+			$this->run->refuse(new AnonymisationClearance(marker: ['state' => AnonymisationRun::IN_PROGRESS, 'saltFingerprint' => 'abc'], hasLegalHold: false, holdReason: '', saltFingerprint: 'abc'))
 		);
 	}//end testAHalfFinishedRunMayBeResumedUnderTheSameSalt()
 
@@ -234,12 +218,7 @@ class AnonymisationRunTest extends TestCase {
 	 * @return void
 	 */
 	public function testAHalfFinishedRunIsRefusedUnderARotatedSalt(): void {
-		$refusal = $this->run->refuse(
-			marker: ['state' => AnonymisationRun::IN_PROGRESS, 'saltFingerprint' => 'abc'],
-			hasLegalHold: false,
-			holdReason: '',
-			saltFingerprint: 'def'
-		);
+		$refusal = $this->run->refuse(new AnonymisationClearance(marker: ['state' => AnonymisationRun::IN_PROGRESS, 'saltFingerprint' => 'abc'], hasLegalHold: false, holdReason: '', saltFingerprint: 'def'));
 
 		$this->assertStringContainsString('two families of pseudonym', (string)$refusal);
 	}//end testAHalfFinishedRunIsRefusedUnderARotatedSalt()
@@ -250,7 +229,7 @@ class AnonymisationRunTest extends TestCase {
 	 * @return void
 	 */
 	public function testACleanRecordIsNotRefused(): void {
-		$this->assertNull($this->run->refuse(marker: [], hasLegalHold: false, holdReason: '', saltFingerprint: 'abc'));
+		$this->assertNull($this->run->refuse(new AnonymisationClearance(marker: [], hasLegalHold: false, holdReason: '', saltFingerprint: 'abc')));
 	}//end testACleanRecordIsNotRefused()
 
 	/**
@@ -265,9 +244,7 @@ class AnonymisationRunTest extends TestCase {
 		$this->expectExceptionMessageMatches('/would change nothing/');
 
 		$this->run->plan(
-			objectUuid: 'obj-2',
-			payload: ['zaaknummer' => 'ZK-1'],
-			annotation: [AnonymisationProfile::ANNOTATION_KEY => []],
+			subject: new AnonymisationSubject(objectUuid: 'obj-2', payload: ['zaaknummer' => 'ZK-1'], annotation: [AnonymisationProfile::ANNOTATION_KEY => []]),
 			salt: 'instance-salt'
 		);
 	}//end testAPlanThatWouldChangeNothingIsRefused()

@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ArchiveNotOfferedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\ArchiveHandler;
+use OCA\OpenRegister\Service\Object\ObjectStateRequest;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
@@ -79,13 +80,7 @@ final class ArchiveHandlerTest extends TestCase {
 	 * @return ArchiveHandler The handler.
 	 */
 	private function handler(): ArchiveHandler {
-		return new ArchiveHandler(
-			$this->magic,
-			$this->audit,
-			$this->permissions,
-			$this->session,
-			$this->createMock(LoggerInterface::class)
-		);
+		return new ArchiveHandler($this->permissions, $this->session, new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->magic, $this->audit, $this->createMock(LoggerInterface::class), $this->createStub(\OCP\EventDispatcher\IEventDispatcher::class)));
 	}//end handler()
 
 	/**
@@ -163,7 +158,7 @@ final class ArchiveHandlerTest extends TestCase {
 		$this->resolvesTo(object: $object);
 		$this->persistsVerbatim();
 
-		$result = $this->handler()->archive(identifier: self::OBJ, reason: 'afgehandeld');
+		$result = $this->handler()->archiveWith(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: self::OBJ, reason: 'afgehandeld', register: null, schema: null));
 
 		$this->assertSame('anna', $result['archived']['by']);
 		$this->assertSame('afgehandeld', $result['archived']['reason']);
@@ -197,7 +192,7 @@ final class ArchiveHandlerTest extends TestCase {
 				'archive'
 			);
 
-		$this->handler()->archive(identifier: self::OBJ);
+		$this->handler()->archiveWith(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: self::OBJ, reason: null, register: null, schema: null));
 	}//end testArchiveWritesAnAuditEntry()
 
 	/**
@@ -215,7 +210,7 @@ final class ArchiveHandlerTest extends TestCase {
 			->method('createAuditTrail')
 			->with($this->anything(), $this->anything(), 'unarchive');
 
-		$result = $this->handler()->unarchive(identifier: self::OBJ);
+		$result = $this->handler()->unarchiveWith(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: self::OBJ, reason: null, register: null, schema: null));
 
 		$this->assertNull($result['archived']);
 		$this->assertFalse($object->isArchived());
@@ -241,7 +236,7 @@ final class ArchiveHandlerTest extends TestCase {
 		$this->resolvesTo(object: $object);
 		$this->audit->expects($this->never())->method('createAuditTrail');
 
-		$result = $this->handler()->archive(identifier: self::OBJ, reason: 'tweede');
+		$result = $this->handler()->archiveWith(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: self::OBJ, reason: 'tweede', register: null, schema: null));
 
 		$this->assertSame('bert', $result['archived']['by']);
 		$this->assertSame('eerste', $result['archived']['reason']);
@@ -261,7 +256,7 @@ final class ArchiveHandlerTest extends TestCase {
 		$this->expectException(ArchiveNotOfferedException::class);
 
 		try {
-			$this->handler()->archive(identifier: self::OBJ);
+			$this->handler()->archiveWith(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: self::OBJ, reason: null, register: null, schema: null));
 		} finally {
 			$this->assertFalse($object->isArchived());
 		}
@@ -294,7 +289,7 @@ final class ArchiveHandlerTest extends TestCase {
 		$this->expectException(NotAuthorizedException::class);
 
 		try {
-			$this->handler()->archive(identifier: self::OBJ);
+			$this->handler()->archiveWith(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: self::OBJ, reason: null, register: null, schema: null));
 		} finally {
 			$this->assertFalse($object->isArchived());
 		}
@@ -325,7 +320,7 @@ final class ArchiveHandlerTest extends TestCase {
 				$this->anything()
 			);
 
-		$this->handler()->archive(identifier: self::OBJ);
+		$this->handler()->archiveWith(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: self::OBJ, reason: null, register: null, schema: null));
 	}//end testTheGateAsksForUpdate()
 
 	/**
@@ -339,7 +334,7 @@ final class ArchiveHandlerTest extends TestCase {
 		$this->resolvesTo(object: $object);
 		$this->persistsVerbatim();
 
-		$result = $this->handler()->freeze(identifier: self::OBJ, reason: 'bezwaar', state: 'in_bezwaar');
+		$result = $this->handler()->freeze(request: new ObjectStateRequest(identifier: self::OBJ, reason: 'bezwaar', register: null, schema: null), state: 'in_bezwaar');
 
 		$this->assertSame('anna', $result['frozen']['by']);
 		$this->assertSame('in_bezwaar', $result['frozen']['state']);
@@ -370,7 +365,7 @@ final class ArchiveHandlerTest extends TestCase {
 		$this->expectException(DoesNotExistException::class);
 
 		try {
-			$this->handler()->archive(identifier: self::OBJ, register: '99');
+			$this->handler()->archiveWith(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: self::OBJ, reason: null, register: '99', schema: null));
 		} finally {
 			$this->assertFalse($object->isArchived());
 		}
@@ -394,11 +389,7 @@ final class ArchiveHandlerTest extends TestCase {
 		$this->resolvesTo(object: $this->object());
 		$this->persistsVerbatim();
 
-		$result = $this->handler()->archive(
-			identifier: self::OBJ,
-			register: $register,
-			schema: $schema
-		);
+		$result = $this->handler()->archiveWith(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: self::OBJ, reason: null, register: $register, schema: $schema));
 
 		$this->assertSame('anna', $result['archived']['by']);
 	}//end testBothRouteSpellingsAreInScope()
@@ -430,9 +421,37 @@ final class ArchiveHandlerTest extends TestCase {
 			->method('createAuditTrail')
 			->with($this->anything(), $this->anything(), 'unfreeze');
 
-		$result = $this->handler()->unfreeze(identifier: self::OBJ);
+		$result = $this->handler()->unfreezeWith(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: self::OBJ, reason: null, register: null, schema: null));
 
 		$this->assertNull($result['frozen']);
 		$this->assertFalse($object->isFrozen());
 	}//end testUnfreezeClearsTheMarker()
+
+	/**
+	 * Other apps call archive, unarchive and unfreeze by class name with the
+	 * identifier, reason, register and schema, positionally and by name.
+	 *
+	 * @return void
+	 */
+	public function testTheIdentifierSignaturesAnswerPositionallyAndByName(): void {
+		$object = $this->object();
+		$this->resolvesTo(object: $object);
+		$this->persistsVerbatim();
+		$handler = $this->handler();
+
+		$this->assertSame('positional', $handler->archive(self::OBJ, 'positional', 'zaken', 'zaak')['archived']['reason']);
+		$this->assertNull($handler->unarchive(self::OBJ, 'back', '1', '2')['archived']);
+		$this->assertSame('named', $handler->archive(identifier: self::OBJ, reason: 'named', register: '1', schema: '2')['archived']['reason']);
+		$this->assertNull($handler->unarchive(identifier: self::OBJ, reason: 'back')['archived']);
+		$this->assertFalse($object->isArchived());
+
+		$object->freeze(userSession: $this->session, reason: 'bezwaar');
+		$this->assertNull($handler->unfreeze(self::OBJ, 'release', 'zaken', 'zaak')['frozen']);
+		$object->freeze(userSession: $this->session, reason: 'bezwaar');
+		$this->assertNull($handler->unfreeze(identifier: self::OBJ, reason: 'release')['frozen']);
+		$this->assertFalse($object->isFrozen());
+
+		$this->expectException(DoesNotExistException::class);
+		$handler->archive(self::OBJ, null, '99', null);
+	}//end testTheIdentifierSignaturesAnswerPositionallyAndByName()
 }//end class

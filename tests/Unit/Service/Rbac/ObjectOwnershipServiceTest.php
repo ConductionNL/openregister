@@ -28,6 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
+use OCA\OpenRegister\Service\Rbac\OwnershipHandover;
+use OCA\OpenRegister\Service\Rbac\OwnedRecord;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -40,10 +42,16 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\ObjectAuthorizationWriter;
 use OCA\OpenRegister\Service\Rbac\GrantManageGuard;
+use OCA\OpenRegister\Service\Rbac\ObjectLookup;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
+use OCA\OpenRegister\Service\Rbac\OwnershipLog;
+use OCA\OpenRegister\Service\Rbac\OwnershipSources;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnerWriter;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
+use OCA\OpenRegister\Service\Rbac\OwnershipGuards;
+use OCA\OpenRegister\Service\Rbac\OwnershipWriters;
+use OCA\OpenRegister\Service\Rbac\PrincipalDirectory;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -166,19 +174,19 @@ class ObjectOwnershipServiceTest extends TestCase {
 		$this->userManager->method('userExists')->willReturn(true);
 
 		$this->service = new ObjectOwnershipService(
-			$this->userSession,
-			$this->userManager,
-			$this->groupManager,
-			new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class)),
-			$this->permissions,
-			$this->ownerWriter,
-			$this->authorizationWriter,
-			$this->auditTrailMapper,
-			$this->magicMapper,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->notificationManager,
-			$this->createMock(LoggerInterface::class)
+			guards: new OwnershipGuards(
+				userSession: $this->userSession,
+				grantManage: new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class)),
+				permissions: $this->permissions
+			),
+			sources: new OwnershipSources(directory: new PrincipalDirectory(userManager: $this->userManager, groupManager: $this->groupManager), lookup: new ObjectLookup(magicMapper: $this->magicMapper, registerMapper: $this->registerMapper, schemaMapper: $this->schemaMapper)),
+			writers: new OwnershipWriters(
+				ownerWriter: $this->ownerWriter,
+				authorizationWriter: $this->authorizationWriter,
+				auditTrailMapper: $this->auditTrailMapper,
+				notificationManager: $this->notificationManager
+			),
+			log: new OwnershipLog(logger: $this->createMock(LoggerInterface::class))
 		);
 	}//end setUp()
 
@@ -254,11 +262,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 			->method('writeOwner')
 			->with($this->anything(), $this->anything(), 'uuid-1', 'bob');
 
-		$outcome = $this->service->claim(
-			register: new Register(),
-			schema: new Schema(),
-			object: $this->record('uuid-1', 'alice')
-		);
+		$outcome = $this->service->claim(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')));
 
 		$this->assertTrue($outcome['changed']);
 		$this->assertSame('alice', $outcome['previousOwner']);
@@ -296,11 +300,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 			)
 			->willReturn($this->createMock(AuditTrail::class));
 
-		$this->service->claim(
-			register: new Register(),
-			schema: new Schema(),
-			object: $this->record('uuid-1', 'alice')
-		);
+		$this->service->claim(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')));
 	}//end testTheHandoverIsRecordedAsItsOwnActionNamingBothOwners()
 
 	/**
@@ -332,11 +332,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 
 		$this->notificationManager->expects($this->once())->method('notify');
 
-		$this->service->claim(
-			register: new Register(),
-			schema: new Schema(),
-			object: $this->record('uuid-1', 'alice')
-		);
+		$this->service->claim(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')));
 	}//end testThePreviousOwnerIsTold()
 
 	/**
@@ -357,11 +353,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 		$this->notificationManager->expects($this->never())->method('notify');
 
 		$this->expectException(NotAuthorizedException::class);
-		$this->service->claim(
-			register: new Register(),
-			schema: new Schema(),
-			object: $this->record('uuid-1', 'alice')
-		);
+		$this->service->claim(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')));
 	}//end testACallerWhoMayNotEditCannotTakeTheRecord()
 
 	/**
@@ -375,11 +367,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 		$this->ownerWriter->expects($this->never())->method('writeOwner');
 
 		$this->expectException(NotAuthorizedException::class);
-		$this->service->claim(
-			register: new Register(),
-			schema: new Schema(),
-			object: $this->record('uuid-1', 'alice')
-		);
+		$this->service->claim(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')));
 	}//end testAnAnonymousCallerCannotTakeTheRecord()
 
 	/**
@@ -396,12 +384,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 		$this->ownerWriter->expects($this->never())->method('writeOwner');
 
 		$this->expectException(NotAuthorizedException::class);
-		$this->service->assign(
-			register: new Register(),
-			schema: new Schema(),
-			object: $this->record('uuid-1', 'alice'),
-			newOwner: 'carol'
-		);
+		$this->service->assign(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')), handover: new OwnershipHandover(newOwner: 'carol', cascade: false));
 	}//end testOnlyAnAdministratorMayAssignToSomebodyElse()
 
 	/**
@@ -420,12 +403,12 @@ class ObjectOwnershipServiceTest extends TestCase {
 		$this->ownerWriter->expects($this->once())->method('writeOwner')->with($this->anything(), $this->anything(), 'uuid-1', 'carol');
 
 		$outcome = \OCA\OpenRegister\Service\SystemOperationContext::run(
-			fn () => $this->service->assign(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', '__system__'), newOwner: 'carol')
+			fn () => $this->service->assign(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', '__system__')), handover: new OwnershipHandover(newOwner: 'carol', cascade: false))
 		);
 		$this->assertSame('carol', $outcome['newOwner']);
 
 		$this->expectException(NotAuthorizedException::class);
-		$this->service->assign(register: new Register(), schema: new Schema(), object: $this->record('uuid-2', '__system__'), newOwner: 'carol');
+		$this->service->assign(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-2', '__system__')), handover: new OwnershipHandover(newOwner: 'carol', cascade: false));
 	}//end testTheSystemScopeMayAssignWithoutASessionUser()
 
 	/**
@@ -443,12 +426,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 			->method('writeOwner')
 			->with($this->anything(), $this->anything(), 'uuid-1', 'carol');
 
-		$outcome = $this->service->assign(
-			register: new Register(),
-			schema: new Schema(),
-			object: $this->record('uuid-1', 'alice'),
-			newOwner: 'carol'
-		);
+		$outcome = $this->service->assign(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')), handover: new OwnershipHandover(newOwner: 'carol', cascade: false));
 
 		$this->assertSame('carol', $outcome['newOwner']);
 	}//end testAnAdministratorAssignsToANamedOwner()
@@ -556,13 +534,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 			}
 		);
 
-		$outcome = $this->service->assign(
-			register: new Register(),
-			schema: new Schema(),
-			object: $this->record('uuid-1', 'alice'),
-			newOwner: 'carol',
-			cascade: true
-		);
+		$outcome = $this->service->assign(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')), handover: new OwnershipHandover(newOwner: 'carol', cascade: true));
 
 		$this->assertCount(1, $outcome['children']);
 		$this->assertSame(['uuid-1' => 'carol', 'uuid-child' => 'carol'], $written);
@@ -595,13 +567,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 			}
 		);
 
-		$outcome = $this->service->assign(
-			register: new Register(),
-			schema: new Schema(),
-			object: $this->record('uuid-1', 'alice'),
-			newOwner: 'carol',
-			cascade: true
-		);
+		$outcome = $this->service->assign(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')), handover: new OwnershipHandover(newOwner: 'carol', cascade: true));
 
 		$this->assertSame([], $outcome['children']);
 		$this->assertSame(['uuid-1' => 'carol'], $written);
@@ -619,12 +585,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 
 		$this->magicMapper->expects($this->never())->method('findByRelationUsingRelationsColumn');
 
-		$this->service->assign(
-			register: new Register(),
-			schema: new Schema(),
-			object: $this->record('uuid-1', 'alice'),
-			newOwner: 'carol'
-		);
+		$this->service->assign(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')), handover: new OwnershipHandover(newOwner: 'carol', cascade: false));
 	}//end testTheCascadeIsOffUnlessAskedFor()
 
 	/**
@@ -642,11 +603,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 		$this->ownerWriter->expects($this->never())->method('writeOwner');
 		$this->auditTrailMapper->expects($this->never())->method('createAuditTrail');
 
-		$outcome = $this->service->claim(
-			register: new Register(),
-			schema: new Schema(),
-			object: $this->record('uuid-1', 'alice')
-		);
+		$outcome = $this->service->claim(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')));
 
 		$this->assertFalse($outcome['changed']);
 	}//end testTakingARecordYouAlreadyOwnWritesNothing()
@@ -670,11 +627,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 
 		$this->ownerWriter->expects($this->once())->method('writeOwner');
 
-		$outcome = $this->service->claim(
-			register: new Register(),
-			schema: new Schema(),
-			object: $this->record('uuid-1', 'alice')
-		);
+		$outcome = $this->service->claim(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')));
 
 		$this->assertTrue($outcome['changed']);
 	}//end testANotificationFailureDoesNotUndoTheTransfer()
@@ -695,29 +648,24 @@ class ObjectOwnershipServiceTest extends TestCase {
 			static fn (string $uid): bool => ($uid !== 'alice')
 		);
 		$service = new ObjectOwnershipService(
-			$this->userSession,
-			$this->userManager,
-			$this->groupManager,
-			new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class)),
-			$this->permissions,
-			$this->ownerWriter,
-			$this->authorizationWriter,
-			$this->auditTrailMapper,
-			$this->magicMapper,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->notificationManager,
-			$this->createMock(LoggerInterface::class)
+			guards: new OwnershipGuards(
+				userSession: $this->userSession,
+				grantManage: new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class)),
+				permissions: $this->permissions
+			),
+			sources: new OwnershipSources(directory: new PrincipalDirectory(userManager: $this->userManager, groupManager: $this->groupManager), lookup: new ObjectLookup(magicMapper: $this->magicMapper, registerMapper: $this->registerMapper, schemaMapper: $this->schemaMapper)),
+			writers: new OwnershipWriters(
+				ownerWriter: $this->ownerWriter,
+				authorizationWriter: $this->authorizationWriter,
+				auditTrailMapper: $this->auditTrailMapper,
+				notificationManager: $this->notificationManager
+			),
+			log: new OwnershipLog(logger: $this->createMock(LoggerInterface::class))
 		);
 
 		$this->notificationManager->expects($this->never())->method('notify');
 
-		$outcome = $service->assign(
-			register: new Register(),
-			schema: new Schema(),
-			object: $this->record('uuid-1', 'alice'),
-			newOwner: 'carol'
-		);
+		$outcome = $service->assign(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')), handover: new OwnershipHandover(newOwner: 'carol', cascade: false));
 
 		$this->assertTrue($outcome['changed']);
 	}//end testADepartedPreviousOwnerIsNotNotified()
@@ -736,11 +684,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 		$this->ownerWriter->expects($this->never())->method('writeOwner');
 
 		$this->expectException(NotAuthorizedException::class);
-		$this->service->claim(
-			register: new Register(),
-			schema: new Schema(),
-			object: $this->record('uuid-1', 'alice')
-		);
+		$this->service->claim(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')));
 	}//end testAnUnreachableVerdictRefusesTheTakeover()
 
 	/**
@@ -756,13 +700,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 			new \RuntimeException('no magic table for this register')
 		);
 
-		$outcome = $this->service->assign(
-			register: new Register(),
-			schema: new Schema(),
-			object: $this->record('uuid-1', 'alice'),
-			newOwner: 'carol',
-			cascade: true
-		);
+		$outcome = $this->service->assign(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')), handover: new OwnershipHandover(newOwner: 'carol', cascade: true));
 
 		$this->assertTrue($outcome['changed']);
 		$this->assertSame([], $outcome['children']);
@@ -784,13 +722,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 			new \RuntimeException('register 1 does not exist')
 		);
 
-		$outcome = $this->service->assign(
-			register: new Register(),
-			schema: new Schema(),
-			object: $this->record('uuid-1', 'alice'),
-			newOwner: 'carol',
-			cascade: true
-		);
+		$outcome = $this->service->assign(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')), handover: new OwnershipHandover(newOwner: 'carol', cascade: true));
 
 		$this->assertTrue($outcome['changed']);
 		$this->assertSame([], $outcome['children']);
@@ -833,13 +765,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 			}
 		);
 
-		$this->service->assign(
-			register: new Register(),
-			schema: new Schema(),
-			object: $parent,
-			newOwner: 'carol',
-			cascade: true
-		);
+		$this->service->assign(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $parent), handover: new OwnershipHandover(newOwner: 'carol', cascade: true));
 
 		$this->assertSame(['uuid-1', 'uuid-2'], $written);
 	}//end testACyclicRelationGraphTerminates()
@@ -862,12 +788,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 		$this->ownerWriter->expects($this->never())->method('writeOwner');
 
 		$this->expectException(\InvalidArgumentException::class);
-		$this->service->assign(
-			register: new Register(),
-			schema: new Schema(),
-			object: $object,
-			newOwner: 'carol'
-		);
+		$this->service->assign(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $object), handover: new OwnershipHandover(newOwner: 'carol', cascade: false));
 	}//end testARecordWithNoUuidCannotChangeHands()
 
 	/**
@@ -895,12 +816,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 				['scope' => 'private', 'ownerGroup' => 'redactie']
 			);
 
-		$block = $this->service->setOwnerGroup(
-			register: new Register(),
-			schema: new Schema(),
-			object: $object,
-			group: 'redactie'
-		);
+		$block = $this->service->setOwnerGroupFor(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $object), group: 'redactie');
 
 		$this->assertSame('redactie', $block['ownerGroup']);
 	}//end testTheOwnerNamesTheOwningGroupWithoutLosingTheScope()
@@ -916,12 +832,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 		$this->authorizationWriter->expects($this->never())->method('writeAuthorizationBlock');
 
 		$this->expectException(NotAuthorizedException::class);
-		$this->service->setOwnerGroup(
-			register: new Register(),
-			schema: new Schema(),
-			object: $this->record('uuid-1', 'alice'),
-			group: 'redactie'
-		);
+		$this->service->setOwnerGroupFor(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')), group: 'redactie');
 	}//end testAStrangerCannotNameTheOwningGroup()
 
 	/**
@@ -939,12 +850,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 		$this->authorizationWriter->expects($this->never())->method('writeAuthorizationBlock');
 
 		$this->expectException(\InvalidArgumentException::class);
-		$this->service->setOwnerGroup(
-			register: new Register(),
-			schema: new Schema(),
-			object: $this->record('uuid-1', 'alice'),
-			group: 'nobody'
-		);
+		$this->service->setOwnerGroupFor(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')), group: 'nobody');
 	}//end testAnUnknownOwningGroupIsRefused()
 
 	/**
@@ -978,13 +884,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 			}
 		);
 
-		$outcome = $this->service->assign(
-			register: new Register(),
-			schema: new Schema(),
-			object: $chain['uuid-0'],
-			newOwner: 'carol',
-			cascade: true
-		);
+		$outcome = $this->service->assign(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $chain['uuid-0']), handover: new OwnershipHandover(newOwner: 'carol', cascade: true));
 
 		$this->assertSame(['uuid-0', 'uuid-1', 'uuid-2', 'uuid-3', 'uuid-4', 'uuid-5'], $written);
 
@@ -1011,17 +911,33 @@ class ObjectOwnershipServiceTest extends TestCase {
 		$this->signIn('root', ['admin']);
 		$this->ownerWriter->expects($this->never())->method('writeOwner');
 
-		$outcome = $this->service->assign(
-			register: new Register(),
-			schema: new Schema(),
-			object: $this->record('uuid-1', 'carol'),
-			newOwner: 'carol',
-			cascade: true
-		);
+		$outcome = $this->service->assign(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'carol')), handover: new OwnershipHandover(newOwner: 'carol', cascade: true));
 
 		$this->assertSame(
 			['uuid' => 'uuid-1', 'previousOwner' => 'carol', 'newOwner' => 'carol', 'changed' => false, 'children' => []],
 			$outcome
 		);
 	}//end testAnUnchangedOutcomeHasItsFullShape()
+
+	/**
+	 * Other apps call setOwnerGroup(register, schema, object, group) by class
+	 * name, positionally and by name, and the register and schema reach the writer.
+	 *
+	 * @return void
+	 */
+	public function testTheRegisterSchemaOwnerGroupAnswersPositionallyAndByName(): void {
+		$this->signIn('alice', []);
+		$this->groupManager->method('groupExists')->willReturn(true);
+		$register = new Register();
+		$schema   = new Schema();
+
+		$this->authorizationWriter
+			->expects($this->exactly(2))
+			->method('writeAuthorizationBlock')
+			->with($this->identicalTo($register), $this->identicalTo($schema), 'uuid-1', $this->anything());
+
+		$this->assertSame('redactie', $this->service->setOwnerGroup($register, $schema, $this->record('uuid-1', 'alice'), 'redactie')['ownerGroup']);
+		$named = $this->service->setOwnerGroup(register: $register, schema: $schema, object: $this->record('uuid-1', 'alice'), group: null);
+		$this->assertArrayNotHasKey('ownerGroup', $named);
+	}//end testTheRegisterSchemaOwnerGroupAnswersPositionallyAndByName()
 }//end class

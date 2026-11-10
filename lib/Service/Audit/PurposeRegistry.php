@@ -23,9 +23,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Audit;
 
 use OCA\OpenRegister\Db\ProcessingPurpose;
-use OCA\OpenRegister\Db\ProcessingPurposeMapper;
+use OCA\OpenRegister\Db\ProcessingPurposeMapperInterface;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
-use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
+use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
 
 /**
  * Resolves a named purpose, and refuses one that cannot carry a query.
@@ -39,7 +39,27 @@ use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
  *
  * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
-class PurposeRegistry {
+class PurposeRegistry implements PurposeRegistryInterface {
+
+	/**
+	 * What a read that names no purpose is told.
+	 *
+	 * @var string
+	 */
+	private const MISSING_REASON = 'This read needs a declared purpose. Name one in the ' . PurposeContext::HEADER . ' header or the '
+		. PurposeContext::PARAM . ' parameter.';
+
+	/**
+	 * What a read is told per refusal rule; a named purpose fills the `%s`.
+	 *
+	 * @var array<string, string>
+	 */
+	private const REASONS = [
+		PurposeRefusedException::RULE_MISSING => self::MISSING_REASON,
+		PurposeRefusedException::RULE_UNKNOWN => 'Purpose "%s" is not in the administered list.',
+		PurposeRefusedException::RULE_RETIRED => 'Purpose "%s" has been withdrawn and cannot carry a query.',
+	];
+
 	/**
 	 * The status an archived processing activity carries.
 	 *
@@ -50,12 +70,12 @@ class PurposeRegistry {
 	/**
 	 * Constructor.
 	 *
-	 * @param ProcessingPurposeMapper     $purposes   The administered purpose list.
-	 * @param VerwerkingsactiviteitMapper $activities The processing activity register.
+	 * @param ProcessingPurposeMapperInterface     $purposes   The administered purpose list.
+	 * @param VerwerkingsactiviteitMapperInterface $activities The processing activity register.
 	 */
 	public function __construct(
-		private readonly ProcessingPurposeMapper $purposes,
-		private readonly VerwerkingsactiviteitMapper $activities,
+		private readonly ProcessingPurposeMapperInterface $purposes,
+		private readonly VerwerkingsactiviteitMapperInterface $activities,
 	) {
 	}//end __construct()
 
@@ -145,44 +165,13 @@ class PurposeRegistry {
 	 */
 	public function requirePurpose(?string $code): array {
 		$named = trim((string)($code ?? ''));
-		if ($named === '') {
-			throw new PurposeRefusedException(
-				rule: PurposeRefusedException::RULE_MISSING,
-				reason: 'This read needs a declared purpose. Name one in the '
-					. PurposeContext::HEADER . ' header or the '
-					. PurposeContext::PARAM . ' parameter.',
-				purpose: null,
-				context: ['available' => $this->availableCodes()]
-			);
-		}
-
-		$purpose = $this->purposes->resolveReference(reference: $named);
-		if ($purpose === null) {
-			throw new PurposeRefusedException(
-				rule: PurposeRefusedException::RULE_UNKNOWN,
-				reason: sprintf('Purpose "%s" is not in the administered list.', $named),
-				purpose: $named,
-				context: ['available' => $this->availableCodes()]
-			);
-		}
-
-		if ($purpose->getStatus() !== ProcessingPurpose::STATUS_ACTIVE) {
-			throw new PurposeRefusedException(
-				rule: PurposeRefusedException::RULE_RETIRED,
-				reason: sprintf('Purpose "%s" has been withdrawn and cannot carry a query.', $named),
-				purpose: $named,
-				context: ['available' => $this->availableCodes()]
-			);
-		}
+		$purpose = $this->activePurpose(named: $named);
 
 		$activity = $this->boundActivity(purpose: $purpose);
 		if ($activity === null) {
 			throw new PurposeRefusedException(
 				rule: PurposeRefusedException::RULE_UNBOUND,
-				reason: sprintf(
-					'Purpose "%s" names no processing activity, so a query cannot run under it.',
-					$named
-				),
+				reason: sprintf('Purpose "%s" names no processing activity, so a query cannot run under it.', $named),
 				purpose: $named,
 				context: ['activity' => $purpose->getActivity()]
 			);
@@ -190,6 +179,55 @@ class PurposeRegistry {
 
 		return ['purpose' => $purpose, 'activity' => $activity];
 	}//end require()
+
+	/**
+	 * The administered, active purpose a code names.
+	 *
+	 * @param string $named The trimmed code.
+	 *
+	 * @throws PurposeRefusedException When no code is named, the code is unknown, or the purpose is withdrawn.
+	 *
+	 * @return ProcessingPurpose The purpose.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function activePurpose(string $named): ProcessingPurpose {
+		if ($named === '') {
+			$this->refuse(rule: PurposeRefusedException::RULE_MISSING, purpose: null);
+		}
+
+		$purpose = $this->purposes->resolveReference(reference: $named);
+		if ($purpose === null) {
+			$this->refuse(rule: PurposeRefusedException::RULE_UNKNOWN, purpose: $named);
+		}
+
+		if ($purpose->getStatus() !== ProcessingPurpose::STATUS_ACTIVE) {
+			$this->refuse(rule: PurposeRefusedException::RULE_RETIRED, purpose: $named);
+		}
+
+		return $purpose;
+	}//end activePurpose()
+
+	/**
+	 * Refuse the read, offering the usable codes instead.
+	 *
+	 * @param string      $rule    The refusal rule, a key of REASONS.
+	 * @param string|null $purpose The code named, quoted in the reason, or null when none was.
+	 *
+	 * @throws PurposeRefusedException Always.
+	 *
+	 * @return never
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function refuse(string $rule, ?string $purpose): never {
+		$reason = self::REASONS[$rule];
+		if ($purpose !== null) {
+			$reason = sprintf($reason, $purpose);
+		}
+
+		throw new PurposeRefusedException(rule: $rule, reason: $reason, purpose: $purpose, context: ['available' => $this->availableCodes()]);
+	}//end refuse()
 
 	/**
 	 * The codes a refusal offers the caller instead.

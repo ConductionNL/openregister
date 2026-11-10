@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Party;
 
 use OCA\Integriq\Event\OutboundSendDecisionRequestedEvent;
+use OCA\OpenRegister\Service\Party\PartyAddressSelection;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -18,6 +19,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
+use OCA\OpenRegister\Notifications\Service\Party\PartyReachGates;
 use OCA\OpenRegister\Service\Party\PartyService;
 use PHPUnit\Framework\MockObject\MockObject;
 use OCP\EventDispatcher\Event;
@@ -25,6 +27,8 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\MailAddressee;
+use OCA\OpenRegister\Notifications\Service\Notification\MailContent;
 
 /**
  * A melder with no account is reached over the addresses the party holds.
@@ -110,9 +114,9 @@ class PartyNotificationServiceTest extends TestCase {
 		$this->indicators = $this->createMock(PartyIndicatorGuard::class);
 		$this->email = $this->createMock(EmailSender::class);
 
-		$this->email->method('sendToAddress')->willReturnCallback(
-			function (string $address, string $displayName, string $subject, string $body, ?array $unsubscribe = null): string {
-				$this->sent[] = ['address' => $address, 'name' => $displayName, 'subject' => $subject, 'body' => $body, 'unsubscribe' => $unsubscribe];
+		$this->email->method('sendMailTo')->willReturnCallback(
+			function (MailAddressee $to, MailContent $mail): string {
+				$this->sent[] = ['address' => $to->address, 'name' => $to->displayName, 'subject' => $mail->subject, 'body' => $mail->body, 'unsubscribe' => $mail->unsubscribe];
 
 				return EmailSender::OUTCOME_DISPATCHED;
 			}
@@ -132,9 +136,11 @@ class PartyNotificationServiceTest extends TestCase {
 		$this->service = new PartyNotificationService(
 			$this->links,
 			$this->parties,
-			$this->indicators,
 			$this->email,
-			new OptOutAuthority(eventDispatcher: $dispatcher, appConfig: $appConfig, logger: $this->createMock(LoggerInterface::class))
+			new PartyReachGates(
+				indicators: $this->indicators,
+				optOut: new OptOutAuthority(eventDispatcher: $dispatcher, appConfig: $appConfig, logger: $this->createMock(LoggerInterface::class))
+			)
 		);
 	}//end setUp()
 
@@ -191,7 +197,7 @@ class PartyNotificationServiceTest extends TestCase {
 		$this->parties->method('definitionFor')->willReturn(new PartyDefinition());
 		$this->indicators->method('sendRefusalFor')->willReturn(null);
 		$this->parties->method('addressesOfKind')->willReturnCallback(
-			static fn (ObjectEntity $p, string $kind, ?PartyDefinition $d = null): array => [
+			static fn (ObjectEntity $p, PartyAddressSelection $selection): array => [
 				['kind' => 'correspondence', 'type' => 'email', 'value' => $byUuid[(string)$p->getUuid()][1], 'label' => null],
 			]
 		);
@@ -228,8 +234,8 @@ class PartyNotificationServiceTest extends TestCase {
 
 		$this->indicators->method('sendRefusalFor')->willReturn($refusal);
 		$this->parties->method('addressesOfKind')->willReturnCallback(
-			static fn (ObjectEntity $p, string $kind, ?PartyDefinition $d = null): array => array_values(
-				array_filter($addresses, static fn (array $a): bool => $a['kind'] === $kind)
+			static fn (ObjectEntity $p, PartyAddressSelection $selection): array => array_values(
+				array_filter($addresses, static fn (array $a): bool => $a['kind'] === $selection->kind)
 			)
 		);
 		$this->parties->method('addresses')->willReturn($addresses);

@@ -38,7 +38,7 @@ use UnexpectedValueException;
 /**
  * Collects principal resolvers and answers with the ids they mean.
  */
-class PrincipalResolverRegistry {
+class PrincipalResolverRegistry implements PrincipalResolverRegistryInterface {
 
 	/**
 	 * The resolvers, by type.

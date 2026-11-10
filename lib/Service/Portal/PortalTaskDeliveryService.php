@@ -50,7 +50,7 @@ use Throwable;
  *
  * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
  */
-class PortalTaskDeliveryService {
+class PortalTaskDeliveryService implements PortalTaskDeliveryServiceInterface, PortalTaskDeliveryRequestInterface, PortalTaskReminderInterface {
 
 	/**
 	 * Constructor.
@@ -81,28 +81,56 @@ class PortalTaskDeliveryService {
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
 	 */
 	public function request(TaskInterface $task, string $kind, array $message): array {
+		return $this->record(request: new DeliveryRequest(task: $task, kind: $kind, message: $message));
+	}//end request()
+
+	/**
+	 * Record one delivery request on every channel. Never throws.
+	 *
+	 * @param DeliveryRequest $request The task, the kind of ask and its message.
+	 *
+	 * @return array<int, PortalTaskDelivery> The rows written (possibly none).
+	 */
+	private function record(DeliveryRequest $request): array {
 		$written = [];
 		foreach (PortalTaskDelivery::CHANNELS as $channel) {
-			$row = new PortalTaskDelivery();
-			$row->setTaskUuid((string)$task->getUuid());
-			$row->setPartyReference((string)$task->getAssignee());
-			$row->setChannel($channel);
-			$row->setKind($kind);
-			$row->setMessage($message);
-
-			try {
-				$written[] = $this->deliveries->insert($row);
-			} catch (Throwable $failure) {
-				$this->logger->warning(
-					'[PortalTaskDeliveryService] Could not record the ' . $channel . ' delivery request of task '
-					. $task->getUuid() . '; the task and its run stand, the delivery state reads not-recorded: ' . $failure->getMessage(),
-					['task' => $task->getUuid(), 'channel' => $channel, 'kind' => $kind]
-				);
+			$row = $this->insert(request: $request, channel: $channel);
+			if ($row !== null) {
+				$written[] = $row;
 			}
 		}
 
 		return $written;
-	}//end request()
+	}//end record()
+
+	/**
+	 * Write the request's row for one channel, or log why it could not be written.
+	 *
+	 * @param DeliveryRequest $request The task, the kind of ask and its message.
+	 * @param string          $channel The channel.
+	 *
+	 * @return PortalTaskDelivery|null The row written, or null.
+	 */
+	private function insert(DeliveryRequest $request, string $channel): ?PortalTaskDelivery {
+		$task = $request->task;
+		$row = new PortalTaskDelivery();
+		$row->setTaskUuid((string)$task->getUuid());
+		$row->setPartyReference((string)$task->getAssignee());
+		$row->setChannel($channel);
+		$row->setKind($request->kind);
+		$row->setMessage($request->message);
+
+		try {
+			return $this->deliveries->insert($row);
+		} catch (Throwable $failure) {
+			$this->logger->warning(
+				'[PortalTaskDeliveryService] Could not record the ' . $channel . ' delivery request of task '
+				. $task->getUuid() . '; the task and its run stand, the delivery state reads not-recorded: ' . $failure->getMessage(),
+				['task' => $task->getUuid(), 'channel' => $channel, 'kind' => $request->kind]
+			);
+			return null;
+		}
+	}//end insert()
 
 	/**
 	 * The message an ask, re-ask or reminder carries to portaliq.

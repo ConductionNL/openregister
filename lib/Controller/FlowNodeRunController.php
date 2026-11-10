@@ -23,7 +23,7 @@
  *     decision, once, in code review;
  *  2. the CALLER holds OpenRegister's own object-RBAC permission on the
  *     SUBJECT object named in the request — evaluated on every call, the
- *     same {@see \OCA\OpenRegister\Service\Object\PermissionHandler} the
+ *     same {@see \OCA\OpenRegister\Service\Object\PermissionHandlerInterface} the
  *     patch/create object-op path already goes through.
  *
  * `flow.run` (the flow named-rights matrix `FlowAccess` guards) is
@@ -51,21 +51,25 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\FlowNodeCall;
 use OCA\OpenRegister\Controller\Support\FlowNodeRunControllerServices;
+use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
-use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
-use OCA\OpenRegister\Service\Flow\FlowLocator;
-use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
-use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
+use OCA\OpenRegister\Service\Flow\FlowDeadEndInterface;
+use OCA\OpenRegister\Service\Flow\FlowLifecycleRefusedInterface;
+use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
+use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
+use OCA\OpenRegister\Service\Flow\FlowPublishedGraphInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
-use OCA\OpenRegister\Service\Flow\FlowService;
-use OCA\OpenRegister\Service\Flow\FlowUnattributed;
+use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowUnattributedInterface;
 use OCA\OpenRegister\Service\Flow\IFlowDirectlyInvokable;
+use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Delegation\DelegationRefused;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -107,30 +111,30 @@ class FlowNodeRunController extends Controller {
 	/**
 	 * Org-scoped flow lookup — the same non-oracle
 	 *
-	 * @var FlowService
+	 * @var FlowServiceInterface
 	 */
-	private readonly FlowService $flows;
+	private readonly FlowServiceInterface $flows;
 
 	/**
 	 * Resolves the flow's PUBLISHED
 	 *
-	 * @var FlowPublishedGraph
+	 * @var FlowPublishedGraphInterface
 	 */
-	private readonly FlowPublishedGraph $publishedGraphs;
+	private readonly FlowPublishedGraphInterface $publishedGraphs;
 
 	/**
 	 * Resolves the live flow document (for
 	 *
-	 * @var FlowLocator
+	 * @var FlowLocatorInterface
 	 */
-	private readonly FlowLocator $subjects;
+	private readonly FlowLocatorInterface $subjects;
 
 	/**
 	 * Resolves a
 	 *
-	 * @var FlowNodeRegistry
+	 * @var FlowNodeRegistryInterface
 	 */
-	private readonly FlowNodeRegistry $nodes;
+	private readonly FlowNodeRegistryInterface $nodes;
 
 	/**
 	 * Queues and executes the one node.
@@ -156,30 +160,28 @@ class FlowNodeRunController extends Controller {
 	/**
 	 * The SAME object-RBAC evaluator the
 	 *
-	 * @var PermissionHandler
+	 * @var PermissionCheckInterface
 	 */
-	private readonly PermissionHandler $permissions;
+	private readonly PermissionCheckInterface $permissions;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
 	 * @param FlowNodeRunControllerServices $services The flow node run controller services.
 	 *                              {@see FlowRunService::executeNode()}'s
 	 *                              version pin) — NOT used for its
-	 *                              `resolveSubject()`, which loads with RBAC
+	 *                              `resolveObject()`, which loads with RBAC
 	 *                              off and is for background paths only; the
 	 *                              subject here is loaded via `$objects`
 	 *                              instead, under this caller's own RBAC and
 	 *                              multitenancy.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		FlowNodeRunControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->userSession = $services->platform->userSession;
 		$this->flows = $services->graph->flows;
 		$this->publishedGraphs = $services->graph->publishedGraphs;
@@ -286,33 +288,9 @@ class FlowNodeRunController extends Controller {
 			'config' => array_merge((array)($step['config'] ?? []), $callerConfig),
 		];
 
-		$callerUid = $this->callerUid();
-
-		try {
-			$run = $this->runner->queue(
-				flowId: $id,
-				subject: $ref,
-				trigger: FlowRunServiceInterface::TRIGGER_DIRECT_NODE,
-				context: ['nodeId' => $nodeId],
-				user: $callerUid
-			);
-		} catch (FlowLifecycleRefused $e) {
-			return new JSONResponse(
-				[
-					'error' => $e->getMessage(),
-					'reason' => $e->getReason(),
-					'lifecycleStatus' => $e->getState(),
-					'flowId' => $e->getFlowId(),
-				],
-				Http::STATUS_CONFLICT
-			);
-		} catch (FlowDeadEnd $e) {
-			return new JSONResponse(
-				['error' => $e->getMessage(), 'nodes' => $e->getNodeIds()],
-				Http::STATUS_CONFLICT
-			);
-		} catch (FlowUnattributed|DelegationRefused $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_CONFLICT);
+		$run = $this->queueRun(call: new FlowNodeCall(flowId: $id, nodeId: $nodeId), ref: $ref);
+		if ($run instanceof JSONResponse) {
+			return $run;
 		}
 
 		$flowDocument = ($this->subjects->resolveFlow(flowId: $id) ?? ['id' => $id, 'nodes' => [$mergedStep], 'edges' => []]);
@@ -324,12 +302,52 @@ class FlowNodeRunController extends Controller {
 			run: $run,
 			flow: $flowDocument,
 			subject: $object,
-			nodeId: $nodeId,
 			config: $callerConfig
 		);
 
 		return new JSONResponse($run->jsonSerialize(), Http::STATUS_CREATED);
 	}//end run()
+
+	/**
+	 * Queue the direct run as the caller, answering each queue refusal with its 409.
+	 *
+	 * @param FlowNodeCall          $call The flow and the node invoked.
+	 * @param array<string, string> $ref  The subject reference `{uuid, register, schema}`.
+	 *
+	 * @return FlowRun|JSONResponse The queued run, or the 409 refusal.
+	 *
+	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md#requirement-direct-invocation-is-authorized-against-the-subject-object
+	 */
+	private function queueRun(FlowNodeCall $call, array $ref): FlowRun|JSONResponse {
+		$callerUid = $this->callerUid();
+
+		try {
+			return $this->runner->queue(
+				flowId: $call->flowId,
+				subject: $ref,
+				trigger: FlowRunServiceInterface::TRIGGER_DIRECT_NODE,
+				context: [FlowRunServiceInterface::NODE_ID_CONTEXT_KEY => $call->nodeId],
+				user: $callerUid
+			);
+		} catch (FlowLifecycleRefusedInterface $e) {
+			return new JSONResponse(
+				[
+					'error' => $e->getMessage(),
+					'reason' => $e->getReason(),
+					'lifecycleStatus' => $e->getState(),
+					'flowId' => $e->getFlowId(),
+				],
+				Http::STATUS_CONFLICT
+			);
+		} catch (FlowDeadEndInterface $e) {
+			return new JSONResponse(
+				['error' => $e->getMessage(), 'nodes' => $e->getNodeIds()],
+				Http::STATUS_CONFLICT
+			);
+		} catch (FlowUnattributedInterface|DelegationRefused $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_CONFLICT);
+		}//end try
+	}//end queueRun()
 
 	/**
 	 * Resolve the flow, its published node, and the node's opt-in — the half
@@ -363,36 +381,66 @@ class FlowNodeRunController extends Controller {
 			return new JSONResponse(['error' => 'No such node: ' . $nodeId], Http::STATUS_NOT_FOUND);
 		}
 
-		$step = null;
-		foreach ((array)($graph['nodes'] ?? []) as $candidate) {
-			if ((string)($candidate['id'] ?? '') === $nodeId) {
-				$step = $candidate;
-				break;
-			}
-		}
-
+		$step = $this->publishedStep(graph: $graph, nodeId: $nodeId);
 		if ($step === null) {
 			return new JSONResponse(['error' => 'No such node: ' . $nodeId], Http::STATUS_NOT_FOUND);
 		}
 
-		$type = (string)($step['type'] ?? '');
-
-		try {
-			$node = $this->nodes->get(type: $type);
-		} catch (Throwable $e) {
-			return new JSONResponse(['error' => 'No such node: ' . $nodeId], Http::STATUS_NOT_FOUND);
-		}
-
-		// THE OPT-IN. A node type that has not implemented this is refused
-		// identically to a node id that does not exist at all (spec.md's own
-		// scenario) — there is no oracle for "exists but not invokable this
-		// way" versus "no such node".
-		if (($node instanceof IFlowDirectlyInvokable) === false) {
+		$node = $this->invokableNode(type: (string)($step['type'] ?? ''));
+		if ($node === null) {
 			return new JSONResponse(['error' => 'No such node: ' . $nodeId], Http::STATUS_NOT_FOUND);
 		}
 
 		return ['node' => $node, 'step' => $step];
 	}//end resolveInvokableStep()
+
+	/**
+	 * The first step of the published graph with this node id.
+	 *
+	 * @param array  $graph  The published graph.
+	 * @param string $nodeId The node's id.
+	 *
+	 * @return array<string, mixed>|null The authored step, or null when the graph has none.
+	 *
+	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md#requirement-a-node-type-opts-in-to-direct-invocation
+	 */
+	private function publishedStep(array $graph, string $nodeId): array|null {
+		foreach ((array)($graph['nodes'] ?? []) as $candidate) {
+			if ((string)($candidate['id'] ?? '') === $nodeId) {
+				return $candidate;
+			}
+		}
+
+		return null;
+	}//end publishedStep()
+
+	/**
+	 * The registered node of this type, when it opted in to direct invocation.
+	 *
+	 * THE OPT-IN. A node type that has not implemented this is refused
+	 * identically to a node id that does not exist at all (spec.md's own
+	 * scenario) — there is no oracle for "exists but not invokable this
+	 * way" versus "no such node".
+	 *
+	 * @param string $type The node type.
+	 *
+	 * @return IFlowNode|null The node, or null when unknown or not invokable this way.
+	 *
+	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md#requirement-a-node-type-opts-in-to-direct-invocation
+	 */
+	private function invokableNode(string $type): IFlowNode|null {
+		try {
+			$node = $this->nodes->get(type: $type);
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		if (($node instanceof IFlowDirectlyInvokable) === false) {
+			return null;
+		}
+
+		return $node;
+	}//end invokableNode()
 
 	/**
 	 * Resolve the subject and require the caller's own update permission on
@@ -417,6 +465,37 @@ class FlowNodeRunController extends Controller {
 	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md#requirement-direct-invocation-is-authorized-against-the-subject-object
 	 */
 	private function resolveAuthorizedSubject(array $subjectRef): array|JSONResponse {
+		$ref = $this->subjectReference(subjectRef: $subjectRef);
+		if ($ref instanceof JSONResponse) {
+			return $ref;
+		}
+
+		$object = $this->loadSubject(ref: $ref);
+		if ($object === null) {
+			return new JSONResponse(['error' => 'No such object.'], Http::STATUS_NOT_FOUND);
+		}
+
+		$refusal = $this->refuseSubjectUpdate(object: $object);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return [
+			'object' => $object,
+			'ref' => $ref,
+		];
+	}//end resolveAuthorizedSubject()
+
+	/**
+	 * The trimmed subject reference, or the 400 when a part of it is missing.
+	 *
+	 * @param array<string, mixed> $subjectRef `{uuid, register, schema}` from the request body.
+	 *
+	 * @return array<string, string>|JSONResponse `{uuid, register, schema}`, or the 400.
+	 *
+	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md#requirement-direct-invocation-is-authorized-against-the-subject-object
+	 */
+	private function subjectReference(array $subjectRef): array|JSONResponse {
 		$uuid = trim((string)($subjectRef['uuid'] ?? ''));
 		$register = trim((string)($subjectRef['register'] ?? ''));
 		$schema = trim((string)($subjectRef['schema'] ?? ''));
@@ -428,11 +507,24 @@ class FlowNodeRunController extends Controller {
 			);
 		}
 
+		return ['uuid' => $uuid, 'register' => $register, 'schema' => $schema];
+	}//end subjectReference()
+
+	/**
+	 * Load the subject in the caller's organisation, RBAC evaluated separately.
+	 *
+	 * @param array<string, string> $ref `{uuid, register, schema}`.
+	 *
+	 * @return ObjectEntity|null The subject, or null when it does not load.
+	 *
+	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md#requirement-direct-invocation-is-authorized-against-the-subject-object
+	 */
+	private function loadSubject(array $ref): ObjectEntity|null {
 		try {
 			$object = $this->objects->find(
-				id: $uuid,
-				register: $register,
-				schema: $schema,
+				id: $ref['uuid'],
+				register: $ref['register'],
+				schema: $ref['schema'],
 				_rbac: false,
 				_multitenancy: true,
 				// This load is the boundary CHECK, not the business read — the
@@ -443,13 +535,26 @@ class FlowNodeRunController extends Controller {
 				_audit: false
 			);
 		} catch (Throwable $e) {
-			$object = null;
+			return null;
 		}
 
 		if (($object instanceof ObjectEntity) === false) {
-			return new JSONResponse(['error' => 'No such object.'], Http::STATUS_NOT_FOUND);
+			return null;
 		}
 
+		return $object;
+	}//end loadSubject()
+
+	/**
+	 * Refuse the run unless the caller may update the subject; no decision is a refusal.
+	 *
+	 * @param ObjectEntity $object The subject.
+	 *
+	 * @return JSONResponse|null The 403, or null when the caller may update it.
+	 *
+	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md#requirement-direct-invocation-is-authorized-against-the-subject-object
+	 */
+	private function refuseSubjectUpdate(ObjectEntity $object): JSONResponse|null {
 		try {
 			$schemaEntity = $this->schemas->find(id: (string)$object->getSchema(), _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
@@ -476,11 +581,8 @@ class FlowNodeRunController extends Controller {
 			);
 		}
 
-		return [
-			'object' => $object,
-			'ref' => ['uuid' => $uuid, 'register' => $register, 'schema' => $schema],
-		];
-	}//end resolveAuthorizedSubject()
+		return null;
+	}//end refuseSubjectUpdate()
 
 	/**
 	 * The current caller's uid, or null when anonymous.

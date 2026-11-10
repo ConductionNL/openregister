@@ -9,6 +9,8 @@ namespace Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\SchemasController;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\SchemasControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -135,11 +137,11 @@ class SchemasControllerTest extends TestCase {
 					return $groupManager;
 				}
 
-				if ($id === \OCA\OpenRegister\Service\SchemaDeletionService::class) {
+				if ($id === \OCA\OpenRegister\Service\SchemaTeardownInterface::class) {
 					return $schemaDeletionService;
 				}
 
-				if ($id === \OCA\OpenRegister\Service\Form\FormDependentsCheck::class) {
+				if ($id === \OCA\OpenRegister\Service\Form\FormDependentsCheckInterface::class) {
 					return $this->formCheck;
 				}
 
@@ -1607,8 +1609,8 @@ class SchemasControllerTest extends TestCase {
 		$this->schemaMapper->method('findAll')->willReturn([$schema1, $schema2]);
 		$this->schemaMapper->method('hasReferenceToSchema')
 			->willReturnCallback(
-				function ($properties, $targetSchemaId) {
-					return $targetSchemaId === '2';
+				function ($properties, $target) {
+					return (string)$target->getId() === '2';
 				}
 			);
 
@@ -1791,8 +1793,7 @@ class SchemasControllerTest extends TestCase {
 		$jsonLdContext->method('getImplementedTypes')->willReturn($implementedTypes);
 
 		$resolver = new \OCA\OpenRegister\Service\SemanticTypeResolver(
-			$schemaMapper,
-			$registerMapper,
+			new SchemaCatalog($registerMapper, $schemaMapper, $this->createMock(MagicMapperInterface::class)),
 			$jsonLdContext,
 			$this->logger,
 			null

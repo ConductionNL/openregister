@@ -1278,6 +1278,39 @@
             "error": "Not unique"
         }
     },
+    "create throws notification": {
+        "calls": [
+            {
+                "method": "logger.info",
+                "args": [
+                    "[SchemasController::create] Starting schema creation",
+                    {
+                        "title": "T",
+                        "has_organisation": false,
+                        "organisation": "not set"
+                    }
+                ]
+            },
+            {
+                "method": "schemaMapper.createFromArray",
+                "args": [
+                    {
+                        "title": "T"
+                    }
+                ]
+            }
+        ],
+        "status": 422,
+        "data": {
+            "error": "Invalid x-openregister-notifications declaration: [x] bad value",
+            "errors": [
+                {
+                    "code": "x",
+                    "message": "bad value"
+                }
+            ]
+        }
+    },
     "create throws property vocabulary": {
         "calls": [
             {
@@ -2933,6 +2966,16 @@
                         "read": [
                             "staff"
                         ]
+                    }
+                ]
+            },
+            {
+                "method": "logger.warning",
+                "args": [
+                    "[SchemasController] Schema authorization change not written to the audit trail",
+                    {
+                        "schemaId": 3,
+                        "exception": "Audit store down"
                     }
                 ]
             },
@@ -6902,6 +6945,38 @@
             "error": "Not unique"
         }
     },
+    "update throws notification": {
+        "calls": [
+            {
+                "method": "schemaMapper.find",
+                "args": [
+                    3,
+                    [],
+                    true,
+                    true
+                ]
+            },
+            {
+                "method": "schemaMapper.updateFromArray",
+                "args": [
+                    3,
+                    {
+                        "title": "T"
+                    }
+                ]
+            }
+        ],
+        "status": 422,
+        "data": {
+            "error": "Invalid x-openregister-notifications declaration: [x] bad value",
+            "errors": [
+                {
+                    "code": "x",
+                    "message": "bad value"
+                }
+            ]
+        }
+    },
     "update throws property vocabulary": {
         "calls": [
             {
@@ -9141,6 +9216,91 @@
             "error": "Not unique"
         }
     },
+    "upload existing throws notification": {
+        "calls": [
+            {
+                "method": "schemaMapper.find",
+                "args": [
+                    3,
+                    [],
+                    true,
+                    true
+                ]
+            },
+            {
+                "method": "upload.getUploadedJson",
+                "args": [
+                    []
+                ]
+            },
+            {
+                "method": "schemaMapper.update",
+                "args": [
+                    {
+                        "schema": {
+                            "id": 3,
+                            "uuid": "schema-uuid-3",
+                            "uri": null,
+                            "slug": null,
+                            "title": "U",
+                            "description": null,
+                            "version": null,
+                            "summary": null,
+                            "icon": null,
+                            "required": [],
+                            "properties": {
+                                "old": {
+                                    "type": "string"
+                                }
+                            },
+                            "archive": [],
+                            "source": null,
+                            "hardValidation": true,
+                            "immutable": false,
+                            "appendOnly": false,
+                            "searchable": true,
+                            "smartPickerEnabled": false,
+                            "updated": null,
+                            "created": null,
+                            "maxDepth": 0,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "sharedWith": [],
+                            "deleted": null,
+                            "configuration": null,
+                            "exportable": false,
+                            "allOf": null,
+                            "oneOf": null,
+                            "anyOf": null,
+                            "facets": null,
+                            "hooks": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null,
+                            "draft": null
+                        }
+                    }
+                ]
+            }
+        ],
+        "status": 422,
+        "data": {
+            "error": "Invalid x-openregister-notifications declaration: [x] bad value",
+            "errors": [
+                {
+                    "code": "x",
+                    "message": "bad value"
+                }
+            ]
+        }
+    },
     "upload existing throws property vocabulary": {
         "calls": [
             {
@@ -11088,6 +11248,78 @@
         "status": 409,
         "data": {
             "error": "Not unique"
+        }
+    },
+    "upload new throws notification": {
+        "calls": [
+            {
+                "method": "upload.getUploadedJson",
+                "args": [
+                    []
+                ]
+            },
+            {
+                "method": "schemaMapper.insert",
+                "args": [
+                    {
+                        "schema": {
+                            "id": null,
+                            "uuid": "<uuid>",
+                            "uri": null,
+                            "slug": null,
+                            "title": "U",
+                            "description": null,
+                            "version": null,
+                            "summary": null,
+                            "icon": null,
+                            "required": [],
+                            "properties": [],
+                            "archive": [],
+                            "source": null,
+                            "hardValidation": true,
+                            "immutable": false,
+                            "appendOnly": false,
+                            "searchable": true,
+                            "smartPickerEnabled": false,
+                            "updated": null,
+                            "created": null,
+                            "maxDepth": 0,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "sharedWith": [],
+                            "deleted": null,
+                            "configuration": null,
+                            "exportable": false,
+                            "allOf": null,
+                            "oneOf": null,
+                            "anyOf": null,
+                            "facets": null,
+                            "hooks": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null,
+                            "draft": null
+                        }
+                    }
+                ]
+            }
+        ],
+        "status": 422,
+        "data": {
+            "error": "Invalid x-openregister-notifications declaration: [x] bad value",
+            "errors": [
+                {
+                    "code": "x",
+                    "message": "bad value"
+                }
+            ]
         }
     },
     "upload new throws property vocabulary": {

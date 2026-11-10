@@ -29,8 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Event;
 
 use OCA\OpenRegister\Db\Decision;
-use OCA\OpenRegister\Service\Decision\ReviewPolicy;
-use OCP\EventDispatcher\Event;
+use OCA\OpenRegister\Kernel\Contracts\ReviewPolicyInterface;
 
 /**
  * A vetoable question: may this user change this decision?
@@ -42,7 +41,7 @@ use OCP\EventDispatcher\Event;
  *
  * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-the-app-that-owns-the-subject-may-answer-who-supervises-req-dec-002
  */
-class DecisionChangeRequestedEvent extends Event {
+class DecisionChangeRequestedEvent extends AbstractDecisionRequestEvent {
 
 	/**
 	 * Why a listener refused, when it did.
@@ -61,24 +60,24 @@ class DecisionChangeRequestedEvent extends Event {
 	/**
 	 * Constructor.
 	 *
-	 * @param Decision             $decision The decision someone wants to change.
-	 * @param string               $actorId  The user who wants to change it.
-	 * @param ReviewPolicy         $policy   The policy that applies.
-	 * @param array<string, mixed> $subject  What the decision is on: subjectType,
-	 *                                       subjectId and, when known, register,
-	 *                                       schema, objectUuid and fileId.
-	 * @param bool                 $allowed  OpenRegister's own answer from the policy.
+	 * @param Decision              $decision The decision someone wants to change.
+	 * @param string                $actorId  The user who wants to change it.
+	 * @param ReviewPolicyInterface $policy   The policy that applies.
+	 * @param array<string, mixed>  $subject  What the decision is on: subjectType,
+	 *                                        subjectId and, when known, register,
+	 *                                        schema, objectUuid and fileId.
+	 * @param bool                  $allowed  OpenRegister's own answer from the policy.
 	 *
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-the-app-that-owns-the-subject-may-answer-who-supervises-req-dec-002
 	 */
 	public function __construct(
 		private readonly Decision $decision,
-		private readonly string $actorId,
-		private readonly ReviewPolicy $policy,
-		private readonly array $subject,
+		string $actorId,
+		ReviewPolicyInterface $policy,
+		array $subject,
 		private bool $allowed,
 	) {
-		parent::__construct();
+		parent::__construct(actorId: $actorId, policy: $policy, subject: $subject);
 	}//end __construct()
 
 	/**
@@ -91,40 +90,6 @@ class DecisionChangeRequestedEvent extends Event {
 	public function getDecision(): Decision {
 		return $this->decision;
 	}//end getDecision()
-
-	/**
-	 * The user who wants to change it.
-	 *
-	 * @return string The user id.
-	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-the-app-that-owns-the-subject-may-answer-who-supervises-req-dec-002
-	 */
-	public function getActorId(): string {
-		return $this->actorId;
-	}//end getActorId()
-
-	/**
-	 * The policy that applies.
-	 *
-	 * @return ReviewPolicy The policy.
-	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-the-app-that-owns-the-subject-may-answer-who-supervises-req-dec-002
-	 */
-	public function getPolicy(): ReviewPolicy {
-		return $this->policy;
-	}//end getPolicy()
-
-	/**
-	 * What the decision is on.
-	 *
-	 * @return array<string, mixed> subjectType, subjectId and, when known,
-	 *                              register, schema, objectUuid and fileId.
-	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-the-app-that-owns-the-subject-may-answer-who-supervises-req-dec-002
-	 */
-	public function getSubject(): array {
-		return $this->subject;
-	}//end getSubject()
 
 	/**
 	 * Let the change through, unless a listener has already refused it.

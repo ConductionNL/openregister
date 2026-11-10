@@ -6,6 +6,8 @@ namespace Unit\Service\Notification;
 
 use DateTime;
 use OCA\OpenRegister\Notifications\BackgroundJob\NotificationQueueFlushJob;
+use OCA\OpenRegister\Notifications\BackgroundJob\QueueFlushDelivery;
+use OCA\OpenRegister\Notifications\BackgroundJob\QueueFlushTiming;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\QueuedNotification;
@@ -13,6 +15,19 @@ use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\ChannelSet;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchGates;
+use OCA\OpenRegister\Notifications\Service\Notification\AppIntegrations;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryLedger;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleAudience;
+use OCA\OpenRegister\Notifications\Service\Notification\MessageRendering;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchThrottle;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryHold;
+use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Notifications\Service\Notification\DigestScheduleEvaluator;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeliveryWindowService;
 use OCP\Activity\IManager as IActivityManager;
@@ -76,8 +91,8 @@ class NotificationDeliveryWindowIntegrationTest extends TestCase {
 
 		$this->historyMapper = $this->createMock(NotificationHistoryMapper::class);
 		$this->historyMapper->method('record')->willReturnCallback(
-			function (string $ruleId, string $channel, string $recipient, string $status, ...$rest) {
-				$this->recordedHistory[] = $status;
+			function (\OCA\OpenRegister\Notifications\Db\HistoryEntry $entry) {
+				$this->recordedHistory[] = $entry->delivery->status;
 				return new \OCA\OpenRegister\Notifications\Db\NotificationHistory();
 			}
 		);
@@ -131,32 +146,50 @@ class NotificationDeliveryWindowIntegrationTest extends TestCase {
 		);
 
 		$dispatcher = new AnnotationNotificationDispatcher(
-			$schemaMapper,
-			$notificationManager,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IGroupManager::class),
-			$userManager,
-			$this->createMock(IMailer::class),
-			$this->createMock(IActivityManager::class),
-			$this->createMock(IClientService::class),
-			$serverContainer,
-			null,
-			null,
-			$this->historyMapper,
-			null,
-			null,
-			null,
-			null,
-			null,
-			null,
-			null,
-			null,
-			null,
-			null,
-			$windowService,
-			$this->queuedMapper,
-			$digestEvaluator,
-			$this->time
+			channels: new ChannelSet(
+				ncSender: new NcNotificationSender(
+					notificationManager: $notificationManager,
+					logger: $this->createMock(LoggerInterface::class),
+					userManager: $userManager
+				),
+				emailSender: new EmailSender(
+					userManager: $userManager,
+					mailer: $this->createMock(IMailer::class),
+					logger: $this->createMock(LoggerInterface::class)
+				),
+				talkSender: new TalkSender(
+					httpClient: $this->createMock(IClientService::class),
+					logger: $this->createMock(LoggerInterface::class),
+					config: $serverContainer->get(IConfig::class)
+				),
+				activityManager: $this->createMock(IActivityManager::class)
+			),
+			gates: new DispatchGates(
+				throttle: new DispatchThrottle(),
+				deliveryHold: new DeliveryHold(windowService: $windowService, digestEvaluator: $digestEvaluator, queue: $this->queuedMapper, timeFactory: $this->time)
+			),
+			integrations: new AppIntegrations(
+				httpClient: $this->createMock(IClientService::class),
+				serverContainer: $serverContainer
+			),
+			ledger: new DeliveryLedger(
+				logger: $this->createMock(LoggerInterface::class),
+				historyMapper: $this->historyMapper
+			),
+			audience: new RuleAudience(
+				schemaMapper: $schemaMapper,
+				recipientResolver: new NotificationRecipientResolver(
+					userManager: $userManager,
+					groupManager: $this->createMock(IGroupManager::class),
+					logger: $this->createMock(LoggerInterface::class),
+					serverContainer: $serverContainer
+				)
+			),
+			rendering: new MessageRendering(
+				templating: new NotificationTemplating(
+					logger: $this->createMock(LoggerInterface::class)
+				)
+			)
 		);
 
 		// No individual notification MUST be delivered before the flush —
@@ -199,12 +232,8 @@ class NotificationDeliveryWindowIntegrationTest extends TestCase {
 		// time in dispatch(), not at dispatchQueued() flush time).
 		$flushJob = new NotificationQueueFlushJob(
 			$this->time,
-			$this->queuedMapper,
-			$schemaMapper,
-			$dispatcher,
-			$windowService,
-			$digestEvaluator,
-			$this->createMock(LoggerInterface::class)
+			new QueueFlushTiming($schemaMapper, $windowService, $digestEvaluator),
+			new QueueFlushDelivery($this->queuedMapper, $dispatcher, $this->createMock(LoggerInterface::class))
 		);
 
 		$reflection = new \ReflectionClass($flushJob);

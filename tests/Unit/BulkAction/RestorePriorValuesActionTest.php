@@ -29,6 +29,8 @@ namespace Unit\BulkAction;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\BulkAction\BulkObjectAccess;
 use InvalidArgumentException;
 use OCA\OpenRegister\BulkAction\RestorePriorValuesAction;
 use OCA\OpenRegister\BulkAction\ReversibleBulkActionInterface;
@@ -79,7 +81,7 @@ final class RestorePriorValuesActionTest extends TestCase {
 	}
 
 	private function action(): RestorePriorValuesAction {
-		return new RestorePriorValuesAction($this->memberMapper, $this->objectService, new NullLogger());
+		return new RestorePriorValuesAction($this->memberMapper, new BulkObjectAccess($this->objectService, $this->createMock(SchemaMapperInterface::class), new NullLogger()));
 	}
 
 	private function object(array $data = ['status' => 'afgehandeld']): ObjectEntity {

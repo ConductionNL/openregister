@@ -32,19 +32,35 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Evaluates MongoDB-style comparison operators for RBAC condition matching
- *
- * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  */
 class OperatorEvaluator {
 	/**
+	 * The method that checks each supported operator.
+	 *
+	 * @var array<string, string>
+	 */
+	private const OPERATOR_METHODS = [
+		'$eq' => 'operatorEquals',
+		'$ne' => 'operatorNotEquals',
+		'$in' => 'operatorIn',
+		'$nin' => 'operatorNotIn',
+		'$contains' => 'operatorContains',
+		'$exists' => 'operatorExists',
+		'$gt' => 'operatorGreaterThan',
+		'$gte' => 'operatorGreaterThanOrEqual',
+		'$lt' => 'operatorLessThan',
+		'$lte' => 'operatorLessThanOrEqual',
+	];
+
+	/**
 	 * Constructor for OperatorEvaluator
 	 *
-	 * @param LoggerInterface    $logger   Logger for debugging
+	 * @param LoggerInterface $logger Logger for debugging
 	 * @param ComparableInstants $instants Compares two dates as UTC instants
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
-		private readonly ComparableInstants $instants=new ComparableInstants(),
+		private readonly ComparableInstants $instants = new ComparableInstants(),
 	) {
 	}//end __construct()
 
@@ -63,7 +79,12 @@ class OperatorEvaluator {
 	 */
 	public function valueMatchesOperator(mixed $value, array $operators): bool {
 		foreach ($operators as $operator => $operand) {
-			if ($this->applySingleOperator(value: $value, operator: $operator, operand: $operand) === false) {
+			$method = (self::OPERATOR_METHODS[$operator] ?? null);
+			if ($method === null) {
+				return $this->rejectUnknownOperator(operator: $operator);
+			}
+
+			if ($this->{$method}(value: $value, operand: $operand) === false) {
 				return false;
 			}
 		}//end foreach
@@ -72,50 +93,25 @@ class OperatorEvaluator {
 	}//end valueMatchesOperator()
 
 	/**
-	 * Apply a single operator check against a value
+	 * Refuse a match on an operator this evaluator does not know.
 	 *
-	 * @param mixed $value Object value
-	 * @param string $operator Operator name (e.g. '$eq', '$gt')
-	 * @param mixed $operand Operand to compare against
+	 * Fail-closed on unknown operators to match the SQL path. MagicRbacHandler
+	 * emits the impossible predicate (1 = 0) for an operator it cannot build,
+	 * so the whole rule denies on the list even beside other properties
+	 * (openregister#4089). Returning true here would grant access on malformed
+	 * rules (fail-open), creating a list-vs-find security drift.
 	 *
-	 * @return bool True if value satisfies the operator condition
+	 * @param string $operator The unknown operator name.
+	 *
+	 * @return false Always: the match is refused.
 	 */
-	private function applySingleOperator(mixed $value, string $operator, mixed $operand): bool {
-		switch ($operator) {
-			case '$eq':
-				return $this->operatorEquals(value: $value, operand: $operand);
-			case '$ne':
-				return $this->operatorNotEquals(value: $value, operand: $operand);
-			case '$in':
-				return $this->operatorIn(value: $value, operand: $operand);
-			case '$nin':
-				return $this->operatorNotIn(value: $value, operand: $operand);
-			case '$contains':
-				return $this->operatorContains(value: $value, operand: $operand);
-			case '$exists':
-				return $this->operatorExists(value: $value, operand: $operand);
-			case '$gt':
-				return $this->operatorGreaterThan(value: $value, operand: $operand);
-			case '$gte':
-				return $this->operatorGreaterThanOrEqual(value: $value, operand: $operand);
-			case '$lt':
-				return $this->operatorLessThan(value: $value, operand: $operand);
-			case '$lte':
-				return $this->operatorLessThanOrEqual(value: $value, operand: $operand);
-			default:
-				// Fail-closed on unknown operators to match the SQL path.
-				// MagicRbacHandler emits the impossible predicate (1 = 0) for an
-				// operator it cannot build, so the whole rule denies on the list
-				// even beside other properties (openregister#4089). Returning
-				// true here would grant access on malformed rules (fail-open),
-				// creating a list-vs-find security drift.
-				$this->logger->warning(
-					message: '[OperatorEvaluator] Unknown operator — rejecting match',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'operator' => $operator]
-				);
-				return false;
-		}//end switch
-	}//end applySingleOperator()
+	private function rejectUnknownOperator(string $operator): bool {
+		$this->logger->warning(
+			message: '[OperatorEvaluator] Unknown operator — rejecting match',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'operator' => $operator]
+		);
+		return false;
+	}//end rejectUnknownOperator()
 
 	/**
 	 * Check $eq operator: value must strictly equal operand
@@ -168,16 +164,28 @@ class OperatorEvaluator {
 		// Only a list is a list of values: a scalar or a map (such as an
 		// unsupported `$lookup`) differs from its own array_values() and
 		// denies (openregister#4089).
-		if ($operand !== array_values((array) $operand)) {
-			return false;
-		}
-
-		if ($value === null) {
+		if ($this->isListLookup(value: $value, operand: $operand) === false) {
 			return false;
 		}
 
 		return in_array($value, $operand, true);
 	}//end operatorIn()
+
+	/**
+	 * Whether `$in`/`$nin` can decide at all: a list operand and a non-null value.
+	 *
+	 * Only a list is a list of values: a scalar or a map (such as an unsupported
+	 * `$lookup`) differs from its own array_values() and denies (openregister#4089).
+	 * A null value is SQL's NULL IN (...), which WHERE filters out.
+	 *
+	 * @param mixed $value Object value
+	 * @param mixed $operand The operand
+	 *
+	 * @return bool True when membership decides the verdict.
+	 */
+	private function isListLookup(mixed $value, mixed $operand): bool {
+		return $operand === array_values((array)$operand) && $value !== null;
+	}//end isListLookup()
 
 	/**
 	 * Check $contains operator: the object's ARRAY-valued property must contain the operand.
@@ -224,13 +232,7 @@ class OperatorEvaluator {
 
 		// An array-valued operand is ANY-intersection ($user.groups).
 		if (is_array($operand) === true) {
-			foreach ($operand as $candidate) {
-				if ($candidate !== null && in_array($candidate, $value, true) === true) {
-					return true;
-				}
-			}
-
-			return false;
+			return $this->containsAny(value: $value, candidates: $operand);
 		}
 
 		// Nothing to look for cannot be found.
@@ -240,6 +242,24 @@ class OperatorEvaluator {
 
 		return in_array($operand, $value, true);
 	}//end operatorContains()
+
+	/**
+	 * Whether the object's array holds any one of the candidates; a null candidate never matches.
+	 *
+	 * @param array $value The object's array value.
+	 * @param array $candidates The values to look for.
+	 *
+	 * @return bool True when at least one non-null candidate is a strict member.
+	 */
+	private function containsAny(array $value, array $candidates): bool {
+		foreach ($candidates as $candidate) {
+			if ($candidate !== null && in_array($candidate, $value, true) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end containsAny()
 
 	/**
 	 * Check $nin operator: value must not be in the operand array
@@ -256,11 +276,7 @@ class OperatorEvaluator {
 	private function operatorNotIn(mixed $value, mixed $operand): bool {
 		// A scalar or map operand denies, as the list query does; it used to
 		// grant every object (openregister#4089). See operatorIn().
-		if ($operand !== array_values((array) $operand)) {
-			return false;
-		}
-
-		if ($value === null) {
+		if ($this->isListLookup(value: $value, operand: $operand) === false) {
 			return false;
 		}
 
@@ -300,13 +316,9 @@ class OperatorEvaluator {
 	 * @return bool True if value is strictly greater than operand
 	 */
 	private function operatorGreaterThan(mixed $value, mixed $operand): bool {
-		if ($value === null || $operand === null) {
-			return false;
-		}
+		$pair = $this->comparable(value: $value, operand: $operand);
 
-		[$left, $right] = $this->instants->pair(value: $value, operand: $operand);
-
-		return $left > $right;
+		return $pair !== null && $pair[0] > $pair[1];
 	}//end operatorGreaterThan()
 
 	/**
@@ -320,13 +332,9 @@ class OperatorEvaluator {
 	 * @return bool True if value is greater than or equal to operand
 	 */
 	private function operatorGreaterThanOrEqual(mixed $value, mixed $operand): bool {
-		if ($value === null || $operand === null) {
-			return false;
-		}
+		$pair = $this->comparable(value: $value, operand: $operand);
 
-		[$left, $right] = $this->instants->pair(value: $value, operand: $operand);
-
-		return $left >= $right;
+		return $pair !== null && $pair[0] >= $pair[1];
 	}//end operatorGreaterThanOrEqual()
 
 	/**
@@ -340,13 +348,9 @@ class OperatorEvaluator {
 	 * @return bool True if value is strictly less than operand
 	 */
 	private function operatorLessThan(mixed $value, mixed $operand): bool {
-		if ($value === null || $operand === null) {
-			return false;
-		}
+		$pair = $this->comparable(value: $value, operand: $operand);
 
-		[$left, $right] = $this->instants->pair(value: $value, operand: $operand);
-
-		return $left < $right;
+		return $pair !== null && $pair[0] < $pair[1];
 	}//end operatorLessThan()
 
 	/**
@@ -364,12 +368,27 @@ class OperatorEvaluator {
 	 * @return bool True if value is less than or equal to operand
 	 */
 	private function operatorLessThanOrEqual(mixed $value, mixed $operand): bool {
+		$pair = $this->comparable(value: $value, operand: $operand);
+
+		return $pair !== null && $pair[0] <= $pair[1];
+	}//end operatorLessThanOrEqual()
+
+	/**
+	 * The two sides of an ordering comparison, or null when either is NULL.
+	 *
+	 * Matches SQL three-valued logic: NULL <op> X is NULL, which WHERE filters
+	 * out, so a null side refuses instead of PHP coercing it to 0/"".
+	 *
+	 * @param mixed $value Object value
+	 * @param mixed $operand Threshold value
+	 *
+	 * @return array{0: mixed, 1: mixed}|null The comparable pair, or null to refuse.
+	 */
+	private function comparable(mixed $value, mixed $operand): ?array {
 		if ($value === null || $operand === null) {
-			return false;
+			return null;
 		}
 
-		[$left, $right] = $this->instants->pair(value: $value, operand: $operand);
-
-		return $left <= $right;
-	}//end operatorLessThanOrEqual()
+		return $this->instants->pair(value: $value, operand: $operand);
+	}//end comparable()
 }//end class

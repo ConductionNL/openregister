@@ -20,6 +20,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\ConfigurationSettingsControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -41,20 +43,32 @@ use Psr\Log\LoggerInterface;
  */
 class ConfigurationSettingsController extends Controller {
 	/**
+	 * Settings service.
+	 *
+	 * @var AppSettingsInterface
+	 */
+	private readonly AppSettingsInterface $settingsService;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
-	 * @param AppSettingsInterface $settingsService Settings service.
-	 * @param LoggerInterface $logger Logger.
+	 * @param ConfigurationSettingsControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		$appName,
 		IRequest $request,
-		private readonly AppSettingsInterface $settingsService,
-		private readonly LoggerInterface $logger,
+		ConfigurationSettingsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->settingsService = $services->settingsService;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
@@ -180,20 +194,9 @@ class ConfigurationSettingsController extends Controller {
 	public function getObjectSettings(): JSONResponse {
 		try {
 			$settings = $this->settingsService->getObjectSettingsOnly();
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'data' => $settings,
-				]
-			);
+			return new JSONResponse(data: ['success' => true, 'data' => $settings]);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->objectSettingsFailure(e: $e);
 		}
 	}//end getObjectSettings()
 
@@ -208,31 +211,41 @@ class ConfigurationSettingsController extends Controller {
 	 */
 	public function updateObjectSettings(): JSONResponse {
 		try {
-			$data = $this->request->getParams();
-
-			// Extract IDs from objects sent by frontend.
-			if (($data['provider'] ?? null) !== null && is_array($data['provider']) === true) {
-				$data['provider'] = $data['provider']['id'] ?? null;
-			}
-
+			$data = $this->withProviderId(data: $this->request->getParams());
 			$result = $this->settingsService->updateObjectSettingsOnly($data);
 			return new JSONResponse(
-				data: [
-					'success' => true,
-					'message' => 'Object settings updated successfully',
-					'data' => $result,
-				]
+				data: ['success' => true, 'message' => 'Object settings updated successfully', 'data' => $result]
 			);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
-		}//end try
+			return $this->objectSettingsFailure(e: $e);
+		}
 	}//end updateObjectSettings()
+
+	/**
+	 * Replace the provider object the frontend sent with its id.
+	 *
+	 * @param array<string, mixed> $data The request parameters.
+	 *
+	 * @return array<string, mixed> The parameters with the provider id only.
+	 */
+	private function withProviderId(array $data): array {
+		if (is_array($data['provider'] ?? null) === true) {
+			$data['provider'] = $data['provider']['id'] ?? null;
+		}
+
+		return $data;
+	}//end withProviderId()
+
+	/**
+	 * The 500 answer for an object settings read or write that threw.
+	 *
+	 * @param Exception $e The exception.
+	 *
+	 * @return JSONResponse The failure.
+	 */
+	private function objectSettingsFailure(Exception $e): JSONResponse {
+		return new JSONResponse(data: ['success' => false, 'error' => $e->getMessage()], statusCode: 500);
+	}//end objectSettingsFailure()
 
 	/**
 	 * PATCH Object settings (delegates to updateObjectSettings)

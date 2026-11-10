@@ -62,10 +62,8 @@ class SubFlowNodeTokenTest extends TestCase {
 		$this->runs = $this->createMock(FlowRunService::class);
 
 		$this->node = new SubFlowNode(
-			$this->resolvers,
-			$this->runs,
-			$l,
-			$this->createMock(IURLGenerator::class)
+			new \OCA\OpenRegister\Service\Flow\FlowExecution($this->resolvers, $this->runs, new \Psr\Log\NullLogger()),
+			new \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation($l, $this->createMock(IURLGenerator::class))
 		);
 
 	}//end setUp()
@@ -204,11 +202,11 @@ class SubFlowNodeTokenTest extends TestCase {
 	public function testAParentWithoutATokenStillRunsASubFlow(): void {
 		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'child', 'edges' => []]);
 		$this->runs->method('queue')->willReturn($this->runWithToken(FlowRun::STATUS_QUEUED));
-		$this->runs->method('execute')->willReturn($this->runWithToken(FlowRun::STATUS_COMPLETED));
+		$this->runs->expects($this->once())->method('execute')->willReturn($this->runWithToken(FlowRun::STATUS_COMPLETED));
 
 		$items = $this->node->execute([], ['flow' => 'child'], []);
 
-		$this->assertIsArray($items);
+		$this->assertSame([], $items);
 
 	}//end testAParentWithoutATokenStillRunsASubFlow()
 }//end class

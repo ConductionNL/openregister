@@ -32,10 +32,15 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\OpenRegister\Notifications\Db\DuplicateDispatchException;
 use OCA\OpenRegister\Notifications\Db\NotificationDispatchLogMapper;
+use OCA\OpenRegister\Notifications\Db\HistoryDelivery;
+use OCA\OpenRegister\Notifications\Db\HistoryEntry;
+use OCA\OpenRegister\Notifications\Db\HistoryNotice;
+use OCA\OpenRegister\Notifications\Db\HistoryTarget;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\QueuedNotification;
 use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapper;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -54,7 +59,7 @@ use OCP\IUserManager;
 use OCP\Mail\IMailer;
 use OCP\Notification\IManager as INotificationManager;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
+use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifierInterface;
 
 /**
  * Reads notification annotations and dispatches matching ones.
@@ -80,43 +85,32 @@ use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
 class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInterface {
 
 	/**
-	 * The nc-notification channel unit — injected, or lazily built.
-	 * Nullable-and-lazy keeps every existing constructor call site working:
-	 * the shared units are appended OPTIONAL constructor parameters, and a
-	 * dispatcher constructed without them builds each from its own
-	 * dependencies on first use — the same objects, wired the same way.
+	 * Logger for dispatch diagnostics (from the ledger).
 	 *
-	 * @var NcNotificationSender|null
+	 * @var LoggerInterface
 	 */
-	private ?NcNotificationSender $lazyNcSender = null;
+	private readonly LoggerInterface $logger;
 
 	/**
-	 * The email channel unit — injected, or lazily built.
+	 * URL generator for action-target deeplinks (from the rendering set).
 	 *
-	 * @var EmailSender|null
+	 * @var IURLGenerator|null
 	 */
-	private ?EmailSender $lazyEmailSender = null;
+	private readonly ?IURLGenerator $urlGenerator;
 
 	/**
-	 * The Talk channel unit — injected, or lazily built.
+	 * Object resolver for relation-target deeplinks (from the rendering set).
 	 *
-	 * @var TalkSender|null
+	 * @var \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface|null
 	 */
-	private ?TalkSender $lazyTalkSender = null;
+	private readonly ?\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface $objectService;
 
 	/**
-	 * The shared recipient resolver — injected, or lazily built.
+	 * Canonical per-app deeplink resolver (from the rendering set).
 	 *
-	 * @var NotificationRecipientResolver|null
+	 * @var \OCA\OpenRegister\Service\DeepLinkResolverInterface|null
 	 */
-	private ?NotificationRecipientResolver $lazyRecipientResolver = null;
-
-	/**
-	 * The dialect's placeholder evaluator — injected, or lazily built.
-	 *
-	 * @var NotificationTemplating|null
-	 */
-	private ?NotificationTemplating $lazyTemplating = null;
+	private readonly ?\OCA\OpenRegister\Service\DeepLinkResolverInterface $deepLinkRegistry;
 
 	/**
 	 * The register's languages for the object being dispatched, default first.
@@ -135,83 +129,31 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	private RuleReachRecorder $reachRecorder;
 
 	/**
-	 * Constructor.
+	 * Constructor. The dispatcher's collaborators come in six capability sets,
+	 * each built by the container: the channels it delivers over, the gates a
+	 * delivery passes, its reach into other apps, what it records, whom a rule
+	 * reaches, and how a message is composed.
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Mapper used to resolve the object's schema.
-	 * @param INotificationManager $notificationManager Nextcloud notification API.
-	 * @param LoggerInterface $logger Logger for dispatch diagnostics.
-	 * @param IGroupManager $groupManager Group resolver for `groups` recipient kinds.
-	 * @param IUserManager $userManager User resolver for `users` recipient kinds.
-	 * @param IMailer $mailer Mailer for the `email` channel.
-	 * @param IActivityManager $activityManager Activity manager for the `activity` channel.
-	 * @param IClientService $httpClient HTTP client for the `webhook` and `talk` channels.
-	 * @param IServerContainer $serverContainer Server container for expression resolvers (F06).
-	 * @param RateLimiter|null $rateLimiter Optional rate limiter (per-rule, per-recipient).
-	 * @param IConfig|null $config Optional config service for runtime tunables.
-	 * @param NotificationHistoryMapper|null $historyMapper Optional history mapper for delivery audit rows.
-	 * @param NotificationCoalescer|null $coalescer Optional coalescer for burst suppression.
-	 * @param \OCA\OpenRegister\Notifications\Db\NotificationSubscriptionMapper|null $subscriptionMapper Optional subscription mapper (DEPRECATED).
-	 * @param NotificationDispatchLogMapper|null $dispatchLogMapper Dispatch-log mapper for idempotency dedup.
-	 * @param NotificationPreferenceService|null $preferenceService Override-only preference resolver (delivery gate).
-	 * @param IJobList|null $jobList Job list used to enqueue the web-push dispatch job.
-	 * @param IURLGenerator|null $urlGenerator URL generator for action-target deeplinks.
-	 * @param RegisterMapperInterface|null $registerMapper Register mapper used for the default originApp.
-	 * @param \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface|null $objectService Object resolver for relation-target deeplinks (RBAC).
-	 * @param \OCA\OpenRegister\Service\DeepLinkRegistryService|null $deepLinkRegistry Canonical per-app deeplink resolver.
-	 * @param IAppManager|null $appManager Resolves originApp display name (auto body).
-	 * @param NotificationDeliveryWindowService|null $deliveryWindowService Override-only quiet-hours resolver + evaluator.
-	 * @param QueuedNotificationMapper|null $queuedNotificationMapper Durable queue mapper (quiet-hours + digest schedule).
-	 * @param DigestScheduleEvaluator|null $digestScheduleEvaluator Live evaluator for the `digest` fixed-time schedule.
-	 * @param ITimeFactory|null $timeFactory Time source for the delivery/digest gate.
-	 * @param NcNotificationSender|null $ncSender Shared nc-notification channel unit (lazily built when absent).
-	 * @param EmailSender|null $emailSender Shared email channel unit (lazily built when absent).
-	 * @param TalkSender|null $talkSender Shared Talk channel unit (lazily built when absent).
-	 * @param NotificationRecipientResolver|null $recipientResolver Shared recipient resolver (lazily built when absent).
-	 * @param NotificationTemplating|null $templating Shared placeholder evaluator (lazily built when absent).
-	 * @param RuleReachRecorder|null $reachRecorder Notes rules that reached nobody (lazily built when absent).
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected dependencies.
+	 * @param ChannelSet       $channels     The nc-notification, email, Talk and activity channels.
+	 * @param DispatchGates    $gates        Throttle, quiet-hours / digest hold, preference and subscription gates.
+	 * @param AppIntegrations  $integrations Webhook HTTP, web-push job list, runtime app services, app lookup.
+	 * @param DeliveryLedger   $ledger       Logger, delivery history, idempotency log and reach notes.
+	 * @param RuleAudience     $audience     Schema and register lookup, recipient resolver, user config.
+	 * @param MessageRendering $rendering    Placeholder evaluator and the deeplink sources.
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly INotificationManager $notificationManager,
-		private readonly LoggerInterface $logger,
-		private readonly IGroupManager $groupManager,
-		private readonly IUserManager $userManager,
-		private readonly IMailer $mailer,
-		private readonly IActivityManager $activityManager,
-		private readonly IClientService $httpClient,
-		private readonly IServerContainer $serverContainer,
-		private readonly ?RateLimiter $rateLimiter = null,
-		private readonly ?IConfig $config = null,
-		private readonly ?NotificationHistoryMapper $historyMapper = null,
-		private readonly ?NotificationCoalescer $coalescer = null,
-		private readonly ?\OCA\OpenRegister\Notifications\Db\NotificationSubscriptionMapper $subscriptionMapper = null,
-		private readonly ?NotificationDispatchLogMapper $dispatchLogMapper = null,
-		private readonly ?NotificationPreferenceService $preferenceService = null,
-		private readonly ?IJobList $jobList = null,
-		private readonly ?IURLGenerator $urlGenerator = null,
-		private readonly ?RegisterMapperInterface $registerMapper = null,
-		private readonly ?\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface $objectService = null,
-		private readonly ?\OCA\OpenRegister\Service\DeepLinkRegistryService $deepLinkRegistry = null,
-		private readonly ?IAppManager $appManager = null,
-		private readonly ?NotificationDeliveryWindowService $deliveryWindowService = null,
-		private readonly ?QueuedNotificationMapper $queuedNotificationMapper = null,
-		private readonly ?DigestScheduleEvaluator $digestScheduleEvaluator = null,
-		private readonly ?ITimeFactory $timeFactory = null,
-		?NcNotificationSender $ncSender = null,
-		?EmailSender $emailSender = null,
-		?TalkSender $talkSender = null,
-		?NotificationRecipientResolver $recipientResolver = null,
-		?NotificationTemplating $templating = null,
-		?RuleReachRecorder $reachRecorder = null,
+		private readonly ChannelSet $channels,
+		private readonly DispatchGates $gates,
+		private readonly AppIntegrations $integrations,
+		private readonly DeliveryLedger $ledger,
+		private readonly RuleAudience $audience,
+		private readonly MessageRendering $rendering,
 	) {
-		$this->reachRecorder = ($reachRecorder ?? new RuleReachRecorder(logger: $logger));
-		$this->lazyNcSender = $ncSender;
-		$this->lazyEmailSender = $emailSender;
-		$this->lazyTalkSender = $talkSender;
-		$this->lazyRecipientResolver = $recipientResolver;
-		$this->lazyTemplating = $templating;
+		$this->logger           = $ledger->logger;
+		$this->urlGenerator     = $rendering->urlGenerator;
+		$this->objectService    = $rendering->objectService;
+		$this->deepLinkRegistry = $rendering->deepLinkRegistry;
+		$this->reachRecorder    = ($ledger->reachRecorder ?? new RuleReachRecorder(logger: $ledger->logger));
 	}//end __construct()
 
 	/**
@@ -224,14 +166,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function ncSender(): NcNotificationSender {
-		$this->lazyNcSender ??= new NcNotificationSender(
-			notificationManager: $this->notificationManager,
-			logger: $this->logger,
-			userManager: $this->userManager,
-			jobList: $this->jobList
-		);
-
-		return $this->lazyNcSender;
+		return $this->channels->ncSender;
 	}//end ncSender()
 
 	/**
@@ -243,13 +178,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function emailSender(): EmailSender {
-		$this->lazyEmailSender ??= new EmailSender(
-			userManager: $this->userManager,
-			mailer: $this->mailer,
-			logger: $this->logger
-		);
-
-		return $this->lazyEmailSender;
+		return $this->channels->emailSender;
 	}//end emailSender()
 
 	/**
@@ -261,13 +190,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function talkSender(): TalkSender {
-		$this->lazyTalkSender ??= new TalkSender(
-			httpClient: $this->httpClient,
-			logger: $this->logger,
-			config: ($this->config ?? $this->systemConfig())
-		);
-
-		return $this->lazyTalkSender;
+		return $this->channels->talkSender;
 	}//end talkSender()
 
 	/**
@@ -279,14 +202,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function recipientResolver(): NotificationRecipientResolver {
-		$this->lazyRecipientResolver ??= new NotificationRecipientResolver(
-			userManager: $this->userManager,
-			groupManager: $this->groupManager,
-			logger: $this->logger,
-			serverContainer: $this->serverContainer
-		);
-
-		return $this->lazyRecipientResolver;
+		return $this->audience->recipientResolver;
 	}//end recipientResolver()
 
 	/**
@@ -298,33 +214,8 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function templating(): NotificationTemplating {
-		$this->lazyTemplating ??= new NotificationTemplating(
-			logger: $this->logger,
-			objectService: $this->objectService
-		);
-
-		return $this->lazyTemplating;
+		return $this->rendering->templating;
 	}//end templating()
-
-	/**
-	 * The system config, resolved through the server container for callers
-	 * that constructed the dispatcher with the legacy (no-IConfig) signature.
-	 *
-	 * @return IConfig|null The config service, or null when unresolvable.
-	 */
-	private function systemConfig(): ?IConfig {
-		try {
-			$config = $this->serverContainer->get(IConfig::class);
-		} catch (\Throwable $e) {
-			return null;
-		}
-
-		if (($config instanceof IConfig) === false) {
-			return null;
-		}
-
-		return $config;
-	}//end systemConfig()
 
 	/**
 	 * Fire any notifications declared on the schema whose trigger matches.
@@ -382,16 +273,30 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @spec openspec/changes/openregister-system-notifications/tasks.md#task-2
 	 */
 	public function dispatchWithSchema(ObjectEntity $object, string $trigger, array $context, Schema $schema): void {
+		$this->fireRules(event: new NotificationEvent(object: $object, trigger: $trigger, context: $context), schema: $schema);
+	}//end dispatchWithSchema()
+
+	/**
+	 * Fire every rule a schema declares for one event.
+	 *
+	 * @param NotificationEvent $event  The object, the trigger and its extras.
+	 * @param Schema            $schema The schema carrying the rules.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/openregister-system-notifications/tasks.md#task-2
+	 */
+	private function fireRules(NotificationEvent $event, Schema $schema): void {
 		$notifications = $this->getAnnotation(schema: $schema);
 		if ($notifications === null) {
 			return;
 		}
 
-		$this->registerLanguages = $this->resolveRegisterLanguages(object: $object);
+		$this->registerLanguages = $this->resolveRegisterLanguages(object: $event->object);
 
 		// The canonical INotification subject comes from the trigger, not the
 		// rule name, so every schema-declared in-app notification renders.
-		$subjectKey = $this->canonicalSubject(trigger: $trigger);
+		$subjectKey = $this->canonicalSubject(trigger: $event->trigger);
 
 		foreach ($notifications as $name => $spec) {
 			if (is_array($spec) === false) {
@@ -401,15 +306,15 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			$firing = new RuleFiring(
 				ruleId: (string)$name,
 				spec: $spec,
-				object: $object,
+				object: $event->object,
 				schema: $schema,
-				context: $context,
+				context: $event->context,
 				subjectKey: $subjectKey
 			);
-			$this->fireRule(firing: $firing, trigger: $trigger);
+			$this->fireRule(firing: $firing, trigger: $event->trigger);
 		}
 
-	}//end dispatchWithSchema()
+	}//end fireRules()
 
 	/**
 	 * Run one rule through its gates and channels.
@@ -426,7 +331,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			return;
 		}
 
-		$firing->scopes  = $this->dispatchScopes(spec: $firing->spec, object: $firing->object, schemaSlug: $firing->schemaSlug);
+		$firing->scopes  = $this->dispatchScopes(firing: $firing);
 		$firing->eventId = $this->newEventId();
 
 		$this->resolveFiringRecipients(firing: $firing);
@@ -477,12 +382,11 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @return bool
 	 */
 	private function ruleApplies(RuleFiring $firing, string $trigger): bool {
-		$matches = $this->matches(
-			triggerSpec: $firing->spec['trigger'] ?? [],
+		$matcher = new NotificationTriggerMatcher(
 			trigger: $trigger,
 			context: array_merge($firing->context, ['_data' => $firing->data])
 		);
-		if ($matches === false) {
+		if ($matcher->matches(triggerSpec: ($firing->spec['trigger'] ?? [])) === false) {
 			return false;
 		}
 
@@ -495,7 +399,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			return true;
 		}
 
-		$key = $this->resolveIdempotencyKey(template: $template, object: $firing->object, data: $firing->data);
+		$key = $this->resolveIdempotencyKey(template: $template, firing: $firing);
 		if ($this->claimIdempotencyKey(slug: $firing->ruleId, key: $key) === true) {
 			return true;
 		}
@@ -527,12 +431,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 
 		// A group or role the server no longer has is a failed dispatch, not an empty one.
 		if ($resolved['unresolved'] !== []) {
-			$this->recordUnresolvedRecipients(
-				ruleId: $firing->ruleId,
-				unresolved: $resolved['unresolved'],
-				object: $firing->object,
-				eventId: $firing->eventId
-			);
+			$this->recordUnresolvedRecipients(firing: $firing, unresolved: $resolved['unresolved']);
 		}
 
 		if (($firing->spec['requiresSubscription'] ?? false) === true) {
@@ -553,35 +452,48 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @return void
 	 */
 	private function renderBroadcastSubject(RuleFiring $firing): void {
-		$firing->broadcastSubject = $this->resolveLocalizedSubject(
-			template: $firing->subjectTemplate(),
-			locale: null,
-			data: $firing->data,
-			context: $firing->context,
-			fallbackName: $firing->ruleId
-		);
+		$broadcast = new MessageTarget(firing: $firing, locale: null);
+		$firing->broadcastSubject = $this->messages()->subject(target: $broadcast);
 		$firing->channels         = (array)($firing->spec['channels'] ?? ['nc-notification']);
 
-		$firing->addressBody = $this->resolveMessageBody(
-			template: $firing->messageTemplate(),
-			locale: null,
-			data: $firing->data,
-			context: $firing->context,
-			hasActions: false,
-			originApp: ''
-		);
+		$firing->addressBody = $this->messages()->declaredBody(target: $broadcast);
 		if (trim($firing->addressBody) === '') {
 			$firing->addressBody = $firing->broadcastSubject;
 		}
 
-		// Absent or unknown reads as the default category, never as exempt.
-		$firing->category = OptOutAuthority::DEFAULT_CATEGORY;
-		$category         = ($firing->spec['messageCategory'] ?? '');
+		$firing->category = self::messageCategory(spec: $firing->spec);
+	}//end renderBroadcastSubject()
+
+	/**
+	 * The rule's message category. Absent or unknown reads as the default
+	 * category, never as exempt.
+	 *
+	 * @param array<string, mixed> $spec The rule declaration.
+	 *
+	 * @return string
+	 */
+	private static function messageCategory(array $spec): string {
+		$category = ($spec['messageCategory'] ?? '');
 		if (is_string($category) === true && in_array(strtolower(trim($category)), OptOutAuthority::CATEGORIES, true) === true) {
-			$firing->category = strtolower(trim($category));
+			return strtolower(trim($category));
 		}
 
-	}//end renderBroadcastSubject()
+		return OptOutAuthority::DEFAULT_CATEGORY;
+	}//end messageCategory()
+
+	/**
+	 * The renderer of subjects and bodies for the object being dispatched.
+	 *
+	 * @return RuleMessageRenderer
+	 */
+	private function messages(): RuleMessageRenderer {
+		return new RuleMessageRenderer(
+			templating: $this->templating(),
+			languages: $this->registerLanguages,
+			appManager: $this->integrations->appManager,
+			logger: $this->logger
+		);
+	}//end messages()
 
 	/**
 	 * Resolve the rate limit, coalesce window, origin app, actions and the
@@ -608,15 +520,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			originApp: $firing->originApp
 		);
 
-		$firing->broadcastMessage = $this->resolveMessageBody(
-			template: $firing->messageTemplate(),
-			locale: null,
-			data: $firing->data,
-			context: $firing->context,
-			hasActions: count($firing->actions) > 0,
-			originApp: $firing->originApp
-		);
-
+		$firing->broadcastMessage = $this->messages()->body(target: new MessageTarget(firing: $firing, locale: null));
 	}//end resolveRuleDelivery()
 
 	/**
@@ -652,7 +556,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @return void
 	 */
 	private function deliverToRecipient(RuleFiring $firing, RecipientDelivery $delivery): void {
-		if ($this->rateLimitAllows(ruleId: $firing->ruleId, recipient: $delivery->uid, rateLimit: $firing->rateLimit) === false) {
+		if ($this->gates->throttle->rateAllows(firing: $firing, recipient: $delivery->uid) === false) {
 			$delivery->status = 'rate-limited';
 			$this->recordSkippedDelivery(firing: $firing, delivery: $delivery);
 			return;
@@ -660,7 +564,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 
 		$this->renderForRecipient(firing: $firing, delivery: $delivery);
 
-		if ($this->coalesceAllows(ruleId: $firing->ruleId, recipient: $delivery->uid, coalesce: $firing->coalesce) === false) {
+		if ($this->gates->throttle->coalesceAllows(firing: $firing, recipient: $delivery->uid) === false) {
 			$delivery->status = 'coalesced';
 			$this->recordSkippedDelivery(firing: $firing, delivery: $delivery);
 			return;
@@ -690,22 +594,9 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 */
 	private function renderForRecipient(RuleFiring $firing, RecipientDelivery $delivery): void {
 		$delivery->locale  = $this->resolveUserLocale(uid: $delivery->uid);
-		$delivery->subject = $this->resolveLocalizedSubject(
-			template: $firing->subjectTemplate(),
-			locale: $delivery->locale,
-			data: $firing->data,
-			context: $firing->context,
-			fallbackName: $firing->ruleId
-		);
-		$delivery->message = $this->resolveMessageBody(
-			template: $firing->messageTemplate(),
-			locale: $delivery->locale,
-			data: $firing->data,
-			context: $firing->context,
-			hasActions: count($firing->actions) > 0,
-			originApp: $firing->originApp
-		);
-
+		$target = new MessageTarget(firing: $firing, locale: $delivery->locale);
+		$delivery->subject = $this->messages()->subject(target: $target);
+		$delivery->message = $this->messages()->body(target: $target);
 	}//end renderForRecipient()
 
 	/**
@@ -721,11 +612,11 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 */
 	private function applyPreference(RuleFiring $firing, RecipientDelivery $delivery): bool {
 		$delivery->channels = $firing->channels;
-		if ($this->preferenceService === null) {
+		if ($this->gates->preferenceService === null) {
 			return true;
 		}
 
-		$pref = $this->preferenceService->resolveEffective(
+		$pref = $this->gates->preferenceService->resolveEffective(
 			schemaDefault: $firing->spec,
 			userId: $delivery->uid,
 			schemaSlug: $firing->schemaSlug,
@@ -757,13 +648,23 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 */
 	private function emitToRecipient(RuleFiring $firing, RecipientDelivery $delivery): void {
 		$subject = (string)$delivery->subject;
+		$origin  = DeliveryOrigin::ofFiring(firing: $firing);
 		foreach (['nc-notification', 'email', 'activity'] as $channel) {
 			if (in_array($channel, $delivery->channels, true) === false) {
 				continue;
 			}
 
+			$record = new DeliveryRecord(
+				channel: $channel,
+				recipient: $delivery->uid,
+				status: 'dispatched',
+				detail: new DeliveryDetail(subject: $subject, locale: $delivery->locale)
+			);
 			if ($channel === 'nc-notification') {
-				$this->emitNotification(
+				// The shared channel units, the same classes the flow messaging
+				// service invokes; the declarative path stays best-effort, so
+				// their outcomes are not escalated here.
+				$this->ncSender()->send(
 					uid: $delivery->uid,
 					object: $firing->object,
 					subjectKey: $firing->subjectKey,
@@ -776,26 +677,12 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 					webPushActive: $firing->hasChannel('web-push')
 				);
 			} elseif ($channel === 'email') {
-				$this->emitEmail(uid: $delivery->uid, subject: $subject, body: $subject);
+				$this->emailSender()->send(uid: $delivery->uid, subject: $subject, body: $subject);
 			} else {
-				$this->emitActivity(
-					uid: $delivery->uid,
-					objectId: (string)($firing->object->getUuid() ?? ''),
-					name: $firing->ruleId,
-					subject: $subject
-				);
+				$this->emitActivity(origin: $origin, record: $record);
 			}
 
-			$this->recordHistory(
-				ruleId: $firing->ruleId,
-				channel: $channel,
-				recipient: $delivery->uid,
-				status: 'dispatched',
-				object: $firing->object,
-				subject: $subject,
-				locale: $delivery->locale,
-				eventId: $firing->eventId
-			);
+			$this->recordHistory(origin: $origin, record: $record);
 		}//end foreach
 
 	}//end emitToRecipient()
@@ -813,20 +700,16 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	private function recordSkippedDelivery(RuleFiring $firing, RecipientDelivery $delivery): void {
+		$origin = new DeliveryOrigin(ruleId: $firing->ruleId, object: $firing->object, eventId: $delivery->eventId);
+		$detail = new DeliveryDetail(subject: $delivery->subject, locale: $delivery->locale);
 		foreach ($firing->channels as $channel) {
 			if (in_array($channel, ['webhook', 'talk'], true) === true) {
 				continue;
 			}
 
 			$this->recordHistory(
-				ruleId: $firing->ruleId,
-				channel: (string)$channel,
-				recipient: $delivery->uid,
-				status: $delivery->status,
-				object: $firing->object,
-				subject: $delivery->subject,
-				locale: $delivery->locale,
-				eventId: $delivery->eventId
+				origin: $origin,
+				record: new DeliveryRecord(channel: (string)$channel, recipient: $delivery->uid, status: $delivery->status, detail: $detail)
 			);
 		}
 
@@ -842,26 +725,24 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * rather than derived, so OpenRegister never has to guess what a leaf app
 	 * means by it.
 	 *
-	 * @param array<string, mixed> $spec The notification rule spec.
-	 * @param ObjectEntity $object The triggering object.
-	 * @param string $schemaSlug The owning schema's slug.
+	 * @param RuleFiring $firing The rule, its triggering object and the owning schema's slug.
 	 *
 	 * @return array<int, string> The candidate scopes, narrowest first.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
 	 */
-	private function dispatchScopes(array $spec, ObjectEntity $object, string $schemaSlug): array {
+	private function dispatchScopes(RuleFiring $firing): array {
 		$scopes = [];
-		if ($schemaSlug !== '') {
-			$scopes[] = 'schema:' . $schemaSlug;
+		if ($firing->schemaSlug !== '') {
+			$scopes[] = 'schema:' . $firing->schemaSlug;
 		}
 
-		$domain = ($spec['domain'] ?? null);
+		$domain = ($firing->spec['domain'] ?? null);
 		if (is_string($domain) === true && $domain !== '') {
 			$scopes[] = 'domain:' . $domain;
 		}
 
-		$register = $object->getRegister();
+		$register = $firing->object->getRegister();
 		if (is_string($register) === true && $register !== '') {
 			$scopes[] = 'register:' . $register;
 		} elseif (is_int($register) === true) {
@@ -911,15 +792,8 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			}
 
 			$this->recordHistory(
-				ruleId: $firing->ruleId,
-				channel: 'outbound',
-				recipient: $handler,
-				status: $status,
-				object: $firing->object,
-				subject: null,
-				locale: null,
-				eventId: $firing->eventId,
-				errorMessage: $failure
+				origin: DeliveryOrigin::ofFiring(firing: $firing),
+				record: new DeliveryRecord(channel: 'outbound', recipient: $handler, status: $status, detail: new DeliveryDetail(errorMessage: $failure))
 			);
 		}//end foreach
 	}//end runOutboundTransports()
@@ -942,7 +816,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		}
 
 		try {
-			$service = $this->serverContainer->get($handler);
+			$service = $this->integrations->serverContainer->get($handler);
 		} catch (\Throwable $e) {
 			return sprintf('transport "%s" could not be resolved: %s', $handler, $e->getMessage());
 		}
@@ -988,21 +862,6 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	}//end newEventId()
 
 	/**
-	 * Resolve "now" for the delivery-window / digest-schedule gate. Uses
-	 * the injected `ITimeFactory` when present (tests inject a controllable
-	 * clock), else the real wall clock.
-	 *
-	 * @return DateTimeImmutable
-	 */
-	private function currentTime(): DateTimeImmutable {
-		if ($this->timeFactory !== null) {
-			return DateTimeImmutable::createFromInterface($this->timeFactory->getDateTime());
-		}
-
-		return new DateTimeImmutable('now');
-	}//end currentTime()
-
-	/**
 	 * Evaluate the delivery-window (quiet-hours) / digest-schedule gate for
 	 * one recipient and, when it suppresses, persist a `QueuedNotification`
 	 * row (never drop the event) and record notification history with the
@@ -1026,16 +885,14 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			return false;
 		}
 
-		$now = $this->currentTime();
-		$reason = $this->queueReason(
-			windowActive: $this->insideQuietHours(uid: $delivery->uid, now: $now),
-			digestDeclared: $this->digestDeclared(spec: $firing->spec)
-		);
-		if ($reason === null) {
+		$hold = $this->gates->deliveryHold->decide(firing: $firing, uid: $delivery->uid);
+		if ($hold === null) {
 			return false;
 		}
 
-		if ($this->queuedNotificationMapper !== null) {
+		$now    = $hold->at;
+		$reason = $hold->reason;
+		if ($this->gates->deliveryHold->keepsRows() === true) {
 			$entity = $this->queuedNotificationFor(firing: $firing, delivery: $delivery);
 			$entity->setReason($reason);
 			$entity->setPayload(
@@ -1061,7 +918,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			$entity->setCreatedAt(DateTime::createFromImmutable($now));
 
 			try {
-				$this->queuedNotificationMapper->insert(entity: $entity);
+				$this->gates->deliveryHold->keep(row: $entity);
 			} catch (\Throwable $e) {
 				$this->logger->warning(
 					sprintf('[AnnotationNotificationDispatcher] failed to queue rule="%s" recipient="%s": %s', $firing->ruleId, $delivery->uid, $e->getMessage())
@@ -1080,73 +937,6 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 
 		return true;
 	}//end deliveryWindowOrDigestSuppresses()
-
-	/**
-	 * Why a recipient's delivery is held: quiet hours, a digest schedule, both,
-	 * or null when it may go out now.
-	 *
-	 * @param bool $windowActive   Whether the recipient is inside quiet hours.
-	 * @param bool $digestDeclared Whether the rule declares a digest schedule.
-	 *
-	 * @return string|null A QueuedNotification reason, or null.
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function queueReason(bool $windowActive, bool $digestDeclared): ?string {
-		if ($windowActive === true && $digestDeclared === true) {
-			return QueuedNotification::REASON_BOTH;
-		}
-
-		if ($windowActive === true) {
-			return QueuedNotification::REASON_QUIET_HOURS;
-		}
-
-		if ($digestDeclared === true) {
-			return QueuedNotification::REASON_DIGEST_SCHEDULE;
-		}
-
-		return null;
-	}//end queueReason()
-
-	/**
-	 * Whether the recipient is inside their quiet hours now.
-	 *
-	 * @param string            $uid The recipient.
-	 * @param DateTimeImmutable $now The current time.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function insideQuietHours(string $uid, DateTimeImmutable $now): bool {
-		if ($this->deliveryWindowService === null) {
-			return false;
-		}
-
-		$window = $this->deliveryWindowService->getForUser(userId: $uid);
-		if ($window === null) {
-			return false;
-		}
-
-		return $this->deliveryWindowService->isInsideWindow(window: $window, now: $now);
-	}//end insideQuietHours()
-
-	/**
-	 * Whether the rule declares a valid digest schedule.
-	 *
-	 * @param array<string, mixed> $spec The rule declaration.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function digestDeclared(array $spec): bool {
-		$digestSpec = ($spec['digest'] ?? null);
-
-		return is_array($digestSpec) === true
-			&& $this->digestScheduleEvaluator !== null
-			&& $this->digestScheduleEvaluator->isValidDigestSpec($digestSpec) === true;
-	}//end digestDeclared()
 
 	/**
 	 * A queued notification row for this recipient, without reason or payload.
@@ -1171,8 +961,8 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * `(rule_key, recipient)` pair, called by `NotificationQueueFlushJob`
 	 * once it has determined the group's holding condition has cleared.
 	 *
-	 * Reuses the existing channel fan-out unchanged (`emitNotification`,
-	 * `emitEmail`, `emitActivity`). A single row flushes as its own
+	 * Reuses the existing channel fan-out unchanged (the nc-notification and
+	 * email senders, `emitActivity`). A single row flushes as its own
 	 * pre-resolved subject/message; multiple rows are merged into one
 	 * summary message so the recipient gets one notification instead of N.
 	 * Notification history is updated to `dispatched` on success.
@@ -1216,26 +1006,26 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			$locale = (string)$payload['locale'];
 		}
 
+		$origin = new DeliveryOrigin(ruleId: $ruleId, object: $object);
+		$name   = (string)($payload['name'] ?? $ruleId);
+		$detail = new DeliveryDetail(subject: $subject, locale: $locale);
+
 		if (in_array('nc-notification', $channels, true) === true) {
-			$this->emitNotification(
+			$this->ncSender()->send(
 				uid: $recipient,
 				object: $object,
 				subjectKey: (string)($payload['subjectKey'] ?? $this->canonicalSubject(trigger: 'updated')),
-				name: (string)($payload['name'] ?? $ruleId),
+				name: $name,
 				subject: $subject,
 				message: $message,
 				context: [],
 				originApp: (string)($payload['originApp'] ?? 'openregister'),
-				actions: (array)($payload['actions'] ?? [])
+				actions: (array)($payload['actions'] ?? []),
+				webPushActive: false
 			);
 			$this->recordHistory(
-				ruleId: $ruleId,
-				channel: 'nc-notification',
-				recipient: $recipient,
-				status: 'dispatched',
-				object: $object,
-				subject: $subject,
-				locale: $locale
+				origin: $origin,
+				record: new DeliveryRecord(channel: 'nc-notification', recipient: $recipient, status: 'dispatched', detail: $detail)
 			);
 		}//end if
 
@@ -1245,34 +1035,17 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 				$emailBody = $message;
 			}
 
-			$this->emitEmail(uid: $recipient, subject: $subject, body: $emailBody);
+			$this->emailSender()->send(uid: $recipient, subject: $subject, body: $emailBody);
 			$this->recordHistory(
-				ruleId: $ruleId,
-				channel: 'email',
-				recipient: $recipient,
-				status: 'dispatched',
-				object: $object,
-				subject: $subject,
-				locale: $locale
+				origin: $origin,
+				record: new DeliveryRecord(channel: 'email', recipient: $recipient, status: 'dispatched', detail: $detail)
 			);
 		}
 
 		if (in_array('activity', $channels, true) === true) {
-			$this->emitActivity(
-				uid: $recipient,
-				objectId: (string)($payload['objectUuid'] ?? ''),
-				name: (string)($payload['name'] ?? $ruleId),
-				subject: $subject
-			);
-			$this->recordHistory(
-				ruleId: $ruleId,
-				channel: 'activity',
-				recipient: $recipient,
-				status: 'dispatched',
-				object: $object,
-				subject: $subject,
-				locale: $locale
-			);
+			$record = new DeliveryRecord(channel: 'activity', recipient: $recipient, status: 'dispatched', detail: $detail);
+			$this->emitActivity(origin: new DeliveryOrigin(ruleId: $name, object: $object), record: $record);
+			$this->recordHistory(origin: $origin, record: $record);
 		}
 
 	}//end dispatchQueued()
@@ -1348,9 +1121,9 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		$recipientKey = '__'.$channel.'__';
 		$status       = 'dispatched';
 		$failure      = null;
-		if ($this->rateLimitAllows(ruleId: $firing->ruleId, recipient: $recipientKey, rateLimit: $firing->rateLimit) === false) {
+		if ($this->gates->throttle->rateAllows(firing: $firing, recipient: $recipientKey) === false) {
 			$status = 'rate-limited';
-		} elseif ($this->coalesceAllows(ruleId: $firing->ruleId, recipient: $recipientKey, coalesce: $firing->coalesce) === false) {
+		} elseif ($this->gates->throttle->coalesceAllows(firing: $firing, recipient: $recipientKey) === false) {
 			$status = 'coalesced';
 		} elseif ($channel === 'webhook') {
 			$failure = $this->emitWebhook(firing: $firing);
@@ -1365,63 +1138,16 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		}
 
 		$this->recordHistory(
-			ruleId: $firing->ruleId,
-			channel: $channel,
-			recipient: $recipientKey,
-			status: $status,
-			object: $firing->object,
-			subject: $firing->broadcastSubject,
-			locale: null,
-			eventId: $firing->eventId,
-			errorMessage: $failure
+			origin: DeliveryOrigin::ofFiring(firing: $firing),
+			record: new DeliveryRecord(
+				channel: $channel,
+				recipient: $recipientKey,
+				status: $status,
+				detail: new DeliveryDetail(subject: $firing->broadcastSubject, errorMessage: $failure)
+			)
 		);
 
 	}//end dispatchBroadcastChannel()
-
-	/**
-	 * Apply the (optional) rate limiter. Returns true when the
-	 * dispatch may proceed. A null limiter (test contexts where the
-	 * dependency wasn't injected) always allows — keeps existing
-	 * tests passing without forcing every test to construct a
-	 * RateLimiter.
-	 *
-	 * @param string $ruleId Rule identifier (notification annotation key).
-	 * @param string $recipient Recipient identifier.
-	 * @param array<string, mixed>|null $rateLimit Per-rule override block.
-	 *
-	 * @return bool True when the dispatch may proceed.
-	 */
-	private function rateLimitAllows(string $ruleId, string $recipient, ?array $rateLimit): bool {
-		if ($this->rateLimiter === null) {
-			return true;
-		}
-
-		return $this->rateLimiter->tryConsume(ruleId: $ruleId, recipient: $recipient, perRuleOverride: $rateLimit);
-	}//end rateLimitAllows()
-
-	/**
-	 * Apply the (optional) coalescer. Returns true when the dispatch
-	 * may proceed.
-	 *
-	 * A null coalescer (test contexts where the dependency wasn't
-	 * injected) always allows, as does a missing per-rule
-	 * `coalesce` config block (the rule simply opted out of grouping).
-	 *
-	 * @param string $ruleId Rule identifier (notification annotation key).
-	 * @param string $recipient Recipient identifier.
-	 * @param array<string, mixed>|null $coalesce Per-rule coalesce block.
-	 *
-	 * @return bool True when the dispatch may proceed.
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function coalesceAllows(string $ruleId, string $recipient, ?array $coalesce): bool {
-		if ($this->coalescer === null) {
-			return true;
-		}
-
-		return $this->coalescer->shouldDispatch(ruleId: $ruleId, recipient: $recipient, perRuleOverride: $coalesce);
-	}//end coalesceAllows()
 
 	/**
 	 * Claim the idempotency slot for (slug, key) atomically.
@@ -1450,16 +1176,16 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 *              dispatcher already claimed this (slug, key).
 	 */
 	private function claimIdempotencyKey(string $slug, string $key): bool {
-		if ($this->dispatchLogMapper === null) {
+		if ($this->ledger->dispatchLogMapper === null) {
 			return true;
 		}
 
 		// Prune expired rows lazily — best-effort, failures are swallowed
 		// inside the mapper.
-		$this->dispatchLogMapper->pruneExpired();
+		$this->ledger->dispatchLogMapper->pruneExpired();
 
 		try {
-			$this->dispatchLogMapper->record(
+			$this->ledger->dispatchLogMapper->record(
 				notificationSlug: $slug,
 				idempotencyKey: $key
 			);
@@ -1500,13 +1226,15 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * Values are cast to string and limited to 128 characters each to
 	 * avoid the 512-char column limit being hit by adversarial data.
 	 *
-	 * @param string $template Raw idempotency-key template.
-	 * @param ObjectEntity $object Owning object.
-	 * @param array<string, mixed> $data Pre-fetched object data array.
+	 * @param string     $template Raw idempotency-key template.
+	 * @param RuleFiring $firing   The owning object and its pre-fetched data array.
 	 *
 	 * @return string The resolved key.
 	 */
-	private function resolveIdempotencyKey(string $template, ObjectEntity $object, array $data): string {
+	private function resolveIdempotencyKey(string $template, RuleFiring $firing): string {
+		$object = $firing->object;
+		$data   = $firing->data;
+
 		return preg_replace_callback(
 			'/\$\{@self\.([a-zA-Z0-9_.-]+)\}/',
 			static function (array $matches) use ($object, $data): string {
@@ -1543,78 +1271,68 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * notification user-experience takes precedence over audit
 	 * completeness.
 	 *
-	 * @param string $ruleId The annotation key.
-	 * @param string $channel 'nc-notification' | 'email' | 'activity' | 'webhook' | 'talk'.
-	 * @param string $recipient Recipient identifier.
-	 * @param string $status 'dispatched' | 'rate-limited' | 'coalesced' | 'failed'.
-	 * @param ObjectEntity $object The object the event happened on.
-	 * @param string|null $subject The interpolated subject (null when no subject was rendered).
-	 * @param string|null $locale Recipient locale (null for broadcast channels).
-	 * @param string|null $eventId The firing's event identifier, shared by every transport of one dispatch.
-	 * @param string|null $errorMessage Why this transport did not deliver, when it did not.
+	 * @param DeliveryOrigin $origin The rule, object and event the row belongs to.
+	 * @param DeliveryRecord $record The channel, recipient, status, subject, locale and failure.
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One history row's columns, passed as they are stored.
-	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function recordHistory(
-		string $ruleId,
-		string $channel,
-		string $recipient,
-		string $status,
-		ObjectEntity $object,
-		?string $subject,
-		?string $locale,
-		?string $eventId = null,
-		?string $errorMessage = null,
-	): void {
-		if ($this->historyMapper === null) {
+	private function recordHistory(DeliveryOrigin $origin, DeliveryRecord $record): void {
+		if ($this->ledger->historyMapper === null) {
 			return;
 		}
 
-		$historySchemaId = null;
-		if ($object->getSchema() !== null && $object->getSchema() !== '') {
-			$historySchemaId = (string)$object->getSchema();
-		}
-
-		$historyRegisterId = null;
-		if ($object->getRegister() !== null && $object->getRegister() !== '') {
-			$historyRegisterId = (string)$object->getRegister();
-		}
-
-		$historyObjectUuid = null;
-		if ($object->getUuid() !== null && $object->getUuid() !== '') {
-			$historyObjectUuid = (string)$object->getUuid();
-		}
-
+		$object = $origin->object;
 		try {
-			$this->historyMapper->record(
-				ruleId: $ruleId,
-				channel: $channel,
-				recipient: $recipient,
-				status: $status,
-				schemaId: $historySchemaId,
-				registerId: $historyRegisterId,
-				objectUuid: $historyObjectUuid,
-				subject: $subject,
-				errorMessage: $errorMessage,
-				locale: $locale,
-				eventId: $eventId
+			$this->ledger->historyMapper->record(
+				entry: new HistoryEntry(
+					delivery: new HistoryDelivery(
+						ruleId: $origin->ruleId,
+						channel: $record->channel,
+						recipient: $record->recipient,
+						status: $record->status
+					),
+					target: new HistoryTarget(
+						schemaId: self::storedId(value: $object->getSchema()),
+						registerId: self::storedId(value: $object->getRegister()),
+						objectUuid: self::storedId(value: $object->getUuid()),
+						eventId: $origin->eventId
+					),
+					notice: new HistoryNotice(
+						subject: $record->detail->subject,
+						errorMessage: $record->detail->errorMessage,
+						locale: $record->detail->locale
+					)
+				)
 			);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				sprintf(
 					'[AnnotationNotificationDispatcher] history record failed (rule=%s channel=%s): %s',
-					$ruleId,
-					$channel,
+					$origin->ruleId,
+					$record->channel,
 					$e->getMessage()
 				)
 			);
 		}//end try
 
 	}//end recordHistory()
+
+	/**
+	 * An object identifier as a history column stores it: null when absent or empty.
+	 *
+	 * @param mixed $value The object's register, schema or uuid.
+	 *
+	 * @return string|null
+	 */
+	private static function storedId(mixed $value): ?string {
+		if ($value === null || $value === '') {
+			return null;
+		}
+
+		return (string)$value;
+	}//end storedId()
 
 	/**
 	 * Decide whether the rule's organisation gate (if declared) lets
@@ -1748,7 +1466,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		];
 
 		try {
-			$client = $this->httpClient->newClient();
+			$client = $this->integrations->httpClient->newClient();
 			$client->request(
 				$method,
 				$url,
@@ -1771,360 +1489,9 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	}//end emitWebhook()
 
 	/**
-	 * Decide whether a notification's `trigger` block matches the active event.
-	 *
-	 * For `calculatedChange` triggers, both `condition` (new value) and
-	 * `previously` (old value) must be satisfied for the rule to fire —
-	 * this is the boundary-crossing / debounce check.
-	 *
-	 * @param mixed $triggerSpec The declared `trigger` sub-document, or a bare string
-	 *        naming an app-defined event (`"booking.confirmed"`). Deliberately `mixed`:
-	 *        this is untrusted annotation data straight off a schema, so the shape is
-	 *        checked here rather than assumed — a malformed `trigger` must fail closed,
-	 *        not fatal.
-	 * @param string $trigger The active event type, or the app event being raised.
-	 * @param array<string, mixed> $context Per-event context (e.g. `action`).
-	 *
-	 * @return bool True when the rule should fire for this event.
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function matches($triggerSpec, string $trigger, array $context): bool {
-		// App-defined event: `"trigger": "booking.confirmed"`. The name is the
-		// whole contract — there are no sub-conditions to evaluate, because the
-		// app decided the event was worth raising before it called dispatch().
-		//
-		// This arm also stops a string trigger from reaching the array-typed
-		// parameter this method used to declare, which under strict_types threw
-		// a TypeError mid-dispatch rather than simply not matching.
-		if (is_string($triggerSpec) === true) {
-			return $triggerSpec === $trigger;
-		}
-
-		if (is_array($triggerSpec) === false) {
-			return false;
-		}
-
-		// Object form may also name an app event explicitly.
-		$declaredEvent = ($triggerSpec['event'] ?? null);
-		if (is_string($declaredEvent) === true && $declaredEvent !== '') {
-			return $declaredEvent === $trigger;
-		}
-
-		if ((string)($triggerSpec['type'] ?? '') !== $trigger) {
-			return false;
-		}
-
-		return match ($trigger) {
-			'transition' => $this->transitionActionMatches(triggerSpec: $triggerSpec, context: $context),
-			'created' => $this->createdTriggerMatches(triggerSpec: $triggerSpec, context: $context),
-			'updated' => $this->updatedTriggerMatches(triggerSpec: $triggerSpec, context: $context),
-			'calculatedChange' => $this->calculatedChangeMatches(triggerSpec: $triggerSpec, context: $context),
-			default => true,
-		};
-	}//end matches()
-
-	/**
-	 * Apply a `transition` trigger's optional `action` filter: one action or a list of them.
-	 *
-	 * @param array<string, mixed> $triggerSpec The declared `trigger` block.
-	 * @param array<string, mixed> $context     Per-event context, carrying `action`.
-	 *
-	 * @return bool True when no action is declared or the event's action is among them.
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function transitionActionMatches(array $triggerSpec, array $context): bool {
-		if (isset($triggerSpec['action']) === false) {
-			return true;
-		}
-
-		$expected = $triggerSpec['action'];
-		$actual = ($context['action'] ?? null);
-		if (is_array($expected) === true) {
-			return in_array($actual, $expected, true);
-		}
-
-		return (string)$expected === (string)$actual;
-	}//end transitionActionMatches()
-
-	/**
-	 * Apply a `created` trigger's optional field `filter`.
-	 *
-	 * The rule fires only when the created object's fields, forwarded as
-	 * `_data`, satisfy the filter (e.g. `channel == "telefoon"`). A rule
-	 * without a filter matches on type alone. Fail-closed when the filter is
-	 * malformed or the data is absent.
-	 *
-	 * @param array<string, mixed> $triggerSpec The declared `trigger` block.
-	 * @param array<string, mixed> $context     Per-event context, carrying `_data`.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function createdTriggerMatches(array $triggerSpec, array $context): bool {
-		if (isset($triggerSpec['filter']) === false) {
-			return true;
-		}
-
-		$filter = $triggerSpec['filter'];
-		$data = ($context['_data'] ?? null);
-		if (is_array($filter) === false || is_array($data) === false) {
-			return false;
-		}
-
-		return $this->createdFilterMatches(filter: $filter, data: $data);
-	}//end createdTriggerMatches()
-
-	/**
-	 * Apply an `updated` trigger's optional non-numeric field-change `condition`.
-	 *
-	 * A rule without a condition matches on type alone. Reads the old and new
-	 * object data the listener forwards; fail-closed when the condition is
-	 * malformed or either side is absent.
-	 *
-	 * @param array<string, mixed> $triggerSpec The declared `trigger` block.
-	 * @param array<string, mixed> $context     Per-event context, carrying `_oldData` and `_newData`.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function updatedTriggerMatches(array $triggerSpec, array $context): bool {
-		if (isset($triggerSpec['condition']) === false) {
-			return true;
-		}
-
-		$condition = $triggerSpec['condition'];
-		$change = $this->changedObjectData(context: $context);
-		if (is_array($condition) === false || $change === null) {
-			return false;
-		}
-
-		return $this->fieldChangeConditionMatches(condition: $condition, oldData: $change['old'], newData: $change['new']);
-	}//end updatedTriggerMatches()
-
-	/**
-	 * Apply a `calculatedChange` trigger's boundary-crossing check.
-	 *
-	 * `field` names the calculated property to monitor; the NEW value must
-	 * satisfy the `condition` operators and the OLD value the `previously`
-	 * operators. A side that is not declared is open. Fail-closed when the
-	 * field is missing or the old or new data is absent.
-	 *
-	 * @param array<string, mixed> $triggerSpec The declared `trigger` block.
-	 * @param array<string, mixed> $context     Per-event context, carrying `_oldData` and `_newData`.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function calculatedChangeMatches(array $triggerSpec, array $context): bool {
-		$field = (string)($triggerSpec['field'] ?? '');
-		$change = $this->changedObjectData(context: $context);
-		if ($field === '' || $change === null) {
-			return false;
-		}
-
-		$condition = ($triggerSpec['condition'] ?? null);
-		if (is_array($condition) === true
-			&& $this->numericConditionMatches(value: ($change['new'][$field] ?? null), operators: $condition) === false
-		) {
-			return false;
-		}
-
-		$previously = ($triggerSpec['previously'] ?? null);
-		return is_array($previously) === false
-			|| $this->numericConditionMatches(value: ($change['old'][$field] ?? null), operators: $previously) === true;
-	}//end calculatedChangeMatches()
-
-	/**
-	 * The old and new object data an update event forwards, or null when either is absent.
-	 *
-	 * @param array<string, mixed> $context Per-event context.
-	 *
-	 * @return array{old: array, new: array}|null
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function changedObjectData(array $context): ?array {
-		$newData = ($context['_newData'] ?? null);
-		$oldData = ($context['_oldData'] ?? null);
-		if (is_array($newData) === false || is_array($oldData) === false) {
-			return null;
-		}
-
-		return ['old' => $oldData, 'new' => $newData];
-	}//end changedObjectData()
-
-	/**
-	 * Evaluate a set of plain comparison operators against a numeric value.
-	 *
-	 * Operators mirror the JSON-schema style used by the notification spec:
-	 * `lt`, `lte`, `gt`, `gte`, `eq`, `ne`. All comparisons are numeric
-	 * (int/float); a non-numeric value returns false for every ordering
-	 * operator (`lt`, `lte`, `gt`, `gte`) and casts to string for `eq`/`ne`.
-	 *
-	 * Multiple operators in the map are ANDed together (all must hold).
-	 *
-	 * @param mixed $value The field value to test.
-	 * @param array<string, mixed> $operators Map of operator → threshold (e.g. `['lt' => 0.85]`).
-	 *
-	 * @return bool True when the value satisfies every declared operator.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) numericConditionMatches() evaluates six comparison
-	 * operators (lt, lte, gt, gte, eq, ne) in a match expression; each arm is a distinct spec-defined
-	 * operator and cannot be reduced further.
-	 */
-	private function numericConditionMatches(mixed $value, array $operators): bool {
-		foreach ($operators as $op => $threshold) {
-			$numeric = (is_numeric($value) === true && is_numeric($threshold) === true);
-
-			// BUG-SVC-8: when both sides are numeric, compare as floats so
-			// numerically-equal-but-differently-formatted values match
-			// (e.g. `1.0` eq `1`). Fall back to string compare otherwise.
-			if ($numeric === true) {
-				$equals = ((float)$value === (float)$threshold);
-			} else {
-				$equals = ((string)$value === (string)$threshold);
-			}
-
-			$result = match ((string)$op) {
-				'lt' => $numeric && (float)$value < (float)$threshold,
-				'lte' => $numeric && (float)$value <= (float)$threshold,
-				'gt' => $numeric && (float)$value > (float)$threshold,
-				'gte' => $numeric && (float)$value >= (float)$threshold,
-				'eq' => $equals,
-				'ne' => ($equals === false),
-				default => false,
-			};
-
-			if ($result === false) {
-				return false;
-			}
-		}//end foreach
-
-		return true;
-	}//end numericConditionMatches()
-
-	/**
-	 * Evaluate a `created`-trigger field filter against the created object's data.
-	 *
-	 * Supports the contract's single-field shape `{ field, operator, value|values }`
-	 * with operators `equals` (default), `in`, and `notIn`. Scalar comparison is
-	 * string-cast (mirrors `fieldChangeConditionMatches`). A filter naming an
-	 * unknown field fails closed.
-	 *
-	 * @param array<string, mixed> $filter The `trigger.filter` sub-document.
-	 * @param array<string, mixed> $data The created object's data.
-	 *
-	 * @return bool True when the object satisfies the filter.
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function createdFilterMatches(array $filter, array $data): bool {
-		$field = (string)($filter['field'] ?? '');
-		if ($field === '') {
-			return false;
-		}
-
-		$operator = (string)($filter['operator'] ?? 'equals');
-		$actual = ($data[$field] ?? null);
-		$actualStr = '';
-		if (is_scalar($actual) === true) {
-			$actualStr = (string)$actual;
-		}
-
-		if ($operator === 'in' || $operator === 'notIn') {
-			$values = ($filter['values'] ?? []);
-			if (is_array($values) === false) {
-				return false;
-			}
-
-			$haystack = [];
-			foreach ($values as $candidate) {
-				if (is_scalar($candidate) === true) {
-					$haystack[] = (string)$candidate;
-				} else {
-					$haystack[] = '';
-				}
-			}
-
-			$present = in_array($actualStr, $haystack, true);
-			if ($operator === 'in') {
-				return $present;
-			}
-
-			return ($present === false);
-		}//end if
-
-		// Default: equals.
-		return $actualStr === (string)($filter['value'] ?? '');
-	}//end createdFilterMatches()
-
-	/**
-	 * Evaluate a non-numeric field-change condition for an `updated` trigger.
-	 *
-	 * Compares one field's value between the old and new object data:
-	 *   - `changed`            — matches when old != new.
-	 *   - `equals` (+ `value`) — matches when new == value; when optional
-	 *                            `from` is present, also requires old == from
-	 *                            (i.e. a specific `from` -> `value` transition).
-	 *
-	 * Comparison is string-normalised (scalars cast to string, non-scalars to
-	 * the empty string), consistent with the `eq`/`ne` handling in
-	 * `numericConditionMatches()`. An empty/missing `field` returns false.
-	 *
-	 * @param array<string, mixed> $condition The `condition` sub-document (`field`, `operator`, `value`, `from`).
-	 * @param array<string, mixed> $oldData The object's data before the update.
-	 * @param array<string, mixed> $newData The object's data after the update.
-	 *
-	 * @return bool True when the declared change occurred.
-	 */
-	private function fieldChangeConditionMatches(array $condition, array $oldData, array $newData): bool {
-		$field = (string)($condition['field'] ?? '');
-		if ($field === '') {
-			return false;
-		}
-
-		$operator = (string)($condition['operator'] ?? 'changed');
-		$oldValue = ($oldData[$field] ?? null);
-		$newValue = ($newData[$field] ?? null);
-
-		$oldStr = '';
-		if (is_scalar($oldValue) === true) {
-			$oldStr = (string)$oldValue;
-		}
-
-		$newStr = '';
-		if (is_scalar($newValue) === true) {
-			$newStr = (string)$newValue;
-		}
-
-		if ($operator === 'changed') {
-			return $oldStr !== $newStr;
-		}
-
-		if ($operator === 'equals') {
-			if ($newStr !== (string)($condition['value'] ?? '')) {
-				return false;
-			}
-
-			if (isset($condition['from']) === true) {
-				return $oldStr === (string)$condition['from'];
-			}
-
-			return true;
-		}
-
-		return false;
-	}//end fieldChangeConditionMatches()
-
-	/**
 	 * Read a schema's `authorization.roles` assignment as a role-to-groups map.
 	 *
-	 * The same map `PermissionHandler` expands for a lifecycle transition, read
+	 * The same map `PermissionHandlerInterface` expands for a lifecycle transition, read
 	 * here so a notification rule may address `{"kind": "role", "role": "..."}`
 	 * in the schema's own vocabulary rather than repeating the group ids the
 	 * assignment happens to hold today.
@@ -2167,26 +1534,20 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * recipient column and `recipient-unresolved` as its status, so the fault is
 	 * readable rather than a silence (ADR-005).
 	 *
-	 * @param string $ruleId The rule that named it.
+	 * @param RuleFiring $firing The rule that named it, its triggering object and event identifier.
 	 * @param array<int, array{kind: string, id: string, reason: string}> $unresolved The resolver's report.
-	 * @param ObjectEntity $object The triggering object.
-	 * @param string $eventId The dispatch's event identifier.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-group-or-a-declared-role-is-a-recipient-req-nrg-001
 	 */
-	private function recordUnresolvedRecipients(
-		string $ruleId,
-		array $unresolved,
-		ObjectEntity $object,
-		string $eventId,
-	): void {
+	private function recordUnresolvedRecipients(RuleFiring $firing, array $unresolved): void {
+		$origin = DeliveryOrigin::ofFiring(firing: $firing);
 		foreach ($unresolved as $entry) {
 			$this->logger->warning(
 				sprintf(
 					'[AnnotationNotificationDispatcher] rule="%s" addressed %s "%s" which did not resolve (%s)',
-					$ruleId,
+					$firing->ruleId,
 					$entry['kind'],
 					$entry['id'],
 					$entry['reason']
@@ -2194,15 +1555,13 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			);
 
 			$this->recordHistory(
-				ruleId: $ruleId,
-				channel: $entry['kind'],
-				recipient: $entry['id'],
-				status: 'recipient-unresolved',
-				object: $object,
-				subject: null,
-				locale: null,
-				eventId: $eventId,
-				errorMessage: $entry['reason']
+				origin: $origin,
+				record: new DeliveryRecord(
+					channel: $entry['kind'],
+					recipient: $entry['id'],
+					status: 'recipient-unresolved',
+					detail: new DeliveryDetail(errorMessage: $entry['reason'])
+				)
 			);
 		}
 
@@ -2223,191 +1582,6 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	}//end userExists()
 
 	/**
-	 * Resolve a localized subject template against a recipient locale.
-	 *
-	 * Subject templates can be declared in three shapes:
-	 *
-	 *   1. Legacy single-language string:
-	 *        subject: "Object {{title}} updated"
-	 *   2. Per-locale map:
-	 *        subject:
-	 *          nl: "Object {{title}} bijgewerkt"
-	 *          en: "Object {{title}} updated"
-	 *   3. Per-locale map with explicit default:
-	 *        subject:
-	 *          defaultLocale: nl
-	 *          nl: "..."
-	 *          en: "..."
-	 *
-	 * The resolver picks the recipient's locale when present in the
-	 * map, then falls back to:
-	 *   a. the explicit `defaultLocale` key if set,
-	 *   b. `nl` (Dutch — the primary language for Conduction's NL
-	 *      government audience),
-	 *   c. `en`,
-	 *   d. the first non-default key in declaration order,
-	 *   e. the rule's annotation name (last-resort identifier).
-	 *
-	 * Closes the spec's NL/EN i18n requirement; new locales beyond the
-	 * NL/EN minimum just need to be added under their ISO 639-1 code in
-	 * the schema annotation — no code change required.
-	 *
-	 * @param mixed $template Raw subject value (string or array).
-	 * @param string|null $locale Recipient locale, or null for broadcast channels.
-	 * @param array<string, mixed> $data Object data for `{{prop}}` interpolation.
-	 * @param array<string, mixed> $context Trigger-specific context.
-	 * @param string $fallbackName Annotation name (last-resort fallback).
-	 *
-	 * @return string The interpolated subject string.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) resolveLocalizedSubject() handles three template
-	 * shapes (string, locale-keyed map, default-locale fallback) and within each shape applies
-	 * template-variable interpolation; each branch is required by the i18n subject contract.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Template shape × locale-match × defaultLocale fallback
-	 * × interpolation presence produce many paths; all are required by the spec's subject-resolution
-	 * priority chain.
-	 */
-	private function resolveLocalizedSubject(
-		mixed $template,
-		?string $locale,
-		array $data,
-		array $context,
-		string $fallbackName,
-	): string {
-		if (is_string($template) === true && $template !== '') {
-			// Legacy single-language path — no per-locale map declared.
-			return $this->interpolate(template: $template, data: $data, context: $context, locale: $locale);
-		}
-
-		if (is_array($template) === true) {
-			$declared = isset($template['defaultLocale']) === true && is_string($template['defaultLocale']) === true;
-			$defaultLocale = 'nl';
-			if ($declared === true) {
-				$defaultLocale = $template['defaultLocale'];
-			}
-
-			// Recipient locale wins when declared.
-			if ($locale !== null && isset($template[$locale]) === true && is_string($template[$locale]) === true) {
-				return $this->interpolate(template: $template[$locale], data: $data, context: $context, locale: $locale);
-			}
-
-			// Explicit default locale next.
-			if (isset($template[$defaultLocale]) === true && is_string($template[$defaultLocale]) === true) {
-				return $this->interpolate(template: $template[$defaultLocale], data: $data, context: $context, locale: $locale);
-			}
-
-			// NL/EN baseline.
-			foreach (['nl', 'en'] as $candidate) {
-				if (isset($template[$candidate]) === true && is_string($template[$candidate]) === true) {
-					return $this->interpolate(template: $template[$candidate], data: $data, context: $context, locale: $locale);
-				}
-			}
-
-			// First locale in declaration order (skip the meta key).
-			foreach ($template as $key => $value) {
-				if ($key === 'defaultLocale') {
-					continue;
-				}
-
-				if (is_string($value) === true) {
-					return $this->interpolate(template: $value, data: $data, context: $context, locale: $locale);
-				}
-			}
-		}//end if
-
-		return $fallbackName;
-	}//end resolveLocalizedSubject()
-
-	/**
-	 * Resolve the notification BODY (message) for a recipient/broadcast.
-	 *
-	 * The body is distinct from the title (`subject`):
-	 *
-	 *   1. When the rule declares a `message` template (string or per-locale
-	 *      map), it is localised + `{{prop}}`-interpolated through the SAME
-	 *      resolver as the subject (`resolveLocalizedSubject()`).
-	 *   2. When the rule declares NO `message` but DOES declare `actions[]`,
-	 *      the body is auto-derived as "Open in {AppName}." where {AppName}
-	 *      is the originApp's human display name (via IAppManager; falls back
-	 *      to ucfirst(originApp) when unavailable).
-	 *   3. When the rule declares neither `message` nor `actions`, the body
-	 *      is empty — exactly today's behaviour (back-compat).
-	 *
-	 * @param mixed $template Raw `message` value (string, array, or null).
-	 * @param string|null $locale Recipient locale, or null for broadcast channels.
-	 * @param array<string, mixed> $data Object data for `{{prop}}` interpolation.
-	 * @param array<string, mixed> $context Trigger-specific context.
-	 * @param bool $hasActions Whether the rule declared resolvable actions.
-	 * @param string $originApp Resolved origin app id (drives the auto-body app name).
-	 *
-	 * @return string The interpolated body string, or '' for the empty back-compat body.
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function resolveMessageBody(
-		mixed $template,
-		?string $locale,
-		array $data,
-		array $context,
-		bool $hasActions,
-		string $originApp,
-	): string {
-		$hasTemplate = (is_string($template) === true && $template !== '') || (is_array($template) === true && $template !== []);
-		if ($hasTemplate === true) {
-			// Reuse the subject resolver: identical shape, locale-resolution
-			// and {{prop}} interpolation contract. The empty fallbackName
-			// means an unresolvable map degrades to '' rather than a name.
-			return $this->resolveLocalizedSubject(
-				template: $template,
-				locale: $locale,
-				data: $data,
-				context: $context,
-				fallbackName: ''
-			);
-		}
-
-		// No explicit body: auto-derive only when the rule has actions.
-		if ($hasActions === false) {
-			return '';
-		}
-
-		return sprintf('Open in %s.', $this->resolveAppDisplayName(app: $originApp));
-	}//end resolveMessageBody()
-
-	/**
-	 * Resolve an app's human display name for the auto-derived body.
-	 *
-	 * Reads the app's `name` from IAppManager::getAppInfo() when the manager
-	 * is available; falls back to ucfirst(app) when the manager is absent
-	 * (older fixtures) or the lookup yields no usable name.
-	 *
-	 * @param string $app The app id.
-	 *
-	 * @return string The human-readable app display name.
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function resolveAppDisplayName(string $app): string {
-		$fallback = ucfirst($app);
-		if ($this->appManager === null || $app === '') {
-			return $fallback;
-		}
-
-		try {
-			$info = $this->appManager->getAppInfo($app);
-			if (is_array($info) === true && is_string($info['name'] ?? null) === true && $info['name'] !== '') {
-				return $info['name'];
-			}
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				sprintf('[AnnotationNotificationDispatcher] app display-name lookup failed: %s', $e->getMessage())
-			);
-		}
-
-		return $fallback;
-	}//end resolveAppDisplayName()
-
-	/**
 	 * Resolve a Nextcloud user's preferred locale.
 	 *
 	 * Reads `core.lang` from the user's NC config — the same value
@@ -2423,12 +1597,12 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @return string|null The 2-letter language code, or null when unknown.
 	 */
 	private function resolveUserLocale(string $uid): ?string {
-		if ($this->config === null) {
+		if ($this->audience->config === null) {
 			return null;
 		}
 
 		try {
-			$raw = $this->config->getUserValue($uid, 'core', 'lang', '');
+			$raw = $this->audience->config->getUserValue($uid, 'core', 'lang', '');
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -2437,54 +1611,10 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			return null;
 		}
 
-		// NC stores values like `nl`, `en_GB`, `de_DE` — strip the
-		// region suffix so the lookup matches the simple ISO 639-1
-		// keys we expect in the per-locale subject map.
-		$sep = strpos($raw, '_');
-		if ($sep !== false) {
-			$raw = substr($raw, 0, $sep);
-		}
-
-		return strtolower($raw);
+		// NC stores values like `nl`, `en_GB`, `de_DE`: the region suffix goes,
+		// so the lookup matches the ISO 639-1 keys of the per-locale subject map.
+		return strtolower(explode('_', $raw, 2)[0]);
 	}//end resolveUserLocale()
-
-	/**
-	 * Replace {{prop}} tokens with values from $data, then $context.
-	 *
-	 * Substituted values are HTML-escaped at the source as defence in
-	 * depth. The rendered subject ends up in:
-	 *   - INotificationManager (HTML render path in the NC notification UI),
-	 *   - the Activity stream (HTML render path),
-	 *   - email subject/body (plain-text setPlainBody, but still rendered
-	 *     by mail clients that may interpret HTML in the subject line).
-	 * Nextcloud's own rendering layers escape on output, so this is a
-	 * second layer rather than the only one — but it keeps the
-	 * `<script>` / `"` / `&` characters that come from object data
-	 * from being placed into a notification context without escaping.
-	 *
-	 * The literal template fragments authored by the schema author
-	 * pass through unchanged (they aren't sourced from object data).
-	 *
-	 * @param string $template The raw subject template.
-	 * @param array<string, mixed> $data Object data for `{{prop}}` lookup.
-	 * @param array<string, mixed> $context Per-event context for `{{prop}}` lookup.
-	 * @param string|null $locale The recipient's language, or null for a broadcast.
-	 *
-	 * @return string The interpolated string.
-	 *
-	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/notificatie-engine/spec.md#requirement-a-translatable-value-must-fill-its-placeholder
-	 */
-	private function interpolate(string $template, array $data, array $context, ?string $locale = null): string {
-		// The dialect's ONE placeholder evaluator — the same class the flow
-		// messaging service renders node templates through. A translatable
-		// value renders in the recipient's language, then the register's.
-		return $this->templating()->interpolate(
-			template: $template,
-			data: $data,
-			context: $context,
-			languages: array_merge([$locale], $this->registerLanguages)
-		);
-	}//end interpolate()
 
 	/**
 	 * The register's default language, then its other languages.
@@ -2496,14 +1626,13 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/notificatie-engine/spec.md#requirement-a-translatable-value-must-fill-its-placeholder
 	 */
 	private function resolveRegisterLanguages(ObjectEntity $object): array {
-		$registerId = $object->getRegister();
-		if ($this->registerMapper === null || $registerId === null || (string)$registerId === '') {
+		try {
+			$register = $this->objectRegister(object: $object);
+		} catch (\Throwable $e) {
 			return [];
 		}
 
-		try {
-			$register = $this->registerMapper->find($registerId, _rbac: false, _multitenancy: false);
-		} catch (\Throwable $e) {
+		if ($register === null) {
 			return [];
 		}
 
@@ -2511,6 +1640,22 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 
 		return array_values(array_unique(array_filter($languages, static fn ($code): bool => is_string($code) === true && $code !== '')));
 	}//end resolveRegisterLanguages()
+
+	/**
+	 * The register of the object being dispatched, null when it is unknown.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return Register|null
+	 */
+	private function objectRegister(ObjectEntity $object): ?Register {
+		$registerId = $object->getRegister();
+		if ($this->audience->registerMapper === null || $registerId === null || (string)$registerId === '') {
+			return null;
+		}
+
+		return $this->audience->registerMapper->find($registerId, _rbac: false, _multitenancy: false);
+	}//end objectRegister()
 
 	/**
 	 * Map a trigger to the canonical INotification subject the Notifier
@@ -2547,24 +1692,17 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		}
 
 		// Default: the app that owns the schema's register.
-		$registerId = $object->getRegister();
-		$registerMapper = $this->registerMapper;
-		if ($registerMapper !== null && $registerId !== null && (string)$registerId !== '') {
-			try {
-				$register = $registerMapper->find(
-					$registerId,
-					_rbac: false,
-					_multitenancy: false
-				);
-				$owningApp = $register->getApplication();
-				if (is_string($owningApp) === true && $owningApp !== '') {
-					return $owningApp;
-				}
-			} catch (\Throwable $e) {
-				$this->logger->debug(
-					sprintf('[AnnotationNotificationDispatcher] originApp register lookup failed: %s', $e->getMessage())
-				);
-			}
+		try {
+			$owningApp = $this->objectRegister(object: $object)?->getApplication();
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				sprintf('[AnnotationNotificationDispatcher] originApp register lookup failed: %s', $e->getMessage())
+			);
+			return 'openregister';
+		}
+
+		if (is_string($owningApp) === true && $owningApp !== '') {
+			return $owningApp;
 		}
 
 		return 'openregister';
@@ -2673,7 +1811,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			return false;
 		}
 
-		return \OCA\OpenRegister\Service\Task\TaskState::isRejectingOutcome(outcome: $outcome);
+		return \OCA\OpenRegister\Service\Task\TaskStateRules::isRejectingOutcome(outcome: $outcome);
 	}//end taskVerbNeedsForm()
 
 	/**
@@ -2762,12 +1900,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		}
 
 		if ($kind === 'url') {
-			$href = (string)($target['href'] ?? '');
-			if (filter_var($href, FILTER_VALIDATE_URL) === false) {
-				return null;
-			}
-
-			return $href;
+			return (new LinkableUrl())->orNull(href: (string)($target['href'] ?? ''));
 		}
 
 		if ($kind === 'route') {
@@ -2974,7 +2107,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	private function enqueueWebPush(RuleFiring $firing): void {
-		if ($this->jobList === null) {
+		if ($this->integrations->jobList === null) {
 			$this->logger->debug('[AnnotationNotificationDispatcher] web-push declared but IJobList unavailable.');
 			return;
 		}
@@ -2997,63 +2130,6 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			object: $firing->object
 		);
 	}//end enqueueWebPush()
-
-	/**
-	 * Persist + dispatch a single in-app Nextcloud notification row.
-	 *
-	 * The INotification carries the canonical `$subjectKey` (which the
-	 * Notifier switches on to render localised text + an object-detail
-	 * action link), the routing parameters the action link needs
-	 * (`objectTitle`, `registerId`, `schemaId`, `objectUuid`), the rule's
-	 * own name under `notificationType`, and the pre-rendered subject text
-	 * under `_text` (so a schema's custom per-locale subject still wins).
-	 *
-	 * Push delivery needs no extra code: `notify_push` auto-intercepts this
-	 * same `IManager::notify()` call and relays it to connected devices.
-	 *
-	 * @param string $uid Recipient user UID.
-	 * @param ObjectEntity $object The object the event happened on.
-	 * @param string $subjectKey Canonical subject identifier (object_created/_updated/_transitioned).
-	 * @param string $name Annotation rule name (notification type identifier).
-	 * @param string $subject Pre-interpolated subject text (notification title).
-	 * @param string $message Pre-interpolated body text (notification body); may be empty.
-	 * @param array<string, mixed> $context Trigger context (action, from, to).
-	 * @param string $originApp Resolved originApp (declared or register-owning app).
-	 * @param array<int, array<string, mixed>> $actions Resolved action buttons (label map + deeplink url + primary).
-	 * @param bool $webPushActive Whether the rule also delivers over web-push (drives duplicate suppression).
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function emitNotification(
-		string $uid,
-		ObjectEntity $object,
-		string $subjectKey,
-		string $name,
-		string $subject,
-		string $message,
-		array $context,
-		string $originApp = 'openregister',
-		array $actions = [],
-		bool $webPushActive = false,
-	): void {
-		// The shared channel send unit — the same class the flow messaging
-		// service invokes. The declarative path stays best-effort, so the
-		// outcome is not escalated here; the unit already logs failures.
-		$this->ncSender()->send(
-			uid: $uid,
-			object: $object,
-			subjectKey: $subjectKey,
-			name: $name,
-			subject: $subject,
-			message: $message,
-			context: $context,
-			originApp: $originApp,
-			actions: $actions,
-			webPushActive: $webPushActive
-		);
-	}//end emitNotification()
 
 	/**
 	 * Send a rule addressed to the parties on an object, over their own addresses.
@@ -3105,7 +2181,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 				$onlyRole = $role;
 			}
 
-			$sent = $this->serverContainer->get(PartyNotificationService::class)->notifyParties(
+			$sent = $this->integrations->serverContainer->get(PartyNotificationService::class)->notifyParties(
 				objectUuid: $objectUuid,
 				subject: $firing->broadcastSubject,
 				body: $firing->addressBody,
@@ -3116,13 +2192,13 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			foreach ($sent as $outcome) {
 				$reached++;
 				$this->recordHistory(
-					ruleId: $firing->ruleId,
-					channel: 'email',
-					recipient: 'party:' . $outcome['party'],
-					status: $outcome['outcome'],
-					object: $firing->object,
-					subject: $firing->broadcastSubject,
-					locale: null
+					origin: new DeliveryOrigin(ruleId: $firing->ruleId, object: $firing->object),
+					record: new DeliveryRecord(
+						channel: 'email',
+						recipient: 'party:' . $outcome['party'],
+						status: $outcome['outcome'],
+						detail: new DeliveryDetail(subject: $firing->broadcastSubject)
+					)
 				);
 			}
 		}//end foreach
@@ -3151,7 +2227,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 
 		$hasEntry = false;
 		foreach ($firing->recipientsSpec() as $recipient) {
-			if (is_array($recipient) === true && (string)($recipient['kind'] ?? '') === ReferencedAddressNotifier::KIND) {
+			if (is_array($recipient) === true && (string)($recipient['kind'] ?? '') === ReferencedAddressNotifierInterface::KIND) {
 				$hasEntry = true;
 				break;
 			}
@@ -3161,7 +2237,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			return 0;
 		}
 
-		$outcomes = $this->serverContainer->get(ReferencedAddressNotifier::class)->notify(
+		$outcomes = $this->integrations->serverContainer->get(ReferencedAddressNotifierInterface::class)->notify(
 			object: $firing->object,
 			data: $firing->data,
 			recipientsSpec: $firing->recipientsSpec(),
@@ -3178,13 +2254,13 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			}
 
 			$this->recordHistory(
-				ruleId: $firing->ruleId,
-				channel: 'email',
-				recipient: 'field:' . $outcome['field'],
-				status: $outcome['outcome'],
-				object: $firing->object,
-				subject: $firing->broadcastSubject,
-				locale: null
+				origin: new DeliveryOrigin(ruleId: $firing->ruleId, object: $firing->object),
+				record: new DeliveryRecord(
+					channel: 'email',
+					recipient: 'field:' . $outcome['field'],
+					status: $outcome['outcome'],
+					detail: new DeliveryDetail(subject: $firing->broadcastSubject)
+				)
 			);
 		}
 
@@ -3192,44 +2268,27 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	}//end dispatchToAddresses()
 
 	/**
-	 * Send a transactional email to a Nextcloud user.
-	 *
-	 * Resolves the user's email via IUserManager and short-circuits if
-	 * SMTP isn't configured (mailer->validateMailFrom would fail) or
-	 * the user has no email on file.
-	 *
-	 * @param string $uid Recipient user UID.
-	 * @param string $subject Email subject line.
-	 * @param string $body Email body text.
-	 *
-	 * @return void
-	 */
-	private function emitEmail(string $uid, string $subject, string $body): void {
-		// The shared channel send unit — the same class the flow messaging
-		// service invokes. The declarative path stays best-effort (SMTP not
-		// configured is normal in dev containers), so the outcome is not
-		// escalated here; the unit already logs failures.
-		$this->emailSender()->send(uid: $uid, subject: $subject, body: $body);
-	}//end emitEmail()
-
-	/**
 	 * Publish an entry to the Nextcloud Activity stream.
 	 *
-	 * @param string $uid Affected user UID.
-	 * @param string $objectId Owning object's UUID (or rule name fallback).
-	 * @param string $name Annotation name (activity subject identifier).
-	 * @param string $subject Pre-interpolated activity text.
+	 * The entry is filed under the origin's rule name and points at the
+	 * origin's object uuid, or at the rule name when the object has none.
+	 *
+	 * @param DeliveryOrigin $origin The rule name and object the entry is filed under.
+	 * @param DeliveryRecord $record The affected user and the pre-interpolated activity text.
 	 *
 	 * @return void
 	 */
-	private function emitActivity(string $uid, string $objectId, string $name, string $subject): void {
-		$objectRef = $name;
-		if ($objectId !== '') {
-			$objectRef = $objectId;
+	private function emitActivity(DeliveryOrigin $origin, DeliveryRecord $record): void {
+		$uid       = $record->recipient;
+		$name      = $origin->ruleId;
+		$subject   = (string)$record->detail->subject;
+		$objectRef = (string)($origin->object->getUuid() ?? '');
+		if ($objectRef === '') {
+			$objectRef = $name;
 		}
 
 		try {
-			$event = $this->activityManager->generateEvent();
+			$event = $this->channels->activityManager->generateEvent();
 			$event
 				->setApp('openregister')
 				->setType('openregister_objects')
@@ -3237,7 +2296,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 				->setSubject($name, ['_text' => $subject])
 				->setObject('object', 0, $objectRef)
 				->setTimestamp(time());
-			$this->activityManager->publish($event);
+			$this->channels->activityManager->publish($event);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				sprintf('[AnnotationNotificationDispatcher] activity to "%s" failed (%s)', $uid, $e->getMessage())
@@ -3259,7 +2318,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		}
 
 		try {
-			return $this->schemaMapper->find($ref, _multitenancy: false);
+			return $this->audience->schemaMapper->find($ref, _multitenancy: false);
 		} catch (\Throwable) {
 			return null;
 		}
@@ -3299,7 +2358,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @return array<int, mixed>
 	 */
 	private function filterBySubscription(array $recipients, ObjectEntity $object): array {
-		if ($this->subscriptionMapper === null) {
+		if ($this->gates->subscriptionMapper === null) {
 			return $recipients;
 		}
 
@@ -3310,7 +2369,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		}
 
 		try {
-			$subscribed = $this->subscriptionMapper->findSubscribedUids(
+			$subscribed = $this->gates->subscriptionMapper->findSubscribedUids(
 				registerId: (int)$registerId,
 				schemaId: (int)$schemaId
 			);

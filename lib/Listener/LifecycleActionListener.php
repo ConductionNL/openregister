@@ -34,12 +34,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
-use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutor;
-use OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutorInterface;
+use OCA\OpenRegister\Service\Lifecycle\TransitionPayload;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -55,134 +52,115 @@ class LifecycleActionListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param LifecycleActionExecutor $executor Runs the transition's declared actions.
-	 * @param LoggerInterface $logger Logger for diagnostics.
-	 * @param LifecycleTransitionResolver $transitionResolver Decides which declared transition an edit is, so the named action's own actions run.
+	 * @param LifecycleEditReader              $edits    Reads the edit and the transition it amounts to.
+	 * @param LifecycleActionExecutorInterface $executor Runs the transition's declared actions.
+	 * @param LoggerInterface                  $logger   Logger for diagnostics.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly LifecycleActionExecutor $executor,
+		private readonly LifecycleEditReader $edits,
+		private readonly LifecycleActionExecutorInterface $executor,
 		private readonly LoggerInterface $logger,
-		private readonly LifecycleTransitionResolver $transitionResolver,
 	) {
 	}//end __construct()
 
 	/**
 	 * Run declared actions for the attempted lifecycle transition.
 	 *
+	 * A prior listener (transition legality via LifecycleValidationListener, or an
+	 * approval gate) may have rejected or blocked the transition. It is then not
+	 * happening, so its actions must not run.
+	 *
 	 * @param Event $event Inbound dispatcher event.
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function handle(Event $event): void {
-		if (($event instanceof ObjectUpdatingEvent) === false) {
-			return;
+		if (($event instanceof ObjectUpdatingEvent) === true && $event->isPropagationStopped() === false) {
+			$this->runDeclaredActions(event: $event);
 		}
-
-		// A prior listener (transition legality via LifecycleValidationListener,
-		// or an approval gate) may have rejected or blocked this transition. In
-		// that case the transition is not happening, so its actions must not run.
-		if ($event->isPropagationStopped() === true) {
-			return;
-		}
-
-		$oldObject = $event->getOldObject();
-		if ($oldObject === null) {
-			// No prior state — this is an initial create, not a transition.
-			return;
-		}
-
-		$newObject = $event->getNewObject();
-		$schema = $this->loadSchema(object: $newObject);
-		if ($schema === null) {
-			return;
-		}
-
-		$config = ($schema->getConfiguration() ?? []);
-		$annotation = ($config['x-openregister-lifecycle'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		$field = (string)($annotation['field'] ?? ($annotation['property'] ?? ''));
-		$transitions = ($annotation['transitions'] ?? []);
-		if ($field === '' || is_array($transitions) === false || $transitions === []) {
-			return;
-		}
-
-		$oldData = ($oldObject->getObject() ?? []);
-		$newData = ($newObject->getObject() ?? []);
-		$oldValue = ($oldData[$field] ?? null);
-		$newValue = ($newData[$field] ?? null);
-
-		if ($oldValue === $newValue || is_string($newValue) === false) {
-			return;
-		}
-
-		$matched = $this->transitionResolver->resolve(
-			transitions: $transitions,
-			uuid: (string)$newObject->getUuid(),
-			oldValue: (string)$oldValue,
-			newValue: $newValue
-		);
-		if ($matched === null) {
-			// Not a recognised transition — LifecycleValidationListener rejects
-			// this on its own; there is nothing for the executor to run.
-			return;
-		}
-
-		[$action, $spec] = $matched;
-
-		$actions = ($spec['actions'] ?? null);
-		if (is_array($actions) === false || $actions === []) {
-			return;
-		}
-
-		// Fail-loud by design: a missing handler / unparseable condition throws
-		// out of the executor and is NOT caught here — the exception propagates
-		// to the save path (HookStoppedException / 500), aborting the transition
-		// rather than silently dropping the declared action.
-		$result = $this->executor->run(
-			actions: $actions,
-			objectData: $newData,
-			previousData: $oldData,
-			transition: $action
-		);
-
-		if ($result !== $newData) {
-			$newObject->setObject($result);
-		}
-
-		$this->logger->debug(
-			sprintf('[LifecycleActionListener] executed %d action(s) for transition "%s".', count($actions), $action)
-		);
 	}//end handle()
 
 	/**
-	 * Load the schema referenced by an object, returning null on failure.
+	 * Run the actions of the transition this update amounts to, if any.
 	 *
-	 * @param ObjectEntity $object Object whose schema reference to resolve.
+	 * @param ObjectUpdatingEvent $event The update.
 	 *
-	 * @return Schema|null Resolved schema, or null on lookup failure.
+	 * @return void
 	 */
-	private function loadSchema(ObjectEntity $object): ?Schema {
-		$schemaRef = $object->getSchema();
-		if ($schemaRef === null || $schemaRef === '') {
+	private function runDeclaredActions(ObjectUpdatingEvent $event): void {
+		$attempt = $this->attemptOf(event: $event);
+		if ($attempt === null) {
+			return;
+		}
+
+		$actions = ($attempt->spec['actions'] ?? null);
+		if (is_array($actions) === true && $actions !== []) {
+			$this->run(attempt: $attempt, actions: $actions);
+		}
+	}//end runDeclaredActions()
+
+	/**
+	 * The transition this update amounts to, or null when it moves no declared state.
+	 *
+	 * An edit no transition allows is LifecycleValidationListener's to reject; there
+	 * is nothing for the executor to run.
+	 *
+	 * @param ObjectUpdatingEvent $event The update.
+	 *
+	 * @return LifecycleAttempt|null
+	 */
+	private function attemptOf(ObjectUpdatingEvent $event): ?LifecycleAttempt {
+		$edit = $this->edits->editOf(event: $event);
+		if ($edit === null || $this->movesADeclaredState(edit: $edit) === false) {
 			return null;
 		}
 
-		try {
-			return $this->schemaMapper->find($schemaRef, _multitenancy: false);
-		} catch (\Throwable $e) {
-			return null;
+		return $this->edits->attemptOf(edit: $edit);
+	}//end attemptOf()
+
+	/**
+	 * Whether the schema declares a field and transitions and this edit moves the field to a text value.
+	 *
+	 * @param LifecycleEdit $edit The edit.
+	 *
+	 * @return bool
+	 */
+	private function movesADeclaredState(LifecycleEdit $edit): bool {
+		return $edit->declaration->field() !== ''
+			&& $edit->declaration->hasTransitions() === true
+			&& $edit->changesStateToText() === true;
+	}//end movesADeclaredState()
+
+	/**
+	 * Run a transition's actions over the incoming data.
+	 *
+	 * Fail-loud by design: a missing handler or unparseable condition throws out of
+	 * the executor and is not caught here. The exception propagates to the save path
+	 * (HookStoppedException / 500), aborting the transition rather than silently
+	 * dropping the declared action.
+	 *
+	 * @param LifecycleAttempt  $attempt The matched transition.
+	 * @param array<int, mixed> $actions Its declared actions.
+	 *
+	 * @return void
+	 */
+	private function run(LifecycleAttempt $attempt, array $actions): void {
+		$newData = $attempt->edit->getNewData();
+		$result  = $this->executor->run(
+			actions: $actions,
+			payload: new TransitionPayload(transition: $attempt->action, objectData: $newData, previousData: $attempt->edit->getOldData())
+		);
+
+		if ($result !== $newData) {
+			$attempt->edit->object()->setObject($result);
 		}
-	}//end loadSchema()
+
+		$this->logger->debug(
+			sprintf('[LifecycleActionListener] executed %d action(s) for transition "%s".', count($actions), $attempt->action)
+		);
+	}//end run()
 }//end class

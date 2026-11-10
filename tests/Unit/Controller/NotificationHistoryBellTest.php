@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationHistoryControllerServices;
 use OCA\OpenRegister\Notifications\Controller\NotificationHistoryController;
 use OCA\OpenRegister\Notifications\Db\NotificationHistory;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
@@ -31,6 +32,7 @@ use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Db\ListQuery;
 
 /**
  * Three verbs and the subject axis, through the controller a client reaches.
@@ -88,12 +90,8 @@ class NotificationHistoryBellTest extends TestCase {
 		$groups->method('isAdmin')->willReturn(false);
 
 		return new NotificationHistoryController(
-			'openregister',
 			$this->request,
-			$this->mapper,
-			$session,
-			$groups,
-			$this->clearing
+			new NotificationHistoryControllerServices(mapper: $this->mapper, userSession: $session, groupManager: $groups, clearing: $this->clearing)
 		);
 
 	}//end controller()
@@ -284,8 +282,8 @@ class NotificationHistoryBellTest extends TestCase {
 
 		$seen = [];
 		$this->mapper->method('findFiltered')->willReturnCallback(
-			static function (array $filters) use (&$seen): array {
-				$seen['find'] = $filters;
+			static function (ListQuery $query) use (&$seen): array {
+				$seen['find'] = $query->filters;
 				return [];
 			}
 		);

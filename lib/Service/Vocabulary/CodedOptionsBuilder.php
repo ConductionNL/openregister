@@ -38,24 +38,19 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Vocabulary;
 
 use DateTimeImmutable;
-use DateTimeInterface;
 
 /**
  * Produces the options and the option tree for a coded property.
  */
-class CodedOptionsBuilder {
+class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param ConceptRepository $concepts Reads the scheme's concepts.
-	 * @param ConceptHierarchy $hierarchy Walks broader and narrower.
-	 * @param ConceptLifecycle $lifecycle Answers the validity window.
+	 * @param ConceptSchemeAccess $scheme Reads the scheme's concepts, hierarchy and validity windows.
 	 */
 	public function __construct(
-		private readonly ConceptRepository $concepts,
-		private readonly ConceptHierarchy $hierarchy,
-		private readonly ConceptLifecycle $lifecycle,
+		private readonly ConceptSchemeAccess $scheme,
 	) {
 
 	}//end __construct()
@@ -68,115 +63,15 @@ class CodedOptionsBuilder {
 	 * picker stops offering a retired resultaattype the day it is retired.
 	 *
 	 * @param CodedPropertyDeclaration $declaration The property's declaration.
-	 * @param string $language The BCP-47 tag to read labels in.
-	 * @param string|null $context The context value in play, when the subset is bound.
-	 * @param DateTimeInterface|null $asOf The instant to judge windows at; now when null.
+	 * @param CodedOptionScope         $scope       The label language, the context value in play and the instant to judge windows at.
 	 *
 	 * @return array<int,array<string,mixed>> The options.
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function options(
-		CodedPropertyDeclaration $declaration,
-		string $language = 'nl',
-		?string $context = null,
-		?DateTimeInterface $asOf = null,
-	): array {
-		$instant = ($asOf ?? new DateTimeImmutable());
-		$conceptsByUri = $this->concepts->conceptsOf(schemeUri: $declaration->scheme);
-		if ($conceptsByUri === []) {
-			return [];
-		}
-
-		$candidates = array_keys($conceptsByUri);
-		if ($declaration->branch !== null && isset($conceptsByUri[$declaration->branch]) === true) {
-			$candidates = $this->hierarchy->branchUris(
-				rootUri: $declaration->branch,
-				conceptsByUri: $conceptsByUri,
-				maxDepth: $declaration->maxDepth
-			);
-		}
-
-		$options = [];
-		foreach ($candidates as $uri) {
-			$option = $this->optionFor(
-				declaration: $declaration,
-				uri: (string)$uri,
-				conceptsByUri: $conceptsByUri,
-				context: $context,
-				language: $language,
-				asOf: $instant
-			);
-			if ($option !== null) {
-				$options[] = $option;
-			}
-		}//end foreach
-
-		return $options;
+	public function options(CodedPropertyDeclaration $declaration, CodedOptionScope $scope=new CodedOptionScope()): array {
+		return $this->optionsFor(query: $this->query(declaration: $declaration, scope: $scope));
 	}//end options()
-
-	/**
-	 * The option for one candidate uri, or null when it is not offerable.
-	 *
-	 * The per-candidate filtering lives here so {@see options()} stays a plain
-	 * gather-loop: a value outside its window, outside the context, or off a
-	 * leaf-only branch returns null and is left out.
-	 *
-	 * @param CodedPropertyDeclaration $declaration The property's declaration.
-	 * @param string $uri The candidate concept uri.
-	 * @param array<string,array<string,mixed>> $conceptsByUri The scheme's concepts.
-	 * @param string|null $context The context value in play, when the subset is bound.
-	 * @param string $language The BCP-47 tag to read labels in.
-	 * @param DateTimeInterface $asOf The instant to judge windows at.
-	 *
-	 * @return array<string,mixed>|null The option, or null to skip this uri.
-	 */
-	private function optionFor(
-		CodedPropertyDeclaration $declaration,
-		string $uri,
-		array $conceptsByUri,
-		?string $context,
-		string $language,
-		DateTimeInterface $asOf,
-	): ?array {
-		$concept = ($conceptsByUri[$uri] ?? []);
-
-		if ($this->lifecycle->isOfferable(
-			concept: $concept,
-			at: $asOf,
-			allowDeprecated: $declaration->allowDeprecated
-		) === false
-		) {
-			return null;
-		}
-
-		if ($declaration->matchesContext(concept: $concept, context: $context) === false) {
-			return null;
-		}
-
-		$leaf = $this->hierarchy->isLeaf(uri: $uri, conceptsByUri: $conceptsByUri);
-		if ($declaration->leafOnly === true && $leaf === false) {
-			return null;
-		}
-
-		$value = $uri;
-		if ($declaration->store === 'notation') {
-			$value = trim((string)($concept['notation'] ?? ''));
-			if ($value === '') {
-				return null;
-			}
-		}
-
-		return [
-			'value' => $value,
-			'uri' => $uri,
-			'label' => $this->hierarchy->labelOf(concept: $concept, language: $language),
-			'notation' => ($concept['notation'] ?? null),
-			'weight' => $this->lifecycle->weightOf(concept: $concept),
-			'leaf' => $leaf,
-			'fields' => ($concept[ConceptLifecycle::FIELD_FIELDS] ?? null),
-		];
-	}//end optionFor()
 
 	/**
 	 * The options for one declaration, as a tree.
@@ -187,49 +82,212 @@ class CodedOptionsBuilder {
 	 * having to name a root.
 	 *
 	 * @param CodedPropertyDeclaration $declaration The property's declaration.
-	 * @param string $language The BCP-47 tag to read labels in.
-	 * @param DateTimeInterface|null $asOf The instant to judge windows at; now when null.
+	 * @param CodedOptionScope         $scope       The label language and the instant to judge windows at; its context is not read.
 	 *
 	 * @return array<int,array<string,mixed>> The roots of the tree.
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function tree(
-		CodedPropertyDeclaration $declaration,
-		string $language = 'nl',
-		?DateTimeInterface $asOf = null,
-	): array {
-		$instant = ($asOf ?? new DateTimeImmutable());
-		$conceptsByUri = $this->concepts->conceptsOf(schemeUri: $declaration->scheme);
-		if ($conceptsByUri === []) {
+	public function tree(CodedPropertyDeclaration $declaration, CodedOptionScope $scope=new CodedOptionScope()): array {
+		return $this->treeFor(query: $this->query(declaration: $declaration, scope: new CodedOptionScope(language: $scope->language, asOf: $scope->asOf)));
+	}//end tree()
+
+	/**
+	 * The option tree of the query, one root per tree root uri.
+	 *
+	 * @param CodedOptionQuery|null $query The call's inputs, or null when the scheme holds no concepts.
+	 *
+	 * @return array<int,array<string,mixed>> The roots of the tree.
+	 */
+	private function treeFor(?CodedOptionQuery $query): array {
+		if ($query === null) {
 			return [];
 		}
 
-		if ($declaration->branch !== null && isset($conceptsByUri[$declaration->branch]) === true) {
-			return [
-				$this->hierarchy->tree(
-					rootUri: $declaration->branch,
-					conceptsByUri: $conceptsByUri,
-					language: $language,
-					at: $instant,
-					maxDepth: $declaration->maxDepth
-				),
-			];
+		return array_map(
+			fn (string $uri): array => $this->subtree(query: $query, uri: $uri),
+			$this->treeRootUris(query: $query)
+		);
+	}//end treeFor()
+
+	/**
+	 * Every offerable option of the query, in candidate order.
+	 *
+	 * @param CodedOptionQuery|null $query The call's inputs, or null when the scheme holds no concepts.
+	 *
+	 * @return array<int,array<string,mixed>> The options.
+	 */
+	private function optionsFor(?CodedOptionQuery $query): array {
+		if ($query === null) {
+			return [];
 		}
 
-		$roots = [];
-		foreach ($this->rootUris(conceptsByUri: $conceptsByUri) as $uri) {
-			$roots[] = $this->hierarchy->tree(
-				rootUri: $uri,
-				conceptsByUri: $conceptsByUri,
-				language: $language,
-				at: $instant,
-				maxDepth: $declaration->maxDepth
-			);
+		$options = array_map(
+			fn ($uri): ?array => $this->optionFor(query: $query, uri: (string) $uri),
+			$this->candidateUris(query: $query)
+		);
+
+		return array_values(array_filter($options, static fn (?array $option): bool => $option !== null));
+	}//end optionsFor()
+
+	/**
+	 * The option tree under one root.
+	 *
+	 * @param CodedOptionQuery $query The call's inputs.
+	 * @param string           $uri   The root's uri.
+	 *
+	 * @return array<string,mixed> The root's tree node.
+	 */
+	private function subtree(CodedOptionQuery $query, string $uri): array {
+		return $this->scheme->hierarchy->tree(
+			branch: new ConceptBranch(rootUri: $uri, conceptsByUri: $query->conceptsByUri, maxDepth: $query->declaration->maxDepth),
+			reading: $query->reading
+		);
+	}//end subtree()
+
+	/**
+	 * Read the declaration's scheme and bundle it with the call's inputs.
+	 *
+	 * @param CodedPropertyDeclaration $declaration The property's declaration.
+	 * @param CodedOptionScope         $scope       Language, context and instant (now when null).
+	 *
+	 * @return CodedOptionQuery|null The query, or null when the scheme holds no concepts.
+	 */
+	private function query(CodedPropertyDeclaration $declaration, CodedOptionScope $scope): ?CodedOptionQuery {
+		$instant = ($scope->asOf ?? new DateTimeImmutable());
+		$conceptsByUri = $this->scheme->concepts->conceptsOf(schemeUri: $declaration->scheme);
+		if ($conceptsByUri === []) {
+			return null;
 		}
 
-		return $roots;
-	}//end tree()
+		return new CodedOptionQuery(
+			declaration: $declaration,
+			conceptsByUri: $conceptsByUri,
+			context: $scope->context,
+			reading: new ConceptReading(language: $scope->language, instant: $instant)
+		);
+	}//end query()
+
+	/**
+	 * The uris a flat option list is drawn from: the bound branch, else the whole scheme.
+	 *
+	 * @param CodedOptionQuery $query The call's inputs.
+	 *
+	 * @return array<int,int|string> The candidate uris.
+	 */
+	private function candidateUris(CodedOptionQuery $query): array {
+		$branch = $query->existingBranch();
+		if ($branch === null) {
+			return array_keys($query->conceptsByUri);
+		}
+
+		return $this->scheme->hierarchy->branchUris(
+			branch: new ConceptBranch(rootUri: $branch, conceptsByUri: $query->conceptsByUri, maxDepth: $query->declaration->maxDepth)
+		);
+	}//end candidateUris()
+
+	/**
+	 * The roots an option tree is drawn from: the bound branch, else the scheme's top concepts.
+	 *
+	 * @param CodedOptionQuery $query The call's inputs.
+	 *
+	 * @return array<int,string> The root uris.
+	 */
+	private function treeRootUris(CodedOptionQuery $query): array {
+		$branch = $query->existingBranch();
+		if ($branch === null) {
+			return $this->rootUris(conceptsByUri: $query->conceptsByUri);
+		}
+
+		return [$branch];
+	}//end treeRootUris()
+
+	/**
+	 * The option for one candidate uri, or null when it is not offerable.
+	 *
+	 * The per-candidate filtering lives here so {@see options()} stays a plain
+	 * gather-loop: a value outside its window, outside the context, off a
+	 * leaf-only branch, or without the notation it is stored by returns null
+	 * and is left out.
+	 *
+	 * @param CodedOptionQuery $query The call's inputs.
+	 * @param string           $uri   The candidate concept uri.
+	 *
+	 * @return array<string,mixed>|null The option, or null to skip this uri.
+	 */
+	private function optionFor(CodedOptionQuery $query, string $uri): ?array {
+		$value = $this->storedValue(query: $query, uri: $uri);
+		if ($value === null || $this->isOffered(query: $query, uri: $uri) === false) {
+			return null;
+		}
+
+		return ['value' => $value] + $this->optionFields(query: $query, uri: $uri);
+	}//end optionFor()
+
+	/**
+	 * Whether a candidate is in its window, in the context and, when required, a leaf.
+	 *
+	 * @param CodedOptionQuery $query The call's inputs.
+	 * @param string           $uri   The candidate concept uri.
+	 *
+	 * @return boolean True when the candidate may be offered.
+	 */
+	private function isOffered(CodedOptionQuery $query, string $uri): bool {
+		$declaration = $query->declaration;
+		$concept = $query->concept(uri: $uri);
+		$lifecycle = $this->scheme->lifecycle;
+		if ($lifecycle->isOfferable(concept: $concept, at: $query->reading->instant, allowDeprecated: $declaration->allowDeprecated) === false) {
+			return false;
+		}
+
+		if ($declaration->matchesContext(concept: $concept, context: $query->context) === false) {
+			return false;
+		}
+
+		return $declaration->leafOnly === false || $this->scheme->hierarchy->isLeaf(uri: $uri, conceptsByUri: $query->conceptsByUri) === true;
+	}//end isOffered()
+
+	/**
+	 * The value an option stores: the uri, or the trimmed notation.
+	 *
+	 * @param CodedOptionQuery $query The call's inputs.
+	 * @param string           $uri   The candidate concept uri.
+	 *
+	 * @return string|null The stored value, or null when stored by a notation the concept lacks.
+	 */
+	private function storedValue(CodedOptionQuery $query, string $uri): ?string {
+		if ($query->declaration->store !== 'notation') {
+			return $uri;
+		}
+
+		$notation = trim((string) ($query->concept(uri: $uri)['notation'] ?? ''));
+		if ($notation === '') {
+			return null;
+		}
+
+		return $notation;
+	}//end storedValue()
+
+	/**
+	 * Everything an option shows besides its stored value.
+	 *
+	 * @param CodedOptionQuery $query The call's inputs.
+	 * @param string           $uri   The candidate concept uri.
+	 *
+	 * @return array<string,mixed> The uri, label, notation, weight, leaf flag and extra fields.
+	 */
+	private function optionFields(CodedOptionQuery $query, string $uri): array {
+		$concept = $query->concept(uri: $uri);
+
+		return [
+			'uri' => $uri,
+			'label' => $this->scheme->hierarchy->labelOf(concept: $concept, language: $query->reading->language),
+			'notation' => ($concept['notation'] ?? null),
+			'weight' => $this->scheme->lifecycle->weightOf(concept: $concept),
+			'leaf' => $this->scheme->hierarchy->isLeaf(uri: $uri, conceptsByUri: $query->conceptsByUri),
+			'fields' => ($concept[ConceptLifecycle::FIELD_FIELDS] ?? null),
+		];
+	}//end optionFields()
 
 	/**
 	 * The uris of the concepts nothing in the scheme is broader of.
@@ -241,18 +299,26 @@ class CodedOptionsBuilder {
 	private function rootUris(array $conceptsByUri): array {
 		$roots = [];
 		foreach ($conceptsByUri as $uri => $concept) {
-			$broader = ($concept['broader'] ?? null);
-			if (is_string($broader) === true && $broader !== '') {
-				continue;
+			if ($this->namesBroader(broader: ($concept['broader'] ?? null)) === false) {
+				$roots[] = (string) $uri;
 			}
-
-			if (is_array($broader) === true && $broader !== []) {
-				continue;
-			}
-
-			$roots[] = (string)$uri;
 		}
 
 		return $roots;
 	}//end rootUris()
+
+	/**
+	 * Whether a `broader` value names at least one parent.
+	 *
+	 * @param mixed $broader The raw `broader` value.
+	 *
+	 * @return boolean True for a non-empty string or a non-empty list.
+	 */
+	private function namesBroader(mixed $broader): bool {
+		if (is_string($broader) === true) {
+			return $broader !== '';
+		}
+
+		return is_array($broader) === true && $broader !== [];
+	}//end namesBroader()
 }//end class

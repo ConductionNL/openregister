@@ -140,12 +140,10 @@ class AuthorizationServiceHardeningTest extends TestCase {
 		$request->method('passesCSRFCheck')->willReturnCallback(fn (): bool => $this->passesCsrf);
 
 		return new AuthorizationService(
-			userManager: $users,
-			userSession: $session,
+			directory: new \OCA\OpenRegister\Service\UserDirectory(session: $session, users: $users, groups: $groups),
 			consumerMapper: $mapper,
 			cacheFactory: $cacheFactory,
-			groupManager: $groups,
-			request: $request,
+			request: $request
 		);
 	}//end service()
 
@@ -366,9 +364,27 @@ class AuthorizationServiceHardeningTest extends TestCase {
 
 	public function testALongLifetimeIsStillAccepted(): void {
 		// The 3600 s cap integriq applies is an open question (Q4): not built here.
-		$this->service()->validatePayload(['iat' => time(), 'exp' => time() + 86400]);
-		$this->assertTrue(true);
+		$refusedWith = null;
+		try {
+			$this->service()->validatePayload(['iat' => time(), 'exp' => time() + 86400]);
+		} catch (AuthenticationException $e) {
+			$refusedWith = $e->getMessage();
+		}
+
+		$this->assertNull($refusedWith, 'A 24 h token that has not expired must be accepted.');
 	}//end testALongLifetimeIsStillAccepted()
+
+	/**
+	 * The same 24 h lifetime, ended an hour ago, is refused as expired.
+	 *
+	 * @return void
+	 */
+	public function testTheSameLongLifetimeIsRefusedOnceItHasRunOut(): void {
+		// The pair of the test above: the same 24 h lifetime, ended an hour ago.
+		$this->expectException(AuthenticationException::class);
+		$this->expectExceptionMessage('expired');
+		$this->service()->validatePayload(['iat' => time() - 90000, 'exp' => time() - 3600]);
+	}//end testTheSameLongLifetimeIsRefusedOnceItHasRunOut()
 
 	public function testTheConsumerThatAuthenticatedIsReadBack(): void {
 		$secret = str_repeat('k', 32);
@@ -458,8 +474,12 @@ class AuthorizationServiceHardeningTest extends TestCase {
 		$this->sessionUser = $this->userNamed('piet');
 		$this->authorizationHeader = 'Bearer real-token';
 
-		$this->service()->authorizeOAuth('Bearer real-token', [], ['staff']);
-		$this->assertTrue(true);
+		$service = $this->service();
+		$service->authorizeOAuth('Bearer real-token', [], ['staff']);
+
+		$this->sessionUser = $this->userNamed('klaas');
+		$this->expectException(AuthenticationException::class);
+		$service->authorizeOAuth('Bearer real-token', [], ['staff']);
 	}//end testOAuthAcceptsTheBearerTheRequestCarried()
 
 	public function testACredentialNeverWritesTheIdentityIntoTheSession(): void {

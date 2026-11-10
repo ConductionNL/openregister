@@ -56,27 +56,67 @@ final class FlowStreamPass {
 	public array $placeItems = [];
 
 	/**
+	 * The flow document.
+	 *
+	 * @var array
+	 */
+	public readonly array $flow;
+
+	/**
+	 * The marking store (synced from each commit).
+	 *
+	 * @var MarkingStoreInterface
+	 */
+	public readonly MarkingStoreInterface $store;
+
+	/**
+	 * The subject holding the marking.
+	 *
+	 * @var object
+	 */
+	public readonly object $subject;
+
+	/**
+	 * Performs each step's side effect.
+	 *
+	 * @var FlowStepDispatcher
+	 */
+	public readonly FlowStepDispatcher $dispatcher;
+
+	/**
+	 * Run-level metadata handed to every step.
+	 *
+	 * @var array
+	 */
+	public readonly array $context;
+
+	/**
+	 * The stream collaborator.
+	 *
+	 * @var FlowStreamWalk
+	 */
+	public readonly FlowStreamWalk $streams;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param array                 $flow       The flow document.
-	 * @param Workflow              $workflow   The Petri net over the run's marking store.
-	 * @param MarkingStoreInterface $store      The marking store (synced from each commit).
-	 * @param object                $subject    The subject holding the marking.
-	 * @param FlowStepDispatcher    $dispatcher Performs each step's side effect.
-	 * @param array                 $context    Run-level metadata handed to every step.
-	 * @param FlowStreamWalk        $streams    The stream collaborator.
+	 * The flow, store, subject, dispatcher, context and stream collaborator
+	 * are taken from the run start as they stand when the pass is made; the
+	 * start must carry its streams.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A value object carrying the pass's collaborators
+	 * @param FlowRunStart $start    The run start the pass walks for.
+	 * @param Workflow     $workflow The Petri net over the run's marking store.
 	 */
 	public function __construct(
-		public readonly array $flow,
+		FlowRunStart $start,
 		public readonly Workflow $workflow,
-		public readonly MarkingStoreInterface $store,
-		public readonly object $subject,
-		public readonly FlowStepDispatcher $dispatcher,
-		public readonly array $context,
-		public readonly FlowStreamWalk $streams,
 	) {
+		$this->streams    = $start->streams;
+		$this->flow       = $start->flow;
+		$this->store      = $start->store;
+		$this->subject    = $start->subject;
+		$this->dispatcher = $start->dispatcher;
+		$this->context    = $start->context;
 	}//end __construct()
 
 	/**
@@ -112,4 +152,26 @@ final class FlowStreamPass {
 	public function result(string $status): array {
 		return ['status' => $status, 'log' => $this->log, 'context' => $this->context, 'items' => $this->items];
 	}//end result()
+
+	/**
+	 * The pass's last word, under the lock, from the marking there.
+	 *
+	 * "Work remains" excludes the transitions parked streams keep enabled: a
+	 * wait is not work, and counting it would re-queue every parked run.
+	 *
+	 * @return array The run result.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
+	 */
+	public function finish(): array {
+		$enabled = $this->streams->workRemains(transitions: $this->workflow->getEnabledTransitions(subject: $this->subject));
+		$status = $this->streams->finalize(enabled: $enabled);
+
+		$result = $this->result(status: $status);
+		if ($status === FlowEngine::STATUS_SUSPENDED) {
+			$result['resumeAt'] = $this->streams->run()->getResumeAt();
+		}
+
+		return $result;
+	}//end finish()
 }//end class

@@ -88,30 +88,91 @@ final class ObjectDateDeclaration {
 	public const DEFAULT_APPOINTMENT_MINUTES = 60;
 
 	/**
+	 * The schema property carrying the date.
+	 *
+	 * @var string
+	 */
+	public readonly string $property;
+
+	/**
+	 * One of KINDS.
+	 *
+	 * @var string
+	 */
+	public readonly string $kind;
+
+	/**
+	 * Template for the event summary.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $summaryTemplate;
+
+	/**
+	 * Days before a deadline to warn, when any.
+	 *
+	 * @var int|null
+	 */
+	public readonly ?int $alarmOffsetDays;
+
+	/**
+	 * The property carrying the end of a period or appointment.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $endProperty;
+
+	/**
+	 * The length of an appointment without an end property.
+	 *
+	 * @var int|null
+	 */
+	public readonly ?int $durationMinutes;
+
+	/**
+	 * The flow-timer purpose a deadline reads its date from.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $timerPurpose;
+
+	/**
+	 * The working calendar a deadline resolves against.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $calendarSlug;
+
+	/**
+	 * The property holding the appointment's attendees.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $attendeesProperty;
+
+	/**
 	 * Constructor. Use `fromArray()`, which validates.
 	 *
 	 * @param string $property The schema property carrying the date.
 	 * @param string $kind One of KINDS.
-	 * @param string|null $summaryTemplate Template for the event summary.
-	 * @param int|null $alarmOffsetDays Days before a deadline to warn, when any.
-	 * @param string|null $endProperty The property carrying the end of a period or appointment.
-	 * @param int|null $durationMinutes The length of an appointment without an end property.
-	 * @param string|null $timerPurpose The flow-timer purpose a deadline reads its date from.
-	 * @param string|null $calendarSlug The working calendar a deadline resolves against.
-	 * @param string|null $attendeesProperty The property holding the appointment's attendees.
+	 * @param ObjectDateLayout $layout How the event is drawn: summary, end, length, attendees.
+	 * @param ObjectDateTerm $term How a deadline is computed and announced.
 	 */
 	private function __construct(
-		public readonly string $property,
-		public readonly string $kind,
-		public readonly ?string $summaryTemplate,
-		public readonly ?int $alarmOffsetDays,
-		public readonly ?string $endProperty,
-		public readonly ?int $durationMinutes,
-		public readonly ?string $timerPurpose,
-		public readonly ?string $calendarSlug,
-		public readonly ?string $attendeesProperty,
+		string $property,
+		string $kind,
+		ObjectDateLayout $layout,
+		ObjectDateTerm $term,
 	) {
-
+		$this->property = $property;
+		$this->kind = $kind;
+		$this->summaryTemplate = $layout->summaryTemplate;
+		$this->alarmOffsetDays = $term->alarmOffsetDays;
+		$this->endProperty = $layout->endProperty;
+		$this->durationMinutes = $layout->durationMinutes;
+		$this->timerPurpose = $term->timerPurpose;
+		$this->calendarSlug = $term->calendarSlug;
+		$this->attendeesProperty = $layout->attendeesProperty;
 	}//end __construct()
 
 	/**
@@ -158,21 +219,26 @@ final class ObjectDateDeclaration {
 			);
 		}
 
-		$alarm = self::readAlarmOffsetDays(property: $property, kind: $kind, config: $config);
-		$endProperty = self::readEndProperty(property: $property, kind: $kind, config: $config);
+		$run = new DateDeclarationRun(property: $property, kind: $kind, config: $config);
+		$alarm = self::readAlarmOffsetDays(run: $run);
+		$endProperty = self::readEndProperty(run: $run);
 		$duration = self::readDurationMinutes(property: $property, config: $config);
-		$timerPurpose = self::readTimerPurpose(property: $property, kind: $kind, config: $config);
+		$timerPurpose = self::readTimerPurpose(run: $run);
 
 		return new self(
 			property: $property,
 			kind: $kind,
-			summaryTemplate: self::stringOrNull(value: ($config['summaryTemplate'] ?? null)),
-			alarmOffsetDays: $alarm,
-			endProperty: $endProperty,
-			durationMinutes: $duration,
-			timerPurpose: $timerPurpose,
-			calendarSlug: self::stringOrNull(value: ($config['calendar'] ?? null)),
-			attendeesProperty: self::stringOrNull(value: ($config['attendeesProperty'] ?? null)),
+			layout: new ObjectDateLayout(
+				summaryTemplate: self::stringOrNull(value: ($config['summaryTemplate'] ?? null)),
+				endProperty: $endProperty,
+				durationMinutes: $duration,
+				attendeesProperty: self::stringOrNull(value: ($config['attendeesProperty'] ?? null)),
+			),
+			term: new ObjectDateTerm(
+				alarmOffsetDays: $alarm,
+				timerPurpose: $timerPurpose,
+				calendarSlug: self::stringOrNull(value: ($config['calendar'] ?? null)),
+			),
 		);
 	}//end fromArray()
 
@@ -218,16 +284,16 @@ final class ObjectDateDeclaration {
 	/**
 	 * The alarm offset, in days, refusing a negative or non-integer offset.
 	 *
-	 * @param string $property The property being declared.
-	 * @param string $kind The declared kind.
-	 * @param array<string, mixed> $config The declaration.
+	 * @param DateDeclarationRun $run The property, kind and declaration.
 	 *
 	 * @return int|null The offset, or null when none is declared.
 	 *
 	 * @throws CalendarDateKindException When the offset is unusable.
 	 */
-	private static function readAlarmOffsetDays(string $property, string $kind, array $config): ?int {
-		$raw = ($config['alarmOffsetDays'] ?? null);
+	private static function readAlarmOffsetDays(DateDeclarationRun $run): ?int {
+		$property = $run->property;
+		$kind = $run->kind;
+		$raw = ($run->config['alarmOffsetDays'] ?? null);
 
 		if ($raw === null) {
 			return null;
@@ -243,6 +309,20 @@ final class ObjectDateDeclaration {
 			);
 		}
 
+		return self::wholeDays(property: $property, raw: $raw);
+	}//end readAlarmOffsetDays()
+
+	/**
+	 * A declared alarm offset that is a whole number of days at or above zero.
+	 *
+	 * @param string $property The property being declared.
+	 * @param mixed $raw The declared offset.
+	 *
+	 * @return int The offset.
+	 *
+	 * @throws CalendarDateKindException When the offset is unusable.
+	 */
+	private static function wholeDays(string $property, mixed $raw): int {
 		if (is_int($raw) === false || $raw < 0) {
 			throw new CalendarDateKindException(
 				message: sprintf(
@@ -253,21 +333,21 @@ final class ObjectDateDeclaration {
 		}
 
 		return $raw;
-	}//end readAlarmOffsetDays()
+	}//end wholeDays()
 
 	/**
 	 * The end property, required on a period.
 	 *
-	 * @param string $property The property being declared.
-	 * @param string $kind The declared kind.
-	 * @param array<string, mixed> $config The declaration.
+	 * @param DateDeclarationRun $run The property, kind and declaration.
 	 *
 	 * @return string|null The end property, or null when none is declared.
 	 *
 	 * @throws CalendarDateKindException When a period declares no end.
 	 */
-	private static function readEndProperty(string $property, string $kind, array $config): ?string {
-		$endProperty = self::stringOrNull(value: ($config['endProperty'] ?? null));
+	private static function readEndProperty(DateDeclarationRun $run): ?string {
+		$property = $run->property;
+		$kind = $run->kind;
+		$endProperty = self::stringOrNull(value: ($run->config['endProperty'] ?? null));
 
 		if ($kind === self::KIND_PERIOD && $endProperty === null) {
 			throw new CalendarDateKindException(
@@ -313,16 +393,16 @@ final class ObjectDateDeclaration {
 	/**
 	 * The flow-timer purpose a deadline binds to.
 	 *
-	 * @param string $property The property being declared.
-	 * @param string $kind The declared kind.
-	 * @param array<string, mixed> $config The declaration.
+	 * @param DateDeclarationRun $run The property, kind and declaration.
 	 *
 	 * @return string|null The purpose, or null when the deadline reads its raw date.
 	 *
 	 * @throws CalendarDateKindException When the purpose is not a timer purpose.
 	 */
-	private static function readTimerPurpose(string $property, string $kind, array $config): ?string {
-		$purpose = self::stringOrNull(value: ($config['timerPurpose'] ?? null));
+	private static function readTimerPurpose(DateDeclarationRun $run): ?string {
+		$property = $run->property;
+		$kind = $run->kind;
+		$purpose = self::stringOrNull(value: ($run->config['timerPurpose'] ?? null));
 
 		if ($purpose === null) {
 			return null;

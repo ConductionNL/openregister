@@ -13,8 +13,10 @@ namespace OCA\OpenRegister\Tests\Unit\Search;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Search\SearchDictionaryProvider;
+use OCA\OpenRegister\Service\Search\SynonymCaps;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -58,9 +60,7 @@ class SearchDictionaryProviderTest extends TestCase {
 		);
 
 		$this->provider = new SearchDictionaryProvider(
-			$this->objects,
-			$this->registers,
-			$this->schemas,
+			new SchemaCatalog(registers: $this->registers, schemas: $this->schemas, tables: $this->objects),
 			$this->appConfig,
 			$this->createMock(LoggerInterface::class)
 		);
@@ -112,7 +112,7 @@ class SearchDictionaryProviderTest extends TestCase {
 			[['prefLabel' => ['nl' => 'de']]]
 		);
 
-		$expansion = $this->provider->forLanguage('nl')->expand('de omgevingsvergunning', 5, 20);
+		$expansion = $this->provider->forLanguage('nl')->expand('de omgevingsvergunning', new SynonymCaps(5, 20));
 
 		$this->assertSame('(omgevingsvergunning OR bouwvergunning)', $expansion->term());
 	}//end testAdministeredConceptsBecomeTheDictionary()

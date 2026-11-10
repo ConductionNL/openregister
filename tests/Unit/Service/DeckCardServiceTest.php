@@ -6,6 +6,8 @@ use Exception;
 use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCA\OpenRegister\Service\DeckCardService;
+use OCA\OpenRegister\Service\DeckPlatform;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCP\App\IAppManager;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -41,12 +43,9 @@ class DeckCardServiceTest extends TestCase {
 
 		$this->service = new DeckCardService(
 			$this->deckLinkMapper,
-			$this->appManager,
-			$this->userSession,
-			$this->logger,
+			new LinkServiceRuntime($this->appManager, $this->userSession, $this->logger),
 			$this->urlGenerator,
-			$this->createMock(IUserManager::class),
-			$this->createMock(ContainerInterface::class)
+			new DeckPlatform($this->createMock(IUserManager::class), $this->createMock(ContainerInterface::class))
 		);
 	}
 
@@ -228,12 +227,9 @@ class DeckCardServiceTest extends TestCase {
 		$service = $this->getMockBuilder(DeckCardService::class)
 			->setConstructorArgs([
 				$this->deckLinkMapper,
-				$this->appManager,
-				$this->userSession,
-				$this->logger,
+				new LinkServiceRuntime($this->appManager, $this->userSession, $this->logger),
 				$this->urlGenerator,
-				$this->createMock(IUserManager::class),
-				$this->createMock(ContainerInterface::class),
+				new DeckPlatform($this->createMock(IUserManager::class), $this->createMock(ContainerInterface::class)),
 			])
 			->onlyMethods(['userCanAccessBoard'])
 			->getMock();

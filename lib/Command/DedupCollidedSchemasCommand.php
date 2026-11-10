@@ -140,8 +140,21 @@ class DedupCollidedSchemasCommand extends Command {
 			return $rows;
 		}
 
-		// Keep whole collision groups that involve the requested register, so
-		// the owner is still visible in the report.
+		return self::groupsInvolving(rows: $rows, registerSlug: $registerSlug);
+
+	}//end findCollisions()
+
+	/**
+	 * Keep whole collision groups that involve the requested register.
+	 *
+	 * The owner stays visible in the report.
+	 *
+	 * @param array<int, array<string, mixed>> $rows         Collision rows.
+	 * @param string                           $registerSlug The register slug.
+	 *
+	 * @return array<int, array<string, mixed>> The rows of every group the register is in.
+	 */
+	private static function groupsInvolving(array $rows, string $registerSlug): array {
 		$keep = [];
 		foreach ($rows as $row) {
 			if ($row['register_slug'] === $registerSlug) {
@@ -152,8 +165,7 @@ class DedupCollidedSchemasCommand extends Command {
 		return array_values(
 			array_filter($rows, static fn (array $r): bool => isset($keep[$r['schema_id']]) === true)
 		);
-
-	}//end findCollisions()
+	}//end groupsInvolving()
 
 	/**
 	 * Pick the register that keeps the original schema row.
@@ -181,31 +193,19 @@ class DedupCollidedSchemasCommand extends Command {
 	/**
 	 * Clone a schema row, repoint the register at the clone, and move its table.
 	 *
-	 * @param int $schemaId Shared schema id.
-	 * @param int $registerId Register that must stop sharing.
-	 * @param string $registerApp Application owning that register.
+	 * @param array<string, mixed> $row The collision row of the register that must stop sharing
+	 *                                  (schema_id, register_id, register_app).
 	 *
 	 * @return int The new schema id.
 	 */
-	private function splitOne(int $schemaId, int $registerId, ?string $registerApp): int {
-		$newUuid = sprintf(
-			'%s-%s',
-			substr(bin2hex(random_bytes(8)), 0, 8),
-			substr(bin2hex(random_bytes(12)), 0, 24)
-		);
-
+	private function splitOne(array $row): int {
 		// All three steps are one unit: an earlier revision let the clone
 		// INSERT commit while the repoint UPDATE failed on a type error,
 		// leaving orphaned schema rows referenced by nobody. Either the
 		// register ends up owning a clone, or nothing changes.
 		$this->db->beginTransaction();
 		try {
-			$newId = $this->splitOneLocked(
-				schemaId: $schemaId,
-				registerId: $registerId,
-				registerApp: $registerApp,
-				newUuid: $newUuid
-			);
+			$newId = $this->splitOneLocked(row: $row);
 			$this->db->commit();
 		} catch (Throwable $e) {
 			$this->db->rollBack();
@@ -218,14 +218,20 @@ class DedupCollidedSchemasCommand extends Command {
 	/**
 	 * Perform the split inside an open transaction.
 	 *
-	 * @param int $schemaId Shared schema id.
-	 * @param int $registerId Register that must stop sharing.
-	 * @param string|null $registerApp Application owning that register.
-	 * @param string $newUuid Uuid for the clone.
+	 * @param array<string, mixed> $row The collision row of the register that must stop sharing.
 	 *
 	 * @return int The new schema id.
 	 */
-	private function splitOneLocked(int $schemaId, int $registerId, ?string $registerApp, string $newUuid): int {
+	private function splitOneLocked(array $row): int {
+		$schemaId = (int)$row['schema_id'];
+		$registerId = (int)$row['register_id'];
+		$registerApp = $row['register_app'];
+		$newUuid = sprintf(
+			'%s-%s',
+			substr(bin2hex(random_bytes(8)), 0, 8),
+			substr(bin2hex(random_bytes(12)), 0, 24)
+		);
+
 		// 1. Clone every column except the identity ones.
 		$this->db->executeStatement(
 			'INSERT INTO *PREFIX*openregister_schemas
@@ -303,72 +309,104 @@ class DedupCollidedSchemasCommand extends Command {
 			return 0;
 		}
 
-		$groups = [];
-		foreach ($rows as $row) {
-			$groups[(int)$row['schema_id']][] = $row;
-		}
+		$groups = self::groupBySchema(rows: $rows);
 
 		$output->writeln(sprintf('Found <comment>%d</comment> schema(s) shared by more than one register.', count($groups)));
 		if ($apply === false) {
 			$output->writeln('<comment>DRY RUN</comment> — pass --apply to write. Nothing has been changed.');
 		}
 
-		$split = 0;
-		$failed = 0;
-		foreach ($groups as $schemaId => $group) {
-			$owner = $this->pickOwner(group: $group);
-			$output->writeln(
-				sprintf(
-					"\nschema #%d <info>%s</info> (application=%s) — owner: register #%s %s",
-					$schemaId,
-					$group[0]['schema_slug'],
-					($group[0]['schema_app'] ?? '-'),
-					$owner['register_id'],
-					$owner['register_slug']
-				)
-			);
-
-			foreach ($group as $row) {
-				if ((int)$row['register_id'] === (int)$owner['register_id']) {
-					continue;
-				}
-
-				if ($apply === false) {
-					$output->writeln(sprintf('    would split -> register #%s %s', $row['register_id'], $row['register_slug']));
-					$split++;
-					continue;
-				}
-
-				try {
-					$newId = $this->splitOne(
-						schemaId: (int)$schemaId,
-						registerId: (int)$row['register_id'],
-						registerApp: $row['register_app']
-					);
-					$output->writeln(
-						sprintf('    <info>split</info> -> register #%s %s now owns schema #%d', $row['register_id'], $row['register_slug'], $newId)
-					);
-					$split++;
-				} catch (Throwable $e) {
-					$output->writeln(sprintf('    <error>failed</error> register #%s: %s', $row['register_id'], $e->getMessage()));
-					$failed++;
-				}
-			}//end foreach
-		}//end foreach
-
-		$verb = 'Would split';
-		if ($apply === true) {
-			$verb = 'Split';
+		$run = new SchemaDedupRun(output: $output, apply: $apply);
+		$tally = ['split' => 0, 'failed' => 0];
+		foreach ($groups as $group) {
+			$outcome = $this->splitGroup(group: $group, run: $run);
+			$tally['split'] += $outcome['split'];
+			$tally['failed'] += $outcome['failed'];
 		}
 
-		$output->writeln(
-			sprintf("\n%s %d register/schema pair(s); %d failure(s).", $verb, $split, $failed)
-		);
+		$output->writeln($run->summaryLine(tally: $tally));
 
-		if ($failed === 0) {
+		if ($tally['failed'] === 0) {
 			return 0;
 		}
 
 		return 1;
 	}//end execute()
+
+	/**
+	 * Group collision rows by schema id, in row order.
+	 *
+	 * @param array<int, array<string, mixed>> $rows Collision rows.
+	 *
+	 * @return array<int, array<int, array<string, mixed>>> Rows per schema id.
+	 */
+	private static function groupBySchema(array $rows): array {
+		$groups = [];
+		foreach ($rows as $row) {
+			$groups[(int)$row['schema_id']][] = $row;
+		}
+
+		return $groups;
+	}//end groupBySchema()
+
+	/**
+	 * Report one shared schema and split it off every register but its owner.
+	 *
+	 * @param array<int, array<string, mixed>> $group The collision rows of one shared schema.
+	 * @param SchemaDedupRun                   $run   Whether to write, and the console output stream.
+	 *
+	 * @return array{split: int, failed: int} The tally for this schema.
+	 */
+	private function splitGroup(array $group, SchemaDedupRun $run): array {
+		$tally = ['split' => 0, 'failed' => 0];
+		$schemaId = (int)$group[0]['schema_id'];
+		$owner = $this->pickOwner(group: $group);
+		$run->output->writeln(
+			sprintf(
+				"\nschema #%d <info>%s</info> (application=%s) — owner: register #%s %s",
+				$schemaId,
+				$group[0]['schema_slug'],
+				($group[0]['schema_app'] ?? '-'),
+				$owner['register_id'],
+				$owner['register_slug']
+			)
+		);
+
+		foreach ($group as $row) {
+			if ((int)$row['register_id'] === (int)$owner['register_id']) {
+				continue;
+			}
+
+			$tally[$this->splitRow(row: $row, run: $run)]++;
+		}
+
+		return $tally;
+	}//end splitGroup()
+
+	/**
+	 * Split the schema off one register, or report that it would be.
+	 *
+	 * @param array<string, mixed> $row The register's collision row.
+	 * @param SchemaDedupRun       $run Whether to write, and the console output stream.
+	 *
+	 * @return string 'split' or 'failed'.
+	 */
+	private function splitRow(array $row, SchemaDedupRun $run): string {
+		$output = $run->output;
+		if ($run->apply === false) {
+			$output->writeln(sprintf('    would split -> register #%s %s', $row['register_id'], $row['register_slug']));
+			return 'split';
+		}
+
+		try {
+			$newId = $this->splitOne(row: $row);
+			$output->writeln(
+				sprintf('    <info>split</info> -> register #%s %s now owns schema #%d', $row['register_id'], $row['register_slug'], $newId)
+			);
+			return 'split';
+		} catch (Throwable $e) {
+			$output->writeln(sprintf('    <error>failed</error> register #%s: %s', $row['register_id'], $e->getMessage()));
+			return 'failed';
+		}
+	}//end splitRow()
 }//end class

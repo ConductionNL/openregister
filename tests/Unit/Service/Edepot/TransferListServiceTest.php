@@ -14,8 +14,6 @@ declare(strict_types=1);
 namespace Unit\Service\Edepot;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Edepot\TransferListService;
 use OCP\IAppConfig;
@@ -29,8 +27,6 @@ use Psr\Log\LoggerInterface;
  * Test class for TransferListService.
  */
 class TransferListServiceTest extends TestCase {
-	private MagicMapper&MockObject $objectMapper;
-	private AuditTrailMapper&MockObject $auditTrailMapper;
 	private \OCA\OpenRegister\Service\Edepot\TransferRecordService&MockObject $transferRecordService;
 	private IAppConfig&MockObject $appConfig;
 	private INotificationManager&MockObject $notificationManager;
@@ -40,8 +36,6 @@ class TransferListServiceTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
-		$this->objectMapper = $this->createMock(MagicMapper::class);
-		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
 		$this->transferRecordService = $this->createMock(\OCA\OpenRegister\Service\Edepot\TransferRecordService::class);
 		$this->appConfig = $this->createMock(IAppConfig::class);
 		$this->notificationManager = $this->createMock(INotificationManager::class);
@@ -56,12 +50,8 @@ class TransferListServiceTest extends TestCase {
 			->willReturnCallback(static fn ($app, $key, $default = '') => $default);
 
 		$this->service = new TransferListService(
-			$this->objectMapper,
-			$this->auditTrailMapper,
-			$this->transferRecordService,
-			$this->appConfig,
+			new \OCA\OpenRegister\Service\Edepot\TransferStores(objects: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class), records: $this->transferRecordService, settings: $this->appConfig, logger: $this->logger),
 			$this->notificationManager,
-			$this->logger,
 		);
 	}
 
@@ -117,7 +107,7 @@ class TransferListServiceTest extends TestCase {
 	 */
 	public function testRejectTransferList(): void {
 		$list = $this->createSampleList();
-		$result = $this->service->rejectTransferList($list, 'archivist-1', 'Not ready for transfer');
+		$result = $this->service->reject($list, new \OCA\OpenRegister\Service\Edepot\TransferRejection(archivistId: 'archivist-1', reason: 'Not ready for transfer'));
 
 		$this->assertEquals(TransferListService::STATUS_REJECTED, $result['status']);
 		$this->assertEquals('Not ready for transfer', $result['approvalMetadata']['rejectionReason']);
@@ -130,7 +120,7 @@ class TransferListServiceTest extends TestCase {
 		$list = $this->createSampleList();
 
 		$this->expectException(InvalidArgumentException::class);
-		$this->service->rejectTransferList($list, 'archivist-1', '');
+		$this->service->reject($list, new \OCA\OpenRegister\Service\Edepot\TransferRejection(archivistId: 'archivist-1', reason: ''));
 	}
 
 	/**
@@ -138,7 +128,7 @@ class TransferListServiceTest extends TestCase {
 	 */
 	public function testExcludeObjects(): void {
 		$list = $this->createSampleList();
-		$result = $this->service->excludeObjects($list, ['uuid-1'], 'Metadata incomplete');
+		$result = $this->service->exclude($list, new \OCA\OpenRegister\Service\Edepot\TransferExclusion(objectUuids: ['uuid-1'], reason: 'Metadata incomplete'));
 
 		$this->assertCount(1, $result['exclusions']);
 		$this->assertCount(1, $result['objectReferences']);

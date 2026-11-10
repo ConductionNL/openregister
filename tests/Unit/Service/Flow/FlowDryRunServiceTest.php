@@ -17,11 +17,14 @@ namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
+use OCA\OpenRegister\Service\Flow\FlowDryRunLookups;
 use OCA\OpenRegister\Service\Flow\FlowDryRunService;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
+use OCA\OpenRegister\Service\Flow\FlowRunWalkServices;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\ObjectService;
@@ -98,11 +101,11 @@ class FlowDryRunServiceTest extends TestCase {
 		$this->objects = $this->createMock(ObjectService::class);
 
 		return new FlowDryRunService(
-			flows: $this->flows,
-			locator: $locator,
-			objects: $this->objects,
-			engine: new FlowEngine(new FlowDefinitionBuilder(), $this->createMock(LoggerInterface::class)),
-			registry: $this->registry
+			lookups: new FlowDryRunLookups(flows: $this->flows, locator: $locator, objects: $this->objects),
+			walk: new FlowRunWalkServices(
+				engine: new FlowEngine(new FlowDefinitionBuilder(), $this->createMock(LoggerInterface::class)),
+				registry: $this->registry
+			)
 		);
 	}
 
@@ -141,6 +144,16 @@ class FlowDryRunServiceTest extends TestCase {
 
 		self::assertSame(['check', 'mark'], array_column($result['steps'], 'nodeId'));
 		self::assertTrue($result['steps'][1]['preview']['performed']);
+	}
+
+	public function testWalksTheReferencedObjectAsTheIdentifierFormDoes(): void {
+		$this->objectIs(['amount' => 5000]);
+
+		$result = $this->service->dryRunObject(flowId: 'f1', ref: new ObjectRef(register: 'dossiq', schema: 'case', id: 'o1'));
+
+		self::assertSame(['check', 'tell'], array_column($result['steps'], 'nodeId'));
+		self::assertSame('completed', $result['status']);
+		self::assertSame(0, $this->mail->runs);
 	}
 
 	public function testReportsAStepThatRefusesItsConfigurationAsTheRealRunWould(): void {

@@ -23,6 +23,9 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -32,7 +35,9 @@ use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -279,9 +284,9 @@ class MagicMapperSoftDeleteBatchGoldenTest extends TestCase {
 
 		$container = $this->createMock(ContainerInterface::class);
 		$services = [
-			DateTimeNormalizer::class => $this->createMock(DateTimeNormalizer::class),
+			DateTimeNormalizerInterface::class => $this->createMock(DateTimeNormalizer::class),
 			ConditionMatcher::class => $this->createMock(ConditionMatcher::class),
-			SchemaTypeConverter::class => $this->createMock(SchemaTypeConverter::class),
+			SchemaTypeConverterInterface::class => $this->createMock(SchemaTypeConverter::class),
 		];
 		$container->method('get')->willReturnCallback(static fn (string $id) => ($services[$id] ?? null));
 
@@ -289,17 +294,22 @@ class MagicMapperSoftDeleteBatchGoldenTest extends TestCase {
 			->setConstructorArgs(
 				[
 					$db,
-					$schemaMapper,
-					$registerMapper,
-					$this->createMock(IConfig::class),
-					$dispatcher,
-					$this->createMock(IUserSession::class),
-					$this->createMock(IGroupManager::class),
-					$this->createMock(IUserManager::class),
-					$this->createMock(IAppConfig::class),
-					$logger,
-					$this->createMock(SettingsService::class),
-					$container,
+					new MagicMapperLookups(
+						$schemaMapper,
+						$registerMapper,
+						$container
+					),
+					new MagicMapperIdentity(
+						$this->createMock(IUserSession::class),
+						$this->createMock(IGroupManager::class),
+						$this->createMock(IUserManager::class)
+					),
+					new MagicMapperRuntime(
+						$this->createMock(IConfig::class),
+						$this->createMock(IAppConfig::class),
+						$dispatcher,
+						$logger
+					),
 				]
 			)
 			->onlyMethods(['getTableNameForRegisterSchema', 'saveObjectToRegisterSchemaTable'])

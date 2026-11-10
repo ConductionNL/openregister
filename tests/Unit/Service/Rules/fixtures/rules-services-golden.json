@@ -1,0 +1,3209 @@
+{
+    "enablement": {
+        "calculation off": {
+            "outcome": {
+                "ok": true,
+                "rule": {
+                    "id": "calculation:bezwaar:uiterlijkeDatum",
+                    "kind": "calculation",
+                    "schema": "bezwaar",
+                    "key": "uiterlijkeDatum",
+                    "label": "uiterlijkeDatum",
+                    "source": "x-openregister-calculations.uiterlijkeDatum",
+                    "enabled": false,
+                    "actions": [
+                        "setValue"
+                    ],
+                    "condition": {
+                        "ok": 1
+                    },
+                    "maxObjects": 3,
+                    "scope": {
+                        "property": "zaaktype",
+                        "value": "a"
+                    },
+                    "order": 1
+                },
+                "audit": {
+                    "actor": "jan",
+                    "actorName": "Jan",
+                    "ruleId": "calculation:bezwaar:uiterlijkeDatum",
+                    "from": true,
+                    "to": false
+                }
+            },
+            "calls": [
+                [
+                    "updateFromArray",
+                    7,
+                    {
+                        "configuration": {
+                            "x-openregister-calculations": {
+                                "uiterlijkeDatum": {
+                                    "type": "date",
+                                    "expression": {
+                                        "ok": 1
+                                    },
+                                    "maxObjects": 3,
+                                    "scope": {
+                                        "property": "zaaktype",
+                                        "value": "a"
+                                    },
+                                    "enabled": false
+                                },
+                                "kapot": {
+                                    "expression": {
+                                        "throw": 1
+                                    },
+                                    "enabled": false,
+                                    "maxObjects": 0
+                                },
+                                "geen": "scalar"
+                            },
+                            "x-openregister-lifecycle": {
+                                "field": "status",
+                                "states": {
+                                    "open": {
+                                        "fields": {
+                                            "bedrag": {
+                                                "readOnly": true
+                                            }
+                                        },
+                                        "condition": {
+                                            "==": [
+                                                1,
+                                                1
+                                            ]
+                                        },
+                                        "maxObjects": 9
+                                    },
+                                    "dicht": [],
+                                    "leeg": {
+                                        "fields": "x"
+                                    }
+                                },
+                                "transitions": {
+                                    "sluiten": {
+                                        "label": "Sluiten",
+                                        "condition": {
+                                            ">": [
+                                                {
+                                                    "var": "object.bedrag"
+                                                },
+                                                500
+                                            ]
+                                        },
+                                        "enabled": false
+                                    },
+                                    "openen": {
+                                        "to": "open"
+                                    },
+                                    "ast": {
+                                        "condition": {
+                                            "gt": [
+                                                {
+                                                    "prop": "object.bedrag"
+                                                },
+                                                10
+                                            ]
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "properties": {
+                            "bedrag": {
+                                "type": "number"
+                            },
+                            "termijn": {
+                                "type": "string",
+                                "calculation": {
+                                    "expression": {
+                                        "ok": "termijn"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
+            ]
+        },
+        "calculation on": {
+            "outcome": {
+                "ok": true,
+                "rule": {
+                    "id": "calculation:bezwaar:kapot",
+                    "kind": "calculation",
+                    "schema": "bezwaar",
+                    "key": "kapot",
+                    "label": "kapot",
+                    "source": "x-openregister-calculations.kapot",
+                    "enabled": true,
+                    "actions": [
+                        "setValue"
+                    ],
+                    "condition": {
+                        "throw": 1
+                    },
+                    "maxObjects": null,
+                    "scope": null,
+                    "order": 1
+                },
+                "audit": {
+                    "actor": "jan",
+                    "actorName": "Jan",
+                    "ruleId": "calculation:bezwaar:kapot",
+                    "from": false,
+                    "to": true
+                }
+            },
+            "calls": [
+                [
+                    "updateFromArray",
+                    7,
+                    {
+                        "configuration": {
+                            "x-openregister-calculations": {
+                                "uiterlijkeDatum": {
+                                    "type": "date",
+                                    "expression": {
+                                        "ok": 1
+                                    },
+                                    "maxObjects": 3,
+                                    "scope": {
+                                        "property": "zaaktype",
+                                        "value": "a"
+                                    }
+                                },
+                                "kapot": {
+                                    "expression": {
+                                        "throw": 1
+                                    },
+                                    "enabled": true,
+                                    "maxObjects": 0
+                                },
+                                "geen": "scalar"
+                            },
+                            "x-openregister-lifecycle": {
+                                "field": "status",
+                                "states": {
+                                    "open": {
+                                        "fields": {
+                                            "bedrag": {
+                                                "readOnly": true
+                                            }
+                                        },
+                                        "condition": {
+                                            "==": [
+                                                1,
+                                                1
+                                            ]
+                                        },
+                                        "maxObjects": 9
+                                    },
+                                    "dicht": [],
+                                    "leeg": {
+                                        "fields": "x"
+                                    }
+                                },
+                                "transitions": {
+                                    "sluiten": {
+                                        "label": "Sluiten",
+                                        "condition": {
+                                            ">": [
+                                                {
+                                                    "var": "object.bedrag"
+                                                },
+                                                500
+                                            ]
+                                        },
+                                        "enabled": false
+                                    },
+                                    "openen": {
+                                        "to": "open"
+                                    },
+                                    "ast": {
+                                        "condition": {
+                                            "gt": [
+                                                {
+                                                    "prop": "object.bedrag"
+                                                },
+                                                10
+                                            ]
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "properties": {
+                            "bedrag": {
+                                "type": "number"
+                            },
+                            "termijn": {
+                                "type": "string",
+                                "calculation": {
+                                    "expression": {
+                                        "ok": "termijn"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
+            ]
+        },
+        "property calculation": {
+            "outcome": {
+                "ok": true,
+                "rule": {
+                    "id": "calculation:bezwaar:termijn",
+                    "kind": "calculation",
+                    "schema": "bezwaar",
+                    "key": "termijn",
+                    "label": "termijn",
+                    "source": "x-openregister-calculations.termijn",
+                    "enabled": false,
+                    "actions": [
+                        "setValue"
+                    ],
+                    "condition": {
+                        "ok": "termijn"
+                    },
+                    "maxObjects": null,
+                    "scope": null,
+                    "order": 1
+                },
+                "audit": {
+                    "actor": "jan",
+                    "actorName": "Jan",
+                    "ruleId": "calculation:bezwaar:termijn",
+                    "from": true,
+                    "to": false
+                }
+            },
+            "calls": [
+                [
+                    "updateFromArray",
+                    7,
+                    {
+                        "configuration": {
+                            "x-openregister-calculations": {
+                                "uiterlijkeDatum": {
+                                    "type": "date",
+                                    "expression": {
+                                        "ok": 1
+                                    },
+                                    "maxObjects": 3,
+                                    "scope": {
+                                        "property": "zaaktype",
+                                        "value": "a"
+                                    }
+                                },
+                                "kapot": {
+                                    "expression": {
+                                        "throw": 1
+                                    },
+                                    "enabled": false,
+                                    "maxObjects": 0
+                                },
+                                "geen": "scalar"
+                            },
+                            "x-openregister-lifecycle": {
+                                "field": "status",
+                                "states": {
+                                    "open": {
+                                        "fields": {
+                                            "bedrag": {
+                                                "readOnly": true
+                                            }
+                                        },
+                                        "condition": {
+                                            "==": [
+                                                1,
+                                                1
+                                            ]
+                                        },
+                                        "maxObjects": 9
+                                    },
+                                    "dicht": [],
+                                    "leeg": {
+                                        "fields": "x"
+                                    }
+                                },
+                                "transitions": {
+                                    "sluiten": {
+                                        "label": "Sluiten",
+                                        "condition": {
+                                            ">": [
+                                                {
+                                                    "var": "object.bedrag"
+                                                },
+                                                500
+                                            ]
+                                        },
+                                        "enabled": false
+                                    },
+                                    "openen": {
+                                        "to": "open"
+                                    },
+                                    "ast": {
+                                        "condition": {
+                                            "gt": [
+                                                {
+                                                    "prop": "object.bedrag"
+                                                },
+                                                10
+                                            ]
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "properties": {
+                            "bedrag": {
+                                "type": "number"
+                            },
+                            "termijn": {
+                                "type": "string",
+                                "calculation": {
+                                    "expression": {
+                                        "ok": "termijn"
+                                    },
+                                    "enabled": false
+                                }
+                            }
+                        }
+                    }
+                ]
+            ]
+        },
+        "state rule": {
+            "outcome": {
+                "ok": true,
+                "rule": {
+                    "id": "stateFieldRule:bezwaar:open",
+                    "kind": "stateFieldRule",
+                    "schema": "bezwaar",
+                    "key": "open",
+                    "label": "open",
+                    "source": "x-openregister-lifecycle.states.open.fields",
+                    "enabled": false,
+                    "actions": [
+                        "hideField",
+                        "readOnlyField",
+                        "requireField"
+                    ],
+                    "condition": {
+                        "==": [
+                            1,
+                            1
+                        ]
+                    },
+                    "maxObjects": 9,
+                    "scope": null,
+                    "order": 2
+                },
+                "audit": {
+                    "actor": "jan",
+                    "actorName": "Jan",
+                    "ruleId": "stateFieldRule:bezwaar:open",
+                    "from": true,
+                    "to": false
+                }
+            },
+            "calls": [
+                [
+                    "updateFromArray",
+                    7,
+                    {
+                        "configuration": {
+                            "x-openregister-calculations": {
+                                "uiterlijkeDatum": {
+                                    "type": "date",
+                                    "expression": {
+                                        "ok": 1
+                                    },
+                                    "maxObjects": 3,
+                                    "scope": {
+                                        "property": "zaaktype",
+                                        "value": "a"
+                                    }
+                                },
+                                "kapot": {
+                                    "expression": {
+                                        "throw": 1
+                                    },
+                                    "enabled": false,
+                                    "maxObjects": 0
+                                },
+                                "geen": "scalar"
+                            },
+                            "x-openregister-lifecycle": {
+                                "field": "status",
+                                "states": {
+                                    "open": {
+                                        "fields": {
+                                            "bedrag": {
+                                                "readOnly": true
+                                            }
+                                        },
+                                        "condition": {
+                                            "==": [
+                                                1,
+                                                1
+                                            ]
+                                        },
+                                        "maxObjects": 9,
+                                        "enabled": false
+                                    },
+                                    "dicht": [],
+                                    "leeg": {
+                                        "fields": "x"
+                                    }
+                                },
+                                "transitions": {
+                                    "sluiten": {
+                                        "label": "Sluiten",
+                                        "condition": {
+                                            ">": [
+                                                {
+                                                    "var": "object.bedrag"
+                                                },
+                                                500
+                                            ]
+                                        },
+                                        "enabled": false
+                                    },
+                                    "openen": {
+                                        "to": "open"
+                                    },
+                                    "ast": {
+                                        "condition": {
+                                            "gt": [
+                                                {
+                                                    "prop": "object.bedrag"
+                                                },
+                                                10
+                                            ]
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "properties": {
+                            "bedrag": {
+                                "type": "number"
+                            },
+                            "termijn": {
+                                "type": "string",
+                                "calculation": {
+                                    "expression": {
+                                        "ok": "termijn"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
+            ]
+        },
+        "condition": {
+            "outcome": {
+                "ok": true,
+                "rule": {
+                    "id": "lifecycleCondition:bezwaar:sluiten",
+                    "kind": "lifecycleCondition",
+                    "schema": "bezwaar",
+                    "key": "sluiten",
+                    "label": "Sluiten",
+                    "source": "x-openregister-lifecycle.transitions.sluiten.condition",
+                    "enabled": true,
+                    "actions": [
+                        "refuseTransition"
+                    ],
+                    "condition": {
+                        ">": [
+                            {
+                                "var": "object.bedrag"
+                            },
+                            500
+                        ]
+                    },
+                    "maxObjects": null,
+                    "scope": null,
+                    "order": 3
+                },
+                "audit": {
+                    "actor": "jan",
+                    "actorName": "Jan",
+                    "ruleId": "lifecycleCondition:bezwaar:sluiten",
+                    "from": false,
+                    "to": true
+                }
+            },
+            "calls": [
+                [
+                    "updateFromArray",
+                    7,
+                    {
+                        "configuration": {
+                            "x-openregister-calculations": {
+                                "uiterlijkeDatum": {
+                                    "type": "date",
+                                    "expression": {
+                                        "ok": 1
+                                    },
+                                    "maxObjects": 3,
+                                    "scope": {
+                                        "property": "zaaktype",
+                                        "value": "a"
+                                    }
+                                },
+                                "kapot": {
+                                    "expression": {
+                                        "throw": 1
+                                    },
+                                    "enabled": false,
+                                    "maxObjects": 0
+                                },
+                                "geen": "scalar"
+                            },
+                            "x-openregister-lifecycle": {
+                                "field": "status",
+                                "states": {
+                                    "open": {
+                                        "fields": {
+                                            "bedrag": {
+                                                "readOnly": true
+                                            }
+                                        },
+                                        "condition": {
+                                            "==": [
+                                                1,
+                                                1
+                                            ]
+                                        },
+                                        "maxObjects": 9
+                                    },
+                                    "dicht": [],
+                                    "leeg": {
+                                        "fields": "x"
+                                    }
+                                },
+                                "transitions": {
+                                    "sluiten": {
+                                        "label": "Sluiten",
+                                        "condition": {
+                                            ">": [
+                                                {
+                                                    "var": "object.bedrag"
+                                                },
+                                                500
+                                            ]
+                                        },
+                                        "enabled": true
+                                    },
+                                    "openen": {
+                                        "to": "open"
+                                    },
+                                    "ast": {
+                                        "condition": {
+                                            "gt": [
+                                                {
+                                                    "prop": "object.bedrag"
+                                                },
+                                                10
+                                            ]
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "properties": {
+                            "bedrag": {
+                                "type": "number"
+                            },
+                            "termijn": {
+                                "type": "string",
+                                "calculation": {
+                                    "expression": {
+                                        "ok": "termijn"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
+            ]
+        },
+        "flow": {
+            "outcome": {
+                "ok": true,
+                "rule": {
+                    "id": "flow:bezwaar:flow-a",
+                    "kind": "flow",
+                    "schema": "bezwaar",
+                    "key": "flow-a",
+                    "label": "flow-a",
+                    "source": "openregister_flow_triggers.flow-a",
+                    "enabled": true,
+                    "actions": [
+                        "runFlow"
+                    ],
+                    "condition": {
+                        "events": [
+                            "create",
+                            "update"
+                        ]
+                    },
+                    "maxObjects": null,
+                    "scope": {
+                        "property": "zaaktype",
+                        "value": "c"
+                    },
+                    "order": 5
+                },
+                "audit": {
+                    "actor": "jan",
+                    "actorName": "Jan",
+                    "ruleId": "flow:bezwaar:flow-a",
+                    "from": true,
+                    "to": false
+                }
+            },
+            "calls": [
+                [
+                    "flowSave",
+                    {
+                        "enabled": false
+                    },
+                    "flow-a"
+                ]
+            ]
+        },
+        "unknown": {
+            "outcome": {
+                "ok": false,
+                "error": {
+                    "code": "rule-unknown",
+                    "message": "Schema \"bezwaar\" declares no rule \"calculation:bezwaar:nope\"."
+                }
+            },
+            "calls": []
+        },
+        "write fails": {
+            "outcome": {
+                "ok": false,
+                "error": {
+                    "code": "rule-switch-not-written",
+                    "message": "schema not saved"
+                }
+            },
+            "calls": [
+                [
+                    "updateFromArray",
+                    7,
+                    {
+                        "configuration": {
+                            "x-openregister-calculations": {
+                                "uiterlijkeDatum": {
+                                    "type": "date",
+                                    "expression": {
+                                        "ok": 1
+                                    },
+                                    "maxObjects": 3,
+                                    "scope": {
+                                        "property": "zaaktype",
+                                        "value": "a"
+                                    }
+                                },
+                                "kapot": {
+                                    "expression": {
+                                        "throw": 1
+                                    },
+                                    "enabled": true,
+                                    "maxObjects": 0
+                                },
+                                "geen": "scalar"
+                            },
+                            "x-openregister-lifecycle": {
+                                "field": "status",
+                                "states": {
+                                    "open": {
+                                        "fields": {
+                                            "bedrag": {
+                                                "readOnly": true
+                                            }
+                                        },
+                                        "condition": {
+                                            "==": [
+                                                1,
+                                                1
+                                            ]
+                                        },
+                                        "maxObjects": 9
+                                    },
+                                    "dicht": [],
+                                    "leeg": {
+                                        "fields": "x"
+                                    }
+                                },
+                                "transitions": {
+                                    "sluiten": {
+                                        "label": "Sluiten",
+                                        "condition": {
+                                            ">": [
+                                                {
+                                                    "var": "object.bedrag"
+                                                },
+                                                500
+                                            ]
+                                        },
+                                        "enabled": false
+                                    },
+                                    "openen": {
+                                        "to": "open"
+                                    },
+                                    "ast": {
+                                        "condition": {
+                                            "gt": [
+                                                {
+                                                    "prop": "object.bedrag"
+                                                },
+                                                10
+                                            ]
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "properties": {
+                            "bedrag": {
+                                "type": "number"
+                            },
+                            "termijn": {
+                                "type": "string",
+                                "calculation": {
+                                    "expression": {
+                                        "ok": "termijn"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
+            ]
+        }
+    },
+    "enforcer": {
+        "no schema ref": {
+            "outcome": null,
+            "calls": []
+        },
+        "empty schema ref": {
+            "outcome": null,
+            "calls": []
+        },
+        "schema unresolvable": {
+            "outcome": null,
+            "calls": [
+                [
+                    "findSchema",
+                    "7"
+                ],
+                [
+                    "warning",
+                    "Administered validations skipped; schema \"7\" could not be resolved: no schema"
+                ]
+            ]
+        },
+        "no validations": {
+            "outcome": null,
+            "calls": [
+                [
+                    "findSchema",
+                    "7"
+                ]
+            ]
+        },
+        "refused on create": {
+            "outcome": {
+                "code": "administered-validation-refused",
+                "validation": "mandaat",
+                "message": "Mandate required",
+                "properties": [
+                    "mandaat",
+                    "bedrag"
+                ],
+                "refusals": [
+                    {
+                        "validation": "mandaat",
+                        "severity": "refuse",
+                        "properties": [
+                            "mandaat",
+                            "bedrag"
+                        ],
+                        "message": "Mandate required",
+                        "unevaluable": false
+                    },
+                    {
+                        "validation": "kapot",
+                        "severity": "refuse",
+                        "properties": [],
+                        "message": "This check could not be evaluated, so the save is refused: it is not declared in this schema's condition library",
+                        "unevaluable": true
+                    }
+                ],
+                "warnings": [
+                    {
+                        "validation": "gewijzigd",
+                        "severity": "warn",
+                        "properties": [],
+                        "message": "Status changed",
+                        "unevaluable": false
+                    }
+                ]
+            },
+            "calls": [
+                [
+                    "findSchema",
+                    "7"
+                ],
+                [
+                    "record",
+                    [
+                        "administeredValidation:bezwaar:gewijzigd",
+                        "bezwaar",
+                        {
+                            "verdict": "fired",
+                            "operand": "",
+                            "operandValue": null,
+                            "message": "Status changed"
+                        },
+                        "uuid-1",
+                        "reg",
+                        null
+                    ]
+                ],
+                [
+                    "record",
+                    [
+                        "administeredValidation:bezwaar:mandaat",
+                        "bezwaar",
+                        {
+                            "verdict": "refused",
+                            "operand": "mandaat, bedrag",
+                            "operandValue": null,
+                            "message": "Mandate required"
+                        },
+                        "uuid-1",
+                        "reg",
+                        null
+                    ]
+                ]
+            ]
+        },
+        "refused on update": {
+            "outcome": {
+                "code": "administered-validation-refused",
+                "validation": "mandaat",
+                "message": "Mandate required",
+                "properties": [
+                    "mandaat",
+                    "bedrag"
+                ],
+                "refusals": [
+                    {
+                        "validation": "mandaat",
+                        "severity": "refuse",
+                        "properties": [
+                            "mandaat",
+                            "bedrag"
+                        ],
+                        "message": "Mandate required",
+                        "unevaluable": false
+                    },
+                    {
+                        "validation": "kapot",
+                        "severity": "refuse",
+                        "properties": [],
+                        "message": "This check could not be evaluated, so the save is refused: it is not declared in this schema's condition library",
+                        "unevaluable": true
+                    }
+                ],
+                "warnings": [
+                    {
+                        "validation": "gewijzigd",
+                        "severity": "warn",
+                        "properties": [],
+                        "message": "Status changed",
+                        "unevaluable": false
+                    }
+                ]
+            },
+            "calls": [
+                [
+                    "findSchema",
+                    "7"
+                ],
+                [
+                    "record",
+                    [
+                        "administeredValidation:bezwaar:gewijzigd",
+                        "bezwaar",
+                        {
+                            "verdict": "fired",
+                            "operand": "",
+                            "operandValue": null,
+                            "message": "Status changed"
+                        },
+                        "uuid-1",
+                        "reg",
+                        null
+                    ]
+                ],
+                [
+                    "record",
+                    [
+                        "administeredValidation:bezwaar:mandaat",
+                        "bezwaar",
+                        {
+                            "verdict": "refused",
+                            "operand": "mandaat, bedrag",
+                            "operandValue": null,
+                            "message": "Mandate required"
+                        },
+                        "uuid-1",
+                        "reg",
+                        null
+                    ]
+                ]
+            ]
+        },
+        "passes on update": {
+            "outcome": {
+                "code": "administered-validation-refused",
+                "validation": "kapot",
+                "message": "This check could not be evaluated, so the save is refused: it is not declared in this schema's condition library",
+                "properties": [],
+                "refusals": [
+                    {
+                        "validation": "kapot",
+                        "severity": "refuse",
+                        "properties": [],
+                        "message": "This check could not be evaluated, so the save is refused: it is not declared in this schema's condition library",
+                        "unevaluable": true
+                    }
+                ],
+                "warnings": [
+                    {
+                        "validation": "gewijzigd",
+                        "severity": "warn",
+                        "properties": [],
+                        "message": "Status changed",
+                        "unevaluable": false
+                    }
+                ]
+            },
+            "calls": [
+                [
+                    "findSchema",
+                    "7"
+                ],
+                [
+                    "record",
+                    [
+                        "administeredValidation:bezwaar:gewijzigd",
+                        "bezwaar",
+                        {
+                            "verdict": "fired",
+                            "operand": "",
+                            "operandValue": null,
+                            "message": "Status changed"
+                        },
+                        "uuid-1",
+                        "reg",
+                        null
+                    ]
+                ],
+                [
+                    "record",
+                    [
+                        "administeredValidation:bezwaar:kapot",
+                        "bezwaar",
+                        {
+                            "verdict": "error",
+                            "operand": "",
+                            "operandValue": null,
+                            "message": "This check could not be evaluated, so the save is refused: it is not declared in this schema's condition library"
+                        },
+                        "uuid-1",
+                        "reg",
+                        null
+                    ]
+                ]
+            ]
+        },
+        "no slug": {
+            "outcome": {
+                "code": "administered-validation-refused",
+                "validation": "mandaat",
+                "message": "Mandate required",
+                "properties": [
+                    "mandaat",
+                    "bedrag"
+                ],
+                "refusals": [
+                    {
+                        "validation": "mandaat",
+                        "severity": "refuse",
+                        "properties": [
+                            "mandaat",
+                            "bedrag"
+                        ],
+                        "message": "Mandate required",
+                        "unevaluable": false
+                    },
+                    {
+                        "validation": "kapot",
+                        "severity": "refuse",
+                        "properties": [],
+                        "message": "This check could not be evaluated, so the save is refused: it is not declared in this schema's condition library",
+                        "unevaluable": true
+                    }
+                ],
+                "warnings": [
+                    {
+                        "validation": "gewijzigd",
+                        "severity": "warn",
+                        "properties": [],
+                        "message": "Status changed",
+                        "unevaluable": false
+                    }
+                ]
+            },
+            "calls": [
+                [
+                    "findSchema",
+                    "7"
+                ]
+            ]
+        },
+        "record fails": {
+            "outcome": {
+                "code": "administered-validation-refused",
+                "validation": "mandaat",
+                "message": "Mandate required",
+                "properties": [
+                    "mandaat",
+                    "bedrag"
+                ],
+                "refusals": [
+                    {
+                        "validation": "mandaat",
+                        "severity": "refuse",
+                        "properties": [
+                            "mandaat",
+                            "bedrag"
+                        ],
+                        "message": "Mandate required",
+                        "unevaluable": false
+                    },
+                    {
+                        "validation": "kapot",
+                        "severity": "refuse",
+                        "properties": [],
+                        "message": "This check could not be evaluated, so the save is refused: it is not declared in this schema's condition library",
+                        "unevaluable": true
+                    }
+                ],
+                "warnings": [
+                    {
+                        "validation": "gewijzigd",
+                        "severity": "warn",
+                        "properties": [],
+                        "message": "Status changed",
+                        "unevaluable": false
+                    }
+                ]
+            },
+            "calls": [
+                [
+                    "findSchema",
+                    "7"
+                ],
+                [
+                    "record",
+                    [
+                        "administeredValidation:bezwaar:gewijzigd",
+                        "bezwaar",
+                        {
+                            "verdict": "fired",
+                            "operand": "",
+                            "operandValue": null,
+                            "message": "Status changed"
+                        },
+                        "uuid-1",
+                        "reg",
+                        null
+                    ]
+                ],
+                [
+                    "warning",
+                    "Administered validation run could not be recorded: record failed"
+                ],
+                [
+                    "record",
+                    [
+                        "administeredValidation:bezwaar:mandaat",
+                        "bezwaar",
+                        {
+                            "verdict": "refused",
+                            "operand": "mandaat, bedrag",
+                            "operandValue": null,
+                            "message": "Mandate required"
+                        },
+                        "uuid-1",
+                        "reg",
+                        null
+                    ]
+                ],
+                [
+                    "warning",
+                    "Administered validation run could not be recorded: record failed"
+                ]
+            ]
+        }
+    },
+    "inventory": {
+        "describe": [
+            {
+                "id": "calculation:bezwaar:kapot",
+                "kind": "calculation",
+                "schema": "bezwaar",
+                "key": "kapot",
+                "label": "kapot",
+                "source": "x-openregister-calculations.kapot",
+                "enabled": false,
+                "actions": [
+                    "setValue"
+                ],
+                "condition": {
+                    "throw": 1
+                },
+                "maxObjects": null,
+                "scope": null,
+                "order": 1
+            },
+            {
+                "id": "calculation:bezwaar:termijn",
+                "kind": "calculation",
+                "schema": "bezwaar",
+                "key": "termijn",
+                "label": "termijn",
+                "source": "x-openregister-calculations.termijn",
+                "enabled": true,
+                "actions": [
+                    "setValue"
+                ],
+                "condition": {
+                    "ok": "termijn"
+                },
+                "maxObjects": null,
+                "scope": null,
+                "order": 1
+            },
+            {
+                "id": "calculation:bezwaar:uiterlijkeDatum",
+                "kind": "calculation",
+                "schema": "bezwaar",
+                "key": "uiterlijkeDatum",
+                "label": "uiterlijkeDatum",
+                "source": "x-openregister-calculations.uiterlijkeDatum",
+                "enabled": true,
+                "actions": [
+                    "setValue"
+                ],
+                "condition": {
+                    "ok": 1
+                },
+                "maxObjects": 3,
+                "scope": {
+                    "property": "zaaktype",
+                    "value": "a"
+                },
+                "order": 1
+            },
+            {
+                "id": "stateFieldRule:bezwaar:open",
+                "kind": "stateFieldRule",
+                "schema": "bezwaar",
+                "key": "open",
+                "label": "open",
+                "source": "x-openregister-lifecycle.states.open.fields",
+                "enabled": true,
+                "actions": [
+                    "hideField",
+                    "readOnlyField",
+                    "requireField"
+                ],
+                "condition": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "maxObjects": 9,
+                "scope": null,
+                "order": 2
+            },
+            {
+                "id": "lifecycleCondition:bezwaar:ast",
+                "kind": "lifecycleCondition",
+                "schema": "bezwaar",
+                "key": "ast",
+                "label": "ast",
+                "source": "x-openregister-lifecycle.transitions.ast.condition",
+                "enabled": true,
+                "actions": [
+                    "refuseTransition"
+                ],
+                "condition": {
+                    "gt": [
+                        {
+                            "prop": "object.bedrag"
+                        },
+                        10
+                    ]
+                },
+                "maxObjects": null,
+                "scope": null,
+                "order": 3
+            },
+            {
+                "id": "lifecycleCondition:bezwaar:sluiten",
+                "kind": "lifecycleCondition",
+                "schema": "bezwaar",
+                "key": "sluiten",
+                "label": "Sluiten",
+                "source": "x-openregister-lifecycle.transitions.sluiten.condition",
+                "enabled": false,
+                "actions": [
+                    "refuseTransition"
+                ],
+                "condition": {
+                    ">": [
+                        {
+                            "var": "object.bedrag"
+                        },
+                        500
+                    ]
+                },
+                "maxObjects": null,
+                "scope": null,
+                "order": 3
+            },
+            {
+                "id": "flow:bezwaar:flow-a",
+                "kind": "flow",
+                "schema": "bezwaar",
+                "key": "flow-a",
+                "label": "flow-a",
+                "source": "openregister_flow_triggers.flow-a",
+                "enabled": true,
+                "actions": [
+                    "runFlow"
+                ],
+                "condition": {
+                    "events": [
+                        "create",
+                        "update"
+                    ]
+                },
+                "maxObjects": null,
+                "scope": {
+                    "property": "zaaktype",
+                    "value": "c"
+                },
+                "order": 5
+            },
+            {
+                "id": "flow:bezwaar:flow-b",
+                "kind": "flow",
+                "schema": "bezwaar",
+                "key": "flow-b",
+                "label": "flow-b",
+                "source": "openregister_flow_triggers.flow-b",
+                "enabled": false,
+                "actions": [
+                    "runFlow"
+                ],
+                "condition": {
+                    "events": [
+                        "update"
+                    ]
+                },
+                "maxObjects": null,
+                "scope": {
+                    "property": "zaaktype",
+                    "value": "d"
+                },
+                "order": 5
+            },
+            {
+                "id": "flow:bezwaar:flow-c",
+                "kind": "flow",
+                "schema": "bezwaar",
+                "key": "flow-c",
+                "label": "flow-c",
+                "source": "openregister_flow_triggers.flow-c",
+                "enabled": true,
+                "actions": [
+                    "runFlow"
+                ],
+                "condition": {
+                    "events": [
+                        "delete"
+                    ]
+                },
+                "maxObjects": null,
+                "scope": null,
+                "order": 5
+            }
+        ],
+        "window30": [
+            {
+                "id": "calculation:bezwaar:kapot",
+                "kind": "calculation",
+                "schema": "bezwaar",
+                "key": "kapot",
+                "label": "kapot",
+                "source": "x-openregister-calculations.kapot",
+                "enabled": false,
+                "actions": [
+                    "setValue"
+                ],
+                "condition": {
+                    "throw": 1
+                },
+                "maxObjects": null,
+                "scope": null,
+                "order": 1,
+                "lastRun": null,
+                "lastVerdict": null,
+                "lastError": null,
+                "lastErrorAt": null,
+                "ranInsideWindow": false,
+                "idleWindowDays": 30
+            },
+            {
+                "id": "calculation:bezwaar:termijn",
+                "kind": "calculation",
+                "schema": "bezwaar",
+                "key": "termijn",
+                "label": "termijn",
+                "source": "x-openregister-calculations.termijn",
+                "enabled": true,
+                "actions": [
+                    "setValue"
+                ],
+                "condition": {
+                    "ok": "termijn"
+                },
+                "maxObjects": null,
+                "scope": null,
+                "order": 1,
+                "lastRun": null,
+                "lastVerdict": null,
+                "lastError": null,
+                "lastErrorAt": null,
+                "ranInsideWindow": false,
+                "idleWindowDays": 30
+            },
+            {
+                "id": "calculation:bezwaar:uiterlijkeDatum",
+                "kind": "calculation",
+                "schema": "bezwaar",
+                "key": "uiterlijkeDatum",
+                "label": "uiterlijkeDatum",
+                "source": "x-openregister-calculations.uiterlijkeDatum",
+                "enabled": true,
+                "actions": [
+                    "setValue"
+                ],
+                "condition": {
+                    "ok": 1
+                },
+                "maxObjects": 3,
+                "scope": {
+                    "property": "zaaktype",
+                    "value": "a"
+                },
+                "order": 1,
+                "lastRun": "2026-09-10T00:00:00+00:00",
+                "lastVerdict": "fired",
+                "lastError": null,
+                "lastErrorAt": null,
+                "ranInsideWindow": true,
+                "ruleId": "calculation:bezwaar:uiterlijkeDatum",
+                "idleWindowDays": 30
+            },
+            {
+                "id": "stateFieldRule:bezwaar:open",
+                "kind": "stateFieldRule",
+                "schema": "bezwaar",
+                "key": "open",
+                "label": "open",
+                "source": "x-openregister-lifecycle.states.open.fields",
+                "enabled": true,
+                "actions": [
+                    "hideField",
+                    "readOnlyField",
+                    "requireField"
+                ],
+                "condition": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "maxObjects": 9,
+                "scope": null,
+                "order": 2,
+                "lastRun": null,
+                "lastVerdict": null,
+                "lastError": null,
+                "lastErrorAt": null,
+                "ranInsideWindow": false,
+                "idleWindowDays": 30
+            },
+            {
+                "id": "lifecycleCondition:bezwaar:ast",
+                "kind": "lifecycleCondition",
+                "schema": "bezwaar",
+                "key": "ast",
+                "label": "ast",
+                "source": "x-openregister-lifecycle.transitions.ast.condition",
+                "enabled": true,
+                "actions": [
+                    "refuseTransition"
+                ],
+                "condition": {
+                    "gt": [
+                        {
+                            "prop": "object.bedrag"
+                        },
+                        10
+                    ]
+                },
+                "maxObjects": null,
+                "scope": null,
+                "order": 3,
+                "lastRun": null,
+                "lastVerdict": null,
+                "lastError": null,
+                "lastErrorAt": null,
+                "ranInsideWindow": false,
+                "idleWindowDays": 30
+            },
+            {
+                "id": "lifecycleCondition:bezwaar:sluiten",
+                "kind": "lifecycleCondition",
+                "schema": "bezwaar",
+                "key": "sluiten",
+                "label": "Sluiten",
+                "source": "x-openregister-lifecycle.transitions.sluiten.condition",
+                "enabled": false,
+                "actions": [
+                    "refuseTransition"
+                ],
+                "condition": {
+                    ">": [
+                        {
+                            "var": "object.bedrag"
+                        },
+                        500
+                    ]
+                },
+                "maxObjects": null,
+                "scope": null,
+                "order": 3,
+                "lastRun": null,
+                "lastVerdict": null,
+                "lastError": null,
+                "lastErrorAt": null,
+                "ranInsideWindow": false,
+                "idleWindowDays": 30
+            },
+            {
+                "id": "flow:bezwaar:flow-a",
+                "kind": "flow",
+                "schema": "bezwaar",
+                "key": "flow-a",
+                "label": "flow-a",
+                "source": "openregister_flow_triggers.flow-a",
+                "enabled": true,
+                "actions": [
+                    "runFlow"
+                ],
+                "condition": {
+                    "events": [
+                        "create",
+                        "update"
+                    ]
+                },
+                "maxObjects": null,
+                "scope": {
+                    "property": "zaaktype",
+                    "value": "c"
+                },
+                "order": 5,
+                "lastRun": "2026-01-01T00:00:00+00:00",
+                "lastVerdict": "error",
+                "lastError": "kapot",
+                "lastErrorAt": "2026-01-01T00:00:00+00:00",
+                "ranInsideWindow": false,
+                "ruleId": "flow:bezwaar:flow-a",
+                "idleWindowDays": 30
+            },
+            {
+                "id": "flow:bezwaar:flow-b",
+                "kind": "flow",
+                "schema": "bezwaar",
+                "key": "flow-b",
+                "label": "flow-b",
+                "source": "openregister_flow_triggers.flow-b",
+                "enabled": false,
+                "actions": [
+                    "runFlow"
+                ],
+                "condition": {
+                    "events": [
+                        "update"
+                    ]
+                },
+                "maxObjects": null,
+                "scope": {
+                    "property": "zaaktype",
+                    "value": "d"
+                },
+                "order": 5,
+                "lastRun": null,
+                "lastVerdict": null,
+                "lastError": null,
+                "lastErrorAt": null,
+                "ranInsideWindow": false,
+                "idleWindowDays": 30
+            },
+            {
+                "id": "flow:bezwaar:flow-c",
+                "kind": "flow",
+                "schema": "bezwaar",
+                "key": "flow-c",
+                "label": "flow-c",
+                "source": "openregister_flow_triggers.flow-c",
+                "enabled": true,
+                "actions": [
+                    "runFlow"
+                ],
+                "condition": {
+                    "events": [
+                        "delete"
+                    ]
+                },
+                "maxObjects": null,
+                "scope": null,
+                "order": 5,
+                "lastRun": null,
+                "lastVerdict": null,
+                "lastError": null,
+                "lastErrorAt": null,
+                "ranInsideWindow": false,
+                "idleWindowDays": 30
+            }
+        ],
+        "window0": [
+            {
+                "id": "calculation:bezwaar:kapot",
+                "kind": "calculation",
+                "schema": "bezwaar",
+                "key": "kapot",
+                "label": "kapot",
+                "source": "x-openregister-calculations.kapot",
+                "enabled": false,
+                "actions": [
+                    "setValue"
+                ],
+                "condition": {
+                    "throw": 1
+                },
+                "maxObjects": null,
+                "scope": null,
+                "order": 1,
+                "lastRun": null,
+                "lastVerdict": null,
+                "lastError": null,
+                "lastErrorAt": null,
+                "ranInsideWindow": false,
+                "idleWindowDays": 1
+            },
+            {
+                "id": "calculation:bezwaar:termijn",
+                "kind": "calculation",
+                "schema": "bezwaar",
+                "key": "termijn",
+                "label": "termijn",
+                "source": "x-openregister-calculations.termijn",
+                "enabled": true,
+                "actions": [
+                    "setValue"
+                ],
+                "condition": {
+                    "ok": "termijn"
+                },
+                "maxObjects": null,
+                "scope": null,
+                "order": 1,
+                "lastRun": null,
+                "lastVerdict": null,
+                "lastError": null,
+                "lastErrorAt": null,
+                "ranInsideWindow": false,
+                "idleWindowDays": 1
+            },
+            {
+                "id": "calculation:bezwaar:uiterlijkeDatum",
+                "kind": "calculation",
+                "schema": "bezwaar",
+                "key": "uiterlijkeDatum",
+                "label": "uiterlijkeDatum",
+                "source": "x-openregister-calculations.uiterlijkeDatum",
+                "enabled": true,
+                "actions": [
+                    "setValue"
+                ],
+                "condition": {
+                    "ok": 1
+                },
+                "maxObjects": 3,
+                "scope": {
+                    "property": "zaaktype",
+                    "value": "a"
+                },
+                "order": 1,
+                "lastRun": "2026-09-10T00:00:00+00:00",
+                "lastVerdict": "fired",
+                "lastError": null,
+                "lastErrorAt": null,
+                "ranInsideWindow": false,
+                "ruleId": "calculation:bezwaar:uiterlijkeDatum",
+                "idleWindowDays": 1
+            },
+            {
+                "id": "stateFieldRule:bezwaar:open",
+                "kind": "stateFieldRule",
+                "schema": "bezwaar",
+                "key": "open",
+                "label": "open",
+                "source": "x-openregister-lifecycle.states.open.fields",
+                "enabled": true,
+                "actions": [
+                    "hideField",
+                    "readOnlyField",
+                    "requireField"
+                ],
+                "condition": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "maxObjects": 9,
+                "scope": null,
+                "order": 2,
+                "lastRun": null,
+                "lastVerdict": null,
+                "lastError": null,
+                "lastErrorAt": null,
+                "ranInsideWindow": false,
+                "idleWindowDays": 1
+            },
+            {
+                "id": "lifecycleCondition:bezwaar:ast",
+                "kind": "lifecycleCondition",
+                "schema": "bezwaar",
+                "key": "ast",
+                "label": "ast",
+                "source": "x-openregister-lifecycle.transitions.ast.condition",
+                "enabled": true,
+                "actions": [
+                    "refuseTransition"
+                ],
+                "condition": {
+                    "gt": [
+                        {
+                            "prop": "object.bedrag"
+                        },
+                        10
+                    ]
+                },
+                "maxObjects": null,
+                "scope": null,
+                "order": 3,
+                "lastRun": null,
+                "lastVerdict": null,
+                "lastError": null,
+                "lastErrorAt": null,
+                "ranInsideWindow": false,
+                "idleWindowDays": 1
+            },
+            {
+                "id": "lifecycleCondition:bezwaar:sluiten",
+                "kind": "lifecycleCondition",
+                "schema": "bezwaar",
+                "key": "sluiten",
+                "label": "Sluiten",
+                "source": "x-openregister-lifecycle.transitions.sluiten.condition",
+                "enabled": false,
+                "actions": [
+                    "refuseTransition"
+                ],
+                "condition": {
+                    ">": [
+                        {
+                            "var": "object.bedrag"
+                        },
+                        500
+                    ]
+                },
+                "maxObjects": null,
+                "scope": null,
+                "order": 3,
+                "lastRun": null,
+                "lastVerdict": null,
+                "lastError": null,
+                "lastErrorAt": null,
+                "ranInsideWindow": false,
+                "idleWindowDays": 1
+            },
+            {
+                "id": "flow:bezwaar:flow-a",
+                "kind": "flow",
+                "schema": "bezwaar",
+                "key": "flow-a",
+                "label": "flow-a",
+                "source": "openregister_flow_triggers.flow-a",
+                "enabled": true,
+                "actions": [
+                    "runFlow"
+                ],
+                "condition": {
+                    "events": [
+                        "create",
+                        "update"
+                    ]
+                },
+                "maxObjects": null,
+                "scope": {
+                    "property": "zaaktype",
+                    "value": "c"
+                },
+                "order": 5,
+                "lastRun": "2026-01-01T00:00:00+00:00",
+                "lastVerdict": "error",
+                "lastError": "kapot",
+                "lastErrorAt": "2026-01-01T00:00:00+00:00",
+                "ranInsideWindow": false,
+                "ruleId": "flow:bezwaar:flow-a",
+                "idleWindowDays": 1
+            },
+            {
+                "id": "flow:bezwaar:flow-b",
+                "kind": "flow",
+                "schema": "bezwaar",
+                "key": "flow-b",
+                "label": "flow-b",
+                "source": "openregister_flow_triggers.flow-b",
+                "enabled": false,
+                "actions": [
+                    "runFlow"
+                ],
+                "condition": {
+                    "events": [
+                        "update"
+                    ]
+                },
+                "maxObjects": null,
+                "scope": {
+                    "property": "zaaktype",
+                    "value": "d"
+                },
+                "order": 5,
+                "lastRun": null,
+                "lastVerdict": null,
+                "lastError": null,
+                "lastErrorAt": null,
+                "ranInsideWindow": false,
+                "idleWindowDays": 1
+            },
+            {
+                "id": "flow:bezwaar:flow-c",
+                "kind": "flow",
+                "schema": "bezwaar",
+                "key": "flow-c",
+                "label": "flow-c",
+                "source": "openregister_flow_triggers.flow-c",
+                "enabled": true,
+                "actions": [
+                    "runFlow"
+                ],
+                "condition": {
+                    "events": [
+                        "delete"
+                    ]
+                },
+                "maxObjects": null,
+                "scope": null,
+                "order": 5,
+                "lastRun": null,
+                "lastVerdict": null,
+                "lastError": null,
+                "lastErrorAt": null,
+                "ranInsideWindow": false,
+                "idleWindowDays": 1
+            }
+        ],
+        "scoped": [
+            {
+                "id": "calculation:bezwaar:kapot",
+                "kind": "calculation",
+                "schema": "bezwaar",
+                "key": "kapot",
+                "label": "kapot",
+                "source": "x-openregister-calculations.kapot",
+                "enabled": false,
+                "actions": [
+                    "setValue"
+                ],
+                "condition": {
+                    "throw": 1
+                },
+                "maxObjects": null,
+                "scope": null,
+                "order": 1,
+                "lastRun": null,
+                "lastVerdict": null,
+                "lastError": null,
+                "lastErrorAt": null,
+                "ranInsideWindow": false,
+                "idleWindowDays": 365
+            },
+            {
+                "id": "calculation:bezwaar:termijn",
+                "kind": "calculation",
+                "schema": "bezwaar",
+                "key": "termijn",
+                "label": "termijn",
+                "source": "x-openregister-calculations.termijn",
+                "enabled": true,
+                "actions": [
+                    "setValue"
+                ],
+                "condition": {
+                    "ok": "termijn"
+                },
+                "maxObjects": null,
+                "scope": null,
+                "order": 1,
+                "lastRun": null,
+                "lastVerdict": null,
+                "lastError": null,
+                "lastErrorAt": null,
+                "ranInsideWindow": false,
+                "idleWindowDays": 365
+            },
+            {
+                "id": "stateFieldRule:bezwaar:open",
+                "kind": "stateFieldRule",
+                "schema": "bezwaar",
+                "key": "open",
+                "label": "open",
+                "source": "x-openregister-lifecycle.states.open.fields",
+                "enabled": true,
+                "actions": [
+                    "hideField",
+                    "readOnlyField",
+                    "requireField"
+                ],
+                "condition": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "maxObjects": 9,
+                "scope": null,
+                "order": 2,
+                "lastRun": null,
+                "lastVerdict": null,
+                "lastError": null,
+                "lastErrorAt": null,
+                "ranInsideWindow": false,
+                "idleWindowDays": 365
+            },
+            {
+                "id": "lifecycleCondition:bezwaar:ast",
+                "kind": "lifecycleCondition",
+                "schema": "bezwaar",
+                "key": "ast",
+                "label": "ast",
+                "source": "x-openregister-lifecycle.transitions.ast.condition",
+                "enabled": true,
+                "actions": [
+                    "refuseTransition"
+                ],
+                "condition": {
+                    "gt": [
+                        {
+                            "prop": "object.bedrag"
+                        },
+                        10
+                    ]
+                },
+                "maxObjects": null,
+                "scope": null,
+                "order": 3,
+                "lastRun": null,
+                "lastVerdict": null,
+                "lastError": null,
+                "lastErrorAt": null,
+                "ranInsideWindow": false,
+                "idleWindowDays": 365
+            },
+            {
+                "id": "lifecycleCondition:bezwaar:sluiten",
+                "kind": "lifecycleCondition",
+                "schema": "bezwaar",
+                "key": "sluiten",
+                "label": "Sluiten",
+                "source": "x-openregister-lifecycle.transitions.sluiten.condition",
+                "enabled": false,
+                "actions": [
+                    "refuseTransition"
+                ],
+                "condition": {
+                    ">": [
+                        {
+                            "var": "object.bedrag"
+                        },
+                        500
+                    ]
+                },
+                "maxObjects": null,
+                "scope": null,
+                "order": 3,
+                "lastRun": null,
+                "lastVerdict": null,
+                "lastError": null,
+                "lastErrorAt": null,
+                "ranInsideWindow": false,
+                "idleWindowDays": 365
+            },
+            {
+                "id": "flow:bezwaar:flow-a",
+                "kind": "flow",
+                "schema": "bezwaar",
+                "key": "flow-a",
+                "label": "flow-a",
+                "source": "openregister_flow_triggers.flow-a",
+                "enabled": true,
+                "actions": [
+                    "runFlow"
+                ],
+                "condition": {
+                    "events": [
+                        "create",
+                        "update"
+                    ]
+                },
+                "maxObjects": null,
+                "scope": {
+                    "property": "zaaktype",
+                    "value": "c"
+                },
+                "order": 5,
+                "lastRun": "2026-01-01T00:00:00+00:00",
+                "lastVerdict": "error",
+                "lastError": "kapot",
+                "lastErrorAt": "2026-01-01T00:00:00+00:00",
+                "ranInsideWindow": true,
+                "ruleId": "flow:bezwaar:flow-a",
+                "idleWindowDays": 365
+            },
+            {
+                "id": "flow:bezwaar:flow-c",
+                "kind": "flow",
+                "schema": "bezwaar",
+                "key": "flow-c",
+                "label": "flow-c",
+                "source": "openregister_flow_triggers.flow-c",
+                "enabled": true,
+                "actions": [
+                    "runFlow"
+                ],
+                "condition": {
+                    "events": [
+                        "delete"
+                    ]
+                },
+                "maxObjects": null,
+                "scope": null,
+                "order": 5,
+                "lastRun": null,
+                "lastVerdict": null,
+                "lastError": null,
+                "lastErrorAt": null,
+                "ranInsideWindow": false,
+                "idleWindowDays": 365
+            }
+        ],
+        "find": {
+            "id": "flow:bezwaar:flow-b",
+            "kind": "flow",
+            "schema": "bezwaar",
+            "key": "flow-b",
+            "label": "flow-b",
+            "source": "openregister_flow_triggers.flow-b",
+            "enabled": false,
+            "actions": [
+                "runFlow"
+            ],
+            "condition": {
+                "events": [
+                    "update"
+                ]
+            },
+            "maxObjects": null,
+            "scope": {
+                "property": "zaaktype",
+                "value": "d"
+            },
+            "order": 5
+        },
+        "missing": null,
+        "empty": [
+            {
+                "id": "flow::flow-a",
+                "kind": "flow",
+                "schema": "",
+                "key": "flow-a",
+                "label": "flow-a",
+                "source": "openregister_flow_triggers.flow-a",
+                "enabled": true,
+                "actions": [
+                    "runFlow"
+                ],
+                "condition": {
+                    "events": [
+                        "create",
+                        "update"
+                    ]
+                },
+                "maxObjects": null,
+                "scope": null,
+                "order": 5
+            },
+            {
+                "id": "flow::flow-b",
+                "kind": "flow",
+                "schema": "",
+                "key": "flow-b",
+                "label": "flow-b",
+                "source": "openregister_flow_triggers.flow-b",
+                "enabled": false,
+                "actions": [
+                    "runFlow"
+                ],
+                "condition": {
+                    "events": [
+                        "update"
+                    ]
+                },
+                "maxObjects": null,
+                "scope": {
+                    "property": "zaaktype",
+                    "value": "d"
+                },
+                "order": 5
+            },
+            {
+                "id": "flow::flow-c",
+                "kind": "flow",
+                "schema": "",
+                "key": "flow-c",
+                "label": "flow-c",
+                "source": "openregister_flow_triggers.flow-c",
+                "enabled": true,
+                "actions": [
+                    "runFlow"
+                ],
+                "condition": {
+                    "events": [
+                        "delete"
+                    ]
+                },
+                "maxObjects": null,
+                "scope": null,
+                "order": 5
+            }
+        ]
+    },
+    "recorder": {
+        "": {
+            "refused": [
+                [
+                    "summary",
+                    [
+                        "r:s:k",
+                        "s",
+                        "refused",
+                        "2026-03-04T05:06:07+00:00",
+                        null
+                    ]
+                ],
+                [
+                    "getUser"
+                ],
+                [
+                    "insert",
+                    {
+                        "id": null,
+                        "ruleId": "r:s:k",
+                        "schema": "s",
+                        "register": "reg",
+                        "objectUuid": "uuid",
+                        "verdict": "refused",
+                        "operand": "ababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababab…",
+                        "operandValue": "v",
+                        "message": "said",
+                        "actor": "jan",
+                        "created": "2026-03-04T05:06:07+00:00"
+                    }
+                ]
+            ],
+            "error": [
+                [
+                    "summary",
+                    [
+                        "r:s:k",
+                        "s",
+                        "error",
+                        "2026-03-04T05:06:07+00:00",
+                        "kapot"
+                    ]
+                ],
+                [
+                    "getUser"
+                ],
+                [
+                    "insert",
+                    {
+                        "id": null,
+                        "ruleId": "r:s:k",
+                        "schema": "s",
+                        "register": "reg",
+                        "objectUuid": "uuid",
+                        "verdict": "error",
+                        "operand": null,
+                        "operandValue": null,
+                        "message": "kapot",
+                        "actor": "jan",
+                        "created": "2026-03-04T05:06:07+00:00"
+                    }
+                ]
+            ],
+            "fired": [
+                [
+                    "summary",
+                    [
+                        "r:s:k",
+                        "s",
+                        "fired",
+                        "2026-03-04T05:06:07+00:00",
+                        null
+                    ]
+                ],
+                [
+                    "getUser"
+                ],
+                [
+                    "insert",
+                    {
+                        "id": null,
+                        "ruleId": "r:s:k",
+                        "schema": "s",
+                        "register": "reg",
+                        "objectUuid": "uuid",
+                        "verdict": "fired",
+                        "operand": null,
+                        "operandValue": null,
+                        "message": null,
+                        "actor": "jan",
+                        "created": "2026-03-04T05:06:07+00:00"
+                    }
+                ]
+            ],
+            "detailEnabled": true,
+            "retentionDays": 30
+        },
+        "off": {
+            "refused": [
+                [
+                    "summary",
+                    [
+                        "r:s:k",
+                        "s",
+                        "refused",
+                        "2026-03-04T05:06:07+00:00",
+                        null
+                    ]
+                ]
+            ],
+            "error": [
+                [
+                    "summary",
+                    [
+                        "r:s:k",
+                        "s",
+                        "error",
+                        "2026-03-04T05:06:07+00:00",
+                        "kapot"
+                    ]
+                ]
+            ],
+            "fired": [
+                [
+                    "summary",
+                    [
+                        "r:s:k",
+                        "s",
+                        "fired",
+                        "2026-03-04T05:06:07+00:00",
+                        null
+                    ]
+                ]
+            ],
+            "detailEnabled": false,
+            "retentionDays": 30
+        },
+        "yes": {
+            "refused": [
+                [
+                    "summary",
+                    [
+                        "r:s:k",
+                        "s",
+                        "refused",
+                        "2026-03-04T05:06:07+00:00",
+                        null
+                    ]
+                ],
+                [
+                    "getUser"
+                ],
+                [
+                    "insert",
+                    {
+                        "id": null,
+                        "ruleId": "r:s:k",
+                        "schema": "s",
+                        "register": "reg",
+                        "objectUuid": "uuid",
+                        "verdict": "refused",
+                        "operand": "ababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababab…",
+                        "operandValue": "v",
+                        "message": "said",
+                        "actor": "jan",
+                        "created": "2026-03-04T05:06:07+00:00"
+                    }
+                ]
+            ],
+            "error": [
+                [
+                    "summary",
+                    [
+                        "r:s:k",
+                        "s",
+                        "error",
+                        "2026-03-04T05:06:07+00:00",
+                        "kapot"
+                    ]
+                ],
+                [
+                    "getUser"
+                ],
+                [
+                    "insert",
+                    {
+                        "id": null,
+                        "ruleId": "r:s:k",
+                        "schema": "s",
+                        "register": "reg",
+                        "objectUuid": "uuid",
+                        "verdict": "error",
+                        "operand": null,
+                        "operandValue": null,
+                        "message": "kapot",
+                        "actor": "jan",
+                        "created": "2026-03-04T05:06:07+00:00"
+                    }
+                ]
+            ],
+            "fired": [
+                [
+                    "summary",
+                    [
+                        "r:s:k",
+                        "s",
+                        "fired",
+                        "2026-03-04T05:06:07+00:00",
+                        null
+                    ]
+                ],
+                [
+                    "getUser"
+                ],
+                [
+                    "insert",
+                    {
+                        "id": null,
+                        "ruleId": "r:s:k",
+                        "schema": "s",
+                        "register": "reg",
+                        "objectUuid": "uuid",
+                        "verdict": "fired",
+                        "operand": null,
+                        "operandValue": null,
+                        "message": null,
+                        "actor": "jan",
+                        "created": "2026-03-04T05:06:07+00:00"
+                    }
+                ]
+            ],
+            "detailEnabled": true,
+            "retentionDays": 30
+        },
+        "FALSE": {
+            "refused": [
+                [
+                    "summary",
+                    [
+                        "r:s:k",
+                        "s",
+                        "refused",
+                        "2026-03-04T05:06:07+00:00",
+                        null
+                    ]
+                ]
+            ],
+            "error": [
+                [
+                    "summary",
+                    [
+                        "r:s:k",
+                        "s",
+                        "error",
+                        "2026-03-04T05:06:07+00:00",
+                        "kapot"
+                    ]
+                ]
+            ],
+            "fired": [
+                [
+                    "summary",
+                    [
+                        "r:s:k",
+                        "s",
+                        "fired",
+                        "2026-03-04T05:06:07+00:00",
+                        null
+                    ]
+                ]
+            ],
+            "detailEnabled": false,
+            "retentionDays": 30
+        },
+        "12": {
+            "refused": [
+                [
+                    "summary",
+                    [
+                        "r:s:k",
+                        "s",
+                        "refused",
+                        "2026-03-04T05:06:07+00:00",
+                        null
+                    ]
+                ],
+                [
+                    "getUser"
+                ],
+                [
+                    "insert",
+                    {
+                        "id": null,
+                        "ruleId": "r:s:k",
+                        "schema": "s",
+                        "register": "reg",
+                        "objectUuid": "uuid",
+                        "verdict": "refused",
+                        "operand": "ababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababab…",
+                        "operandValue": "v",
+                        "message": "said",
+                        "actor": "jan",
+                        "created": "2026-03-04T05:06:07+00:00"
+                    }
+                ]
+            ],
+            "error": [
+                [
+                    "summary",
+                    [
+                        "r:s:k",
+                        "s",
+                        "error",
+                        "2026-03-04T05:06:07+00:00",
+                        "kapot"
+                    ]
+                ],
+                [
+                    "getUser"
+                ],
+                [
+                    "insert",
+                    {
+                        "id": null,
+                        "ruleId": "r:s:k",
+                        "schema": "s",
+                        "register": "reg",
+                        "objectUuid": "uuid",
+                        "verdict": "error",
+                        "operand": null,
+                        "operandValue": null,
+                        "message": "kapot",
+                        "actor": "jan",
+                        "created": "2026-03-04T05:06:07+00:00"
+                    }
+                ]
+            ],
+            "fired": [
+                [
+                    "summary",
+                    [
+                        "r:s:k",
+                        "s",
+                        "fired",
+                        "2026-03-04T05:06:07+00:00",
+                        null
+                    ]
+                ],
+                [
+                    "getUser"
+                ],
+                [
+                    "insert",
+                    {
+                        "id": null,
+                        "ruleId": "r:s:k",
+                        "schema": "s",
+                        "register": "reg",
+                        "objectUuid": "uuid",
+                        "verdict": "fired",
+                        "operand": null,
+                        "operandValue": null,
+                        "message": null,
+                        "actor": "jan",
+                        "created": "2026-03-04T05:06:07+00:00"
+                    }
+                ]
+            ],
+            "detailEnabled": true,
+            "retentionDays": 12
+        },
+        "failing": [
+            [
+                [
+                    "summary",
+                    [
+                        "r:s:k",
+                        "s",
+                        "error",
+                        "2026-03-04T05:06:07+00:00",
+                        "kapot"
+                    ]
+                ],
+                [
+                    "warning",
+                    "[RuleRunRecorder] Could not update the summary for rule r:s:k: summary failed",
+                    [
+                        "file",
+                        "line"
+                    ]
+                ],
+                [
+                    "getUser"
+                ],
+                [
+                    "insert",
+                    {
+                        "id": null,
+                        "ruleId": "r:s:k",
+                        "schema": "s",
+                        "register": null,
+                        "objectUuid": null,
+                        "verdict": "error",
+                        "operand": null,
+                        "operandValue": null,
+                        "message": "kapot",
+                        "actor": "jan",
+                        "created": "2026-03-04T05:06:07+00:00"
+                    }
+                ]
+            ],
+            [
+                [
+                    "summary",
+                    [
+                        "r:s:k",
+                        "s",
+                        "error",
+                        "2026-03-04T05:06:07+00:00",
+                        "kapot"
+                    ]
+                ],
+                [
+                    "getUser"
+                ],
+                [
+                    "insert",
+                    {
+                        "id": null,
+                        "ruleId": "r:s:k",
+                        "schema": "s",
+                        "register": null,
+                        "objectUuid": null,
+                        "verdict": "error",
+                        "operand": null,
+                        "operandValue": null,
+                        "message": "kapot",
+                        "actor": "jan",
+                        "created": "2026-03-04T05:06:07+00:00"
+                    }
+                ],
+                [
+                    "warning",
+                    "[RuleRunRecorder] Could not write a run row for rule r:s:k: insert failed",
+                    [
+                        "file",
+                        "line"
+                    ]
+                ]
+            ],
+            [
+                [
+                    "summary",
+                    [
+                        "r:s:k",
+                        "s",
+                        "error",
+                        "2026-03-04T05:06:07+00:00",
+                        "kapot"
+                    ]
+                ],
+                [
+                    "warning",
+                    "[RuleRunRecorder] Could not update the summary for rule r:s:k: summary failed",
+                    [
+                        "file",
+                        "line"
+                    ]
+                ],
+                [
+                    "getUser"
+                ],
+                [
+                    "insert",
+                    {
+                        "id": null,
+                        "ruleId": "r:s:k",
+                        "schema": "s",
+                        "register": null,
+                        "objectUuid": null,
+                        "verdict": "error",
+                        "operand": null,
+                        "operandValue": null,
+                        "message": "kapot",
+                        "actor": "jan",
+                        "created": "2026-03-04T05:06:07+00:00"
+                    }
+                ],
+                [
+                    "warning",
+                    "[RuleRunRecorder] Could not write a run row for rule r:s:k: insert failed",
+                    [
+                        "file",
+                        "line"
+                    ]
+                ]
+            ]
+        ],
+        "defaults": [
+            [
+                "summary",
+                {
+                    "0": "r:s:k",
+                    "1": "s",
+                    "2": "fired",
+                    "4": null
+                }
+            ],
+            [
+                "getUser"
+            ],
+            [
+                "insert",
+                {
+                    "id": null,
+                    "ruleId": "r:s:k",
+                    "schema": "s",
+                    "register": null,
+                    "objectUuid": null,
+                    "verdict": "fired",
+                    "operand": null,
+                    "operandValue": null,
+                    "message": null,
+                    "actor": "jan"
+                }
+            ]
+        ]
+    },
+    "replay": {
+        "ids": {
+            "outcome": {
+                "ok": true,
+                "committed": false,
+                "ruleId": "calculation:bezwaar:uiterlijkeDatum",
+                "maxObjects": 3,
+                "count": 2,
+                "job": {
+                    "previewed": {
+                        "actionId": "openregister:apply-rule",
+                        "parameters": {
+                            "schema": "bezwaar",
+                            "ruleId": "calculation:bezwaar:uiterlijkeDatum"
+                        }
+                    }
+                }
+            },
+            "calls": [
+                [
+                    "create",
+                    [
+                        {
+                            "actionId": "openregister:apply-rule",
+                            "parameters": {
+                                "schema": "bezwaar",
+                                "ruleId": "calculation:bezwaar:uiterlijkeDatum"
+                            }
+                        },
+                        {
+                            "criteria": {
+                                "ids": [
+                                    1,
+                                    "1",
+                                    2
+                                ]
+                            },
+                            "registerId": 4,
+                            "schemaId": 7
+                        },
+                        "jan",
+                        "reden"
+                    ]
+                ]
+            ]
+        },
+        "query": {
+            "outcome": {
+                "ok": true,
+                "committed": false,
+                "ruleId": "calculation:bezwaar:uiterlijkeDatum",
+                "maxObjects": 3,
+                "count": 2,
+                "job": {
+                    "previewed": {
+                        "actionId": "openregister:apply-rule",
+                        "parameters": {
+                            "schema": "bezwaar",
+                            "ruleId": "calculation:bezwaar:uiterlijkeDatum"
+                        }
+                    }
+                }
+            },
+            "calls": [
+                [
+                    "count",
+                    {
+                        "status": "open",
+                        "@self": {
+                            "owner": "x",
+                            "register": 99,
+                            "schema": 7
+                        }
+                    }
+                ],
+                [
+                    "create",
+                    [
+                        {
+                            "actionId": "openregister:apply-rule",
+                            "parameters": {
+                                "schema": "bezwaar",
+                                "ruleId": "calculation:bezwaar:uiterlijkeDatum"
+                            }
+                        },
+                        {
+                            "criteria": {
+                                "query": {
+                                    "_limit": 5,
+                                    "_page": 2,
+                                    "status": "open",
+                                    "@self": {
+                                        "owner": "x",
+                                        "register": 99
+                                    }
+                                }
+                            },
+                            "registerId": null,
+                            "schemaId": 7
+                        },
+                        "jan",
+                        "reden"
+                    ]
+                ]
+            ]
+        },
+        "query self not array": {
+            "outcome": {
+                "ok": true,
+                "committed": false,
+                "ruleId": "calculation:bezwaar:termijn",
+                "maxObjects": null,
+                "count": 1,
+                "job": {
+                    "previewed": {
+                        "actionId": "openregister:apply-rule",
+                        "parameters": {
+                            "schema": "bezwaar",
+                            "ruleId": "calculation:bezwaar:termijn"
+                        }
+                    }
+                }
+            },
+            "calls": [
+                [
+                    "count",
+                    {
+                        "@self": {
+                            "register": 4,
+                            "schema": 7
+                        }
+                    }
+                ],
+                [
+                    "create",
+                    [
+                        {
+                            "actionId": "openregister:apply-rule",
+                            "parameters": {
+                                "schema": "bezwaar",
+                                "ruleId": "calculation:bezwaar:termijn"
+                            }
+                        },
+                        {
+                            "criteria": {
+                                "query": {
+                                    "@self": "x"
+                                }
+                            },
+                            "registerId": 4,
+                            "schemaId": 7
+                        },
+                        "jan",
+                        "reden"
+                    ]
+                ]
+            ]
+        },
+        "query plain": {
+            "outcome": {
+                "ok": true,
+                "committed": false,
+                "ruleId": "calculation:bezwaar:termijn",
+                "maxObjects": null,
+                "count": 1,
+                "job": {
+                    "previewed": {
+                        "actionId": "openregister:apply-rule",
+                        "parameters": {
+                            "schema": "bezwaar",
+                            "ruleId": "calculation:bezwaar:termijn"
+                        }
+                    }
+                }
+            },
+            "calls": [
+                [
+                    "count",
+                    {
+                        "a": 1,
+                        "@self": {
+                            "schema": 7
+                        }
+                    }
+                ],
+                [
+                    "create",
+                    [
+                        {
+                            "actionId": "openregister:apply-rule",
+                            "parameters": {
+                                "schema": "bezwaar",
+                                "ruleId": "calculation:bezwaar:termijn"
+                            }
+                        },
+                        {
+                            "criteria": {
+                                "query": {
+                                    "a": 1
+                                }
+                            },
+                            "registerId": null,
+                            "schemaId": 7
+                        },
+                        "jan",
+                        "reden"
+                    ]
+                ]
+            ]
+        },
+        "over ceiling": {
+            "outcome": [
+                "OCA\\OpenRegister\\Service\\Rules\\RuleCeilingException",
+                "Rule \"calculation:bezwaar:uiterlijkeDatum\" allows at most 3 objects in one run, and this selection holds 4. Nothing was written. Narrow the selection, or raise maxObjects on the rule."
+            ],
+            "calls": []
+        },
+        "count fails": {
+            "outcome": {
+                "ok": false,
+                "committed": false,
+                "error": {
+                    "code": "rule-replay-no-selection",
+                    "message": "A replay needs a selection: either \"ids\" or a \"query\"."
+                }
+            },
+            "calls": [
+                [
+                    "count",
+                    {
+                        "status": "open",
+                        "@self": {
+                            "owner": "x",
+                            "register": 4,
+                            "schema": 7
+                        }
+                    }
+                ]
+            ]
+        },
+        "no selection": {
+            "outcome": {
+                "ok": false,
+                "committed": false,
+                "error": {
+                    "code": "rule-replay-no-selection",
+                    "message": "A replay needs a selection: either \"ids\" or a \"query\"."
+                }
+            },
+            "calls": []
+        },
+        "condition": {
+            "outcome": {
+                "ok": false,
+                "committed": false,
+                "error": {
+                    "code": "rule-replay-not-replayable",
+                    "message": "A rule of kind \"lifecycleCondition\" derives no value for a stored object, so there is nothing to replay."
+                }
+            },
+            "calls": []
+        },
+        "unknown": {
+            "outcome": {
+                "ok": false,
+                "committed": false,
+                "error": {
+                    "code": "rule-replay-unknown-rule",
+                    "message": "Schema \"bezwaar\" declares no rule \"calculation:bezwaar:nope\"."
+                }
+            },
+            "calls": []
+        },
+        "unknown without slug": {
+            "outcome": {
+                "ok": false,
+                "committed": false,
+                "error": {
+                    "code": "rule-replay-unknown-rule",
+                    "message": "Schema \"\" declares no rule \"calculation:bezwaar:nope\"."
+                }
+            },
+            "calls": []
+        }
+    },
+    "trial": {
+        "calculation": {
+            "ok": true,
+            "committed": false,
+            "ruleId": "calculation:bezwaar:uiterlijkeDatum",
+            "kind": "calculation",
+            "objectUuid": null,
+            "trace": {
+                "verdict": "fired",
+                "operand": null,
+                "operandValue": null,
+                "message": null
+            },
+            "writes": {
+                "uiterlijkeDatum": {
+                    "evaluated": {
+                        "ok": 1
+                    },
+                    "on": {
+                        "a": 1
+                    }
+                }
+            }
+        },
+        "property calculation": {
+            "ok": true,
+            "committed": false,
+            "ruleId": "calculation:bezwaar:termijn",
+            "kind": "calculation",
+            "objectUuid": null,
+            "trace": {
+                "verdict": "fired",
+                "operand": null,
+                "operandValue": null,
+                "message": null
+            },
+            "writes": {
+                "termijn": {
+                    "evaluated": {
+                        "ok": "termijn"
+                    },
+                    "on": []
+                }
+            }
+        },
+        "calculation throws": {
+            "ok": false,
+            "committed": false,
+            "ruleId": "calculation:bezwaar:kapot",
+            "kind": "calculation",
+            "objectUuid": null,
+            "trace": {
+                "verdict": "error",
+                "operand": null,
+                "operandValue": null,
+                "message": "kapot"
+            },
+            "writes": []
+        },
+        "condition holds": {
+            "ok": true,
+            "committed": false,
+            "ruleId": "lifecycleCondition:bezwaar:sluiten",
+            "kind": "lifecycleCondition",
+            "objectUuid": null,
+            "trace": {
+                "verdict": "fired",
+                "operand": null,
+                "operandValue": null,
+                "message": null
+            },
+            "writes": []
+        },
+        "condition fails": {
+            "ok": true,
+            "committed": false,
+            "ruleId": "lifecycleCondition:bezwaar:sluiten",
+            "kind": "lifecycleCondition",
+            "objectUuid": null,
+            "trace": {
+                "verdict": "no_match",
+                "operand": "object.bedrag",
+                "operandValue": "1",
+                "message": null
+            },
+            "writes": []
+        },
+        "ast condition": {
+            "ok": true,
+            "committed": false,
+            "ruleId": "lifecycleCondition:bezwaar:ast",
+            "kind": "lifecycleCondition",
+            "objectUuid": null,
+            "trace": {
+                "verdict": "no_match",
+                "operand": "object.bedrag",
+                "operandValue": "1",
+                "message": null
+            },
+            "writes": []
+        },
+        "state rule": {
+            "ok": false,
+            "committed": false,
+            "error": {
+                "code": "rule-trial-not-evaluable",
+                "message": "A rule of kind \"stateFieldRule\" cannot be tried against a single payload."
+            }
+        },
+        "flow": {
+            "ok": false,
+            "committed": false,
+            "error": {
+                "code": "rule-trial-not-evaluable",
+                "message": "A rule of kind \"flow\" cannot be tried against a single payload."
+            }
+        },
+        "unknown": {
+            "ok": false,
+            "committed": false,
+            "error": {
+                "code": "rule-unknown",
+                "message": "Schema \"bezwaar\" declares no rule \"calculation:bezwaar:nope\"."
+            }
+        },
+        "unknown draft": {
+            "ok": true,
+            "committed": false,
+            "ruleId": "calculation:bezwaar:draft",
+            "kind": "calculation",
+            "objectUuid": null,
+            "trace": {
+                "verdict": "fired",
+                "operand": null,
+                "operandValue": null,
+                "message": null
+            },
+            "writes": {
+                "draft": {
+                    "evaluated": {
+                        "ok": "draft"
+                    },
+                    "on": []
+                }
+            }
+        },
+        "draft on condition": {
+            "ok": true,
+            "committed": false,
+            "ruleId": "lifecycleCondition:bezwaar:sluiten",
+            "kind": "lifecycleCondition",
+            "objectUuid": null,
+            "trace": {
+                "verdict": "fired",
+                "operand": null,
+                "operandValue": null,
+                "message": null
+            },
+            "writes": []
+        },
+        "override without expression": {
+            "ok": false,
+            "committed": false,
+            "error": {
+                "code": "rule-unknown",
+                "message": "Schema \"bezwaar\" declares no rule \"calculation:bezwaar:nope\"."
+            }
+        },
+        "object": {
+            "ok": true,
+            "committed": false,
+            "ruleId": "lifecycleCondition:bezwaar:sluiten",
+            "kind": "lifecycleCondition",
+            "objectUuid": "uuid-o1",
+            "trace": {
+                "verdict": "fired",
+                "operand": null,
+                "operandValue": null,
+                "message": null
+            },
+            "writes": []
+        },
+        "object calculation draft": {
+            "ok": true,
+            "committed": false,
+            "ruleId": "calculation:bezwaar:draft",
+            "kind": "calculation",
+            "objectUuid": "uuid-o2",
+            "trace": {
+                "verdict": "fired",
+                "operand": null,
+                "operandValue": null,
+                "message": null
+            },
+            "writes": {
+                "draft": {
+                    "evaluated": {
+                        "ok": "draft"
+                    },
+                    "on": {
+                        "id": "uuid-o2",
+                        "object": {
+                            "bedrag": 900
+                        },
+                        "bedrag": 900
+                    }
+                }
+            }
+        },
+        "object register missing": {
+            "ok": false,
+            "committed": false,
+            "error": {
+                "code": "rule-trial-object-not-found",
+                "message": "Object \"o1\" could not be read in register \"missing\"."
+            }
+        },
+        "object gone": {
+            "ok": false,
+            "committed": false,
+            "error": {
+                "code": "rule-trial-object-not-found",
+                "message": "Object \"gone\" could not be read in register \"reg\"."
+            }
+        },
+        "object unknown rule": {
+            "ok": false,
+            "committed": false,
+            "error": {
+                "code": "rule-unknown",
+                "message": "Schema \"bezwaar\" declares no rule \"calculation:bezwaar:nope\"."
+            }
+        }
+    }
+}

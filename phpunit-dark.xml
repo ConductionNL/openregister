@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    phpunit-dark.xml: the suites that need a booted Nextcloud and a live
+    database: tests/Db, tests/Service and tests/Api. CI runs each suite as its
+    own job in .github/workflows/dark-suites.yml.
+
+    Same settings as phpunit.xml (bootstrap, strictness, memory cap); only the
+    suites differ. Run one suite against an installed Nextcloud:
+
+        OPENREGISTER_TEST_NC_ROOT=/var/www/html php vendor/bin/phpunit -c phpunit-dark.xml, testsuite "Database Tests"
+
+    QUARANTINE: every <exclude> below is a red file from the measurement run,
+    with a comment naming its failure class. It is a list to burn down, not a
+    fix: delete the entry together with the change that makes the file green.
+    Never add an entry to get a green build for a file that was green.
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache"
+         executionOrder="default"
+         requireCoverageMetadata="false"
+         beStrictAboutCoverageMetadata="true"
+         beStrictAboutOutputDuringTests="true"
+         failOnRisky="false"
+         failOnWarning="true"
+         displayDetailsOnTestsThatTriggerWarnings="true"
+         failOnDeprecation="false">
+
+    <testsuites>
+        <testsuite name="Database Tests">
+            <directory>tests/Db</directory>
+        </testsuite>
+        <testsuite name="Service Tests">
+            <directory>tests/Service</directory>
+        </testsuite>
+        <testsuite name="Api Tests">
+            <directory>tests/Api</directory>
+        </testsuite>
+    </testsuites>
+
+    <source>
+        <include>
+            <directory suffix=".php">lib/</directory>
+        </include>
+        <exclude>
+            <directory>lib/Migration/</directory>
+            <file>lib/AppInfo/Application.php</file>
+            <directory>lib/Contract/</directory>
+        </exclude>
+    </source>
+
+    <php>
+        <env name="PHPUNIT_RUN" value="1"/>
+        <!-- Same cap as phpunit.xml; see the reasoning there. -->
+        <ini name="memory_limit" value="2G"/>
+    </php>
+</phpunit>

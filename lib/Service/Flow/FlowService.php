@@ -36,17 +36,13 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Db\Flow\FlowSelection;
 use OCA\OpenRegister\Exception\FlowRunRefused;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapperInterface;
-use OCA\OpenRegister\Db\FlowRunStepMapper;
-use OCA\OpenRegister\Db\FlowStateMapper;
-use OCA\OpenRegister\Db\FlowVersionMapper;
+use OCA\OpenRegister\Db\FlowVersionMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\IUserSession;
-use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -66,7 +62,7 @@ use Throwable;
  *
  * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
  */
-class FlowService {
+class FlowService implements FlowServiceInterface {
 	/**
 	 * The app id a flow is attributed to when the caller names none.
 	 *
@@ -75,50 +71,34 @@ class FlowService {
 	private const DEFAULT_APP = 'openregister';
 
 	/**
-	 * Who is asking, and which flows are theirs.
-	 *
-	 * @var FlowCaller
-	 */
-	private FlowCaller $caller;
-
-	/**
 	 * Constructor.
 	 *
-	 * @param FlowMapper $mapper Reads and writes flow definitions.
-	 * @param FlowTriggerIndex $triggerIndex Keeps the trigger index derived from the nodes.
-	 * @param FlowRunServiceInterface $runner Queues and executes runs.
-	 * @param FlowRunAdvancer $advancer Advances a run inline for a synchronous caller.
-	 * @param FlowRunMapperInterface $runs Sweeps a deleted flow's runs.
-	 * @param FlowRunStepMapper $steps Sweeps those runs' step rows.
-	 * @param FlowStateMapper $state Sweeps a deleted flow's carried state.
-	 * @param IUserSession $userSession Identifies the acting user.
-	 * @param LoggerInterface $logger Records refusals and failures.
-	 * @param ContainerInterface $container Resolves OrganisationService lazily.
-	 * @param FlowRunAuthorization|null $runAuthorization Judges whether the caller may act on a run. Nullable
-	 *                                                    and last so no construction site shifts; absent, the
-	 *                                                    guarded actions refuse, which scopes.
+	 * @param FlowDefinitionStore $definitions The flow table and the trigger index derived from its nodes.
+	 * @param FlowRunDispatch $dispatch The run queue and executor, the inline advancer and the run authorization.
+	 * @param FlowDeletionSweep $sweep The runs, step rows and carried state a deleted flow takes with it.
+	 * @param FlowServicePlatform $platform The acting user, the log and the lazy service lookup.
 	 */
 	public function __construct(
-		private readonly FlowMapper $mapper,
-		private readonly FlowTriggerIndex $triggerIndex,
-		private readonly FlowRunServiceInterface $runner,
-		private readonly FlowRunAdvancer $advancer,
-		private readonly FlowRunMapperInterface $runs,
-		private readonly FlowRunStepMapper $steps,
-		private readonly FlowStateMapper $state,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
-		private readonly ContainerInterface $container,
-		private readonly ?FlowRunAuthorization $runAuthorization = null,
+		private readonly FlowDefinitionStore $definitions,
+		private readonly FlowRunDispatch $dispatch,
+		private readonly FlowDeletionSweep $sweep,
+		private readonly FlowServicePlatform $platform,
 	) {
-		$this->caller = new FlowCaller(
-			mapper: $mapper,
-			userSession: $userSession,
-			container: $container,
-			logger: $logger
-		);
-
 	}//end __construct()
+
+	/**
+	 * Who is asking, and which flows are theirs.
+	 *
+	 * Stateless: every answer is read from the session and the flow table at
+	 * the moment it is asked, so a fresh reader per question answers the same.
+	 *
+	 * @return FlowCaller
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	private function caller(): FlowCaller {
+		return new FlowCaller(mapper: $this->definitions->mapper, platform: $this->platform);
+	}//end caller()
 
 	/**
 	 * List the caller's flows, newest first.
@@ -131,31 +111,40 @@ class FlowService {
 	 *
 	 * @return array<int, Flow> The flows visible to the caller.
 	 *
+	 * Kept for its callers (FlowController, other apps); delegates to listFlows().
+	 *
 	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
 	 */
-	public function findAll(
-		?string $app = null,
-		?string $applicationSlug = null,
-		?bool $enabled = null,
-		int $limit = 100,
-		int $offset = 0,
-	): array {
-		$organisation = $this->caller->activeOrganisation();
+	public function findAll(?string $app=null, ?string $applicationSlug=null, ?bool $enabled=null, int $limit=100, int $offset=0): array {
+		$filters = ['app' => $app, 'applicationSlug' => $applicationSlug, 'enabled' => $enabled];
+		return $this->listFlows(query: new ListQuery(limit: $limit, offset: $offset, filters: $filters));
+	}//end findAll()
+
+	/**
+	 * List the caller's flows in their active organisation, newest first.
+	 *
+	 * @param ListQuery $query The page, and the `app`, `applicationSlug` and `enabled` filters (each null for any).
+	 *
+	 * @return array<int, Flow> The flows visible to the caller.
+	 *
+	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+	 */
+	public function listFlows(ListQuery $query): array {
+		$organisation = $this->caller()->activeOrganisation();
 		if ($organisation === null) {
 			// No resolvable tenant means no flows, never every tenant's flows.
 			return [];
 		}
 
-		return $this->mapper->findAllFlows(
-			app: $app,
-			applicationSlug: $applicationSlug,
+		return $this->definitions->mapper->findAllFlows(
+			app: $query->filters['app'] ?? null,
+			applicationSlug: $query->filters['applicationSlug'] ?? null,
 			organisation: $organisation,
-			enabled: $enabled,
-			limit: $limit,
-			offset: $offset
+			enabled: $query->filters['enabled'] ?? null,
+			limit: $query->limit,
+			offset: ($query->offset ?? 0)
 		);
-
-	}//end findAll()
+	}//end listFlows()
 
 	/**
 	 * Count the flows visible to the caller.
@@ -168,12 +157,13 @@ class FlowService {
 	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
 	 */
 	public function count(?string $app = null, ?string $applicationSlug = null): int {
-		$organisation = $this->caller->activeOrganisation();
+		$organisation = $this->caller()->activeOrganisation();
 		if ($organisation === null) {
 			return 0;
 		}
 
-		return $this->mapper->countFlows(app: $app, applicationSlug: $applicationSlug, organisation: $organisation);
+		$selection = new FlowSelection(app: $app, applicationSlug: $applicationSlug, organisation: $organisation);
+		return $this->definitions->mapper->countFlows(selection: $selection);
 	}//end count()
 
 	/**
@@ -192,9 +182,9 @@ class FlowService {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	public function find(string $uuid): Flow {
-		$flow = $this->mapper->findByUuid($uuid);
+		$flow = $this->definitions->mapper->findByUuid($uuid);
 
-		if ($flow->belongsTo($this->caller->activeOrganisation()) === false) {
+		if ($flow->belongsTo($this->caller()->activeOrganisation()) === false) {
 			throw new DoesNotExistException('No such flow');
 		}
 
@@ -222,7 +212,7 @@ class FlowService {
 	 * @spec openspec/changes/flow-runs-honour-their-declaration/specs/flow-engine/spec.md
 	 */
 	public function assertRunnable(Flow $flow): void {
-		$authorization = ($this->runAuthorization ?? new FlowRunAuthorization());
+		$authorization = ($this->dispatch->runAuthorization ?? new FlowRunAuthorization());
 
 		$verdict = $authorization->verdictFor(flow: $flow);
 		if ($verdict === FlowRunAuthorization::ALLOWED) {
@@ -275,7 +265,7 @@ class FlowService {
 	 * @spec openspec/specs/flow-storage/spec.md
 	 */
 	public function adopt(Flow $flow): Flow {
-		$uid = $this->caller->actingUser();
+		$uid = $this->caller()->actingUser();
 		if ($uid === null) {
 			throw new FlowAdoptionRefused(
 				reason: FlowAdoptionRefused::REASON_NO_ACTING_USER,
@@ -297,9 +287,9 @@ class FlowService {
 
 		$flow->setOwner($uid);
 		$flow->setUpdated(new DateTime());
-		$stored = $this->mapper->update($flow);
+		$stored = $this->definitions->mapper->update($flow);
 
-		$this->logger->info(
+		$this->platform->logger->info(
 			message: '[FlowService] Flow "' . (string)$stored->getUuid() . '" ("' . (string)$stored->getName()
 				. '", app "' . (string)$stored->getApp() . '") was ADOPTED by "' . $uid
 				. '": it now has an owner and will dispatch once enabled.',
@@ -361,7 +351,7 @@ class FlowService {
 		$graphBefore = $this->graphSignature(flow: $flow);
 
 		$this->applyEditableFields(flow: $flow, data: $data);
-		(new FlowTriggerValidator($this->container, $this->logger))->validate(flow: $flow);
+		(new FlowTriggerValidator($this->platform->container, $this->platform->logger))->validate(flow: $flow);
 
 		// A published version is immutable. Only a DEFINITION change is
 		// refused, deliberately: renaming a flow, editing its description or
@@ -370,8 +360,8 @@ class FlowService {
 		// uneditable.
 		if ($this->graphSignature(flow: $flow) !== $graphBefore) {
 			(new FlowLifecycleGuard(
-				$this->container->get(FlowNodePreflight::class),
-				$this->logger
+				$this->platform->container->get(FlowNodePreflight::class),
+				$this->platform->logger
 			))->refuseEditUnlessDraft(
 				flowId: (string)$flow->getUuid(),
 				state: $flow->getLifecycleStatus()
@@ -388,7 +378,7 @@ class FlowService {
 		// the published version's — the opposite of both rules. Deriving from
 		// the published version is also what keeps an `enabled` toggle working
 		// while a draft is open.
-		$this->triggerIndex->reindex(flow: $stored);
+		$this->definitions->triggerIndex->reindex(flow: $stored);
 
 		return $stored;
 	}//end save()
@@ -435,10 +425,10 @@ class FlowService {
 	 */
 	private function persistFlow(Flow $flow, ?string $uuid): Flow {
 		if (($uuid ?? '') === '') {
-			return $this->mapper->insert($flow);
+			return $this->definitions->mapper->insert($flow);
 		}
 
-		return $this->mapper->update($flow);
+		return $this->definitions->mapper->update($flow);
 	}//end persistFlow()
 
 	/**
@@ -462,7 +452,7 @@ class FlowService {
 			return $this->find(uuid: $uuid);
 		}
 
-		['owner' => $owner, 'organisation' => $organisation] = $this->caller->ownership();
+		['owner' => $owner, 'organisation' => $organisation] = $this->caller()->ownership();
 
 		// REFUSE rather than stamp nulls. `Flow::belongsTo()` is fail-closed on
 		// both sides, so a flow with no organisation belongs to nobody: it does
@@ -630,12 +620,12 @@ class FlowService {
 	 */
 	public function deleteStored(Flow $flow): void {
 		$uuid = (string)$flow->getUuid();
-		$this->mapper->delete($flow);
+		$this->definitions->mapper->delete($flow);
 
 		// Drop the flow's trigger rows too. An orphaned row is read on every
 		// matching object event and names a flow that can no longer be loaded,
 		// so it costs a failed lookup per event, forever.
-		$this->triggerIndex->forget(flowUuid: $uuid);
+		$this->definitions->triggerIndex->forget(flowUuid: $uuid);
 
 		// And its execution history, by the same reasoning. `flow_runs` and
 		// `flow_state` key on the flow UUID, so once the flow row is gone every
@@ -649,12 +639,12 @@ class FlowService {
 		// run, not the flow, so dropping the runs first would strand the steps
 		// with no way left to find them.
 		try {
-			$runUuids = $this->runs->deleteByFlow(flowId: $uuid);
+			$runUuids = $this->sweep->runs->deleteByFlow(flowId: $uuid);
 			foreach ($runUuids as $runUuid) {
-				$this->steps->deleteByRun(runUuid: $runUuid);
+				$this->sweep->steps->deleteByRun(runUuid: $runUuid);
 			}
 
-			$this->state->deleteByFlow(flowId: $uuid);
+			$this->sweep->state->deleteByFlow(flowId: $uuid);
 
 			// 🔴 AND ITS VERSION ROWS, for exactly the same reason — I added
 			// the table and did not extend this cascade, so every deleted flow
@@ -670,12 +660,12 @@ class FlowService {
 			// content-addressed and SHARED — two flows holding the same graph
 			// share one row — so deleting by flow would pull a definition out
 			// from under an unrelated flow's version.
-			$this->container->get(FlowVersionMapper::class)->deleteByFlow(flowUuid: $uuid);
+			$this->platform->container->get(FlowVersionMapperInterface::class)->deleteByFlow(flowUuid: $uuid);
 		} catch (Throwable $e) {
 			// The flow itself is already gone, so this must not turn a
 			// successful delete into an error the caller has to retry — a retry
 			// would 404 on the flow and never reach this cascade anyway.
-			$this->logger->warning(
+			$this->platform->logger->warning(
 				message: '[FlowService] Deleted flow ' . $uuid . ' but could not sweep its history: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
@@ -718,39 +708,32 @@ class FlowService {
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
-	public function run(
-		string $uuid,
-		array $subject = [],
-		array $context = [],
-		bool $sync = false,
-		string $trigger = Flow::TRIGGER_MANUAL
-	): FlowRun {
+	public function run(string $uuid, array $subject=[], array $context=[], bool $sync=false, string $trigger=Flow::TRIGGER_MANUAL): FlowRun {
+		return $this->runFlow(uuid: $uuid, options: new FlowRunOptions(subject: $subject, context: $context, sync: $sync, trigger: $trigger));
+	}//end run()
+
+	/**
+	 * Queue a run of a flow the caller owns, as run() describes it.
+	 *
+	 * The flow is resolved in the caller's organisation and the owner check runs
+	 * before anything is queued.
+	 *
+	 * @param string         $uuid    The flow uuid.
+	 * @param FlowRunOptions $options The subject, run metadata, whether to wait, and the trigger.
+	 *
+	 * @return FlowRun The queued run, or the finished run when the caller waits.
+	 *
+	 * @throws DoesNotExistException When no such flow exists, or it is not the caller's.
+	 * @throws FlowRunRefused When the caller may not run this flow (no owner, not theirs).
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	public function runFlow(string $uuid, FlowRunOptions $options): FlowRun {
 		$flow = $this->find(uuid: $uuid);
 		$this->assertRunnable(flow: $flow);
 
-		$run = $this->runner->queue(
-			flowId: (string)$flow->getUuid(),
-			subject: $subject,
-			trigger: $trigger,
-			context: $context,
-			user: $this->caller->actingUser()
-		);
-
-		if ($sync === false) {
-			return $run;
-		}
-
-		// Queue FIRST, then advance the queued row — never execute instead of
-		// queueing. The run record is what the retry endpoint, the run log and
-		// every observability surface read; a synchronous run that skipped it
-		// would execute invisibly and leave a person who pressed Run with
-		// nothing to look at afterwards.
-		//
-		// `rethrow: true` because this call is answering a request ABOUT this
-		// run: a caller who asked to wait has earned the error. The worker
-		// swallows for the opposite reason — one bad run must not stop a queue.
-		return $this->advancer->advance(run: $run, rethrow: true);
-	}//end run()
+		return $this->start(flow: $flow, options: $options);
+	}//end runFlow()
 
 	/**
 	 * Run a flow on behalf of a declared action whose right the caller already holds.
@@ -763,36 +746,55 @@ class FlowService {
 	 * (ADR-023). The run still executes as the acting user, so every write
 	 * inside it is checked against their rights.
 	 *
-	 * @param string               $uuid    The flow uuid.
-	 * @param array<string, mixed> $subject `{uuid, register, schema}` of the object.
-	 * @param array<string, mixed> $context Run-level metadata.
-	 * @param boolean              $sync    Execute inline and return the finished run.
+	 * @param string         $uuid    The flow uuid.
+	 * @param FlowRunOptions $options The subject (`{uuid, register, schema}`), run-level metadata, whether to
+	 *                                execute inline, and the trigger (manual for an action).
 	 *
-	 * @return FlowRun The queued run, or the finished run when $sync is true.
+	 * @return FlowRun The queued run, or the finished run when the options ask for a sync run.
 	 *
 	 * @throws DoesNotExistException When no such flow exists.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) As run(): $sync chooses who advances the run.
-	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-inline-steps-are-a-straight-line-lowered-to-the-one-flow-engine
 	 */
-	public function runForAction(string $uuid, array $subject, array $context, bool $sync): FlowRun {
-		$flow = $this->mapper->findByUuid($uuid);
+	public function runForAction(string $uuid, FlowRunOptions $options): FlowRun {
+		return $this->start(flow: $this->definitions->mapper->findByUuid($uuid), options: $options);
+	}//end runForAction()
 
-		$run = $this->runner->queue(
+	/**
+	 * Queue a run of a flow already resolved and authorised, attributed to the
+	 * acting user, and advance it inline when the caller asked to wait.
+	 *
+	 * @param Flow           $flow    The flow to run.
+	 * @param FlowRunOptions $options The subject, run metadata, whether to wait, and the trigger.
+	 *
+	 * @return FlowRun The queued run, or the finished run when the caller waits.
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	private function start(Flow $flow, FlowRunOptions $options): FlowRun {
+		$run = $this->dispatch->runner->queue(
 			flowId: (string)$flow->getUuid(),
-			subject: $subject,
-			trigger: Flow::TRIGGER_MANUAL,
-			context: $context,
-			user: $this->caller->actingUser()
+			subject: $options->subject,
+			trigger: $options->trigger,
+			context: $options->context,
+			user: $this->caller()->actingUser()
 		);
 
-		if ($sync === false) {
+		if ($options->sync === false) {
 			return $run;
 		}
 
-		return $this->advancer->advance(run: $run, rethrow: true);
-	}//end runForAction()
+		// Queue FIRST, then advance the queued row — never execute instead of
+		// queueing. The run record is what the retry endpoint, the run log and
+		// every observability surface read; a synchronous run that skipped it
+		// would execute invisibly and leave a person who pressed Run with
+		// nothing to look at afterwards.
+		//
+		// `rethrow: true` because this call is answering a request ABOUT this
+		// run: a caller who asked to wait has earned the error. The worker
+		// swallows for the opposite reason — one bad run must not stop a queue.
+		return $this->dispatch->advancer->advance(run: $run, rethrow: true);
+	}//end start()
 
 	/**
 	 * Mint a v4 uuid.

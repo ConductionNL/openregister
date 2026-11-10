@@ -22,6 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover
@@ -63,6 +66,11 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
  */
 class ExampleSetRequirementsTest extends ExampleSetTestCase {
 	/**
@@ -224,7 +232,7 @@ class ExampleSetRequirementsTest extends ExampleSetTestCase {
 		$report = $this->installer->install(plan: $plan, today: $this->today());
 		$this->assertTrue($report['ok'], json_encode($report));
 		$this->assertSame(['site/sign-in' => 'created'], $report['changes']);
-		$row = $this->store->get(register: 'site', schema: 'portal', id: $portal);
+		$row = $this->store->row(ref: new ObjectRef(register: 'site', schema: 'portal', id: $portal));
 		$this->assertSame(['password', 'nextcloud'], $row['authentication']['modes']);
 		$this->assertSame('sanne.devries', $row['authentication']['modeLabels']['nextcloud']['who']);
 
@@ -240,7 +248,7 @@ class ExampleSetRequirementsTest extends ExampleSetTestCase {
 		$this->assertSame(1, $removed['removed']['changes']);
 		$this->assertSame(
 			['id' => $portal, 'slug' => 'demo', 'title' => 'Renamed', 'authentication' => ['modes' => ['password']]],
-			$this->store->get(register: 'site', schema: 'portal', id: $portal)
+			$this->store->row(ref: new ObjectRef(register: 'site', schema: 'portal', id: $portal))
 		);
 	}
 
@@ -261,7 +269,7 @@ class ExampleSetRequirementsTest extends ExampleSetTestCase {
 			['change site/sign-in on site portal ('.$portal.'), path authentication.modeLabels.nextcloud, which somebody changed after the install'],
 			$removed['left']
 		);
-		$row = $this->store->get(register: 'site', schema: 'portal', id: $portal);
+		$row = $this->store->row(ref: new ObjectRef(register: 'site', schema: 'portal', id: $portal));
 		$this->assertSame(['title' => 'Mijn eigen kaart'], $row['authentication']['modeLabels']['nextcloud'], 'the user\'s value stays');
 		$this->assertSame(['password'], $row['authentication']['modes'], 'what the set appended is still taken out');
 	}
@@ -302,7 +310,7 @@ class ExampleSetRequirementsTest extends ExampleSetTestCase {
 		$this->remover->remove(set: 'demo');
 
 		$this->assertSame(['site/sign-in' => 'kept'], $report['changes']);
-		$this->assertSame(['nextcloud'], $this->store->get(register: 'site', schema: 'portal', id: $portal)['authentication']['modes']);
+		$this->assertSame(['nextcloud'], $this->store->row(ref: new ObjectRef(register: 'site', schema: 'portal', id: $portal))['authentication']['modes']);
 	}
 
 	public function testAChangeWhoseWhereTwoObjectsAnswerRefusesTheCheckAndWritesNothing(): void {
@@ -322,8 +330,8 @@ class ExampleSetRequirementsTest extends ExampleSetTestCase {
 		$report = $this->installer->install(plan: $plan, today: $this->today());
 		$this->assertCount(1, $report['refusals']);
 		$this->assertSame(0, $this->store->updates);
-		$this->assertSame(['password'], $this->store->get(register: 'site', schema: 'portal', id: $first)['authentication']['modes']);
-		$this->assertSame(['password'], $this->store->get(register: 'site', schema: 'portal', id: $second)['authentication']['modes']);
+		$this->assertSame(['password'], $this->store->row(ref: new ObjectRef(register: 'site', schema: 'portal', id: $first))['authentication']['modes']);
+		$this->assertSame(['password'], $this->store->row(ref: new ObjectRef(register: 'site', schema: 'portal', id: $second))['authentication']['modes']);
 	}
 
 	public function testAChangeWithoutItsObjectRefusesTheCheck(): void {
@@ -356,6 +364,6 @@ class ExampleSetRequirementsTest extends ExampleSetTestCase {
 		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
 
 		$this->assertTrue($report['ok'], json_encode($report));
-		$this->assertSame('[{"at":"2026-10-12"}]', $this->store->find(register: 'cases', schema: 'case', filters: [])[0]['history']);
+		$this->assertSame('[{"at":"2026-10-12"}]', $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'case'), filters: [])[0]['history']);
 	}
 }

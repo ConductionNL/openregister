@@ -32,15 +32,14 @@ class IdentityTranslationProvider implements TranslationProviderInterface {
 	/**
 	 * Identity translation: returns the source text unchanged.
 	 *
-	 * @param string $text The source text.
-	 * @param string $fromLong BCP 47 source language code.
-	 * @param string $toLong BCP 47 target language code.
+	 * @param string       $text The source text.
+	 * @param LanguagePair $pair The BCP 47 source and target language codes; not read.
 	 *
 	 * @return string|null Always the source text (passthrough).
 	 *
 	 * @spec openspec/specs/register-i18n/spec.md
 	 */
-	public function translate(string $text, string $fromLong, string $toLong): ?string {
+	public function translate(string $text, LanguagePair $pair): ?string {
 		// Same-language translation is a degenerate but valid request.
 		// Different-language: passthrough (the operator should plug a
 		// real provider in front of this for real translations).

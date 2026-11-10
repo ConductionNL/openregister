@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 
 /**
  * Writes the outcome of a dead-end check onto the flow's own status.
@@ -38,11 +38,11 @@ final class FlowDeadEndVerdict {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowMapper $mapper Stores the flow.
+	 * @param FlowMapperInterface $mapper Stores the flow.
 	 * @param Flow       $flow   The flow judged.
 	 */
 	public function __construct(
-		private readonly FlowMapper $mapper,
+		private readonly FlowMapperInterface $mapper,
 		private readonly Flow $flow,
 	) {
 	}//end __construct()

@@ -37,10 +37,8 @@ namespace OCA\OpenRegister\Service\Chat;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\AppFramework\Http\Response;
-use OCP\Http\Client\IClientService;
 use OCP\IAppConfig;
 use OCP\IRequest;
-use OCP\IURLGenerator;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -52,7 +50,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Chat
  */
-class ChatProxyHandler {
+class ChatProxyHandler implements ChatProxyHandlerInterface {
 
 	/**
 	 * App id whose config holds the proxy target.
@@ -124,17 +122,15 @@ class ChatProxyHandler {
 	/**
 	 * Constructor.
 	 *
-	 * @param IAppConfig $appConfig Reads the `chat.proxyTo` appconfig value.
-	 * @param IAppManager $appManager Checks whether hermiq is installed/enabled before ever attempting a call.
-	 * @param IURLGenerator $urlGenerator Builds absolute same-instance URLs for the forward/redirect targets.
-	 * @param IClientService $clientService NC's outbound HTTP client factory.
-	 * @param LoggerInterface $logger Logs fallback reasons (never throws past this class).
+	 * @param ChatProxyEndpoint $endpoint   The collaborators that locate and call the chat backend.
+	 * @param IAppConfig        $appConfig  Reads the `chat.proxyTo` appconfig value.
+	 * @param IAppManager       $appManager Checks whether hermiq is installed/enabled before ever attempting a call.
+	 * @param LoggerInterface   $logger     Logs fallback reasons (never throws past this class).
 	 */
 	public function __construct(
+		private readonly ChatProxyEndpoint $endpoint,
 		private readonly IAppConfig $appConfig,
 		private readonly IAppManager $appManager,
-		private readonly IURLGenerator $urlGenerator,
-		private readonly IClientService $clientService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -211,7 +207,7 @@ class ChatProxyHandler {
 		}
 
 		try {
-			$client = $this->clientService->newClient();
+			$client = $this->endpoint->clientService->newClient();
 			$upstream = $client->request($method, $url, $options);
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -266,10 +262,10 @@ class ChatProxyHandler {
 	 * @return bool True when hermiq's chat health endpoint responds without a 5xx / transport error.
 	 */
 	public function probeReachable(): bool {
-		$url = $this->urlGenerator->getAbsoluteURL(self::HERMIQ_HEALTH_PATH);
+		$url = $this->endpoint->urlGenerator->getAbsoluteURL(self::HERMIQ_HEALTH_PATH);
 
 		try {
-			$client = $this->clientService->newClient();
+			$client = $this->endpoint->clientService->newClient();
 			$response = $client->get(
 				$url,
 				[
@@ -348,7 +344,7 @@ class ChatProxyHandler {
 	 * @return string The absolute URL.
 	 */
 	private function buildAbsoluteUrl(string $hermiqPath, string $queryString): string {
-		return $this->urlGenerator->getAbsoluteURL($hermiqPath) . $queryString;
+		return $this->endpoint->urlGenerator->getAbsoluteURL($hermiqPath) . $queryString;
 	}//end buildAbsoluteUrl()
 
 	/**

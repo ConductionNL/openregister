@@ -1,0 +1,329 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`DashboardSideBar golden renders the totals tables 1`] = `
+"<x-ncappsidebar modelvalue="overview-tab" name="t:Dashboard" subname="t:Get real-time insights into your organization's data health by focusing on registers, schema definitions, and object storage and usage." open="false" class="dashboard-sidebar">
+  <slot-default>
+    <x-ncappsidebartab id="overview-tab" name="t:Overview" order="1">
+      <slot-default>
+        <div class="filterSection">
+          <h3>t:Filter Statistics</h3>
+          <div class="filterGroup"><label for="registerSelect">t:Register</label>
+            <x-ncselect reduce="[function]" label="title" getoptionlabel="[function]" id="registerSelect" loading="false" disabled="false" inputlabel="t:Register" placeholder="t:Select a register"></x-ncselect>
+          </div>
+          <div class="filterGroup"><label for="schemaSelect">t:Schema</label>
+            <x-ncselect id="schemaSelect" loading="false" disabled="true" inputlabel="t:Schema" placeholder="t:Select a schema"></x-ncselect>
+          </div>
+        </div>
+        <div class="section">
+          <h3 class="sectionTitle">t:Totals</h3>
+          <div class="statsContainer">
+            <table class="statisticsTable">
+              <thead>
+                <tr>
+                  <th scope="col">t:Name</th>
+                  <th scope="col">t:Count</th>
+                  <th scope="col">t:Size</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">t:Registers</th>
+                  <td>3</td>
+                  <td>-</td>
+                </tr>
+                <tr>
+                  <th scope="row">t:Schemas</th>
+                  <td>3</td>
+                  <td>-</td>
+                </tr>
+                <tr>
+                  <th scope="row">t:Objects</th>
+                  <td>7</td>
+                  <td>7 KB</td>
+                </tr>
+                <tr class="subRow">
+                  <th scope="row" class="indented">t:Invalid</th>
+                  <td>8</td>
+                  <td>-</td>
+                </tr>
+                <tr class="subRow">
+                  <th scope="row" class="indented">t:Deleted</th>
+                  <td>9</td>
+                  <td>-</td>
+                </tr>
+                <tr class="subRow">
+                  <th scope="row" class="indented">t:Locked</th>
+                  <td>10</td>
+                  <td>-</td>
+                </tr>
+                <tr>
+                  <th scope="row">t:Logs</th>
+                  <td>11</td>
+                  <td>14 KB</td>
+                </tr>
+                <tr>
+                  <th scope="row">t:Files</th>
+                  <td>12</td>
+                  <td>7 MB</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="section">
+          <h3 class="sectionTitle">t:Orphaned Items</h3>
+          <div class="statsContainer">
+            <table class="statisticsTable">
+              <thead>
+                <tr>
+                  <th scope="col">t:Name</th>
+                  <th scope="col">t:Count</th>
+                  <th scope="col">t:Size</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">t:Objects</th>
+                  <td>3</td>
+                  <td>3 KB</td>
+                </tr>
+                <tr class="subRow">
+                  <th scope="row" class="indented">t:Invalid</th>
+                  <td>4</td>
+                  <td>-</td>
+                </tr>
+                <tr class="subRow">
+                  <th scope="row" class="indented">t:Deleted</th>
+                  <td>5</td>
+                  <td>-</td>
+                </tr>
+                <tr class="subRow">
+                  <th scope="row" class="indented">t:Locked</th>
+                  <td>6</td>
+                  <td>-</td>
+                </tr>
+                <tr>
+                  <th scope="row">t:Logs</th>
+                  <td>7</td>
+                  <td>6 KB</td>
+                </tr>
+                <tr>
+                  <th scope="row">t:Files</th>
+                  <td>8</td>
+                  <td>3 MB</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </slot-default>
+      <slot-icon>
+        <x-magnify size="20"></x-magnify>
+      </slot-icon>
+    </x-ncappsidebartab>
+  </slot-default>
+</x-ncappsidebar>"
+`;
+
+exports[`DashboardSideBar golden renders the totals tables 2`] = `
+[
+  [
+    "objectStore.initializeColumnFilters",
+  ],
+  [
+    "registerStore.refreshRegisterList",
+  ],
+  [
+    "schemaStore.refreshSchemaList",
+  ],
+]
+`;
+
+exports[`DashboardSideBar golden renders while loading 1`] = `
+"<x-ncappsidebar modelvalue="overview-tab" name="t:Dashboard" subname="t:Get real-time insights into your organization's data health by focusing on registers, schema definitions, and object storage and usage." open="false" class="dashboard-sidebar">
+  <slot-default>
+    <x-ncappsidebartab id="overview-tab" name="t:Overview" order="1">
+      <slot-default>
+        <div class="filterSection">
+          <h3>t:Filter Statistics</h3>
+          <div class="filterGroup"><label for="registerSelect">t:Register</label>
+            <x-ncselect reduce="[function]" label="title" getoptionlabel="[function]" id="registerSelect" loading="false" disabled="false" inputlabel="t:Register" placeholder="t:Select a register"></x-ncselect>
+          </div>
+          <div class="filterGroup"><label for="schemaSelect">t:Schema</label>
+            <x-ncselect id="schemaSelect" loading="false" disabled="true" inputlabel="t:Schema" placeholder="t:Select a schema"></x-ncselect>
+          </div>
+        </div>
+        <div class="section">
+          <h3 class="sectionTitle">t:Totals</h3>
+          <div class="loadingContainer">
+            <x-ncloadingicon size="20"></x-ncloadingicon><span>t:Loading statistics...</span>
+          </div>
+        </div>
+        <div class="section">
+          <h3 class="sectionTitle">t:Orphaned Items</h3>
+          <div class="loadingContainer">
+            <x-ncloadingicon size="20"></x-ncloadingicon><span>t:Loading statistics...</span>
+          </div>
+        </div>
+      </slot-default>
+      <slot-icon>
+        <x-magnify size="20"></x-magnify>
+      </slot-icon>
+    </x-ncappsidebartab>
+  </slot-default>
+</x-ncappsidebar>"
+`;
+
+exports[`DashboardSideBar golden renders without statistics 1`] = `
+"<x-ncappsidebar modelvalue="overview-tab" name="t:Dashboard" subname="t:Get real-time insights into your organization's data health by focusing on registers, schema definitions, and object storage and usage." open="false" class="dashboard-sidebar">
+  <slot-default>
+    <x-ncappsidebartab id="overview-tab" name="t:Overview" order="1">
+      <slot-default>
+        <div class="filterSection">
+          <h3>t:Filter Statistics</h3>
+          <div class="filterGroup"><label for="registerSelect">t:Register</label>
+            <x-ncselect reduce="[function]" label="title" getoptionlabel="[function]" id="registerSelect" loading="false" disabled="false" inputlabel="t:Register" placeholder="t:Select a register"></x-ncselect>
+          </div>
+          <div class="filterGroup"><label for="schemaSelect">t:Schema</label>
+            <x-ncselect id="schemaSelect" loading="false" disabled="true" inputlabel="t:Schema" placeholder="t:Select a schema"></x-ncselect>
+          </div>
+        </div>
+        <div class="section">
+          <h3 class="sectionTitle">t:Totals</h3>
+        </div>
+        <div class="section">
+          <h3 class="sectionTitle">t:Orphaned Items</h3>
+        </div>
+      </slot-default>
+      <slot-icon>
+        <x-magnify size="20"></x-magnify>
+      </slot-icon>
+    </x-ncappsidebartab>
+  </slot-default>
+</x-ncappsidebar>"
+`;
+
+exports[`DashboardSideBar golden renders zeros for empty totals 1`] = `
+"<x-ncappsidebar modelvalue="overview-tab" name="t:Dashboard" subname="t:Get real-time insights into your organization's data health by focusing on registers, schema definitions, and object storage and usage." open="false" class="dashboard-sidebar">
+  <slot-default>
+    <x-ncappsidebartab id="overview-tab" name="t:Overview" order="1">
+      <slot-default>
+        <div class="filterSection">
+          <h3>t:Filter Statistics</h3>
+          <div class="filterGroup"><label for="registerSelect">t:Register</label>
+            <x-ncselect reduce="[function]" label="title" getoptionlabel="[function]" id="registerSelect" loading="false" disabled="false" inputlabel="t:Register" placeholder="t:Select a register"></x-ncselect>
+          </div>
+          <div class="filterGroup"><label for="schemaSelect">t:Schema</label>
+            <x-ncselect id="schemaSelect" loading="false" disabled="true" inputlabel="t:Schema" placeholder="t:Select a schema"></x-ncselect>
+          </div>
+        </div>
+        <div class="section">
+          <h3 class="sectionTitle">t:Totals</h3>
+          <div class="statsContainer">
+            <table class="statisticsTable">
+              <thead>
+                <tr>
+                  <th scope="col">t:Name</th>
+                  <th scope="col">t:Count</th>
+                  <th scope="col">t:Size</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">t:Registers</th>
+                  <td>0</td>
+                  <td>-</td>
+                </tr>
+                <tr>
+                  <th scope="row">t:Schemas</th>
+                  <td>0</td>
+                  <td>-</td>
+                </tr>
+                <tr>
+                  <th scope="row">t:Objects</th>
+                  <td>0</td>
+                  <td>0 KB</td>
+                </tr>
+                <tr class="subRow">
+                  <th scope="row" class="indented">t:Invalid</th>
+                  <td>0</td>
+                  <td>-</td>
+                </tr>
+                <tr class="subRow">
+                  <th scope="row" class="indented">t:Deleted</th>
+                  <td>0</td>
+                  <td>-</td>
+                </tr>
+                <tr class="subRow">
+                  <th scope="row" class="indented">t:Locked</th>
+                  <td>0</td>
+                  <td>-</td>
+                </tr>
+                <tr>
+                  <th scope="row">t:Logs</th>
+                  <td>0</td>
+                  <td>0 KB</td>
+                </tr>
+                <tr>
+                  <th scope="row">t:Files</th>
+                  <td>0</td>
+                  <td>0 KB</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="section">
+          <h3 class="sectionTitle">t:Orphaned Items</h3>
+          <div class="statsContainer">
+            <table class="statisticsTable">
+              <thead>
+                <tr>
+                  <th scope="col">t:Name</th>
+                  <th scope="col">t:Count</th>
+                  <th scope="col">t:Size</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">t:Objects</th>
+                  <td>0</td>
+                  <td>0 KB</td>
+                </tr>
+                <tr class="subRow">
+                  <th scope="row" class="indented">t:Invalid</th>
+                  <td>0</td>
+                  <td>-</td>
+                </tr>
+                <tr class="subRow">
+                  <th scope="row" class="indented">t:Deleted</th>
+                  <td>0</td>
+                  <td>-</td>
+                </tr>
+                <tr class="subRow">
+                  <th scope="row" class="indented">t:Locked</th>
+                  <td>0</td>
+                  <td>-</td>
+                </tr>
+                <tr>
+                  <th scope="row">t:Logs</th>
+                  <td>0</td>
+                  <td>0 KB</td>
+                </tr>
+                <tr>
+                  <th scope="row">t:Files</th>
+                  <td>0</td>
+                  <td>0 KB</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </slot-default>
+      <slot-icon>
+        <x-magnify size="20"></x-magnify>
+      </slot-icon>
+    </x-ncappsidebartab>
+  </slot-default>
+</x-ncappsidebar>"
+`;

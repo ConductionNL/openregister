@@ -1,0 +1,514 @@
+{
+    "branch blank": {
+        "filters": {
+            "categorie": {
+                "branch": "  "
+            }
+        },
+        "record": {
+            "schemaLookups": [],
+            "schemeReads": []
+        }
+    },
+    "branch not a string": {
+        "filters": {
+            "categorie": {
+                "branch": 5
+            }
+        },
+        "record": {
+            "schemaLookups": [],
+            "schemeReads": []
+        }
+    },
+    "branch notation store": {
+        "filters": {
+            "categorie": {
+                "in": [
+                    "V",
+                    "VK",
+                    "VKS"
+                ]
+            }
+        },
+        "record": {
+            "schemaLookups": [
+                [
+                    7,
+                    [],
+                    false,
+                    false
+                ]
+            ],
+            "schemeReads": [
+                "https://example.org/vergunningen"
+            ]
+        }
+    },
+    "branch trimmed": {
+        "filters": {
+            "categorie": {
+                "in": [
+                    "urn:kap",
+                    "urn:kap-spoed"
+                ]
+            }
+        },
+        "record": {
+            "schemaLookups": [
+                [
+                    7,
+                    [],
+                    false,
+                    false
+                ]
+            ],
+            "schemeReads": [
+                "https://example.org/vergunningen"
+            ]
+        }
+    },
+    "branch uri store": {
+        "filters": {
+            "categorie": {
+                "in": [
+                    "urn:vergunning",
+                    "urn:kap",
+                    "urn:melding",
+                    "urn:kap-spoed"
+                ]
+            },
+            "other": "x"
+        },
+        "record": {
+            "schemaLookups": [
+                [
+                    7,
+                    [],
+                    false,
+                    false
+                ]
+            ],
+            "schemeReads": [
+                "https://example.org/vergunningen"
+            ]
+        }
+    },
+    "declared max depth": {
+        "filters": {
+            "categorie": {
+                "in": [
+                    "urn:vergunning",
+                    "urn:kap",
+                    "urn:melding"
+                ]
+            }
+        },
+        "record": {
+            "schemaLookups": [
+                [
+                    7,
+                    [],
+                    false,
+                    false
+                ]
+            ],
+            "schemeReads": [
+                "https://example.org/vergunningen"
+            ]
+        }
+    },
+    "depth not numeric": {
+        "filters": {
+            "categorie": {
+                "in": [
+                    "urn:vergunning",
+                    "urn:kap",
+                    "urn:melding"
+                ]
+            }
+        },
+        "record": {
+            "schemaLookups": [
+                [
+                    7,
+                    [],
+                    false,
+                    false
+                ]
+            ],
+            "schemeReads": [
+                "https://example.org/vergunningen"
+            ]
+        }
+    },
+    "depth one string": {
+        "filters": {
+            "categorie": {
+                "in": [
+                    "urn:vergunning",
+                    "urn:kap",
+                    "urn:melding"
+                ]
+            }
+        },
+        "record": {
+            "schemaLookups": [
+                [
+                    7,
+                    [],
+                    false,
+                    false
+                ]
+            ],
+            "schemeReads": [
+                "https://example.org/vergunningen"
+            ]
+        }
+    },
+    "depth zero": {
+        "filters": {
+            "categorie": {
+                "in": [
+                    "urn:vergunning"
+                ]
+            }
+        },
+        "record": {
+            "schemaLookups": [
+                [
+                    7,
+                    [],
+                    false,
+                    false
+                ]
+            ],
+            "schemeReads": [
+                "https://example.org/vergunningen"
+            ]
+        }
+    },
+    "filter depth beats max": {
+        "filters": {
+            "categorie": {
+                "in": [
+                    "urn:vergunning",
+                    "urn:kap",
+                    "urn:melding",
+                    "urn:kap-spoed"
+                ]
+            }
+        },
+        "record": {
+            "schemaLookups": [
+                [
+                    7,
+                    [],
+                    false,
+                    false
+                ]
+            ],
+            "schemeReads": [
+                "https://example.org/vergunningen"
+            ]
+        }
+    },
+    "leaf branch": {
+        "filters": {
+            "categorie": {
+                "in": [
+                    "urn:kap-spoed"
+                ]
+            }
+        },
+        "record": {
+            "schemaLookups": [
+                [
+                    7,
+                    [],
+                    false,
+                    false
+                ]
+            ],
+            "schemeReads": [
+                "https://example.org/vergunningen"
+            ]
+        }
+    },
+    "mixed properties": {
+        "filters": {
+            "status": {
+                "branch": "urn:vergunning"
+            },
+            "categorie": {
+                "in": [
+                    "urn:kap",
+                    "urn:kap-spoed"
+                ]
+            },
+            "q": {
+                "in": [
+                    "a"
+                ]
+            }
+        },
+        "record": {
+            "schemaLookups": [
+                [
+                    7,
+                    [],
+                    false,
+                    false
+                ]
+            ],
+            "schemeReads": [
+                "https://example.org/vergunningen"
+            ]
+        }
+    },
+    "no branch filter": {
+        "filters": {
+            "categorie": "urn:kap",
+            "q": "x"
+        },
+        "record": {
+            "schemaLookups": [],
+            "schemeReads": []
+        }
+    },
+    "notation blank skipped": {
+        "filters": {
+            "categorie": {
+                "branch": "urn:melding"
+            }
+        },
+        "record": {
+            "schemaLookups": [
+                [
+                    7,
+                    [],
+                    false,
+                    false
+                ]
+            ],
+            "schemeReads": [
+                "https://example.org/vergunningen"
+            ]
+        }
+    },
+    "schema missing": {
+        "filters": {
+            "categorie": {
+                "branch": "urn:vergunning"
+            }
+        },
+        "record": {
+            "schemaLookups": [
+                [
+                    404,
+                    [],
+                    false,
+                    false
+                ]
+            ],
+            "schemeReads": []
+        }
+    },
+    "schema not coded": {
+        "filters": {
+            "categorie": {
+                "branch": "urn:vergunning"
+            }
+        },
+        "record": {
+            "schemaLookups": [
+                [
+                    7,
+                    [],
+                    false,
+                    false
+                ]
+            ],
+            "schemeReads": []
+        }
+    },
+    "schema ref empty": {
+        "filters": {
+            "categorie": {
+                "branch": "urn:vergunning"
+            }
+        },
+        "record": {
+            "schemaLookups": [],
+            "schemeReads": []
+        }
+    },
+    "schema ref empty list": {
+        "filters": {
+            "categorie": {
+                "branch": "urn:vergunning"
+            }
+        },
+        "record": {
+            "schemaLookups": [],
+            "schemeReads": []
+        }
+    },
+    "schema ref keyed one": {
+        "filters": {
+            "categorie": {
+                "in": [
+                    "urn:vergunning",
+                    "urn:kap",
+                    "urn:melding",
+                    "urn:kap-spoed"
+                ]
+            }
+        },
+        "record": {
+            "schemaLookups": [
+                [
+                    7,
+                    [],
+                    false,
+                    false
+                ]
+            ],
+            "schemeReads": [
+                "https://example.org/vergunningen"
+            ]
+        }
+    },
+    "schema ref list of array": {
+        "filters": {
+            "categorie": {
+                "branch": "urn:vergunning"
+            }
+        },
+        "record": {
+            "schemaLookups": [],
+            "schemeReads": []
+        }
+    },
+    "schema ref list of null": {
+        "filters": {
+            "categorie": {
+                "branch": "urn:vergunning"
+            }
+        },
+        "record": {
+            "schemaLookups": [],
+            "schemeReads": []
+        }
+    },
+    "schema ref list of one": {
+        "filters": {
+            "categorie": {
+                "in": [
+                    "urn:vergunning",
+                    "urn:kap",
+                    "urn:melding",
+                    "urn:kap-spoed"
+                ]
+            }
+        },
+        "record": {
+            "schemaLookups": [
+                [
+                    "permits",
+                    [],
+                    false,
+                    false
+                ]
+            ],
+            "schemeReads": [
+                "https://example.org/vergunningen"
+            ]
+        }
+    },
+    "schema ref list of two": {
+        "filters": {
+            "categorie": {
+                "branch": "urn:vergunning"
+            }
+        },
+        "record": {
+            "schemaLookups": [],
+            "schemeReads": []
+        }
+    },
+    "schema ref null": {
+        "filters": {
+            "categorie": {
+                "branch": "urn:vergunning"
+            }
+        },
+        "record": {
+            "schemaLookups": [],
+            "schemeReads": []
+        }
+    },
+    "schema ref slug": {
+        "filters": {
+            "categorie": {
+                "in": [
+                    "urn:vergunning",
+                    "urn:kap",
+                    "urn:melding",
+                    "urn:kap-spoed"
+                ]
+            }
+        },
+        "record": {
+            "schemaLookups": [
+                [
+                    "permits",
+                    [],
+                    false,
+                    false
+                ]
+            ],
+            "schemeReads": [
+                "https://example.org/vergunningen"
+            ]
+        }
+    },
+    "undeclared property": {
+        "filters": {
+            "status": {
+                "branch": "urn:vergunning"
+            }
+        },
+        "record": {
+            "schemaLookups": [
+                [
+                    7,
+                    [],
+                    false,
+                    false
+                ]
+            ],
+            "schemeReads": []
+        }
+    },
+    "unknown branch": {
+        "filters": {
+            "categorie": {
+                "branch": "urn:nope"
+            }
+        },
+        "record": {
+            "schemaLookups": [
+                [
+                    7,
+                    [],
+                    false,
+                    false
+                ]
+            ],
+            "schemeReads": [
+                "https://example.org/vergunningen"
+            ]
+        }
+    }
+}

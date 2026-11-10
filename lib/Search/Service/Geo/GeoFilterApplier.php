@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Search\Service\Geo;
 /**
  * Applies spatial filters to a list of rows by post-filtering.
  */
-class GeoFilterApplier {
+class GeoFilterApplier implements GeoFilterApplierInterface {
 
 	private const GEOJSON_TYPES = ['Point', 'Polygon', 'MultiPolygon', 'LineString'];
 

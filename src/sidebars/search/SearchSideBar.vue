@@ -117,70 +117,31 @@
 			<!-- Filter Section -->
 			<div class="filterSection">
 				<h3>{{ t('openregister', 'Filter Objects') }}</h3>
-				<div class="filterGroup">
-					<label for="registerSelect">{{
-						t('openregister', 'Registers')
-					}}</label>
+				<div
+					v-for="picker in scopePickers"
+					:key="picker.id"
+					class="filterGroup">
+					<label :for="picker.id">{{ picker.label }}</label>
 					<NcSelect
-						v-bind="registerOptions"
-						id="registerSelect"
-						:modelValue="selectedRegisters"
-						:loading="registerLoading"
-						:disabled="registerLoading"
-						:inputLabel="t('openregister', 'Registers')"
+						v-bind="picker.bag"
+						:id="picker.id"
+						:modelValue="picker.value"
+						:loading="picker.loading"
+						:disabled="picker.disabled"
+						:inputLabel="picker.label"
 						:multiple="true"
 						:closeOnSelect="false"
-						:placeholder="
-							t('openregister', 'Select one or more registers')
-						"
-						@update:modelValue="handleRegisterChange">
+						:placeholder="picker.placeholder"
+						@update:modelValue="picker.change">
 						<template #option="{ title, description }">
-							<div class="option-content">
-								<span class="option-title">{{ title }}</span>
-								<span
-									v-if="description"
-									class="option-description"
-									>{{ description }}</span
-								>
-							</div>
+							<SelectOption
+								:title="title"
+								:description="description" />
 						</template>
 					</NcSelect>
 					<p class="field-hint">
-						{{ selectedRegisters.length }}
-						{{ t('openregister', 'register(s) selected') }}
-					</p>
-				</div>
-				<div class="filterGroup">
-					<label for="schemaSelect">{{
-						t('openregister', 'Schemas')
-					}}</label>
-					<NcSelect
-						v-bind="schemaOptions"
-						id="schemaSelect"
-						:modelValue="selectedSchemas"
-						:loading="schemaLoading"
-						:disabled="selectedRegisters.length === 0 || schemaLoading"
-						:inputLabel="t('openregister', 'Schemas')"
-						:multiple="true"
-						:closeOnSelect="false"
-						:placeholder="
-							t('openregister', 'Select one or more schemas')
-						"
-						@update:modelValue="handleSchemaChange">
-						<template #option="{ title, description }">
-							<div class="option-content">
-								<span class="option-title">{{ title }}</span>
-								<span
-									v-if="description"
-									class="option-description"
-									>{{ description }}</span
-								>
-							</div>
-						</template>
-					</NcSelect>
-					<p class="field-hint">
-						{{ selectedSchemas.length }}
-						{{ t('openregister', 'schema(s) selected') }}
+						{{ picker.value.length }}
+						{{ picker.hint }}
 					</p>
 				</div>
 			</div>
@@ -231,67 +192,38 @@
 						{{ t('openregister', 'Available Filters') }}
 					</h4>
 
-					<!-- Metadata Facets -->
-					<div v-if="facetableFields['@self']" class="facet-category">
-						<h5 class="facet-category-title">
-							{{ t('openregister', 'Metadata Filters') }}
-						</h5>
-						<div class="facet-checkboxes">
-							<div
-								v-for="(field, fieldName) in facetableFields[
-									'@self'
-								]"
-								:key="`@self.${fieldName}`"
-								class="facet-checkbox">
-								<input
-									:id="`facet-@self-${fieldName}`"
-									v-model="enabledFacets[`@self.${fieldName}`]"
-									type="checkbox"
-									@change="
-										toggleFacet(`@self.${fieldName}`, field)
-									" />
-								<label
-									:for="`facet-@self-${fieldName}`"
-									class="facet-checkbox-label">
-									{{ field.description || fieldName }}
-									<span class="facet-types"
-										>({{ field.facet_types.join(', ') }})</span
-									>
-								</label>
+					<!-- Metadata and Object Field Facets -->
+					<template
+						v-for="category in facetCategories"
+						:key="category.key">
+						<div v-if="category.entries" class="facet-category">
+							<h5 class="facet-category-title">
+								{{ category.title }}
+							</h5>
+							<div class="facet-checkboxes">
+								<div
+									v-for="entry in category.entries"
+									:key="entry.key"
+									class="facet-checkbox">
+									<input
+										:id="entry.id"
+										v-model="enabledFacets[entry.key]"
+										type="checkbox"
+										@change="
+											toggleFacet(entry.key, entry.field)
+										" />
+									<label
+										:for="entry.id"
+										class="facet-checkbox-label">
+										{{ entry.label }}
+										<span class="facet-types"
+											>({{ entry.types }})</span
+										>
+									</label>
+								</div>
 							</div>
 						</div>
-					</div>
-
-					<!-- Object Field Facets -->
-					<div v-if="facetableFields.object_fields" class="facet-category">
-						<h5 class="facet-category-title">
-							{{ t('openregister', 'Content Filters') }}
-						</h5>
-						<div class="facet-checkboxes">
-							<div
-								v-for="(
-									field, fieldName
-								) in facetableFields.object_fields"
-								:key="fieldName"
-								class="facet-checkbox">
-								<input
-									:id="`facet-${fieldName}`"
-									v-model="enabledFacets[fieldName]"
-									type="checkbox"
-									@change="toggleFacet(fieldName, field)" />
-								<label
-									:for="`facet-${fieldName}`"
-									class="facet-checkbox-label">
-									{{
-										field.title || field.description || fieldName
-									}}
-									<span class="facet-types"
-										>({{ field.facet_types.join(', ') }})</span
-									>
-								</label>
-							</div>
-						</div>
-					</div>
+					</template>
 
 					<!-- Info about loaded facets -->
 					<div
@@ -556,6 +488,7 @@ import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Star from 'vue-material-design-icons/Star.vue'
 import StarOutline from 'vue-material-design-icons/StarOutline.vue'
 import ViewDashboardOutline from 'vue-material-design-icons/ViewDashboardOutline.vue'
+import SelectOption from '../../components/shared/SelectOption.vue'
 import DeleteView from '../../modals/view/DeleteView.vue'
 import EditView from '../../modals/view/EditView.vue'
 import { freshState } from '../../services/initialState.js'
@@ -566,16 +499,12 @@ import {
 	schemaStore,
 	viewsStore,
 } from '../../store/store.js'
+import { scopeListLoader } from '../scopeListLoader.js'
 
 /**
  * The state every instance of this component starts from.
  */
 const INITIAL_STATE = {
-	navigationStore,
-	objectStore,
-	registerStore,
-	schemaStore,
-	viewsStore,
 	activeTab: 'search-tab', // Active tab tracker
 	registerLoading: false,
 	schemaLoading: false,
@@ -613,6 +542,45 @@ const INITIAL_STATE = {
 	metadataExpanded: true, // Metadata section expanded by default
 }
 
+/**
+ * An NcSelect options bag for a multi-select that returns only the IDs.
+ *
+ * @param {Array<object>} options The options, each with a value and a title
+ * @return {object} The options bag
+ */
+function pickerOptions(options) {
+	return {
+		options,
+		reduce: (option) => option.value, // Return only the ID for multi-select
+		label: 'title',
+		getOptionLabel: (option) => {
+			return option.title || option.label || ''
+		},
+	}
+}
+
+/**
+ * The checkboxes of one facet group, in the order the schema lists the fields.
+ *
+ * @param {object|undefined} fields The group's facetable fields, by name
+ * @param {function(string): string[]} keys The facet key and input id of a field name
+ * @param {function(object, string): string} label The label of a field
+ * @return {Array<object>|null} The checkboxes, or null without fields
+ */
+function facetEntries(fields, keys, label) {
+	if (!fields) return null
+	return Object.entries(fields).map(([fieldName, field]) => {
+		const [key, id] = keys(fieldName)
+		return {
+			key,
+			id,
+			field,
+			label: label(field, fieldName),
+			types: field.facet_types.join(', '),
+		}
+	})
+}
+
 export default {
 	name: 'SearchSideBar',
 	components: {
@@ -634,13 +602,91 @@ export default {
 		CogOutline,
 		EditView,
 		DeleteView,
+		SelectOption,
 	},
 
+	mixins: [scopeListLoader],
+
 	data() {
-		return freshState(INITIAL_STATE)
+		return {
+			navigationStore,
+			objectStore,
+			registerStore,
+			schemaStore,
+			viewsStore,
+			...freshState(INITIAL_STATE),
+		}
 	},
 
 	computed: {
+		/**
+		 * The register and schema pickers: the same multi-select twice, the
+		 * schema one disabled until a register is picked.
+		 *
+		 * @spec exclude Presentational picker configuration.
+		 * @return {Array<object>} The pickers, registers first
+		 */
+		scopePickers() {
+			return [
+				{
+					id: 'registerSelect',
+					label: t('openregister', 'Registers'),
+					bag: this.registerOptions,
+					value: this.selectedRegisters,
+					loading: this.registerLoading,
+					disabled: this.registerLoading,
+					placeholder: t('openregister', 'Select one or more registers'),
+					change: this.handleRegisterChange,
+					hint: t('openregister', 'register(s) selected'),
+				},
+				{
+					id: 'schemaSelect',
+					label: t('openregister', 'Schemas'),
+					bag: this.schemaOptions,
+					value: this.selectedSchemas,
+					loading: this.schemaLoading,
+					disabled: this.selectedRegisters.length === 0 || this.schemaLoading,
+					placeholder: t('openregister', 'Select one or more schemas'),
+					change: this.handleSchemaChange,
+					hint: t('openregister', 'schema(s) selected'),
+				},
+			]
+		},
+
+		/**
+		 * The facet checkbox groups: metadata (`@self`) fields, then object
+		 * fields. A group's `entries` is null when the schema has none of them.
+		 *
+		 * @spec exclude Presentational grouping of the facetable fields.
+		 * @return {Array<object>} The groups, in display order
+		 */
+		facetCategories() {
+			return [
+				{
+					key: '@self',
+					title: t('openregister', 'Metadata Filters'),
+					entries: facetEntries(
+						this.facetableFields['@self'],
+						(fieldName) => [
+							`@self.${fieldName}`,
+							`facet-@self-${fieldName}`,
+						],
+						(field, fieldName) => field.description || fieldName,
+					),
+				},
+				{
+					key: 'object_fields',
+					title: t('openregister', 'Content Filters'),
+					entries: facetEntries(
+						this.facetableFields.object_fields,
+						(fieldName) => [fieldName, `facet-${fieldName}`],
+						(field, fieldName) =>
+							field.title || field.description || fieldName,
+					),
+				},
+			]
+		},
+
 		/**
 		 * Search string for CnIndexSidebar; synced to store and used for fetch.
 		 *
@@ -658,21 +704,15 @@ export default {
 		 * @return {object} NcSelect options bag for registers
 		 */
 		registerOptions() {
-			return {
-				options: registerStore.registerList.map((register) => ({
+			return pickerOptions(
+				registerStore.registerList.map((register) => ({
 					value: register.id,
 					label: register.title,
 					title: register.title,
 					description: register.description,
 					register,
 				})),
-
-				reduce: (option) => option.value, // Return only the ID for multi-select
-				label: 'title',
-				getOptionLabel: (option) => {
-					return option.title || option.label || ''
-				},
-			}
+			)
 		},
 
 		/**
@@ -695,8 +735,8 @@ export default {
 				}
 			})
 
-			return {
-				options: schemaStore.schemaList
+			return pickerOptions(
+				schemaStore.schemaList
 					.filter((schema) => schemaIds.has(schema.id))
 					.map((schema) => ({
 						value: schema.id,
@@ -705,13 +745,7 @@ export default {
 						description: schema.description,
 						schema,
 					})),
-
-				reduce: (option) => option.value, // Return only the ID for multi-select
-				label: 'title',
-				getOptionLabel: (option) => {
-					return option.title || option.label || ''
-				},
-			}
+			)
 		},
 
 		/**
@@ -819,19 +853,6 @@ export default {
 		},
 
 		/**
-		 * Flatten the object metadata map into column descriptors for display.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {Array} Metadata column descriptors
-		 */
-		metadataColumns() {
-			return Object.entries(objectStore.metadata).map(([id, meta]) => ({
-				id,
-				...meta,
-			}))
-		},
-
-		/**
 		 * Get properties for all selected schemas
 		 *
 		 * Returns an array of objects containing schema info and properties
@@ -877,44 +898,15 @@ export default {
 			deep: true,
 		},
 
-		// Re-apply the query params once the register list arrives. The mount-
-		// time `applyQueryParamsFromRoute()` retry loop (10 × 200ms) is shorter
-		// than the actual `_extend=schemas&stats` register-list response on
-		// busy dev envs (~5s observed), so deep-links with ?register=… stayed
-		// empty and downstream tables never populated. Reacting to the list
-		// transition closes that race without polling. See the e2e investigation
-		// in tests/e2e/spec-coverage/{entity-management-modals, saved-search-views}.
-		'$root.registerStore.registerList': {
-			/**
-			 * @param {Array<object>} newList
-			 * @spec exclude Vue watch handler plumbing; re-runs applyQueryParamsFromRoute when the register list finishes loading on /tables deep-links.
-			 */
-			handler(newList) {
-				if (this.$route.path !== '/tables') return
-				if (Array.isArray(newList) === false || newList.length === 0) return
-				if (this.$route.query.register === undefined) return
-				if (this.selectedRegisters.length > 0) return
-				this.applyQueryParamsFromRoute()
-			},
-		},
+		// A deep link names ids the lists resolve, and the lists can take longer than any retry window.
+		'registerStore.registerList': 'applyRouteOnceListsArrive',
+		'schemaStore.schemaList': 'applyRouteOnceListsArrive',
 
 		// Watch for schema changes to initialize properties
 		// Use immediate: true equivalent in mounted
 		// This watcher will update properties when schema changes
 		'$root.schemaStore.schemaItem': {
-			/**
-			 * @param {object|null} newSchema
-			 * @spec exclude Vue watch handler plumbing; re-initialises object properties when the selected schema changes.
-			 */
-			handler(newSchema) {
-				if (newSchema) {
-					objectStore.initializeProperties(newSchema)
-				} else {
-					objectStore.properties = {}
-					objectStore.initializeColumnFilters()
-				}
-			},
-
+			handler: 'syncSchemaProperties',
 			deep: true,
 		},
 
@@ -979,21 +971,7 @@ export default {
 		})
 
 		// Only load lists if they're empty
-		if (!registerStore.registerList.length) {
-			registerStore
-				.refreshRegisterList()
-				.finally(() => (this.registerLoading = false))
-		} else {
-			this.registerLoading = false
-		}
-
-		if (!schemaStore.schemaList.length) {
-			schemaStore
-				.refreshSchemaList()
-				.finally(() => (this.schemaLoading = false))
-		} else {
-			this.schemaLoading = false
-		}
+		this.loadScopeLists()
 
 		// Load default view if available
 		const defaultView = viewsStore.getDefaultView
@@ -1150,38 +1128,26 @@ export default {
 				)
 				return true
 			}
-			// Try apply now, or retry shortly if lists not yet loaded.
-			//
-			// The register list (`GET /api/registers?_extend=schemas&stats`)
-			// takes 3–4.5s on a populated instance — longer than the former
-			// 10×200ms (2s) budget — so a `/tables?register=…&schema=…`
-			// deep-link gave up before the list arrived and the table stayed
-			// on "No objects found. Select registers and schemas…", never
-			// firing the search. The `$root.registerStore.registerList`
-			// watcher was meant to cover this but did not re-trigger the
-			// search reliably. Extend the retry window to 40×200ms (8s) so it
-			// comfortably outlasts the real list-load time. Verified via the
-			// e2e investigation in tests/e2e/spec-coverage/
-			// {entity-management-modals, saved-search-views}.
-			const tryApply = (attempt = 0) => {
-				const regOk = applyRegisters()
-				const schOk = applySchemas()
-				if (regOk && schOk) {
-					if (
-						this.selectedRegisters.length > 0
-						&& this.selectedSchemas.length > 0
-					) {
-						this.performSearchWithFacets()
-					} else {
-						objectStore.clearSearchCollection()
-					}
-					return
-				}
-				if (attempt < 40) {
-					setTimeout(() => tryApply(attempt + 1), 200)
-				}
+			// A list that is not loaded yet leaves this to applyRouteOnceListsArrive().
+			if (applyRegisters() === false || applySchemas() === false) return
+			if (this.selectedRegisters.length > 0 && this.selectedSchemas.length > 0) {
+				this.performSearchWithFacets()
+			} else {
+				objectStore.clearSearchCollection()
 			}
-			tryApply()
+		},
+
+		/**
+		 * Apply the route's scope when a list arrives and the scope is not applied yet.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
+		 * @return {void}
+		 */
+		applyRouteOnceListsArrive() {
+			if (this.$route.path !== '/tables') return
+			if (this.$route.query.register === undefined) return
+			if (this.selectedRegisters.length > 0 && this.selectedSchemas.length > 0) return
+			this.applyQueryParamsFromRoute()
 		},
 
 		/**
@@ -1758,6 +1724,23 @@ export default {
 		},
 
 		/**
+		 * The query parameters of the current search a saved view keeps (not UI
+		 * state like pagination, sorting or columns).
+		 *
+		 * @spec openspec/specs/saved-search-views/spec.md
+		 * @return {object} The view configuration
+		 */
+		viewConfiguration() {
+			return {
+				registers: this.selectedRegisters,
+				schemas: this.selectedSchemas,
+				searchTerms: this.searchTerms,
+				facetFilters: this.facetFilters,
+				enabledFacets: this.enabledFacets,
+			}
+		},
+
+		/**
 		 * Persist the current search configuration as a new saved view.
 		 *
 		 * @spec openspec/specs/saved-search-views/spec.md
@@ -1773,14 +1756,7 @@ export default {
 					description: this.viewDescription || '',
 					isPublic: this.viewIsPublic,
 					isDefault: this.viewIsDefault,
-					configuration: {
-						// Query parameters only
-						registers: this.selectedRegisters,
-						schemas: this.selectedSchemas,
-						searchTerms: this.searchTerms,
-						facetFilters: this.facetFilters,
-						enabledFacets: this.enabledFacets,
-					},
+					configuration: this.viewConfiguration(),
 				}
 
 				const newView = await viewsStore.createView(viewData)
@@ -1844,14 +1820,7 @@ export default {
 					description: viewsStore.activeView.description || '',
 					isPublic: viewsStore.activeView.isPublic,
 					isDefault: viewsStore.activeView.isDefault,
-					configuration: {
-						// Query parameters only
-						registers: this.selectedRegisters,
-						schemas: this.selectedSchemas,
-						searchTerms: this.searchTerms,
-						facetFilters: this.facetFilters,
-						enabledFacets: this.enabledFacets,
-					},
+					configuration: this.viewConfiguration(),
 				}
 
 				const updatedView = await viewsStore.updateView(
@@ -2155,8 +2124,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@use '../../styles/components.scss' as *;
-
 .section {
 	padding: 16px;
 	margin-bottom: 0;
@@ -2198,7 +2165,8 @@ export default {
 	flex: 1;
 }
 
-.activeViewButtons {
+.activeViewButtons,
+.saveViewFormActions {
 	display: flex;
 	gap: 8px;
 
@@ -2212,15 +2180,6 @@ export default {
 	flex-direction: column;
 	gap: 12px;
 	width: 100%;
-}
-
-.saveViewFormActions {
-	display: flex;
-	gap: 8px;
-
-	button {
-		flex: 1;
-	}
 }
 
 .saveViewHint {
@@ -2397,8 +2356,6 @@ export default {
 	margin: 0;
 	padding-top: 4px;
 }
-
-@include option-content-rules;
 
 .search-input-container {
 	display: flex;

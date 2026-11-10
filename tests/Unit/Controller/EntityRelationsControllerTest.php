@@ -31,9 +31,12 @@ use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Db\Decision;
 use OCA\OpenRegister\Db\DecisionMapper;
 use OCA\OpenRegister\Service\Decision\DecisionOwnership;
+use OCA\OpenRegister\Service\Decision\DecisionVisibilityPlatform;
+use OCA\OpenRegister\Service\Decision\ReviewPolicyFileOwners;
 use OCA\OpenRegister\Service\Decision\DecisionService;
 use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\Decision\RelationDecisionService;
+use OCA\OpenRegister\Service\Decision\RelationDecisionStores;
 use OCA\OpenRegister\Service\Decision\ReviewPolicyResolver;
 use OCA\OpenRegister\Service\File\ManagedFileOwnerLookup;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -126,21 +129,17 @@ class EntityRelationsControllerTest extends TestCase {
 			}
 		);
 		$this->relationDecisions = new RelationDecisionService(
-			relationMapper: $this->mapper,
-			decisions: new DecisionService(decisionMapper: $decisionMapper),
+			stores: new RelationDecisionStores(relationMapper: $this->mapper, decisions: new DecisionService(decisionMapper: $decisionMapper), db: $this->createMock(IDBConnection::class)),
 			ownership: new DecisionOwnership(
 				groupManager: $this->createMock(IGroupManager::class),
-				eventDispatcher: $this->createMock(IEventDispatcher::class),
-				logger: $this->logger
+				platform: new DecisionVisibilityPlatform($this->createMock(IEventDispatcher::class), $this->logger)
 			),
 			policies: new ReviewPolicyResolver(
 				schemaMapper: $this->schemaMapper,
 				fileSettings: new FileSettingsHandler(appConfig: $this->createMock(IAppConfig::class)),
-				rootFolder: $this->rootFolder,
-				owners: $this->createMock(ManagedFileOwnerLookup::class),
+				fileOwners: new ReviewPolicyFileOwners($this->rootFolder, $this->createMock(ManagedFileOwnerLookup::class)),
 				logger: $this->logger
-			),
-			db: $this->createMock(IDBConnection::class)
+			)
 		);
 	}//end setUp()
 
@@ -158,7 +157,8 @@ class EntityRelationsControllerTest extends TestCase {
 			$this->emailLinkMapper,
 			$this->logger,
 			$this->relationDecisions,
-			$this->visibleAsIs()
+			$this->visibleAsIs(),
+			$this->createMock(IGroupManager::class)
 		);
 	}//end makeController()
 

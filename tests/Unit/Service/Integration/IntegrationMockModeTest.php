@@ -32,12 +32,16 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion + local fixture helpers take positional args by convention; mirroring ExternalIntegrationRouterTest in this repo.
 
 use OCA\OpenRegister\Controller\CompanyLookupController;
+use OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting;
+use OCA\OpenRegister\Controller\Support\CompanyLookupControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Controller\MessageDispatchController;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\BrpPersonProvider;
 use OCA\OpenRegister\Service\Integration\Providers\KvkProvider;
 use OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider;
+use OCA\OpenRegister\Service\Integration\Providers\CompanySearch;
+use OCA\OpenRegister\Service\Integration\Providers\CompanySearchFactory;
 use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
@@ -125,8 +129,16 @@ class IntegrationMockModeTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
+		$router = $this->realMockRouter(mockResponse: $mockResponse, mockMeta: $mockMeta);
+		if (in_array($class, [KvkProvider::class, OpenCorporatesProvider::class, MessageDispatchProvider::class], true) === true) {
+			return new $class(
+				routing: new ConnectorRouting(router: $router, appManager: $appManager, l10n: $l10n),
+				logger: new NullLogger(),
+			);
+		}
+
 		return new $class(
-			router: $this->realMockRouter(mockResponse: $mockResponse, mockMeta: $mockMeta),
+			router: $router,
 			appManager: $appManager,
 			l10n: $l10n,
 			logger: new NullLogger(),
@@ -162,7 +174,7 @@ class IntegrationMockModeTest extends TestCase {
 
 		// @var OpenCorporatesProvider $oc
 		$oc = $this->provider(OpenCorporatesProvider::class, $fixture);
-		$result = $oc->searchCompanies('Conduction', 'nl', 30, 1);
+		$result = $oc->searchCompanies((new CompanySearch('Conduction', 30, 1))->narrowedBy(['jurisdiction' => 'nl']));
 
 		$this->assertArrayNotHasKey('unavailable', $result);
 		$this->assertSame(2, $result['total']);
@@ -238,7 +250,7 @@ class IntegrationMockModeTest extends TestCase {
 			}
 		);
 
-		$controller = new CompanyLookupController('openregister', $request, $kvk, $oc);
+		$controller = new CompanyLookupController($request, new CompanyLookupControllerServices($kvk, $oc, new CompanySearchFactory()));
 		$response = $controller->kvkCompany();
 
 		$this->assertSame(200, $response->getStatus());
@@ -252,7 +264,7 @@ class IntegrationMockModeTest extends TestCase {
 		// @var MessageDispatchProvider $dispatch
 		$dispatch = $this->provider(MessageDispatchProvider::class, $fixture);
 		$request = $this->createMock(IRequest::class);
-		$controller = new MessageDispatchController('openregister', $request, $dispatch);
+		$controller = new MessageDispatchController($request, $dispatch);
 
 		// The send endpoint signature is exercised in MessageDispatchControllerTest;
 		// here we assert the leaf surfaces the canned body through dispatch().

@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
 use OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer;
+use OCA\OpenRegister\AppHost\Store\StoreActionCheck;
 use OCP\IGroupManager;
 use OCP\IUser;
 use PHPUnit\Framework\TestCase;
@@ -139,6 +140,19 @@ class StoreActionAuthorizerTest extends TestCase {
 		$this->assertFalse(
 			$authorizer->can('integriq', 'catalog.instantiate', $this->createMock(IUser::class))
 		);
+	}
+
+	/**
+	 * permits() answers as can() does: yes on a yes, no on a no or a throwing matrix.
+	 *
+	 * @return void
+	 */
+	public function testPermitsTakesTheCheckObject(): void {
+		$user = $this->createMock(IUser::class);
+
+		$this->assertTrue($this->authorizer(new FakeActionAuthService(true))->permits(new StoreActionCheck('integriq', 'catalog.instantiate', $user)));
+		$this->assertFalse($this->authorizer(new FakeActionAuthService(false))->permits(new StoreActionCheck('integriq', 'catalog.instantiate', $user)));
+		$this->assertFalse($this->authorizer(new ThrowingActionAuthService())->permits(new StoreActionCheck('integriq', 'catalog.instantiate', $user)));
 	}
 
 	/**

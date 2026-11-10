@@ -36,9 +36,13 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTimeImmutable;
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\FlowTimerDiagnosticControllerServices;
+use OCA\OpenRegister\Controller\Support\TermExplanationRequest;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
-use OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic;
-use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
+use OCA\OpenRegister\Service\Flow\Timer\TermDiagnosticInterface;
+use OCA\OpenRegister\Service\Flow\Timer\TermQuery;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinitionsInterface;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -55,22 +59,48 @@ use OCP\IUserSession;
 class FlowTimerDiagnosticController extends Controller {
 
 	/**
+	 * Who is asking.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Whether they are an administrator.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * The engine, narrating.
+	 *
+	 * @var TermDiagnosticInterface
+	 */
+	private readonly TermDiagnosticInterface $diagnostic;
+
+	/**
+	 * Builds and validates the calendar definition.
+	 *
+	 * @var WorkingCalendarDefinitionsInterface
+	 */
+	private readonly WorkingCalendarDefinitionsInterface $calendars;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string          $appName      The app id.
-	 * @param IRequest        $request      The request.
-	 * @param IUserSession    $userSession  Who is asking.
-	 * @param IGroupManager   $groupManager Whether they are an administrator.
-	 * @param TermDiagnostic  $diagnostic   The engine, narrating.
+	 * @param IRequest $request The request.
+	 * @param FlowTimerDiagnosticControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly TermDiagnostic $diagnostic,
+		FlowTimerDiagnosticControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->userSession = $services->userSession;
+		$this->groupManager = $services->groupManager;
+		$this->diagnostic = $services->diagnostic;
+		$this->calendars = $services->calendars;
 	}//end __construct()
 
 	/**
@@ -83,55 +113,88 @@ class FlowTimerDiagnosticController extends Controller {
 	 * name an organisation the caller is not in (D-2).
 	 *
 	 * @param array<string, mixed> $calendar The `working-calendar` definition.
-	 * @param string               $anchorAt The anchor instant.
-	 * @param array<string, mixed> $sla      `{value, unit, rollToWorkingDay?}`.
-	 * @param array<int, mixed>    $ladder   Optional rungs.
+	 * @param string $anchorAt The anchor instant.
+	 * @param array<string, mixed> $sla `{value, unit, rollToWorkingDay?}`.
+	 * @param array<int, mixed> $ladder Optional rungs.
 	 *
 	 * @return JSONResponse The walk, or a refusal.
 	 *
 	 * @spec openspec/changes/term-engine-diagnostic/specs/flow-business-timers/spec.md
 	 */
 	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
-	public function explain(
-		array $calendar = [],
-		string $anchorAt = '',
-		array $sla = [],
-		array $ladder = []
-	): JSONResponse {
+	public function explain(array $calendar = [], string $anchorAt = '', array $sla = [], array $ladder = []): JSONResponse {
+		return $this->explainAsAdmin(term: new TermExplanationRequest(calendar: $calendar, anchorAt: $anchorAt, sla: $sla, ladder: $ladder));
+	}//end explain()
+
+	/**
+	 * Explain a term for an administrator; anyone else is refused before anything is read.
+	 *
+	 * @param TermExplanationRequest $term The calendar, anchor, SLA and ladder as sent.
+	 *
+	 * @return JSONResponse The walk, or a refusal.
+	 *
+	 * @spec openspec/changes/term-engine-diagnostic/specs/flow-business-timers/spec.md
+	 */
+	private function explainAsAdmin(TermExplanationRequest $term): JSONResponse {
 		$refusal = $this->requireAdmin();
 		if ($refusal !== null) {
 			return $refusal;
 		}
 
-		if ($anchorAt === '') {
-			return $this->refused(message: 'An anchor moment is required; the diagnostic explains a term from a date you choose.');
-		}
-
 		try {
-			$anchor = new DateTimeImmutable($anchorAt);
-		} catch (Exception $e) {
-			return $this->refused(message: sprintf('The anchor "%s" could not be read as a moment.', $anchorAt));
-		}
-
-		try {
-			$resolved = WorkingCalendar::fromArray(definition: $calendar);
-
-			return new JSONResponse(
-				data: $this->diagnostic->explain(
-					calendar: $resolved,
-					anchor: $anchor,
-					sla: $sla,
-					ladder: $ladder
-				)
-			);
+			return new JSONResponse(data: $this->diagnostic->explain(query: $this->termQuery(term: $term)));
 		} catch (FlowTimerValidationException $refused) {
-			// The SAME message the save path would have given, rather than a
-			// diagnostic-specific one: a calendar that cannot be saved must
-			// not be explainable, and the reader should meet one explanation
-			// of why, not two.
+			// A calendar that cannot be saved is not explainable, for the save path's own reason.
 			return $this->refused(message: $refused->getMessage());
 		}
-	}//end explain()
+	}//end explainAsAdmin()
+
+	/**
+	 * Parse a request into the query the diagnostic walks; the anchor is read first.
+	 *
+	 * @param TermExplanationRequest $term The calendar, anchor, SLA and ladder as sent.
+	 *
+	 * @return TermQuery The parsed query.
+	 *
+	 * @throws FlowTimerValidationException When the anchor or the calendar cannot be read.
+	 *
+	 * @spec openspec/changes/term-engine-diagnostic/specs/flow-business-timers/spec.md
+	 */
+	private function termQuery(TermExplanationRequest $term): TermQuery {
+		$anchor = $this->readAnchor(anchorAt: $term->anchorAt);
+
+		return new TermQuery(
+			calendar: $this->calendars->parse(definition: $term->calendar),
+			anchor: $anchor,
+			sla: $term->sla,
+			ladder: $term->ladder
+		);
+	}//end termQuery()
+
+	/**
+	 * Read the anchor instant the term is explained from.
+	 *
+	 * A missing anchor is refused rather than defaulted to now. Both refusals
+	 * are raised as the validation exception explain() already answers with
+	 * a 422, so they reach the caller exactly as before.
+	 *
+	 * @param string $anchorAt The anchor as sent.
+	 *
+	 * @return DateTimeImmutable The anchor.
+	 *
+	 * @throws FlowTimerValidationException When the anchor is missing or unreadable.
+	 */
+	private function readAnchor(string $anchorAt): DateTimeImmutable {
+		if ($anchorAt === '') {
+			throw new FlowTimerValidationException(message: 'An anchor moment is required; the diagnostic explains a term from a date you choose.');
+		}
+
+		try {
+			return new DateTimeImmutable($anchorAt);
+		} catch (Exception $e) {
+			throw new FlowTimerValidationException(message: sprintf('The anchor "%s" could not be read as a moment.', $anchorAt));
+		}
+	}//end readAnchor()
 
 	/**
 	 * A 422 carrying the reason.

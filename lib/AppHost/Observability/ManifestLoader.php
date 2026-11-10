@@ -143,25 +143,7 @@ class ManifestLoader {
 			return null;
 		}
 
-		$manifestPath = $appPath . '/src/manifest.json';
-		if (is_readable($manifestPath) === false) {
-			return null;
-		}
-
-		$raw = file_get_contents($manifestPath);
-		if ($raw === false) {
-			return null;
-		}
-
-		$decoded = json_decode($raw, associative: true);
-		if (json_last_error() !== JSON_ERROR_NONE || is_array($decoded) === false) {
-			$this->logger->warning(
-				message: sprintf('[AppHost\\ManifestLoader] manifest.json for "%s" is invalid JSON', $appId),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return null;
-		}
-
-		return $decoded;
+		$lookup = new ManifestLookup(appId: $appId, appPath: $appPath, tag: 'AppHost\\ManifestLoader');
+		return BundledManifestFile::decodeFor(lookup: $lookup, logger: $this->logger);
 	}//end loadBundledManifest()
 }//end class

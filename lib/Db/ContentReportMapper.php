@@ -36,7 +36,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
-class ContentReportMapper extends QBMapper {
+class ContentReportMapper extends QBMapper implements ContentReportMapperInterface {
 	/**
 	 * Constructor.
 	 *
@@ -125,28 +125,27 @@ class ContentReportMapper extends QBMapper {
 	/**
 	 * List reports, newest first, optionally filtered.
 	 *
-	 * @param string|null $status Optional review filter.
-	 * @param string|null $organisationId Optional organisation filter.
-	 * @param int|null $limit Optional page size.
+	 * @param ListQuery $query Optional `status` and `organisation_id` filters (empty is no filter) and the page size
+	 *                         (unbounded or not positive is no limit).
 	 *
 	 * @return ContentReport[] The matching reports.
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	public function findAll(?string $status = null, ?string $organisationId = null, ?int $limit = null): array {
+	public function findAll(ListQuery $query): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->orderBy('id', 'DESC');
 
-		if ($status !== null && $status !== '') {
-			$qb->andWhere($qb->expr()->eq('status', $qb->createNamedParameter($status)));
+		foreach (['status', 'organisation_id'] as $column) {
+			$value = ($query->filters[$column] ?? null);
+			if ($value !== null && $value !== '') {
+				$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter($value)));
+			}
 		}
 
-		if ($organisationId !== null && $organisationId !== '') {
-			$qb->andWhere($qb->expr()->eq('organisation_id', $qb->createNamedParameter($organisationId)));
-		}
-
+		$limit = $query->limitOrNull();
 		if ($limit !== null && $limit > 0) {
 			$qb->setMaxResults($limit);
 		}

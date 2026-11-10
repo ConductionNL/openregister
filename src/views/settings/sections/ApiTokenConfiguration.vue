@@ -118,27 +118,28 @@ import { translate as t } from '@nextcloud/l10n'
 			</div>
 		</SettingsCard>
 
-		<!-- GitHub Token Configuration -->
 		<SettingsCard
-			:title="t('openregister', 'GitHub Personal Access Token')"
+			v-for="token in tokenCards"
+			:key="token.key"
+			:title="token.title"
 			icon="🔐"
 			:collapsible="false">
 			<template #icon>
-				<Github :size="20" />
+				<component :is="token.icon" :size="20" />
 			</template>
 
 			<div class="token-config">
 				<div class="token-field-group">
-					<label for="github-token">GitHub Token</label>
+					<label :for="token.id">{{ token.label }}</label>
 					<div class="token-input-row">
 						<NcPasswordField
-							id="github-token"
-							v-model="githubToken"
-							placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+							:id="token.id"
+							:modelValue="token.value"
+							:placeholder="token.placeholder"
 							autocomplete="off"
-							@update:modelValue="updateGitHubToken">
+							@update:modelValue="token.update">
 							<template #trailing-button-icon>
-								<Github :size="20" />
+								<component :is="token.icon" :size="20" />
 							</template>
 						</NcPasswordField>
 
@@ -147,10 +148,10 @@ import { translate as t } from '@nextcloud/l10n'
 								variant="primary"
 								:disabled="
 									saving
-									|| !githubToken
-									|| githubToken === originalGithubToken
+									|| !token.value
+									|| token.value === token.original
 								"
-								@click="saveGitHubToken">
+								@click="token.save">
 								<template #icon>
 									<NcLoadingIcon v-if="saving" :size="20" />
 									<ContentSave v-else :size="20" />
@@ -159,18 +160,18 @@ import { translate as t } from '@nextcloud/l10n'
 							</NcButton>
 							<NcButton
 								variant="secondary"
-								:disabled="testingGithub || !githubToken"
-								@click="testGitHubToken">
+								:disabled="token.testing || !token.value"
+								@click="token.test">
 								<template #icon>
-									<NcLoadingIcon v-if="testingGithub" :size="20" />
+									<NcLoadingIcon v-if="token.testing" :size="20" />
 									<TestTube v-else :size="20" />
 								</template>
 								Test Token
 							</NcButton>
 							<NcButton
 								variant="error"
-								:disabled="saving || !githubToken"
-								@click="clearGitHubToken">
+								:disabled="saving || !token.value"
+								@click="token.clear">
 								<template #icon>
 									<Delete :size="20" />
 								</template>
@@ -178,119 +179,33 @@ import { translate as t } from '@nextcloud/l10n'
 							</NcButton>
 							<span
 								v-if="
-									githubToken
-									&& githubToken === originalGithubToken
-									&& !githubTestResult
+									token.value
+									&& token.value === token.original
+									&& !token.result
 								"
 								class="saved-indicator">
 								<CheckCircle :size="20" /> Token saved
 							</span>
 							<span
-								v-if="githubTestResult && githubTestResult.success"
+								v-if="token.result && token.result.success"
 								class="test-result-success">
 								<CheckCircle :size="20" />
-								{{ githubTestResult.message }}
+								{{ token.result.message }}
 							</span>
 							<span
-								v-if="githubTestResult && !githubTestResult.success"
+								v-if="token.result && !token.result.success"
 								class="test-result-error">
 								<AlertCircle :size="20" />
-								{{ githubTestResult.message }}
+								{{ token.result.message }}
 							</span>
 						</div>
 					</div>
 
-					<p class="field-hint">
+					<p v-if="token.key === 'github'" class="field-hint">
 						<LockOutline :size="16" /> Optional: Required for discovering
 						and publishing configurations to/from GitHub
 					</p>
-				</div>
-			</div>
-		</SettingsCard>
-
-		<!-- GitLab Token Configuration -->
-		<SettingsCard
-			:title="t('openregister', 'GitLab Personal Access Token')"
-			icon="🔐"
-			:collapsible="false">
-			<template #icon>
-				<Gitlab :size="20" />
-			</template>
-
-			<div class="token-config">
-				<div class="token-field-group">
-					<label for="gitlab-token">GitLab Token</label>
-					<div class="token-input-row">
-						<NcPasswordField
-							id="gitlab-token"
-							v-model="gitlabToken"
-							placeholder="glpat-xxxxxxxxxxxxxxxxxxxx"
-							autocomplete="off"
-							@update:modelValue="updateGitLabToken">
-							<template #trailing-button-icon>
-								<Gitlab :size="20" />
-							</template>
-						</NcPasswordField>
-
-						<div class="token-actions">
-							<NcButton
-								variant="primary"
-								:disabled="
-									saving
-									|| !gitlabToken
-									|| gitlabToken === originalGitlabToken
-								"
-								@click="saveGitLabToken">
-								<template #icon>
-									<NcLoadingIcon v-if="saving" :size="20" />
-									<ContentSave v-else :size="20" />
-								</template>
-								Save Token
-							</NcButton>
-							<NcButton
-								variant="secondary"
-								:disabled="testingGitlab || !gitlabToken"
-								@click="testGitLabToken">
-								<template #icon>
-									<NcLoadingIcon v-if="testingGitlab" :size="20" />
-									<TestTube v-else :size="20" />
-								</template>
-								Test Token
-							</NcButton>
-							<NcButton
-								variant="error"
-								:disabled="saving || !gitlabToken"
-								@click="clearGitLabToken">
-								<template #icon>
-									<Delete :size="20" />
-								</template>
-								Clear Token
-							</NcButton>
-							<span
-								v-if="
-									gitlabToken
-									&& gitlabToken === originalGitlabToken
-									&& !gitlabTestResult
-								"
-								class="saved-indicator">
-								<CheckCircle :size="20" /> Token saved
-							</span>
-							<span
-								v-if="gitlabTestResult && gitlabTestResult.success"
-								class="test-result-success">
-								<CheckCircle :size="20" />
-								{{ gitlabTestResult.message }}
-							</span>
-							<span
-								v-if="gitlabTestResult && !gitlabTestResult.success"
-								class="test-result-error">
-								<AlertCircle :size="20" />
-								{{ gitlabTestResult.message }}
-							</span>
-						</div>
-					</div>
-
-					<p class="field-hint">
+					<p v-else class="field-hint">
 						<LockOutline :size="16" /> Optional: Use
 						<code>read_api</code> for discovery, or <code>api</code> for
 						discovery + publishing
@@ -298,7 +213,7 @@ import { translate as t } from '@nextcloud/l10n'
 				</div>
 
 				<!-- GitLab Instance URL -->
-				<div class="gitlab-url-section">
+				<div v-if="token.key === 'gitlab'" class="gitlab-url-section">
 					<h5>🌐 Custom GitLab Instance (Optional)</h5>
 					<div class="token-field-group">
 						<label for="gitlab-url">GitLab API Base URL</label>
@@ -369,6 +284,7 @@ import TestTube from 'vue-material-design-icons/TestTube.vue'
 import Web from 'vue-material-design-icons/Web.vue'
 import SettingsCard from '../../../components/shared/SettingsCard.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import { saveMessageMethods } from './saveMessage.js'
 
 /**
  * API Token Configuration Component
@@ -420,11 +336,71 @@ export default {
 		}
 	},
 
+	computed: {
+		/**
+		 * The GitHub and GitLab token cards: their texts, current and stored
+		 * token, test state and handlers, for display.
+		 *
+		 * @spec exclude UI plumbing — token card layout over local fields.
+		 * @return {Array<object>}
+		 */
+		tokenCards() {
+			return [
+				{
+					key: 'github',
+					id: 'github-token',
+					label: 'GitHub Token',
+					title: this.t('openregister', 'GitHub Personal Access Token'),
+					icon: Github,
+					placeholder: 'ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+					...this.tokenState('github', 'GitHub'),
+				},
+				{
+					key: 'gitlab',
+					id: 'gitlab-token',
+					label: 'GitLab Token',
+					title: this.t('openregister', 'GitLab Personal Access Token'),
+					icon: Gitlab,
+					placeholder: 'glpat-xxxxxxxxxxxxxxxxxxxx',
+					...this.tokenState('gitlab', 'GitLab'),
+				},
+			]
+		},
+	},
+
 	async mounted() {
 		await this.loadTokens()
 	},
 
 	methods: {
+		...saveMessageMethods,
+
+		/**
+		 * The current and stored token, test state and handlers of a provider.
+		 *
+		 * @spec exclude UI plumbing — binds a token card to its local fields.
+		 * @param {string} field The prefix of its fields, such as `github`
+		 * @param {string} name The suffix of its handlers, such as `GitHub`
+		 * @return {object} The token state
+		 */
+		tokenState(field, name) {
+			const suffix = field.charAt(0).toUpperCase() + field.slice(1)
+			return {
+				value: this[`${field}Token`],
+				original: this[`original${suffix}Token`],
+				testing: this[`testing${suffix}`],
+				result: this[`${field}TestResult`],
+				update: (value) => {
+					this[`${field}Token`] = value
+					this[`update${name}Token`](value)
+				},
+
+				save: () => this[`save${name}Token`](),
+				test: () => this[`test${name}Token`](),
+				clear: () => this[`clear${name}Token`](),
+			}
+		},
+
 		/**
 		 * Load existing API tokens from the backend
 		 *
@@ -586,22 +562,6 @@ export default {
 		},
 
 		/**
-		 * Show save message
-		 *
-		 * @spec exclude UI plumbing — transient inline message with auto-clear timeout.
-		 * @param {string} message - The message to show
-		 * @param {string} type - The type of message ('success' or 'error')
-		 * @return {void}
-		 */
-		showSaveMessage(message, type = 'success') {
-			this.saveMessage = message
-			this.saveMessageType = type
-			setTimeout(() => {
-				this.saveMessage = ''
-			}, 3000)
-		},
-
-		/**
 		 * Test GitHub token validity
 		 *
 		 * @spec exclude UI plumbing — thin POST + result display; token validation contract owned by backend.
@@ -757,7 +717,8 @@ export default {
 	line-height: 1.5;
 }
 
-.scope-item code {
+.scope-item code,
+.scope-list code {
 	background: var(--color-background-dark);
 	padding: 2px 6px;
 	border-radius: 3px;
@@ -782,15 +743,6 @@ export default {
 	margin: 6px 0;
 	font-size: 14px;
 	line-height: 1.5;
-}
-
-.scope-list code {
-	background: var(--color-background-dark);
-	padding: 2px 6px;
-	border-radius: 3px;
-	font-family: monospace;
-	color: var(--color-primary-element);
-	font-weight: 600;
 }
 
 .scope-note {
@@ -896,7 +848,8 @@ export default {
 	flex: 1;
 }
 
-.saved-indicator {
+.saved-indicator,
+.test-result-success {
 	display: flex;
 	align-items: center;
 	gap: 6px;
@@ -906,12 +859,6 @@ export default {
 }
 
 .test-result-success {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	color: var(--color-success);
-	font-weight: 500;
-	font-size: 14px;
 	padding: 8px 12px;
 	background-color: var(--color-success-light);
 	border-radius: var(--border-radius);

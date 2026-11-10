@@ -39,31 +39,55 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Kernel\Contracts\NotificationTemplatesInterface;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationTemplatesControllerServices;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationRequestTrait;
 
 class NotificationTemplatesController extends Controller {
+	use NotificationRequestTrait;
+
+	/**
+	 * The catalogue of platform events and their texts.
+	 *
+	 * @var NotificationTemplatesInterface
+	 */
+	private readonly NotificationTemplatesInterface $registry;
+
+	/**
+	 * The user session and the authority on who is an administrator.
+	 *
+	 * @var ControllerSession
+	 */
+	private readonly ControllerSession $session;
+
+	/**
+	 * Current-user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
-	 * @param IRequest $request Request.
-	 * @param NotificationTemplatesInterface $registry The catalogue of platform events and their texts.
-	 * @param IGroupManager $groupManager The authority on who is an administrator.
-	 * @param IUserSession $userSession Current-user session.
+	 * @param IRequest                                 $request  Request.
+	 * @param NotificationTemplatesControllerServices $services The template registry and the session.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly NotificationTemplatesInterface $registry,
-		private readonly IGroupManager $groupManager,
-		private readonly IUserSession $userSession,
+		NotificationTemplatesControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+
+		$this->registry = $services->registry;
+		$this->session = $services->session;
+		$this->userSession = $services->session->userSession;
 	}//end __construct()
 
 	/**
@@ -85,7 +109,7 @@ class NotificationTemplatesController extends Controller {
 	 */
 	public function index(): JSONResponse {
 		if ($this->resolveUserId() === null) {
-			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+			return $this->authenticationRequired();
 		}
 
 		$rows = $this->registry->listAll();
@@ -113,7 +137,7 @@ class NotificationTemplatesController extends Controller {
 	 */
 	public function gaps(): JSONResponse {
 		if ($this->resolveUserId() === null) {
-			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+			return $this->authenticationRequired();
 		}
 
 		$gaps = $this->registry->gaps();
@@ -134,25 +158,45 @@ class NotificationTemplatesController extends Controller {
 	public function update(string $event): JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {
-			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+			return $this->authenticationRequired();
 		}
 
-		if ($this->groupManager->isAdmin($userId) === false) {
+		if ($this->session->groupManager->isAdmin($userId) === false) {
 			return new JSONResponse(data: ['error' => 'Administrator required'], statusCode: 403);
 		}
 
-		$params = $this->request->getParams();
+		return $this->editTemplate(event: $event, params: $this->request->getParams());
+	}//end update()
+
+	/**
+	 * Store the payload's template edit (or its reset), then answer with the result.
+	 *
+	 * @param string               $event  The event whose template is edited.
+	 * @param array<string, mixed> $params The request payload.
+	 *
+	 * @return JSONResponse The template now in effect, or a 422.
+	 */
+	private function editTemplate(string $event, array $params): JSONResponse {
 		$template = null;
-		if (($params['reset'] ?? false) !== true && ($params['reset'] ?? null) !== 'true') {
+		if ($this->wantsReset(params: $params) === false) {
 			$template = ($params['template'] ?? null);
 			if (is_array($template) === false) {
-				return new JSONResponse(
-					data: ['error' => 'A "template" object, or "reset": true, is required'],
-					statusCode: 422
-				);
+				return new JSONResponse(data: ['error' => 'A "template" object, or "reset": true, is required'], statusCode: 422);
 			}
 		}
 
+		return $this->storeTemplate(event: $event, template: $template);
+	}//end editTemplate()
+
+	/**
+	 * Store a template (null clears the edit), then answer with the template in effect.
+	 *
+	 * @param string                    $event    The event.
+	 * @param array<string, mixed>|null $template The template, or null to clear the edit.
+	 *
+	 * @return JSONResponse The template in effect, or a 422 when the registry refuses it.
+	 */
+	private function storeTemplate(string $event, ?array $template): JSONResponse {
 		try {
 			$this->registry->edit(event: $event, template: $template);
 		} catch (\InvalidArgumentException $e) {
@@ -166,19 +210,5 @@ class NotificationTemplatesController extends Controller {
 				'edited' => $this->registry->hasEdit(event: $event),
 			]
 		);
-	}//end update()
-
-	/**
-	 * Resolve the current user's UID, or null when anonymous.
-	 *
-	 * @return string|null
-	 */
-	private function resolveUserId(): ?string {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return null;
-		}
-
-		return $user->getUID();
-	}//end resolveUserId()
+	}//end storeTemplate()
 }//end class

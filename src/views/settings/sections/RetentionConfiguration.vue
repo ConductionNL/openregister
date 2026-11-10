@@ -6,12 +6,7 @@
 		:loadingMessage="t('openregister', 'Loading retention settings...')">
 		<!-- Actions slot -->
 		<template #actions>
-			<SectionSaveActions
-				:loading="loading"
-				:saving="saving"
-				:rebasing="rebasing"
-				@rebase="showRebaseDialog"
-				@save="saveSettings" />
+			<SectionSaveActions v-bind="saveActions" />
 		</template>
 
 		<!-- Section Description -->
@@ -578,18 +573,6 @@ export default {
 		padding: 8px 12px;
 		border-radius: var(--border-radius);
 		border: 1px solid var(--color-border-dark);
-	}
-
-	.section-header-inline {
-		position: static;
-		flex-direction: column;
-		gap: 12px;
-		align-items: stretch;
-		margin-bottom: 20px;
-	}
-
-	.button-group {
-		justify-content: center;
 	}
 }
 </style>

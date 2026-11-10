@@ -21,8 +21,10 @@ namespace OCA\OpenRegister\Service\Object;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Archival\RecordState;
+use OCA\OpenRegister\Service\DeclaredRow;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCP\IUserSession;
@@ -47,7 +49,7 @@ class OrphanDeletionGuard {
 	 * Constructor.
 	 *
 	 * @param MagicMapperInterface             $objectMapper      Organisation boundary and delete guards.
-	 * @param PermissionHandler       $permissionHandler The caller's delete right.
+	 * @param PermissionCheckInterface       $permissionHandler The caller's delete right.
 	 * @param IUserSession            $userSession       The caller.
 	 * @param ContainerInterface|null $container         Resolves the shared-data and integrity services lazily.
 	 *
@@ -55,7 +57,7 @@ class OrphanDeletionGuard {
 	 */
 	public function __construct(
 		private readonly MagicMapperInterface $objectMapper,
-		private readonly PermissionHandler $permissionHandler,
+		private readonly PermissionCheckInterface $permissionHandler,
 		private readonly IUserSession $userSession,
 		private readonly ?ContainerInterface $container,
 	) {
@@ -73,19 +75,49 @@ class OrphanDeletionGuard {
 	 * @spec openspec/specs/referential-integrity/spec.md
 	 */
 	public function allows(ObjectEntity $row, Register $register, Schema $schema): bool {
-		if ($this->userSession->getUser() === null || $this->isProtected(row: $row, schema: $schema) === true) {
+		return $this->allowsIn(row: $row, table: new RegisterSchema(register: $register, schema: $schema));
+	}//end allows()
+
+	/**
+	 * Whether the signed-in caller may soft-delete this row of this table.
+	 *
+	 * @param ObjectEntity   $row   The row.
+	 * @param RegisterSchema $table The row's register and schema.
+	 *
+	 * @return bool False on any refusal or failure.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function allowsIn(ObjectEntity $row, RegisterSchema $table): bool {
+		if ($this->userSession->getUser() === null || $this->isProtected(row: $row, schema: $table->schema) === true) {
 			return false;
 		}
 
 		try {
-			return $this->objectMapper->callerOrganisationsHold(row: $row) === true
-				&& $this->mayWriteSharedData(register: $register, schema: $schema) === true
-				&& $this->permissionHandler->hasPermission(schema: $schema, action: 'delete', objectOwner: $row->getOwner(), object: $row) === true
-				&& $this->passesDeleteChecks(row: $row) === true;
+			return $this->callerMayDelete(row: $row, table: $table);
 		} catch (Throwable $e) {
 			return false;
 		}
-	}//end allows()
+	}//end allowsIn()
+
+	/**
+	 * Whether the caller holds the row's organisation, may write the shared data, may delete, and the delete passes.
+	 *
+	 * Asked in that order; the first refusal stops the questions.
+	 *
+	 * @param ObjectEntity   $row   The row.
+	 * @param RegisterSchema $table The register and schema.
+	 *
+	 * @return bool True when every check passes
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function callerMayDelete(ObjectEntity $row, RegisterSchema $table): bool {
+		return $this->objectMapper->callerOrganisationsHold(row: $row) === true
+			&& $this->mayWriteSharedData(table: $table) === true
+			&& $this->permissionHandler->hasPermission(schema: $table->schema, action: 'delete', objectOwner: $row->getOwner(), object: $row) === true
+			&& $this->passesDeleteChecks(row: $row) === true;
+	}//end callerMayDelete()
 
 	/**
 	 * Whether the row's schema or state refuses every delete.
@@ -108,18 +140,23 @@ class OrphanDeletionGuard {
 	 * The organisation boundary answers a read question and lets a consumer of shared
 	 * master data through, so the write question is asked here.
 	 *
-	 * @param Register $register The row's register.
-	 * @param Schema   $schema   The row's schema.
+	 * @param RegisterSchema $table The row's register and schema.
 	 *
 	 * @return bool
 	 *
 	 * @throws Throwable When the caller only consumes either, or a service is missing.
 	 */
-	private function mayWriteSharedData(Register $register, Schema $schema): bool {
+	private function mayWriteSharedData(RegisterSchema $table): bool {
 		$shared = $this->container->get(SharedMasterDataService::class);
 		$organisations = $this->container->get(OrganisationServiceInterface::class)->getUserActiveOrganisations();
-		$shared->assertWritable(table: SharedMasterDataService::REGISTERS, id: $register->getId(), activeOrgUuids: $organisations);
-		$shared->assertWritable(table: SharedMasterDataService::SCHEMAS, id: $schema->getId(), activeOrgUuids: $organisations);
+		$shared->assertWritable(
+			row: new DeclaredRow(table: SharedMasterDataService::REGISTERS, id: $table->register->getId()),
+			activeOrgUuids: $organisations
+		);
+		$shared->assertWritable(
+			row: new DeclaredRow(table: SharedMasterDataService::SCHEMAS, id: $table->schema->getId()),
+			activeOrgUuids: $organisations
+		);
 
 		return true;
 	}//end mayWriteSharedData()

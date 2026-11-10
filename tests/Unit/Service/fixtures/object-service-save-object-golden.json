@@ -231,6 +231,16 @@
                 ]
             ],
             [
+                "logger.debug",
+                [
+                    "[ObjectService] Folder binding not re-validated, object not loadable",
+                    {
+                        "uuid": "gen-2",
+                        "exception": "not found"
+                    }
+                ]
+            ],
+            [
                 "saveHandler.clearAllCaches",
                 []
             ],
@@ -250,7 +260,6 @@
                         "seeded": 1
                     },
                     "gen-2",
-                    null,
                     true,
                     true,
                     true,
@@ -540,7 +549,6 @@
                         "expression": 1,
                         "seeded": 1
                     },
-                    null,
                     null,
                     true,
                     true,
@@ -889,6 +897,16 @@
                 ]
             ],
             [
+                "logger.debug",
+                [
+                    "[ObjectService] Folder binding not re-validated, object not loadable",
+                    {
+                        "uuid": "u-new",
+                        "exception": "not found"
+                    }
+                ]
+            ],
+            [
                 "saveHandler.clearAllCaches",
                 []
             ],
@@ -906,7 +924,6 @@
                         "always": 1
                     },
                     "u-new",
-                    null,
                     true,
                     true,
                     true,
@@ -1251,6 +1268,16 @@
                 ]
             ],
             [
+                "logger.debug",
+                [
+                    "[ObjectService] Folder binding not re-validated, object not loadable",
+                    {
+                        "uuid": "chosen-2",
+                        "exception": "not found"
+                    }
+                ]
+            ],
+            [
                 "saveHandler.clearAllCaches",
                 []
             ],
@@ -1269,7 +1296,6 @@
                         "always": 1
                     },
                     "chosen-2",
-                    null,
                     true,
                     true,
                     true,
@@ -1645,7 +1671,6 @@
                         "expression": 1,
                         "seeded": 1
                     },
-                    null,
                     null,
                     true,
                     true,
@@ -2053,7 +2078,6 @@
                         "always": 1
                     },
                     "u-2",
-                    null,
                     true,
                     true,
                     true,
@@ -2338,7 +2362,6 @@
                         "seeded": 1
                     },
                     null,
-                    null,
                     true,
                     true,
                     true,
@@ -2565,7 +2588,6 @@
                         "expression": 1,
                         "seeded": 1
                     },
-                    null,
                     null,
                     true,
                     true,
@@ -2871,7 +2893,6 @@
                         "expression": 1,
                         "seeded": 1
                     },
-                    null,
                     null,
                     true,
                     true,
@@ -3211,6 +3232,16 @@
                 ]
             ],
             [
+                "logger.debug",
+                [
+                    "[ObjectService] Folder binding not re-validated, object not loadable",
+                    {
+                        "uuid": "chosen-1",
+                        "exception": "not found"
+                    }
+                ]
+            ],
+            [
                 "saveHandler.clearAllCaches",
                 []
             ],
@@ -3229,7 +3260,6 @@
                         "always": 1
                     },
                     "chosen-1",
-                    null,
                     true,
                     true,
                     true,
@@ -3525,6 +3555,16 @@
                 ]
             ],
             [
+                "logger.debug",
+                [
+                    "[ObjectService] Folder binding not re-validated, object not loadable",
+                    {
+                        "uuid": "gen-1",
+                        "exception": "not found"
+                    }
+                ]
+            ],
+            [
                 "saveHandler.clearAllCaches",
                 []
             ],
@@ -3544,7 +3584,6 @@
                         "seeded": 1
                     },
                     "gen-1",
-                    null,
                     true,
                     true,
                     true,
@@ -3852,6 +3891,16 @@
                 ]
             ],
             [
+                "logger.debug",
+                [
+                    "[ObjectService] Folder binding not re-validated, object not loadable",
+                    {
+                        "uuid": "gen-1",
+                        "exception": "not found"
+                    }
+                ]
+            ],
+            [
                 "saveHandler.clearAllCaches",
                 []
             ],
@@ -3872,7 +3921,6 @@
                         "seeded": 1
                     },
                     "gen-1",
-                    null,
                     true,
                     true,
                     true,
@@ -4165,7 +4213,6 @@
                         "expression": 1,
                         "seeded": 1
                     },
-                    null,
                     null,
                     true,
                     true,
@@ -4546,7 +4593,6 @@
                         "always": 1
                     },
                     "u-9",
-                    null,
                     true,
                     true,
                     true,
@@ -4905,7 +4951,6 @@
                         "always": 1
                     },
                     "u-1",
-                    null,
                     false,
                     false,
                     true,
@@ -5209,6 +5254,16 @@
                 ]
             ],
             [
+                "logger.debug",
+                [
+                    "[ObjectService] Folder binding not re-validated, object not loadable",
+                    {
+                        "uuid": "gen-1",
+                        "exception": "not found"
+                    }
+                ]
+            ],
+            [
                 "saveHandler.clearAllCaches",
                 []
             ],
@@ -5228,7 +5283,6 @@
                         "seeded": 1
                     },
                     "gen-1",
-                    null,
                     true,
                     true,
                     true,
@@ -5611,7 +5665,6 @@
                         "always": 1
                     },
                     "u-1",
-                    null,
                     true,
                     true,
                     true,
@@ -5907,6 +5960,16 @@
                 ]
             ],
             [
+                "logger.debug",
+                [
+                    "[ObjectService] Folder binding not re-validated, object not loadable",
+                    {
+                        "uuid": "gen-3",
+                        "exception": "not found"
+                    }
+                ]
+            ],
+            [
                 "saveHandler.clearAllCaches",
                 []
             ],
@@ -5926,7 +5989,6 @@
                         "seeded": 1
                     },
                     "gen-3",
-                    null,
                     false,
                     false,
                     true,
@@ -6576,7 +6638,6 @@
                         "seeded": 1
                     },
                     null,
-                    null,
                     true,
                     true,
                     true,
@@ -6866,7 +6927,6 @@
                         "expression": 1,
                         "seeded": 1
                     },
-                    null,
                     null,
                     true,
                     true,
@@ -7309,6 +7369,16 @@
                 ]
             ],
             [
+                "logger.debug",
+                [
+                    "[ObjectService] Folder binding not re-validated, object not loadable",
+                    {
+                        "uuid": "3f2b8c1e-4d5a-4b6c-8d7e-9f0a1b2c3d4e",
+                        "exception": "not found"
+                    }
+                ]
+            ],
+            [
                 "saveHandler.clearAllCaches",
                 []
             ],
@@ -7328,7 +7398,6 @@
                         "seeded": 1
                     },
                     "3f2b8c1e-4d5a-4b6c-8d7e-9f0a1b2c3d4e",
-                    null,
                     true,
                     true,
                     true,
@@ -7686,7 +7755,6 @@
                         "always": 1
                     },
                     "3f2b8c1e-4d5a-4b6c-8d7e-9f0a1b2c3d4e",
-                    null,
                     true,
                     true,
                     true,
@@ -8019,7 +8087,6 @@
                         "always": 1
                     },
                     "3f2b8c1e-4d5a-4b6c-8d7e-9f0a1b2c3d4e",
-                    null,
                     true,
                     true,
                     true,
@@ -8290,7 +8357,6 @@
                         "seeded": 1
                     },
                     null,
-                    null,
                     true,
                     true,
                     true,
@@ -8509,7 +8575,6 @@
                         "expression": 1,
                         "seeded": 1
                     },
-                    null,
                     null,
                     true,
                     true,
@@ -8793,7 +8858,6 @@
                         "seeded": 1
                     },
                     null,
-                    null,
                     true,
                     true,
                     true,
@@ -8954,7 +9018,6 @@
                         "expression": 1,
                         "seeded": 1
                     },
-                    null,
                     null,
                     true,
                     true,
@@ -9180,7 +9243,6 @@
                         "expression": 1,
                         "seeded": 1
                     },
-                    null,
                     null,
                     true,
                     true,
@@ -9526,6 +9588,16 @@
                 ]
             ],
             [
+                "logger.debug",
+                [
+                    "[ObjectService] Folder binding not re-validated, object not loadable",
+                    {
+                        "uuid": "sid-1",
+                        "exception": "not found"
+                    }
+                ]
+            ],
+            [
                 "saveHandler.clearAllCaches",
                 []
             ],
@@ -9546,7 +9618,6 @@
                         "always": 1
                     },
                     "sid-1",
-                    null,
                     true,
                     true,
                     true,
@@ -9820,7 +9891,6 @@
                         "expression": 1,
                         "seeded": 1
                     },
-                    null,
                     null,
                     true,
                     true,
@@ -10262,7 +10332,6 @@
                         "always": 1
                     },
                     "u-1",
-                    null,
                     true,
                     true,
                     true,
@@ -10629,7 +10698,6 @@
                         "always": 1
                     },
                     "u-1",
-                    null,
                     true,
                     true,
                     true,
@@ -11026,7 +11094,6 @@
                         "expression": 1,
                         "seeded": 1
                     },
-                    null,
                     null,
                     true,
                     true,

@@ -118,13 +118,23 @@ class LinksControllersGoldenTest extends TestCase {
 			return $context['request'];
 		}
 
+		$reflection = new ReflectionClass($class);
+		if ($reflection->isFinal() === true) {
+			$parts = [];
+			foreach ($reflection->getConstructor()->getParameters() as $part) {
+				$parts[] = $this->double(param: $part, context: $context);
+			}
+
+			return new $class(...$parts);
+		}
+
 		$mock = $this->createMock($class);
 		if ($class === IL10N::class) {
 			$mock->method('t')->willReturnCallback(fn ($text, $parameters = []) => vsprintf($text, $parameters));
 			return $mock;
 		}
 
-		if ($class === \OCA\OpenRegister\Service\Object\PermissionHandler::class) {
+		if ($class === \OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class) {
 			$mock->method('hasPermission')->willReturn(true);
 			return $mock;
 		}
@@ -220,7 +230,7 @@ class LinksControllersGoldenTest extends TestCase {
 		$objectService->method('getObject')->willReturn(null);
 		$talk = $this->createMock(\OCA\OpenRegister\Service\TalkLinkService::class);
 		$talk->method('isTalkAvailable')->willReturn(true);
-		$controller = new \OCA\OpenRegister\Controller\TalkLinksController('openregister', $this->createMock(IRequest::class), $talk, $objectService);
+		$controller = new \OCA\OpenRegister\Controller\TalkLinksController($this->createMock(IRequest::class), new \OCA\OpenRegister\Controller\Support\TalkLinksControllerServices($talk, $objectService));
 
 		$this->assertSame(404, $controller->index('reg', 'sch', 'obj')->getStatus());
 		$this->assertSame(['setRegister reg', 'setSchema sch', 'setObject obj'], $calls);

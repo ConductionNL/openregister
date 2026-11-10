@@ -30,7 +30,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use DateTime;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationHistoryControllerServices;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingService;
@@ -41,6 +43,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Db\ListQuery;
 
 /**
  * Class NotificationHistoryController.
@@ -48,26 +51,87 @@ use OCP\IUserSession;
  * @psalm-suppress UnusedClass
  */
 class NotificationHistoryController extends Controller {
+
+	/**
+	 * Query parameters the list passes on to the mapper as filters.
+	 *
+	 * `subjectType`/`subjectId` are the bell's axis: what a notice is ABOUT,
+	 * which is not the same question as which schema's rule produced it.
+	 * `eventId` reads one firing's transports together: the in-app notice and
+	 * the outbound call that came from the same event share it, which is the
+	 * only way to ask "what else happened when this fired". The last three are
+	 * the list-state switches, present as strings and read as booleans by the
+	 * mapper, so `?unreadOnly=true` works from a plain query string.
+	 */
+	private const FILTER_KEYS = [
+		'ruleId',
+		'channel',
+		'recipient',
+		'objectUuid',
+		'schemaId',
+		'registerId',
+		'status',
+		'subjectType',
+		'subjectId',
+		'eventId',
+		'unreadOnly',
+		'includeArchived',
+		'includeSnoozed',
+	];
+
+	/**
+	 * Page size when none or an invalid one is asked for.
+	 */
+	private const DEFAULT_LIMIT = 50;
+
+	/**
+	 * Largest page size, so "give me everything" cannot spike memory.
+	 */
+	private const MAX_LIMIT = 500;
+	/**
+	 * Mapper for the notification history table.
+	 *
+	 * @var NotificationHistoryMapper
+	 */
+	private readonly NotificationHistoryMapper $mapper;
+
+	/**
+	 * Active session, drives the per-caller filter scope (F07).
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group resolver, admins keep full audit visibility (F07).
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * The one writer of read, snooze and archive.
+	 *
+	 * @var NotificationClearingService
+	 */
+	private readonly NotificationClearingService $clearing;
+
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name.
-	 * @param IRequest $request HTTP request.
-	 * @param NotificationHistoryMapper $mapper Mapper for the notification history table.
-	 * @param IUserSession $userSession Active session — drives the per-caller filter scope (F07).
-	 * @param IGroupManager $groupManager Group resolver — admins keep full audit visibility (F07).
-	 * @param NotificationClearingService $clearing The one writer of read, snooze and archive.
+	 * @param IRequest $request Request.
+	 * @param NotificationHistoryControllerServices $services The controller's services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly NotificationHistoryMapper $mapper,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly NotificationClearingService $clearing,
+		NotificationHistoryControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
+		$this->mapper = $services->mapper;
+		$this->userSession = $services->userSession;
+		$this->groupManager = $services->groupManager;
+		$this->clearing = $services->clearing;
 	}//end __construct()
 
 	/**
@@ -113,7 +177,7 @@ class NotificationHistoryController extends Controller {
 		$limit = $this->resolveLimit();
 		$offset = $this->resolveOffset();
 
-		$results = $this->mapper->findFiltered(filters: $filters, limit: $limit, offset: $offset);
+		$results = $this->mapper->findFiltered(query: new ListQuery(limit: $limit, offset: $offset, filters: $filters));
 		$total = $this->mapper->countFiltered(filters: $filters);
 
 		return new JSONResponse(
@@ -143,21 +207,9 @@ class NotificationHistoryController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function snooze(int $id): JSONResponse {
-		$until = $this->request->getParam('snoozedUntil');
-		if (is_string($until) === false || $until === '') {
-			return new JSONResponse(
-				['message' => 'snoozedUntil is required', 'error' => 'snoozed-until-required'],
-				Http::STATUS_BAD_REQUEST
-			);
-		}
-
-		try {
-			$moment = new DateTime($until);
-		} catch (\Throwable $e) {
-			return new JSONResponse(
-				['message' => 'snoozedUntil is not a moment', 'error' => 'snoozed-until-invalid'],
-				Http::STATUS_BAD_REQUEST
-			);
+		$moment = $this->snoozeMoment();
+		if ($moment instanceof JSONResponse) {
+			return $moment;
 		}
 
 		try {
@@ -168,6 +220,24 @@ class NotificationHistoryController extends Controller {
 
 		return new JSONResponse($row->jsonSerialize());
 	}//end snooze()
+
+	/**
+	 * The `snoozedUntil` moment, or the 400 response refusing it.
+	 *
+	 * @return DateTime|JSONResponse
+	 */
+	private function snoozeMoment(): DateTime|JSONResponse {
+		$until = $this->stringParam(name: 'snoozedUntil');
+		if ($until === null) {
+			return $this->badRequest(message: 'snoozedUntil is required', error: 'snoozed-until-required');
+		}
+
+		try {
+			return new DateTime($until);
+		} catch (\Throwable $e) {
+			return $this->badRequest(message: 'snoozedUntil is not a moment', error: 'snoozed-until-invalid');
+		}
+	}//end snoozeMoment()
 
 	/**
 	 * Archive one of the caller's own notices, without reading it.
@@ -208,21 +278,13 @@ class NotificationHistoryController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function markThreadRead(): JSONResponse {
-		$objectUuid = $this->request->getParam('objectUuid');
-		if (is_string($objectUuid) === false || $objectUuid === '') {
-			return new JSONResponse(
-				['message' => 'objectUuid is required', 'error' => 'object-uuid-required'],
-				Http::STATUS_BAD_REQUEST
-			);
-		}
-
-		$subjectId = $this->request->getParam('subjectId');
-		if (is_string($subjectId) === false || $subjectId === '') {
-			$subjectId = null;
+		$objectUuid = $this->stringParam(name: 'objectUuid');
+		if ($objectUuid === null) {
+			return $this->badRequest(message: 'objectUuid is required', error: 'object-uuid-required');
 		}
 
 		try {
-			$cleared = $this->clearing->markThreadRead(objectUuid: $objectUuid, subjectId: $subjectId);
+			$cleared = $this->clearing->markThreadRead(objectUuid: $objectUuid, subjectId: $this->stringParam(name: 'subjectId'));
 		} catch (NotAuthorizedException $e) {
 			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
 		}
@@ -231,73 +293,92 @@ class NotificationHistoryController extends Controller {
 	}//end markThreadRead()
 
 	/**
+	 * A 400 response with a message and an error code.
+	 *
+	 * @param string $message The message.
+	 * @param string $error   The error code.
+	 *
+	 * @return JSONResponse
+	 */
+	private function badRequest(string $message, string $error): JSONResponse {
+		return new JSONResponse(['message' => $message, 'error' => $error], Http::STATUS_BAD_REQUEST);
+	}//end badRequest()
+
+	/**
+	 * A request parameter that is a non-empty string, null otherwise.
+	 *
+	 * @param string $name The parameter name.
+	 *
+	 * @return string|null
+	 */
+	private function stringParam(string $name): ?string {
+		return ($this->stringParams(names: [$name])[$name] ?? null);
+	}//end stringParam()
+
+	/**
+	 * The request parameters among `$names` that are non-empty strings, keyed by name.
+	 *
+	 * @param array<int, string> $names The parameter names, in the order they are read.
+	 *
+	 * @return array<string, string>
+	 */
+	private function stringParams(array $names): array {
+		$values = [];
+		foreach ($names as $name) {
+			$value = $this->request->getParam($name);
+			if (is_string($value) === true && $value !== '') {
+				$values[$name] = $value;
+			}
+		}
+
+		return $values;
+	}//end stringParams()
+
+	/**
+	 * A request parameter that is a non-negative integer, given as an int or a
+	 * string of digits; null otherwise.
+	 *
+	 * @param string $name The parameter name.
+	 *
+	 * @return int|null
+	 */
+	private function naturalParam(string $name): ?int {
+		$raw = $this->request->getParam($name);
+		if (is_string($raw) === true && ctype_digit($raw) === true) {
+			return (int)$raw;
+		}
+
+		if (is_int($raw) === true && $raw >= 0) {
+			return $raw;
+		}
+
+		return null;
+	}//end naturalParam()
+
+	/**
 	 * Extract supported filter values from the request.
 	 *
 	 * @return array<string, string|null> Filter map.
 	 */
 	private function extractFilters(): array {
-		$supported = [
-			'ruleId',
-			'channel',
-			'recipient',
-			'objectUuid',
-			'schemaId',
-			'registerId',
-			'status',
-			// The bell's axis: what a notice is ABOUT, which is not the same
-			// question as which schema's rule produced it.
-			'subjectType',
-			'subjectId',
-			// One firing's transports, read together. The in-app notice and the
-			// outbound call that came from the same event share this id, which
-			// is the only way to ask "what else happened when this fired".
-			'eventId',
-			// The three list-state switches. Present as strings and read as
-			// booleans by the mapper, so `?unreadOnly=true` works from a plain
-			// query string.
-			'unreadOnly',
-			'includeArchived',
-			'includeSnoozed',
-		];
-
-		$filters = [];
-		foreach ($supported as $key) {
-			$value = $this->request->getParam($key);
-			if (is_string($value) === true && $value !== '') {
-				$filters[$key] = $value;
-			}
-		}
-
-		return $filters;
+		return $this->stringParams(names: self::FILTER_KEYS);
 	}//end extractFilters()
 
 	/**
 	 * Resolve the limit parameter.
 	 *
-	 * Defaults to 50 when missing or invalid; capped at 500 to prevent
+	 * Defaults to 50 when missing, zero or invalid; capped at 500 to prevent
 	 * accidental "give me everything" queries from spiking memory.
 	 *
 	 * @return int Resolved limit.
 	 */
 	private function resolveLimit(): int {
-		$defaultValue = 50;
-		$maxValue = 500;
-
-		$raw = $this->request->getParam('limit');
-		if ($raw === null || $raw === '') {
-			return $defaultValue;
+		$value = $this->naturalParam(name: 'limit');
+		if ($value === null || $value === 0) {
+			return self::DEFAULT_LIMIT;
 		}
 
-		if (is_string($raw) === true && ctype_digit($raw) === true) {
-			$value = (int)$raw;
-			if ($value > 0) {
-				return min($value, $maxValue);
-			}
-		} elseif (is_int($raw) === true && $raw > 0) {
-			return min($raw, $maxValue);
-		}
-
-		return $defaultValue;
+		return min($value, self::MAX_LIMIT);
 	}//end resolveLimit()
 
 	/**
@@ -308,19 +389,6 @@ class NotificationHistoryController extends Controller {
 	 * @return int Resolved offset.
 	 */
 	private function resolveOffset(): int {
-		$raw = $this->request->getParam('offset');
-		if ($raw === null || $raw === '') {
-			return 0;
-		}
-
-		if (is_string($raw) === true && ctype_digit($raw) === true) {
-			return (int)$raw;
-		}
-
-		if (is_int($raw) === true && $raw >= 0) {
-			return $raw;
-		}
-
-		return 0;
+		return ($this->naturalParam(name: 'offset') ?? 0);
 	}//end resolveOffset()
 }//end class

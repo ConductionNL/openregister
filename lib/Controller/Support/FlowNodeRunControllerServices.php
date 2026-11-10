@@ -34,7 +34,7 @@ final class FlowNodeRunControllerServices {
 	 * @param FlowNodeRunMappers   $mappers   The mappers bundle.
 	 * @param FlowNodeRunGraph     $graph     The graph bundle.
 	 * @param FlowNodeRunExecution $execution The execution bundle.
-	 * @param FlowNodeRunPlatform  $platform  The platform bundle.
+	 * @param DsarCasePlatform     $platform  The platform bundle.
 	 *
 	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md
 	 */
@@ -42,7 +42,7 @@ final class FlowNodeRunControllerServices {
 		public readonly FlowNodeRunMappers $mappers,
 		public readonly FlowNodeRunGraph $graph,
 		public readonly FlowNodeRunExecution $execution,
-		public readonly FlowNodeRunPlatform $platform,
+		public readonly DsarCasePlatform $platform,
 	) {
 	}//end __construct()
 }//end class

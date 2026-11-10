@@ -49,7 +49,7 @@ use OCP\IDBConnection;
  * delete guard asks of the table, with its own predicate set, exactly as
  * {@see FlowRunMapper} argues.
  */
-class FlowTimerMapper extends QBMapper {
+class FlowTimerMapper extends QBMapper implements FlowTimerMapperInterface {
 
 	/**
 	 * Constructor.
@@ -237,22 +237,21 @@ class FlowTimerMapper extends QBMapper {
 	/**
 	 * Every timer in a state, paged by id, for the invariant check.
 	 *
-	 * @param string $state The state.
-	 * @param int $afterId Return rows with an id above this.
-	 * @param int $limit The page size.
+	 * @param string   $state  The state.
+	 * @param IdCursor $cursor The rows after this id, and the page size.
 	 *
 	 * @return array<int, FlowTimer> The page.
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
-	public function findByStatePaged(string $state, int $afterId, int $limit): array {
+	public function findByStatePaged(string $state, IdCursor $cursor): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('state', $qb->createNamedParameter($state)))
-			->andWhere($qb->expr()->gt('id', $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
+			->andWhere($cursor->after(qb: $qb))
 			->orderBy('id', 'ASC')
-			->setMaxResults($limit);
+			->setMaxResults($cursor->limit);
 
 		return $this->findEntities(query: $qb);
 	}//end findByStatePaged()

@@ -49,14 +49,11 @@ namespace OCA\OpenRegister\Repair;
 use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskAudit;
-use OCA\OpenRegister\Db\TaskAuditMapper;
-use OCA\OpenRegister\Db\TaskCandidateMapper;
-use OCA\OpenRegister\Db\TaskMapper;
+use OCA\OpenRegister\Repair\Support\ApprovalTaskStores;
+use OCA\OpenRegister\Repair\Support\RepairPlatform;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\IAppConfig;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -76,18 +73,12 @@ class SeedTaskFixtures implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param IAppConfig $appConfig Holds the opt-in flag.
-	 * @param TaskMapper $tasks The task table.
-	 * @param TaskCandidateMapper $candidates The candidate index rows.
-	 * @param TaskAuditMapper $audits The append-only audit.
-	 * @param LoggerInterface $logger Failure reporting.
+	 * @param RepairPlatform     $platform The app config holding the opt-in flag, and failure reporting.
+	 * @param ApprovalTaskStores $mappers  The task table, the candidate index rows and the append-only audit.
 	 */
 	public function __construct(
-		private readonly IAppConfig $appConfig,
-		private readonly TaskMapper $tasks,
-		private readonly TaskCandidateMapper $candidates,
-		private readonly TaskAuditMapper $audits,
-		private readonly LoggerInterface $logger,
+		private readonly RepairPlatform $platform,
+		private readonly ApprovalTaskStores $mappers,
 	) {
 
 	}//end __construct()
@@ -113,7 +104,7 @@ class SeedTaskFixtures implements IRepairStep {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	public function run(IOutput $output): void {
-		if ($this->appConfig->getValueBool('openregister', self::FLAG, false) === false) {
+		if ($this->platform->config->getValueBool('openregister', self::FLAG, false) === false) {
 			$output->info('Task fixtures: skipped (openregister/' . self::FLAG . ' is not enabled).');
 			return;
 		}
@@ -129,7 +120,7 @@ class SeedTaskFixtures implements IRepairStep {
 				// the repair-step defect this fleet already paid for once, so
 				// the skip is visible in the repair log AND the app log.
 				$output->warning(sprintf('Task fixture %s failed: %s', (string)($fixture['uuid'] ?? '?'), $failure->getMessage()));
-				$this->logger->warning(
+				$this->platform->logger->warning(
 					'[SeedTaskFixtures] Fixture failed: ' . $failure->getMessage(),
 					['uuid' => ($fixture['uuid'] ?? null)]
 				);
@@ -151,7 +142,7 @@ class SeedTaskFixtures implements IRepairStep {
 	 */
 	private function seedOne(array $fixture): bool {
 		try {
-			$this->tasks->findByUuid(uuid: (string)$fixture['uuid']);
+			$this->mappers->tasks->findByUuid(uuid: (string)$fixture['uuid']);
 
 			return false;
 		} catch (DoesNotExistException) {
@@ -161,7 +152,7 @@ class SeedTaskFixtures implements IRepairStep {
 		$task = new Task();
 		$task->hydrate($fixture['task']);
 		$task->setUuid((string)$fixture['uuid']);
-		$persisted = $this->tasks->insert($task);
+		$persisted = $this->mappers->tasks->insert($task);
 
 		// The one-write-path invariant, preserved by hand: JSON and index
 		// rows land together.
@@ -187,7 +178,7 @@ class SeedTaskFixtures implements IRepairStep {
 			];
 		}
 
-		$this->candidates->replaceForTask(taskId: (int)$persisted->getId(), candidates: $rows);
+		$this->mappers->candidates->replaceForTask(taskId: (int)$persisted->getId(), candidates: $rows);
 
 		foreach (($fixture['audit'] ?? []) as $auditFixture) {
 			$entry = new TaskAudit();
@@ -200,7 +191,7 @@ class SeedTaskFixtures implements IRepairStep {
 			$entry->setMandate($auditFixture['mandate'] ?? null);
 			$entry->setReason($auditFixture['reason'] ?? null);
 			$entry->setAuthorized((bool)($auditFixture['authorized'] ?? true));
-			$this->audits->insert($entry);
+			$this->mappers->audits->insert($entry);
 		}
 
 		return true;

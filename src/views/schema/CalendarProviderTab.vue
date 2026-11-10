@@ -152,16 +152,10 @@ import { translate as t } from '@nextcloud/l10n'
 
 			<!-- Save button -->
 			<div class="fieldRow actions">
-				<NcButton
-					variant="primary"
+				<SaveButton
+					:saving="saving"
 					:disabled="!isValid || saving"
-					@click="save">
-					<template #icon>
-						<NcLoadingIcon v-if="saving" :size="20" />
-						<ContentSave v-else :size="20" />
-					</template>
-					{{ t('openregister', 'Save') }}
-				</NcButton>
+					@click="save" />
 			</div>
 		</template>
 	</div>
@@ -172,12 +166,11 @@ import {
 	NcButton,
 	NcCheckboxRadioSwitch,
 	NcColorPicker,
-	NcLoadingIcon,
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
 import CircleIcon from 'vue-material-design-icons/Circle.vue'
-import ContentSave from 'vue-material-design-icons/ContentSave.vue'
+import SaveButton from '../../components/shared/SaveButton.vue'
 import { schemaStore } from '../../store/store.js'
 
 export default {
@@ -186,11 +179,10 @@ export default {
 		NcButton,
 		NcCheckboxRadioSwitch,
 		NcColorPicker,
-		NcLoadingIcon,
 		NcSelect,
 		NcTextField,
 		CircleIcon,
-		ContentSave,
+		SaveButton,
 	},
 
 	props: {

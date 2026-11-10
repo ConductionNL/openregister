@@ -31,7 +31,7 @@
  * Per-app Doriath identity (per-app-doriath-application design D-5): alongside
  * the OR app-key onboarding, the same hook also registers the consuming app as
  * its OWN identity-only Doriath `Application` via
- * {@see \OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrar} —
+ * {@see \OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrarInterface} —
  * manifest-driven, idempotent, `pending`, no CSR. This adds identity only;
  * brokered secret custody stays under OR's single self-registered application
  * vault (credential-doriath-leaf D-C/D-F), untouched.
@@ -56,8 +56,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\AppHost\Repair;
 
 use OCA\OpenRegister\AppHost\Service\AppHostSettingsService;
-use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
-use OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrar;
+use OCA\OpenRegister\Service\Credential\CredentialAppTokenServiceInterface;
+use OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrarInterface;
 use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -82,16 +82,16 @@ class GenericInitializeSettings implements IRepairStep {
 	 * @param AppHostSettingsService $settingsService App-scoped settings service.
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param IAppManager|null $appManager Locates the leaf's bundled manifest (lazily resolved when null).
-	 * @param CredentialAppTokenService|null $tokenService Credential-broker app registry (lazily resolved when null).
-	 * @param DoriathApplicationRegistrar|null $applicationRegistrar Per-app Doriath application registrar (lazily resolved when null).
+	 * @param CredentialAppTokenServiceInterface|null $tokenService Credential-broker app registry (lazily resolved when null).
+	 * @param DoriathApplicationRegistrarInterface|null $applicationRegistrar Per-app Doriath application registrar (lazily resolved when null).
 	 */
 	public function __construct(
 		protected readonly string $appId,
 		protected readonly AppHostSettingsService $settingsService,
 		protected readonly LoggerInterface $logger,
 		protected readonly ?IAppManager $appManager = null,
-		protected readonly ?CredentialAppTokenService $tokenService = null,
-		protected readonly ?DoriathApplicationRegistrar $applicationRegistrar = null,
+		protected readonly ?CredentialAppTokenServiceInterface $tokenService = null,
+		protected readonly ?DoriathApplicationRegistrarInterface $applicationRegistrar = null,
 	) {
 	}//end __construct()
 
@@ -212,7 +212,7 @@ class GenericInitializeSettings implements IRepairStep {
 	 */
 	private function registerBrokerAppKey(IOutput $output): void {
 		try {
-			$tokenService = ($this->tokenService ?? Server::get(CredentialAppTokenService::class));
+			$tokenService = ($this->tokenService ?? Server::get(CredentialAppTokenServiceInterface::class));
 
 			if ($tokenService->isRegistered($this->appId) === true) {
 				// Never rotate an existing signing secret from an auto-run.
@@ -237,7 +237,7 @@ class GenericInitializeSettings implements IRepairStep {
 	/**
 	 * Register the consuming app as its own identity-only Doriath `Application`.
 	 *
-	 * Delegates to {@see DoriathApplicationRegistrar}: name = appId, description
+	 * Delegates to {@see DoriathApplicationRegistrarInterface}: name = appId, description
 	 * = the manifest description (fallback appId), type `internal`, no CSR,
 	 * `pending`. Idempotent and never-throw are owned by the registrar; this
 	 * method only supplies the description read from the leaf manifest. Custody
@@ -249,7 +249,7 @@ class GenericInitializeSettings implements IRepairStep {
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
 	private function registerDoriathApplication(): void {
-		$registrar = ($this->applicationRegistrar ?? Server::get(DoriathApplicationRegistrar::class));
+		$registrar = ($this->applicationRegistrar ?? Server::get(DoriathApplicationRegistrarInterface::class));
 		$registrar->registerApplication($this->appId, $this->manifestDescription());
 	}//end registerDoriathApplication()
 

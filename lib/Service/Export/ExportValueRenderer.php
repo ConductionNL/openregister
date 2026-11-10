@@ -75,15 +75,14 @@ class ExportValueRenderer {
 	/**
 	 * A value written as a surface would show it.
 	 *
-	 * @param mixed                 $value    The raw value.
-	 * @param array<string, mixed>  $property The schema property, when the schema resolved.
-	 * @param array<string, string> $names    Uuid to object name map.
+	 * @param mixed           $value  The raw value.
+	 * @param ColumnRendering $column The column's schema property and the uuid to name map.
 	 *
 	 * @return string The cell.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function rendered($value, array $property, array $names): string {
+	public function rendered($value, ColumnRendering $column): string {
 		if ($value === null) {
 			return '';
 		}
@@ -99,7 +98,7 @@ class ExportValueRenderer {
 		if (is_array($value) === true) {
 			$parts = [];
 			foreach ($value as $item) {
-				$parts[] = $this->rendered(value: $item, property: $property, names: $names);
+				$parts[] = $this->rendered(value: $item, column: $column);
 			}
 
 			return implode('; ', $parts);
@@ -111,11 +110,11 @@ class ExportValueRenderer {
 
 		$scalar = (string)$value;
 
-		if (isset($names[$scalar]) === true) {
-			return $names[$scalar];
+		if (isset($column->names[$scalar]) === true) {
+			return $column->names[$scalar];
 		}
 
-		$label = $this->enumLabel(value: $scalar, property: $property);
+		$label = $this->enumLabel(value: $scalar, property: $column->property);
 		if ($label !== null) {
 			return $label;
 		}

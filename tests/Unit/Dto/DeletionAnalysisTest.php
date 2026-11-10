@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace Unit\Dto;
 
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -36,9 +37,7 @@ class DeletionAnalysisTest extends TestCase {
 	public function testFullConstructionSetsAllProperties(): void {
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			cascadeTargets: [['uuid' => 'a']],
-			nullifyTargets: [['uuid' => 'b']],
-			defaultTargets: [['uuid' => 'c']],
+			effects: new DeletionEffects(cascadeTargets: [['uuid' => 'a']], nullifyTargets: [['uuid' => 'b']], defaultTargets: [['uuid' => 'c']]),
 			blockers: [],
 			chainPaths: [['a' => 'b']]
 		);
@@ -60,9 +59,7 @@ class DeletionAnalysisTest extends TestCase {
 	public function testBlockedObjectIsNotDeletable(): void {
 		$analysis = new DeletionAnalysis(
 			deletable: false,
-			cascadeTargets: [],
-			nullifyTargets: [],
-			defaultTargets: [],
+			effects: new DeletionEffects(cascadeTargets: [], nullifyTargets: [], defaultTargets: []),
 			blockers: [['objectUuid' => 'xyz', 'schema' => 'foo']]
 		);
 
@@ -96,9 +93,7 @@ class DeletionAnalysisTest extends TestCase {
 	public function testChainPathsDefaultsToEmptyArray(): void {
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			cascadeTargets: [],
-			nullifyTargets: [],
-			defaultTargets: [],
+			effects: new DeletionEffects(cascadeTargets: [], nullifyTargets: [], defaultTargets: []),
 			blockers: []
 		);
 

@@ -32,17 +32,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\ConfigurationServiceInterface;
-use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
  * Imports the intake-sources register descriptor idempotently on upgrade/install.
  */
-class SeedIntakeSourceRegister implements IRepairStep {
+class SeedIntakeSourceRegister implements IRepairStep, IntakeSourceRegisterSlugsInterface {
 
 	/**
 	 * App-relative path to the register descriptor imported by this step.
@@ -50,20 +47,6 @@ class SeedIntakeSourceRegister implements IRepairStep {
 	 * @var string
 	 */
 	public const REGISTER_PATH = '/lib/Settings/intake_source_register.json';
-
-	/**
-	 * The register slug this step materialises.
-	 *
-	 * @var string
-	 */
-	public const REGISTER_SLUG = 'intake-sources';
-
-	/**
-	 * The schema slug an intake source is an object of.
-	 *
-	 * @var string
-	 */
-	public const SCHEMA_SLUG = 'intake-source';
 
 	/**
 	 * Descriptor version passed to the importer's version_compare gate.
@@ -80,16 +63,12 @@ class SeedIntakeSourceRegister implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConfigurationServiceInterface $configurationService The OR configuration importer.
-	 * @param IAppManager          $appManager           Resolves the openregister app path on disk.
-	 * @param LoggerInterface      $logger               Logger for import diagnostics.
+	 * @param RegisterDescriptorImport $descriptors Importer, app path and log for the descriptor.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ConfigurationServiceInterface $configurationService,
-		private readonly IAppManager $appManager,
-		private readonly LoggerInterface $logger,
+		private readonly RegisterDescriptorImport $descriptors,
 	) {
 	}//end __construct()
 
@@ -115,7 +94,7 @@ class SeedIntakeSourceRegister implements IRepairStep {
 	 */
 	public function run(IOutput $output): void {
 		try {
-			$path = ($this->appManager->getAppPath('openregister') . self::REGISTER_PATH);
+			$path = ($this->descriptors->appManager->getAppPath('openregister') . self::REGISTER_PATH);
 			if (is_file($path) === false) {
 				$output->warning('Intake-sources register descriptor not found: ' . $path);
 				return;
@@ -129,7 +108,7 @@ class SeedIntakeSourceRegister implements IRepairStep {
 
 			// The importer takes the DECODED descriptor; force: false keeps the
 			// import idempotent and leaves administrator edits in place.
-			$this->configurationService->importFromApp(
+			$this->descriptors->configurationService->importFromApp(
 				appId: 'openregister',
 				data: $data,
 				version: self::REGISTER_VERSION,
@@ -138,7 +117,7 @@ class SeedIntakeSourceRegister implements IRepairStep {
 
 			$output->info('Intake-sources register imported (intake-source schema)');
 		} catch (Throwable $e) {
-			$this->logger->warning('[SeedIntakeSourceRegister] import failed: ' . $e->getMessage());
+			$this->descriptors->logger->warning('[SeedIntakeSourceRegister] import failed: ' . $e->getMessage());
 			$output->warning('Intake-sources register import skipped: ' . $e->getMessage());
 		}//end try
 	}//end run()

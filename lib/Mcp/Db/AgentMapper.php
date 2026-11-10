@@ -23,6 +23,7 @@
 namespace OCA\OpenRegister\Mcp\Db;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
 use OCA\OpenRegister\Event\AgentCreatedEvent;
 use OCA\OpenRegister\Event\AgentDeletedEvent;
 use OCA\OpenRegister\Event\AgentUpdatedEvent;
@@ -33,7 +34,6 @@ use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
-use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
@@ -56,13 +56,12 @@ use OCA\OpenRegister\Db\QueryPage;
  * @method Agent delete(Entity $entity)
  * @method Agent find(int|string $id)
  * @method Agent findEntity(IQueryBuilder $query)
- * @method Agent[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<Agent> findEntities(IQueryBuilder $query)
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class AgentMapper extends QBMapper {
+class AgentMapper extends QBMapper implements AgentMapperInterface {
 	use MultiTenancyTrait;
 
 	/**
@@ -70,27 +69,6 @@ class AgentMapper extends QBMapper {
 	 *
 	 * @var OrganisationServiceInterface
 	 */
-
-	/**
-	 * Organisation mapper for organisation-related operations.
-	 *
-	 * @var OrganisationMapperInterface
-	 */
-	protected OrganisationMapperInterface $organisationMapper;
-
-	/**
-	 * User session for current user
-	 *
-	 * @var IUserSession
-	 */
-	private IUserSession $userSession;
-
-	/**
-	 * Group manager for RBAC
-	 *
-	 * @var IGroupManager
-	 */
-	private IGroupManager $groupManager;
 
 	/**
 	 * Event dispatcher for dispatching agent events
@@ -102,26 +80,23 @@ class AgentMapper extends QBMapper {
 	/**
 	 * Constructor
 	 *
-	 * @param IDBConnection $db Database connection
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
-	 * @param IUserSession $userSession User session
-	 * @param IGroupManager $groupManager Group manager
-	 * @param IEventDispatcher $eventDispatcher Event dispatcher
+	 * The organisation mapper, user session and group manager are the
+	 * multi-tenancy and RBAC inputs MultiTenancyTrait reads; they stay direct
+	 * parameters (access guards are never bundled) and are promoted.
+	 *
+	 * @param AgentMapperPlatform         $platform           Database connection and event dispatcher
+	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper, for multi-tenancy
+	 * @param IUserSession                $userSession        User session, for the current user
+	 * @param IGroupManager               $groupManager       Group manager, for RBAC
 	 */
 	public function __construct(
-		IDBConnection $db,
-		// REMOVED: Services should not be in mappers.
-		OrganisationMapperInterface $organisationMapper,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
-		IEventDispatcher $eventDispatcher,
+		AgentMapperPlatform $platform,
+		protected OrganisationMapperInterface $organisationMapper,
+		private IUserSession $userSession,
+		private IGroupManager $groupManager,
 	) {
-		parent::__construct(db: $db, tableName: 'openregister_agents', entityClass: Agent::class);
-		// REMOVED: Services should not be in mappers.
-		$this->organisationMapper = $organisationMapper;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
-		$this->eventDispatcher = $eventDispatcher;
+		parent::__construct(db: $platform->db, tableName: 'openregister_agents', entityClass: Agent::class);
+		$this->eventDispatcher = $platform->eventDispatcher;
 	}//end __construct()
 
 	/**
@@ -213,45 +188,47 @@ class AgentMapper extends QBMapper {
 	 * @psalm-return list<\OCA\OpenRegister\Mcp\Db\Agent>
 	 */
 	public function findByOrganisation(string $organisationUuid, ?string $userId = null, int $limit = 50, int $offset = 0): array {
-		// Verify RBAC permission to read.
-		$this->verifyRbacPermission(
-			action: 'read',
-			entityType: 'agent'
-		);
+		$this->verifyRbacPermission(action: 'read', entityType: 'agent');
+		$query = $this->organisationPage(organisationUuid: $organisationUuid, page: new QueryPage(limit: $limit, offset: $offset));
+		// Without a user every agent in the organisation is returned; with one, only those it may access.
+		return $this->filterByUserAccess(agents: $this->findEntities(query: $query), userId: $userId);
+	}//end findByOrganisation()
 
+	/**
+	 * The newest-first page of one organisation's agents.
+	 *
+	 * @param string    $organisationUuid Organisation UUID.
+	 * @param QueryPage $page             The limit and offset.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function organisationPage(string $organisationUuid, QueryPage $page): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
 			->from($this->tableName)
-			->where($qb->expr()->eq('organisation', $qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR)))
-			->setMaxResults($limit)
-			->setFirstResult($offset)
-			->orderBy('created', 'DESC');
+			->where($qb->expr()->eq('organisation', $qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR)));
+		$page->applyTo(qb: $qb);
+		$qb->orderBy('created', 'DESC');
 
-		// If no user provided, return all agents in the organisation.
-		if ($userId === null) {
-			return $this->findEntities(query: $qb);
-		}
-
-		// Filter results by user access rights.
-		$allAgents = $this->findEntities(query: $qb);
-		return $this->filterByUserAccess(
-			agents: $allAgents,
-			userId: $userId
-		);
-	}//end findByOrganisation()
+		return $qb;
+	}//end organisationPage()
 
 	/**
 	 * Filter agents by user access rights
 	 *
-	 * @param Agent[] $agents Array of agents to filter
-	 * @param string $userId User ID
+	 * @param Agent[]     $agents Array of agents to filter
+	 * @param string|null $userId User ID, or null to keep every agent
 	 *
 	 * @return Agent[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Mcp\Db\Agent>
 	 */
-	private function filterByUserAccess(array $agents, string $userId): array {
+	private function filterByUserAccess(array $agents, ?string $userId): array {
+		if ($userId === null) {
+			return $agents;
+		}
+
 		$accessible = [];
 
 		foreach ($agents as $agent) {
@@ -275,7 +252,7 @@ class AgentMapper extends QBMapper {
 	 *
 	 * @return bool True if user can access
 	 */
-	public function canUserAccessAgent(Agent $agent, string $userId): bool {
+	public function canUserAccessAgent(Entity $agent, string $userId): bool {
 		// Non-private agents are accessible to all users in the organisation.
 		if ($agent->getIsPrivate() === false || $agent->getIsPrivate() === null) {
 			return true;
@@ -305,7 +282,7 @@ class AgentMapper extends QBMapper {
 	 *
 	 * @return bool True if user can modify
 	 */
-	public function canUserModifyAgent(Agent $agent, string $userId): bool {
+	public function canUserModifyAgent(Entity $agent, string $userId): bool {
 		return $agent->getOwner() === $userId;
 	}//end canUserModifyAgent()
 
@@ -324,23 +301,44 @@ class AgentMapper extends QBMapper {
 	 * @psalm-return list<\OCA\OpenRegister\Mcp\Db\Agent>
 	 */
 	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $order = []): array {
-		// Verify RBAC permission to read.
-		$this->verifyRbacPermission(
-			action: 'read',
-			entityType: 'agent'
-		);
+		$this->verifyRbacPermission(action: 'read', entityType: 'agent');
+		$qb = $this->filteredQuery(filters: $filters, order: $order);
+		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
+		return $this->findInOrganisation(qb: $qb);
+	}//end findAll()
 
+	/**
+	 * An agent query with the filters and order applied.
+	 *
+	 * @param array|null $filters Filter criteria.
+	 * @param array|null $order   Field to direction.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function filteredQuery(?array $filters, ?array $order): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
 			->from($this->tableName);
 
 		$this->applyAgentFilters(qb: $qb, filters: $filters);
-
 		$this->applyAgentOrder(qb: $qb, order: $order);
-		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
 
-		// Apply organisation filter, allowing NULL organisation for legacy/global agents.
+		return $qb;
+	}//end filteredQuery()
+
+	/**
+	 * Run an agent query inside the active organisation.
+	 *
+	 * NULL organisation stays allowed for legacy and global agents.
+	 *
+	 * @param IQueryBuilder $qb The query.
+	 *
+	 * @return Agent[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Mcp\Db\Agent>
+	 */
+	private function findInOrganisation(IQueryBuilder $qb): array {
 		$this->applyOrganisationFilter(
 			qb: $qb,
 			columnName: 'organisation',
@@ -348,7 +346,7 @@ class AgentMapper extends QBMapper {
 		);
 
 		return $this->findEntities(query: $qb);
-	}//end findAll()
+	}//end findInOrganisation()
 
 	/**
 	 * Order an agent read by the given fields, or newest first when none are given.

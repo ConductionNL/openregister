@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\Service\Object\RemovedDraft;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -24,6 +25,9 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\DraftExpiry;
+use OCA\OpenRegister\Service\Object\DraftExpiryInterface;
+use OCA\OpenRegister\Service\Object\DraftRemovalFrame;
+use OCA\OpenRegister\Service\Object\DraftRemovalFrameInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -72,7 +76,7 @@ class DraftExpiryJobTest extends TestCase {
 			$constructor = (new ReflectionClass($class))->getConstructor();
 			foreach (($constructor?->getParameters() ?? []) as $parameter) {
 				$type = $parameter->getType();
-				if ($type instanceof ReflectionNamedType && $type->getName() === DraftExpiry::class) {
+				if ($type instanceof ReflectionNamedType && $type->getName() === DraftExpiryInterface::class) {
 					$found[] = $class;
 				}
 			}
@@ -172,7 +176,7 @@ class DraftExpiryJobTest extends TestCase {
 						return new \OCA\OpenRegister\Db\AuditTrail();
 					}
 				);
-				(new \OCA\OpenRegister\Service\Object\DraftRemovalRecord(auditTrail: $audit, logger: $this->createMock(LoggerInterface::class)))->write(draft: new ObjectEntity(), register: null, schema: null);
+				(new \OCA\OpenRegister\Service\Object\DraftRemovalRecord(auditTrail: $audit, logger: $this->createMock(LoggerInterface::class)))->write(new RemovedDraft(draft: new ObjectEntity(), register: null, schema: null));
 
 				return true;
 			}
@@ -196,7 +200,8 @@ class DraftExpiryJobTest extends TestCase {
 			services: [
 				ITimeFactory::class => $this->clock(),
 				LoggerInterface::class => $logger,
-				DraftExpiry::class => new DraftExpiry(objects: $objects, registers: $registers, schemas: $schemas, logger: $this->createMock(LoggerInterface::class)),
+				DraftRemovalFrameInterface::class => new DraftRemovalFrame(),
+				DraftExpiryInterface::class => new DraftExpiry(objects: $objects, registers: $registers, schemas: $schemas, logger: $this->createMock(LoggerInterface::class)),
 			]
 		);
 
@@ -233,7 +238,7 @@ class DraftExpiryJobTest extends TestCase {
 
 		$job = $this->build(
 			class: $this->declaredJobClass(),
-			services: [ITimeFactory::class => $this->clock(), LoggerInterface::class => $logger, DraftExpiry::class => $expiry]
+			services: [ITimeFactory::class => $this->clock(), LoggerInterface::class => $logger, DraftExpiryInterface::class => $expiry, DraftRemovalFrameInterface::class => new DraftRemovalFrame()]
 		);
 		$this->runJob(job: $job);
 	}//end testAZeroIsLogged()
@@ -250,7 +255,7 @@ class DraftExpiryJobTest extends TestCase {
 
 		$job = $this->build(
 			class: $this->declaredJobClass(),
-			services: [ITimeFactory::class => $this->clock(), LoggerInterface::class => $logger, DraftExpiry::class => $expiry]
+			services: [ITimeFactory::class => $this->clock(), LoggerInterface::class => $logger, DraftExpiryInterface::class => $expiry, DraftRemovalFrameInterface::class => new DraftRemovalFrame()]
 		);
 
 		$this->expectException(RuntimeException::class);
@@ -274,7 +279,7 @@ class DraftExpiryJobTest extends TestCase {
 
 		$job = $this->build(
 			class: $this->declaredJobClass(),
-			services: [ITimeFactory::class => $this->clock(), LoggerInterface::class => $logger, DraftExpiry::class => $expiry]
+			services: [ITimeFactory::class => $this->clock(), LoggerInterface::class => $logger, DraftExpiryInterface::class => $expiry, DraftRemovalFrameInterface::class => new DraftRemovalFrame()]
 		);
 		$this->runJob(job: $job);
 	}//end testARefusalIsLoggedWhereTheDefaultLevelShowsIt()

@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\JobRuntime;
 use DateTime;
 use OCA\OpenRegister\BackgroundJob\CasePlanTimerRearmJob;
 use OCA\OpenRegister\Service\Case\CasePlanTimerRearm;
@@ -38,7 +39,7 @@ class CasePlanTimerRearmJobTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$time = $this->createMock(ITimeFactory::class);
 		$time->method('getDateTime')->willReturn(new DateTime('2026-09-01 10:00:00'));
-		$this->job = new CasePlanTimerRearmJob(time: $time, rearm: $this->rearm, logger: $this->logger);
+		$this->job = new CasePlanTimerRearmJob(runtime: new JobRuntime(time: $time, logger: $this->logger), rearm: $this->rearm);
 	}//end setUp()
 
 	private function tick(): void {

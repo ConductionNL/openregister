@@ -67,7 +67,7 @@ use Throwable;
  *   cause vocabulary; each is required for the degrade-don't-throw dispatch
  *   surface (AD-23).
  */
-class MessageDispatchProvider extends AbstractIntegrationProvider {
+class MessageDispatchProvider extends AbstractIntegrationProvider implements MessageDispatcherInterface {
 
 	use ConnectorRoutedProviderTrait;
 
@@ -119,21 +119,41 @@ class MessageDispatchProvider extends AbstractIntegrationProvider {
 	private string $targetSource = self::SOURCE_ID;
 
 	/**
+	 * External-call router.
+	 *
+	 * @var ExternalIntegrationRouterInterface
+	 */
+	private ExternalIntegrationRouterInterface $router;
+
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ExternalIntegrationRouterInterface $router External-call router.
-	 * @param IAppManager $appManager NC app manager (isEnabled check).
-	 * @param IL10N $l10n Localisation.
-	 * @param LoggerInterface $logger Logger for degraded paths.
+	 * @param ConnectorRouting $routing The router, app manager (isEnabled check) and localisation.
+	 * @param LoggerInterface  $logger  Logger for degraded paths.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private ExternalIntegrationRouterInterface $router,
-		private IAppManager $appManager,
-		private IL10N $l10n,
+		ConnectorRouting $routing,
 		private LoggerInterface $logger,
 	) {
+		$this->router     = $routing->router;
+		$this->appManager = $routing->appManager;
+		$this->l10n       = $routing->l10n;
 	}//end __construct()
 
 	/**
@@ -245,49 +265,80 @@ class MessageDispatchProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/changes/archive/2026-10-05-messaging-dispatch-leaf/tasks.md
 	 */
 	public function dispatch(string $source, array $body, string $path, array $headers = []): array {
-		$source = trim($source);
+		$options = ['body' => $body, 'headers' => $this->withJsonAccept(headers: $headers)];
+
+		return $this->sendThrough(source: trim($source), send: fn (): array => $this->send(path: $path, options: $options));
+	}//end dispatch()
+
+	/**
+	 * Make one call through an allowed messaging source; refuse any other source.
+	 *
+	 * @param string                       $source The messaging source, trimmed.
+	 * @param callable(): array<mixed>     $send   The call to make through it.
+	 *
+	 * @return array<string,mixed> The upstream response, or the degraded envelope.
+	 */
+	private function sendThrough(string $source, callable $send): array {
 		if (in_array($source, self::ALLOWED_SOURCES, true) === false) {
-			$this->logger->warning(
-				'MessageDispatchProvider::dispatch rejected an unknown source slug.'
-			);
-			return $this->degraded(cause: ProviderUnavailableException::CAUSE_OPENCONNECTOR_SOURCE_MISSING);
+			return $this->rejectUnknownSource();
 		}
 
 		$this->targetSource = $source;
-
-		$requestHeaders = $headers;
-		if (isset($requestHeaders['Accept']) === false) {
-			$requestHeaders['Accept'] = 'application/json';
-		}
-
 		try {
-			$response = $this->router->call(
-				provider: $this,
-				method: 'POST',
-				path: ltrim($path, '/'),
-				options: [
-					'body' => $body,
-					'headers' => $requestHeaders,
-				]
-			);
+			return $send();
+		} finally {
+			// Reset to the advertised default so a later contract caller
+			// (health/probe) never inherits a stale per-call source.
+			$this->targetSource = self::SOURCE_ID;
+		}
+	}//end sendThrough()
+
+	/**
+	 * Refuse a source slug outside {@see ALLOWED_SOURCES} before the router
+	 * is touched.
+	 *
+	 * @return array<string,mixed> The degraded envelope.
+	 */
+	private function rejectUnknownSource(): array {
+		$this->logger->warning('MessageDispatchProvider::dispatch rejected an unknown source slug.');
+		return $this->degraded(cause: ProviderUnavailableException::CAUSE_OPENCONNECTOR_SOURCE_MISSING);
+	}//end rejectUnknownSource()
+
+	/**
+	 * POST through the router to the current {@see $targetSource} and wrap
+	 * the outcome in the sent or degraded envelope (AD-23).
+	 *
+	 * @param string               $path    Path relative to the source base URL.
+	 * @param array<string, mixed> $options The router options (body + headers).
+	 *
+	 * @return array<string,mixed> The sent or degraded envelope.
+	 */
+	private function send(string $path, array $options): array {
+		try {
+			$response = $this->router->call(provider: $this, method: 'POST', path: ltrim($path, '/'), options: $options);
 		} catch (ProviderUnavailableException $e) {
 			return $this->degraded(cause: $e->getCause());
 		} catch (Throwable $e) {
 			// Never log the body — a message body may carry PII.
 			$this->logger->warning('MessageDispatchProvider::dispatch failed (transport).');
 			return $this->degraded(cause: ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN);
-		} finally {
-			// Reset to the advertised default so a later contract caller
-			// (health/probe) never inherits a stale per-call source.
-			$this->targetSource = self::SOURCE_ID;
-		}//end try
+		}
 
-		return [
-			'status' => 'sent',
-			'source' => $source,
-			'response' => $response,
-		];
-	}//end dispatch()
+		return ['status' => 'sent', 'source' => $this->targetSource, 'response' => $response];
+	}//end send()
+
+	/**
+	 * The caller's headers with `Accept: application/json` added when the
+	 * caller set none.
+	 *
+	 * @param array<string,string> $headers The caller's extra headers.
+	 *
+	 * @return array<string,string>
+	 */
+	private function withJsonAccept(array $headers): array {
+		$headers['Accept'] ??= 'application/json';
+		return $headers;
+	}//end withJsonAccept()
 
 	/**
 	 * Build the degraded envelope so the dispatch shape stays stable across

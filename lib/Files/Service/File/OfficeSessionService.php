@@ -24,7 +24,6 @@ namespace OCA\OpenRegister\Files\Service\File;
 
 use OCA\OpenRegister\Exception\OfficeOpenRefusedException;
 use OCP\App\IAppManager;
-use OCP\Files\File;
 use OCP\IAppConfig;
 use OCP\IConfig;
 use OCP\IURLGenerator;
@@ -74,28 +73,26 @@ class OfficeSessionService {
 	/**
 	 * Constructor.
 	 *
-	 * @param IAppManager        $appManager   Tells whether Office is enabled.
-	 * @param ContainerInterface $container    Resolves the richdocuments services lazily.
-	 * @param IURLGenerator      $urlGenerator Builds the server host and the WOPI source.
-	 * @param IConfig            $config       Reads the instance id.
-	 * @param IAppConfig         $appConfig    Reads richdocuments' callback address.
+	 * @param IAppManager           $appManager   Tells whether Office is enabled.
+	 * @param ContainerInterface    $container    Resolves the richdocuments services lazily.
+	 * @param IURLGenerator         $urlGenerator Builds the server host and the WOPI source.
+	 * @param OfficeSessionSettings $settings     The instance config and the app config.
 	 */
 	public function __construct(
 		private readonly IAppManager $appManager,
 		private readonly ContainerInterface $container,
 		private readonly IURLGenerator $urlGenerator,
-		private readonly IConfig $config,
-		private readonly IAppConfig $appConfig,
+		private readonly OfficeSessionSettings $settings,
 	) {
 	}//end __construct()
 
 	/**
-	 * Issue an Office session for one file.
+	 * Issue an Office session for one open request.
 	 *
-	 * @param File   $file        The object's file, already known to belong to a readable object.
-	 * @param string $editorUid   The acting person.
-	 * @param string $displayName Their display name, shown in Office.
-	 * @param bool   $canWrite    Whether the object rule lets them change the file.
+	 * Write access needs both the caller's write right and Office's own edit
+	 * right; a user Office refuses gets no token at all.
+	 *
+	 * @param OfficeOpenRequest $request The file, the editor, their display name and the caller's write right.
 	 *
 	 * @return OfficeSession The session the browser posts into the Office frame.
 	 *
@@ -103,10 +100,10 @@ class OfficeSessionService {
 	 *
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
 	 */
-	public function open(File $file, string $editorUid, string $displayName, bool $canWrite): OfficeSession {
+	public function openSession(OfficeOpenRequest $request): OfficeSession {
 		$services = $this->richdocuments();
 
-		$urlSrc = $services['tokenManager']->getUrlSrcForMimeType($file->getMimeType());
+		$urlSrc = $services['tokenManager']->getUrlSrcForMimeType($request->file->getMimeType());
 		if (is_string($urlSrc) === false || $urlSrc === '') {
 			throw new OfficeOpenRefusedException(
 				httpStatus: OfficeOpenRefusedException::UNSUPPORTED_TYPE,
@@ -115,26 +112,26 @@ class OfficeSessionService {
 		}
 
 		$permissions = $services['permissionManager'];
-		if ($permissions->isEnabledForUser($editorUid) !== true) {
+		if ($permissions->isEnabledForUser($request->editorUid) !== true) {
 			throw new OfficeOpenRefusedException(
 				httpStatus: OfficeOpenRefusedException::NOT_PERMITTED,
 				message: 'You may not use Nextcloud Office on this instance.'
 			);
 		}
 
-		$writable = ($canWrite === true && $permissions->userCanEdit($editorUid) === true);
-		$fileId = (string)$file->getId();
+		$writable = ($request->canWrite === true && $permissions->userCanEdit($request->editorUid) === true);
+		$fileId = (string)$request->file->getId();
 
-		$guestName = $displayName;
+		$guestName = $request->displayName;
 		if ($guestName === '') {
-			$guestName = $editorUid;
+			$guestName = $request->editorUid;
 		}
 
 		try {
 			$wopi = $services['wopiMapper']->generateFileToken(
 				$fileId,
 				self::OWNER,
-				$editorUid,
+				$request->editorUid,
 				'0',
 				$writable,
 				$this->urlGenerator->getAbsoluteURL('/'),
@@ -151,11 +148,13 @@ class OfficeSessionService {
 		return new OfficeSession(
 			urlSrc: $urlSrc,
 			wopiSrc: $this->wopiSrc(fileId: $fileId),
-			token: (string)$wopi->getToken(),
-			tokenTtl: ((int)$wopi->getExpiry() * 1000),
-			readOnly: ($writable === false)
+			access: new OfficeSessionToken(
+				token: (string)$wopi->getToken(),
+				tokenTtl: ((int)$wopi->getExpiry() * 1000),
+				readOnly: ($writable === false)
+			)
 		);
-	}//end open()
+	}//end openSession()
 
 	/**
 	 * Whether Nextcloud Office is enabled on this instance.
@@ -221,12 +220,12 @@ class OfficeSessionService {
 	 * @return string The WOPI source address.
 	 */
 	private function wopiSrc(string $fileId): string {
-		$base = rtrim($this->appConfig->getValueString(self::OFFICE_APP, 'wopi_callback_url', ''), '/');
+		$base = rtrim($this->settings->appConfig->getValueString(self::OFFICE_APP, 'wopi_callback_url', ''), '/');
 		if ($base === '') {
 			$base = rtrim($this->urlGenerator->getAbsoluteURL('/'), '/');
 		}
 
-		$instanceId = $this->config->getSystemValueString('instanceid', '');
+		$instanceId = $this->settings->config->getSystemValueString('instanceid', '');
 
 		return $base . '/index.php/apps/richdocuments/wopi/files/' . $fileId . '_' . $instanceId;
 	}//end wopiSrc()

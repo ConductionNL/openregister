@@ -29,6 +29,7 @@ namespace Unit\Controller;
 use OCA\OpenRegister\Controller\FederatedConfigController;
 use OCA\OpenRegister\Service\Config\FederatedConfigAccess;
 use OCA\OpenRegister\Service\Config\FederatedConfigService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FederatedConfigControllerFactory;
 use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -84,7 +85,7 @@ class FederatedConfigControllerBundleGateTest extends TestCase {
 		$this->access = $this->createMock(FederatedConfigAccess::class);
 		$this->request = $this->createMock(IRequest::class);
 
-		$this->controller = new FederatedConfigController(
+		$this->controller = FederatedConfigControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->service,

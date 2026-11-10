@@ -39,11 +39,13 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Service\Rbac\MemberOfResolver;
+use OCA\OpenRegister\Service\Rbac\SchemaRegisterLookup;
 use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IParameter;
@@ -176,12 +178,10 @@ class MagicRbacMemberOfListTest extends TestCase {
 
 		$evaluator = new OperatorEvaluator(new NullLogger());
 		$matcher = new ConditionMatcher(
-			$session,
+			new ConditionUserResolvers($session, $groups, new MemberOfResolver(new SchemaRegisterLookup($schemas, $registers), $this->containerGiving($objects), $evaluator, new NullLogger())),
 			$this->createMock(ContainerInterface::class),
 			$evaluator,
-			new NullLogger(),
-			$groups,
-			new MemberOfResolver($schemas, $registers, $this->containerGiving($objects), $evaluator, new NullLogger())
+			new NullLogger()
 		);
 
 		return new MagicRbacHandler(

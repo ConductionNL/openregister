@@ -114,6 +114,10 @@
 		"OCA\\OpenRegister\\Listener\\FrozenObjectDeleteGuardListener",
 		"OCA\\OpenRegister\\Listener\\ObjectStateDeleteGuardListener"
 	],
+	"OCA\\OpenRegister\\Event\\ObjectLeavingEvent": [
+		"OCA\\OpenRegister\\Listener\\WorkingCalendarDeleteGuardListener",
+		"OCA\\OpenRegister\\Listener\\ConceptDeleteGuardListener"
+	],
 	"OCA\\OpenRegister\\Event\\ObjectLockedEvent": [
 		"OCA\\OpenRegister\\Listener\\FlowTriggerListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener"
@@ -206,7 +210,7 @@
 		"OCA\\OpenRegister\\Listener\\SourceRecordChangeListener",
 		"OCA\\OpenRegister\\Listener\\GrantableRightsInvalidationListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener",
-		"OCA\\OpenRegister\\Service\\Notification\\NotificationsAnnotationInstaller",
+		"OCA\\OpenRegister\\Listener\\NotificationsAnnotationInstallListener",
 		"OCA\\OpenRegister\\Listener\\HandoffQueueDrainListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\NotificationDedupeAnnotationSyncListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
@@ -227,7 +231,7 @@
 		"OCA\\OpenRegister\\Listener\\GrantableRightsInvalidationListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener",
 		"OCA\\OpenRegister\\Listener\\AuthorizationCacheInvalidationListener",
-		"OCA\\OpenRegister\\Service\\Notification\\NotificationsAnnotationInstaller",
+		"OCA\\OpenRegister\\Listener\\NotificationsAnnotationInstallListener",
 		"OCA\\OpenRegister\\Listener\\HandoffQueueDrainListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\NotificationDedupeAnnotationSyncListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",

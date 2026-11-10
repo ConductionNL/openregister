@@ -18,11 +18,12 @@ namespace Unit\Calendar;
 use OCA\OpenRegister\Calendar\CalendarEventTransformer;
 use OCA\OpenRegister\Calendar\RegisterCalendar;
 use OCA\OpenRegister\Calendar\RegisterCalendarProvider;
+use OCA\OpenRegister\Calendar\RegisterCalendarSources;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -31,7 +32,6 @@ class RegisterCalendarProviderTest extends TestCase {
 	private SchemaMapper $schemaMapper;
 	private RegisterMapper $registerMapper;
 	private MagicMapper $magicMapper;
-	private IUserSession $userSession;
 	private LoggerInterface $logger;
 	private CalendarEventTransformer $transformer;
 
@@ -39,17 +39,15 @@ class RegisterCalendarProviderTest extends TestCase {
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->magicMapper = $this->createMock(MagicMapper::class);
-		$this->userSession = $this->createMock(IUserSession::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->transformer = $this->createMock(CalendarEventTransformer::class);
 
 		$this->provider = new RegisterCalendarProvider(
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->magicMapper,
-			$this->userSession,
-			$this->logger,
-			$this->transformer
+			new RegisterCalendarSources(
+				new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->magicMapper),
+				$this->transformer,
+				$this->logger
+			)
 		);
 	}
 

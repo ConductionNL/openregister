@@ -29,12 +29,15 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
+use OCA\OpenRegister\Search\Service\ViewAudience;
+use OCA\OpenRegister\Search\Service\ViewDefinition;
 use OCA\OpenRegister\Search\Service\ViewService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Search\Service\ViewEdit;
 
 /**
  * Unit tests for ViewService.
@@ -211,12 +214,16 @@ class ViewServiceTest extends TestCase {
 		);
 
 		$result = $this->service->create(
-			name: 'My View',
-			description: 'Description',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: []
+			definition: new ViewDefinition(
+				name: 'My View',
+				description: 'Description',
+				query: []
+			),
+			audience: new ViewAudience(
+				owner: 'user1',
+				isPublic: false,
+				isDefault: false
+			)
 		);
 
 		$this->assertInstanceOf(expected: View::class, actual: $result);
@@ -259,12 +266,16 @@ class ViewServiceTest extends TestCase {
 		);
 
 		$result = $this->service->create(
-			name: 'Org View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: []
+			definition: new ViewDefinition(
+				name: 'Org View',
+				description: 'Desc',
+				query: []
+			),
+			audience: new ViewAudience(
+				owner: 'user1',
+				isPublic: false,
+				isDefault: false
+			)
 		);
 
 		$this->assertInstanceOf(expected: View::class, actual: $result);
@@ -294,12 +305,16 @@ class ViewServiceTest extends TestCase {
 		);
 
 		$this->service->create(
-			name: 'New Default',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: true,
-			query: []
+			definition: new ViewDefinition(
+				name: 'New Default',
+				description: 'Desc',
+				query: []
+			),
+			audience: new ViewAudience(
+				owner: 'user1',
+				isPublic: false,
+				isDefault: true
+			)
 		);
 	}//end testCreateClearsDefaultWhenSettingDefault()
 
@@ -316,12 +331,16 @@ class ViewServiceTest extends TestCase {
 		$this->expectException(exception: Exception::class);
 
 		$this->service->create(
-			name: 'View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: []
+			definition: new ViewDefinition(
+				name: 'View',
+				description: 'Desc',
+				query: []
+			),
+			audience: new ViewAudience(
+				owner: 'user1',
+				isPublic: false,
+				isDefault: false
+			)
 		);
 	}//end testCreateThrowsAndLogsOnFailure()
 
@@ -341,14 +360,12 @@ class ViewServiceTest extends TestCase {
 			}
 		);
 
-		$result = $this->service->update(
+		$result = $this->service->revise(
 			id: 1,
-			name: 'Updated',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: ['key' => 'val']
+			edit: new ViewEdit(
+				definition: new ViewDefinition(name: 'Updated', description: 'Desc', query: ['key' => 'val']),
+				audience: new ViewAudience(owner: 'user1', isPublic: false, isDefault: false)
+			)
 		);
 
 		$this->assertSame(expected: 'Updated', actual: $result->getName());
@@ -368,15 +385,13 @@ class ViewServiceTest extends TestCase {
 			}
 		);
 
-		$result = $this->service->update(
+		$result = $this->service->revise(
 			id: 1,
-			name: 'View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: [],
-			favoredBy: ['user1', 'user2']
+			edit: new ViewEdit(
+				definition: new ViewDefinition(name: 'View', description: 'Desc', query: []),
+				audience: new ViewAudience(owner: 'user1', isPublic: false, isDefault: false),
+				favoredBy: ['user1', 'user2']
+			)
 		);
 
 		$this->assertSame(expected: ['user1', 'user2'], actual: $result->getFavoredBy());
@@ -402,14 +417,12 @@ class ViewServiceTest extends TestCase {
 			}
 		);
 
-		$result = $this->service->update(
+		$result = $this->service->revise(
 			id: 1,
-			name: 'View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: true,
-			query: []
+			edit: new ViewEdit(
+				definition: new ViewDefinition(name: 'View', description: 'Desc', query: []),
+				audience: new ViewAudience(owner: 'user1', isPublic: false, isDefault: true)
+			)
 		);
 
 		// The existing default should have been cleared (updated to isDefault=false).
@@ -428,14 +441,12 @@ class ViewServiceTest extends TestCase {
 
 		$this->expectException(exception: DoesNotExistException::class);
 
-		$this->service->update(
+		$this->service->revise(
 			id: 1,
-			name: 'View',
-			description: 'Desc',
-			owner: 'user2',
-			isPublic: false,
-			isDefault: false,
-			query: []
+			edit: new ViewEdit(
+				definition: new ViewDefinition(name: 'View', description: 'Desc', query: []),
+				audience: new ViewAudience(owner: 'user2', isPublic: false, isDefault: false)
+			)
 		);
 	}//end testUpdateThrowsForPrivateViewOfOtherUser()
 
@@ -553,13 +564,17 @@ class ViewServiceTest extends TestCase {
 		$presentation = ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']];
 
 		$result = $this->service->create(
-			name: 'Kanban View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: ['schemas' => ['status-schema']],
-			presentation: $presentation
+			definition: new ViewDefinition(
+				name: 'Kanban View',
+				description: 'Desc',
+				query: ['schemas' => ['status-schema']],
+				presentation: $presentation
+			),
+			audience: new ViewAudience(
+				owner: 'user1',
+				isPublic: false,
+				isDefault: false
+			)
 		);
 
 		$this->assertSame(expected: $presentation, actual: $result->getPresentation());
@@ -580,13 +595,17 @@ class ViewServiceTest extends TestCase {
 		$this->expectException(exception: InvalidArgumentException::class);
 
 		$this->service->create(
-			name: 'Kanban View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: ['schemas' => ['some-schema']],
-			presentation: ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']]
+			definition: new ViewDefinition(
+				name: 'Kanban View',
+				description: 'Desc',
+				query: ['schemas' => ['some-schema']],
+				presentation: ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']]
+			),
+			audience: new ViewAudience(
+				owner: 'user1',
+				isPublic: false,
+				isDefault: false
+			)
 		);
 	}//end testCreateRejectsKanbanGroupByFieldNotOnSchema()
 
@@ -605,13 +624,17 @@ class ViewServiceTest extends TestCase {
 		$this->expectException(exception: InvalidArgumentException::class);
 
 		$this->service->create(
-			name: 'Calendar View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: ['schemas' => ['some-schema']],
-			presentation: ['viewType' => 'calendar', 'calendar' => ['dateField' => 'dueDate']]
+			definition: new ViewDefinition(
+				name: 'Calendar View',
+				description: 'Desc',
+				query: ['schemas' => ['some-schema']],
+				presentation: ['viewType' => 'calendar', 'calendar' => ['dateField' => 'dueDate']]
+			),
+			audience: new ViewAudience(
+				owner: 'user1',
+				isPublic: false,
+				isDefault: false
+			)
 		);
 	}//end testCreateRejectsCalendarDateFieldNotOnSchema()
 
@@ -641,13 +664,17 @@ class ViewServiceTest extends TestCase {
 		];
 
 		$result = $this->service->create(
-			name: 'Calendar View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: ['schemas' => ['event-schema']],
-			presentation: $presentation
+			definition: new ViewDefinition(
+				name: 'Calendar View',
+				description: 'Desc',
+				query: ['schemas' => ['event-schema']],
+				presentation: $presentation
+			),
+			audience: new ViewAudience(
+				owner: 'user1',
+				isPublic: false,
+				isDefault: false
+			)
 		);
 
 		$this->assertSame(expected: $presentation, actual: $result->getPresentation());
@@ -668,13 +695,17 @@ class ViewServiceTest extends TestCase {
 		$this->expectException(exception: InvalidArgumentException::class);
 
 		$this->service->create(
-			name: 'Calendar View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: ['schemas' => ['event-schema']],
-			presentation: ['viewType' => 'calendar', 'calendar' => ['dateField' => 'startDate', 'endDateField' => 'missingField']]
+			definition: new ViewDefinition(
+				name: 'Calendar View',
+				description: 'Desc',
+				query: ['schemas' => ['event-schema']],
+				presentation: ['viewType' => 'calendar', 'calendar' => ['dateField' => 'startDate', 'endDateField' => 'missingField']]
+			),
+			audience: new ViewAudience(
+				owner: 'user1',
+				isPublic: false,
+				isDefault: false
+			)
 		);
 	}//end testCreateRejectsCalendarEndDateFieldNotOnSchema()
 
@@ -689,13 +720,17 @@ class ViewServiceTest extends TestCase {
 		$this->expectException(exception: InvalidArgumentException::class);
 
 		$this->service->create(
-			name: 'Kanban View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: [],
-			presentation: ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']]
+			definition: new ViewDefinition(
+				name: 'Kanban View',
+				description: 'Desc',
+				query: [],
+				presentation: ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']]
+			),
+			audience: new ViewAudience(
+				owner: 'user1',
+				isPublic: false,
+				isDefault: false
+			)
 		);
 	}//end testCreateRejectsPresentationWithNoSchemaConfigured()
 
@@ -713,13 +748,17 @@ class ViewServiceTest extends TestCase {
 		);
 
 		$result = $this->service->create(
-			name: 'Plain View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: [],
-			presentation: null
+			definition: new ViewDefinition(
+				name: 'Plain View',
+				description: 'Desc',
+				query: [],
+				presentation: null
+			),
+			audience: new ViewAudience(
+				owner: 'user1',
+				isPublic: false,
+				isDefault: false
+			)
 		);
 
 		$this->assertNull(actual: $result->getPresentation());
@@ -745,15 +784,17 @@ class ViewServiceTest extends TestCase {
 
 		$presentation = ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']];
 
-		$result = $this->service->update(
+		$result = $this->service->revise(
 			id: 1,
-			name: 'View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: ['schemas' => ['status-schema']],
-			presentation: $presentation
+			edit: new ViewEdit(
+				definition: new ViewDefinition(
+					name: 'View',
+					description: 'Desc',
+					query: ['schemas' => ['status-schema']],
+					presentation: $presentation
+				),
+				audience: new ViewAudience(owner: 'user1', isPublic: false, isDefault: false)
+			)
 		);
 
 		$this->assertSame(expected: $presentation, actual: $result->getPresentation());
@@ -774,15 +815,17 @@ class ViewServiceTest extends TestCase {
 
 		$this->expectException(exception: InvalidArgumentException::class);
 
-		$this->service->update(
+		$this->service->revise(
 			id: 1,
-			name: 'View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: ['schemas' => ['some-schema']],
-			presentation: ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']]
+			edit: new ViewEdit(
+				definition: new ViewDefinition(
+					name: 'View',
+					description: 'Desc',
+					query: ['schemas' => ['some-schema']],
+					presentation: ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']]
+				),
+				audience: new ViewAudience(owner: 'user1', isPublic: false, isDefault: false)
+			)
 		);
 	}//end testUpdateRejectsInvalidPresentation()
 
@@ -803,14 +846,12 @@ class ViewServiceTest extends TestCase {
 			}
 		);
 
-		$result = $this->service->update(
+		$result = $this->service->revise(
 			id: 1,
-			name: 'View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: []
+			edit: new ViewEdit(
+				definition: new ViewDefinition(name: 'View', description: 'Desc', query: []),
+				audience: new ViewAudience(owner: 'user1', isPublic: false, isDefault: false)
+			)
 		);
 
 		$this->assertSame(expected: $existingPresentation, actual: $result->getPresentation());
@@ -827,13 +868,17 @@ class ViewServiceTest extends TestCase {
 		$this->expectException(exception: InvalidArgumentException::class);
 
 		$this->service->create(
-			name: 'View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: [],
-			presentation: ['viewType' => 'gallery']
+			definition: new ViewDefinition(
+				name: 'View',
+				description: 'Desc',
+				query: [],
+				presentation: ['viewType' => 'gallery']
+			),
+			audience: new ViewAudience(
+				owner: 'user1',
+				isPublic: false,
+				isDefault: false
+			)
 		);
 	}//end testCreateRejectsUnknownViewType()
 }//end class

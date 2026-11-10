@@ -22,15 +22,31 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files;
 
+use OCA\OpenRegister\Files\Db\ChunkIndexOverviewInterface;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
+use OCA\OpenRegister\Files\Db\ChunkStoreInterface;
 use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
+use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
+use OCA\OpenRegister\Files\Service\File\FileSharingHandlerInterface;
 use OCA\OpenRegister\Files\Service\File\Office\ConversionManagerConverter;
 use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
+use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisioner;
+use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisionerInterface;
+use OCA\OpenRegister\Files\Service\File\ShareUrlBuilder;
+use OCA\OpenRegister\Files\Service\File\ShareUrlBuilderInterface;
 use OCA\OpenRegister\Files\Service\File\TaggingHandler;
+use OCA\OpenRegister\Files\Service\NoteAccounts;
 use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Files\Service\NoteVersionService;
+use OCA\OpenRegister\Files\Service\RiskLevelService;
+use OCA\OpenRegister\Files\Service\RiskLevelServiceInterface;
 use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCA\OpenRegister\Files\Service\UploadService;
@@ -56,11 +72,20 @@ final class FilesRegistrar
      */
     public const BINDINGS = [
         AccessLinkReaderInterface::class          => AccessLinkReader::class,
+        ChunkIndexOverviewInterface::class        => ChunkMapper::class,
         ChunkMapperInterface::class               => ChunkMapper::class,
+        ChunkSourceReaderInterface::class         => ChunkMapper::class,
+        ChunkStoreInterface::class                => ChunkMapper::class,
         DocumentProcessingHandlerInterface::class => DocumentProcessingHandler::class,
         FileMapperInterface::class                => FileMapper::class,
+        FileOwnershipHandlerInterface::class      => FileOwnershipHandler::class,
+        FileRestrictionGuardInterface::class      => FileRestrictionGuard::class,
+        FileSharingHandlerInterface::class        => FileSharingHandler::class,
         NcOfficeConverterInterface::class         => ConversionManagerConverter::class,
         NoteServiceInterface::class               => NoteService::class,
+        RegisterFolderProvisionerInterface::class => RegisterFolderProvisioner::class,
+        RiskLevelServiceInterface::class          => RiskLevelService::class,
+        ShareUrlBuilderInterface::class           => ShareUrlBuilder::class,
         TaggingHandlerInterface::class            => TaggingHandler::class,
         TextExtractionServiceInterface::class     => TextExtractionService::class,
         UploadServiceInterface::class             => UploadService::class,
@@ -95,8 +120,10 @@ final class FilesRegistrar
     {
         return new NoteService(
             commentsManager: $container->get('OCP\Comments\ICommentsManager'),
-            userSession: $container->get('OCP\IUserSession'),
-            userManager: $container->get('OCP\IUserManager'),
+            accounts: new NoteAccounts(
+                userSession: $container->get('OCP\IUserSession'),
+                userManager: $container->get('OCP\IUserManager')
+            ),
             visibility: $container->get(TimelineVisibilityServiceInterface::class),
             versions: $container->get(NoteVersionService::class)
         );

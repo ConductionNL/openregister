@@ -28,9 +28,11 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionCatalogue;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationEntries;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionGate;
@@ -58,10 +60,11 @@ class RenderObjectUpdateRightTest extends TestCase {
 	 *
 	 * @param array<int, string>       $groups The reader's groups.
 	 * @param array<int, string>|string $extend The _extend parameter.
+	 * @param string $owner The object's owner.
 	 *
 	 * @return array The serialised object.
 	 */
-	private function renderAs(array $groups, array|string $extend, array $actions = []): array {
+	private function renderAs(array $groups, array|string $extend, array $actions = [], string $owner = 'bob'): array {
 		$schema = new Schema();
 		$schema->setId(7);
 		$schema->setSlug('case');
@@ -83,7 +86,7 @@ class RenderObjectUpdateRightTest extends TestCase {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueBool')->willReturn(true);
 
-		$permissions = new PermissionHandler(
+		$permissions = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$userSession,
 			$userManager,
 			$groupManager,
@@ -98,9 +101,8 @@ class RenderObjectUpdateRightTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 		$actionList = new ObjectActionList(
-			new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
+			new ObjectActionCatalogue(new ObjectActionDefinitions($this->createMock(RegisterMapper::class)), new ObjectActionInputs(new OasRequestValidator())),
 			new ObjectActionGate($permissions, $userSession, $l10n, $this->createMock(ObjectActionElevationEntries::class)),
-			new ObjectActionInputs(new OasRequestValidator()),
 			$this->createMock(TransitionEngine::class),
 			$l10n
 		);
@@ -108,7 +110,7 @@ class RenderObjectUpdateRightTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			static function (string $id) use ($permissions, $actionList) {
-				if ($id === PermissionHandler::class) {
+				if ($id === PermissionHandlerInterface::class) {
 					return $permissions;
 				}
 
@@ -124,35 +126,48 @@ class RenderObjectUpdateRightTest extends TestCase {
 		$translationHandler->method('resolveTranslationsForRender')->willReturnArgument(0);
 
 		$render = new RenderObject(
-			$this->createMock(\OCA\OpenRegister\Files\Db\FileMapper::class),
-			$this->createMock(MagicMapper::class),
-			$this->createMock(RegisterMapper::class),
-			$schemaMapper,
-			$this->createMock(\OCP\SystemTag\ISystemTagManager::class),
-			$this->createMock(\OCP\SystemTag\ISystemTagObjectMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\CacheHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\PropertyRbacHandler::class),
-			new NullLogger(),
-			$this->createMock(\OCA\OpenRegister\Service\FileService::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			$translationHandler,
-			$this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
-			$this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
-			$this->createMock(\OCA\OpenRegister\Service\UrnService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\LanguageService::class),
-			null,
-			null,
-			null,
-			$container
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					objectEntityMapper: $this->createMock(MagicMapper::class),
+					registerMapper: $this->createMock(RegisterMapper::class),
+					schemaMapper: $schemaMapper,
+					objectCacheService: $this->createMock(\OCA\OpenRegister\Service\Object\CacheHandler::class)
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $this->createMock(\OCA\OpenRegister\Files\Db\FileMapper::class),
+					fileService: $this->createMock(\OCA\OpenRegister\Service\FileService::class),
+					systemTagManager: $this->createMock(\OCP\SystemTag\ISystemTagManager::class),
+					systemTagMapper: $this->createMock(\OCP\SystemTag\ISystemTagObjectMapper::class)
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $translationHandler,
+					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+					languageService: $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+					calculationEvaluator: $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
+					linkedEntityEnricher: $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+					urnService: $this->createMock(\OCA\OpenRegister\Service\UrnService::class)
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: new NullLogger(),
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(objectSourceRegistry: null, fieldEncryptionHandler: null),
+				request: null,
+				container: $container
+			),
+			propertyRbacHandler: $this->createMock(\OCA\OpenRegister\Service\PropertyRbacHandler::class)
 		);
 
 		$entity = new ObjectEntity();
 		$entity->setUuid('5b0c1f0e-0000-4000-8000-000000000001');
 		$entity->setSchema('7');
 		$entity->setRegister('3');
-		$entity->setOwner('bob');
+		$entity->setOwner($owner);
 		$entity->setObject(['reference' => 'Z-1']);
 
 		return $render->renderEntity(entity: $entity, _extend: $extend)->jsonSerialize();
@@ -168,6 +183,17 @@ class RenderObjectUpdateRightTest extends TestCase {
 
 		$this->assertSame(['update' => true], $rendered['@self']['can'] ?? null);
 	}//end testAnEditorMayUpdate()
+
+	/**
+	 * The owner may update through the owner rule, in no group that says so.
+	 *
+	 * @return void
+	 */
+	public function testTheOwnerMayUpdate(): void {
+		$rendered = $this->renderAs([], ['@self.can'], owner: 'alice');
+
+		$this->assertSame(['update' => true], $rendered['@self']['can'] ?? null);
+	}//end testTheOwnerMayUpdate()
 
 	/**
 	 * 🔴 A reader reads `can.update: false`, so the list offers no editor.

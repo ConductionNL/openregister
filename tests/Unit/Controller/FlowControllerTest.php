@@ -32,6 +32,7 @@ use OCA\OpenRegister\Controller\FlowController;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCP\AppFramework\Http\JSONResponse;
@@ -45,6 +46,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Controller\FlowController
  * @uses \OCA\OpenRegister\Controller\Support\FlowCatalogue
+ * @uses \OCA\OpenRegister\Controller\Support\FlowNodeTypes
  * @uses \OCA\OpenRegister\Controller\Support\FlowDefinitions
  * @uses \OCA\OpenRegister\Controller\Support\FlowControllerServices
  *
@@ -202,8 +204,7 @@ class FlowControllerTest extends TestCase {
 		\OCA\OpenRegister\Service\OpenRegisterActionAuthService $actionAuth,
 	): FlowAccess {
 		return new FlowAccess(
-			userSession: $userSession,
-			groupManager: $groupManager,
+			caller: new CallerContext(userSession: $userSession, groupManager: $groupManager),
 			actionAuth: $actionAuth
 		);
 

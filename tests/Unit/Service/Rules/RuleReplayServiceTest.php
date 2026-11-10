@@ -26,13 +26,16 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rules\RuleCeilingException;
-use OCA\OpenRegister\Service\Rules\RuleCeilingService;
+use OCA\OpenRegister\Service\Rules\FlowRuleDescriptors;
 use OCA\OpenRegister\Service\Rules\RuleInventoryService;
 use OCA\OpenRegister\Service\Rules\RuleReplayService;
+use OCA\OpenRegister\Service\Rules\RuleTargets;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
-use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
-use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -87,10 +90,8 @@ class RuleReplayServiceTest extends TestCase {
 		$summaries->method('findBySchema')->willReturn([]);
 
 		return new RuleInventoryService(
-			triggers: $triggers,
 			summaries: $summaries,
-			propertyCalculations: new PropertyCalculations(),
-			vocabulary: new RuleVocabulary()
+			flows: new FlowRuleDescriptors(triggers: $triggers, published: null)
 		);
 	}//end inventory()
 
@@ -142,11 +143,15 @@ class RuleReplayServiceTest extends TestCase {
 	 * @return RuleReplayService The service.
 	 */
 	private function service(): RuleReplayService {
+		$catalog = new SchemaCatalog(
+			registers: $this->createMock(originalClassName: RegisterMapperInterface::class),
+			schemas: $this->createMock(originalClassName: SchemaMapperInterface::class),
+			tables: $this->createMock(originalClassName: MagicMapperInterface::class)
+		);
+
 		return new RuleReplayService(
-			inventory: $this->inventory(),
-			ceiling: new RuleCeilingService(),
-			jobs: $this->jobs,
-			objects: $this->objects
+			targets: new RuleTargets(rules: $this->inventory(), catalog: $catalog, objects: $this->objects),
+			jobs: $this->jobs
 		);
 	}//end service()
 

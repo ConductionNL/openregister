@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Audit\HistoryEntryRedactor;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryServices;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Audit\ReadEventVisibility;
@@ -153,9 +154,11 @@ trait BuildsReaderHistory {
 
 		return new ObjectHistoryForReaders(
 			$access,
-			$mapper,
-			new HistoryEntryRedactor($this->readerProperties(groups: $groups)),
-			$registerMapper,
+			new ObjectHistoryServices(
+				$mapper,
+				new HistoryEntryRedactor($this->readerProperties(groups: $groups)),
+				$registerMapper
+			),
 			$guard,
 			$reads
 		);
@@ -199,12 +202,6 @@ trait BuildsReaderHistory {
 			static fn (string $uid, string $group): bool => in_array($group, $groups, true)
 		);
 
-		return new PropertyRbacHandler(
-			$session,
-			$groupManager,
-			$this->createMock(ConditionMatcher::class),
-			$this->createMock(LoggerInterface::class),
-			self::stateFieldRuleResolver($session, $groupManager)
-		);
+		return new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($session, $groupManager), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(ConditionMatcher::class), self::stateFieldRuleResolver($session, $groupManager)), logger: $this->createMock(LoggerInterface::class));
 	}//end readerProperties()
 }//end trait

@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectAction;
 
+use OCA\OpenRegister\Service\ObjectAction\ElevatedWrite;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -26,6 +27,7 @@ use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationEntries;
+use OCA\OpenRegister\Service\ObjectAction\ActionElevation;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
@@ -78,7 +80,7 @@ class ObjectActionElevationTest extends TestCase {
 		$appConfig->method('getValueBool')->willReturn(false);
 		$appConfig->method('getValueString')->willReturn(DenyEnforcementMode::MODE_ENFORCING);
 
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$session,
 			$users,
 			$groups,
@@ -110,9 +112,7 @@ class ObjectActionElevationTest extends TestCase {
 		$this->assertFalse($handler->hasPermission(schema: $this->schema(), action: 'create', userId: 'anna'), 'precondition: anna may not create');
 
 		$granted = ObjectActionElevationScope::run(
-			'publish',
-			'anna',
-			$this->entries(),
+			new ActionElevation('publish', 'anna', $this->entries()),
 			fn (): bool => $handler->hasPermission(schema: $this->schema(), action: 'create', userId: 'anna', register: '4')
 		);
 
@@ -126,9 +126,7 @@ class ObjectActionElevationTest extends TestCase {
 		$object->setRegister('4');
 
 		[$update, $otherSchema, $otherRegister] = ObjectActionElevationScope::run(
-			'publish',
-			'anna',
-			$this->entries(),
+			new ActionElevation('publish', 'anna', $this->entries()),
 			function () use ($handler, $object): array {
 				$elsewhere = new ObjectEntity();
 				$elsewhere->setUuid('p-2');
@@ -151,9 +149,7 @@ class ObjectActionElevationTest extends TestCase {
 		$handler = $this->handler();
 
 		$granted = ObjectActionElevationScope::run(
-			'publish',
-			'anna',
-			$this->entries(),
+			new ActionElevation('publish', 'anna', $this->entries()),
 			fn (): bool => $handler->hasPermission(schema: $this->schema(), action: 'create', userId: 'anna')
 		);
 
@@ -164,9 +160,7 @@ class ObjectActionElevationTest extends TestCase {
 		$handler = $this->handler();
 
 		$granted = ObjectActionElevationScope::run(
-			'publish',
-			'anna',
-			$this->entries(),
+			new ActionElevation('publish', 'anna', $this->entries()),
 			fn (): bool => $handler->hasPermission(schema: $this->schema(), action: 'create', userId: 'anna', register: '5')
 		);
 
@@ -179,9 +173,7 @@ class ObjectActionElevationTest extends TestCase {
 		$schema->setAuthorization(['create' => ['redactie'], 'deny' => ['create' => ['behandelaars']]]);
 
 		$granted = ObjectActionElevationScope::run(
-			'publish',
-			'anna',
-			$this->entries(),
+			new ActionElevation('publish', 'anna', $this->entries()),
 			fn (): bool => $handler->hasPermission(schema: $schema, action: 'create', userId: 'anna', register: '4')
 		);
 
@@ -247,12 +239,12 @@ class ObjectActionElevationTest extends TestCase {
 
 	public function testTheElevationEndsWithTheRunEvenWhenItThrows(): void {
 		try {
-			ObjectActionElevationScope::run('publish', 'anna', $this->entries(), static fn () => throw new RuntimeException('step failed'));
+			ObjectActionElevationScope::run(new ActionElevation('publish', 'anna', $this->entries()), static fn () => throw new RuntimeException('step failed'));
 		} catch (RuntimeException) {
 			$this->addToAssertionCount(1);
 		}
 
-		$this->assertFalse(ObjectActionElevationScope::allows(schemaId: 9, registerId: '4', verb: 'create'));
+		$this->assertFalse(ObjectActionElevationScope::permits(new ElevatedWrite(9, '4', 'create')));
 		$this->assertFalse($this->handler()->hasPermission(schema: $this->schema(), action: 'create', userId: 'anna'));
 	}//end testTheElevationEndsWithTheRunEvenWhenItThrows()
 
@@ -269,11 +261,9 @@ class ObjectActionElevationTest extends TestCase {
 		$ordinary->setAction('update');
 
 		ObjectActionElevationScope::run(
-			'publish',
-			'anna',
-			$this->entries(),
+			new ActionElevation('publish', 'anna', $this->entries()),
 			function () use ($mapper, $apply, $elevated, $ordinary): void {
-				ObjectActionElevationScope::allows(schemaId: 9, registerId: '4', verb: 'create');
+				ObjectActionElevationScope::permits(new ElevatedWrite(9, '4', 'create'));
 				$apply->invoke($mapper, $elevated);
 				$apply->invoke($mapper, $ordinary);
 			}

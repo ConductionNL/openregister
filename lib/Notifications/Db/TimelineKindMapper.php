@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Db;
 
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\IDBConnection;
@@ -41,6 +40,8 @@ use OCP\IDBConnection;
  * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
 class TimelineKindMapper extends QBMapper {
+	use NotificationQueryTrait;
+
 
 	/**
 	 * Constructor.
@@ -66,18 +67,12 @@ class TimelineKindMapper extends QBMapper {
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	public function findBySlug(string $slug): ?TimelineKind {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('slug', $qb->createNamedParameter($slug)))
-			->setMaxResults(1);
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$found = $this->findFirstOrNull(qb: $this->selectWhereEquals(columns: ['slug' => $slug]));
+		if ($found instanceof TimelineKind) {
+			return $found;
 		}
 
+		return null;
 	}//end findBySlug()
 
 	/**
@@ -99,25 +94,8 @@ class TimelineKindMapper extends QBMapper {
 			->from($this->getTableName())
 			->orderBy('slug', 'ASC');
 
-		if ($register !== null) {
-			$qb->andWhere(
-				$qb->expr()->orX(
-					$qb->expr()->isNull('register'),
-					$qb->expr()->eq('register', $qb->createNamedParameter($register))
-				)
-			);
-		}
-
-		if ($schema !== null) {
-			$qb->andWhere(
-				$qb->expr()->orX(
-					$qb->expr()->isNull('schema'),
-					$qb->expr()->eq('schema', $qb->createNamedParameter($schema))
-				)
-			);
-		}
+		$this->whereScopedOrUnscoped(qb: $qb, columns: ['register' => $register, 'schema' => $schema]);
 
 		return $this->findEntities(query: $qb);
-
 	}//end findAll()
 }//end class

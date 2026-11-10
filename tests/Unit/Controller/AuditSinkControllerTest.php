@@ -28,6 +28,7 @@ namespace Unit\Controller;
 use OCA\OpenRegister\Controller\AuditSinkController;
 use OCA\OpenRegister\Service\Audit\AuditSink;
 use OCA\OpenRegister\Service\Audit\AuditSinkStatus;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\AuditSinkControllerFactory;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -82,7 +83,7 @@ final class AuditSinkControllerTest extends TestCase {
 
 		$groups->method('getUserGroupIds')->willReturn($memberships);
 
-		return new AuditSinkController(
+		return AuditSinkControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$sink,

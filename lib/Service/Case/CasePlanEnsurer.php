@@ -33,12 +33,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Case;
 
 use DateTime;
+use DateTimeImmutable;
 use OCA\OpenRegister\Db\CaseItem;
-use OCA\OpenRegister\Db\CaseItemAudit;
-use OCA\OpenRegister\Db\CaseItemAuditMapper;
-use OCA\OpenRegister\Db\CaseItemMapper;
 use OCA\OpenRegister\Exception\CaseValidationException;
-use OCP\IDBConnection;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct;
 use Throwable;
 
 /**
@@ -54,20 +52,16 @@ class CasePlanEnsurer {
 	/**
 	 * Constructor.
 	 *
-	 * @param CaseItemMapper $items The plan-item table.
-	 * @param CaseItemAuditMapper $audits The append-only audit.
+	 * @param CasePlanStore $store The plan-item table, the append-only audit and the transaction.
 	 * @param CasePlanDefinition $definitions The one definition validator.
 	 * @param CasePlanTransitions $transitions The one lifecycle table.
-	 * @param IDBConnection $db Holds the transaction.
 	 * @param CasePlanItemTimers|null $timers Arms the due and expiry timers of an item ensured as active: no transition
 	 *                                        event is dispatched for it, so the listener that arms them never hears of it.
 	 */
 	public function __construct(
-		private readonly CaseItemMapper $items,
-		private readonly CaseItemAuditMapper $audits,
+		private readonly CasePlanStore $store,
 		private readonly CasePlanDefinition $definitions,
 		private readonly CasePlanTransitions $transitions,
-		private readonly IDBConnection $db,
 		private readonly ?CasePlanItemTimers $timers = null,
 	) {
 
@@ -76,12 +70,7 @@ class CasePlanEnsurer {
 	/**
 	 * Ensure the definition's items exist on the object with their states.
 	 *
-	 * @param string $objectUuid The anchoring object.
-	 * @param int|null $registerId Its register.
-	 * @param int|null $schemaId Its schema.
-	 * @param array<string, mixed> $definition `settings` + nested `items`; a node MAY carry `state`.
-	 * @param array<int, mixed> $history Entries `{item, from?, to, at, actor?, reason?}`.
-	 * @param string $actor The importing identity (`system:<app>`).
+	 * @param CaseItemsEnsureRequest $request The anchor, the definition (a node MAY carry `state`), the history and the importing identity.
 	 *
 	 * @return array{created: array<int, string>, existing: array<int, string>, items: array<int, array<string, mixed>>}
 	 *
@@ -89,25 +78,57 @@ class CasePlanEnsurer {
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
-	public function ensure(
-		string $objectUuid,
-		?int $registerId,
-		?int $schemaId,
-		array $definition,
-		array $history,
-		string $actor,
-	): array {
-		$normalised = $this->definitions->validate(definition: $definition);
-		$types = [];
+	public function ensure(CaseItemsEnsureRequest $request): array {
+		$normalised = $this->definitions->validate(definition: $request->definition);
+		$types      = [];
 		$this->checkStates(nodes: $normalised['items'], types: $types);
-		$historyByKey = $this->checkHistory(history: $history, types: $types);
+		$insertion = new CasePlanInsertion(anchor: $request->anchor, settings: $normalised['settings'], actor: $request->actor);
+		$history = new CaseEnsuredHistory(history: $request->history, types: $types);
+		$run = new CaseEnsureRun(insertion: $insertion, history: $history, existing: $this->existingRows(anchor: $request->anchor, types: $types));
 
+		$this->write(nodes: $normalised['items'], run: $run);
+
+		return $this->settle(run: $run);
+	}//end ensure()
+
+	/**
+	 * The rows the object already has, by key, each checked against the call's
+	 * anchor and against the type the definition declares for its key.
+	 *
+	 * @param CaseAnchor $anchor The anchoring object and the call's register and schema.
+	 * @param array<string, string> $types The definition's key => type.
+	 *
+	 * @return array<string, CaseItem> The existing rows by key.
+	 *
+	 * @throws CaseValidationException On another anchor, or on a key that exists as another type.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
+	 */
+	private function existingRows(CaseAnchor $anchor, array $types): array {
 		$existing = [];
-		foreach ($this->items->findByObject(objectUuid: $objectUuid) as $row) {
-			$this->checkAnchor(row: $row, registerId: $registerId, schemaId: $schemaId);
+		foreach ($this->store->items->findByObject(objectUuid: $anchor->objectUuid) as $row) {
+			$this->checkAnchor(row: $row, anchor: $anchor);
 			$existing[(string)$row->getItemKey()] = $row;
 		}
 
+		$this->checkTypes(types: $types, existing: $existing);
+
+		return $existing;
+	}//end existingRows()
+
+	/**
+	 * An item that exists keeps its type: ensuring it as another is refused.
+	 *
+	 * @param array<string, string> $types The definition's key => type.
+	 * @param array<string, CaseItem> $existing The existing rows by key.
+	 *
+	 * @return void
+	 *
+	 * @throws CaseValidationException Naming the key and both types.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
+	 */
+	private function checkTypes(array $types, array $existing): void {
 		foreach ($types as $key => $type) {
 			if (isset($existing[$key]) === true && $existing[$key]->getPlanItemType() !== $type) {
 				throw new CaseValidationException(
@@ -115,44 +136,36 @@ class CasePlanEnsurer {
 				);
 			}
 		}
-
-		$created = [];
-		$kept = [];
-		$this->db->beginTransaction();
-		try {
-			$this->ensureLevel(
-				nodes: $normalised['items'],
-				parentId: null,
-				context: [
-					'object' => $objectUuid,
-					'register' => $registerId,
-					'schema' => $schemaId,
-					'settings' => $normalised['settings'],
-					'actor' => $actor,
-					'history' => $historyByKey,
-					'existing' => $existing,
-				],
-				created: $created,
-				kept: $kept
-			);
-			$this->db->commit();
-		} catch (Throwable $failure) {
-			$this->db->rollBack();
-			throw $failure;
-		}
-
-		$rows = $this->items->findByObject(objectUuid: $objectUuid);
-		$this->armTimers(rows: $rows, created: $created, actor: $actor);
-
-		return [
-			'created' => $created,
-			'existing' => $kept,
-			'items' => array_map(static fn (CaseItem $row): array => $row->jsonSerialize(), $rows),
-		];
-	}//end ensure()
+	}//end checkTypes()
 
 	/**
-	 * Arm the deadlines of the items this call created as active, and mark the rest.
+	 * Insert the missing items in one transaction.
+	 *
+	 * @param array<int, array<string, mixed>> $nodes The validated top level.
+	 * @param CaseEnsureRun                    $run   The insertion, history and existing rows; collects created and kept keys.
+	 *
+	 * @return void
+	 *
+	 * @throws Throwable Whatever failed, after rolling back.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
+	 */
+	private function write(array $nodes, CaseEnsureRun $run): void {
+		$this->store->db->beginTransaction();
+		try {
+			foreach ($nodes as $position => $node) {
+				$this->ensureNode(placed: new CasePlanPlacement(node: $node, parentId: null, position: (int)$position), run: $run);
+			}
+
+			$this->store->db->commit();
+		} catch (Throwable $failure) {
+			$this->store->db->rollBack();
+			throw $failure;
+		}
+	}//end write()
+
+	/**
+	 * After the commit: arm the timers and report what the object now holds.
 	 *
 	 * An item inserted in a state it carries goes through no state machine, so
 	 * no `CaseItemTransitionedEvent` reaches the timer listener, and an
@@ -165,33 +178,57 @@ class CasePlanEnsurer {
 	 * again: its statutory expiry is marked, and the re-arm pass arms it or
 	 * drops the marker when a timer is already running.
 	 *
-	 * @param array<int, CaseItem> $rows Every row of the object, after the commit.
-	 * @param array<int, string> $created The keys this call created.
+	 * @param CaseEnsureRun $run The anchoring object, the ensuring identity and what the write did.
+	 *
+	 * @return array{created: array<int, string>, existing: array<int, string>, items: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+	 */
+	private function settle(CaseEnsureRun $run): array {
+		$rows = $this->store->items->findByObject(objectUuid: $run->insertion->anchor->objectUuid);
+		$created = $run->created;
+		$active = array_filter($rows, static fn (CaseItem $row): bool => $row->getState() === CaseItem::STATE_ACTIVE);
+		$isNew = static fn (CaseItem $row): bool => in_array((string)$row->getItemKey(), $created, true);
+		$this->armEntered(rows: array_filter($active, $isNew), actor: (string)$run->insertion->actor);
+		$this->markStatutory(rows: array_filter($active, static fn (CaseItem $row): bool => $isNew($row) === false));
+
+		return [
+			'created' => $created,
+			'existing' => $run->kept,
+			'items' => array_map(static fn (CaseItem $row): array => $row->jsonSerialize(), $rows),
+		];
+	}//end settle()
+
+	/**
+	 * Arm the deadlines of the active items this call created.
+	 *
+	 * @param array<int, CaseItem> $rows The active rows this call created.
 	 * @param string $actor The ensuring identity.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
-	private function armTimers(array $rows, array $created, string $actor): void {
-		if ($this->timers === null) {
-			return;
-		}
-
-		$entered = array_filter(
-			$rows,
-			static fn (CaseItem $row): bool => $row->getState() === CaseItem::STATE_ACTIVE && in_array((string)$row->getItemKey(), $created, true)
-		);
-		foreach ($entered as $row) {
-			$this->timers->onEntered(item: $row, actor: $actor);
-		}
-
+	private function armEntered(array $rows, string $actor): void {
 		foreach ($rows as $row) {
-			if ($row->getState() === CaseItem::STATE_ACTIVE && in_array((string)$row->getItemKey(), $created, true) === false) {
-				$this->timers->markIfStatutory(item: $row);
-			}
+			$this->timers?->onEntered(item: $row, act: new FlowTimerAct(actor: $actor, now: new DateTimeImmutable()));
 		}
-	}//end armTimers()
+	}//end armEntered()
+
+	/**
+	 * Mark the statutory expiry of the active items that already existed, for the re-arm pass.
+	 *
+	 * @param array<int, CaseItem> $rows The active rows that already existed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+	 */
+	private function markStatutory(array $rows): void {
+		foreach ($rows as $row) {
+			$this->timers?->markIfStatutory(item: $row);
+		}
+	}//end markStatutory()
 
 	/**
 	 * Every node's state must be one its type can reach from `available`.
@@ -207,25 +244,34 @@ class CasePlanEnsurer {
 	 */
 	private function checkStates(array $nodes, array &$types): void {
 		foreach ($nodes as $node) {
-			$key = (string)$node['key'];
-			$type = (string)$node['type'];
-			$state = (string)($node['state'] ?? CaseItem::STATE_AVAILABLE);
-			if (in_array($state, $this->reachable(type: $type), true) === false) {
-				throw new CaseValidationException(
-					message: sprintf(
-						"'%s' (%s) cannot carry state '%s'; its lifecycle reaches %s.",
-						$key,
-						$type,
-						$state,
-						implode(', ', $this->reachable(type: $type))
-					)
-				);
-			}
-
-			$types[$key] = $type;
+			$this->checkState(node: $node);
+			$types[(string)$node['key']] = (string)$node['type'];
 			$this->checkStates(nodes: ($node['children'] ?? []), types: $types);
 		}
 	}//end checkStates()
+
+	/**
+	 * One node's recorded state must be one its type can reach.
+	 *
+	 * @param array<string, mixed> $node A validated node: its key, its plan-item type and the state it carries.
+	 *
+	 * @return void
+	 *
+	 * @throws CaseValidationException Naming the item, its type and the state.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
+	 */
+	private function checkState(array $node): void {
+		$key = (string)$node['key'];
+		$type = (string)$node['type'];
+		$state = (string)($node['state'] ?? CaseItem::STATE_AVAILABLE);
+		$reachable = $this->reachable(type: $type);
+		if (in_array($state, $reachable, true) === false) {
+			throw new CaseValidationException(
+				message: sprintf("'%s' (%s) cannot carry state '%s'; its lifecycle reaches %s.", $key, $type, $state, implode(', ', $reachable))
+			);
+		}
+	}//end checkState()
 
 	/**
 	 * The states a type can be in: `available` and everything the table
@@ -254,62 +300,11 @@ class CasePlanEnsurer {
 	}//end reachable()
 
 	/**
-	 * Validate history and group it by item key.
-	 *
-	 * @param array<int, mixed> $history The entries.
-	 * @param array<string, string> $types The definition's key => type.
-	 *
-	 * @return array<string, array<int, array{from: string, to: string, at: DateTime, actor: string|null, reason: string|null}>>
-	 *
-	 * @throws CaseValidationException On an entry that is not usable.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
-	 */
-	private function checkHistory(array $history, array $types): array {
-		$byKey = [];
-		foreach ($history as $index => $entry) {
-			$label = sprintf('history[%d]', (int)$index);
-			if (is_array($entry) === false) {
-				throw new CaseValidationException(message: sprintf('%s must be an object.', $label));
-			}
-
-			$key = trim((string)($entry['item'] ?? ''));
-			if (isset($types[$key]) === false) {
-				throw new CaseValidationException(message: sprintf("%s names item '%s', which the definition does not declare.", $label, $key));
-			}
-
-			$from = trim((string)($entry['from'] ?? ''));
-			$to = trim((string)($entry['to'] ?? ''));
-			if (in_array($to, CaseItem::STATES, true) === false || ($from !== '' && in_array($from, CaseItem::STATES, true) === false)) {
-				throw new CaseValidationException(
-					message: sprintf("%s has from-state '%s' and to-state '%s'; both must be plan-item states.", $label, $from, $to)
-				);
-			}
-
-			$moment = $this->moment(value: ($entry['at'] ?? null));
-			if ($moment === null) {
-				throw new CaseValidationException(message: sprintf('%s has an unreadable moment; `at` must be an ISO 8601 date-time.', $label));
-			}
-
-			$byKey[$key][] = [
-				'from' => $from,
-				'to' => $to,
-				'at' => $moment,
-				'actor' => $this->stringOrNull(value: ($entry['actor'] ?? null)),
-				'reason' => $this->stringOrNull(value: ($entry['reason'] ?? null)),
-			];
-		}//end foreach
-
-		return $byKey;
-	}//end checkHistory()
-
-	/**
 	 * A plan is anchored to ONE object: an existing row that names another
 	 * register or schema refuses the call.
 	 *
 	 * @param CaseItem $row An existing row.
-	 * @param int|null $registerId The call's register.
-	 * @param int|null $schemaId The call's schema.
+	 * @param CaseAnchor $anchor The call's register and schema.
 	 *
 	 * @return void
 	 *
@@ -317,7 +312,9 @@ class CasePlanEnsurer {
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
-	private function checkAnchor(CaseItem $row, ?int $registerId, ?int $schemaId): void {
+	private function checkAnchor(CaseItem $row, CaseAnchor $anchor): void {
+		$registerId = $anchor->registerId;
+		$schemaId = $anchor->schemaId;
 		$registerDiffers = $registerId !== null && $row->getRegisterId() !== null && $row->getRegisterId() !== $registerId;
 		$schemaDiffers = $schemaId !== null && $row->getSchemaId() !== null && $row->getSchemaId() !== $schemaId;
 		if ($registerDiffers === true || $schemaDiffers === true) {
@@ -334,179 +331,69 @@ class CasePlanEnsurer {
 	}//end checkAnchor()
 
 	/**
-	 * Ensure one level and recurse into stages.
+	 * Ensure one placed node and recurse into a stage's children.
 	 *
-	 * @param array<int, array<string, mixed>> $nodes The level.
-	 * @param int|null $parentId The containing stage's row id.
-	 * @param array<string, mixed> $context object, register, schema, settings, actor, history, existing.
-	 * @param array<int, string> $created Collects created keys.
-	 * @param array<int, string> $kept Collects existing keys.
+	 * @param CasePlanPlacement $placed The validated node, its containing stage's row id and its position.
+	 * @param CaseEnsureRun     $run    The insertion, history and existing rows; collects created and kept keys.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
-	private function ensureLevel(array $nodes, ?int $parentId, array $context, array &$created, array &$kept): void {
-		foreach ($nodes as $position => $node) {
-			$key = (string)$node['key'];
-			$row = ($context['existing'][$key] ?? null);
-			if ($row instanceof CaseItem) {
-				$kept[] = $key;
-			}
-
-			if ($row instanceof CaseItem === false) {
-				$row = $this->insert(node: $node, parentId: $parentId, position: (int)$position, context: $context);
-				$created[] = $key;
-			}
-
-			$this->ensureLevel(nodes: ($node['children'] ?? []), parentId: (int)$row->getId(), context: $context, created: $created, kept: $kept);
+	private function ensureNode(CasePlanPlacement $placed, CaseEnsureRun $run): void {
+		$key = (string)$placed->node['key'];
+		$row = ($run->existing[$key] ?? null);
+		if ($row instanceof CaseItem === false) {
+			$row = $this->insert(placed: $placed, run: $run);
+			$run->created[] = $key;
+		} else {
+			$run->kept[] = $key;
 		}
-	}//end ensureLevel()
+
+		foreach (($placed->node['children'] ?? []) as $position => $child) {
+			$this->ensureNode(placed: new CasePlanPlacement(node: $child, parentId: (int)$row->getId(), position: (int)$position), run: $run);
+		}
+	}//end ensureNode()
 
 	/**
 	 * Insert one missing item with its recorded state, its creation audit and
 	 * its imported history.
 	 *
-	 * @param array<string, mixed> $node The validated node.
-	 * @param int|null $parentId The containing stage's row id.
-	 * @param int $position Its position among its siblings.
-	 * @param array<string, mixed> $context See {@see ensureLevel()}.
+	 * @param CasePlanPlacement $placed The validated node, its containing stage's row id and its position.
+	 * @param CaseEnsureRun     $run    The insertion every row is built from and the history.
 	 *
 	 * @return CaseItem The inserted row.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
-	private function insert(array $node, ?int $parentId, int $position, array $context): CaseItem {
-		$origin = CaseItem::ORIGIN_DEFINED;
-		if (($node['discretionary'] ?? false) === true) {
-			$origin = CaseItem::ORIGIN_DISCRETIONARY;
+	private function insert(CasePlanPlacement $placed, CaseEnsureRun $run): CaseItem {
+		$row = $this->definitions->rowFrom(placed: $placed, insertion: $run->insertion);
+		self::carryState(row: $row, node: $placed->node);
+		$persisted = $this->store->items->insert($row);
+		foreach ($run->history->auditsFor(item: $persisted, actor: (string)$run->insertion->actor) as $audit) {
+			$this->store->audits->insert($audit);
 		}
 
-		$actor = (string)$context['actor'];
-		$row = $this->definitions->rowFrom(
-			node: $node,
-			objectUuid: (string)$context['object'],
-			registerId: $context['register'],
-			schemaId: $context['schema'],
-			parentId: $parentId,
-			position: $position,
-			settings: $context['settings'],
-			origin: $origin,
-			actor: $actor
-		);
+		return $persisted;
+	}//end insert()
+	/**
+	 * Put the state a node carries on its unsaved row; a row that is past
+	 * `available` is stamped as entered now.
+	 *
+	 * @param CaseItem $row The unsaved row.
+	 * @param array<string, mixed> $node The validated node.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
+	 */
+	private static function carryState(CaseItem $row, array $node): void {
 		$state = (string)($node['state'] ?? CaseItem::STATE_AVAILABLE);
 		$row->setState($state);
 		$row->setIsTerminal(in_array($state, CaseItem::TERMINAL_STATES, true));
 		if ($state !== CaseItem::STATE_AVAILABLE) {
 			$row->setEnteredAt(new DateTime());
 		}
+	}//end carryState()
 
-		$persisted = $this->items->insert($row);
-		$this->appendAudit(item: $persisted, from: '', to: $state, actor: $actor, reason: null, imported: false, moment: null, actorOfRecord: $actor);
-
-		foreach (($context['history'][(string)$node['key']] ?? []) as $entry) {
-			$this->appendAudit(
-				item: $persisted,
-				from: $entry['from'],
-				to: $entry['to'],
-				actor: ($entry['actor'] ?? $actor),
-				reason: $entry['reason'],
-				imported: true,
-				moment: $entry['at'],
-				actorOfRecord: $actor
-			);
-		}
-
-		return $persisted;
-	}//end insert()
-
-	/**
-	 * Append one audit entry.
-	 *
-	 * @param CaseItem $item The row.
-	 * @param string $from The from-state ('' on creation).
-	 * @param string $to The to-state.
-	 * @param string $actor The identity the entry names.
-	 * @param string|null $reason Free text.
-	 * @param bool $imported Whether it is brought-over history.
-	 * @param DateTime|null $moment Its original moment, for imported history.
-	 * @param string $actorOfRecord The importer, recorded as the cause reference.
-	 *
-	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag IS the stored column.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
-	 */
-	private function appendAudit(
-		CaseItem $item,
-		string $from,
-		string $to,
-		string $actor,
-		?string $reason,
-		bool $imported,
-		?DateTime $moment,
-		string $actorOfRecord,
-	): void {
-		$entry = new CaseItemAudit();
-		$entry->setCaseItemId((int)$item->getId());
-		$entry->setFromState($from);
-		$entry->setToState($to);
-		$entry->setCause(CaseItemAudit::CAUSE_IMPORT);
-		$entry->setCauseRef('ensure:' . $actorOfRecord);
-		$entry->setActor($actor);
-		$entry->setReason($reason);
-		$entry->setAuthorized(true);
-		$entry->setImported($imported);
-		if ($moment !== null) {
-			$entry->setCreated($moment);
-		}
-
-		$this->audits->insert($entry);
-	}//end appendAudit()
-
-	/**
-	 * Parse an ISO 8601 moment.
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return DateTime|null The moment, or null when unreadable.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
-	 */
-	private function moment(mixed $value): ?DateTime {
-		if (is_string($value) === false || trim($value) === '') {
-			return null;
-		}
-
-		// Only a full ISO 8601 date-time with an offset: relative phrases that
-		// DateTime would happily accept ("yesterday") are not a moment.
-		$pattern = '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})$/';
-		if (preg_match($pattern, trim($value)) !== 1) {
-			return null;
-		}
-
-		try {
-			return new DateTime(trim($value));
-		} catch (Throwable) {
-			return null;
-		}
-	}//end moment()
-
-	/**
-	 * A trimmed non-empty string, or null.
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return string|null The string.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
-	 */
-	private function stringOrNull(mixed $value): ?string {
-		if (is_string($value) === false || trim($value) === '') {
-			return null;
-		}
-
-		return trim($value);
-	}//end stringOrNull()
 }//end class

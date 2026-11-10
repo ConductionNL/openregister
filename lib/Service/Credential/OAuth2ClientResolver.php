@@ -102,6 +102,26 @@ class OAuth2ClientResolver {
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */
 	public function resolve(array $credential, string $provider, ?string $actingUserId = null): array {
+		$client = $this->configuredClient(credential: $credential, provider: $provider);
+		$clientSecret = $this->secretFor(clientRef: $client['clientRef'], actingUserId: $actingUserId);
+
+		return ['clientId' => $client['clientId'], 'clientSecret' => $clientSecret];
+	}//end resolve()
+
+	/**
+	 * The client id and secret credentialRef: the credential's own, else the instance default.
+	 *
+	 * A credential that names its own client-secret credentialRef keeps its own
+	 * client id too; only without one does the provider's instance default apply.
+	 *
+	 * @param array<string, mixed> $credential The credential object's serialised data.
+	 * @param string               $provider   The catalogue provider identifier.
+	 *
+	 * @return array{clientId: string, clientRef: string} The client id and the secret's credentialRef, possibly empty.
+	 *
+	 * @throws OAuth2ClientNotConfiguredException When no client id is configured for the provider at all.
+	 */
+	private function configuredClient(array $credential, string $provider): array {
 		$clientRef = trim((string)($credential['clientCredentialRef'] ?? ''));
 		$clientId = trim((string)($credential['clientId'] ?? ''));
 
@@ -116,13 +136,8 @@ class OAuth2ClientResolver {
 			throw new OAuth2ClientNotConfiguredException(message: 'no OAuth2 client id is configured for provider ' . $provider);
 		}
 
-		$clientSecret = null;
-		if ($clientRef !== '') {
-			$clientSecret = $this->secretFor(clientRef: $clientRef, actingUserId: $actingUserId);
-		}
-
-		return ['clientId' => $clientId, 'clientSecret' => $clientSecret];
-	}//end resolve()
+		return ['clientId' => $clientId, 'clientRef' => $clientRef];
+	}//end configuredClient()
 
 	/**
 	 * Read one client secret out of the broker, through its own guard chain.
@@ -130,11 +145,15 @@ class OAuth2ClientResolver {
 	 * @param string $clientRef The `generic-oauth2` credential UUID holding the client secret.
 	 * @param string|null $actingUserId The asserted user for a sessionless caller.
 	 *
-	 * @return string|null The client secret, or null when the referenced credential holds none.
+	 * @return string|null The client secret, or null when there is no reference or the referenced credential holds none.
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */
 	private function secretFor(string $clientRef, ?string $actingUserId): ?string {
+		if ($clientRef === '') {
+			return null;
+		}
+
 		try {
 			$broker = $this->container->get(CredentialBrokerService::class);
 		} catch (Throwable $unresolvable) {
@@ -147,10 +166,8 @@ class OAuth2ClientResolver {
 			);
 		}
 
-		return $broker->resolveInjectable(
-			credentialId: $clientRef,
-			appId: self::BROKER_APP_ID,
-			actingUserId: $actingUserId
+		return $broker->resolveInjectableFor(
+			request: new InjectableSecretRequest(credentialId: $clientRef, appId: self::BROKER_APP_ID, actingUserId: $actingUserId)
 		);
 	}//end secretFor()
 }//end class

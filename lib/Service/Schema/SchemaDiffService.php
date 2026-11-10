@@ -81,6 +81,18 @@ class SchemaDiffService {
 	public function diff(array $old, array $new, array $renames = []): SchemaChangeSet {
 		$run = new SchemaDiffRun(old: $old, new: $new);
 		$run->declareRenames(renames: $renames);
+
+		return $this->classified(run: $run);
+	}//end diff()
+
+	/**
+	 * Collect every change of one diff and classify the set.
+	 *
+	 * @param SchemaDiffRun $run The diff state, renames declared.
+	 *
+	 * @return SchemaChangeSet The typed, classified change set.
+	 */
+	private function classified(SchemaDiffRun $run): SchemaChangeSet {
 		$this->collectRemoved(run: $run);
 		$this->collectAdded(run: $run);
 		$this->collectChanged(run: $run);
@@ -88,7 +100,7 @@ class SchemaDiffService {
 		$this->collectNoLongerRequired(run: $run);
 
 		return $run->changeSet();
-	}//end diff()
+	}//end classified()
 
 	/**
 	 * Record properties of the old definition that the new one lacks, except declared renames.
@@ -143,23 +155,31 @@ class SchemaDiffService {
 	 */
 	private function collectChanged(SchemaDiffRun $run): void {
 		foreach ($run->newProps as $name => $newDef) {
-			if (array_key_exists($name, $run->oldProps) === false) {
-				continue;
-			}
-
-			$propChanges = $this->diffProperty(
-				pair: new PropertyDefinitionPair(name: $name, old: (array)$run->oldProps[$name], new: (array)$newDef)
-			);
-			foreach ($propChanges as $change) {
-				if ($this->kindIsBreaking(kind: $change['kind']) === true) {
-					$run->breaking(change: $change);
-					continue;
-				}
-
-				$run->compatible(change: $change);
+			if (array_key_exists($name, $run->oldProps) === true) {
+				$pair = new PropertyDefinitionPair(name: $name, old: (array)$run->oldProps[$name], new: (array)$newDef);
+				$this->recordClassified(run: $run, changes: $this->diffProperty(pair: $pair));
 			}
 		}
 	}//end collectChanged()
+
+	/**
+	 * Record each change as breaking or compatible by its kind.
+	 *
+	 * @param SchemaDiffRun                    $run     The diff state.
+	 * @param array<int, array<string, mixed>> $changes The changes of one property.
+	 *
+	 * @return void
+	 */
+	private function recordClassified(SchemaDiffRun $run, array $changes): void {
+		foreach ($changes as $change) {
+			if ($this->kindIsBreaking(kind: $change['kind']) === true) {
+				$run->breaking(change: $change);
+				continue;
+			}
+
+			$run->compatible(change: $change);
+		}
+	}//end recordClassified()
 
 	/**
 	 * Record existing properties that became required.
@@ -219,26 +239,13 @@ class SchemaDiffService {
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
 	public function nextVersion(?string $currentVersion, SchemaChangeSet $changeSet): string {
-		$parts = $this->parseVersion(version: $currentVersion);
-
-		switch ($changeSet->getBump()) {
-			case 'major':
-				$parts[0]++;
-				$parts[1] = 0;
-				$parts[2] = 0;
-				break;
-			case 'minor':
-				$parts[1]++;
-				$parts[2] = 0;
-				break;
-			case 'patch':
-				$parts[2]++;
-				break;
-			case 'none':
-			default:
-				// No bump.
-				break;
-		}
+		[$major, $minor, $patch] = $this->parseVersion(version: $currentVersion);
+		$parts = match ($changeSet->getBump()) {
+			'major' => [($major + 1), 0, 0],
+			'minor' => [$major, ($minor + 1), 0],
+			'patch' => [$major, $minor, ($patch + 1)],
+			default => [$major, $minor, $patch],
+		};
 
 		return implode('.', $parts);
 	}//end nextVersion()
@@ -369,17 +376,46 @@ class SchemaDiffService {
 			return null;
 		}
 
-		if (is_array($oldEnum) === false && is_array($newEnum) === true) {
+		if (is_array($oldEnum) !== is_array($newEnum)) {
+			return $this->diffEnumPresence(pair: $pair);
+		}
+
+		return $this->diffEnumMembers(pair: $pair);
+
+	}//end diffEnum()
+
+	/**
+	 * Diff an enum that only one side declares as a list.
+	 *
+	 * @param PropertyDefinitionPair $pair The property's old and new definition.
+	 *
+	 * @return array<string, mixed> The change.
+	 */
+	private function diffEnumPresence(PropertyDefinitionPair $pair): array {
+		$oldEnum = $pair->old['enum'] ?? null;
+		$newEnum = $pair->new['enum'] ?? null;
+		if (is_array($newEnum) === true) {
 			// Newly constrained to a fixed set = tightening.
 			return $pair->tightened(old: null, new: ['enum' => $newEnum]);
 		}
 
-		if (is_array($oldEnum) === true && is_array($newEnum) === false) {
-			// Enum dropped = relaxation.
-			return $pair->relaxed(old: ['enum' => $oldEnum], new: null);
-		}
+		// Enum dropped = relaxation.
+		return $pair->relaxed(old: ['enum' => $oldEnum], new: null);
 
-		// Both arrays — compare membership.
+	}//end diffEnumPresence()
+
+	/**
+	 * Diff the membership of an enum both sides declare.
+	 *
+	 * A side that declares a non-list enum raises a TypeError, as before.
+	 *
+	 * @param PropertyDefinitionPair $pair The property's old and new definition.
+	 *
+	 * @return array<string, mixed>|null The change, or null when the members are the same.
+	 */
+	private function diffEnumMembers(PropertyDefinitionPair $pair): ?array {
+		$oldEnum = $pair->old['enum'] ?? null;
+		$newEnum = $pair->new['enum'] ?? null;
 		$removed = array_diff($oldEnum, $newEnum);
 		$added = array_diff($newEnum, $oldEnum);
 
@@ -395,7 +431,7 @@ class SchemaDiffService {
 		// Only widened.
 		return $pair->relaxed(old: ['enum' => $oldEnum], new: ['enum' => $newEnum]);
 
-	}//end diffEnum()
+	}//end diffEnumMembers()
 
 	/**
 	 * Whether a numeric bound declared on both sides moved in the tightening direction.

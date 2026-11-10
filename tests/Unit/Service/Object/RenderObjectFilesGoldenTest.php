@@ -30,10 +30,12 @@ use ReflectionProperty;
  * Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
+ * @uses \OCA\OpenRegister\Service\Object\RecordAnnotations
  * @uses \OCA\OpenRegister\Service\Object\RecurrenceOccurrences
  * @uses \OCA\OpenRegister\Service\Object\VirtualCalculations
  * @uses \OCA\OpenRegister\Service\Object\InverseBatch
  * @uses \OCA\OpenRegister\Service\Object\InverseLookup
+ * @uses \OCA\OpenRegister\Service\Object\ExtendTargetReads
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationCache
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationPreload
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationRender
@@ -130,7 +132,22 @@ class RenderObjectFilesGoldenTest extends TestCase {
 		});
 
 		$render = (new ReflectionClass(RenderObject::class))->newInstanceWithoutConstructor();
-		foreach (['fileMapper' => $fileMapper, 'systemTagMapper' => $tagMapper, 'systemTagManager' => $tagManager, 'container' => null, 'fileTagsCache' => []] as $property => $value) {
+		$stores = new \OCA\OpenRegister\Service\Object\RenderStores(
+			mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+				objectEntityMapper: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class),
+				registerMapper: $this->createMock(\OCA\OpenRegister\Db\RegisterMapperInterface::class),
+				schemaMapper: $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class),
+				objectCacheService: $this->createMock(\OCA\OpenRegister\Service\Object\CacheHandlerInterface::class)
+			),
+			files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+				fileMapper: $fileMapper,
+				fileService: $this->createMock(\OCA\OpenRegister\Service\FileReaderInterface::class),
+				systemTagManager: $tagManager,
+				systemTagMapper: $tagMapper
+			)
+		);
+		$runtime = new \OCA\OpenRegister\Service\Object\RenderRuntime(logger: $this->createMock(\Psr\Log\LoggerInterface::class), extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(), container: null);
+		foreach (['stores' => $stores, 'runtime' => $runtime, 'fileTagsCache' => []] as $property => $value) {
 			(new ReflectionProperty(RenderObject::class, $property))->setValue($render, $value);
 		}
 

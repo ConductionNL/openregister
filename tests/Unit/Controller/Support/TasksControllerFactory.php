@@ -18,7 +18,7 @@ final class TasksControllerFactory {
 	/**
 	 * The constructor arguments of TasksController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param ObjectCalendarTasksInterface $taskService Constructor argument.
 	 * @param ObjectService $objectService Constructor argument.
@@ -40,7 +40,6 @@ final class TasksControllerFactory {
 		?\OCP\IGroupManager $groupManager = null,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\TasksControllerServices(
 				domain: new \OCA\OpenRegister\Controller\Support\TasksDomain(

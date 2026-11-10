@@ -33,11 +33,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -235,15 +239,13 @@ class MagicMapperTest extends TestCase {
 					}
 					return $fieldEncryption;
 				}
-				if ($id === DateTimeNormalizer::class
-					|| $id === \OCA\OpenRegister\Service\DateTimeNormalizer::class
-				) {
+				if ($id === DateTimeNormalizerInterface::class) {
 					return $dateTimeNormalizer;
 				}
 				if ($id === \OCA\OpenRegister\Service\ConditionMatcher::class) {
 					return $conditionMatcher;
 				}
-				if ($id === \OCA\OpenRegister\Service\Object\SchemaTypeConverter::class) {
+				if ($id === \OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface::class) {
 					return $schemaTypeConverter;
 				}
 				return null;
@@ -253,17 +255,22 @@ class MagicMapperTest extends TestCase {
 		// Create MagicMapper instance with all required dependencies.
 		$this->magicMapper = new MagicMapper(
 			$this->mockDb,
-			$this->mockSchemaMapper,
-			$this->mockRegisterMapper,
-			$this->mockConfig,
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IUserManager::class),
-			$this->mockAppConfig,
-			$this->mockLogger,
-			$this->createMock(SettingsService::class),
-			$container
+			new MagicMapperLookups(
+				$this->mockSchemaMapper,
+				$this->mockRegisterMapper,
+				$container
+			),
+			new MagicMapperIdentity(
+				$this->createMock(IUserSession::class),
+				$this->createMock(IGroupManager::class),
+				$this->createMock(IUserManager::class)
+			),
+			new MagicMapperRuntime(
+				$this->mockConfig,
+				$this->mockAppConfig,
+				$this->createMock(IEventDispatcher::class),
+				$this->mockLogger
+			)
 		);
 
 	}//end setUp()
@@ -604,7 +611,7 @@ class MagicMapperTest extends TestCase {
 		$method = $reflection->getMethod('prepareObjectDataForTable');
 		$method->setAccessible(true);
 
-		$result = $method->invoke($this->magicMapper, $objectData, $this->mockRegister, $schema);
+		$result = $method->invoke($this->magicMapper, $objectData, new \OCA\OpenRegister\Db\RegisterSchema($this->mockRegister, $schema));
 
 		// Verify metadata fields are prefixed.
 		$this->assertEquals('test-uuid-123', $result['_uuid']);
@@ -627,7 +634,7 @@ class MagicMapperTest extends TestCase {
 		// boundary, so it can never persist as ownership.
 		$forgedData = $objectData;
 		$forgedData['@self']['owner'] = ['group' => 'admin'];
-		$forgedResult = $method->invoke($this->magicMapper, $forgedData, $this->mockRegister, $schema);
+		$forgedResult = $method->invoke($this->magicMapper, $forgedData, new \OCA\OpenRegister\Db\RegisterSchema($this->mockRegister, $schema));
 		$this->assertNull($forgedResult['_owner']);
 
 		// Verify schema properties are included.
@@ -660,13 +667,12 @@ class MagicMapperTest extends TestCase {
 		$stamped = $method->invoke(
 			$this->magicMapper,
 			['@self' => ['uuid' => 'u-1', 'lastUserActivity' => new \DateTime('2026-09-01 10:00:00', new \DateTimeZone('UTC'))], 'name' => 'x'],
-			$this->mockRegister,
-			$schema
+			new \OCA\OpenRegister\Db\RegisterSchema($this->mockRegister, $schema)
 		);
 		$this->assertSame(expected: '2026-09-01 10:00:00', actual: $stamped['_last_user_activity']);
 		$this->assertNotNull(actual: $stamped['_updated']);
 
-		$never = $method->invoke($this->magicMapper, ['@self' => ['uuid' => 'u-2'], 'name' => 'x'], $this->mockRegister, $schema);
+		$never = $method->invoke($this->magicMapper, ['@self' => ['uuid' => 'u-2'], 'name' => 'x'], new \OCA\OpenRegister\Db\RegisterSchema($this->mockRegister, $schema));
 		$this->assertArrayHasKey(key: '_last_user_activity', array: $never);
 		$this->assertNull(actual: $never['_last_user_activity'], message: 'a row no person wrote has no last user activity');
 		$this->assertNotNull(actual: $never['_updated'], message: 'while `updated` keeps defaulting to now');
@@ -690,11 +696,11 @@ class MagicMapperTest extends TestCase {
 		$entity->setSchemaVersion('2.1.0');
 		$entity->setObject(['name' => 'x']);
 
-		$prepared = $method->invoke($this->magicMapper, $entity->jsonSerialize(), $this->mockRegister, $schema);
+		$prepared = $method->invoke($this->magicMapper, $entity->jsonSerialize(), new \OCA\OpenRegister\Db\RegisterSchema($this->mockRegister, $schema));
 		$this->assertSame(expected: '2.1.0', actual: $prepared['_schema_version']);
 
 		$snakeData = ['@self' => ['uuid' => 'u-2', 'schema_version' => '1.0.0'], 'name' => 'x'];
-		$snake = $method->invoke($this->magicMapper, $snakeData, $this->mockRegister, $schema);
+		$snake = $method->invoke($this->magicMapper, $snakeData, new \OCA\OpenRegister\Db\RegisterSchema($this->mockRegister, $schema));
 		$this->assertSame(expected: '1.0.0', actual: $snake['_schema_version']);
 	}//end testSchemaVersionIsWrittenFromItsSerialisedName()
 
@@ -751,7 +757,7 @@ class MagicMapperTest extends TestCase {
 		$method = $reflection->getMethod('prepareObjectDataForTable');
 		$method->setAccessible(true);
 
-		$result = $method->invoke($this->magicMapper, $objectData, $this->mockRegister, $schema);
+		$result = $method->invoke($this->magicMapper, $objectData, new \OCA\OpenRegister\Db\RegisterSchema($this->mockRegister, $schema));
 
 		// Still dropped — this change makes the loss visible, it does not store
 		// the field. Rejecting at the DB write boundary would be far too late.
@@ -794,8 +800,7 @@ class MagicMapperTest extends TestCase {
 		$method->invoke(
 			$this->magicMapper,
 			['@self' => ['uuid' => 'u'], 'name' => 'ok', 'id' => 'u'],
-			$this->mockRegister,
-			$schema
+			new \OCA\OpenRegister\Db\RegisterSchema($this->mockRegister, $schema)
 		);
 
 		$this->assertFalse($warned, 'A fully declared payload must not warn.');
@@ -913,7 +918,7 @@ class MagicMapperTest extends TestCase {
 	 */
 	private function prepareForTable(array $objectData, TestableSchema $schema): array {
 		$method = (new \ReflectionClass($this->magicMapper))->getMethod('prepareObjectDataForTable');
-		return $method->invoke($this->magicMapper, $objectData, $this->mockRegister, $schema);
+		return $method->invoke($this->magicMapper, $objectData, new \OCA\OpenRegister\Db\RegisterSchema($this->mockRegister, $schema));
 
 	}//end prepareForTable()
 
@@ -962,8 +967,7 @@ class MagicMapperTest extends TestCase {
 				'personalNumberType' => 'bsn',
 				'birthYear'          => 'openregister:enc:v1:ciphertext-for-the-year',
 			],
-			$this->mockRegister,
-			$schema
+			new \OCA\OpenRegister\Db\RegisterSchema($this->mockRegister, $schema)
 		);
 
 		foreach (array_keys($prepared) as $column) {
@@ -1030,8 +1034,7 @@ class MagicMapperTest extends TestCase {
 		$plain = $method->invoke(
 			$this->magicMapper,
 			['@self' => ['uuid' => 'p-1'], 'displayName' => 'Learner', 'personalNumber' => '123456782'],
-			$this->mockRegister,
-			$schema
+			new \OCA\OpenRegister\Db\RegisterSchema($this->mockRegister, $schema)
 		);
 		$this->assertSame('openregister:enc:v1:CIPHER(287654321)', $plain['personal_number']);
 		$this->assertSame('Learner', $plain['display_name'] ?? $plain['displayName'] ?? null);
@@ -1039,8 +1042,7 @@ class MagicMapperTest extends TestCase {
 		$envelope = $method->invoke(
 			$this->magicMapper,
 			['@self' => ['uuid' => 'p-1'], 'personalNumber' => 'openregister:enc:v1:already'],
-			$this->mockRegister,
-			$schema
+			new \OCA\OpenRegister\Db\RegisterSchema($this->mockRegister, $schema)
 		);
 		$this->assertSame('openregister:enc:v1:already', $envelope['personal_number']);
 	}//end testTheSingleWritePathStoresAnEncryptedPropertyOnlyAsAnEnvelope()
@@ -1099,8 +1101,7 @@ class MagicMapperTest extends TestCase {
 		$method->invoke(
 			$this->magicMapper,
 			['@self' => ['uuid' => 'p-1'], 'personalNumber' => '123456782'],
-			$this->mockRegister,
-			$this->encryptedLearnerProfile()
+			new \OCA\OpenRegister\Db\RegisterSchema($this->mockRegister, $this->encryptedLearnerProfile())
 		);
 	}//end testAnEncryptedPropertyIsNeverWrittenInTheClearWhenEncryptionIsUnavailable()
 

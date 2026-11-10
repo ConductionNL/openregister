@@ -36,14 +36,13 @@ namespace OCA\OpenRegister\Event;
 
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskSequence;
-use OCP\EventDispatcher\Event;
 
 /**
  * Carries the completed sequence, its final task and the resolved status.
  *
  * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-the-four-approval-events-are-replaced-by-a-named-complete-mapping
  */
-class TaskSequenceCompletedEvent extends Event {
+class TaskSequenceCompletedEvent extends AbstractTaskSequenceEvent {
 
 	/**
 	 * Constructor.
@@ -54,25 +53,14 @@ class TaskSequenceCompletedEvent extends Event {
 	 * @param string $statusOnApprove The resolved approving status.
 	 */
 	public function __construct(
-		private readonly TaskSequence $sequence,
+		TaskSequence $sequence,
 		private readonly Task $finalTask,
 		private readonly ?string $decider,
 		private readonly string $statusOnApprove,
 	) {
-		parent::__construct();
+		parent::__construct(sequence: $sequence);
 
 	}//end __construct()
-
-	/**
-	 * The completed sequence.
-	 *
-	 * @return TaskSequence The sequence as persisted.
-	 *
-	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-the-four-approval-events-are-replaced-by-a-named-complete-mapping
-	 */
-	public function getSequence(): TaskSequence {
-		return $this->sequence;
-	}//end getSequence()
 
 	/**
 	 * The final position's task.

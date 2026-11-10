@@ -34,7 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Export;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -67,7 +67,7 @@ class ExportRightService {
 	/**
 	 * Wire the RBAC collaborators.
 	 *
-	 * @param PermissionHandler $permissionHandler Canonical RBAC verdict.
+	 * @param PermissionHandlerInterface $permissionHandler Canonical RBAC verdict.
 	 * @param IUserSession      $userSession       The calling principal.
 	 * @param IGroupManager     $groupManager      Administrator bypass.
 	 * @param LoggerInterface   $logger            PSR logger.
@@ -75,7 +75,7 @@ class ExportRightService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly PermissionHandler $permissionHandler,
+		private readonly PermissionHandlerInterface $permissionHandler,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
@@ -152,28 +152,7 @@ class ExportRightService {
 			);
 		}
 
-		$action = self::ACTION;
-		if ($this->declaresExport(schema: $schema) === false) {
-			// Nobody has narrowed the verb on this schema yet, so it is held
-			// wherever `read` is held. See design D-2.
-			$action = self::FALLBACK_ACTION;
-		}
-
-		if ($this->holdsRight(schema: $schema, action: $action, userId: $userId) === true) {
-			return null;
-		}
-
-		return new ExportRefusedException(
-			rule: 'export-right-missing',
-			reason: 'User ' . $userId . ' does not hold the export right on schema '
-				. ($schema->getSlug() ?? (string)$schema->getId())
-				. '. Reading this schema and taking its data off the instance are separate grants.',
-			statusCode: 403,
-			context: [
-				'schema' => ($schema->getSlug() ?? (string)$schema->getId()),
-				'evaluated' => $action,
-			]
-		);
+		return $this->refusalUnlessHeld(schema: $schema, userId: $userId);
 	}//end refusalForUid()
 
 	/**
@@ -207,17 +186,25 @@ class ExportRightService {
 	}//end declaresExport()
 
 	/**
-	 * Whether the caller holds the named action on the schema.
+	 * The refusal when the principal does not hold the verb this schema asks for.
+	 *
+	 * A check that throws refuses: an unreadable verdict is not a grant.
 	 *
 	 * @param Schema $schema The schema.
-	 * @param string $action The verb to evaluate.
-	 * @param string $userId The caller.
+	 * @param string $userId The principal the export runs as.
 	 *
-	 * @return bool True when the caller holds it.
+	 * @return ExportRefusedException|null The refusal, or null when they hold it.
 	 */
-	private function holdsRight(Schema $schema, string $action, string $userId): bool {
+	private function refusalUnlessHeld(Schema $schema, string $userId): ?ExportRefusedException {
+		$action = self::ACTION;
+		if ($this->declaresExport(schema: $schema) === false) {
+			// Nobody has narrowed the verb on this schema yet, so it is held
+			// wherever `read` is held. See design D-2.
+			$action = self::FALLBACK_ACTION;
+		}
+
 		try {
-			return $this->permissionHandler->hasPermission(
+			$held = $this->permissionHandler->hasPermission(
 				schema: $schema,
 				action: $action,
 				userId: $userId,
@@ -230,7 +217,23 @@ class ExportRightService {
 				message: '[ExportRight] Permission check failed, refusing the export',
 				context: ['schema' => $schema->getId(), 'error' => $e->getMessage()]
 			);
-			return false;
+			$held = false;
 		}
-	}//end holdsRight()
+
+		if ($held === true) {
+			return null;
+		}
+
+		return new ExportRefusedException(
+			rule: 'export-right-missing',
+			reason: 'User ' . $userId . ' does not hold the export right on schema '
+				. ($schema->getSlug() ?? (string)$schema->getId())
+				. '. Reading this schema and taking its data off the instance are separate grants.',
+			statusCode: 403,
+			context: [
+				'schema' => ($schema->getSlug() ?? (string)$schema->getId()),
+				'evaluated' => $action,
+			]
+		);
+	}//end refusalUnlessHeld()
 }//end class

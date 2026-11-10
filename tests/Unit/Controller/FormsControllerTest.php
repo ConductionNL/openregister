@@ -20,7 +20,9 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolver;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
+use OCA\OpenRegister\Service\Form\FormSubmission;
 use OCA\OpenRegister\Service\Form\FormSubmitService;
+use OCA\OpenRegister\Service\Form\FormSubmitter;
 use OCA\OpenRegister\Service\Form\FormUploadStore;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
 use OCA\OpenRegister\Service\Object\DraftOwner;
@@ -45,7 +47,7 @@ use OCA\OpenRegister\Tests\Unit\Architecture\ControllerSources;
  * Status codes, bodies and the auth posture of each route.
  *
  * @covers \OCA\OpenRegister\Controller\FormsController
- * @uses \OCA\OpenRegister\Controller\Support\FormsMappers
+ * @uses \OCA\OpenRegister\Controller\Support\FlowNodeRunMappers
  * @uses \OCA\OpenRegister\Controller\Support\FormsDomain
  * @uses \OCA\OpenRegister\Controller\Support\FormsPlatform
  * @uses \OCA\OpenRegister\Controller\Support\FormsControllerServices
@@ -165,7 +167,7 @@ class FormsControllerTest extends TestCase {
 		$this->resolver->method('resolve')->with('form-1')->willReturn($this->form());
 		$answer = ['reference' => '2026-0412', 'id' => 'u', 'receivedAt' => null, 'confirmation' => [], 'objects' => []];
 		$this->submitter->expects($this->once())->method('submit')
-			->with(['register' => 'dossiq', 'schema' => 'case'], null, ['onderwerp' => 'Kapvergunning'], null, 'k1', 'form-1', null)
+			->with(new FormSubmission(writes: [['register' => 'dossiq', 'schema' => 'case', 'mapping' => null]], payload: ['onderwerp' => 'Kapvergunning'], submitter: new FormSubmitter(subject: null, scope: 'form-1')), 'k1')
 			->willReturn($answer);
 
 		$response = $this->controller->submit(formId: 'form-1');
@@ -175,14 +177,13 @@ class FormsControllerTest extends TestCase {
 	}//end testASubmitAnswers201()
 
 	/**
-	 * A journey form with several writes goes through submitAll(), all or none.
+	 * A journey form with several writes goes through submit() with every write as it is, all or none.
 	 */
 	public function testAJourneyFormGoesThroughSubmitAll(): void {
 		$writes = [['as' => 'org', 'register' => 'crm', 'schema' => 'organisation'], ['as' => 'contact', 'register' => 'crm', 'schema' => 'contact']];
 		$this->params = ['formId' => 'form-2', 'naam' => 'De Korst'];
 		$this->resolver->method('resolve')->willReturn(['id' => 'form-2', 'writes' => $writes, 'audience' => 'public']);
-		$this->submitter->expects($this->never())->method('submit');
-		$this->submitter->expects($this->once())->method('submitAll')->with($writes, ['naam' => 'De Korst'], null, null, 'form-2', null)
+		$this->submitter->expects($this->once())->method('submit')->with(new FormSubmission(writes: $writes, payload: ['naam' => 'De Korst'], submitter: new FormSubmitter(subject: null, scope: 'form-2')), null)
 			->willReturn(['reference' => 'r', 'id' => 'i', 'receivedAt' => null, 'confirmation' => [], 'objects' => []]);
 
 		$this->assertSame(201, $this->controller->submit(formId: 'form-2')->getStatus());
@@ -209,7 +210,7 @@ class FormsControllerTest extends TestCase {
 	public function testAnUnknownFormIsA404AndAnAttempt(): void {
 		$this->resolver->method('resolve')->willThrowException(new FormSubmitRefusedException(message: 'This form does not exist.', status: 404));
 		$this->throttler->expects($this->once())->method('registerAttempt')->with(ThrottledSurfaces::FORM_SUBMIT, '192.0.2.7');
-		$this->submitter->expects($this->never())->method('submitAll');
+		$this->submitter->expects($this->never())->method('submit');
 
 		$this->assertSame(404, $this->controller->submit(formId: 'nope')->getStatus());
 	}//end testAnUnknownFormIsA404AndAnAttempt()
@@ -219,7 +220,7 @@ class FormsControllerTest extends TestCase {
 	 */
 	public function testAFilledHoneypotStoresNothing(): void {
 		$this->params = ['formId' => 'form-1', '_hp' => 'http://spam.example'];
-		$this->submitter->expects($this->never())->method('submitAll');
+		$this->submitter->expects($this->never())->method('submit');
 		$this->resolver->expects($this->never())->method('resolve');
 
 		$response = $this->controller->submit(formId: 'form-1');
@@ -351,12 +352,14 @@ class FormsControllerTest extends TestCase {
 		$this->session->method('getUser')->willReturn($user);
 		$this->resolver->method('resolve')->willReturn($this->form());
 		$this->params = ['formId' => 'form-1', 'onderwerp' => 'Half af', '_draft' => 'd-1'];
-		$this->submitter->method('isOwnerOfDraft')->with(['register' => 'dossiq', 'schema' => 'case'], 'd-1', $user)->willReturn(true);
+		$submitter = new FormSubmitter(subject: $user, scope: 'form-1', draftId: 'd-1');
+		$writes = [['register' => 'dossiq', 'schema' => 'case', 'mapping' => null]];
+		$this->submitter->method('isOwnerOfDraft')->with(['register' => 'dossiq', 'schema' => 'case'], $submitter)->willReturn(true);
 		$this->submitter->expects($this->once())->method('saveDraft')
-			->with(['register' => 'dossiq', 'schema' => 'case'], null, ['onderwerp' => 'Half af'], $user, 'd-1', 'form-1')
+			->with(new FormSubmission(writes: $writes, payload: ['onderwerp' => 'Half af'], submitter: $submitter))
 			->willReturn(['id' => 'd-1', 'status' => 'draft']);
 		$this->submitter->expects($this->once())->method('submit')
-			->with(['register' => 'dossiq', 'schema' => 'case'], null, ['onderwerp' => 'Half af'], $user, null, 'form-1', 'd-1')
+			->with(new FormSubmission(writes: $writes, payload: ['onderwerp' => 'Half af'], submitter: $submitter), null)
 			->willReturn(['reference' => 'r', 'id' => 'd-1', 'receivedAt' => 'now', 'confirmation' => [], 'objects' => []]);
 
 		$saved = $this->controller->draft(formId: 'form-1');
@@ -407,12 +410,15 @@ class FormsControllerTest extends TestCase {
 		foreach ($calls as $method => $arguments) {
 			foreach ($arguments as $argument) {
 				$this->assertNotInstanceOf(DraftOwner::class, $argument, $method . ' was handed an owner assertion from a request.');
+				if ($argument instanceof FormSubmission || $argument instanceof FormSubmitter) {
+					$this->assertNull($argument->owner, $method . ' was handed an owner assertion from a request.');
+				}
 			}
 
 			$this->assertNotContains('portal:subject-1', $arguments, $method);
 		}
 
-		$this->assertSame(['onderwerp' => 'Half af'], $calls['saveDraft'][2], 'Metadata and control keys stay out of the payload.');
+		$this->assertSame(['onderwerp' => 'Half af'], $calls['saveDraft'][0]->payload, 'Metadata and control keys stay out of the payload.');
 	}//end testARequestCannotNameADraftsOwner()
 
 	/**

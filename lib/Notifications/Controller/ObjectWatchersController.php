@@ -40,9 +40,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Notifications\Controller\Support\ObjectWatchersControllerServices;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Interaction\WatcherService;
+use OCA\OpenRegister\Service\Interaction\AddressedObject;
+use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -58,24 +61,49 @@ use Psr\Log\LoggerInterface;
 class ObjectWatchersController extends Controller {
 
 	/**
+	 * Resolves an object through the RBAC boundary.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * The subscription primitive.
+	 *
+	 * @var WatcherServiceInterface
+	 */
+	private readonly WatcherServiceInterface $watchers;
+
+	/**
+	 * Verifies a named uid before it is subscribed.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
 	 * @param IRequest $request Request.
-	 * @param ObjectOperationsInterface $objectService Resolves an object through the RBAC boundary.
-	 * @param WatcherService $watchers The subscription primitive.
-	 * @param IUserManager $userManager Verifies a named uid before it is subscribed.
-	 * @param LoggerInterface $logger Logger.
+	 * @param ObjectWatchersControllerServices $services The controller's services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly WatcherService $watchers,
-		private readonly IUserManager $userManager,
-		private readonly LoggerInterface $logger,
+		ObjectWatchersControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+
+		$this->objectService = $services->objectService;
+		$this->watchers = $services->watchers;
+		$this->userManager = $services->userManager;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
@@ -99,16 +127,37 @@ class ObjectWatchersController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function watch(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		return $this->watchAt(path: ['register' => $register, 'schema' => $schema, 'id' => $id]);
+	}//end watch()
+
+	/**
+	 * Watch the object at a route path.
+	 *
+	 * @param array<string, string> $path The register, schema and object id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function watchAt(array $path): JSONResponse {
+		$object = $this->resolveObject(path: $path);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
+		return $this->watchObject(object: $object, scope: ['register' => $path['register'], 'schema' => $path['schema']]);
+	}//end watchAt()
+
+	/**
+	 * Follow a resolved object for the caller.
+	 *
+	 * @param ObjectEntity          $object The object.
+	 * @param array<string, string> $scope  The register and schema as the caller named them.
+	 *
+	 * @return JSONResponse The subscription, or an error.
+	 */
+	private function watchObject(ObjectEntity $object, array $scope): JSONResponse {
 		try {
 			$watcher = $this->watchers->watch(
-				object: $object,
-				register: $register,
-				schema: $schema,
+				target: new AddressedObject(object: $object, register: $scope['register'], schema: $scope['schema']),
 				notify: $this->notifyParam()
 			);
 		} catch (NotAuthorizedException $e) {
@@ -118,7 +167,7 @@ class ObjectWatchersController extends Controller {
 		}
 
 		return new JSONResponse($watcher->jsonSerialize());
-	}//end watch()
+	}//end watchObject()
 
 	/**
 	 * Stop following an object.
@@ -135,11 +184,33 @@ class ObjectWatchersController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function unwatch(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		return $this->unwatchAt(path: ['register' => $register, 'schema' => $schema, 'id' => $id]);
+	}//end unwatch()
+
+	/**
+	 * Stop watching the object at a route path.
+	 *
+	 * @param array<string, string> $path The register, schema and object id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function unwatchAt(array $path): JSONResponse {
+		$object = $this->resolveObject(path: $path);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
+		return $this->unwatchObject(object: $object);
+	}//end unwatchAt()
+
+	/**
+	 * Stop following a resolved object.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return JSONResponse Empty on success, or an error.
+	 */
+	private function unwatchObject(ObjectEntity $object): JSONResponse {
 		try {
 			$this->watchers->unwatch(object: $object);
 		} catch (NotAuthorizedException $e) {
@@ -149,7 +220,7 @@ class ObjectWatchersController extends Controller {
 		}
 
 		return new JSONResponse([], Http::STATUS_NO_CONTENT);
-	}//end unwatch()
+	}//end unwatchObject()
 
 	/**
 	 * List an object's watchers, for a caller who may edit it.
@@ -166,11 +237,33 @@ class ObjectWatchersController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		return $this->watchersAt(path: ['register' => $register, 'schema' => $schema, 'id' => $id]);
+	}//end index()
+
+	/**
+	 * The watchers of the object at a route path.
+	 *
+	 * @param array<string, string> $path The register, schema and object id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function watchersAt(array $path): JSONResponse {
+		$object = $this->resolveObject(path: $path);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
+		return $this->watcherList(object: $object);
+	}//end watchersAt()
+
+	/**
+	 * List a resolved object's watchers.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return JSONResponse The watchers with the time each subscribed, or an error.
+	 */
+	private function watcherList(ObjectEntity $object): JSONResponse {
 		try {
 			$rows = $this->watchers->listWatchers(object: $object);
 		} catch (NotAuthorizedException $e) {
@@ -189,7 +282,7 @@ class ObjectWatchersController extends Controller {
 		}
 
 		return new JSONResponse(['results' => $results, 'total' => count($results)]);
-	}//end index()
+	}//end watcherList()
 
 	/**
 	 * Subscribe another user, for a caller who may manage the object.
@@ -207,24 +300,46 @@ class ObjectWatchersController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function add(string $register, string $schema, string $id, string $userId): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		return $this->addAt(path: ['register' => $register, 'schema' => $schema, 'id' => $id], userId: $userId);
+	}//end add()
+
+	/**
+	 * Add a watcher to the object at a route path.
+	 *
+	 * @param array<string, string> $path   The register, schema and object id from the route.
+	 * @param string                $userId The user from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function addAt(array $path, string $userId): JSONResponse {
+		$object = $this->resolveObject(path: $path);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
+		return $this->addTo(object: $object, watcher: ['userId' => $userId, 'register' => $path['register'], 'schema' => $path['schema']]);
+	}//end addAt()
+
+	/**
+	 * Subscribe a known user to a resolved object.
+	 *
+	 * @param ObjectEntity          $object  The object.
+	 * @param array<string, string> $watcher The user to subscribe, and the register and schema as named.
+	 *
+	 * @return JSONResponse The subscription, or an error.
+	 */
+	private function addTo(ObjectEntity $object, array $watcher): JSONResponse {
 		// The uid arrives in the URL, so it is caller-controlled. Subscribing a
 		// name nothing answers to would put a row in the table that no dispatch
 		// can ever resolve, and the list would show a person who does not exist.
-		if ($this->userManager->userExists($userId) === false) {
+		if ($this->userManager->userExists($watcher['userId']) === false) {
 			return new JSONResponse(['message' => 'Unknown user'], Http::STATUS_BAD_REQUEST);
 		}
 
 		try {
-			$watcher = $this->watchers->addWatcher(
-				object: $object,
-				userId: $userId,
-				register: $register,
-				schema: $schema
+			$added = $this->watchers->addWatcher(
+				target: new AddressedObject(object: $object, register: $watcher['register'], schema: $watcher['schema']),
+				userId: $watcher['userId']
 			);
 		} catch (NotAuthorizedException $e) {
 			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
@@ -232,8 +347,8 @@ class ObjectWatchersController extends Controller {
 			return $this->unexpected(exception: $e, context: 'add');
 		}
 
-		return new JSONResponse($watcher->jsonSerialize());
-	}//end add()
+		return new JSONResponse($added->jsonSerialize());
+	}//end addTo()
 
 	/**
 	 * Remove a user's subscription.
@@ -254,11 +369,35 @@ class ObjectWatchersController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function remove(string $register, string $schema, string $id, string $userId): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		return $this->removeAt(path: ['register' => $register, 'schema' => $schema, 'id' => $id], userId: $userId);
+	}//end remove()
+
+	/**
+	 * Remove a watcher from the object at a route path.
+	 *
+	 * @param array<string, string> $path   The register, schema and object id from the route.
+	 * @param string                $userId The user from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function removeAt(array $path, string $userId): JSONResponse {
+		$object = $this->resolveObject(path: $path);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
+		return $this->removeFrom(object: $object, userId: $userId);
+	}//end removeAt()
+
+	/**
+	 * Remove a user's subscription from a resolved object.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param string       $userId The user whose subscription is removed.
+	 *
+	 * @return JSONResponse Empty on success, or an error.
+	 */
+	private function removeFrom(ObjectEntity $object, string $userId): JSONResponse {
 		try {
 			$this->watchers->removeWatcher(object: $object, userId: $userId);
 		} catch (NotAuthorizedException $e) {
@@ -268,7 +407,7 @@ class ObjectWatchersController extends Controller {
 		}
 
 		return new JSONResponse([], Http::STATUS_NO_CONTENT);
-	}//end remove()
+	}//end removeFrom()
 
 	/**
 	 * The notification switch the caller asked for, or null when they named none.
@@ -294,18 +433,16 @@ class ObjectWatchersController extends Controller {
 	 * these endpoints cannot be used to probe which object ids exist, and a user
 	 * without read can never write a watcher row.
 	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema Schema slug or id.
-	 * @param string $id Object uuid.
+	 * @param array<string, string> $path The register slug or id, schema slug or id and object uuid.
 	 *
 	 * @return ObjectEntity|JSONResponse The object, or the response to return.
 	 */
-	private function resolveObject(string $register, string $schema, string $id): ObjectEntity|JSONResponse {
+	private function resolveObject(array $path): ObjectEntity|JSONResponse {
 		try {
 			// The setObject() call already looks the object up, so an unknown id throws here.
-			$this->objectService->setRegister($register);
-			$this->objectService->setSchema($schema);
-			$this->objectService->setObject($id);
+			$this->objectService->setRegister($path['register']);
+			$this->objectService->setSchema($path['schema']);
+			$this->objectService->setObject($path['id']);
 			$object = $this->objectService->getObject();
 		} catch (\Throwable $e) {
 			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);

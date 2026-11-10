@@ -19,14 +19,13 @@ declare(strict_types=1);
 
 namespace Unit\Service\Notification;
 
-use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationTriggerMatcher;
 use PHPUnit\Framework\TestCase;
-use ReflectionMethod;
 
 final class AppDefinedTriggerEventTest extends TestCase {
 
 	/**
-	 * Invoke the dispatcher's private matches() without constructing it.
+	 * Ask the matcher about one trigger and event.
 	 *
 	 * @param mixed  $triggerSpec The declared trigger.
 	 * @param string $trigger     The active event.
@@ -34,12 +33,7 @@ final class AppDefinedTriggerEventTest extends TestCase {
 	 * @return bool Whether the rule matches.
 	 */
 	private function triggerMatches($triggerSpec, string $trigger): bool {
-		$method = new ReflectionMethod(AnnotationNotificationDispatcher::class, 'matches');
-		$method->setAccessible(true);
-
-		$dispatcher = (new \ReflectionClass(AnnotationNotificationDispatcher::class))->newInstanceWithoutConstructor();
-
-		return (bool) $method->invoke($dispatcher, $triggerSpec, $trigger, []);
+		return (new NotificationTriggerMatcher(trigger: $trigger, context: []))->matches(triggerSpec: $triggerSpec);
 	}
 
 	public function testABareStringTriggerMatchesItsOwnEvent(): void {

@@ -69,6 +69,8 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoopCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoops
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceNormaliser
  * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaDefaults
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ConfigurationFields
@@ -215,9 +217,14 @@ class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 	 * @return void
 	 */
 	public function testAWellFormedHierarchySaves(): void {
-		$this->validateHierarchy($this->zaakWith(['parent' => 'hoofdzaak', 'maxDepth' => 3]));
+		$refusal = null;
+		try {
+			$this->validateHierarchy($this->zaakWith(['parent' => 'hoofdzaak', 'maxDepth' => 3]));
+		} catch (Exception $e) {
+			$refusal = $e->getMessage();
+		}
 
-		$this->addToAssertionCount(1);
+		$this->assertNull($refusal, 'A well-formed hierarchy was refused at save.');
 	}//end testAWellFormedHierarchySaves()
 
 	/**
@@ -253,9 +260,16 @@ class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 			]
 		);
 
-		$this->validateHierarchy($schema);
+		$refusal = null;
+		try {
+			$this->validateHierarchy($schema);
+		} catch (Exception $e) {
+			$refusal = $e->getMessage();
+		}
 
-		$this->addToAssertionCount(1);
+		// The pair is testAHierarchyPointingAtAnotherSchemaIsRefusedAtSave: a
+		// `$ref` that names a different schema is refused by the same check.
+		$this->assertNull($refusal, 'A self-reference spelt as the schema id was refused at save.');
 	}//end testASelfReferenceSpeltAsTheSchemaIdIsAccepted()
 
 	/**

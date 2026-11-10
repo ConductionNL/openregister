@@ -8,6 +8,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\MigrationService;
 use OCP\IDBConnection;
@@ -31,10 +32,7 @@ class MigrationServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new MigrationService(
-			$this->magicMapper,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->logger
+			new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->magicMapper)
 		);
 	}
 

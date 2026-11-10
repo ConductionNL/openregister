@@ -97,12 +97,13 @@ class ObjectPermissionsResolver {
 				continue;
 			}
 
-			foreach ($this->grantsIn(block: $block, level: $level, roleDefinitions: $roleDefinitions) as $grant) {
+			$run = new HoldersRun(level: $level, roleDefinitions: $roleDefinitions);
+			foreach ($this->grantsIn(block: $block, run: $run) as $grant) {
 				$holders = $this->fold(into: $holders, entry: $grant);
 			}
 
 			$deny = $this->denyResolver->denyBlock(authorization: $block);
-			foreach ($this->grantsIn(block: $deny, level: $level, roleDefinitions: $roleDefinitions) as $rule) {
+			foreach ($this->grantsIn(block: $deny, run: $run) as $rule) {
 				$denied[] = $rule;
 			}
 		}//end foreach
@@ -113,13 +114,12 @@ class ObjectPermissionsResolver {
 	/**
 	 * Every grant one block writes, as one entry per principal and verb.
 	 *
-	 * @param array|null $block           The block at one level.
-	 * @param string     $level           Where the block is written.
-	 * @param mixed      $roleDefinitions The register's role definitions.
+	 * @param array|null $block The block at one level.
+	 * @param HoldersRun $run   Where the block is written and the register's role definitions.
 	 *
 	 * @return array<int, array<string, mixed>> The rules.
 	 */
-	private function grantsIn(?array $block, string $level, mixed $roleDefinitions): array {
+	private function grantsIn(?array $block, HoldersRun $run): array {
 		if (is_array($block) === false || $block === []) {
 			return [];
 		}
@@ -138,7 +138,7 @@ class ObjectPermissionsResolver {
 			if ($key === self::ROLES_KEY) {
 				$rules = array_merge(
 					$rules,
-					$this->roleGrantsIn(assignments: $entries, level: $level, roleDefinitions: $roleDefinitions)
+					$this->roleGrantsIn(assignments: $entries, run: $run)
 				);
 				continue;
 			}
@@ -147,7 +147,7 @@ class ObjectPermissionsResolver {
 				continue;
 			}
 
-			$rules = array_merge($rules, $this->verbGrantsIn(entries: $entries, action: $key, level: $level));
+			$rules = array_merge($rules, $this->verbGrantsIn(entries: $entries, origin: new RuleOrigin(level: $run->level, action: $key)));
 		}//end foreach
 
 		return $rules;
@@ -156,13 +156,12 @@ class ObjectPermissionsResolver {
 	/**
 	 * Every entry written directly under one verb, as a rule apiece.
 	 *
-	 * @param array  $entries The entries as written.
-	 * @param string $action  The verb they grant.
-	 * @param string $level   Where the block is written.
+	 * @param array      $entries The entries as written.
+	 * @param RuleOrigin $origin  Where the block is written and the verb the entries grant.
 	 *
 	 * @return array<int, array<string, mixed>> The rules.
 	 */
-	private function verbGrantsIn(array $entries, string $action, string $level): array {
+	private function verbGrantsIn(array $entries, RuleOrigin $origin): array {
 		$rules = [];
 		foreach ($entries as $entry) {
 			$principal = $this->principalOf(rule: $entry);
@@ -172,12 +171,12 @@ class ObjectPermissionsResolver {
 
 			$rules[] = [
 				'principal' => $principal,
-				'action' => $action,
-				'level' => $level,
+				'action' => $origin->action,
+				'level' => $origin->level,
 				'role' => null,
 				'rule' => $entry,
 				'conditional' => (is_array($entry) === true && isset($entry['match']) === true),
-				'declared' => $this->catalogue->isGrantable($action),
+				'declared' => $this->catalogue->isGrantable($origin->action),
 			];
 		}
 
@@ -191,43 +190,66 @@ class ObjectPermissionsResolver {
 	 * what an administrator edits. Reporting only the group would be true and
 	 * useless: nobody granted that group the verb, the role did.
 	 *
-	 * @param array  $assignments     The block's `roles` map.
-	 * @param string $level           Where the block is written.
-	 * @param mixed  $roleDefinitions The register's role definitions.
+	 * @param array      $assignments The block's `roles` map.
+	 * @param HoldersRun $run         Where the block is written and the register's role definitions.
 	 *
 	 * @return array<int, array<string, mixed>> The rules.
 	 */
-	private function roleGrantsIn(array $assignments, string $level, mixed $roleDefinitions): array {
-		$actionsByRole = $this->actionsByRole(roleDefinitions: $roleDefinitions);
+	private function roleGrantsIn(array $assignments, HoldersRun $run): array {
+		$actionsByRole = (new RoleActionMap())->of(roleDefinitions: $run->roleDefinitions);
 
 		$rules = [];
 		foreach ($assignments as $roleName => $holders) {
-			if (is_string($roleName) === false || is_array($holders) === false) {
-				continue;
+			if (is_string($roleName) === true && is_array($holders) === true) {
+				$role = ['level' => $run->level, 'role' => $roleName, 'rule' => $holders];
+				$rules = [...$rules, ...$this->roleRules(role: $role, actions: ($actionsByRole[$roleName] ?? []))];
 			}
-
-			foreach (($actionsByRole[$roleName] ?? []) as $action) {
-				foreach ($holders as $holder) {
-					$principal = $this->principalOf(rule: $holder);
-					if ($principal === null) {
-						continue;
-					}
-
-					$rules[] = [
-						'principal' => $principal,
-						'action' => $action,
-						'level' => $level,
-						'role' => $roleName,
-						'rule' => $holders,
-						'conditional' => false,
-						'declared' => $this->catalogue->isGrantable($action),
-					];
-				}
-			}
-		}//end foreach
+		}
 
 		return $rules;
 	}//end roleGrantsIn()
+
+	/**
+	 * One rule per action of a role and principal its holders name.
+	 *
+	 * @param array{level: string, role: string, rule: array} $role    The level, role name and holder list.
+	 * @param array<int, string>                              $actions The role's actions.
+	 *
+	 * @return array<int, array<string, mixed>> The rules, action by action.
+	 */
+	private function roleRules(array $role, array $actions): array {
+		$rules = [];
+		foreach ($actions as $action) {
+			foreach ($role['rule'] as $holder) {
+				$principal = $this->principalOf(rule: $holder);
+				if ($principal !== null) {
+					$rules[] = $this->roleRule(principal: $principal, role: [...$role, 'action' => $action]);
+				}
+			}
+		}
+
+		return $rules;
+	}//end roleRules()
+
+	/**
+	 * The rule one role gives one principal for one action.
+	 *
+	 * @param string                                                          $principal The principal.
+	 * @param array{level: string, role: string, rule: array, action: string} $role      The level, role name, holder list and the action.
+	 *
+	 * @return array<string, mixed> The rule.
+	 */
+	private function roleRule(string $principal, array $role): array {
+		return [
+			'principal' => $principal,
+			'action' => $role['action'],
+			'level' => $role['level'],
+			'role' => $role['role'],
+			'rule' => $role['rule'],
+			'conditional' => false,
+			'declared' => $this->catalogue->isGrantable($role['action']),
+		];
+	}//end roleRule()
 
 	/**
 	 * Fold one rule into the principal it names.
@@ -255,42 +277,6 @@ class ObjectPermissionsResolver {
 
 		return $into;
 	}//end fold()
-
-	/**
-	 * Flatten role definitions into a name to actions map.
-	 *
-	 * `extends` is NOT followed here, for the same reason it is not followed in
-	 * {@see ProvenanceResolver}: the hierarchy is resolved in PermissionHandler,
-	 * and a second walk of it could disagree with the one that decides. A caller
-	 * holding the resolved map passes that instead.
-	 *
-	 * @param mixed $roleDefinitions The register's role definitions.
-	 *
-	 * @return array<string, array<int, string>> Role name to its actions.
-	 */
-	private function actionsByRole(mixed $roleDefinitions): array {
-		if (is_array($roleDefinitions) === false) {
-			return [];
-		}
-
-		$map = [];
-		foreach ($roleDefinitions as $key => $definition) {
-			if (is_array($definition) === false) {
-				continue;
-			}
-
-			if (isset($definition['name']) === true && is_array(($definition['actions'] ?? null)) === true) {
-				$map[(string)$definition['name']] = array_values(array_filter($definition['actions'], 'is_string'));
-				continue;
-			}
-
-			if (is_string($key) === true) {
-				$map[$key] = array_values(array_filter($definition, 'is_string'));
-			}
-		}
-
-		return $map;
-	}//end actionsByRole()
 
 	/**
 	 * The principal one entry names.

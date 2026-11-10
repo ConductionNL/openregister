@@ -115,7 +115,7 @@ class ContactSearchTest extends TestCase {
 		$user = $this->createMock(\OCP\IUser::class);
 		$session = $this->createMock(\OCP\IUserSession::class);
 		$session->method('getUser')->willReturn($user);
-		$controller = new ContactSearchController('openregister', $request, $this->search(), $session);
+		$controller = new ContactSearchController($request, new \OCA\OpenRegister\Search\Controller\Support\ContactSearchControllerServices($this->search(), $session));
 
 		$found = $controller->search();
 		$refused = $controller->search();

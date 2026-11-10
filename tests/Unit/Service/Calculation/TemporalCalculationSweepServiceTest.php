@@ -41,6 +41,12 @@ use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepService;
+use OCA\OpenRegister\Service\Calculation\TemporalSweep\CalculationRecomputer;
+use OCA\OpenRegister\Service\Calculation\TemporalSweep\LifecycleTerminals;
+use OCA\OpenRegister\Service\Calculation\TemporalSweep\TemporalCalculations;
+use OCA\OpenRegister\Service\Calculation\TemporalSweep\TemporalObjectRefresher;
+use OCA\OpenRegister\Service\Calculation\TemporalSweep\TemporalSchemaScan;
+use OCA\OpenRegister\Service\Calculation\TemporalSweep\TemporalSchemaSweeper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\IUserSession;
@@ -102,14 +108,20 @@ class TemporalCalculationSweepServiceTest extends TestCase {
 			aggregates: $this->createMock(AggregateReferenceResolver::class),
 		);
 
+		$logger = $this->createMock(LoggerInterface::class);
 		$this->service = new TemporalCalculationSweepService(
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->registerMapper,
+			scan: new TemporalSchemaScan(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)), logger: $logger),
+			calculations: new TemporalCalculations(),
+			sweeper: new TemporalSchemaSweeper(
+				terminals: new LifecycleTerminals(),
+				refresher: new TemporalObjectRefresher(
+					recomputer: new CalculationRecomputer(evaluator: $this->evaluator, payloadBuilder: $this->payloadBuilder, logger: $logger),
+					objectService: $this->objectService,
+					logger: $logger
+				),
+				logger: $logger
+			),
 			objectMapper: $this->objectMapper,
-			evaluator: $this->evaluator,
-			payloadBuilder: $this->payloadBuilder,
-			objectService: $this->objectService,
-			logger: $this->createMock(LoggerInterface::class),
 		);
 
 	}//end setUp()

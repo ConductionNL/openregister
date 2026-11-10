@@ -500,7 +500,7 @@ class AppendOnlyTest extends TestCase {
 			->willReturnCallback(
 				function (mixed ...$args) use ($savedEntity): ObjectEntity {
 					$this->assertSame('3f2c6a3e-1111-4222-8333-444455556666', ($args[3] ?? null));
-					$this->assertTrue(($args[12] ?? false), 'an append-only insert must be insert-only down to the mapper');
+					$this->assertTrue(($args[11] ?? false), 'an append-only insert must be insert-only down to the mapper');
 					return $savedEntity;
 				}
 			);
@@ -640,7 +640,7 @@ class AppendOnlyTest extends TestCase {
 			->method('saveObject')
 			->willReturnCallback(
 				function (mixed ...$args) use ($savedEntity, &$failIfExists): ObjectEntity {
-					$failIfExists = ($args[12] ?? null);
+					$failIfExists = ($args[11] ?? null);
 					return $savedEntity;
 				}
 			);

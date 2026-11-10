@@ -1,0 +1,150 @@
+{
+    "bag int": [
+        "BAG reference MUST be a 16-digit nummeraanduiding string"
+    ],
+    "bag ok": [],
+    "bag short": [
+        "BAG nummeraanduiding MUST be 16 digits: 4-digit gemeentecode + 2-digit objecttypecode + 10-digit volgnummer"
+    ],
+    "bag upper type": [
+        "BAG nummeraanduiding MUST be 16 digits: 4-digit gemeentecode + 2-digit objecttypecode + 10-digit volgnummer"
+    ],
+    "declared empty": null,
+    "declared format int": "geo:linestring",
+    "declared format mixed": "geo:point",
+    "declared format not geo": "geo:polygon",
+    "declared format wins": "geo:point",
+    "declared null": null,
+    "declared plain type": null,
+    "declared string": null,
+    "declared type array": null,
+    "declared type upper": "geo:bag",
+    "geometry line bad": [
+        "LineString MUST contain at least 2 coordinate positions"
+    ],
+    "geometry lowercase point": [
+        "geometry type MUST be one of Point, Polygon, MultiPolygon, LineString"
+    ],
+    "geometry multi bad": [
+        "MultiPolygon MUST contain at least one polygon"
+    ],
+    "geometry no type": [
+        "geometry type MUST be one of Point, Polygon, MultiPolygon, LineString"
+    ],
+    "geometry non array": [
+        "geometry MUST be a GeoJSON object"
+    ],
+    "geometry point": [],
+    "geometry polygon bad": [
+        "Polygon MUST have at least one linear ring"
+    ],
+    "geometry unknown": [
+        "geometry type MUST be one of Point, Polygon, MultiPolygon, LineString"
+    ],
+    "geometry upper type": [],
+    "line bad positions": [
+        "each LineString position MUST be a coordinate array",
+        "longitude MUST be between -180 and 180 (it is the first element per RFC 7946)",
+        "coordinates MUST be numeric",
+        "latitude MUST be between -90 and 90 (it is the second element per RFC 7946)"
+    ],
+    "line not array": [
+        "LineString MUST contain at least 2 coordinate positions"
+    ],
+    "line ok": [],
+    "line one pos": [
+        "LineString MUST contain at least 2 coordinate positions"
+    ],
+    "line wrong type": [
+        "LineString geometry MUST have type \"LineString\""
+    ],
+    "multi bad polygons": [
+        "MultiPolygon polygon #k MUST have at least one ring",
+        "MultiPolygon polygon #1 MUST have at least one ring",
+        "MultiPolygon polygon #2 ring #0 is unclosed: first and last coordinate MUST be identical",
+        "MultiPolygon polygon #3 ring #0 MUST contain at least 4 coordinate positions"
+    ],
+    "multi empty": [
+        "MultiPolygon MUST contain at least one polygon"
+    ],
+    "multi ok": [],
+    "multi scalar": [
+        "MultiPolygon MUST contain at least one polygon"
+    ],
+    "multi wrong type": [
+        "MultiPolygon geometry MUST have type \"MultiPolygon\""
+    ],
+    "non array": [
+        "geometry MUST be a GeoJSON object"
+    ],
+    "point assoc coords": [
+        "coordinates MUST be numeric"
+    ],
+    "point both out": [
+        "longitude MUST be between -180 and 180 (it is the first element per RFC 7946)",
+        "latitude MUST be between -90 and 90 (it is the second element per RFC 7946)"
+    ],
+    "point coords string": [
+        "Point coordinates MUST be a [longitude, latitude] array"
+    ],
+    "point edges": [],
+    "point lat out": [
+        "latitude MUST be between -90 and 90 (it is the second element per RFC 7946)"
+    ],
+    "point lon low": [
+        "longitude MUST be between -180 and 180 (it is the first element per RFC 7946)"
+    ],
+    "point lon out": [
+        "longitude MUST be between -180 and 180 (it is the first element per RFC 7946)"
+    ],
+    "point no type": [
+        "Point geometry MUST have type \"Point\""
+    ],
+    "point non numeric": [
+        "coordinates MUST be numeric"
+    ],
+    "point non numeric lat": [
+        "coordinates MUST be numeric"
+    ],
+    "point numeric strings": [],
+    "point ok": [],
+    "point short coords": [
+        "Point coordinates MUST be a [longitude, latitude] array"
+    ],
+    "point wrong type": [
+        "Point geometry MUST have type \"Point\""
+    ],
+    "polygon bad positions": [
+        "Polygon ring #0 has a non-array position",
+        "longitude MUST be between -180 and 180 (it is the first element per RFC 7946)",
+        "coordinates MUST be numeric"
+    ],
+    "polygon int vs float closure": [
+        "Polygon ring #0 is unclosed: first and last coordinate MUST be identical"
+    ],
+    "polygon no rings": [
+        "Polygon MUST have at least one linear ring"
+    ],
+    "polygon ok": [],
+    "polygon rings scalar": [
+        "Polygon MUST have at least one linear ring"
+    ],
+    "polygon scalar ring": [
+        "Polygon ring #0 MUST contain at least 4 coordinate positions"
+    ],
+    "polygon short ring": [
+        "Polygon ring #0 MUST contain at least 4 coordinate positions"
+    ],
+    "polygon two rings": [
+        "Polygon ring #1 is unclosed: first and last coordinate MUST be identical"
+    ],
+    "polygon unclosed": [
+        "Polygon ring #0 is unclosed: first and last coordinate MUST be identical"
+    ],
+    "polygon wrong type": [
+        "Polygon geometry MUST have type \"Polygon\""
+    ],
+    "unknown type": [
+        "unknown geo property type: geo:circle"
+    ]
+}

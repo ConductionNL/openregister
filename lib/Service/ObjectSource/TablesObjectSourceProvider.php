@@ -38,9 +38,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ObjectSource;
 
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -61,33 +63,40 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 	private const DEFAULT_LIMIT = 200;
 
 	/**
-	 * Row cap for the O(n) UUID-resolution scan in find() (bounded + logged).
+	 * Row cap for the O(n) scans of a UUID lookup and of a query applied in PHP (bounded + logged).
 	 *
 	 * @var int
 	 */
 	private const UUID_SCAN_CAP = 1000;
 
 	/**
+	 * The acting-user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Logger for read failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param TablesTableReader $reader Guarded gateway to Tables services.
-	 * @param TablesColumnMapper $columnMapper Column/row → property
-	 *                                         projection.
-	 * @param TablesUuidDeriver $uuidDeriver Deterministic object-uuid derivation.
-	 * @param TablesSchemaSyncService $syncService Managed-schema lookup (relation targets).
-	 * @param IUserSession $userSession Acting-user session (RBAC scoping).
-	 * @param LoggerInterface $logger Logger for read diagnostics.
+	 * @param TablesProviderParts $parts   The reader, row mapper, uuid derivation and managed-schema lookup.
+	 * @param LinkSessionRuntime  $session The acting-user session and the logger for read failures.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly TablesTableReader $reader,
-		private readonly TablesColumnMapper $columnMapper,
-		private readonly TablesUuidDeriver $uuidDeriver,
-		private readonly TablesSchemaSyncService $syncService,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		private readonly TablesProviderParts $parts,
+		LinkSessionRuntime $session,
 	) {
+		$this->userSession = $session->userSession;
+		$this->logger = $session->logger;
 	}//end __construct()
 
 	/**
@@ -112,7 +121,7 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
 	public function isEnabled(): bool {
-		return $this->reader->isAvailable();
+		return $this->parts->reader->isAvailable();
 	}//end isEnabled()
 
 	/**
@@ -132,38 +141,31 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
 	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
-		$userId = $this->userId();
-		if ($userId === null) {
-			return null;
-		}
-
-		$tableId = (int)($config['tableId'] ?? 0);
-		if ($tableId === 0) {
-			return null;
-		}
-
-		if (ctype_digit($id) === true) {
-			$row = $this->reader->findRow(rowId: (int)$id, tableId: $tableId, userId: $userId);
-			if ($row === null) {
-				return null;
-			}
-
-			return $this->toObjectEntity(register: $register, schema: $schema, row: $row, tableId: $tableId, userId: $userId);
-		}
-
-		if ($this->uuidDeriver->looksLikeUuid($id) === true) {
-			return $this->findByUuid(register: $register, schema: $schema, uuid: $id, config: $config, userId: $userId);
-		}
-
-		return null;
+		return $this->findTargeted(target: $this->target(table: new RegisterSchema(register: $register, schema: $schema), config: $config), id: $id);
 	}//end find()
+
+	/**
+	 * Read one object of a target that names a table.
+	 *
+	 * @param TablesObjectTarget|null $target The target, or null when no user is logged in.
+	 * @param string                  $id     The object uuid or numeric row id.
+	 *
+	 * @return ObjectEntity|null The object, or null when absent or the target names no table.
+	 */
+	private function findTargeted(?TablesObjectTarget $target, string $id): ?ObjectEntity {
+		if ($target === null || $target->scope->tableId === 0) {
+			return null;
+		}
+
+		return $this->findById(target: $target, id: $id);
+	}//end findTargeted()
 
 	/**
 	 * {@inheritDoc}
 	 *
-	 * Pushes `limit`/`offset` natively to Tables; any other filter/sort is applied
-	 * provider-side in PHP. A `config.viewId` binds a Tables View instead of the
-	 * raw `config.tableId`.
+	 * Pushes `limit`/`offset` natively to Tables. A query with filters, search, ids
+	 * or a sort is applied in PHP over a bounded scan, and paged after that. A
+	 * `config.viewId` binds a Tables View instead of the raw `config.tableId`.
 	 *
 	 * @param Register $register The register the schema belongs to.
 	 * @param Schema $schema The sourced schema.
@@ -175,29 +177,32 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
 	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
-		$userId = $this->userId();
-		if ($userId === null) {
-			return [];
-		}
-
-		$tableId = (int)($config['tableId'] ?? 0);
-		if ($tableId === 0) {
-			return [];
-		}
-
-		$limit = (int)($query['limit'] ?? self::DEFAULT_LIMIT);
-		$offset = (int)($query['offset'] ?? 0);
-		$this->warnUnpushedFilters(query: $query);
-
-		$rows = $this->fetchRows(config: $config, tableId: $tableId, userId: $userId, limit: $limit, offset: $offset);
-
-		$objects = [];
-		foreach ($rows as $row) {
-			$objects[] = $this->toObjectEntity(register: $register, schema: $schema, row: $row, tableId: $tableId, userId: $userId);
-		}
-
-		return $objects;
+		return $this->listTargeted(target: $this->target(table: new RegisterSchema(register: $register, schema: $schema), config: $config), query: $query);
 	}//end findAll()
+
+	/**
+	 * Read one page of a target that names a table.
+	 *
+	 * @param TablesObjectTarget|null $target The target, or null when no user is logged in.
+	 * @param array<string, mixed>    $query  Query (filters/search/limit/offset).
+	 *
+	 * @return ObjectEntity[] The page, or an empty list when the target names no table.
+	 */
+	private function listTargeted(?TablesObjectTarget $target, array $query): array {
+		if ($target === null || $target->scope->tableId === 0) {
+			return [];
+		}
+
+		$scope       = $target->scope;
+		$objectQuery = new TablesObjectQuery(query: $query);
+		if ($objectQuery->isNarrowing() === true) {
+			return $objectQuery->page(objects: $this->matching(target: $target, query: $objectQuery), defaultLimit: self::DEFAULT_LIMIT);
+		}
+
+		$page = $scope->withPage(limit: (int)($query['limit'] ?? self::DEFAULT_LIMIT), offset: (int)($query['offset'] ?? 0));
+
+		return $this->toObjects(target: $target, rows: $this->parts->reader->findRows(scope: $page));
+	}//end listTargeted()
 
 	/**
 	 * {@inheritDoc}
@@ -209,53 +214,94 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 	 *
 	 * @return int The number of matching virtual objects.
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $register/$schema unused; the count is source-side.
-	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
 	public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
-		$userId = $this->userId();
-		if ($userId === null) {
+		return $this->countTargeted(target: $this->target(table: new RegisterSchema(register: $register, schema: $schema), config: $config), query: $query);
+	}//end count()
+
+	/**
+	 * Count the objects of a target that names a table or a view.
+	 *
+	 * @param TablesObjectTarget|null $target The target, or null when no user is logged in.
+	 * @param array<string, mixed>    $query  Query (filters/search).
+	 *
+	 * @return int The count, or 0 when the target names no table or view.
+	 */
+	private function countTargeted(?TablesObjectTarget $target, array $query): int {
+		if ($target === null || $target->scope->sourceId() === 0) {
 			return 0;
 		}
 
-		$viewId = (int)($config['viewId'] ?? 0);
-		$tableId = (int)($config['tableId'] ?? 0);
-		if ($viewId !== 0) {
-			return $this->reader->countRows(id: $viewId, userId: $userId, isView: true);
+		$objectQuery = new TablesObjectQuery(query: $query);
+		if ($objectQuery->isNarrowing() === true && $target->scope->tableId !== 0) {
+			return count($this->matching(target: $target, query: $objectQuery));
 		}
 
-		if ($tableId !== 0) {
-			return $this->reader->countRows(id: $tableId, userId: $userId, isView: false);
+		return $this->parts->reader->countRows(scope: $target->scope);
+	}//end countTargeted()
+
+	/**
+	 * Resolve a virtual object by a numeric row id or a derived UUID.
+	 *
+	 * @param TablesObjectTarget $target The register, schema and read scope.
+	 * @param string $id The rowId or derived UUID.
+	 *
+	 * @return ObjectEntity|null The virtual object, or null when absent/denied.
+	 *
+	 * @spec openspec/specs/tables-virtual-register/spec.md
+	 */
+	private function findById(TablesObjectTarget $target, string $id): ?ObjectEntity {
+		if (ctype_digit($id) === true) {
+			return $this->findByRowId(target: $target, rowId: (int)$id);
 		}
 
-		return 0;
-	}//end count()
+		if ($this->parts->uuidDeriver->looksLikeUuid($id) === true) {
+			return $this->findByUuid(target: $target, uuid: $id);
+		}
+
+		return null;
+	}//end findById()
+
+	/**
+	 * Resolve a virtual object by its Tables row id.
+	 *
+	 * @param TablesObjectTarget $target The register, schema and read scope.
+	 * @param int $rowId The Tables row id.
+	 *
+	 * @return ObjectEntity|null The virtual object, or null when absent/denied.
+	 *
+	 * @spec openspec/specs/tables-virtual-register/spec.md
+	 */
+	private function findByRowId(TablesObjectTarget $target, int $rowId): ?ObjectEntity {
+		$row = $this->parts->reader->findRow(rowId: $rowId, scope: $target->scope);
+		if ($row === null) {
+			return null;
+		}
+
+		return $this->toObjectEntity(target: $target, row: $row);
+	}//end findByRowId()
 
 	/**
 	 * Resolve a virtual object by its derived UUID via a bounded, logged scan.
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
+	 * @param TablesObjectTarget $target The register, schema and read scope.
 	 * @param string $uuid The derived object UUID.
-	 * @param array<string, mixed> $config The object-source config block.
-	 * @param string $userId The acting user id.
 	 *
 	 * @return ObjectEntity|null The virtual object, or null when not found.
 	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	private function findByUuid(Register $register, Schema $schema, string $uuid, array $config, string $userId): ?ObjectEntity {
-		$tableId = (int)($config['tableId'] ?? 0);
+	private function findByUuid(TablesObjectTarget $target, string $uuid): ?ObjectEntity {
+		$tableId = $target->scope->tableId;
 		$this->logger->warning(
 			sprintf('[ObjectSource:tables] resolving UUID %s by scanning table %d (bounded to %d rows)', $uuid, $tableId, self::UUID_SCAN_CAP)
 		);
 
-		$rows = $this->fetchRows(config: $config, tableId: $tableId, userId: $userId, limit: self::UUID_SCAN_CAP, offset: 0);
-		foreach ($rows as $row) {
+		foreach ($this->parts->reader->findRows(scope: $target->scope->withPage(limit: self::UUID_SCAN_CAP, offset: 0)) as $row) {
 			$rowId = (int)($row['id'] ?? 0);
-			if ($this->uuidDeriver->deriveObjectUuid(tableId: $tableId, rowId: $rowId) === $uuid) {
-				return $this->toObjectEntity(register: $register, schema: $schema, row: $row, tableId: $tableId, userId: $userId);
+			if ($this->parts->uuidDeriver->deriveObjectUuid(tableId: $tableId, rowId: $rowId) === $uuid) {
+				return $this->toObjectEntity(target: $target, row: $row);
 			}
 		}
 
@@ -263,81 +309,90 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 	}//end findByUuid()
 
 	/**
-	 * Fetch a page of rows, honouring a `config.viewId` View binding.
+	 * The objects of a bounded scan that a query matches. A scan that reaches the cap
+	 * logs a warning, because rows past it were not considered.
 	 *
-	 * @param array<string, mixed> $config The object-source config block.
-	 * @param int $tableId The bound table id.
-	 * @param string $userId The acting user id.
-	 * @param int $limit The native row limit.
-	 * @param int $offset The native row offset.
+	 * @param TablesObjectTarget $target The register, schema and read scope.
+	 * @param TablesObjectQuery $query The query.
 	 *
-	 * @return array<int, array<string, mixed>> The row descriptors.
+	 * @return array<int, ObjectEntity> The matching objects.
 	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	private function fetchRows(array $config, int $tableId, string $userId, int $limit, int $offset): array {
-		$viewId = (int)($config['viewId'] ?? 0);
-		if ($viewId !== 0) {
-			return $this->reader->findRowsByView(viewId: $viewId, userId: $userId, limit: $limit, offset: $offset);
-		}
-
-		return $this->reader->findRowsByTable(tableId: $tableId, userId: $userId, limit: $limit, offset: $offset);
-	}//end fetchRows()
-
-	/**
-	 * Log a warning when a query carries filters/sort the provider cannot push
-	 * down (no silent truncation — per the interface contract).
-	 *
-	 * @param array<string, mixed> $query The query.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/tables-virtual-register/spec.md
-	 */
-	private function warnUnpushedFilters(array $query): void {
-		$pushable = ['limit', 'offset', '_limit', '_offset', 'page', '_page'];
-		$unpushed = array_diff(array_keys($query), $pushable);
-		if (empty($unpushed) === false) {
+	private function matching(TablesObjectTarget $target, TablesObjectQuery $query): array {
+		$rows = $this->parts->reader->findRows(scope: $target->scope->withPage(limit: self::UUID_SCAN_CAP, offset: 0));
+		if (count($rows) >= self::UUID_SCAN_CAP) {
 			$this->logger->warning(
-				'[ObjectSource:tables] query operators applied provider-side (not pushed down): ' . implode(', ', $unpushed)
+				sprintf('[ObjectSource:tables] query applied to the first %d rows of table %d only', self::UUID_SCAN_CAP, $target->scope->tableId)
 			);
 		}
-	}//end warnUnpushedFilters()
+
+		return $query->matching(objects: $this->toObjects(target: $target, rows: $rows));
+	}//end matching()
+
+	/**
+	 * Map row descriptors onto virtual objects.
+	 *
+	 * @param TablesObjectTarget $target The register, schema and read scope.
+	 * @param array<int, array<string, mixed>> $rows The row descriptors.
+	 *
+	 * @return array<int, ObjectEntity> The virtual objects.
+	 *
+	 * @spec openspec/specs/tables-virtual-register/spec.md
+	 */
+	private function toObjects(TablesObjectTarget $target, array $rows): array {
+		return array_map(fn (array $row): ObjectEntity => $this->toObjectEntity(target: $target, row: $row), $rows);
+	}//end toObjects()
 
 	/**
 	 * Map a Tables row descriptor onto a non-persisted virtual ObjectEntity.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema $schema The sourced schema.
+	 * @param TablesObjectTarget $target The register, schema and read scope.
 	 * @param array<string, mixed> $row The row descriptor.
-	 * @param int $tableId The bound table id.
-	 * @param string $userId The acting user id.
 	 *
 	 * @return ObjectEntity The virtual object (never saved).
 	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	private function toObjectEntity(Register $register, Schema $schema, array $row, int $tableId, string $userId): ObjectEntity {
-		$columns = $this->reader->listColumns(tableId: $tableId, userId: $userId);
-		$columnMap = $this->columnMapper->buildColumnMap(columns: $columns);
-		$resolver = $this->targetSchemaResolver();
-
+	private function toObjectEntity(TablesObjectTarget $target, array $row): ObjectEntity {
 		$rowId = (int)($row['id'] ?? 0);
-		$data = $this->columnMapper->projectRow(row: $row, columns: $columns, columnMap: $columnMap, targetSchemaExists: $resolver);
-		$data = array_merge(['id' => (string)$rowId], $data);
 
 		$entity = new ObjectEntity();
-		$entity->setUuid($this->uuidDeriver->deriveObjectUuid(tableId: $tableId, rowId: $rowId));
-		$entity->setRegister((string)$register->getId());
-		$entity->setSchema((string)$schema->getId());
-		$entity->setObject($data);
-		$this->applyMetadata(entity: $entity, row: $row);
+		$entity->setUuid($this->parts->uuidDeriver->deriveObjectUuid(tableId: $target->scope->tableId, rowId: $rowId));
+		$entity->setRegister((string)$target->register->getId());
+		$entity->setSchema((string)$target->schema->getId());
+		$entity->setObject(array_merge(['id' => (string)$rowId], $this->projectedData(target: $target, row: $row)));
+		$this->applyOwner(entity: $entity, row: $row);
+		$this->applyDates(entity: $entity, row: $row);
 
 		return $entity;
 	}//end toObjectEntity()
 
 	/**
-	 * Apply the row's `@self` metadata (created/updated/owner) to the entity.
+	 * Project a row onto the schema's properties through the table's columns.
+	 *
+	 * @param TablesObjectTarget $target The register, schema and read scope.
+	 * @param array<string, mixed> $row The row descriptor.
+	 *
+	 * @return array<string, mixed> The projected properties.
+	 *
+	 * @spec openspec/specs/tables-virtual-register/spec.md
+	 */
+	private function projectedData(TablesObjectTarget $target, array $row): array {
+		$scope = $target->scope;
+		$columns = $target->columns(load: fn (): array => $this->parts->reader->listColumns(tableId: $scope->tableId, userId: $scope->userId));
+
+		$projection = new TablesRowProjection(
+			columns: $columns,
+			columnMap: $this->parts->columnMapper->buildColumnMap(columns: $columns),
+			targetSchemaExists: $this->targetSchemaResolver()
+		);
+
+		return $this->parts->columnMapper->projectRow(row: $row, projection: $projection);
+	}//end projectedData()
+
+	/**
+	 * Apply the row's creator as the entity's owner.
 	 *
 	 * @param ObjectEntity $entity The virtual object.
 	 * @param array<string, mixed> $row The row descriptor.
@@ -346,38 +401,55 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	private function applyMetadata(ObjectEntity $entity, array $row): void {
+	private function applyOwner(ObjectEntity $entity, array $row): void {
 		$owner = ($row['createdBy'] ?? null);
 		if (is_string($owner) === true && $owner !== '') {
 			$entity->setOwner($owner);
 		}
-
-		$this->applyDate(entity: $entity, setter: 'setCreated', value: ($row['createdAt'] ?? null));
-		$this->applyDate(entity: $entity, setter: 'setUpdated', value: ($row['lastEditAt'] ?? null));
-	}//end applyMetadata()
+	}//end applyOwner()
 
 	/**
-	 * Parse an ISO-8601 string and apply it via a DateTime setter, guarded.
+	 * Apply the row's timestamps to the entity; one that cannot be parsed stays unset.
 	 *
 	 * @param ObjectEntity $entity The virtual object.
-	 * @param string $setter The DateTime setter name (setCreated/setUpdated).
-	 * @param mixed $value The ISO-8601 string, or null.
+	 * @param array<string, mixed> $row The row descriptor.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	private function applyDate(ObjectEntity $entity, string $setter, mixed $value): void {
+	private function applyDates(ObjectEntity $entity, array $row): void {
+		$created = $this->parsedDate(value: ($row['createdAt'] ?? null));
+		if ($created !== null) {
+			$entity->setCreated($created);
+		}
+
+		$updated = $this->parsedDate(value: ($row['lastEditAt'] ?? null));
+		if ($updated !== null) {
+			$entity->setUpdated($updated);
+		}
+	}//end applyDates()
+
+	/**
+	 * Parse an ISO-8601 string.
+	 *
+	 * @param mixed $value The ISO-8601 string, or null.
+	 *
+	 * @return DateTime|null The date, or null when absent or unparseable.
+	 *
+	 * @spec openspec/specs/tables-virtual-register/spec.md
+	 */
+	private function parsedDate(mixed $value): ?DateTime {
 		if (is_string($value) === false || $value === '') {
-			return;
+			return null;
 		}
 
 		try {
-			$entity->$setter(new DateTime($value));
+			return new DateTime($value);
 		} catch (Throwable $e) {
-			// Unparseable timestamp — leave the metadata field unset.
+			return null;
 		}
-	}//end applyDate()
+	}//end parsedDate()
 
 	/**
 	 * Build a memoised predicate: does a target table have a seeded schema?
@@ -391,7 +463,7 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 
 		return function (int $targetTableId) use (&$cache): bool {
 			if (array_key_exists($targetTableId, $cache) === false) {
-				$cache[$targetTableId] = $this->syncService->hasManagedSchemaForTableId(tableId: $targetTableId);
+				$cache[$targetTableId] = $this->parts->syncService->hasManagedSchemaForTableId(tableId: $targetTableId);
 			}
 
 			return $cache[$targetTableId];
@@ -399,18 +471,39 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 	}//end targetSchemaResolver()
 
 	/**
-	 * The acting user id, or null when no user is logged in.
+	 * The target a schema's config names for the acting user.
 	 *
-	 * @return string|null The acting user id.
+	 * @param RegisterSchema       $table  The register and schema the objects belong to.
+	 * @param array<string, mixed> $config The object-source config block.
+	 *
+	 * @return TablesObjectTarget|null The target, or null when no user is logged in.
+	 */
+	private function target(RegisterSchema $table, array $config): ?TablesObjectTarget {
+		$scope = $this->scope(config: $config);
+		if ($scope === null) {
+			return null;
+		}
+
+		return new TablesObjectTarget(register: $table->register, schema: $table->schema, scope: $scope);
+	}//end target()
+
+	/**
+	 * The read scope of a schema's config for the acting user.
+	 *
+	 * @param array<string, mixed> $config The object-source config block.
+	 *
+	 * @return TablesReadScope|null The scope, or null when no user is logged in.
 	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	private function userId(): ?string {
+	private function scope(array $config): ?TablesReadScope {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return null;
 		}
 
-		return $user->getUID();
-	}//end userId()
+		$scope = new TablesReadScope(tableId: (int)($config['tableId'] ?? 0), userId: $user->getUID());
+
+		return $scope->withView(viewId: (int)($config['viewId'] ?? 0));
+	}//end scope()
 }//end class

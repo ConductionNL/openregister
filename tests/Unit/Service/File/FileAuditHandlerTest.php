@@ -8,6 +8,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Files\Service\File\BulkDownloadArchive;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -71,11 +72,13 @@ class FileAuditHandlerTest extends TestCase {
 			->willReturnArgument(0);
 
 		$result = $this->handler->logBulkDownload(
-			$object,
-			[42, 43, 44],
-			['file1.pdf', 'file2.pdf', 'file3.pdf'],
-			'object_abc-123_files.zip',
-			512000
+			object: $object,
+			archive: new BulkDownloadArchive(
+				fileIds: [42, 43, 44],
+				fileNames: ['file1.pdf', 'file2.pdf', 'file3.pdf'],
+				zipName: 'object_abc-123_files.zip',
+				totalBytes: 512000
+			)
 		);
 
 		$this->assertInstanceOf(AuditTrail::class, $result);
@@ -115,10 +118,12 @@ class FileAuditHandlerTest extends TestCase {
 			->willReturnArgument(0);
 
 		$this->handler->logBulkDownload(
-			$object,
-			[42],
-			['only.pdf'],
-			'one.zip'
+			object: $object,
+			archive: new BulkDownloadArchive(
+				fileIds: [42],
+				fileNames: ['only.pdf'],
+				zipName: 'one.zip'
+			)
 		);
 
 		$this->assertSame('Anonymous', $captured->getUser());

@@ -64,74 +64,68 @@ class NotificationSubscriptionMapper extends QBMapper {
 	}//end __construct()
 
 	/**
-	 * Subscribe a user to (register, schema). Idempotent: returns the
-	 * existing row when a duplicate is attempted (DB unique index
-	 * protects against races).
+	 * Subscribe a user to (register, schema). Idempotent: returns the existing
+	 * row when a duplicate is attempted (the DB unique index protects against
+	 * races). At least one of registerId / schemaId MUST be set.
 	 *
-	 * At least one of registerId / schemaId MUST be set.
-	 *
-	 * @param string $userId User UID.
-	 * @param ?int $registerId Register id, or null for schema-only.
-	 * @param ?int $schemaId Schema id, or null for register-wide.
+	 * @param SubscriptionKey $key The user and the register and/or schema.
 	 *
 	 * @return NotificationSubscription
 	 *
 	 * @throws \InvalidArgumentException When both ids are null.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	public function subscribe(string $userId, ?int $registerId, ?int $schemaId): NotificationSubscription {
-		if ($registerId === null && $schemaId === null) {
+	public function subscribeTo(SubscriptionKey $key): NotificationSubscription {
+		if ($key->registerId === null && $key->schemaId === null) {
 			throw new InvalidArgumentException(
 				'subscribe() requires at least one of registerId / schemaId'
 			);
 		}
 
 		try {
-			return $this->findExisting(userId: $userId, registerId: $registerId, schemaId: $schemaId);
+			return $this->findExisting(key: $key);
 		} catch (DoesNotExistException) {
 			// Fall through to insert.
 		}
 
 		$entity = new NotificationSubscription();
-		$entity->setUserId($userId);
-		$entity->setRegisterId($registerId);
-		$entity->setSchemaId($schemaId);
+		$entity->setUserId($key->userId);
+		$entity->setRegisterId($key->registerId);
+		$entity->setSchemaId($key->schemaId);
 		$entity->setCreated(new DateTime());
 
 		try {
-			/*
-			 * @var NotificationSubscription $inserted
-			 */
-
-			$inserted = $this->insert(entity: $entity);
-			return $inserted;
+			// insert() fills in the id on the entity it is given and returns that same entity.
+			$this->insert(entity: $entity);
+			return $entity;
 		} catch (DbException) {
 			// Race: parallel insert won. Return the existing row.
-			return $this->findExisting(userId: $userId, registerId: $registerId, schemaId: $schemaId);
+			return $this->findExisting(key: $key);
 		}
 
-	}//end subscribe()
+	}//end subscribeTo()
 
 	/**
-	 * Unsubscribe a (userId, registerId, schemaId) tuple.
+	 * Unsubscribe one (user, register, schema) subscription.
 	 *
-	 * @param string $userId User UID.
-	 * @param ?int $registerId Register id.
-	 * @param ?int $schemaId Schema id.
+	 * @param SubscriptionKey $key The user and the register and/or schema.
 	 *
 	 * @return bool True when a row was deleted.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	public function unsubscribe(string $userId, ?int $registerId, ?int $schemaId): bool {
+	public function unsubscribeFrom(SubscriptionKey $key): bool {
 		$qb = $this->db->getQueryBuilder();
 		$qb->delete($this->getTableName())
 			->where(
-				$qb->expr()->eq('user_id', $qb->createNamedParameter($userId, IQueryBuilder::PARAM_STR))
+				$qb->expr()->eq('user_id', $qb->createNamedParameter($key->userId, IQueryBuilder::PARAM_STR))
 			);
 
-		$this->whereNullableEq(qb: $qb, column: 'register_id', value: $registerId);
-		$this->whereNullableEq(qb: $qb, column: 'schema_id', value: $schemaId);
+		$this->whereNullableEquals(qb: $qb, columns: $key->scopeColumns());
 
 		return ($qb->executeStatement() > 0);
-	}//end unsubscribe()
+	}//end unsubscribeFrom()
 
 	/**
 	 * Find subscriptions for a user.
@@ -207,23 +201,20 @@ class NotificationSubscriptionMapper extends QBMapper {
 	/**
 	 * Find an existing row for the (user, register, schema) tuple.
 	 *
-	 * @param string $userId User UID.
-	 * @param ?int $registerId Register id.
-	 * @param ?int $schemaId Schema id.
+	 * @param SubscriptionKey $key The user, register and schema.
 	 *
 	 * @return NotificationSubscription
 	 *
 	 * @throws DoesNotExistException When no row exists.
 	 */
-	private function findExisting(string $userId, ?int $registerId, ?int $schemaId): NotificationSubscription {
+	private function findExisting(SubscriptionKey $key): NotificationSubscription {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->where(
-				$qb->expr()->eq('user_id', $qb->createNamedParameter($userId, IQueryBuilder::PARAM_STR))
+				$qb->expr()->eq('user_id', $qb->createNamedParameter($key->userId, IQueryBuilder::PARAM_STR))
 			);
-		$this->whereNullableEq(qb: $qb, column: 'register_id', value: $registerId);
-		$this->whereNullableEq(qb: $qb, column: 'schema_id', value: $schemaId);
+		$this->whereNullableEquals(qb: $qb, columns: $key->scopeColumns());
 		$qb->setMaxResults(1);
 
 		/*
@@ -239,21 +230,22 @@ class NotificationSubscriptionMapper extends QBMapper {
 	 * a NULL value MUST match an `IS NULL` column (DBs treat
 	 * NULL = NULL as false otherwise).
 	 *
-	 * @param IQueryBuilder $qb The query builder.
-	 * @param string $column The column name.
-	 * @param ?int $value The value, or null for IS NULL match.
+	 * @param IQueryBuilder           $qb      The query builder.
+	 * @param array<string, int|null> $columns Column to value, null for an IS NULL match.
 	 *
 	 * @return void
 	 */
-	private function whereNullableEq(IQueryBuilder $qb, string $column, ?int $value): void {
-		if ($value === null) {
-			$qb->andWhere($qb->expr()->isNull($column));
-			return;
+	private function whereNullableEquals(IQueryBuilder $qb, array $columns): void {
+		foreach ($columns as $column => $value) {
+			if ($value === null) {
+				$qb->andWhere($qb->expr()->isNull($column));
+				continue;
+			}
+
+			$qb->andWhere(
+				$qb->expr()->eq($column, $qb->createNamedParameter($value, IQueryBuilder::PARAM_INT))
+			);
 		}
 
-		$qb->andWhere(
-			$qb->expr()->eq($column, $qb->createNamedParameter($value, IQueryBuilder::PARAM_INT))
-		);
-
-	}//end whereNullableEq()
+	}//end whereNullableEquals()
 }//end class

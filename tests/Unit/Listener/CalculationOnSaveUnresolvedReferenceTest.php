@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace Unit\Listener;
 
+use OCA\OpenRegister\Service\Rules\RuleRunSubject;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -33,6 +34,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
+use OCA\OpenRegister\Listener\Support\CalculationOnSaveEngine;
+use OCA\OpenRegister\Listener\Support\CalculationOnSaveLookups;
 use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
@@ -116,19 +119,15 @@ class CalculationOnSaveUnresolvedReferenceTest extends TestCase {
 			->onlyMethods(['record'])
 			->getMock();
 		$this->ruleRuns->method('record')->willReturnCallback(
-			function (string $ruleId, string $schemaSlug, RuleTrace $trace): void {
-				$this->traces[$ruleId] = $trace;
+			function (RuleRunSubject $subject, RuleTrace $trace): void {
+				$this->traces[$subject->ruleId] = $trace;
 			}
 		);
 
 		$this->listener = new CalculationOnSaveListener(
-			$schemaMapper,
-			$this->createMock(RegisterMapper::class),
-			new CalculationEvaluator(new PlaceholderResolver($userSession)),
-			$payloadBuilder,
-			$this->createMock(SequenceService::class),
-			$this->ruleRuns,
-			$logger
+			new CalculationOnSaveLookups($schemaMapper, $this->createMock(RegisterMapper::class), $this->createMock(SequenceService::class), $logger),
+			new CalculationOnSaveEngine(new CalculationEvaluator(new PlaceholderResolver($userSession)), $payloadBuilder),
+			$this->ruleRuns
 		);
 	}//end setUp()
 

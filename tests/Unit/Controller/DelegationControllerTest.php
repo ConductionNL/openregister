@@ -34,6 +34,7 @@ use OCA\OpenRegister\Controller\DelegationController;
 use OCA\OpenRegister\Db\DelegationGrant;
 use OCA\OpenRegister\Db\DelegationGrantMapper;
 use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Service\Delegation\DelegationCaller;
 use OCA\OpenRegister\Service\Delegation\DelegationConsentService;
 use OCA\OpenRegister\Service\Delegation\DelegationNotifier;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -168,6 +169,7 @@ class DelegationControllerTest extends TestCase {
 
 		if ($consent === null) {
 			$consent = $this->createMock(DelegationConsentService::class);
+			$consent->method('caller')->willReturnCallback(static fn (string $uid, bool $isAdmin): DelegationCaller => new DelegationCaller($uid, $isAdmin));
 			$consent->method('request')->willReturnCallback(fn (): DelegationGrant => $this->pending());
 			$consent->method('answer')->willReturnArgument(0);
 			$consent->method('revoke')->willReturnArgument(0);
@@ -289,6 +291,7 @@ class DelegationControllerTest extends TestCase {
 		$seen = [];
 
 		$consent = $this->createMock(DelegationConsentService::class);
+		$consent->method('caller')->willReturnCallback(static fn (string $uid, bool $isAdmin): DelegationCaller => new DelegationCaller($uid, $isAdmin));
 		$consent->method('request')->willReturnCallback(
 			function (string $principal) use (&$seen): DelegationGrant {
 				$seen[] = $principal;
@@ -332,6 +335,7 @@ class DelegationControllerTest extends TestCase {
 	 */
 	public function testAMeaninglessRequestIsABadRequest(): void {
 		$consent = $this->createMock(DelegationConsentService::class);
+		$consent->method('caller')->willReturnCallback(static fn (string $uid, bool $isAdmin): DelegationCaller => new DelegationCaller($uid, $isAdmin));
 		$consent->method('request')->willThrowException(
 			new InvalidArgumentException('Acting as yourself is not delegation; no consent is needed.')
 		);
@@ -357,6 +361,7 @@ class DelegationControllerTest extends TestCase {
 		$this->stored = $this->pending();
 
 		$consent = $this->createMock(DelegationConsentService::class);
+		$consent->method('caller')->willReturnCallback(static fn (string $uid, bool $isAdmin): DelegationCaller => new DelegationCaller($uid, $isAdmin));
 		$consent->method('answer')->willThrowException(
 			new InvalidArgumentException('Only "mayor" or an administrator may answer.')
 		);
@@ -415,6 +420,7 @@ class DelegationControllerTest extends TestCase {
 		$this->stored = $this->pending();
 
 		$consent = $this->createMock(DelegationConsentService::class);
+		$consent->method('caller')->willReturnCallback(static fn (string $uid, bool $isAdmin): DelegationCaller => new DelegationCaller($uid, $isAdmin));
 		$consent->method('revoke')->willThrowException(new InvalidArgumentException('not yours'));
 
 		$this->assertSame(Http::STATUS_FORBIDDEN, $this->controller($consent)->revoke('grant-1')->getStatus());
@@ -487,9 +493,10 @@ class DelegationControllerTest extends TestCase {
 
 		$seen = [];
 		$consent = $this->createMock(DelegationConsentService::class);
+		$consent->method('caller')->willReturnCallback(static fn (string $uid, bool $isAdmin): DelegationCaller => new DelegationCaller($uid, $isAdmin));
 		$consent->method('answer')->willReturnCallback(
-			function (DelegationGrant $grant, string $by, bool $allow, DateTime $now, bool $isAdmin = false) use (&$seen): DelegationGrant {
-				$seen[] = $isAdmin;
+			function (DelegationGrant $grant, DelegationCaller $caller, bool $allow) use (&$seen): DelegationGrant {
+				$seen[] = $caller->isAdmin;
 
 				return $grant;
 			}

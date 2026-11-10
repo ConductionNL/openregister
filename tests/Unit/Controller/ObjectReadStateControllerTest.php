@@ -30,6 +30,7 @@ use OCP\AppFramework\Http;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Controller\Support\ObjectReadStateControllerServices;
 
 /**
  * The contract of the three verbs, and the two refusals.
@@ -92,12 +93,13 @@ class ObjectReadStateControllerTest extends TestCase {
 		}
 
 		return new ObjectReadStateController(
-			appName: 'openregister',
 			request: $this->request,
-			objectService: $objectService,
-			readState: $this->readState,
-			clearing: $this->clearing,
-			logger: $this->createMock(originalClassName: LoggerInterface::class)
+			services: new ObjectReadStateControllerServices(
+				readState: $this->readState,
+				clearing: $this->clearing,
+				objectService: $objectService,
+				logger: $this->createMock(originalClassName: LoggerInterface::class)
+			)
 		);
 
 	}//end controller()

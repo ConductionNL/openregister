@@ -35,31 +35,32 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Vocabulary;
 
-use DateTimeImmutable;
-use DateTimeInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\CodedValueException;
 
 /**
  * Refuses the coded values a scheme's lifecycle rules say cannot be written.
  */
-class CodedValueGuard {
+class CodedValueGuard implements CodedValueGuardInterface {
+
+	/**
+	 * The write refusals each resolved value is judged against.
+	 *
+	 * @var CodedValueRefusals
+	 */
+	private readonly CodedValueRefusals $refusals;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param ConceptRepository $concepts Reads schemes and their concepts.
-	 * @param ConceptLifecycle $lifecycle Answers window, group and weight.
-	 * @param ConceptHierarchy $hierarchy Walks broader/narrower.
+	 * @param ConceptSchemeAccess             $scheme             Reads schemes, their concepts, hierarchy and lifecycle.
 	 * @param CodedPropertyDeclarationFactory $declarationFactory Reads a schema's coded declarations.
 	 */
 	public function __construct(
-		private readonly ConceptRepository $concepts,
-		private readonly ConceptLifecycle $lifecycle,
-		private readonly ConceptHierarchy $hierarchy,
+		private readonly ConceptSchemeAccess $scheme,
 		private readonly CodedPropertyDeclarationFactory $declarationFactory,
 	) {
-
+		$this->refusals = new CodedValueRefusals(lifecycle: $scheme->lifecycle, hierarchy: $scheme->hierarchy);
 	}//end __construct()
 
 	/**
@@ -70,9 +71,7 @@ class CodedValueGuard {
 	 * behind `hardValidation`: an expiry that only applies to schemas with
 	 * hard validation on is an expiry a gemeente cannot rely on.
 	 *
-	 * @param array<string,mixed> $object The submitted object data.
-	 * @param Schema $schema The schema being written against.
-	 * @param DateTimeInterface|null $at The instant to judge windows at; now when null.
+	 * @param CodedValueWrite $write The submitted object data, the schema it is written against and the instant to judge windows at (now when null).
 	 *
 	 * @return void
 	 *
@@ -80,8 +79,20 @@ class CodedValueGuard {
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function enforce(array $object, Schema $schema, ?DateTimeInterface $at = null): void {
-		$errors = $this->collectViolations(object: $object, schema: $schema, at: $at);
+	public function enforce(CodedValueWrite $write): void {
+		$this->refuse(errors: $this->collectViolations(write: $write));
+	}//end enforce()
+
+	/**
+	 * Throw the refusals, when there are any.
+	 *
+	 * @param array<string,string> $errors The refusals keyed by property name.
+	 *
+	 * @return void
+	 *
+	 * @throws CodedValueException When at least one coded value is refused.
+	 */
+	private function refuse(array $errors): void {
 		if ($errors === []) {
 			return;
 		}
@@ -90,7 +101,7 @@ class CodedValueGuard {
 			message: implode(' ', array_values($errors)),
 			errors: $errors
 		);
-	}//end enforce()
+	}//end refuse()
 
 	/**
 	 * Every refusal the object's coded values earn, keyed by property name.
@@ -99,204 +110,106 @@ class CodedValueGuard {
 	 * rather than refuse (a preview, a revalidation sweep) reads the same
 	 * list without catching an exception to get it.
 	 *
-	 * @param array<string,mixed> $object The submitted object data.
-	 * @param Schema $schema The schema being written against.
-	 * @param DateTimeInterface|null $at The instant to judge windows at; now when null.
+	 * @param CodedValueWrite $write The submitted object data, its schema and the instant to judge windows at.
 	 *
 	 * @return array<string,string> The refusals keyed by property name.
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function collectViolations(array $object, Schema $schema, ?DateTimeInterface $at = null): array {
-		$declarations = $this->declarationFactory->fromProperties(properties: ($schema->getProperties() ?? []));
+	public function collectViolations(CodedValueWrite $write): array {
+		$declarations = $this->declarationsOf(schema: $write->schema);
 		if ($declarations === []) {
 			return [];
 		}
 
-		$instant = ($at ?? new DateTimeImmutable());
-		$errors = [];
-		$heldBySchemeGroup = [];
-
-		foreach ($declarations as $property => $declaration) {
-			$this->collectPropertyViolations(
-				property: $property,
-				declaration: $declaration,
-				object: $object,
-				instant: $instant,
-				heldBySchemeGroup: $heldBySchemeGroup,
-				errors: $errors
-			);
-		}//end foreach
-
-		return $errors;
+		$check = new CodedValueCheck(object: $write->object, asOf: $write->at);
+		return $this->violationsOf(declarations: $declarations, check: $check);
 	}//end collectViolations()
 
 	/**
-	 * Collect the refusals a single coded property's submitted values earn.
+	 * The coded declarations of a schema's properties, keyed by property name.
+	 *
+	 * @param Schema $schema The schema being written against.
+	 *
+	 * @return array<string,CodedPropertyDeclaration> The declarations.
+	 */
+	private function declarationsOf(Schema $schema): array {
+		return $this->declarationFactory->fromProperties(properties: ($schema->getProperties() ?? []));
+	}//end declarationsOf()
+
+	/**
+	 * The refusal of every coded property that earns one, keyed by property name.
+	 *
+	 * @param array<string,CodedPropertyDeclaration> $declarations The schema's coded declarations.
+	 * @param CodedValueCheck                        $check        The pass over the submitted object.
+	 *
+	 * @return array<string,string> The refusals keyed by property name.
+	 */
+	private function violationsOf(array $declarations, CodedValueCheck $check): array {
+		$errors = [];
+		foreach ($declarations as $property => $declaration) {
+			$violation = $this->propertyViolation(subject: $check->subjectFor(property: $property, declaration: $declaration));
+			if ($violation !== null) {
+				$errors[$property] = $violation;
+			}
+		}
+
+		return $errors;
+	}//end violationsOf()
+
+	/**
+	 * The refusal a single coded property's submitted values earn, or null.
 	 *
 	 * Extracted from {@see self::collectViolations()} so the per-property
 	 * guards (present, non-empty, scheme readable) read as one block and the
 	 * per-value judgement lives behind a single call.
 	 *
-	 * @param string                    $property          The property name being judged.
-	 * @param CodedPropertyDeclaration  $declaration       The property's coded declaration.
-	 * @param array<string,mixed>       $object            The submitted object data.
-	 * @param DateTimeInterface         $instant           The instant to judge windows at.
-	 * @param array<string,array<string,string>> $heldBySchemeGroup Groups already held, by scheme+group key.
-	 * @param array<string,string>      $errors            The refusals accumulated so far, keyed by property.
+	 * @param CodedValueSubject $subject The property being judged.
 	 *
-	 * @return void
+	 * @return string|null The refusal message, or null when the values are allowed.
 	 */
-	private function collectPropertyViolations(
-		string $property,
-		CodedPropertyDeclaration $declaration,
-		array $object,
-		DateTimeInterface $instant,
-		array &$heldBySchemeGroup,
-		array &$errors
-	): void {
-		if (array_key_exists($property, $object) === false) {
-			return;
-		}
-
-		$values = $this->valuesOf(value: $object[$property]);
+	private function propertyViolation(CodedValueSubject $subject): ?string {
+		$values = $this->valuesOf(value: $subject->submitted());
 		if ($values === []) {
-			return;
+			return null;
 		}
 
-		$conceptsByUri = $this->concepts->conceptsOf(schemeUri: $declaration->scheme);
+		$conceptsByUri = $this->scheme->concepts->conceptsOf(schemeUri: $subject->declaration->scheme);
 		if ($conceptsByUri === []) {
 			// An unreadable or unseeded scheme refuses nothing: a
 			// vocabulary outage must not become a write outage.
-			return;
+			return null;
 		}
 
+		return $this->lastViolation(subject: $subject->withConcepts(conceptsByUri: $conceptsByUri), values: $values);
+	}//end propertyViolation()
+
+	/**
+	 * Judge every value of a property in order; the last refusal stands.
+	 *
+	 * Every value is judged even after a refusal, so the exclusive-group
+	 * bookkeeping sees each one.
+	 *
+	 * @param CodedValueSubject $subject The property being judged, with its scheme's concepts.
+	 * @param array<int,string> $values  The submitted values.
+	 *
+	 * @return string|null The last refusal message, or null when every value is allowed.
+	 */
+	private function lastViolation(CodedValueSubject $subject, array $values): ?string {
+		$violation = null;
 		foreach ($values as $value) {
-			$concept = $this->concepts->resolve(
-				value: $value,
-				schemeUri: $declaration->scheme,
-				store: $declaration->store
-			);
-			if ($concept === null) {
-				// Membership of the scheme is the dependency change's
-				// refusal (`property-code-list-from-concept-scheme`), not
-				// this one's. Saying it twice would give one mistake two
-				// different messages.
-				continue;
+			// An unresolved value is skipped: scheme membership is refused by
+			// `property-code-list-from-concept-scheme`, and saying it twice
+			// would give one mistake two different messages.
+			$concept = $this->resolve(declaration: $subject->declaration, value: $value);
+			if ($concept !== null) {
+				$match = $subject->matched(value: $value, concept: $concept);
+				$violation = ($this->refusals->violationFor(subject: $subject, match: $match) ?? $violation);
 			}
-
-			$violation = $this->violationForConcept(
-				property: $property,
-				declaration: $declaration,
-				concept: $concept,
-				value: $value,
-				conceptsByUri: $conceptsByUri,
-				instant: $instant,
-				heldBySchemeGroup: $heldBySchemeGroup
-			);
-			if ($violation !== null) {
-				$errors[$property] = $violation;
-			}
-		}//end foreach
-	}//end collectPropertyViolations()
-
-	/**
-	 * The refusal one resolved concept earns on a property, or null when none.
-	 *
-	 * Runs the three write refusals in order — validity window, leaf-only,
-	 * exclusive group — and returns the first message that applies. The
-	 * exclusive-group bookkeeping is delegated so this method stays a plain
-	 * sequence of guards.
-	 *
-	 * @param string                   $property          The property name being judged.
-	 * @param CodedPropertyDeclaration $declaration       The property's coded declaration.
-	 * @param array<string,mixed>      $concept           The resolved concept's data.
-	 * @param string                   $value             The submitted value that resolved it.
-	 * @param array<string,mixed>      $conceptsByUri     The scheme's concepts, keyed by uri.
-	 * @param DateTimeInterface        $instant           The instant to judge windows at.
-	 * @param array<string,array<string,string>> $heldBySchemeGroup Groups already held, by scheme+group key.
-	 *
-	 * @return string|null The refusal message, or null when the value is allowed.
-	 */
-	private function violationForConcept(
-		string $property,
-		CodedPropertyDeclaration $declaration,
-		array $concept,
-		string $value,
-		array $conceptsByUri,
-		DateTimeInterface $instant,
-		array &$heldBySchemeGroup
-	): ?string {
-		if ($this->lifecycle->isWithinWindow(concept: $concept, at: $instant) === false) {
-			return sprintf(
-				'The value "%s" on "%s" is outside its validity window (%s) and can no longer be chosen.',
-				$this->hierarchy->labelOf(concept: $concept, language: 'nl'),
-				$property,
-				$this->lifecycle->describeWindow(concept: $concept)
-			);
 		}
 
-		$uri = (string)($concept['uri'] ?? $value);
-		if ($declaration->leafOnly === true
-			&& $this->hierarchy->isLeaf(uri: $uri, conceptsByUri: $conceptsByUri) === false
-		) {
-			return sprintf(
-				'The value "%s" on "%s" has narrower values under it, and this field accepts only the most specific value.',
-				$this->hierarchy->labelOf(concept: $concept, language: 'nl'),
-				$property
-			);
-		}
-
-		return $this->exclusiveGroupViolation(
-			property: $property,
-			declaration: $declaration,
-			concept: $concept,
-			heldBySchemeGroup: $heldBySchemeGroup
-		);
-	}//end violationForConcept()
-
-	/**
-	 * The refusal an exclusive-group clash earns, recording the first holder.
-	 *
-	 * A concept with no exclusive group refuses nothing. The first concept
-	 * seen for a scheme+group is remembered; a later one in the same group is
-	 * the clash this refuses.
-	 *
-	 * @param string                   $property          The property name being judged.
-	 * @param CodedPropertyDeclaration $declaration       The property's coded declaration.
-	 * @param array<string,mixed>      $concept           The resolved concept's data.
-	 * @param array<string,array<string,string>> $heldBySchemeGroup Groups already held, by scheme+group key.
-	 *
-	 * @return string|null The refusal message, or null when nothing clashes.
-	 */
-	private function exclusiveGroupViolation(
-		string $property,
-		CodedPropertyDeclaration $declaration,
-		array $concept,
-		array &$heldBySchemeGroup
-	): ?string {
-		$group = $this->lifecycle->exclusiveGroupOf(concept: $concept);
-		if ($group === null) {
-			return null;
-		}
-
-		$key = $declaration->scheme . "\0" . $group;
-		$already = ($heldBySchemeGroup[$key] ?? null);
-		if ($already === null) {
-			$heldBySchemeGroup[$key] = [
-				'property' => $property,
-				'label' => $this->hierarchy->labelOf(concept: $concept, language: 'nl'),
-			];
-			return null;
-		}
-
-		return sprintf(
-			'The values "%s" and "%s" both belong to the group "%s", of which only one may be held.',
-			$already['label'],
-			$this->hierarchy->labelOf(concept: $concept, language: 'nl'),
-			$group
-		);
-	}//end exclusiveGroupViolation()
+		return $violation;
+	}//end lastViolation()
 
 	/**
 	 * The rolled-up scores a schema's coded properties declare, keyed by the
@@ -310,31 +223,48 @@ class CodedValueGuard {
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function rolledUpScores(array $object, Schema $schema): array {
-		$declarations = $this->declarationFactory->fromProperties(properties: ($schema->getProperties() ?? []));
 		$scores = [];
-
-		foreach ($declarations as $property => $declaration) {
-			if ($declaration->scoreProperty === null || array_key_exists($property, $object) === false) {
-				continue;
+		foreach ($this->declarationsOf(schema: $schema) as $property => $declaration) {
+			if ($declaration->scoreProperty !== null && array_key_exists($property, $object) === true) {
+				$held = $this->heldConcepts(declaration: $declaration, value: $object[$property]);
+				$scores[$declaration->scoreProperty] = $this->scheme->lifecycle->rollUpWeights(concepts: $held);
 			}
-
-			$held = [];
-			foreach ($this->valuesOf(value: $object[$property]) as $value) {
-				$concept = $this->concepts->resolve(
-					value: $value,
-					schemeUri: $declaration->scheme,
-					store: $declaration->store
-				);
-				if ($concept !== null) {
-					$held[] = $concept;
-				}
-			}
-
-			$scores[$declaration->scoreProperty] = $this->lifecycle->rollUpWeights(concepts: $held);
-		}//end foreach
+		}
 
 		return $scores;
 	}//end rolledUpScores()
+
+	/**
+	 * The concepts a property's submitted values resolve to, skipping unresolved ones.
+	 *
+	 * @param CodedPropertyDeclaration $declaration The property's coded declaration.
+	 * @param mixed                    $value       The submitted value, single or multi.
+	 *
+	 * @return array<int,array<string,mixed>> The resolved concepts.
+	 */
+	private function heldConcepts(CodedPropertyDeclaration $declaration, mixed $value): array {
+		$held = [];
+		foreach ($this->valuesOf(value: $value) as $stored) {
+			$concept = $this->resolve(declaration: $declaration, value: $stored);
+			if ($concept !== null) {
+				$held[] = $concept;
+			}
+		}
+
+		return $held;
+	}//end heldConcepts()
+
+	/**
+	 * Resolve one stored value against a declaration's scheme.
+	 *
+	 * @param CodedPropertyDeclaration $declaration The property's coded declaration.
+	 * @param string                   $value       The stored value.
+	 *
+	 * @return array<string,mixed>|null The concept, or null when the scheme does not hold it.
+	 */
+	private function resolve(CodedPropertyDeclaration $declaration, string $value): ?array {
+		return $this->scheme->concepts->resolve(value: $value, declaration: $declaration);
+	}//end resolve()
 
 	/**
 	 * Normalise a coded property's value to a list of stored strings.
@@ -345,24 +275,13 @@ class CodedValueGuard {
 	 */
 	private function valuesOf(mixed $value): array {
 		if (is_string($value) === true) {
-			if ($value === '') {
-				return [];
-			}
-
-			return [$value];
+			$value = [$value];
 		}
 
 		if (is_array($value) === false) {
 			return [];
 		}
 
-		$values = [];
-		foreach ($value as $entry) {
-			if (is_string($entry) === true && $entry !== '') {
-				$values[] = $entry;
-			}
-		}
-
-		return $values;
+		return array_values(array_filter($value, static fn (mixed $entry): bool => is_string($entry) === true && $entry !== ''));
 	}//end valuesOf()
 }//end class

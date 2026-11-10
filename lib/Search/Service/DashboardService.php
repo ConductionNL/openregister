@@ -24,10 +24,7 @@
 namespace OCA\OpenRegister\Search\Service;
 
 use Exception;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\WebhookLogMapper;
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -68,88 +65,21 @@ class DashboardService {
 
 
 	/**
-	 * Object entity mapper
-	 *
-	 * Handles database operations for object entities.
-	 *
-	 * @var MagicMapperInterface Object entity mapper instance
-	 */
-	private readonly MagicMapperInterface $objectMapper;
-
-	/**
-	 * Audit trail mapper
-	 *
-	 * Handles database operations for audit trail entries.
-	 *
-	 * @var AuditTrailMapperInterface Audit trail mapper instance
-	 */
-	private readonly AuditTrailMapperInterface $auditTrailMapper;
-
-	/**
-	 * Webhook log mapper
-	 *
-	 * Handles database operations for webhook log entries.
-	 *
-	 * @var WebhookLogMapper Webhook log mapper instance
-	 */
-	private readonly WebhookLogMapper $webhookLogMapper;
-
-	/**
-	 * Register mapper
-	 *
-	 * Handles database operations for register entities.
-	 *
-	 * @var RegisterMapperInterface Register mapper instance
-	 */
-	private readonly RegisterMapperInterface $registerMapper;
-
-	/**
-	 * Logger
-	 *
-	 * Used for logging dashboard operations and errors.
-	 *
-	 * @var LoggerInterface Logger instance
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * Schema mapper
-	 *
-	 * Handles database operations for schema entities.
-	 *
-	 * @var DashboardSizes Size recalculation
-	 */
-	private readonly DashboardSizes $sizes;
-
-	/**
 	 * Constructor for DashboardService
 	 *
 	 * Initializes service with required mappers and logger for dashboard operations.
 	 *
-	 * @param MagicMapperInterface $objectMapper Object entity mapper for object statistics
-	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for log statistics
-	 * @param WebhookLogMapper $webhookLogMapper Webhook log mapper for webhook statistics
-	 * @param RegisterMapperInterface $registerMapper Register mapper for register operations
-	 * @param DashboardSizes $sizes Size recalculation
-	 * @param LoggerInterface $logger Logger instance for error tracking
+	 * @param DashboardMappers $mappers The magic table, audit trail, webhook log and register mappers
+	 * @param DashboardSizes   $sizes   Size recalculation
+	 * @param LoggerInterface  $logger  Logger instance for error tracking
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		MagicMapperInterface $objectMapper,
-		AuditTrailMapperInterface $auditTrailMapper,
-		WebhookLogMapper $webhookLogMapper,
-		RegisterMapperInterface $registerMapper,
-		DashboardSizes $sizes,
-		LoggerInterface $logger,
+		private readonly DashboardMappers $mappers,
+		private readonly DashboardSizes $sizes,
+		private readonly LoggerInterface $logger,
 	) {
-		// Store dependencies for use in service methods.
-		$this->objectMapper = $objectMapper;
-		$this->auditTrailMapper = $auditTrailMapper;
-		$this->webhookLogMapper = $webhookLogMapper;
-		$this->registerMapper = $registerMapper;
-		$this->sizes = $sizes;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -164,9 +94,10 @@ class DashboardService {
 	 */
 	private function getStats(?int $registerId = null, ?int $schemaId = null): array {
 		try {
+			$scope = new StatisticsScope(registerId: $registerId, schemaId: $schemaId);
 			return [
-				'objects' => $this->objectTotals(stats: $this->objectMapper->getStatistics(registerId: $registerId, schemaId: $schemaId)),
-				'logs' => $this->sizeTotals(stats: $this->auditTrailMapper->getStatistics(registerId: $registerId, schemaId: $schemaId)),
+				'objects' => $this->objectTotals(stats: $this->mappers->catalog->tables()->getStatistics(scope: $scope)),
+				'logs' => $this->sizeTotals(stats: $this->mappers->auditTrailMapper->getStatistics(registerId: $registerId, schemaId: $schemaId)),
 				'webhookLogs' => $this->webhookLogTotals(),
 				'files' => self::ZERO_TOTALS,
 			];
@@ -182,7 +113,7 @@ class DashboardService {
 	 * @return array<string, mixed>
 	 */
 	private function webhookLogTotals(): array {
-		$webhookLogStats = $this->webhookLogMapper->getStatistics(webhookId: 0);
+		$webhookLogStats = $this->mappers->webhookLogMapper->getStatistics(webhookId: 0);
 		return ['total' => $webhookLogStats['total'] ?? 0, 'size' => 0];
 	}//end webhookLogTotals()
 
@@ -197,8 +128,8 @@ class DashboardService {
 		try {
 			$valid = $this->validCombinations();
 			return [
-				'objects' => $this->objectTotals(stats: $this->objectMapper->getStatistics(registerId: null, schemaId: null, exclude: $valid)),
-				'logs' => $this->sizeTotals(stats: $this->auditTrailMapper->getStatistics(registerId: null, schemaId: null, exclude: $valid)),
+				'objects' => $this->objectTotals(stats: $this->mappers->catalog->tables()->getStatistics(scope: new StatisticsScope(exclude: $valid))),
+				'logs' => $this->sizeTotals(stats: $this->mappers->auditTrailMapper->getStatistics(registerId: null, schemaId: null, exclude: $valid)),
 				'files' => self::ZERO_TOTALS,
 			];
 		} catch (Throwable $e) {
@@ -214,8 +145,8 @@ class DashboardService {
 	 */
 	private function validCombinations(): array {
 		$combinations = [];
-		foreach ($this->registerMapper->findAll() as $register) {
-			foreach ($this->registerMapper->getSchemasByRegisterId($register->getId()) as $schema) {
+		foreach ($this->mappers->catalog->registers()->findAll() as $register) {
+			foreach ($this->mappers->catalog->registers()->getSchemasByRegisterId($register->getId()) as $schema) {
 				$combinations[] = ['register' => $register->getId(), 'schema' => $schema->getId()];
 			}
 		}
@@ -259,7 +190,7 @@ class DashboardService {
 	 * @return DashboardAuditReads
 	 */
 	public function auditReads(): DashboardAuditReads {
-		return new DashboardAuditReads(auditTrailMapper: $this->auditTrailMapper, logger: $this->logger);
+		return new DashboardAuditReads(auditTrailMapper: $this->mappers->auditTrailMapper, logger: $this->logger);
 	}//end auditReads()
 
 	/**
@@ -270,7 +201,7 @@ class DashboardService {
 	 * @return array<int, array<string, mixed>> The dashboard entries.
 	 */
 	private function dashboardEntries(DashboardScope $scope): array {
-		$registers = $this->registerMapper->findAll(filters: $scope->registerFilters());
+		$registers = $this->mappers->catalog->registers()->findAll(filters: $scope->registerFilters());
 
 		$result = [$this->totalsEntry(scope: $scope)];
 		foreach ($registers as $register) {
@@ -359,7 +290,7 @@ class DashboardService {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
 	 */
 	private function buildRegisterEntry(\OCA\OpenRegister\Db\Register $register, ?int $schemaId): array {
-		$schemas = $this->registerMapper->getSchemasByRegisterId($register->getId());
+		$schemas = $this->mappers->catalog->registers()->getSchemasByRegisterId($register->getId());
 
 		$registerArray = $register->jsonSerialize();
 		$registerArray['stats'] = $this->getStats(registerId: $register->getId());
@@ -402,7 +333,7 @@ class DashboardService {
 	 */
 	public function getObjectsByRegisterChartData(?int $registerId = null, ?int $schemaId = null): array {
 		try {
-			return $this->objectMapper->getRegisterChartData(registerId: $registerId, schemaId: $schemaId);
+			return $this->mappers->catalog->tables()->getRegisterChartData(registerId: $registerId, schemaId: $schemaId);
 		} catch (Exception $e) {
 			$this->logFailure(what: 'objects by register chart data', error: $e);
 			return self::EMPTY_CHART;
@@ -423,7 +354,7 @@ class DashboardService {
 	 */
 	public function getObjectsBySchemaChartData(?int $registerId = null, ?int $schemaId = null): array {
 		try {
-			return $this->objectMapper->getSchemaChartData(registerId: $registerId, schemaId: $schemaId);
+			return $this->mappers->catalog->tables()->getSchemaChartData(registerId: $registerId, schemaId: $schemaId);
 		} catch (Exception $e) {
 			$this->logFailure(what: 'objects by schema chart data', error: $e);
 			return self::EMPTY_CHART;
@@ -445,7 +376,7 @@ class DashboardService {
 	 */
 	public function getObjectsBySizeChartData(?int $registerId = null, ?int $schemaId = null): array {
 		try {
-			return $this->objectMapper->getSizeDistributionChartData(registerId: $registerId, schemaId: $schemaId);
+			return $this->mappers->catalog->tables()->getSizeDistributionChartData(registerId: $registerId, schemaId: $schemaId);
 		} catch (Exception $e) {
 			$this->logFailure(what: 'objects by size chart data', error: $e);
 			return self::EMPTY_CHART;

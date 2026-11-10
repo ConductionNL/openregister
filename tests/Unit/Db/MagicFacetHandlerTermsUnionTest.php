@@ -36,11 +36,14 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
+use Psr\Container\ContainerInterface;
 
 /**
  * Every statement a union terms facet prepares, and the facet built from the rows.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicFacetFieldLabel
  * @uses \OCA\OpenRegister\Formats\UuidFormat
  * @uses   \OCA\OpenRegister\Db\MagicMapper\FacetLabelLookup
  * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitReveal
@@ -164,12 +167,18 @@ class MagicFacetHandlerTermsUnionTest extends TestCase {
 		$config = $this->createMock(IConfig::class);
 		$config->method('getSystemValue')->willReturn('nc_');
 
+		$services  = [ObjectNameCacheInterface::class => $cacheHandler, IConfig::class => $config];
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('has')->willReturnCallback(fn (string $id): bool => isset($services[$id]));
+		$container->method('get')->willReturnCallback(
+			fn (string $id): object => $services[$id] ?? throw new RuntimeException('Not in this test container: ' . $id)
+		);
+
 		return new MagicFacetHandler(
 			db: $db,
 			logger: $logger,
-			cacheHandler: $cacheHandler,
 			searchHandler: $searchHandler,
-			config: $config
+			container: $container
 		);
 	}//end handler()
 

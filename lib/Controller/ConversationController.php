@@ -26,14 +26,18 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Controller\Support\ChatFamilyControllerInterface;
 use OCA\OpenRegister\Controller\Support\ConversationControllerServices;
+use OCA\OpenRegister\Controller\Support\ConversationChange;
 use OCA\OpenRegister\Controller\Support\ConversationFailure;
-use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Db\FeedbackMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\ConversationMapperInterface;
 use OCA\OpenRegister\Mcp\Db\Conversation;
-use OCA\OpenRegister\Mcp\Db\ConversationMapper;
-use OCA\OpenRegister\Db\FeedbackMapper;
 use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
-use OCA\OpenRegister\Mcp\Service\ChatService;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -57,14 +61,14 @@ use Symfony\Component\Uid\Uuid;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class ConversationController extends Controller {
+class ConversationController extends Controller implements ChatFamilyControllerInterface {
 
 	/**
 	 * Conversation mapper
 	 *
-	 * @var ConversationMapper
+	 * @var ConversationMapperInterface
 	 */
-	private ConversationMapper $conversationMapper;
+	private ConversationMapperInterface $conversationMapper;
 
 	/**
 	 * Message mapper
@@ -76,16 +80,16 @@ class ConversationController extends Controller {
 	/**
 	 * Feedback mapper
 	 *
-	 * @var FeedbackMapper
+	 * @var FeedbackMapperInterface
 	 */
-	private FeedbackMapper $feedbackMapper;
+	private FeedbackMapperInterface $feedbackMapper;
 
 	/**
 	 * Agent mapper
 	 *
-	 * @var AgentMapper
+	 * @var AgentMapperInterface
 	 */
-	private AgentMapper $agentMapper;
+	private AgentMapperInterface $agentMapper;
 
 	/**
 	 * Organisation service
@@ -97,9 +101,9 @@ class ConversationController extends Controller {
 	/**
 	 * Chat service
 	 *
-	 * @var ChatService
+	 * @var ChatServiceInterface
 	 */
-	private ChatService $chatService;
+	private ChatServiceInterface $chatService;
 
 	/**
 	 * Logger
@@ -118,18 +122,12 @@ class ConversationController extends Controller {
 	/**
 	 * Constructor
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request Request object
 	 * @param ConversationControllerServices $services The conversation controller services.
 	 * @param string $userId User ID
 	 */
-	public function __construct(
-		string $appName,
-		IRequest $request,
-		ConversationControllerServices $services,
-		string $userId,
-	) {
-		parent::__construct(appName: $appName, request: $request);
+	public function __construct(IRequest $request, ConversationControllerServices $services, string $userId) {
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->conversationMapper = $services->mappers->conversationMapper;
 		$this->messageMapper = $services->mappers->messageMapper;
 		$this->feedbackMapper = $services->mappers->feedbackMapper;
@@ -166,84 +164,87 @@ class ConversationController extends Controller {
 	 */
 	public function index(): JSONResponse {
 		try {
-			// Get active organisation.
-			$organisation = $this->organisationService->getActiveOrganisation();
-			$organisationUuid = $organisation?->getUuid();
-
-			// Get query parameters.
+			$organisationUuid = $this->organisationService->getActiveOrganisation()?->getUuid();
 			$params = $this->request->getParams();
-			$limit = (int)($params['limit'] ?? $params['_limit'] ?? 50);
-			$offset = (int)($params['offset'] ?? $params['_offset'] ?? 0);
-			$showDeleted = filter_var($params['_deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
-
-			// Initialize variables before conditional assignment.
-			$conversations = [];
-			$total = 0;
-
-			// Fetch conversations based on deleted filter.
-			if ($showDeleted === true) {
-				// Fetch only deleted/archived conversations.
-				$conversations = $this->conversationMapper->findDeletedByUser(
-					userId: $this->userId,
-					organisation: $organisationUuid,
-					limit: $limit,
-					offset: $offset
-				);
-
-				// Count total archived conversations.
-				$total = $this->conversationMapper->countDeletedByUser(
-					userId: $this->userId,
-					organisation: $organisationUuid
-				);
+			$page   = $this->paging(params: $params);
+			if (filter_var($params['_deleted'] ?? false, FILTER_VALIDATE_BOOLEAN) === true) {
+				$list = $this->listDeletedConversations(organisationUuid: $organisationUuid, page: $page);
+				return new JSONResponse(data: $list + $page, statusCode: 200);
 			}
 
-			if ($showDeleted === false) {
-				// Fetch only active (non-deleted) conversations.
-				$conversations = $this->conversationMapper->findByUser(
-					userId: $this->userId,
-					organisation: $organisationUuid,
-					includeDeleted: false,
-					limit: $limit,
-					offset: $offset
-				);
-
-				// Count total active conversations.
-				$total = $this->conversationMapper->countByUser(
-					userId: $this->userId,
-					organisation: $organisationUuid,
-					includeDeleted: false
-				);
-			}
-
-			return new JSONResponse(
-				data: [
-					'results' => array_map(fn (Conversation $conv) => $conv->jsonSerialize(), $conversations),
-					'total' => $total,
-					'limit' => $limit,
-					'offset' => $offset,
-				],
-				statusCode: 200
-			);
+			$list = $this->listActiveConversations(organisationUuid: $organisationUuid, page: $page);
+			return new JSONResponse(data: $list + $page, statusCode: 200);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ConversationController] Failed to list conversations',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to fetch conversations',
-					'message' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
-		}//end try
+			$this->logFailure(log: 'Failed to list conversations', e: $e);
+			return $this->failure(error: 'Failed to fetch conversations', e: $e);
+		}
 	}//end index()
+
+	/**
+	 * The `limit` (default 50) and `offset` of a list request; the
+	 * underscored spellings are read when the plain ones are absent.
+	 *
+	 * @param array<string, mixed> $params The request parameters
+	 *
+	 * @return array{limit: int, offset: int}
+	 */
+	private function paging(array $params): array {
+		return [
+			'limit' => (int)($params['limit'] ?? $params['_limit'] ?? 50),
+			'offset' => (int)($params['offset'] ?? $params['_offset'] ?? 0),
+		];
+	}//end paging()
+
+	/**
+	 * One page of the current user's archived (soft-deleted) conversations in an organisation.
+	 *
+	 * @param string|null                   $organisationUuid The active organisation
+	 * @param array{limit: int, offset: int} $page             The page
+	 *
+	 * @return array{results: array, total: int}
+	 */
+	private function listDeletedConversations(?string $organisationUuid, array $page): array {
+		$conversations = $this->conversationMapper->findDeletedByUser(
+			userId: $this->userId,
+			organisation: $organisationUuid,
+			limit: $page['limit'],
+			offset: $page['offset']
+		);
+		$total         = $this->conversationMapper->countDeletedByUser(userId: $this->userId, organisation: $organisationUuid);
+		return ['results' => $this->serialized(conversations: $conversations), 'total' => $total];
+	}//end listDeletedConversations()
+
+	/**
+	 * One page of the current user's active conversations in an organisation.
+	 *
+	 * @param string|null                   $organisationUuid The active organisation
+	 * @param array{limit: int, offset: int} $page             The page
+	 *
+	 * @return array{results: array, total: int}
+	 */
+	private function listActiveConversations(?string $organisationUuid, array $page): array {
+		$conversations = $this->conversationMapper->findByUser(
+			userId: $this->userId,
+			organisation: $organisationUuid,
+			includeDeleted: false,
+			limit: $page['limit'],
+			offset: $page['offset']
+		);
+		$total         = $this->conversationMapper->countByUser(userId: $this->userId, organisation: $organisationUuid, includeDeleted: false);
+
+		return ['results' => $this->serialized(conversations: $conversations), 'total' => $total];
+	}//end listActiveConversations()
+
+	/**
+	 * Serialize a list of conversations.
+	 *
+	 * @param array<Conversation> $conversations The conversations
+	 *
+	 * @return array The serialized conversations
+	 */
+	private function serialized(array $conversations): array {
+		return array_map(fn (Conversation $conv) => $conv->jsonSerialize(), $conversations);
+	}//end serialized()
 
 	/**
 	 * Get a single conversation (without messages)
@@ -269,24 +270,16 @@ class ConversationController extends Controller {
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function show(string $uuid): JSONResponse {
-		try {
-			$conversation = $this->conversationMapper->findByUuid($uuid);
-			$denied = $this->readDenied(conversation: $conversation);
-			if ($denied !== null) {
-				return $denied;
+		$failure = new ConversationFailure(uuid: $uuid, error: 'Failed to fetch conversation');
+		return $this->reading(
+			failure: $failure->loggedAs(message: 'Failed to get conversation'),
+			action: function (Conversation $conversation): JSONResponse {
+				// Without messages; the message count is read separately for efficiency.
+				$response = $conversation->jsonSerialize();
+				$response['messageCount'] = $this->messageMapper->countByConversation($conversation->getId());
+				return new JSONResponse(data: $response, statusCode: 200);
 			}
-
-			// Build response without messages; the message count is read separately for efficiency.
-			$response = $conversation->jsonSerialize();
-			$response['messageCount'] = $this->messageMapper->countByConversation($conversation->getId());
-
-			return new JSONResponse(data: $response, statusCode: 200);
-		} catch (DoesNotExistException $e) {
-			return $this->conversationNotFound();
-		} catch (\Exception $e) {
-			$failure = new ConversationFailure(uuid: $uuid, error: 'Failed to fetch conversation');
-			return $this->failed(failure: $failure->loggedAs(message: 'Failed to get conversation'), e: $e);
-		}//end try
+		);
 	}//end show()
 
 	/**
@@ -313,41 +306,81 @@ class ConversationController extends Controller {
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function messages(string $uuid): JSONResponse {
+		$failure = new ConversationFailure(uuid: $uuid, error: 'Failed to fetch messages');
+		return $this->reading(
+			failure: $failure->loggedAs(message: 'Failed to get messages'),
+			action: fn (Conversation $conversation): JSONResponse => $this->messagePage(conversation: $conversation)
+		);
+	}//end messages()
+
+	/**
+	 * One page of a conversation's messages.
+	 *
+	 * @param Conversation $conversation A conversation the caller may read
+	 *
+	 * @return JSONResponse The page
+	 */
+	private function messagePage(Conversation $conversation): JSONResponse {
+		$page     = $this->paging(params: $this->request->getParams());
+		$messages = $this->messageMapper->findByConversation(
+			conversationId: $conversation->getId(),
+			page: new ListQuery(limit: $page['limit'], offset: $page['offset'])
+		);
+		$total    = $this->messageMapper->countByConversation($conversation->getId());
+
+		return new JSONResponse(
+			data: ['results' => array_map(fn ($msg) => $msg->jsonSerialize(), $messages), 'total' => $total] + $page,
+			statusCode: 200
+		);
+	}//end messagePage()
+
+	/**
+	 * Run a read action on a conversation the caller may read.
+	 *
+	 * @param ConversationFailure $failure The failure to report when the action throws
+	 * @param callable            $action  The action, given the conversation
+	 *
+	 * @return JSONResponse The action's response, a refusal (403), not found (404) or the failure (500)
+	 */
+	private function reading(ConversationFailure $failure, callable $action): JSONResponse {
 		try {
-			$conversation = $this->conversationMapper->findByUuid($uuid);
-			$denied = $this->readDenied(conversation: $conversation);
+			$conversation = $this->conversationMapper->findByUuid($failure->uuid);
+			$denied       = $this->readDenied(conversation: $conversation);
 			if ($denied !== null) {
 				return $denied;
 			}
 
-			// Get query parameters for pagination.
-			$params = $this->request->getParams();
-			$limit = (int)($params['limit'] ?? $params['_limit'] ?? 50);
-			$offset = (int)($params['offset'] ?? $params['_offset'] ?? 0);
-
-			$messages = $this->messageMapper->findByConversation(
-				conversationId: $conversation->getId(),
-				limit: $limit,
-				offset: $offset
-			);
-			$total = $this->messageMapper->countByConversation($conversation->getId());
-
-			return new JSONResponse(
-				data: [
-					'results' => array_map(fn ($msg) => $msg->jsonSerialize(), $messages),
-					'total' => $total,
-					'limit' => $limit,
-					'offset' => $offset,
-				],
-				statusCode: 200
-			);
+			return $action($conversation);
 		} catch (DoesNotExistException $e) {
 			return $this->conversationNotFound();
 		} catch (\Exception $e) {
-			$failure = new ConversationFailure(uuid: $uuid, error: 'Failed to fetch messages');
-			return $this->failed(failure: $failure->loggedAs(message: 'Failed to get messages'), e: $e);
-		}//end try
-	}//end messages()
+			return $this->failed(failure: $failure, e: $e);
+		}
+	}//end reading()
+
+	/**
+	 * Run a write action on a conversation the caller may modify.
+	 *
+	 * @param ConversationChange $change The conversation, the verb its refusal names and the error its failure reports
+	 * @param callable           $action The action, given the conversation
+	 *
+	 * @return JSONResponse The action's response, a refusal (403), not found (404) or the failure (500)
+	 */
+	private function modifying(ConversationChange $change, callable $action): JSONResponse {
+		try {
+			$conversation = $this->conversationMapper->findByUuid($change->uuid);
+			$denied       = $this->modifyDenied(conversation: $conversation, message: $change->deniedMessage());
+			if ($denied !== null) {
+				return $denied;
+			}
+
+			return $action($conversation);
+		} catch (DoesNotExistException $e) {
+			return $this->conversationNotFound();
+		} catch (\Exception $e) {
+			return $this->failed(failure: $change->failure(), e: $e);
+		}
+	}//end modifying()
 
 	/**
 	 * Create a new conversation
@@ -383,90 +416,102 @@ class ConversationController extends Controller {
 	#[NoCSRFRequired]
 	public function create(): JSONResponse {
 		try {
-			// Get request data.
-			$data = $this->request->getParams();
-
-			// Get active organisation.
-			$organisation = $this->organisationService->getActiveOrganisation();
-
-			// Get agent ID (handle both agentId and agentUuid).
-			$agentId = null;
-			if (($data['agentId'] ?? null) !== null) {
-				$agentId = $data['agentId'];
-			} elseif (($data['agentUuid'] ?? null) !== null) {
-				// Look up agent by UUID to get ID.
-				try {
-					$agent = $this->agentMapper->findByUuid($data['agentUuid']);
-					$agentId = $agent->getId();
-				} catch (\Exception $e) {
-					// If agent not found, log and continue with null agentId.
-					$this->logger->warning(
-						message: '[ConversationController] Agent UUID not found',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'agentUuid' => $data['agentUuid'],
-						]
-					);
-				}
-			}
-
-			// Generate unique title if not provided.
-			$title = $data['title'] ?? null;
-			if ($title === null && $agentId !== null) {
-				$title = $this->chatService->ensureUniqueTitle(
-					baseTitle: 'New Conversation',
-					userId: $this->userId,
-					agentId: $agentId
-				);
-			}
-
-			// Create new conversation.
-			$conversation = new Conversation();
-			$conversation->setUuid(Uuid::v4()->toRfc4122());
-			$conversation->setUserId($this->userId);
-			$conversation->setOrganisation($organisation?->getUuid());
-			$conversation->setAgentId($agentId);
-			$conversation->setTitle($title);
-			$conversation->setMetadata($data['metadata'] ?? []);
-			$conversation->setCreated(new DateTime());
-			$conversation->setUpdated(new DateTime());
-
-			// Save to database.
-			$conversation = $this->conversationMapper->insert($conversation);
-
+			$data             = $this->request->getParams();
+			$organisationUuid = $this->organisationService->getActiveOrganisation()?->getUuid();
+			$conversation     = $this->conversationMapper->insert($this->newConversation(data: $data, organisationUuid: $organisationUuid));
 			$this->logger->info(
 				message: '[ConversationController] Conversation created',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $conversation->getUuid(),
-					'userId' => $this->userId,
-					'organisation' => $organisation?->getUuid(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $conversation->getUuid(),
+					'userId' => $this->userId, 'organisation' => $organisationUuid]
 			);
 
 			return new JSONResponse(data: $conversation->jsonSerialize(), statusCode: 201);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ConversationController] Failed to create conversation',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to create conversation',
-					'message' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
-		}//end try
+			$this->logFailure(log: 'Failed to create conversation', e: $e);
+			return $this->failure(error: 'Failed to create conversation', e: $e);
+		}
 	}//end create()
+
+	/**
+	 * A new conversation owned by the current user in the active
+	 * organisation; the request cannot set either.
+	 *
+	 * @param array<string, mixed> $data             The request parameters
+	 * @param string|null          $organisationUuid The active organisation
+	 *
+	 * @return Conversation The conversation, not yet inserted
+	 */
+	private function newConversation(array $data, ?string $organisationUuid): Conversation {
+		$agentId      = $this->requestedAgentId(data: $data);
+		$conversation = new Conversation();
+		$conversation->setUuid(Uuid::v4()->toRfc4122());
+		$conversation->setUserId($this->userId);
+		$conversation->setOrganisation($organisationUuid);
+		$conversation->setAgentId($agentId);
+		$conversation->setTitle($this->titleFor(data: $data, agentId: $agentId));
+		$conversation->setMetadata($data['metadata'] ?? []);
+		$conversation->setCreated(new DateTime());
+		$conversation->setUpdated(new DateTime());
+
+		return $conversation;
+	}//end newConversation()
+
+	/**
+	 * The agent of a new conversation: `agentId`, else the id of the agent
+	 * `agentUuid` names, else none.
+	 *
+	 * @param array<string, mixed> $data The request parameters
+	 *
+	 * @return mixed The agent id, or null
+	 */
+	private function requestedAgentId(array $data): mixed {
+		if (($data['agentId'] ?? null) !== null) {
+			return $data['agentId'];
+		}
+
+		if (($data['agentUuid'] ?? null) === null) {
+			return null;
+		}
+
+		return $this->agentIdByUuid(agentUuid: $data['agentUuid']);
+	}//end requestedAgentId()
+
+	/**
+	 * The id of the agent with a UUID; an unknown agent is logged and gives null.
+	 *
+	 * @param mixed $agentUuid The agent UUID
+	 *
+	 * @return int|null The agent id
+	 */
+	private function agentIdByUuid(mixed $agentUuid): ?int {
+		try {
+			return $this->agentMapper->findByUuid($agentUuid)->getId();
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[ConversationController] Agent UUID not found',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'agentUuid' => $agentUuid]
+			);
+			return null;
+		}
+	}//end agentIdByUuid()
+
+	/**
+	 * The title of a new conversation: the requested one, else a unique
+	 * default when there is an agent, else none.
+	 *
+	 * @param array<string, mixed> $data    The request parameters
+	 * @param mixed                $agentId The agent id, or null
+	 *
+	 * @return mixed The title, or null
+	 */
+	private function titleFor(array $data, mixed $agentId): mixed {
+		$title = $data['title'] ?? null;
+		if ($title !== null || $agentId === null) {
+			return $title;
+		}
+
+		return $this->chatService->ensureUniqueTitle(baseTitle: 'New Conversation', userId: $this->userId, agentId: $agentId);
+	}//end titleFor()
 
 	/**
 	 * Update a conversation (e.g., rename)
@@ -492,36 +537,39 @@ class ConversationController extends Controller {
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function update(string $uuid): JSONResponse {
-		try {
-			$conversation = $this->conversationMapper->findByUuid($uuid);
-			$denied = $this->modifyDenied(conversation: $conversation, message: 'You do not have permission to modify this conversation');
-			if ($denied !== null) {
-				return $denied;
-			}
-
-			$data = $this->request->getParams();
-
-			// SECURITY: Only update allowed fields to prevent tampering with immutable fields.
-			// Immutable fields (organisation, owner, userId, agentId, created) are NOT updated.
-			if (($data['title'] ?? null) !== null) {
-				$conversation->setTitle($data['title']);
-			}
-
-			if (($data['metadata'] ?? null) !== null) {
-				$conversation->setMetadata($data['metadata']);
-			}
-
-			$conversation->setUpdated(new DateTime());
-			$conversation = $this->conversationMapper->update($conversation);
-			$this->logged(message: 'Conversation updated', uuid: $uuid);
-
-			return new JSONResponse(data: $conversation->jsonSerialize(), statusCode: 200);
-		} catch (DoesNotExistException $e) {
-			return $this->conversationNotFound();
-		} catch (\Exception $e) {
-			return $this->failed(failure: new ConversationFailure(uuid: $uuid, error: 'Failed to update conversation'), e: $e);
-		}//end try
+		return $this->modifying(
+			change: new ConversationChange(uuid: $uuid, verb: 'modify', error: 'Failed to update conversation'),
+			action: fn (Conversation $conversation): JSONResponse => $this->saveUpdate(conversation: $conversation, uuid: $uuid)
+		);
 	}//end update()
+
+	/**
+	 * Apply the allowed fields of the request to a conversation and save it.
+	 *
+	 * SECURITY: only title and metadata change; organisation, owner, userId,
+	 * agentId and created are immutable.
+	 *
+	 * @param Conversation $conversation A conversation the caller may modify
+	 * @param string       $uuid         The conversation UUID, for the log
+	 *
+	 * @return JSONResponse The saved conversation
+	 */
+	private function saveUpdate(Conversation $conversation, string $uuid): JSONResponse {
+		$data = $this->request->getParams();
+		if (($data['title'] ?? null) !== null) {
+			$conversation->setTitle($data['title']);
+		}
+
+		if (($data['metadata'] ?? null) !== null) {
+			$conversation->setMetadata($data['metadata']);
+		}
+
+		$conversation->setUpdated(new DateTime());
+		$conversation = $this->conversationMapper->update($conversation);
+		$this->logged(message: 'Conversation updated', uuid: $uuid);
+
+		return new JSONResponse(data: $conversation->jsonSerialize(), statusCode: 200);
+	}//end saveUpdate()
 
 	/**
 	 * Soft delete a conversation
@@ -544,25 +592,18 @@ class ConversationController extends Controller {
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function destroy(string $uuid): JSONResponse {
-		try {
-			$conversation = $this->conversationMapper->findByUuid($uuid);
-			$denied = $this->modifyDenied(conversation: $conversation, message: 'You do not have permission to delete this conversation');
-			if ($denied !== null) {
-				return $denied;
-			}
+		return $this->modifying(
+			change: new ConversationChange(uuid: $uuid, verb: 'delete', error: 'Failed to delete conversation'),
+			action: function (Conversation $conversation) use ($uuid): JSONResponse {
+				// An already archived (soft-deleted) conversation is deleted permanently.
+				if ($conversation->getDeletedAt() !== null) {
+					$this->logged(message: 'Permanently deleting archived conversation', uuid: $uuid);
+					return $this->purge(conversation: $conversation, uuid: $uuid);
+				}
 
-			// An already archived (soft-deleted) conversation is deleted permanently.
-			if ($conversation->getDeletedAt() !== null) {
-				$this->logged(message: 'Permanently deleting archived conversation', uuid: $uuid);
-				return $this->purge(conversation: $conversation, uuid: $uuid);
+				return $this->archive(conversation: $conversation, uuid: $uuid);
 			}
-
-			return $this->archive(conversation: $conversation, uuid: $uuid);
-		} catch (DoesNotExistException $e) {
-			return $this->conversationNotFound();
-		} catch (\Exception $e) {
-			return $this->failed(failure: new ConversationFailure(uuid: $uuid, error: 'Failed to delete conversation'), e: $e);
-		}//end try
+		);
 	}//end destroy()
 
 	/**
@@ -589,22 +630,14 @@ class ConversationController extends Controller {
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function restore(string $uuid): JSONResponse {
-		try {
-			$conversation = $this->conversationMapper->findByUuid($uuid);
-			$denied = $this->modifyDenied(conversation: $conversation, message: 'You do not have permission to restore this conversation');
-			if ($denied !== null) {
-				return $denied;
+		return $this->modifying(
+			change: new ConversationChange(uuid: $uuid, verb: 'restore', error: 'Failed to restore conversation'),
+			action: function (Conversation $conversation) use ($uuid): JSONResponse {
+				$conversation = $this->conversationMapper->restore($conversation->getId());
+				$this->logged(message: 'Conversation restored', uuid: $uuid);
+				return new JSONResponse(data: $conversation->jsonSerialize(), statusCode: 200);
 			}
-
-			$conversation = $this->conversationMapper->restore($conversation->getId());
-			$this->logged(message: 'Conversation restored', uuid: $uuid);
-
-			return new JSONResponse(data: $conversation->jsonSerialize(), statusCode: 200);
-		} catch (DoesNotExistException $e) {
-			return $this->conversationNotFound();
-		} catch (\Exception $e) {
-			return $this->failed(failure: new ConversationFailure(uuid: $uuid, error: 'Failed to restore conversation'), e: $e);
-		}//end try
+		);
 	}//end restore()
 
 	/**
@@ -628,19 +661,10 @@ class ConversationController extends Controller {
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function destroyPermanent(string $uuid): JSONResponse {
-		try {
-			$conversation = $this->conversationMapper->findByUuid($uuid);
-			$denied = $this->modifyDenied(conversation: $conversation, message: 'You do not have permission to delete this conversation');
-			if ($denied !== null) {
-				return $denied;
-			}
-
-			return $this->purge(conversation: $conversation, uuid: $uuid);
-		} catch (DoesNotExistException $e) {
-			return $this->conversationNotFound();
-		} catch (\Exception $e) {
-			return $this->failed(failure: new ConversationFailure(uuid: $uuid, error: 'Failed to permanently delete conversation'), e: $e);
-		}//end try
+		return $this->modifying(
+			change: new ConversationChange(uuid: $uuid, verb: 'delete', error: 'Failed to permanently delete conversation'),
+			action: fn (Conversation $conversation): JSONResponse => $this->purge(conversation: $conversation, uuid: $uuid)
+		);
 	}//end destroyPermanent()
 
 	/**
@@ -801,4 +825,29 @@ class ConversationController extends Controller {
 
 		return new JSONResponse(data: ['error' => $failure->error, 'message' => $reason], statusCode: 500);
 	}//end failed()
+
+	/**
+	 * Log a failed action that has no conversation.
+	 *
+	 * @param string     $log The log message, without the controller prefix
+	 * @param \Exception $e   The failure
+	 *
+	 * @return void
+	 */
+	private function logFailure(string $log, \Exception $e): void {
+		$context = ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()];
+		$this->logger->error(message: '[ConversationController] ' . $log, context: $context);
+	}//end logFailure()
+
+	/**
+	 * The 500 for a failed action that has no conversation; the caller logged it.
+	 *
+	 * @param string     $error The error of the response
+	 * @param \Exception $e     The failure
+	 *
+	 * @return JSONResponse The error response
+	 */
+	private function failure(string $error, \Exception $e): JSONResponse {
+		return new JSONResponse(data: ['error' => $error, 'message' => $e->getMessage()], statusCode: 500);
+	}//end failure()
 }//end class

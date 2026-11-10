@@ -38,28 +38,15 @@
 
 			<template v-else>
 				<table class="mergeOperationsTable">
-					<thead>
-						<tr>
-							<th scope="col">
-								{{ t('openregister', 'Survivor') }}
-							</th>
-							<th scope="col">
-								{{ t('openregister', 'Merged from') }}
-							</th>
-							<th scope="col">
-								{{ t('openregister', 'Reason') }}
-							</th>
-							<th scope="col">
-								{{ t('openregister', 'Merged at') }}
-							</th>
-							<th scope="col">
-								{{ t('openregister', 'Status') }}
-							</th>
-							<th scope="col">
-								{{ t('openregister', 'Actions') }}
-							</th>
-						</tr>
-					</thead>
+					<TableHeadRow
+						:labels="[
+							t('openregister', 'Survivor'),
+							t('openregister', 'Merged from'),
+							t('openregister', 'Reason'),
+							t('openregister', 'Merged at'),
+							t('openregister', 'Status'),
+							t('openregister', 'Actions'),
+						]" />
 					<tbody>
 						<tr
 							v-for="operation in mergeOperations"
@@ -104,35 +91,12 @@
 						</tr>
 					</tbody>
 				</table>
-				<div
-					v-if="mergeOperationsTotal > mergeOperationsLimit"
-					class="pagination">
-					<NcButton
-						:disabled="mergeOperationsOffset === 0"
-						@click="previousPage">
-						{{ t('openregister', 'Previous') }}
-					</NcButton>
-					<span class="paginationInfo">
-						{{
-							t('openregister', 'Showing {from}-{to} of {total}', {
-								from: mergeOperationsOffset + 1,
-								to: Math.min(
-									mergeOperationsOffset + mergeOperationsLimit,
-									mergeOperationsTotal,
-								),
-								total: mergeOperationsTotal,
-							})
-						}}
-					</span>
-					<NcButton
-						:disabled="
-							mergeOperationsOffset + mergeOperationsLimit
-							>= mergeOperationsTotal
-						"
-						@click="nextPage">
-						{{ t('openregister', 'Next') }}
-					</NcButton>
-				</div>
+				<RangePager
+					:offset="mergeOperationsOffset"
+					:limit="mergeOperationsLimit"
+					:total="mergeOperationsTotal"
+					@previous="previousPage"
+					@next="nextPage" />
 			</template>
 		</div>
 	</NcAppContent>
@@ -146,6 +110,8 @@ import {
 	NcLoadingIcon,
 } from '@nextcloud/vue'
 import Merge from 'vue-material-design-icons/Merge.vue'
+import TableHeadRow from '../avg/TableHeadRow.vue'
+import RangePager from './RangePager.vue'
 import { qualityStore } from '../../store/store.js'
 
 /**
@@ -162,6 +128,8 @@ export default {
 	name: 'MergeOperationsIndex',
 
 	components: {
+		TableHeadRow,
+		RangePager,
 		NcAppContent,
 		NcEmptyContent,
 		NcLoadingIcon,
@@ -293,11 +261,7 @@ export default {
 <style scoped lang="scss">
 @use '../../styles/views.scss' as *;
 
-@include view-container-3;
-
-.viewHeader h1 {
-	margin-bottom: 4px;
-}
+@include view-container-3-subtitled;
 
 .mergeOperationsTable {
 	width: 100%;
@@ -305,7 +269,7 @@ export default {
 	margin-top: 16px;
 }
 
-.mergeOperationsTable th,
+.mergeOperationsTable :deep(th),
 .mergeOperationsTable td {
 	text-align: left;
 	padding: 8px;

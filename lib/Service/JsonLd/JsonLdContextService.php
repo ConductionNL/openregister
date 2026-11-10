@@ -38,7 +38,7 @@ use OCP\IURLGenerator;
  *
  * @spec openspec/specs/json-ld-output/spec.md
  */
-class JsonLdContextService {
+class JsonLdContextService implements JsonLdContextServiceInterface {
 
 	/**
 	 * The OpenRegister metadata namespace IRI. Used for the `or:` prefix that
@@ -153,17 +153,41 @@ class JsonLdContextService {
 		// Explicit `implements` list is authoritative; keep only absolute IRIs.
 		$implements = ($configuration['implements'] ?? null);
 		if (is_array($implements) === true) {
-			$types = [];
-			foreach ($implements as $candidate) {
-				if ($this->isAbsoluteIri(value: $candidate) === true) {
-					$types[] = $candidate;
-				}
-			}
-
-			return array_values(array_unique($types));
+			return array_values(array_unique($this->absoluteIris(candidates: $implements)));
 		}
 
 		// Otherwise union the default markers.
+		return array_values(array_unique($this->defaultImplementedTypes(schema: $schema, configuration: $configuration)));
+	}//end getImplementedTypes()
+
+	/**
+	 * Keep the absolute-IRI entries of a list, in order.
+	 *
+	 * @param array<mixed> $candidates The candidate entries.
+	 *
+	 * @return array<int, string> The absolute IRIs.
+	 */
+	private function absoluteIris(array $candidates): array {
+		$types = [];
+		foreach ($candidates as $candidate) {
+			if ($this->isAbsoluteIri(value: $candidate) === true) {
+				$types[] = $candidate;
+			}
+		}
+
+		return $types;
+	}//end absoluteIris()
+
+	/**
+	 * The default implemented types: an absolute `jsonld.type`, then the
+	 * schema-level `x-schema-org` marker(s).
+	 *
+	 * @param Schema               $schema        The schema.
+	 * @param array<string, mixed> $configuration The schema configuration.
+	 *
+	 * @return array<int, string> The types, possibly with duplicates.
+	 */
+	private function defaultImplementedTypes(Schema $schema, array $configuration): array {
 		$types = [];
 
 		// (a) `jsonld.type` IRI, when absolute.
@@ -179,8 +203,8 @@ class JsonLdContextService {
 			$types[] = $iri;
 		}
 
-		return array_values(array_unique($types));
-	}//end getImplementedTypes()
+		return $types;
+	}//end defaultImplementedTypes()
 
 	/**
 	 * Expand a schema-level `x-schema-org` marker into absolute schema.org IRIs.
@@ -207,28 +231,66 @@ class JsonLdContextService {
 
 		$iris = [];
 		foreach ($entries as $entry) {
-			if (is_string($entry) === false || $entry === '') {
-				continue;
-			}
-
-			// Compact schema.org CURIE, e.g. `schema:Organization`.
-			if (str_starts_with($entry, 'schema:') === true) {
-				$term = substr($entry, strlen('schema:'));
-				if ($term !== '') {
-					$iris[] = 'https://schema.org/' . $term;
-				}
-
-				continue;
-			}
-
-			// Already an absolute IRI — accept as-is.
-			if ($this->isAbsoluteIri(value: $entry) === true) {
-				$iris[] = $entry;
+			$iri = $this->expandSchemaOrgEntry(entry: $entry);
+			if ($iri !== null) {
+				$iris[] = $iri;
 			}
 		}
 
 		return $iris;
 	}//end expandSchemaOrgMarker()
+
+	/**
+	 * Expand one `x-schema-org` entry: a `schema:` CURIE becomes a schema.org
+	 * IRI, an absolute IRI passes through, anything else is dropped.
+	 *
+	 * @param mixed $entry The marker entry.
+	 *
+	 * @return string|null The absolute IRI, or null when the entry is dropped.
+	 */
+	private function expandSchemaOrgEntry(mixed $entry): ?string {
+		if ($this->isNonEmptyString(value: $entry) === false) {
+			return null;
+		}
+
+		// Compact schema.org CURIE, e.g. `schema:Organization`.
+		if (str_starts_with($entry, 'schema:') === true) {
+			return $this->schemaOrgIri(term: substr($entry, strlen('schema:')));
+		}
+
+		// Already an absolute IRI — accept as-is.
+		if ($this->isAbsoluteIri(value: $entry) === true) {
+			return $entry;
+		}
+
+		return null;
+	}//end expandSchemaOrgEntry()
+
+	/**
+	 * Whether a value is a non-empty string.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool True for a string other than `''`.
+	 */
+	private function isNonEmptyString(mixed $value): bool {
+		return is_string($value) === true && $value !== '';
+	}//end isNonEmptyString()
+
+	/**
+	 * The schema.org IRI of a CURIE's local part.
+	 *
+	 * @param string $term The part after `schema:`.
+	 *
+	 * @return string|null The IRI, or null for an empty term.
+	 */
+	private function schemaOrgIri(string $term): ?string {
+		if ($term === '') {
+			return null;
+		}
+
+		return 'https://schema.org/' . $term;
+	}//end schemaOrgIri()
 
 	/**
 	 * Build the JSON-LD context map for a single schema.
@@ -253,15 +315,77 @@ class JsonLdContextService {
 			return $this->contextCache[$cacheKey];
 		}
 
-		$jsonld = $this->jsonLdConfig(schema: $schema);
-		$vocab = ($jsonld['@vocab'] ?? null);
-		$propMap = ($jsonld['properties'] ?? []);
-		if (is_array($propMap) === false) {
-			$propMap = [];
+		$source  = new JsonLdContextSource(
+			schema: $schema,
+			jsonld: $this->jsonLdConfig(schema: $schema),
+			contextUrl: $this->getSchemaContextUrl(register: $register, schema: $schema)
+		);
+		$context = $this->schemaContextHead(source: $source);
+
+		foreach ($this->propertyTerms(source: $source) as $name => $term) {
+			$context[$name] = $term;
 		}
 
-		$contextUrl = $this->getSchemaContextUrl(register: $register, schema: $schema);
+		$this->contextCache[$cacheKey] = $context;
+		return $context;
+	}//end buildSchemaContext()
 
+	/**
+	 * One context term per named schema property (mapped IRI or fragment term).
+	 *
+	 * @param JsonLdContextSource $source The schema, its JSON-LD configuration and context URL.
+	 *
+	 * @return array<string, mixed> The property terms, in property order.
+	 */
+	private function propertyTerms(JsonLdContextSource $source): array {
+		$propMap = $this->mappedIris(jsonld: $source->jsonld);
+
+		$terms = [];
+		foreach ($source->schema->getProperties() as $name => $definition) {
+			if ($this->isNonEmptyString(value: $name) === false) {
+				continue;
+			}
+
+			if (is_array($definition) === false) {
+				$definition = [];
+			}
+
+			$terms[$name] = $this->buildPropertyTerm(
+				id: $this->termId(mappedIri: ($propMap[$name] ?? null), fallback: $source->contextUrl . '#' . $name),
+				definition: $definition
+			);
+		}
+
+		return $terms;
+	}//end propertyTerms()
+
+	/**
+	 * The explicit property => vocabulary IRI map of a JSON-LD configuration.
+	 *
+	 * @param array<string, mixed> $jsonld The schema's JSON-LD configuration.
+	 *
+	 * @return array<mixed> The map; empty when absent or not an array.
+	 */
+	private function mappedIris(array $jsonld): array {
+		$propMap = ($jsonld['properties'] ?? []);
+		if (is_array($propMap) === false) {
+			return [];
+		}
+
+		return $propMap;
+	}//end mappedIris()
+
+	/**
+	 * The base prefixes, the vocabulary and the schema's class term of a schema context.
+	 *
+	 * @param JsonLdContextSource $source The schema, its JSON-LD configuration and context URL.
+	 *
+	 * @return array<string, mixed> The context so far.
+	 *
+	 * @spec openspec/specs/json-ld-output/spec.md
+	 */
+	private function schemaContextHead(JsonLdContextSource $source): array {
+		$jsonld = $source->jsonld;
 		// Base prefixes always present.
 		$context = [
 			'or' => self::OR_NAMESPACE,
@@ -269,40 +393,33 @@ class JsonLdContextService {
 		];
 
 		// Vocabulary base, when declared.
+		$vocab = ($jsonld['@vocab'] ?? null);
 		if (is_string($vocab) === true && $vocab !== '') {
 			$context['@vocab'] = $vocab;
 		}
 
 		// The schema class term itself (used as @type when no jsonld.type IRI).
-		if (isset($jsonld['type']) === true && is_string($jsonld['type']) === true && $jsonld['type'] !== '') {
-			$context[$this->slugOf(entity: $schema)] = $jsonld['type'];
-		} else {
-			$context[$this->slugOf(entity: $schema)] = $contextUrl . '#' . $this->slugOf(entity: $schema);
-		}
+		$slug           = $this->slugOf(entity: $source->schema);
+		$context[$slug] = $this->classTerm(jsonld: $jsonld, fallback: $source->contextUrl . '#' . $slug);
 
-		// One term per schema property.
-		foreach ($schema->getProperties() as $name => $definition) {
-			if (is_string($name) === false || $name === '') {
-				continue;
-			}
-
-			if (is_array($definition) === true) {
-				$propertyDefinition = $definition;
-			} else {
-				$propertyDefinition = [];
-			}
-
-			$context[$name] = $this->buildPropertyTerm(
-				name: $name,
-				definition: $propertyDefinition,
-				mappedIri: ($propMap[$name] ?? null),
-				contextUrl: $contextUrl
-			);
-		}
-
-		$this->contextCache[$cacheKey] = $context;
 		return $context;
-	}//end buildSchemaContext()
+	}//end schemaContextHead()
+
+	/**
+	 * The schema class term: the configured `jsonld.type`, else the fallback.
+	 *
+	 * @param array<string, mixed> $jsonld   The schema's JSON-LD configuration.
+	 * @param string               $fallback The fragment term of the schema slug.
+	 *
+	 * @return string The class term.
+	 */
+	private function classTerm(array $jsonld, string $fallback): string {
+		if (isset($jsonld['type']) === true && is_string($jsonld['type']) === true && $jsonld['type'] !== '') {
+			return $jsonld['type'];
+		}
+
+		return $fallback;
+	}//end classTerm()
 
 	/**
 	 * Build the register-wide context document: a merged term block covering
@@ -328,19 +445,36 @@ class JsonLdContextService {
 				continue;
 			}
 
-			$schemaContext = $this->buildSchemaContext(register: $register, schema: $schema);
-			foreach ($schemaContext as $term => $value) {
-				// Keep the shared prefixes from the base; merge the rest.
-				if ($term === 'or' || $term === 'xsd') {
-					continue;
-				}
-
-				$context[$term] = $value;
-			}
+			$context = $this->mergeSchemaTerms(
+				context: $context,
+				schemaContext: $this->buildSchemaContext(register: $register, schema: $schema)
+			);
 		}
 
 		return $context;
 	}//end buildRegisterContext()
+
+	/**
+	 * Merge a schema context into the register context; the shared `or`/`xsd`
+	 * prefixes of the base are kept, every other term overwrites.
+	 *
+	 * @param array<string, mixed> $context       The register context so far.
+	 * @param array<string, mixed> $schemaContext One schema's context.
+	 *
+	 * @return array<string, mixed> The merged context.
+	 */
+	private function mergeSchemaTerms(array $context, array $schemaContext): array {
+		foreach ($schemaContext as $term => $value) {
+			// Keep the shared prefixes from the base; merge the rest.
+			if ($term === 'or' || $term === 'xsd') {
+				continue;
+			}
+
+			$context[$term] = $value;
+		}
+
+		return $context;
+	}//end mergeSchemaTerms()
 
 	/**
 	 * Validate a schema's `jsonld` mapping block. Term values must be absolute
@@ -354,62 +488,105 @@ class JsonLdContextService {
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
 	public function validateMapping(array $jsonld): array {
-		$errors = [];
 		$vocab = ($jsonld['@vocab'] ?? null);
-
-		if (array_key_exists('@vocab', $jsonld) === true && $this->isAbsoluteIri(value: $vocab) === false) {
-			$errors[] = '@vocab must be an absolute IRI';
-		}
-
 		if (is_string($vocab) === true) {
 			$vocabBase = $vocab;
 		} else {
 			$vocabBase = null;
 		}
 
-		if (array_key_exists('type', $jsonld) === true) {
-			$type = $jsonld['type'];
-			if ($this->isResolvableTerm(value: $type, vocab: $vocabBase) === false) {
-				$errors[] = 'type must be an absolute IRI or a term resolvable against @vocab';
-			}
+		return array_merge(
+			$this->vocabErrors(jsonld: $jsonld, vocab: $vocab),
+			$this->typeErrors(jsonld: $jsonld, vocab: $vocabBase),
+			$this->propertiesErrors(jsonld: $jsonld, vocab: $vocabBase)
+		);
+	}//end validateMapping()
+
+	/**
+	 * The `@vocab` error: a declared `@vocab` must be an absolute IRI.
+	 *
+	 * @param array<string, mixed> $jsonld The `jsonld` configuration block.
+	 * @param mixed                $vocab  The declared `@vocab` value.
+	 *
+	 * @return array<int, string> The error, or none.
+	 */
+	private function vocabErrors(array $jsonld, mixed $vocab): array {
+		if (array_key_exists('@vocab', $jsonld) === true && $this->isAbsoluteIri(value: $vocab) === false) {
+			return ['@vocab must be an absolute IRI'];
 		}
 
-		if (array_key_exists('properties', $jsonld) === true) {
-			if (is_array($jsonld['properties']) === false) {
-				$errors[] = 'properties must be an object mapping property names to IRIs';
-			} else {
-				foreach ($jsonld['properties'] as $property => $iri) {
-					if ($this->isResolvableTerm(value: $iri, vocab: $vocabBase) === false) {
-						$errors[] = sprintf(
-							'properties.%s must be an absolute IRI or a term resolvable against @vocab',
-							(string)$property
-						);
-					}
-				}
+		return [];
+	}//end vocabErrors()
+
+	/**
+	 * The `type` error: a declared type must be a resolvable term.
+	 *
+	 * @param array<string, mixed> $jsonld The `jsonld` configuration block.
+	 * @param string|null          $vocab  The vocabulary base, or null.
+	 *
+	 * @return array<int, string> The error, or none.
+	 */
+	private function typeErrors(array $jsonld, ?string $vocab): array {
+		if (array_key_exists('type', $jsonld) === true
+			&& $this->isResolvableTerm(value: $jsonld['type'], vocab: $vocab) === false
+		) {
+			return ['type must be an absolute IRI or a term resolvable against @vocab'];
+		}
+
+		return [];
+	}//end typeErrors()
+
+	/**
+	 * The `properties` errors: the block must be an array of resolvable terms.
+	 *
+	 * @param array<string, mixed> $jsonld The `jsonld` configuration block.
+	 * @param string|null          $vocab  The vocabulary base, or null.
+	 *
+	 * @return array<int, string> One error per bad entry, in order.
+	 */
+	private function propertiesErrors(array $jsonld, ?string $vocab): array {
+		if (array_key_exists('properties', $jsonld) === false) {
+			return [];
+		}
+
+		if (is_array($jsonld['properties']) === false) {
+			return ['properties must be an object mapping property names to IRIs'];
+		}
+
+		return $this->unresolvablePropertyErrors(properties: $jsonld['properties'], vocab: $vocab);
+	}//end propertiesErrors()
+
+	/**
+	 * One error per property mapping that is not a resolvable term.
+	 *
+	 * @param array<mixed> $properties The `properties` mapping block.
+	 * @param string|null  $vocab      The vocabulary base, or null.
+	 *
+	 * @return array<int, string> The errors, in order.
+	 */
+	private function unresolvablePropertyErrors(array $properties, ?string $vocab): array {
+		$errors = [];
+		foreach ($properties as $property => $iri) {
+			if ($this->isResolvableTerm(value: $iri, vocab: $vocab) === false) {
+				$errors[] = sprintf(
+					'properties.%s must be an absolute IRI or a term resolvable against @vocab',
+					(string)$property
+				);
 			}
 		}
 
 		return $errors;
-	}//end validateMapping()
+	}//end unresolvablePropertyErrors()
 
 	/**
 	 * Build a single JSON-LD context term for a schema property.
 	 *
-	 * @param string $name The property name.
+	 * @param string               $id         The term's `@id`.
 	 * @param array<string, mixed> $definition The JSON-Schema property definition.
-	 * @param mixed $mappedIri An explicit vocabulary IRI, or null.
-	 * @param string $contextUrl The context-document URL (for fallback fragment terms).
 	 *
 	 * @return array<string, mixed>|string The term definition (string IRI, or expanded term definition).
 	 */
-	private function buildPropertyTerm(string $name, array $definition, mixed $mappedIri, string $contextUrl): array|string {
-		// Determine the @id of the term: explicit mapping, else fragment term.
-		if (is_string($mappedIri) === true && $mappedIri !== '') {
-			$id = $mappedIri;
-		} else {
-			$id = $contextUrl . '#' . $name;
-		}
-
+	private function buildPropertyTerm(string $id, array $definition): array|string {
 		$coercion = $this->coercionForDefinition(definition: $definition);
 
 		// Plain string term when there is no datatype/node coercion.
@@ -422,6 +599,22 @@ class JsonLdContextService {
 			'@type' => $coercion,
 		];
 	}//end buildPropertyTerm()
+
+	/**
+	 * The `@id` of a property term: the explicit mapping, else the fragment term.
+	 *
+	 * @param mixed  $mappedIri An explicit vocabulary IRI, or null.
+	 * @param string $fallback  The fragment term of the property in the context document.
+	 *
+	 * @return string The term's `@id`.
+	 */
+	private function termId(mixed $mappedIri, string $fallback): string {
+		if (is_string($mappedIri) === true && $mappedIri !== '') {
+			return $mappedIri;
+		}
+
+		return $fallback;
+	}//end termId()
 
 	/**
 	 * Map a JSON-Schema property definition to a JSON-LD `@type` coercion.
@@ -439,19 +632,16 @@ class JsonLdContextService {
 	private function coercionForDefinition(array $definition): ?string {
 		$format = ($definition['format'] ?? null);
 
-		if ($this->isRelationDefinition(definition: $definition) === true || $format === 'uri' || $format === 'uri-reference') {
+		if ($this->isRelationDefinition(definition: $definition) === true) {
 			return '@id';
 		}
 
-		if ($format === 'date') {
-			return 'xsd:date';
-		}
-
-		if ($format === 'date-time') {
-			return 'xsd:dateTime';
-		}
-
-		return null;
+		return match ($format) {
+			'uri', 'uri-reference' => '@id',
+			'date' => 'xsd:date',
+			'date-time' => 'xsd:dateTime',
+			default => null,
+		};
 	}//end coercionForDefinition()
 
 	/**
@@ -464,21 +654,24 @@ class JsonLdContextService {
 	 * @return bool True when the property references another object.
 	 */
 	private function isRelationDefinition(array $definition): bool {
-		if (isset($definition['$ref']) === true) {
-			return true;
-		}
-
-		if (isset($definition['objectConfiguration']) === true) {
+		if ($this->carriesReference(definition: $definition) === true) {
 			return true;
 		}
 
 		$items = ($definition['items'] ?? null);
-		if (is_array($items) === true && (isset($items['$ref']) === true || isset($items['objectConfiguration']) === true)) {
-			return true;
-		}
-
-		return false;
+		return is_array($items) === true && $this->carriesReference(definition: $items) === true;
 	}//end isRelationDefinition()
+
+	/**
+	 * Whether a definition carries a `$ref` or an `objectConfiguration`.
+	 *
+	 * @param array<mixed> $definition The definition (or its `items`).
+	 *
+	 * @return bool True when it references another object.
+	 */
+	private function carriesReference(array $definition): bool {
+		return isset($definition['$ref']) === true || isset($definition['objectConfiguration']) === true;
+	}//end carriesReference()
 
 	/**
 	 * Read the optional `jsonld` block from a schema's configuration.
@@ -576,10 +769,18 @@ class JsonLdContextService {
 
 		// A bare term (no scheme, no whitespace) is acceptable only when a
 		// @vocab base is declared to resolve it against.
-		if ($vocab !== null && $vocab !== '' && preg_match('/\s/', $value) !== 1) {
-			return true;
-		}
-
-		return false;
+		return $this->resolvesAgainstVocab(value: $value, vocab: $vocab);
 	}//end isResolvableTerm()
+
+	/**
+	 * Whether a bare term resolves against a declared, non-empty `@vocab`.
+	 *
+	 * @param string      $value The term.
+	 * @param string|null $vocab The declared vocabulary base, or null.
+	 *
+	 * @return bool True when a vocabulary is declared and the term has no whitespace.
+	 */
+	private function resolvesAgainstVocab(string $value, ?string $vocab): bool {
+		return $vocab !== null && $vocab !== '' && preg_match('/\s/', $value) !== 1;
+	}//end resolvesAgainstVocab()
 }//end class

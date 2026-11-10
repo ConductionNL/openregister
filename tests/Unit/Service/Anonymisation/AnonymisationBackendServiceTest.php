@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace Unit\Service\Anonymisation;
 
+use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendCollaborators;
+use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendPlatform;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\Anonymisation\BackendState;
 use OCA\OpenRegister\Service\Anonymisation\ProbeResult;
@@ -77,13 +79,12 @@ class AnonymisationBackendServiceTest extends TestCase {
 	 */
 	private function makeService(): AnonymisationBackendService {
 		return new AnonymisationBackendService(
-			$this->appManager,
-			$this->appConfig,
-			$this->cacheFactory,
-			$this->clientService,
-			$this->fileSettingsHandler,
-			$this->logger,
-			$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
+			new AnonymisationBackendPlatform($this->appManager, $this->appConfig, $this->cacheFactory, $this->clientService),
+			new AnonymisationBackendCollaborators(
+				$this->fileSettingsHandler,
+				$this->logger,
+				$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
+			)
 		);
 	}
 
@@ -281,13 +282,12 @@ class AnonymisationBackendServiceTest extends TestCase {
 		$cacheFactory->method('createDistributed')->willReturn($cache);
 
 		$service = new AnonymisationBackendService(
-			$this->appManager,
-			$this->appConfig,
-			$cacheFactory,
-			$this->clientService,
-			$this->fileSettingsHandler,
-			$this->logger,
-			$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
+			new AnonymisationBackendPlatform($this->appManager, $this->appConfig, $cacheFactory, $this->clientService),
+			new AnonymisationBackendCollaborators(
+				$this->fileSettingsHandler,
+				$this->logger,
+				$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
+			)
 		);
 
 		$probe = $service->probe(BackendState::METHOD_OPENANONYMISER);
@@ -308,13 +308,12 @@ class AnonymisationBackendServiceTest extends TestCase {
 		$cacheFactory->method('createDistributed')->willReturn($cache);
 
 		$service = new AnonymisationBackendService(
-			$this->appManager,
-			$this->appConfig,
-			$cacheFactory,
-			$this->clientService,
-			$this->fileSettingsHandler,
-			$this->logger,
-			$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
+			new AnonymisationBackendPlatform($this->appManager, $this->appConfig, $cacheFactory, $this->clientService),
+			new AnonymisationBackendCollaborators(
+				$this->fileSettingsHandler,
+				$this->logger,
+				$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
+			)
 		);
 
 		$probe = $service->probe(BackendState::METHOD_OPENANONYMISER);
@@ -341,13 +340,12 @@ class AnonymisationBackendServiceTest extends TestCase {
 		$cacheFactory->method('createDistributed')->willReturn($cache);
 
 		$service = new AnonymisationBackendService(
-			$this->appManager,
-			$this->appConfig,
-			$cacheFactory,
-			$this->clientService,
-			$this->fileSettingsHandler,
-			$this->logger,
-			$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
+			new AnonymisationBackendPlatform($this->appManager, $this->appConfig, $cacheFactory, $this->clientService),
+			new AnonymisationBackendCollaborators(
+				$this->fileSettingsHandler,
+				$this->logger,
+				$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
+			)
 		);
 
 		$probe = $service->testConnection(BackendState::METHOD_OPENANONYMISER);
@@ -378,13 +376,12 @@ class AnonymisationBackendServiceTest extends TestCase {
 		);
 
 		return new AnonymisationBackendService(
-			appManager: $this->appManager,
-			appConfig: $this->appConfig,
-			cacheFactory: $this->cacheFactory,
-			clientService: $this->clientService,
-			fileSettingsHandler: $this->fileSettingsHandler,
-			logger: $this->logger,
-			connectionReporter: $reporter,
+			new AnonymisationBackendPlatform(appManager: $this->appManager, appConfig: $this->appConfig, cacheFactory: $this->cacheFactory, clientService: $this->clientService),
+			new AnonymisationBackendCollaborators(
+				fileSettingsHandler: $this->fileSettingsHandler,
+				logger: $this->logger,
+				connectionReporter: $reporter,
+			)
 		);
 	}
 

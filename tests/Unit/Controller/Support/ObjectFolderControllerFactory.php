@@ -18,7 +18,6 @@ final class ObjectFolderControllerFactory {
 	/**
 	 * The constructor arguments of ObjectFolderController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param ObjectFileAccess $objectFileAccess Constructor argument.
 	 * @param ObjectFolderBrowser $browser Constructor argument.
@@ -29,7 +28,6 @@ final class ObjectFolderControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Files\Service\File\ObjectFileAccess $objectFileAccess,
 		\OCA\OpenRegister\Files\Service\File\ObjectFolderBrowser $browser,
@@ -38,7 +36,6 @@ final class ObjectFolderControllerFactory {
 		\OCA\OpenRegister\Service\Object\FileWriteGuard $fileWriteGuard,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Files\Controller\Support\ObjectFolderControllerServices(
 				objectFileAccess: $objectFileAccess,

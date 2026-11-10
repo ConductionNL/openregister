@@ -31,11 +31,17 @@ use OCA\OpenRegister\Db\TaskSequence;
 use OCA\OpenRegister\Db\TaskSequenceMapper;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskSeparationOfDutiesException;
+use OCA\OpenRegister\Service\Task\TaskAnswer;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
+use OCA\OpenRegister\Service\Task\TaskCommit;
+use OCA\OpenRegister\Service\Task\TaskIntake;
+use OCA\OpenRegister\Service\Task\TaskLifecycleServices;
 use OCA\OpenRegister\Service\Task\TaskPerformerResolver;
 use OCA\OpenRegister\Service\Task\TaskSequenceDecisionGuard;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskTables;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -74,16 +80,24 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 		$audits->method('insert')->willReturnArgument(0);
 
 		return new TaskService(
-			tasks: $this->tasks,
-			candidates: $this->createMock(TaskCandidateMapper::class),
-			relations: $this->createMock(TaskRelationMapper::class),
-			audits: $audits,
 			authorization: $this->authorization,
-			resolver: $this->createMock(TaskPerformerResolver::class),
-			db: $this->createMock(IDBConnection::class),
-			logger: new NullLogger(),
-			builder: new TaskBuilder(),
-			dispatcher: null,
+			services: new TaskLifecycleServices(
+				tables: new TaskTables(
+					tasks: $this->tasks,
+					candidates: $this->createMock(TaskCandidateMapper::class),
+					relations: $this->createMock(TaskRelationMapper::class),
+					audits: $audits
+				),
+				commit: new TaskCommit(
+					db: $this->createMock(IDBConnection::class),
+					logger: new NullLogger(),
+					dispatcher: null
+				),
+				intake: new TaskIntake(
+					builder: new TaskBuilder()
+				),
+				resolver: $this->createMock(TaskPerformerResolver::class)
+			),
 			sequenceGuard: new TaskSequenceDecisionGuard(sequences: $this->sequences)
 		);
 	}//end service()
@@ -114,7 +128,7 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 	public function testEnableMovesAnAvailablePositionToEnabled(): void {
 		$this->tasks->method('findByUuid')->willReturn($this->task(Task::STATE_AVAILABLE));
 
-		$enabled = $this->service()->enable(uuid: 't-7', source: 'task-sequence:seq-1', reason: 'position 1 approved');
+		$enabled = $this->service()->enable(uuid: 't-7', trigger: new TaskTrigger(source: 'task-sequence:seq-1', reason: 'position 1 approved'));
 
 		self::assertSame(Task::STATE_ENABLED, $enabled->getState());
 		self::assertSame('enable', $enabled->getLastAction());
@@ -124,7 +138,7 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 		$this->tasks->method('findByUuid')->willReturn($this->task(Task::STATE_ENABLED));
 		$this->tasks->expects(self::never())->method('updateIfOpen');
 
-		$enabled = $this->service()->enable(uuid: 't-7', source: 's', reason: 'again');
+		$enabled = $this->service()->enable(uuid: 't-7', trigger: new TaskTrigger(source: 's', reason: 'again'));
 
 		self::assertSame(Task::STATE_ENABLED, $enabled->getState());
 	}//end testEnableIsIdempotentOnAnEnabledTask()
@@ -134,7 +148,7 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 
 		$this->expectException(TaskConflictException::class);
 		$this->expectExceptionMessage("terminal state 'terminated'");
-		$this->service()->enable(uuid: 't-7', source: 's', reason: 'r');
+		$this->service()->enable(uuid: 't-7', trigger: new TaskTrigger(source: 's', reason: 'r'));
 	}//end testEnableRefusesATerminalTaskNamingItsState()
 
 	public function testDecidingAnAlreadyTerminalTaskIsRefusedNamingTheState(): void {
@@ -143,7 +157,7 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 
 		$this->expectException(TaskConflictException::class);
 		$this->expectExceptionMessage("terminal state 'completed'");
-		$this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: null, comment: null, actor: 'bob');
+		$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'bob');
 	}//end testDecidingAnAlreadyTerminalTaskIsRefusedNamingTheState()
 
 	public function testTheRequesterIsRefusedBeforeThePerformerCheck(): void {
@@ -155,14 +169,14 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 		$this->authorization->expects(self::never())->method('assertMay');
 
 		$this->expectException(TaskSeparationOfDutiesException::class);
-		$this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: null, comment: null, actor: 'alice');
+		$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'alice');
 	}//end testTheRequesterIsRefusedBeforeThePerformerCheck()
 
 	public function testANonRequesterPassesTheGuardAndCompletes(): void {
 		$this->sequenceRequestedBy(requester: 'alice');
 		$this->tasks->method('findByUuid')->willReturn($this->task(Task::STATE_ENABLED));
 
-		$completed = $this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: null, comment: null, actor: 'bob');
+		$completed = $this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'bob');
 
 		self::assertSame(Task::STATE_COMPLETED, $completed->getState());
 		self::assertSame('approved', $completed->getOutcome());
@@ -173,7 +187,7 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 		$this->tasks->method('findByUuid')->willReturn($this->task(Task::STATE_ENABLED));
 
 		try {
-			$this->service()->complete(uuid: 't-7', outcome: 'rejected', resultText: null, comment: '  ', actor: 'bob');
+			$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: '  '), actor: 'bob');
 			self::fail('a comment-less rejection must be refused');
 		} catch (\OCA\OpenRegister\Exception\TaskValidationException $refusal) {
 			self::assertStringContainsString('comment is mandatory', $refusal->getMessage());

@@ -61,7 +61,7 @@ class FormPayloadFindings {
 			return [];
 		}
 
-		return $this->fromError(error: $error, write: $write);
+		return $this->tagged(findings: $this->fromError(error: $error), write: $write);
 	}//end fromResult()
 
 	/**
@@ -75,24 +75,7 @@ class FormPayloadFindings {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
 	 */
 	public function fromThrowable(Throwable $exception, ?string $write = null): array {
-		if ($exception instanceof ValidationException && $exception->getErrors() !== null) {
-			return $this->fromError(error: $exception->getErrors(), write: $write);
-		}
-
-		if ($exception instanceof CustomValidationException) {
-			return $this->fromMap(errors: $exception->getErrors(), code: $this->customCode(exception: $exception), write: $write);
-		}
-
-		if ($exception instanceof HookStoppedException) {
-			return $this->fromMap(errors: $exception->getErrors(), code: 'refused', write: $write);
-		}
-
-		$code = 'invalid';
-		if ($exception instanceof DuplicateBlockedException || $exception instanceof ObjectExistsException) {
-			$code = 'duplicate';
-		}
-
-		return [$this->finding(property: '', code: $code, message: $exception->getMessage(), write: $write)];
+		return $this->tagged(findings: $this->throwableFindings(exception: $exception), write: $write);
 	}//end fromThrowable()
 
 	/**
@@ -113,68 +96,138 @@ class FormPayloadFindings {
 	}//end isPayloadRefusal()
 
 	/**
+	 * The findings of a save-path exception, untagged.
+	 *
+	 * @param Throwable $exception The exception.
+	 *
+	 * @return array<int, array{property: string, code: string, message: string}> The findings.
+	 */
+	private function throwableFindings(Throwable $exception): array {
+		if ($exception instanceof ValidationException && $exception->getErrors() !== null) {
+			return $this->fromError(error: $exception->getErrors());
+		}
+
+		if ($exception instanceof CustomValidationException) {
+			return $this->fromMap(errors: $exception->getErrors(), code: $this->customCode(exception: $exception));
+		}
+
+		if ($exception instanceof HookStoppedException) {
+			return $this->fromMap(errors: $exception->getErrors(), code: 'refused');
+		}
+
+		return [['property' => '', 'code' => $this->genericCode(exception: $exception), 'message' => $exception->getMessage()]];
+	}//end throwableFindings()
+
+	/**
+	 * The code for any other save-path exception: duplicate, or invalid.
+	 *
+	 * @param Throwable $exception The exception.
+	 *
+	 * @return string The code.
+	 */
+	private function genericCode(Throwable $exception): string {
+		if ($exception instanceof DuplicateBlockedException || $exception instanceof ObjectExistsException) {
+			return 'duplicate';
+		}
+
+		return 'invalid';
+	}//end genericCode()
+
+	/**
 	 * The leaf errors of an opis error tree, one finding each.
 	 *
 	 * @param ValidationError $error The root error.
-	 * @param string|null     $write The write, when several are written.
 	 *
-	 * @return array<int, array{property: string, code: string, message: string, write?: string}> The findings.
+	 * @return array<int, array{property: string, code: string, message: string}> The findings.
 	 */
-	private function fromError(ValidationError $error, ?string $write): array {
+	private function fromError(ValidationError $error): array {
 		$subErrors = $error->subErrors();
-		if ($subErrors !== []) {
-			$findings = [];
-			foreach ($subErrors as $subError) {
-				array_push($findings, ...$this->fromError(error: $subError, write: $write));
-			}
-
-			return $findings;
-		}
-
-		$formatter = new ErrorFormatter();
-		$message = $formatter->formatErrorMessage($error);
-		$path = implode('.', array_map('strval', $error->data()->fullPath()));
-		if ($error->keyword() !== 'required') {
-			return [$this->finding(property: $path, code: $error->keyword(), message: $message, write: $write)];
+		if ($subErrors === []) {
+			return $this->fromLeaf(error: $error);
 		}
 
 		$findings = [];
-		foreach ((array)($error->args()['missing'] ?? []) as $missing) {
-			$property = ltrim($path . '.' . (string)$missing, '.');
-			$findings[] = $this->finding(property: $property, code: 'required', message: $message, write: $write);
+		foreach ($subErrors as $subError) {
+			array_push($findings, ...$this->fromError(error: $subError));
 		}
 
 		return $findings;
 	}//end fromError()
 
 	/**
+	 * The findings of one leaf error: one per missing property for `required`, else one.
+	 *
+	 * @param ValidationError $error The leaf error.
+	 *
+	 * @return array<int, array{property: string, code: string, message: string}> The findings.
+	 */
+	private function fromLeaf(ValidationError $error): array {
+		$message = (new ErrorFormatter())->formatErrorMessage($error);
+		$path = implode('.', array_map('strval', $error->data()->fullPath()));
+		if ($error->keyword() !== 'required') {
+			return [['property' => $path, 'code' => $error->keyword(), 'message' => $message]];
+		}
+
+		$findings = [];
+		foreach ((array) ($error->args()['missing'] ?? []) as $missing) {
+			$findings[] = ['property' => ltrim($path.'.'.(string) $missing, '.'), 'code' => 'required', 'message' => $message];
+		}
+
+		return $findings;
+	}//end fromLeaf()
+
+	/**
 	 * Findings from a `property => message` map or a `{property, message}` list.
 	 *
 	 * @param array<int|string, mixed> $errors The errors.
 	 * @param string                   $code   The code every entry gets.
-	 * @param string|null              $write  The write, when several are written.
 	 *
-	 * @return array<int, array{property: string, code: string, message: string, write?: string}> The findings.
+	 * @return array<int, array{property: string, code: string, message: string}> The findings.
 	 */
-	private function fromMap(array $errors, string $code, ?string $write): array {
+	private function fromMap(array $errors, string $code): array {
 		$findings = [];
 		foreach ($errors as $key => $entry) {
-			$property = '';
-			if (is_string($key) === true) {
-				$property = $key;
-			}
-
-			$message = $entry;
-			if (is_array($entry) === true) {
-				$property = (string)($entry['property'] ?? $entry['field'] ?? $property);
-				$message = ($entry['message'] ?? $entry['error'] ?? json_encode($entry));
-			}
-
-			$findings[] = $this->finding(property: $property, code: $code, message: (string)$message, write: $write);
+			$named = $this->namedEntry(key: $key, entry: $entry);
+			$findings[] = ['property' => $named['property'], 'code' => $code, 'message' => $named['message']];
 		}
 
 		return $findings;
 	}//end fromMap()
+
+	/**
+	 * The property and message one map entry names.
+	 *
+	 * A string key names the property; an array entry may override it with
+	 * `property`/`field` and carries its message in `message`/`error`.
+	 *
+	 * @param int|string $key   The map key.
+	 * @param mixed      $entry The entry: a message, or a `{property, message}` map.
+	 *
+	 * @return array{property: string, message: string} The named entry.
+	 */
+	private function namedEntry(int|string $key, mixed $entry): array {
+		$property = '';
+		if (is_string($key) === true) {
+			$property = $key;
+		}
+
+		if (is_array($entry) === false) {
+			return ['property' => $property, 'message' => (string) $entry];
+		}
+
+		return ['property' => (string) ($entry['property'] ?? $entry['field'] ?? $property), 'message' => $this->entryMessage(entry: $entry)];
+	}//end namedEntry()
+
+	/**
+	 * The message an array entry carries, or the entry itself as JSON.
+	 *
+	 * @param array<int|string, mixed> $entry The entry.
+	 *
+	 * @return string The message.
+	 */
+	private function entryMessage(array $entry): string {
+		return (string) ($entry['message'] ?? $entry['error'] ?? json_encode($entry));
+	}//end entryMessage()
 
 	/**
 	 * The code for a custom validation refusal: uniqueness, or invalid.
@@ -192,21 +245,18 @@ class FormPayloadFindings {
 	}//end customCode()
 
 	/**
-	 * One finding, `write` present only when named.
+	 * Name the write on every finding, when one is named.
 	 *
-	 * @param string      $property The property path.
-	 * @param string      $code     The code.
-	 * @param string      $message  The message.
-	 * @param string|null $write    The write.
+	 * @param array<int, array{property: string, code: string, message: string}> $findings The findings.
+	 * @param string|null                                                        $write    The write.
 	 *
-	 * @return array{property: string, code: string, message: string, write?: string} The finding.
+	 * @return array<int, array{property: string, code: string, message: string, write?: string}> The findings.
 	 */
-	private function finding(string $property, string $code, string $message, ?string $write): array {
-		$finding = ['property' => $property, 'code' => $code, 'message' => $message];
-		if ($write !== null) {
-			$finding['write'] = $write;
+	private function tagged(array $findings, ?string $write): array {
+		if ($write === null) {
+			return $findings;
 		}
 
-		return $finding;
-	}//end finding()
+		return array_map(static fn (array $finding): array => $finding + ['write' => $write], $findings);
+	}//end tagged()
 }//end class

@@ -59,7 +59,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Support\PermissionBit;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -148,28 +147,52 @@ class HierarchyGrantExpander {
 			return null;
 		}
 
+		return [
+			'parent' => $parent,
+			'maxDepth' => $this->maxDepthOf(block: $block),
+			'verbs' => $this->inheritedVerbsOf(block: $block),
+		];
+	}//end declarationFor()
+
+	/**
+	 * The authored depth bound: the default below one, never above the ceiling.
+	 *
+	 * @param array $block The hierarchy annotation.
+	 *
+	 * @return integer The depth bound.
+	 */
+	private function maxDepthOf(array $block): int {
 		$declared = (int)($block['maxDepth'] ?? self::DEFAULT_MAX_DEPTH);
 		if ($declared < 1) {
 			$declared = self::DEFAULT_MAX_DEPTH;
 		}
 
-		$verbs = [];
+		return min($declared, self::DEPTH_CEILING);
+	}//end maxDepthOf()
+
+	/**
+	 * The verbs an inherited grant is narrowed to, trimmed, blanks dropped.
+	 *
+	 * @param array $block The hierarchy annotation.
+	 *
+	 * @return string[] The verbs; empty means no narrowing.
+	 */
+	private function inheritedVerbsOf(array $block): array {
 		$declaredVerbs = ($block['inheritedVerbs'] ?? null);
-		if (is_array($declaredVerbs) === true) {
-			foreach ($declaredVerbs as $verb) {
-				$verb = trim((string)$verb);
-				if ($verb !== '') {
-					$verbs[] = $verb;
-				}
+		if (is_array($declaredVerbs) === false) {
+			return [];
+		}
+
+		$verbs = [];
+		foreach ($declaredVerbs as $verb) {
+			$verb = trim((string)$verb);
+			if ($verb !== '') {
+				$verbs[] = $verb;
 			}
 		}
 
-		return [
-			'parent' => $parent,
-			'maxDepth' => min($declared, self::DEPTH_CEILING),
-			'verbs' => $verbs,
-		];
-	}//end declarationFor()
+		return $verbs;
+	}//end inheritedVerbsOf()
 
 	/**
 	 * Expand a grant set with every descendant it reaches.
@@ -184,23 +207,46 @@ class HierarchyGrantExpander {
 	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md
 	 */
 	public function expand(array $granted, ?array $seeds = null): array {
-		if (empty($granted) === true) {
-			return ['granted' => $granted, 'sources' => []];
-		}
-
 		// A grant marked as not inheritable still admits the object it was
 		// written on, and simply does not seed the descent (ledger row 13.41).
 		// `null` means every grant travels, which is what every caller written
 		// before the flag existed meant.
 		$seeds = ($seeds ?? $granted);
-		if (empty($seeds) === true) {
-			return ['granted' => $granted, 'sources' => []];
-		}
 
+		$frontier = $this->frontierOf(seeds: $seeds);
 		$sources = [];
 
+		foreach ($this->hierarchiesToDescend(granted: $granted, seeds: $seeds) as $hierarchy) {
+			// A fresh descent per hierarchy: its seen set and its descendant
+			// count start over, and it sees what the previous one granted.
+			$descent = new HierarchyDescent(
+				seen: $this->seenFrom(frontier: $frontier, granted: $granted),
+				granted: $granted,
+				sources: $sources
+			);
+			$this->descend(run: new HierarchyInheritanceRun(hierarchy: $hierarchy, descent: $descent), frontier: $frontier);
+			$granted = $descent->granted;
+			$sources = $descent->sources;
+		}
+
+		return ['granted' => $granted, 'sources' => $sources];
+	}//end expand()
+
+	/**
+	 * The hierarchies to descend, or none when nothing is granted, nothing travels, or they cannot be read.
+	 *
+	 * @param array<string, int> $granted The direct grants.
+	 * @param array<string, int> $seeds   The grants that travel.
+	 *
+	 * @return array<int, array> The hierarchies.
+	 */
+	private function hierarchiesToDescend(array $granted, array $seeds): array {
+		if (empty($granted) === true || empty($seeds) === true) {
+			return [];
+		}
+
 		try {
-			$hierarchies = $this->descender->hierarchicalTables();
+			return $this->descender->hierarchicalTables();
 		} catch (Throwable $e) {
 			// No expansion rather than no grants: the caller's DIRECT grants
 			// are unaffected by this failing, and withdrawing them would lock
@@ -213,45 +259,44 @@ class HierarchyGrantExpander {
 					'exception' => $e->getMessage(),
 				]
 			);
-			return ['granted' => $granted, 'sources' => []];
+			return [];
 		}
-
-		foreach ($hierarchies as $hierarchy) {
-			$this->expandOne(
-				hierarchy: $hierarchy,
-				granted: $granted,
-				sources: $sources,
-				seeds: $seeds
-			);
-		}
-
-		return ['granted' => $granted, 'sources' => $sources];
-	}//end expand()
+	}//end hierarchiesToDescend()
 
 	/**
-	 * Descend one schema's hierarchy, adding what it reaches.
+	 * The frontier a descent starts from: every direct grant THAT TRAVELS.
 	 *
-	 * @param array{table: string, parentColumn: string, maxDepth: int, verbs: string[], schemaId: int} $hierarchy One declaration, resolved.
-	 * @param array<string, int> $granted The grant map, modified in place.
-	 * @param array<string, string> $sources The provenance map, modified in place.
+	 * A descendant reached on a later level is expanded too, which is what
+	 * makes the grandchild work, but only ever as the descendant of the root it
+	 * came from.
+	 *
 	 * @param array<string, int> $seeds The grants that travel.
 	 *
-	 * @return void
+	 * @return array<string, array{mask: int, root: string}> The frontier.
 	 */
-	private function expandOne(array $hierarchy, array &$granted, array &$sources, array $seeds): void {
-		// The frontier starts at every direct grant THAT TRAVELS. A descendant
-		// reached on a later level is expanded too, which is what makes the
-		// grandchild work, but only ever as the descendant of the root it came
-		// from.
+	private function frontierOf(array $seeds): array {
 		$frontier = [];
 		foreach ($seeds as $uuid => $mask) {
 			$frontier[$uuid] = ['mask' => $mask, 'root' => $uuid];
 		}
 
-		// Everything already granted is `seen`, travelling or not: a
-		// non-inheritable grant on an object still means the object is decided,
-		// and re-deciding it from an ancestor would put the very grant the flag
-		// was written to stop straight back.
+		return $frontier;
+	}//end frontierOf()
+
+	/**
+	 * Every object already decided: the frontier, then every other direct grant.
+	 *
+	 * Everything already granted is `seen`, travelling or not: a
+	 * non-inheritable grant on an object still means the object is decided,
+	 * and re-deciding it from an ancestor would put the very grant the flag
+	 * was written to stop straight back.
+	 *
+	 * @param array<string, array{mask: int, root: string}> $frontier The seeded frontier.
+	 * @param array<string, int>                            $granted  The grants so far.
+	 *
+	 * @return array<string, array{mask: int, root: string}> The seen map.
+	 */
+	private function seenFrom(array $frontier, array $granted): array {
 		$seen = $frontier;
 		foreach (array_keys($granted) as $uuid) {
 			if (isset($seen[$uuid]) === false) {
@@ -259,37 +304,40 @@ class HierarchyGrantExpander {
 			}
 		}
 
-		$added = 0;
+		return $seen;
+	}//end seenFrom()
 
-		for ($depth = 0; $depth < $hierarchy['maxDepth']; $depth++) {
+	/**
+	 * Walk one hierarchy level by level from the frontier, up to its depth bound.
+	 *
+	 * @param HierarchyInheritanceRun $run      The hierarchy and the descent state, modified in place.
+	 * @param array                   $frontier The seeded frontier.
+	 *
+	 * @return void
+	 */
+	private function descend(HierarchyInheritanceRun $run, array $frontier): void {
+		for ($run->depth = 0; $run->depth < $run->hierarchy['maxDepth']; $run->depth++) {
 			if (empty($frontier) === true) {
-				return;
+				break;
 			}
 
-			$children = $this->childrenOrNull(hierarchy: $hierarchy, frontier: $frontier, depth: $depth);
+			$run->frontier = $frontier;
+			$children = $this->childrenOrNull(run: $run);
 			if ($children === null) {
-				return;
+				break;
 			}
 
-			$next = $this->absorbLevel(
-				hierarchy: $hierarchy,
-				children: $children,
-				frontier: $frontier,
-				seen: $seen,
-				granted: $granted,
-				sources: $sources,
-				added: $added
-			);
+			$next = $this->absorbLevel(run: $run, children: $children);
 
 			// The descendant bound was passed. Nothing below this point is
 			// inherited, and stopping here is the whole point of the bound.
 			if ($next === null) {
-				return;
+				break;
 			}
 
 			$frontier = $next;
 		}//end for
-	}//end expandOne()
+	}//end descend()
 
 	/**
 	 * One level of children, or null when the level could not be read.
@@ -297,20 +345,17 @@ class HierarchyGrantExpander {
 	 * A level that cannot be read stops the descent rather than skipping to the
 	 * next one: the objects below it would otherwise be reached from nowhere.
 	 *
-	 * @param array{table: string, parentColumn: string, maxDepth: int, verbs: string[], schemaId: int} $hierarchy One declaration, resolved.
-	 * @param array<string, array{mask: int, root: string}> $frontier The current frontier.
-	 * @param integer $depth Which level this is, for the log.
+	 * @param HierarchyInheritanceRun $run The hierarchy, the current frontier and the level, for the log.
 	 *
 	 * @return array<string, string>|null Child uuid => parent uuid, or null.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function childrenOrNull(array $hierarchy, array $frontier, int $depth): ?array {
+	private function childrenOrNull(HierarchyInheritanceRun $run): ?array {
 		try {
 			return $this->descender->childrenOf(
-				table: $hierarchy['table'],
-				parentColumn: $hierarchy['parentColumn'],
-				parentUuids: array_keys($frontier)
+				level: new HierarchyLevel(table: $run->hierarchy['table'], parentColumn: $run->hierarchy['parentColumn']),
+				parentUuids: array_keys($run->frontier)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
@@ -318,8 +363,8 @@ class HierarchyGrantExpander {
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'schemaId' => $hierarchy['schemaId'],
-					'depth' => $depth,
+					'schemaId' => $run->hierarchy['schemaId'],
+					'depth' => $run->depth,
 					'exception' => $e->getMessage(),
 				]
 			);
@@ -330,80 +375,78 @@ class HierarchyGrantExpander {
 	/**
 	 * Absorb one level of children, returning the next frontier.
 	 *
-	 * @param array{table: string, parentColumn: string, maxDepth: int, verbs: string[], schemaId: int} $hierarchy One declaration, resolved.
-	 * @param array<string, string> $children Child uuid => parent uuid.
-	 * @param array<string, array{mask: int, root: string}> $frontier The current frontier.
-	 * @param array<string, array{mask: int, root: string}> $seen Everything decided so far, modified in place.
-	 * @param array<string, int> $granted The grant map, modified in place.
-	 * @param array<string, string> $sources The provenance map, modified in place.
-	 * @param integer $added How many descendants the descent has taken, modified in place.
+	 * @param HierarchyInheritanceRun $run      The hierarchy, the current frontier and what the descent decided so far.
+	 * @param array<string, string>   $children Child uuid => parent uuid.
 	 *
 	 * @return array<string, array{mask: int, root: string}>|null The next frontier, or null when the bound was passed.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function absorbLevel(
-		array $hierarchy,
-		array $children,
-		array $frontier,
-		array &$seen,
-		array &$granted,
-		array &$sources,
-		int &$added
-	): ?array {
+	private function absorbLevel(HierarchyInheritanceRun $run, array $children): array|null {
 		$next = [];
 
 		foreach ($children as $childUuid => $parentUuid) {
 			$childUuid = (string)$childUuid;
 			$parentUuid = (string)$parentUuid;
 
-			if (isset($seen[$childUuid]) === true) {
-				$this->logRevisit(hierarchy: $hierarchy, childUuid: $childUuid);
+			if (isset($run->descent->seen[$childUuid]) === true) {
+				$this->logRevisit(hierarchy: $run->hierarchy, childUuid: $childUuid);
 				continue;
 			}
 
-			$added++;
-			if ($added > self::MAX_DESCENDANTS) {
-				$this->logger->warning(
-					message: '[HierarchyGrantExpander] The descent passed its descendant bound; nothing below this point is inherited',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'schemaId' => $hierarchy['schemaId'],
-						'bound' => self::MAX_DESCENDANTS,
-					]
-				);
+			if ($this->passesTheBound(run: $run) === true) {
 				return null;
 			}
 
-			$from = ($frontier[$parentUuid] ?? null);
-			if ($from === null) {
+			if (isset($run->frontier[$parentUuid]) === false) {
 				continue;
 			}
 
-			$mask = $this->narrow(mask: $from['mask'], verbs: $hierarchy['verbs']);
-			$seen[$childUuid] = ['mask' => $mask, 'root' => $from['root']];
-			$next[$childUuid] = ['mask' => $mask, 'root' => $from['root']];
-
-			// 🔴 A DIRECT GRANT IS NEVER OVERWRITTEN. The inherited one is the
-			// weaker claim by construction, and the spec keeps the existing
-			// most-specific-wins resolution: a person given `update` on the
-			// child keeps it even where the root grants only `read`.
-			//
-			// A mask of 0 is skipped for the mirror reason: the schema narrowed
-			// every verb away, and recording a grant of nothing would put the
-			// object in the list and refuse every action on it, which reads as
-			// a broken object.
-			if (array_key_exists($childUuid, $granted) === true || $mask === 0) {
-				continue;
-			}
-
-			$granted[$childUuid] = $mask;
-			$sources[$childUuid] = $from['root'];
+			$entry = $this->inheritedEntry(run: $run, from: $run->frontier[$parentUuid]);
+			$run->admit(childUuid: $childUuid, entry: $entry);
+			$next[$childUuid] = $entry;
 		}//end foreach
 
 		return $next;
 	}//end absorbLevel()
+
+	/**
+	 * Count one more descendant, and log and report when that passes the bound.
+	 *
+	 * @param HierarchyInheritanceRun $run The hierarchy being descended and its state, modified in place.
+	 *
+	 * @return bool True when the descendant bound is now passed.
+	 */
+	private function passesTheBound(HierarchyInheritanceRun $run): bool {
+		$descent = $run->descent;
+		$descent->added++;
+		if ($descent->added <= self::MAX_DESCENDANTS) {
+			return false;
+		}
+
+		$this->logger->warning(
+			message: '[HierarchyGrantExpander] The descent passed its descendant bound; nothing below this point is inherited',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'schemaId' => $run->hierarchy['schemaId'],
+				'bound' => self::MAX_DESCENDANTS,
+			]
+		);
+		return true;
+	}//end passesTheBound()
+
+	/**
+	 * A child's frontier entry: the parent's mask narrowed by the hierarchy's verbs, under the parent's root.
+	 *
+	 * @param HierarchyInheritanceRun        $run  The hierarchy being descended.
+	 * @param array{mask: int, root: string} $from The parent's frontier entry.
+	 *
+	 * @return array{mask: int, root: string} The child's frontier entry.
+	 */
+	private function inheritedEntry(HierarchyInheritanceRun $run, array $from): array {
+		return ['mask' => $this->narrow(mask: $from['mask'], verbs: $run->hierarchy['verbs']), 'root' => $from['root']];
+	}//end inheritedEntry()
 
 	/**
 	 * Note that the parent chain returned to an object already resolved.

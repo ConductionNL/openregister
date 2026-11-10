@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\Support\ActorForwardingServices;
+use OCA\OpenRegister\Search\BackgroundJob\Support\AggregationThresholdServices;
 use OCA\OpenRegister\Search\BackgroundJob\AggregationThresholdJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -42,13 +44,17 @@ class AggregationThresholdJobTest extends TestCase {
 
 		$this->job = new AggregationThresholdJob(
 			time: $this->createMock(ITimeFactory::class),
-			userSession: $this->createMock(IUserSession::class),
-			userManager: $this->userManager,
-			organisation: $this->createMock(OrganisationService::class),
-			logger: $this->logger,
-			resolver: $this->resolver,
-			schemaMapper: $this->schemaMapper,
-			evaluator: $this->evaluator,
+			actor: new ActorForwardingServices(
+				userSession: $this->createMock(IUserSession::class),
+				userManager: $this->userManager,
+				organisation: $this->createMock(OrganisationService::class),
+				logger: $this->logger
+			),
+			evaluation: new AggregationThresholdServices(
+				resolver: $this->resolver,
+				schemaMapper: $this->schemaMapper,
+				evaluator: $this->evaluator
+			),
 		);
 	}
 

@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Quota;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 
 /**
@@ -42,7 +43,7 @@ use OCA\OpenRegister\Db\Schema;
  *
  * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md
  */
-class ObjectQuotaService {
+class ObjectQuotaService implements ObjectQuotaServiceInterface {
 
 	/**
 	 * The schema configuration key carrying the quota.
@@ -106,38 +107,50 @@ class ObjectQuotaService {
 	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md
 	 */
 	public function count(int $registerId, Schema $schema, string $organisationUuid): int {
-		// Through the COUNT path, not searchObjects(): with one register and
-		// one schema searchObjects() turns the integer count into [] (live
-		// pass O10), and the quota could never fire. OrFail: a count that
-		// cannot be made throws instead of answering 0.
 		$register = $this->registers->find($registerId, _multitenancy: false, _rbac: false);
 
+		return $this->countIn(table: new RegisterSchema(register: $register, schema: $schema), organisationUuid: $organisationUuid);
+	}//end count()
+
+	/**
+	 * Count one organisation's objects in one register and schema.
+	 *
+	 * Through the COUNT path, not searchObjects(): with one register and one
+	 * schema searchObjects() turns the integer count into [] (live pass O10),
+	 * and the quota could never fire. OrFail: a count that cannot be made
+	 * throws instead of answering 0.
+	 *
+	 * @param RegisterSchema $table            The register and schema.
+	 * @param string         $organisationUuid The organisation's uuid.
+	 *
+	 * @return int The count.
+	 */
+	private function countIn(RegisterSchema $table, string $organisationUuid): int {
 		return $this->objects->countObjectsOrFail(
 			query: [
 				'@self' => ['organisation' => $organisationUuid],
 				'_rbac' => false,
 				'_multitenancy' => false,
 			],
-			register: $register,
-			schema: $schema
+			register: $table->register,
+			schema: $table->schema
 		);
-	}//end count()
+	}//end countIn()
 
 	/**
 	 * The quota status an app shows its administrators.
 	 *
-	 * @param int    $registerId       The register id.
-	 * @param Schema $schema           The schema.
-	 * @param string $organisationUuid The organisation's uuid.
+	 * @param RegisterSchema $table            The register and schema.
+	 * @param string         $organisationUuid The organisation's uuid.
 	 *
 	 * @return array{count: int, limit: int|null, atLimit: bool} The count, the cap (null for none),
 	 *                                                           and whether the next create is refused.
 	 *
 	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md
 	 */
-	public function status(int $registerId, Schema $schema, string $organisationUuid): array {
-		$count = $this->count(registerId: $registerId, schema: $schema, organisationUuid: $organisationUuid);
-		$limit = $this->limitFor(schema: $schema);
+	public function status(RegisterSchema $table, string $organisationUuid): array {
+		$count = $this->countIn(table: $table, organisationUuid: $organisationUuid);
+		$limit = $this->limitFor(schema: $table->schema);
 
 		return [
 			'count' => $count,

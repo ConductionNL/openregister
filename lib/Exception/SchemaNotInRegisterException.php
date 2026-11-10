@@ -56,41 +56,6 @@ use OCP\AppFramework\Db\DoesNotExistException;
 class SchemaNotInRegisterException extends DoesNotExistException {
 
 	/**
-	 * The id of the register the caller named.
-	 *
-	 * @var int|null
-	 */
-	private ?int $registerId;
-
-	/**
-	 * The slug of the register the caller named, when known.
-	 *
-	 * @var string|null
-	 */
-	private ?string $registerSlug;
-
-	/**
-	 * The schema slug that failed to resolve inside that register.
-	 *
-	 * @var string
-	 */
-	private string $schemaSlug;
-
-	/**
-	 * How many schemas carry this slug elsewhere on the instance.
-	 *
-	 * @var int
-	 */
-	private int $candidatesElsewhere;
-
-	/**
-	 * How many schemas the named register carries in total.
-	 *
-	 * @var int
-	 */
-	private int $registerSchemaCount;
-
-	/**
 	 * Constructor.
 	 *
 	 * `$registerSchemaCount` is a COUNT and not a "list is empty" boolean on
@@ -119,18 +84,12 @@ class SchemaNotInRegisterException extends DoesNotExistException {
 	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
 	 */
 	public function __construct(
-		string $schemaSlug,
-		?int $registerId=null,
-		?string $registerSlug=null,
-		int $candidatesElsewhere=0,
-		int $registerSchemaCount=0,
+		private readonly string $schemaSlug,
+		private readonly ?int $registerId=null,
+		private readonly ?string $registerSlug=null,
+		private readonly int $candidatesElsewhere=0,
+		private readonly int $registerSchemaCount=0,
 	) {
-		$this->schemaSlug          = $schemaSlug;
-		$this->registerId          = $registerId;
-		$this->registerSlug        = $registerSlug;
-		$this->candidatesElsewhere = $candidatesElsewhere;
-		$this->registerSchemaCount = $registerSchemaCount;
-
 		parent::__construct(msg: $this->composeMessage());
 	}//end __construct()
 

@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace Unit\Service\Timeline;
 
+use OCA\OpenRegister\Notifications\Db\TimelineEntry;
+use OCA\OpenRegister\Notifications\Service\Timeline\WrittenEntry;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
@@ -34,6 +36,9 @@ use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Notifications\Service\Timeline\EntryMentionService;
+use OCA\OpenRegister\Notifications\Service\Timeline\MentionDelivery;
+use OCA\OpenRegister\Notifications\Service\Timeline\MentionPrincipals;
+use OCA\OpenRegister\Notifications\Service\Timeline\MentionReadCheck;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -143,16 +148,18 @@ class EntryMentionServiceTest extends TestCase {
 		$this->notifications->method('createNotification')->willReturn($notification);
 
 		$this->service = new EntryMentionService(
-			$this->watchers,
-			$this->userManager,
-			$this->userSession,
-			$this->schemaMapper,
-			$this->permissions,
-			$this->notifications,
-			$this->createMock(LoggerInterface::class),
-			$this->deepLinks,
-			$this->urls
+			new MentionPrincipals($this->watchers, $this->userManager, $this->userSession),
+			new MentionReadCheck($this->schemaMapper, $this->permissions),
+			new MentionDelivery($this->notifications, $this->deepLinks, $this->urls),
+			$this->createMock(LoggerInterface::class)
 		);
+	}
+
+	private function written(string $text): WrittenEntry {
+		$entry = new TimelineEntry();
+		$entry->setUuid('entry-a');
+
+		return new WrittenEntry($this->object(), $entry, $text);
 	}
 
 	private function object(): ObjectEntity {
@@ -214,7 +221,7 @@ class EntryMentionServiceTest extends TestCase {
 			->willReturn(new Watcher());
 		$this->notifications->expects($this->once())->method('notify');
 
-		$pulled = $this->service->apply($this->object(), 'entry-a', 'Graag jouw blik hierop @jurist');
+		$pulled = $this->service->apply($this->written('Graag jouw blik hierop @jurist'));
 
 		$this->assertSame(['jurist'], $pulled);
 	}
@@ -229,7 +236,7 @@ class EntryMentionServiceTest extends TestCase {
 		$this->watchers->expects($this->never())->method('subscribeMentioned');
 		$this->notifications->expects($this->never())->method('notify');
 
-		$this->assertSame([], $this->service->apply($this->object(), 'entry-a', 'Kijk jij hier even naar @buitenstaander'));
+		$this->assertSame([], $this->service->apply($this->written('Kijk jij hier even naar @buitenstaander')));
 	}
 
 	public function testAnUnresolvableSchemaRefusesTheMention(): void {
@@ -239,7 +246,7 @@ class EntryMentionServiceTest extends TestCase {
 		$this->permissions->expects($this->never())->method('hasPermission');
 		$this->watchers->expects($this->never())->method('subscribeMentioned');
 
-		$this->assertSame([], $this->service->apply($this->object(), 'entry-a', '@jurist'));
+		$this->assertSame([], $this->service->apply($this->written('@jurist')));
 	}
 
 	public function testNamingYourselfIsNotAMention(): void {
@@ -248,7 +255,7 @@ class EntryMentionServiceTest extends TestCase {
 		$this->allowRead(true);
 		$this->watchers->expects($this->never())->method('subscribeMentioned');
 
-		$this->assertSame([], $this->service->apply($this->object(), 'entry-a', 'Nota bene voor @handler zelf'));
+		$this->assertSame([], $this->service->apply($this->written('Nota bene voor @handler zelf')));
 	}
 
 	public function testAQuotedIdWithASpaceIsAMention(): void {
@@ -297,7 +304,7 @@ class EntryMentionServiceTest extends TestCase {
 			->with('https://nc.example/apps/dossiq/cases/case-1')
 			->willReturnSelf();
 
-		$this->service->apply($this->object(), 'entry-a', '@jurist');
+		$this->service->apply($this->written('@jurist'));
 	}
 
 	public function testWithoutARegisteredDeepLinkTheNotificationLinksToOpenRegistersObjectPage(): void {
@@ -315,7 +322,7 @@ class EntryMentionServiceTest extends TestCase {
 			->with('https://nc.example/index.php/apps/openregister/objects/7/3/case-1')
 			->willReturnSelf();
 
-		$this->service->apply($this->object(), 'entry-a', '@jurist');
+		$this->service->apply($this->written('@jurist'));
 	}
 
 	public function testASubscriptionThatFailsDoesNotProduceANotification(): void {
@@ -325,6 +332,6 @@ class EntryMentionServiceTest extends TestCase {
 		$this->watchers->method('subscribeMentioned')->willThrowException(new \RuntimeException('no row'));
 		$this->notifications->expects($this->never())->method('notify');
 
-		$this->assertSame([], $this->service->apply($this->object(), 'entry-a', '@jurist'));
+		$this->assertSame([], $this->service->apply($this->written('@jurist')));
 	}
 }

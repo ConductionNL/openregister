@@ -116,18 +116,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 						</div>
 						<div class="detailRow">
 							<strong>{{ t('openregister', 'Status') }}:</strong>
-							<span
-								:class="
-									applicationStore.applicationItem.active
-										? 'status-active'
-										: 'status-inactive'
-								">
-								{{
-									applicationStore.applicationItem.active
-										? t('openregister', 'Active')
-										: t('openregister', 'Inactive')
-								}}
-							</span>
+							<ActiveStatus :active="applicationStore.applicationItem.active" />
 						</div>
 						<div
 							v-if="applicationStore.applicationItem.created"
@@ -172,99 +161,24 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 					</div>
 				</div>
 
-				<!-- Configurations -->
-				<div class="detailsCard">
+				<div
+					v-for="card in linkedItemCards"
+					:key="card.key"
+					class="detailsCard">
 					<h3>
-						<Cog :size="20" />
-						{{ t('openregister', 'Configurations') }}
+						<component :is="card.icon" :size="20" />
+						{{ card.title }}
 					</h3>
 					<div class="detailsContent">
-						<div
-							v-if="
-								applicationStore.applicationItem.configurations
-								&& applicationStore.applicationItem.configurations
-									.length > 0
-							">
+						<div v-if="card.items && card.items.length > 0">
 							<p>
-								{{
-									applicationStore.applicationItem.configurations
-										.length
-								}}
-								{{ t('openregister', 'configuration(s)') }}
+								{{ card.items.length }}
+								{{ card.unit }}
 							</p>
 						</div>
 						<div v-else>
 							<NcNoteCard type="info">
-								{{
-									t(
-										'openregister',
-										'No configurations found for this application.',
-									)
-								}}
-							</NcNoteCard>
-						</div>
-					</div>
-				</div>
-
-				<!-- Registers -->
-				<div class="detailsCard">
-					<h3>
-						<Database :size="20" />
-						{{ t('openregister', 'Registers') }}
-					</h3>
-					<div class="detailsContent">
-						<div
-							v-if="
-								applicationStore.applicationItem.registers
-								&& applicationStore.applicationItem.registers.length
-									> 0
-							">
-							<p>
-								{{
-									applicationStore.applicationItem.registers.length
-								}}
-								{{ t('openregister', 'register(s)') }}
-							</p>
-						</div>
-						<div v-else>
-							<NcNoteCard type="info">
-								{{
-									t(
-										'openregister',
-										'No registers found for this application.',
-									)
-								}}
-							</NcNoteCard>
-						</div>
-					</div>
-				</div>
-
-				<!-- Schemas -->
-				<div class="detailsCard">
-					<h3>
-						<FileOutline :size="20" />
-						{{ t('openregister', 'Schemas') }}
-					</h3>
-					<div class="detailsContent">
-						<div
-							v-if="
-								applicationStore.applicationItem.schemas
-								&& applicationStore.applicationItem.schemas.length
-									> 0
-							">
-							<p>
-								{{ applicationStore.applicationItem.schemas.length }}
-								{{ t('openregister', 'schema(s)') }}
-							</p>
-						</div>
-						<div v-else>
-							<NcNoteCard type="info">
-								{{
-									t(
-										'openregister',
-										'No schemas found for this application.',
-									)
-								}}
+								{{ card.empty }}
 							</NcNoteCard>
 						</div>
 					</div>
@@ -294,10 +208,12 @@ import InformationOutline from 'vue-material-design-icons/InformationOutline.vue
 import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import ActiveStatus from './ActiveStatus.vue'
 
 export default {
 	name: 'ApplicationDetails',
 	components: {
+		ActiveStatus,
 		NcAppContent,
 		NcButton,
 		NcActions,
@@ -315,6 +231,57 @@ export default {
 		Cog,
 		Database,
 		FileOutline,
+	},
+
+	computed: {
+		/**
+		 * The cards counting the configurations, registers and schemas of the
+		 * application, for display.
+		 *
+		 * @spec exclude UI display helper — linked-item card layout.
+		 * @return {Array<object>}
+		 */
+		linkedItemCards() {
+			const item = applicationStore.applicationItem
+			return [
+				{
+					key: 'configurations',
+					icon: Cog,
+					title: this.t('openregister', 'Configurations'),
+					unit: this.t('openregister', 'configuration(s)'),
+					empty: this.t(
+						'openregister',
+						'No configurations found for this application.',
+					),
+
+					items: item.configurations,
+				},
+				{
+					key: 'registers',
+					icon: Database,
+					title: this.t('openregister', 'Registers'),
+					unit: this.t('openregister', 'register(s)'),
+					empty: this.t(
+						'openregister',
+						'No registers found for this application.',
+					),
+
+					items: item.registers,
+				},
+				{
+					key: 'schemas',
+					icon: FileOutline,
+					title: this.t('openregister', 'Schemas'),
+					unit: this.t('openregister', 'schema(s)'),
+					empty: this.t(
+						'openregister',
+						'No schemas found for this application.',
+					),
+
+					items: item.schemas,
+				},
+			]
+		},
 	},
 
 	/**

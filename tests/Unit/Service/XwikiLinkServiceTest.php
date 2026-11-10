@@ -31,12 +31,15 @@ declare(strict_types=1);
 namespace Unit\Service;
 
 use Exception;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\XwikiLink;
-use OCA\OpenRegister\Service\LinkTarget;
 use OCA\OpenRegister\Db\XwikiLinkMapper;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCA\OpenRegister\Service\XwikiLinkService;
+use OCA\OpenRegister\Service\XwikiPageDraft;
 use OCP\App\IAppManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -90,9 +93,11 @@ class XwikiLinkServiceTest extends TestCase {
 		$this->service = new XwikiLinkService(
 			$this->mapper,
 			$this->container,
-			$this->appManager,
-			$this->userSession,
-			$this->logger
+			new LinkServiceRuntime(
+				$this->appManager,
+				$this->userSession,
+				$this->logger
+			)
 		);
 	}//end setUp()
 
@@ -212,7 +217,7 @@ class XwikiLinkServiceTest extends TestCase {
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(400);
-		$this->service->createAndLinkPage((new LinkTarget('obj-1', 1))->inSchema(2), 'Sales', '   ');
+		$this->service->createAndLinkPage((new LinkTarget('obj-1', 1))->inSchema(2), new XwikiPageDraft('Sales', '   '));
 	}//end testCreateAndLinkPageRequiresSpaceAndTitle()
 
 	public function testCreateAndLinkPagePostsViaProviderAndLinks(): void {
@@ -236,7 +241,7 @@ class XwikiLinkServiceTest extends TestCase {
 			->method('insert')
 			->willReturnCallback(static fn (XwikiLink $l) => $l);
 
-		$link = $this->service->createAndLinkPage((new LinkTarget('obj-1', 1))->inSchema(2), 'Sales', 'New Page');
+		$link = $this->service->createAndLinkPage((new LinkTarget('obj-1', 1))->inSchema(2), new XwikiPageDraft('Sales', 'New Page'));
 
 		$this->assertSame('Sales.NewPage', $link->getPageReference());
 		$this->assertSame('New Page', $link->getTitle());
@@ -326,7 +331,7 @@ class XwikiLinkServiceTest extends TestCase {
 	public function testSearchPagesReturnsUnconfiguredWhenConnectorAbsent(): void {
 		$this->connectorAvailable(false);
 
-		$result = $this->service->searchPages('passport', 10, 0);
+		$result = $this->service->searchPages(new ListQuery(limit: 10, offset: 0, search: 'passport'));
 		$this->assertTrue($result['unavailable']);
 		$this->assertSame(ProviderUnavailableException::CAUSE_OPENCONNECTOR_DOWN, $result['cause']);
 		$this->assertSame([], $result['results']);
@@ -347,7 +352,7 @@ class XwikiLinkServiceTest extends TestCase {
 			)
 		);
 
-		$result = $this->service->searchPages('foo', 25, 0);
+		$result = $this->service->searchPages(new ListQuery(limit: 25, offset: 0, search: 'foo'));
 		$this->assertTrue($result['unavailable']);
 		$this->assertSame(ProviderUnavailableException::CAUSE_PROVIDER_AUTH, $result['cause']);
 		$this->assertSame(25, $result['limit']);
@@ -366,7 +371,7 @@ class XwikiLinkServiceTest extends TestCase {
 				]
 			);
 
-		$result = $this->service->searchPages('passport', 10, 0);
+		$result = $this->service->searchPages(new ListQuery(limit: 10, offset: 0, search: 'passport'));
 		$this->assertArrayNotHasKey('unavailable', $result);
 		$this->assertSame(1, $result['total']);
 		$this->assertSame(10, $result['limit']);
@@ -385,7 +390,7 @@ class XwikiLinkServiceTest extends TestCase {
 			->with('', '', '', ['_limit' => 100, '_page' => 1])
 			->willReturn([]);
 
-		$result = $this->service->searchPages(null, 9999, -5);
+		$result = $this->service->searchPages(new ListQuery(limit: 9999, offset: -5, search: null));
 		$this->assertArrayNotHasKey('unavailable', $result);
 		$this->assertSame(100, $result['limit']);
 		$this->assertSame(0, $result['offset']);

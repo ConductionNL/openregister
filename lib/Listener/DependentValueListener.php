@@ -28,13 +28,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
-use OCA\OpenRegister\Service\Rules\DependentValueTable;
+use OCA\OpenRegister\Service\Rules\DependentValueTableInterface;
+use OCA\OpenRegister\Service\Rules\DependentValueWrite;
+use OCA\OpenRegister\Listener\Support\EventSchemaLookup;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -64,21 +64,19 @@ class DependentValueListener implements IEventListener {
 	 *
 	 * @var string
 	 */
-	public const ERROR_CODE = DependentValueTable::CODE_VALUE_NOT_ALLOWED;
+	public const ERROR_CODE = DependentValueTableInterface::CODE_VALUE_NOT_ALLOWED;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param DependentValueTable $tables Reads the tables and names what they refuse.
-	 * @param SchemaMapperInterface $schemas Resolves the schema an object belongs to.
-	 * @param LoggerInterface $logger The logger.
+	 * @param DependentValueTableInterface $tables Reads the tables and names what they refuse.
+	 * @param EventSchemaLookup $lookup Resolves the object's schema and logs a failure.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly DependentValueTable $tables,
-		private readonly SchemaMapperInterface $schemas,
-		private readonly LoggerInterface $logger,
+		private readonly DependentValueTableInterface $tables,
+		private readonly EventSchemaLookup $lookup,
 	) {
 	}//end __construct()
 
@@ -92,13 +90,8 @@ class DependentValueListener implements IEventListener {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function handle(Event $event): void {
-		if ($event instanceof ObjectCreatingEvent) {
-			$this->validate(event: $event, object: $event->getObject(), stored: null);
-			return;
-		}
-
-		if ($event instanceof ObjectUpdatingEvent) {
-			$this->validate(event: $event, object: $event->getNewObject(), stored: $event->getOldObject());
+		if ($event instanceof ObjectCreatingEvent || $event instanceof ObjectUpdatingEvent) {
+			$this->validate(event: $event);
 		}
 	}//end handle()
 
@@ -106,45 +99,63 @@ class DependentValueListener implements IEventListener {
 	 * Validate one write against every table its schema declares.
 	 *
 	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write event.
-	 * @param ObjectEntity $object The object the write carries.
-	 * @param ObjectEntity|null $stored The object as it stands, on an update.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function validate(
-		ObjectCreatingEvent|ObjectUpdatingEvent $event,
-		ObjectEntity $object,
-		?ObjectEntity $stored,
-	): void {
+	private function validate(ObjectCreatingEvent|ObjectUpdatingEvent $event): void {
 		try {
-			$data = $object->getObject();
-			$properties = $this->tablesFor(object: $object);
-			if (is_array($data) === false || $properties === null) {
-				// The whole cost for a schema that declares no table: one array
-				// scan, no lookup of the stored object, no refusal path. That
-				// is the "behaves exactly as before" of task 5.3.
-				return;
+			$violations = $this->violationsIn(event: $event);
+			if ($violations !== []) {
+				$this->refuse(event: $event, violations: $violations);
 			}
-
-			$violations = $this->tables->violations(
-				properties: $properties,
-				data: $data,
-				stored: $this->storedData(stored: $stored)
-			);
-			if ($violations === []) {
-				return;
-			}
-
-			$this->refuse(event: $event, violations: $violations);
 		} catch (Throwable $failure) {
-			$this->logger->warning(
+			$this->lookup->logger->warning(
 				message: '[DependentValueListener] The guard itself failed, allowing the save: ' . $failure->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => get_class($failure)]
 			);
 		}//end try
 	}//end validate()
+
+	/**
+	 * What the schema's tables refuse in a write: the new object, and on an update the stored one.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write event.
+	 *
+	 * @return array<int, array<string, string>> The refusals, empty when the write may go ahead.
+	 */
+	private function violationsIn(ObjectCreatingEvent|ObjectUpdatingEvent $event): array {
+		if ($event instanceof ObjectUpdatingEvent) {
+			return $this->violationsOf(object: $event->getNewObject(), stored: $event->getOldObject());
+		}
+
+		return $this->violationsOf(object: $event->getObject(), stored: null);
+	}//end violationsIn()
+
+	/**
+	 * What the schema's tables refuse in this write.
+	 *
+	 * The whole cost for a schema that declares no table: one array scan, no
+	 * lookup of the stored object, no refusal path. That is the "behaves
+	 * exactly as before" of task 5.3.
+	 *
+	 * @param ObjectEntity $object The object the write carries.
+	 * @param ObjectEntity|null $stored The object as it stands, on an update.
+	 *
+	 * @return array<int, array<string, string>> The refusals, empty when the write may go ahead.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function violationsOf(ObjectEntity $object, ?ObjectEntity $stored): array {
+		$data = $object->getObject();
+		$properties = $this->tablesFor(object: $object);
+		if (is_array($data) === false || $properties === null) {
+			return [];
+		}
+
+		return $this->tables->violations(properties: $properties, write: new DependentValueWrite(data: $data, stored: $this->storedData(stored: $stored)));
+	}//end violationsOf()
 
 	/**
 	 * The schema's properties, when it declares at least one table.
@@ -162,11 +173,11 @@ class DependentValueListener implements IEventListener {
 	 */
 	private function tablesFor(ObjectEntity $object): ?array {
 		$reference = $object->getSchema();
-		if ($reference === null || $reference === '') {
+		if ((string)$reference === '') {
 			return null;
 		}
 
-		$schema = $this->schemas->find(id: $reference, _rbac: false, _multitenancy: false);
+		$schema = $this->lookup->catalog->schemas()->find(id: $reference, _rbac: false, _multitenancy: false);
 		$properties = ($schema->getProperties() ?? []);
 		if (is_array($properties) === false || $this->tables->declaresAny(properties: $properties) === false) {
 			return null;
@@ -213,15 +224,8 @@ class DependentValueListener implements IEventListener {
 			$byProperty[$violation['property']] = $violation['message'];
 		}
 
-		$event->setErrors(
-			array_merge(
-				[
-					'code' => self::ERROR_CODE,
-					'message' => implode(' ', array_values($byProperty)),
-				],
-				$byProperty
-			)
-		);
+		$message = implode(' ', array_values($byProperty));
+		$event->setErrors(array_merge(['code' => self::ERROR_CODE, 'message' => $message], $byProperty));
 		$event->stopPropagation();
 	}//end refuse()
 }//end class

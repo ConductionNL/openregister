@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use DateTime;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowStream;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
@@ -40,6 +41,7 @@ use OCA\OpenRegister\Service\Flow\FlowFiringResult;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowOversightRegistry;
 use OCA\OpenRegister\Service\Flow\FlowRunMarkingStore;
+use OCA\OpenRegister\Service\Flow\FlowRunStart;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\FlowStreamHalt;
 use OCA\OpenRegister\Service\Flow\FlowStreamWalk;
@@ -288,14 +290,10 @@ class FlowEngineStreamWalkTest extends TestCase {
 	 */
 	private function walk(array $flow, FlowStepDispatcher $dispatcher, FlowStreamWalk $walk, array $context = []): array {
 		return $this->engine->run(
-			flow: $flow,
-			store: new FlowRunMarkingStore(run: $this->run),
-			subject: new stdClass(),
-			dispatcher: $dispatcher,
-			context: $context,
-			items: [FlowItems::item(json: ['n' => 1])],
-			startAt: null,
-			streams: $walk
+			start: (new FlowRunStart(flow: $flow, store: new FlowRunMarkingStore(run: $this->run), subject: new stdClass(), dispatcher: $dispatcher))->withContext(context: $context)->withStreams(streams: $walk),
+			origin: new FlowRunOrigin(
+				items: [FlowItems::item(json: ['n' => 1])]
+			)
 		);
 	}//end walk()
 
@@ -422,11 +420,10 @@ class FlowEngineStreamWalkTest extends TestCase {
 		$legacyRun = new FlowRun();
 		$legacyDispatcher = new StreamWalkDispatcher();
 		$legacy = $this->engine->run(
-			flow: $flow,
-			store: new FlowRunMarkingStore(run: $legacyRun),
-			subject: new stdClass(),
-			dispatcher: $legacyDispatcher,
-			items: [FlowItems::item(json: ['n' => 1])]
+			start: (new FlowRunStart(flow: $flow, store: new FlowRunMarkingStore(run: $legacyRun), subject: new stdClass(), dispatcher: $legacyDispatcher)),
+			origin: new FlowRunOrigin(
+				items: [FlowItems::item(json: ['n' => 1])]
+			)
 		);
 
 		$streamDispatcher = new StreamWalkDispatcher();

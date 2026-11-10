@@ -27,6 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Db\Flow\FlowSelection;
+use OCA\OpenRegister\Db\Flow\TriggerLookup;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -38,7 +40,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
  */
-class FlowMapper extends QBMapper {
+class FlowMapper extends QBMapper implements FlowMapperInterface {
 	/**
 	 * Constructor.
 	 *
@@ -130,75 +132,72 @@ class FlowMapper extends QBMapper {
 	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
 	 */
 	public function findAllFlows(
-		?string $app = null,
-		?string $applicationSlug = null,
-		?string $organisation = null,
-		?bool $enabled = null,
-		int $limit = 100,
-		int $offset = 0,
+		?string $app = null, ?string $applicationSlug = null, ?string $organisation = null,
+		?bool $enabled = null, int $limit = 100, int $offset = 0,
 	): array {
+		$selection = new FlowSelection(app: $app, applicationSlug: $applicationSlug, organisation: $organisation, enabled: $enabled);
+		return $this->findSelected(selection: $selection, query: new ListQuery(limit: $limit, offset: $offset));
+	}//end findAllFlows()
+
+	/**
+	 * One page of the selected flows, newest first.
+	 *
+	 * @param FlowSelection $selection Which flows.
+	 * @param ListQuery     $query     The limit and offset.
+	 *
+	 * @return array<int, Flow> The flows.
+	 */
+	private function findSelected(FlowSelection $selection, ListQuery $query): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->orderBy('id', 'DESC')
-			->setMaxResults($limit)
-			->setFirstResult($offset);
+			->setMaxResults($query->limit)
+			->setFirstResult($query->offset ?? 0);
 
-		if ($app !== null && $app !== '') {
-			$qb->andWhere($qb->expr()->eq('app', $qb->createNamedParameter($app)));
+		$this->applySelection(qb: $qb, selection: $selection);
+
+		return $this->findEntities(query: $qb);
+	}//end findSelected()
+
+	/**
+	 * Restrict a query to the selected flows: app, slug and organisation, then enabled.
+	 *
+	 * @param IQueryBuilder $qb        The query.
+	 * @param FlowSelection $selection Which flows.
+	 *
+	 * @return void
+	 */
+	private function applySelection(IQueryBuilder $qb, FlowSelection $selection): void {
+		foreach ($selection->columnValues() as $column => $value) {
+			$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter($value)));
 		}
 
-		if ($applicationSlug !== null && $applicationSlug !== '') {
-			$qb->andWhere($qb->expr()->eq('application_slug', $qb->createNamedParameter($applicationSlug)));
-		}
-
-		if ($organisation !== null && $organisation !== '') {
-			$qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation)));
-		}
-
-		if ($enabled !== null) {
+		if ($selection->enabled !== null) {
 			$qb->andWhere(
 				$qb->expr()->eq(
 					'enabled',
-					$qb->createNamedParameter($enabled, IQueryBuilder::PARAM_BOOL)
+					$qb->createNamedParameter($selection->enabled, IQueryBuilder::PARAM_BOOL)
 				)
 			);
 		}
-
-		return $this->findEntities(query: $qb);
-	}//end findAllFlows()
+	}//end applySelection()
 
 	/**
-	 * Count flows matching the same scoping as `findAllFlows()`.
+	 * Count flows matching the same scoping as findAllFlows().
 	 *
-	 * @param string|null $app Restrict to one owning app id.
-	 * @param string|null $applicationSlug Restrict to one OpenBuild virtual-app slug.
-	 * @param string|null $organisation Restrict to one organisation uuid.
+	 * @param FlowSelection $selection Which flows: owning app id, OpenBuild virtual-app slug and organisation uuid.
 	 *
 	 * @return integer The number of matching flows.
 	 *
 	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
 	 */
-	public function countFlows(
-		?string $app = null,
-		?string $applicationSlug = null,
-		?string $organisation = null,
-	): int {
+	public function countFlows(FlowSelection $selection=new FlowSelection()): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->func()->count('*', 'total'))
 			->from($this->getTableName());
 
-		if ($app !== null && $app !== '') {
-			$qb->andWhere($qb->expr()->eq('app', $qb->createNamedParameter($app)));
-		}
-
-		if ($applicationSlug !== null && $applicationSlug !== '') {
-			$qb->andWhere($qb->expr()->eq('application_slug', $qb->createNamedParameter($applicationSlug)));
-		}
-
-		if ($organisation !== null && $organisation !== '') {
-			$qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation)));
-		}
+		$this->applySelection(qb: $qb, selection: $selection);
 
 		$result = $qb->executeQuery();
 		$row = $result->fetch();
@@ -215,25 +214,18 @@ class FlowMapper extends QBMapper {
 	 * than vanishing from the query and looking like "no flow was interested".
 	 * A silently-empty result is exactly how a broken trigger looks.
 	 *
-	 * @param string $trigger The catalog trigger id.
-	 * @param string|null $register The subject's register slug, when object-scoped.
-	 * @param string|null $schema The subject's schema slug, when object-scoped.
-	 * @param string|null $organisation Restrict to one organisation uuid.
+	 * @param TriggerLookup $lookup The catalog trigger id, the subject's register and schema slugs when
+	 *                              object-scoped, and the organisation uuid to restrict to.
 	 *
 	 * @return array<int, Flow> The candidate flows.
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
-	public function findByTrigger(
-		string $trigger,
-		?string $register = null,
-		?string $schema = null,
-		?string $organisation = null,
-	): array {
+	public function findByTrigger(TriggerLookup $lookup): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
-			->where($qb->expr()->eq('trigger', $qb->createNamedParameter($trigger)))
+			->where($qb->expr()->eq('trigger', $qb->createNamedParameter($lookup->trigger)))
 			->andWhere(
 				$qb->expr()->eq(
 					'enabled',
@@ -244,29 +236,17 @@ class FlowMapper extends QBMapper {
 		// An empty trigger_register/trigger_schema means "any", so a row matches
 		// when its restriction is null/empty OR equals the subject's. Writing
 		// this as a plain equality would silently drop every unrestricted flow.
-		if ($register !== null && $register !== '') {
+		foreach ($lookup->subjectColumns() as $column => $value) {
 			$qb->andWhere(
 				$qb->expr()->orX(
-					$qb->expr()->isNull('trigger_register'),
-					$qb->expr()->eq('trigger_register', $qb->createNamedParameter('')),
-					$qb->expr()->eq('trigger_register', $qb->createNamedParameter($register))
+					$qb->expr()->isNull($column),
+					$qb->expr()->eq($column, $qb->createNamedParameter('')),
+					$qb->expr()->eq($column, $qb->createNamedParameter($value))
 				)
 			);
 		}
 
-		if ($schema !== null && $schema !== '') {
-			$qb->andWhere(
-				$qb->expr()->orX(
-					$qb->expr()->isNull('trigger_schema'),
-					$qb->expr()->eq('trigger_schema', $qb->createNamedParameter('')),
-					$qb->expr()->eq('trigger_schema', $qb->createNamedParameter($schema))
-				)
-			);
-		}
-
-		if ($organisation !== null && $organisation !== '') {
-			$qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation)));
-		}
+		$this->applySelection(qb: $qb, selection: new FlowSelection(organisation: $lookup->organisation));
 
 		return $this->findEntities(query: $qb);
 	}//end findByTrigger()

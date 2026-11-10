@@ -18,7 +18,7 @@
         },
         {
             "get": [
-                "ObjectRetentionHandler"
+                "ArchivalSettingsReaderInterface"
             ]
         },
         {
@@ -38,7 +38,12 @@
         },
         {
             "get": [
-                "SaveObject"
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
+                "SaveObjectWriterInterface"
             ]
         },
         {
@@ -166,7 +171,6 @@
                     "certificate": 1
                 },
                 null,
-                null,
                 false,
                 false,
                 true,
@@ -236,7 +240,7 @@
         },
         {
             "get": [
-                "ObjectRetentionHandler"
+                "ArchivalSettingsReaderInterface"
             ]
         },
         {
@@ -256,7 +260,12 @@
         },
         {
             "get": [
-                "SaveObject"
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
+                "SaveObjectWriterInterface"
             ]
         },
         {
@@ -846,7 +855,7 @@
         },
         {
             "get": [
-                "ObjectRetentionHandler"
+                "ArchivalSettingsReaderInterface"
             ]
         },
         {
@@ -866,7 +875,12 @@
         },
         {
             "get": [
-                "SaveObject"
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
+                "SaveObjectWriterInterface"
             ]
         },
         {
@@ -1441,7 +1455,7 @@
         },
         {
             "get": [
-                "ObjectRetentionHandler"
+                "ArchivalSettingsReaderInterface"
             ]
         },
         {
@@ -1461,7 +1475,12 @@
         },
         {
             "get": [
-                "SaveObject"
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
+                "SaveObjectWriterInterface"
             ]
         },
         {
@@ -1690,7 +1709,7 @@
         },
         {
             "get": [
-                "ObjectRetentionHandler"
+                "ArchivalSettingsReaderInterface"
             ]
         },
         {
@@ -1710,7 +1729,12 @@
         },
         {
             "get": [
-                "SaveObject"
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
+                "SaveObjectWriterInterface"
             ]
         },
         {
@@ -1826,7 +1850,7 @@
         },
         {
             "get": [
-                "ObjectRetentionHandler"
+                "ArchivalSettingsReaderInterface"
             ]
         },
         {
@@ -1846,7 +1870,12 @@
         },
         {
             "get": [
-                "SaveObject"
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
+                "SaveObjectWriterInterface"
             ]
         },
         {
@@ -2165,7 +2194,6 @@
                     "certificate": 2
                 },
                 null,
-                null,
                 false,
                 false,
                 true,
@@ -2326,7 +2354,7 @@
         },
         {
             "get": [
-                "ObjectRetentionHandler"
+                "ArchivalSettingsReaderInterface"
             ]
         },
         {
@@ -2346,7 +2374,12 @@
         },
         {
             "get": [
-                "SaveObject"
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
+                "SaveObjectWriterInterface"
             ]
         },
         {
@@ -2538,7 +2571,7 @@
         },
         {
             "get": [
-                "ObjectRetentionHandler"
+                "ArchivalSettingsReaderInterface"
             ]
         },
         {
@@ -2558,7 +2591,12 @@
         },
         {
             "get": [
-                "SaveObject"
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
+                "SaveObjectWriterInterface"
             ]
         },
         {
@@ -2599,7 +2637,7 @@
         },
         {
             "get": [
-                "ObjectRetentionHandler"
+                "ArchivalSettingsReaderInterface"
             ]
         },
         {
@@ -2619,7 +2657,12 @@
         },
         {
             "get": [
-                "SaveObject"
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
+                "SaveObjectWriterInterface"
             ]
         },
         {
@@ -2658,7 +2701,7 @@
         },
         {
             "get": [
-                "ObjectRetentionHandler"
+                "ArchivalSettingsReaderInterface"
             ]
         },
         {
@@ -2678,7 +2721,12 @@
         },
         {
             "get": [
-                "SaveObject"
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
+                "SaveObjectWriterInterface"
             ]
         },
         {
@@ -2732,7 +2780,7 @@
         },
         {
             "get": [
-                "ObjectRetentionHandler"
+                "ArchivalSettingsReaderInterface"
             ]
         },
         {
@@ -2752,7 +2800,12 @@
         },
         {
             "get": [
-                "SaveObject"
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
+                "SaveObjectWriterInterface"
             ]
         },
         {
@@ -2922,7 +2975,7 @@
         },
         {
             "get": [
-                "ObjectRetentionHandler"
+                "ArchivalSettingsReaderInterface"
             ]
         },
         {
@@ -2942,7 +2995,12 @@
         },
         {
             "get": [
-                "SaveObject"
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
+                "SaveObjectWriterInterface"
             ]
         },
         {

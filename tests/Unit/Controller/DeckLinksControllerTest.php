@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\CardDraft;
 use OCA\OpenRegister\Service\LinkTarget;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\DeckLinksControllerFactory;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -91,7 +92,7 @@ class DeckLinksControllerTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectService::class);
 		$this->settingsService = $this->createMock(SettingsService::class);
 
-		$this->controller = new DeckLinksController(
+		$this->controller = DeckLinksControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->service,

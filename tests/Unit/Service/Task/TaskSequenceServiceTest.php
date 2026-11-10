@@ -27,8 +27,13 @@ use OCA\OpenRegister\Db\TaskSequence;
 use OCA\OpenRegister\Db\TaskSequenceMapper;
 use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
 use OCA\OpenRegister\Event\TaskSequenceUndecidedEvent;
+use OCA\OpenRegister\Service\Task\ResolvedChain;
+use OCA\OpenRegister\Service\Task\SequenceAnchor;
+use OCA\OpenRegister\Service\Task\SequenceProvenance;
 use OCA\OpenRegister\Service\Task\TaskSequenceService;
+use OCA\OpenRegister\Service\Task\TaskSequenceServices;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -74,10 +79,12 @@ class TaskSequenceServiceTest extends TestCase {
 		);
 		$this->dispatcher = $this->createMock(IEventDispatcher::class);
 		$this->service = new TaskSequenceService(
-			sequences: $this->sequences,
-			taskReader: $this->taskReader,
-			tasks: $this->tasks,
-			dispatcher: $this->dispatcher,
+			services: new TaskSequenceServices(
+				sequences: $this->sequences,
+				taskReader: $this->taskReader,
+				tasks: $this->tasks,
+				dispatcher: $this->dispatcher
+			),
 			logger: new NullLogger()
 		);
 	}//end setUp()
@@ -144,11 +151,7 @@ class TaskSequenceServiceTest extends TestCase {
 	}//end runningSequence()
 
 	public function testProvisioningCreatesEveryPositionAndEnablesOnlyTheFirst(): void {
-		$sequence = $this->service->provision(
-			template: $this->template(),
-			anchorObjectUuid: 'obj-1',
-			requesterId: 'alice'
-		);
+		$sequence = $this->service->provision(chain: new ResolvedChain(template: $this->template()), anchor: new SequenceAnchor(objectUuid: 'obj-1', requesterId: 'alice'));
 
 		self::assertSame(TaskSequence::STATUS_RUNNING, $sequence->getStatus());
 		self::assertNotNull($sequence->getOpenedAt());
@@ -170,12 +173,7 @@ class TaskSequenceServiceTest extends TestCase {
 
 	public function testAResolvedTierIsFrozenOntoTheSequence(): void {
 		$tier = [['order' => 1, 'role' => 'directors', 'minAmount' => 100000]];
-		$sequence = $this->service->provision(
-			template: $this->template(),
-			anchorObjectUuid: 'obj-1',
-			requesterId: 'alice',
-			tierPositions: $tier
-		);
+		$sequence = $this->service->provision(chain: new ResolvedChain(template: $this->template(), tierPositions: $tier), anchor: new SequenceAnchor(objectUuid: 'obj-1', requesterId: 'alice'));
 
 		self::assertSame(['positions' => $tier], $sequence->getResolvedTier());
 		self::assertCount(1, $this->imported, 'the tier replaces the declared positions');
@@ -186,7 +184,7 @@ class TaskSequenceServiceTest extends TestCase {
 		$template = $this->template();
 		$template['approvingOutcomes'] = ['approved'];
 
-		$this->service->provision(template: $template, anchorObjectUuid: 'obj-1', requesterId: 'alice');
+		$this->service->provision(chain: new ResolvedChain(template: $template), anchor: new SequenceAnchor(objectUuid: 'obj-1', requesterId: 'alice'));
 
 		self::assertCount(3, $this->imported);
 		foreach ($this->imported as $payload) {
@@ -196,7 +194,7 @@ class TaskSequenceServiceTest extends TestCase {
 	}//end testADeclaredApprovingSetIsCopiedOntoEveryPositionTask()
 
 	public function testAPositionTaskWithoutADeclaredSetCarriesThePositionUnchanged(): void {
-		$this->service->provision(template: $this->template(), anchorObjectUuid: 'obj-1', requesterId: 'alice');
+		$this->service->provision(chain: new ResolvedChain(template: $this->template()), anchor: new SequenceAnchor(objectUuid: 'obj-1', requesterId: 'alice'));
 
 		self::assertSame(['order' => 1, 'role' => 'clerks'], $this->imported[0]['templateSnapshot']);
 	}//end testAPositionTaskWithoutADeclaredSetCarriesThePositionUnchanged()
@@ -212,7 +210,7 @@ class TaskSequenceServiceTest extends TestCase {
 		);
 
 		$this->tasks->expects(self::once())->method('enable')
-			->with('task-2', 'task-sequence:seq-1', self::stringContains('position 2'));
+			->with('task-2', self::callback(static fn (TaskTrigger $trigger): bool => $trigger->source === 'task-sequence:seq-1' && str_contains($trigger->reason, 'position 2')));
 		$this->dispatcher->expects(self::never())->method('dispatchTyped');
 
 		$this->service->onTaskTerminal(task: $this->positionTask(1, Task::STATE_COMPLETED, 'approved'));
@@ -443,7 +441,7 @@ class TaskSequenceServiceTest extends TestCase {
 		$this->firstPositionCompletedWith($outcome);
 
 		$this->tasks->expects(self::once())->method('enable')
-			->with('task-2', 'task-sequence:seq-1', self::stringContains('position 2'));
+			->with('task-2', self::callback(static fn (TaskTrigger $trigger): bool => $trigger->source === 'task-sequence:seq-1' && str_contains($trigger->reason, 'position 2')));
 		$this->tasks->expects(self::never())->method('terminateAsMoot');
 		$this->dispatcher->expects(self::never())->method('dispatchTyped');
 

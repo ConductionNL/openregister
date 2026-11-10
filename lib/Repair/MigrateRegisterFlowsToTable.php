@@ -68,7 +68,7 @@ namespace OCA\OpenRegister\Repair;
 
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -124,14 +124,14 @@ class MigrateRegisterFlowsToTable implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowMapper      $flowMapper    Writes into the canonical flow store.
+	 * @param FlowMapperInterface      $flowMapper    Writes into the canonical flow store.
 	 * @param ObjectOperationsInterface   $objectService Reads the register-authored flows.
 	 * @param LoggerInterface $logger        Records what moved and what did not.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly FlowMapper $flowMapper,
+		private readonly FlowMapperInterface $flowMapper,
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {

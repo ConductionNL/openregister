@@ -19,6 +19,10 @@ use DateTime;
 use OCA\OpenRegister\Db\ExportRun;
 use OCA\OpenRegister\Db\ExportRunMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
+use OCA\OpenRegister\Service\Export\ExportRunContent;
+use OCA\OpenRegister\Service\Export\ExportRunFile;
+use OCA\OpenRegister\Service\Export\ExportRunOrigin;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCP\Files\File;
 use OCP\Files\Folder;
@@ -77,20 +81,20 @@ class ExampleSetExportRunsTest extends TestCase {
 		});
 		$recorder = $this->createMock(ExportRunRecorder::class);
 		$recorder->method('record')->willReturnCallback(
-			function (string $source, string $actor, string $format, int $rowCount, ?string $profile = null, ?string $filename = null, ?string $registerName = null, ?string $schemaName = null, ?int $fileId = null, ?string $filePath = null, ?int $retentionSeconds = null, int $downloadCount = 0): ExportRun {
+			function (ExportRunOrigin $origin, ExportRunContent $content, ExportRunFile $file, ?int $retentionSeconds = null): ExportRun {
 				$run = new ExportRun();
 				$run->setUuid('run-'.count($this->runs));
-				$run->setSource($source);
-				$run->setActor($actor);
-				$run->setFormat($format);
-				$run->setRowCount($rowCount);
-				$run->setFilename($filename);
-				$run->setRegisterName($registerName);
-				$run->setSchemaName($schemaName);
-				$run->setFileId($fileId);
-				$run->setFilePath($filePath);
+				$run->setSource($origin->source);
+				$run->setActor($origin->actor);
+				$run->setFormat($content->format);
+				$run->setRowCount($content->rowCount);
+				$run->setFilename($file->filename);
+				$run->setRegisterName($content->registerName);
+				$run->setSchemaName($content->schemaName);
+				$run->setFileId($file->fileId);
+				$run->setFilePath($file->filePath);
 				$run->setRetentionSeconds($retentionSeconds);
-				$run->setDownloadCount($downloadCount);
+				$run->setDownloadCount($file->downloadCount);
 				$run->setProducedAt(new DateTime());
 				return $this->runs[$run->getUuid()] = $run;
 			}
@@ -146,7 +150,7 @@ class ExampleSetExportRunsTest extends TestCase {
 		];
 
 		$this->assertSame('', $kind->refusal(data: $data, users: ['pieter']));
-		$made = $kind->write(app: 'dossiq', key: 'export-woo-q3', data: $data);
+		$made = $kind->write(row: new ExampleSetRow(app: 'dossiq', key: 'export-woo-q3', data: $data));
 
 		$this->assertSame('', $made['error']);
 		$this->assertSame("zaak;titel\n2026-0110;Verlichting fietspad Lindelaan\n", $this->files['Exports/woo-2026-q3.csv']);
@@ -181,7 +185,7 @@ class ExampleSetExportRunsTest extends TestCase {
 		$binary = ['user' => 'pieter', 'fileName' => 'b.xlsx', 'format' => 'xlsx', 'contentBase64' => base64_encode("PK\x03\x04 sheet")];
 		$this->assertSame('', $kind->refusal(data: $binary, users: ['pieter']));
 		$this->assertStringContainsString('content', $kind->refusal(data: (['contentBase64' => '%%%'] + $binary), users: ['pieter']));
-		$made = $kind->write(app: 'dossiq', key: 'export-xlsx', data: $binary);
+		$made = $kind->write(row: new ExampleSetRow(app: 'dossiq', key: 'export-xlsx', data: $binary));
 		$this->assertSame("PK\x03\x04 sheet", $this->files['Exports/b.xlsx'], (string) $made['error']);
 	}//end testAnExportThatCannotBeWrittenIsRefused()
 

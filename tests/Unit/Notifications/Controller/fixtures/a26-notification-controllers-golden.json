@@ -1,0 +1,2343 @@
+{
+    "prefs index as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "prefs index as user": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "schema": "case",
+                    "enabled": true
+                }
+            ],
+            "total": 1
+        },
+        "calls": [
+            "NotificationPreferencesInterface::getEffectiveForUser([\"alice\",[]])"
+        ]
+    },
+    "prefs index as member": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "schema": "case",
+                    "enabled": true
+                }
+            ],
+            "total": 1
+        },
+        "calls": [
+            "NotificationPreferencesInterface::getEffectiveForUser([\"alice\",[]])"
+        ]
+    },
+    "prefs index as subadmin": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "schema": "case",
+                    "enabled": true
+                }
+            ],
+            "total": 1
+        },
+        "calls": [
+            "NotificationPreferencesInterface::getEffectiveForUser([\"alice\",[]])"
+        ]
+    },
+    "prefs index as admin": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "schema": "case",
+                    "enabled": true
+                }
+            ],
+            "total": 1
+        },
+        "calls": [
+            "NotificationPreferencesInterface::getEffectiveForUser([\"root\",[]])"
+        ]
+    },
+    "prefs index scoped as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "prefs index scoped as user": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "schema": "case",
+                    "enabled": true
+                }
+            ],
+            "total": 1
+        },
+        "calls": [
+            "NotificationPreferencesInterface::getEffectiveForUser([\"alice\",[\"register:1\"]])"
+        ]
+    },
+    "prefs index scoped as member": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "schema": "case",
+                    "enabled": true
+                }
+            ],
+            "total": 1
+        },
+        "calls": [
+            "NotificationPreferencesInterface::getEffectiveForUser([\"alice\",[\"register:1\"]])"
+        ]
+    },
+    "prefs index scoped as subadmin": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "schema": "case",
+                    "enabled": true
+                }
+            ],
+            "total": 1
+        },
+        "calls": [
+            "NotificationPreferencesInterface::getEffectiveForUser([\"alice\",[\"register:1\"]])"
+        ]
+    },
+    "prefs index scoped as admin": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "schema": "case",
+                    "enabled": true
+                }
+            ],
+            "total": 1
+        },
+        "calls": [
+            "NotificationPreferencesInterface::getEffectiveForUser([\"root\",[\"register:1\"]])"
+        ]
+    },
+    "prefs update missing as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "prefs update missing as user": {
+        "status": 422,
+        "data": {
+            "error": "Both \"schema\" and \"notification\" are required"
+        },
+        "calls": []
+    },
+    "prefs update missing as member": {
+        "status": 422,
+        "data": {
+            "error": "Both \"schema\" and \"notification\" are required"
+        },
+        "calls": []
+    },
+    "prefs update missing as subadmin": {
+        "status": 422,
+        "data": {
+            "error": "Both \"schema\" and \"notification\" are required"
+        },
+        "calls": []
+    },
+    "prefs update missing as admin": {
+        "status": 422,
+        "data": {
+            "error": "Both \"schema\" and \"notification\" are required"
+        },
+        "calls": []
+    },
+    "prefs update empty as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "prefs update empty as user": {
+        "status": 422,
+        "data": {
+            "error": "Both \"schema\" and \"notification\" are required"
+        },
+        "calls": []
+    },
+    "prefs update empty as member": {
+        "status": 422,
+        "data": {
+            "error": "Both \"schema\" and \"notification\" are required"
+        },
+        "calls": []
+    },
+    "prefs update empty as subadmin": {
+        "status": 422,
+        "data": {
+            "error": "Both \"schema\" and \"notification\" are required"
+        },
+        "calls": []
+    },
+    "prefs update empty as admin": {
+        "status": 422,
+        "data": {
+            "error": "Both \"schema\" and \"notification\" are required"
+        },
+        "calls": []
+    },
+    "prefs update as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "prefs update as user": {
+        "status": 200,
+        "data": {
+            "schema": "case",
+            "notification": "assigned",
+            "scope": "s",
+            "override": {
+                "enabled": false
+            }
+        },
+        "calls": [
+            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",{\"enabled\":false,\"channels\":[\"email\"]},\"s\"])",
+            "NotificationPreferencesInterface::getOverride([\"alice\",\"case\",\"assigned\",\"s\"])"
+        ]
+    },
+    "prefs update as member": {
+        "status": 200,
+        "data": {
+            "schema": "case",
+            "notification": "assigned",
+            "scope": "s",
+            "override": {
+                "enabled": false
+            }
+        },
+        "calls": [
+            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",{\"enabled\":false,\"channels\":[\"email\"]},\"s\"])",
+            "NotificationPreferencesInterface::getOverride([\"alice\",\"case\",\"assigned\",\"s\"])"
+        ]
+    },
+    "prefs update as subadmin": {
+        "status": 200,
+        "data": {
+            "schema": "case",
+            "notification": "assigned",
+            "scope": "s",
+            "override": {
+                "enabled": false
+            }
+        },
+        "calls": [
+            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",{\"enabled\":false,\"channels\":[\"email\"]},\"s\"])",
+            "NotificationPreferencesInterface::getOverride([\"alice\",\"case\",\"assigned\",\"s\"])"
+        ]
+    },
+    "prefs update as admin": {
+        "status": 200,
+        "data": {
+            "schema": "case",
+            "notification": "assigned",
+            "scope": "s",
+            "override": {
+                "enabled": false
+            }
+        },
+        "calls": [
+            "NotificationPreferencesInterface::setOverride([\"root\",\"case\",\"assigned\",{\"enabled\":false,\"channels\":[\"email\"]},\"s\"])",
+            "NotificationPreferencesInterface::getOverride([\"root\",\"case\",\"assigned\",\"s\"])"
+        ]
+    },
+    "prefs update scalar chan as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "prefs update scalar chan as user": {
+        "status": 200,
+        "data": {
+            "schema": "case",
+            "notification": "assigned",
+            "scope": "global",
+            "override": {
+                "enabled": false
+            }
+        },
+        "calls": [
+            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",{\"enabled\":true},null])",
+            "NotificationPreferencesInterface::getOverride([\"alice\",\"case\",\"assigned\",null])"
+        ]
+    },
+    "prefs update scalar chan as member": {
+        "status": 200,
+        "data": {
+            "schema": "case",
+            "notification": "assigned",
+            "scope": "global",
+            "override": {
+                "enabled": false
+            }
+        },
+        "calls": [
+            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",{\"enabled\":true},null])",
+            "NotificationPreferencesInterface::getOverride([\"alice\",\"case\",\"assigned\",null])"
+        ]
+    },
+    "prefs update scalar chan as subadmin": {
+        "status": 200,
+        "data": {
+            "schema": "case",
+            "notification": "assigned",
+            "scope": "global",
+            "override": {
+                "enabled": false
+            }
+        },
+        "calls": [
+            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",{\"enabled\":true},null])",
+            "NotificationPreferencesInterface::getOverride([\"alice\",\"case\",\"assigned\",null])"
+        ]
+    },
+    "prefs update scalar chan as admin": {
+        "status": 200,
+        "data": {
+            "schema": "case",
+            "notification": "assigned",
+            "scope": "global",
+            "override": {
+                "enabled": false
+            }
+        },
+        "calls": [
+            "NotificationPreferencesInterface::setOverride([\"root\",\"case\",\"assigned\",{\"enabled\":true},null])",
+            "NotificationPreferencesInterface::getOverride([\"root\",\"case\",\"assigned\",null])"
+        ]
+    },
+    "prefs reset bool as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "prefs reset bool as user": {
+        "status": 200,
+        "data": {
+            "schema": "case",
+            "notification": "assigned",
+            "scope": "global",
+            "override": null
+        },
+        "calls": [
+            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",null,null])"
+        ]
+    },
+    "prefs reset bool as member": {
+        "status": 200,
+        "data": {
+            "schema": "case",
+            "notification": "assigned",
+            "scope": "global",
+            "override": null
+        },
+        "calls": [
+            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",null,null])"
+        ]
+    },
+    "prefs reset bool as subadmin": {
+        "status": 200,
+        "data": {
+            "schema": "case",
+            "notification": "assigned",
+            "scope": "global",
+            "override": null
+        },
+        "calls": [
+            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",null,null])"
+        ]
+    },
+    "prefs reset bool as admin": {
+        "status": 200,
+        "data": {
+            "schema": "case",
+            "notification": "assigned",
+            "scope": "global",
+            "override": null
+        },
+        "calls": [
+            "NotificationPreferencesInterface::setOverride([\"root\",\"case\",\"assigned\",null,null])"
+        ]
+    },
+    "prefs reset string as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "prefs reset string as user": {
+        "status": 200,
+        "data": {
+            "schema": "case",
+            "notification": "assigned",
+            "scope": "s",
+            "override": null
+        },
+        "calls": [
+            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",null,\"s\"])"
+        ]
+    },
+    "prefs reset string as member": {
+        "status": 200,
+        "data": {
+            "schema": "case",
+            "notification": "assigned",
+            "scope": "s",
+            "override": null
+        },
+        "calls": [
+            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",null,\"s\"])"
+        ]
+    },
+    "prefs reset string as subadmin": {
+        "status": 200,
+        "data": {
+            "schema": "case",
+            "notification": "assigned",
+            "scope": "s",
+            "override": null
+        },
+        "calls": [
+            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",null,\"s\"])"
+        ]
+    },
+    "prefs reset string as admin": {
+        "status": 200,
+        "data": {
+            "schema": "case",
+            "notification": "assigned",
+            "scope": "s",
+            "override": null
+        },
+        "calls": [
+            "NotificationPreferencesInterface::setOverride([\"root\",\"case\",\"assigned\",null,\"s\"])"
+        ]
+    },
+    "prefs reset other as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "prefs reset other as user": {
+        "status": 200,
+        "data": {
+            "schema": "case",
+            "notification": "assigned",
+            "scope": "global",
+            "override": {
+                "enabled": false
+            }
+        },
+        "calls": [
+            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",{\"enabled\":true},null])",
+            "NotificationPreferencesInterface::getOverride([\"alice\",\"case\",\"assigned\",null])"
+        ]
+    },
+    "prefs reset other as member": {
+        "status": 200,
+        "data": {
+            "schema": "case",
+            "notification": "assigned",
+            "scope": "global",
+            "override": {
+                "enabled": false
+            }
+        },
+        "calls": [
+            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",{\"enabled\":true},null])",
+            "NotificationPreferencesInterface::getOverride([\"alice\",\"case\",\"assigned\",null])"
+        ]
+    },
+    "prefs reset other as subadmin": {
+        "status": 200,
+        "data": {
+            "schema": "case",
+            "notification": "assigned",
+            "scope": "global",
+            "override": {
+                "enabled": false
+            }
+        },
+        "calls": [
+            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",{\"enabled\":true},null])",
+            "NotificationPreferencesInterface::getOverride([\"alice\",\"case\",\"assigned\",null])"
+        ]
+    },
+    "prefs reset other as admin": {
+        "status": 200,
+        "data": {
+            "schema": "case",
+            "notification": "assigned",
+            "scope": "global",
+            "override": {
+                "enabled": false
+            }
+        },
+        "calls": [
+            "NotificationPreferencesInterface::setOverride([\"root\",\"case\",\"assigned\",{\"enabled\":true},null])",
+            "NotificationPreferencesInterface::getOverride([\"root\",\"case\",\"assigned\",null])"
+        ]
+    },
+    "group index no group as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "group index no group as user": {
+        "status": 422,
+        "data": {
+            "error": "A \"group\" is required"
+        },
+        "calls": []
+    },
+    "group index no group as member": {
+        "status": 422,
+        "data": {
+            "error": "A \"group\" is required"
+        },
+        "calls": []
+    },
+    "group index no group as subadmin": {
+        "status": 422,
+        "data": {
+            "error": "A \"group\" is required"
+        },
+        "calls": []
+    },
+    "group index no group as admin": {
+        "status": 422,
+        "data": {
+            "error": "A \"group\" is required"
+        },
+        "calls": []
+    },
+    "group index unknown as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "group index unknown as user": {
+        "status": 404,
+        "data": {
+            "error": "Unknown group"
+        },
+        "calls": [
+            "IGroupManager::get([\"ghost\"])"
+        ]
+    },
+    "group index unknown as member": {
+        "status": 404,
+        "data": {
+            "error": "Unknown group"
+        },
+        "calls": [
+            "IGroupManager::get([\"ghost\"])"
+        ]
+    },
+    "group index unknown as subadmin": {
+        "status": 404,
+        "data": {
+            "error": "Unknown group"
+        },
+        "calls": [
+            "IGroupManager::get([\"ghost\"])"
+        ]
+    },
+    "group index unknown as admin": {
+        "status": 404,
+        "data": {
+            "error": "Unknown group"
+        },
+        "calls": [
+            "IGroupManager::get([\"ghost\"])"
+        ]
+    },
+    "group index as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "group index as user": {
+        "status": 403,
+        "data": {
+            "error": "Not a member of that group"
+        },
+        "calls": [
+            "IGroupManager::get([\"staff\"])",
+            "IGroup::inGroup([\"IUser:alice\"])",
+            "IGroupManager::isAdmin([\"alice\"])",
+            "IGroupManager::get([\"staff\"])",
+            "ISubAdmin::isSubAdminOfGroup([\"IUser:alice\",\"IGroup\"])"
+        ]
+    },
+    "group index as member": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "group": "staff",
+                    "schema": "case",
+                    "schemaTitle": "Case",
+                    "notification": "assigned",
+                    "scope": "s",
+                    "enabled": true,
+                    "channels": [
+                        "email"
+                    ]
+                },
+                {
+                    "group": "staff",
+                    "schema": "case",
+                    "schemaTitle": "Case",
+                    "notification": "7",
+                    "scope": "s",
+                    "enabled": true,
+                    "channels": [
+                        "email"
+                    ]
+                },
+                {
+                    "group": "staff",
+                    "schema": "4",
+                    "schemaTitle": "4",
+                    "notification": "done",
+                    "scope": "s",
+                    "enabled": true,
+                    "channels": [
+                        "email"
+                    ]
+                }
+            ],
+            "total": 3
+        },
+        "calls": [
+            "IGroupManager::get([\"staff\"])",
+            "IGroup::inGroup([\"IUser:alice\"])",
+            "SchemaMapperInterface::findAll([null,null,[],[],[],[],true,true])",
+            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"case\",\"assigned\",\"s\"])",
+            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"case\",\"quiet\",\"s\"])",
+            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"case\",\"7\",\"s\"])",
+            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"4\",\"done\",\"s\"])"
+        ]
+    },
+    "group index as subadmin": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "group": "staff",
+                    "schema": "case",
+                    "schemaTitle": "Case",
+                    "notification": "assigned",
+                    "scope": "s",
+                    "enabled": true,
+                    "channels": [
+                        "email"
+                    ]
+                },
+                {
+                    "group": "staff",
+                    "schema": "case",
+                    "schemaTitle": "Case",
+                    "notification": "7",
+                    "scope": "s",
+                    "enabled": true,
+                    "channels": [
+                        "email"
+                    ]
+                },
+                {
+                    "group": "staff",
+                    "schema": "4",
+                    "schemaTitle": "4",
+                    "notification": "done",
+                    "scope": "s",
+                    "enabled": true,
+                    "channels": [
+                        "email"
+                    ]
+                }
+            ],
+            "total": 3
+        },
+        "calls": [
+            "IGroupManager::get([\"staff\"])",
+            "IGroup::inGroup([\"IUser:alice\"])",
+            "IGroupManager::isAdmin([\"alice\"])",
+            "IGroupManager::get([\"staff\"])",
+            "ISubAdmin::isSubAdminOfGroup([\"IUser:alice\",\"IGroup\"])",
+            "SchemaMapperInterface::findAll([null,null,[],[],[],[],true,true])",
+            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"case\",\"assigned\",\"s\"])",
+            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"case\",\"quiet\",\"s\"])",
+            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"case\",\"7\",\"s\"])",
+            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"4\",\"done\",\"s\"])"
+        ]
+    },
+    "group index as admin": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "group": "staff",
+                    "schema": "case",
+                    "schemaTitle": "Case",
+                    "notification": "assigned",
+                    "scope": "s",
+                    "enabled": true,
+                    "channels": [
+                        "email"
+                    ]
+                },
+                {
+                    "group": "staff",
+                    "schema": "case",
+                    "schemaTitle": "Case",
+                    "notification": "7",
+                    "scope": "s",
+                    "enabled": true,
+                    "channels": [
+                        "email"
+                    ]
+                },
+                {
+                    "group": "staff",
+                    "schema": "4",
+                    "schemaTitle": "4",
+                    "notification": "done",
+                    "scope": "s",
+                    "enabled": true,
+                    "channels": [
+                        "email"
+                    ]
+                }
+            ],
+            "total": 3
+        },
+        "calls": [
+            "IGroupManager::get([\"staff\"])",
+            "IGroup::inGroup([\"IUser:root\"])",
+            "IGroupManager::isAdmin([\"root\"])",
+            "SchemaMapperInterface::findAll([null,null,[],[],[],[],true,true])",
+            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"case\",\"assigned\",\"s\"])",
+            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"case\",\"quiet\",\"s\"])",
+            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"case\",\"7\",\"s\"])",
+            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"4\",\"done\",\"s\"])"
+        ]
+    },
+    "group update missing as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "group update missing as user": {
+        "status": 422,
+        "data": {
+            "error": "A \"group\", a \"schema\" and a \"notification\" are required"
+        },
+        "calls": []
+    },
+    "group update missing as member": {
+        "status": 422,
+        "data": {
+            "error": "A \"group\", a \"schema\" and a \"notification\" are required"
+        },
+        "calls": []
+    },
+    "group update missing as subadmin": {
+        "status": 422,
+        "data": {
+            "error": "A \"group\", a \"schema\" and a \"notification\" are required"
+        },
+        "calls": []
+    },
+    "group update missing as admin": {
+        "status": 422,
+        "data": {
+            "error": "A \"group\", a \"schema\" and a \"notification\" are required"
+        },
+        "calls": []
+    },
+    "group update unknown as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "group update unknown as user": {
+        "status": 404,
+        "data": {
+            "error": "Unknown group"
+        },
+        "calls": [
+            "IGroupManager::get([\"ghost\"])"
+        ]
+    },
+    "group update unknown as member": {
+        "status": 404,
+        "data": {
+            "error": "Unknown group"
+        },
+        "calls": [
+            "IGroupManager::get([\"ghost\"])"
+        ]
+    },
+    "group update unknown as subadmin": {
+        "status": 404,
+        "data": {
+            "error": "Unknown group"
+        },
+        "calls": [
+            "IGroupManager::get([\"ghost\"])"
+        ]
+    },
+    "group update unknown as admin": {
+        "status": 404,
+        "data": {
+            "error": "Unknown group"
+        },
+        "calls": [
+            "IGroupManager::get([\"ghost\"])"
+        ]
+    },
+    "group update as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "group update as user": {
+        "status": 403,
+        "data": {
+            "error": "You do not administer that group"
+        },
+        "calls": [
+            "IGroupManager::get([\"staff\"])",
+            "IGroupManager::isAdmin([\"alice\"])",
+            "IGroupManager::get([\"staff\"])",
+            "ISubAdmin::isSubAdminOfGroup([\"IUser:alice\",\"IGroup\"])"
+        ]
+    },
+    "group update as member": {
+        "status": 403,
+        "data": {
+            "error": "You do not administer that group"
+        },
+        "calls": [
+            "IGroupManager::get([\"staff\"])",
+            "IGroupManager::isAdmin([\"alice\"])",
+            "IGroupManager::get([\"staff\"])",
+            "ISubAdmin::isSubAdminOfGroup([\"IUser:alice\",\"IGroup\"])"
+        ]
+    },
+    "group update as subadmin": {
+        "status": 200,
+        "data": {
+            "group": "staff",
+            "schema": "case",
+            "notification": "assigned",
+            "scope": "global",
+            "default": {
+                "channels": [
+                    "email"
+                ]
+            }
+        },
+        "calls": [
+            "IGroupManager::get([\"staff\"])",
+            "IGroupManager::isAdmin([\"alice\"])",
+            "IGroupManager::get([\"staff\"])",
+            "ISubAdmin::isSubAdminOfGroup([\"IUser:alice\",\"IGroup\"])",
+            "NotificationPreferencesInterface::setGroupDefault([\"staff\",\"case\",\"assigned\",{\"enabled\":false,\"channels\":[\"push\"]},null])",
+            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"case\",\"assigned\",null])"
+        ]
+    },
+    "group update as admin": {
+        "status": 200,
+        "data": {
+            "group": "staff",
+            "schema": "case",
+            "notification": "assigned",
+            "scope": "global",
+            "default": {
+                "channels": [
+                    "email"
+                ]
+            }
+        },
+        "calls": [
+            "IGroupManager::get([\"staff\"])",
+            "IGroupManager::isAdmin([\"root\"])",
+            "NotificationPreferencesInterface::setGroupDefault([\"staff\",\"case\",\"assigned\",{\"enabled\":false,\"channels\":[\"push\"]},null])",
+            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"case\",\"assigned\",null])"
+        ]
+    },
+    "group reset as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "group reset as user": {
+        "status": 403,
+        "data": {
+            "error": "You do not administer that group"
+        },
+        "calls": [
+            "IGroupManager::get([\"staff\"])",
+            "IGroupManager::isAdmin([\"alice\"])",
+            "IGroupManager::get([\"staff\"])",
+            "ISubAdmin::isSubAdminOfGroup([\"IUser:alice\",\"IGroup\"])"
+        ]
+    },
+    "group reset as member": {
+        "status": 403,
+        "data": {
+            "error": "You do not administer that group"
+        },
+        "calls": [
+            "IGroupManager::get([\"staff\"])",
+            "IGroupManager::isAdmin([\"alice\"])",
+            "IGroupManager::get([\"staff\"])",
+            "ISubAdmin::isSubAdminOfGroup([\"IUser:alice\",\"IGroup\"])"
+        ]
+    },
+    "group reset as subadmin": {
+        "status": 200,
+        "data": {
+            "group": "staff",
+            "schema": "case",
+            "notification": "assigned",
+            "scope": "s",
+            "default": {
+                "channels": [
+                    "email"
+                ]
+            }
+        },
+        "calls": [
+            "IGroupManager::get([\"staff\"])",
+            "IGroupManager::isAdmin([\"alice\"])",
+            "IGroupManager::get([\"staff\"])",
+            "ISubAdmin::isSubAdminOfGroup([\"IUser:alice\",\"IGroup\"])",
+            "NotificationPreferencesInterface::setGroupDefault([\"staff\",\"case\",\"assigned\",null,\"s\"])",
+            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"case\",\"assigned\",\"s\"])"
+        ]
+    },
+    "group reset as admin": {
+        "status": 200,
+        "data": {
+            "group": "staff",
+            "schema": "case",
+            "notification": "assigned",
+            "scope": "s",
+            "default": {
+                "channels": [
+                    "email"
+                ]
+            }
+        },
+        "calls": [
+            "IGroupManager::get([\"staff\"])",
+            "IGroupManager::isAdmin([\"root\"])",
+            "NotificationPreferencesInterface::setGroupDefault([\"staff\",\"case\",\"assigned\",null,\"s\"])",
+            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"case\",\"assigned\",\"s\"])"
+        ]
+    },
+    "broadcast index as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "broadcast index as user": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "broadcast index as member": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "broadcast index as subadmin": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "broadcast index as admin": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "uuid": "b-1"
+                }
+            ],
+            "total": 1
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"root\"])",
+            "NotificationBroadcastService::listAll([5,null])"
+        ]
+    },
+    "broadcast create no subj as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "broadcast create no subj as user": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "broadcast create no subj as member": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "broadcast create no subj as subadmin": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "broadcast create no subj as admin": {
+        "status": 422,
+        "data": {
+            "error": "A \"subject\" is required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"root\"])"
+        ]
+    },
+    "broadcast create bad date as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "broadcast create bad date as user": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "broadcast create bad date as member": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "broadcast create bad date as subadmin": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "broadcast create bad date as admin": {
+        "status": 422,
+        "data": {
+            "error": "Both \"startsAt\" and \"endsAt\" must be readable moments"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"root\"])"
+        ]
+    },
+    "broadcast create no end as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "broadcast create no end as user": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "broadcast create no end as member": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "broadcast create no end as subadmin": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "broadcast create no end as admin": {
+        "status": 422,
+        "data": {
+            "error": "An \"endsAt\" is required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"root\"])"
+        ]
+    },
+    "broadcast create invalid as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "broadcast create invalid as user": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "broadcast create invalid as member": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "broadcast create invalid as subadmin": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "broadcast create invalid as admin": {
+        "status": 422,
+        "data": {
+            "error": "window too long"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"root\"])",
+            "NotificationBroadcastService::send([\"OCA\\\\OpenRegister\\\\Notifications\\\\Db\\\\BroadcastMessage\",\"root\",\"OCA\\\\OpenRegister\\\\Notifications\\\\Db\\\\BroadcastWindow\"])"
+        ]
+    },
+    "broadcast create as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "broadcast create as user": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "broadcast create as member": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "broadcast create as subadmin": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "broadcast create as admin": {
+        "status": 201,
+        "data": {
+            "uuid": "b-1"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"root\"])",
+            "NotificationBroadcastService::send([\"OCA\\\\OpenRegister\\\\Notifications\\\\Db\\\\BroadcastMessage\",\"root\",\"OCA\\\\OpenRegister\\\\Notifications\\\\Db\\\\BroadcastWindow\"])"
+        ]
+    },
+    "broadcast destroy unknown as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "broadcast destroy unknown as user": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "broadcast destroy unknown as member": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "broadcast destroy unknown as subadmin": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "broadcast destroy unknown as admin": {
+        "status": 404,
+        "data": {
+            "error": "Unknown broadcast"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"root\"])",
+            "NotificationBroadcastService::withdraw([\"ghost\"])"
+        ]
+    },
+    "broadcast destroy as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "broadcast destroy as user": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "broadcast destroy as member": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "broadcast destroy as subadmin": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "broadcast destroy as admin": {
+        "status": 200,
+        "data": {
+            "uuid": "b-1",
+            "withdrawn": true
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"root\"])",
+            "NotificationBroadcastService::withdraw([\"b-1\"])"
+        ]
+    },
+    "broadcast active as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "broadcast active as user": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "uuid": "b-1"
+                }
+            ],
+            "total": 1
+        },
+        "calls": [
+            "NotificationBroadcastService::activeFor([\"alice\",null])"
+        ]
+    },
+    "broadcast active as member": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "uuid": "b-1"
+                }
+            ],
+            "total": 1
+        },
+        "calls": [
+            "NotificationBroadcastService::activeFor([\"alice\",null])"
+        ]
+    },
+    "broadcast active as subadmin": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "uuid": "b-1"
+                }
+            ],
+            "total": 1
+        },
+        "calls": [
+            "NotificationBroadcastService::activeFor([\"alice\",null])"
+        ]
+    },
+    "broadcast active as admin": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "uuid": "b-1"
+                }
+            ],
+            "total": 1
+        },
+        "calls": [
+            "NotificationBroadcastService::activeFor([\"root\",null])"
+        ]
+    },
+    "broadcast ack unknown as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "broadcast ack unknown as user": {
+        "status": 404,
+        "data": {
+            "error": "Unknown broadcast"
+        },
+        "calls": [
+            "NotificationBroadcastService::acknowledge([\"ghost\",\"alice\"])"
+        ]
+    },
+    "broadcast ack unknown as member": {
+        "status": 404,
+        "data": {
+            "error": "Unknown broadcast"
+        },
+        "calls": [
+            "NotificationBroadcastService::acknowledge([\"ghost\",\"alice\"])"
+        ]
+    },
+    "broadcast ack unknown as subadmin": {
+        "status": 404,
+        "data": {
+            "error": "Unknown broadcast"
+        },
+        "calls": [
+            "NotificationBroadcastService::acknowledge([\"ghost\",\"alice\"])"
+        ]
+    },
+    "broadcast ack unknown as admin": {
+        "status": 404,
+        "data": {
+            "error": "Unknown broadcast"
+        },
+        "calls": [
+            "NotificationBroadcastService::acknowledge([\"ghost\",\"root\"])"
+        ]
+    },
+    "broadcast ack as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "broadcast ack as user": {
+        "status": 200,
+        "data": {
+            "uuid": "b-1",
+            "acknowledged": true
+        },
+        "calls": [
+            "NotificationBroadcastService::acknowledge([\"b-1\",\"alice\"])"
+        ]
+    },
+    "broadcast ack as member": {
+        "status": 200,
+        "data": {
+            "uuid": "b-1",
+            "acknowledged": true
+        },
+        "calls": [
+            "NotificationBroadcastService::acknowledge([\"b-1\",\"alice\"])"
+        ]
+    },
+    "broadcast ack as subadmin": {
+        "status": 200,
+        "data": {
+            "uuid": "b-1",
+            "acknowledged": true
+        },
+        "calls": [
+            "NotificationBroadcastService::acknowledge([\"b-1\",\"alice\"])"
+        ]
+    },
+    "broadcast ack as admin": {
+        "status": 200,
+        "data": {
+            "uuid": "b-1",
+            "acknowledged": true
+        },
+        "calls": [
+            "NotificationBroadcastService::acknowledge([\"b-1\",\"root\"])"
+        ]
+    },
+    "templates index as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "templates index as user": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "event": "object.created"
+                }
+            ],
+            "total": 1,
+            "gaps": [
+                "object.deleted"
+            ]
+        },
+        "calls": [
+            "NotificationTemplatesInterface::listAll([])",
+            "NotificationTemplatesInterface::gaps([])"
+        ]
+    },
+    "templates index as member": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "event": "object.created"
+                }
+            ],
+            "total": 1,
+            "gaps": [
+                "object.deleted"
+            ]
+        },
+        "calls": [
+            "NotificationTemplatesInterface::listAll([])",
+            "NotificationTemplatesInterface::gaps([])"
+        ]
+    },
+    "templates index as subadmin": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "event": "object.created"
+                }
+            ],
+            "total": 1,
+            "gaps": [
+                "object.deleted"
+            ]
+        },
+        "calls": [
+            "NotificationTemplatesInterface::listAll([])",
+            "NotificationTemplatesInterface::gaps([])"
+        ]
+    },
+    "templates index as admin": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "event": "object.created"
+                }
+            ],
+            "total": 1,
+            "gaps": [
+                "object.deleted"
+            ]
+        },
+        "calls": [
+            "NotificationTemplatesInterface::listAll([])",
+            "NotificationTemplatesInterface::gaps([])"
+        ]
+    },
+    "templates gaps as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "templates gaps as user": {
+        "status": 200,
+        "data": {
+            "results": [
+                "object.deleted"
+            ],
+            "total": 1
+        },
+        "calls": [
+            "NotificationTemplatesInterface::gaps([])"
+        ]
+    },
+    "templates gaps as member": {
+        "status": 200,
+        "data": {
+            "results": [
+                "object.deleted"
+            ],
+            "total": 1
+        },
+        "calls": [
+            "NotificationTemplatesInterface::gaps([])"
+        ]
+    },
+    "templates gaps as subadmin": {
+        "status": 200,
+        "data": {
+            "results": [
+                "object.deleted"
+            ],
+            "total": 1
+        },
+        "calls": [
+            "NotificationTemplatesInterface::gaps([])"
+        ]
+    },
+    "templates gaps as admin": {
+        "status": 200,
+        "data": {
+            "results": [
+                "object.deleted"
+            ],
+            "total": 1
+        },
+        "calls": [
+            "NotificationTemplatesInterface::gaps([])"
+        ]
+    },
+    "templates update missing as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "templates update missing as user": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "templates update missing as member": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "templates update missing as subadmin": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "templates update missing as admin": {
+        "status": 422,
+        "data": {
+            "error": "A \"template\" object, or \"reset\": true, is required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"root\"])"
+        ]
+    },
+    "templates update invalid as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "templates update invalid as user": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "templates update invalid as member": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "templates update invalid as subadmin": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "templates update invalid as admin": {
+        "status": 422,
+        "data": {
+            "error": "unknown event"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"root\"])",
+            "NotificationTemplatesInterface::edit([\"bad.event\",{\"subject\":\"x\"}])"
+        ]
+    },
+    "templates update as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "templates update as user": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "templates update as member": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "templates update as subadmin": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "templates update as admin": {
+        "status": 200,
+        "data": {
+            "event": "object.created",
+            "template": {
+                "subject": "x"
+            },
+            "edited": true
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"root\"])",
+            "NotificationTemplatesInterface::edit([\"object.created\",{\"subject\":\"x\"}])",
+            "NotificationTemplatesInterface::templateFor([\"object.created\"])",
+            "NotificationTemplatesInterface::hasEdit([\"object.created\"])"
+        ]
+    },
+    "templates reset as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "templates reset as user": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "templates reset as member": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "templates reset as subadmin": {
+        "status": 403,
+        "data": {
+            "error": "Administrator required"
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"alice\"])"
+        ]
+    },
+    "templates reset as admin": {
+        "status": 200,
+        "data": {
+            "event": "object.created",
+            "template": {
+                "subject": "x"
+            },
+            "edited": true
+        },
+        "calls": [
+            "IGroupManager::isAdmin([\"root\"])",
+            "NotificationTemplatesInterface::edit([\"object.created\",null])",
+            "NotificationTemplatesInterface::templateFor([\"object.created\"])",
+            "NotificationTemplatesInterface::hasEdit([\"object.created\"])"
+        ]
+    },
+    "subs index as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "subs index as user": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1
+        },
+        "calls": [
+            "mapper::findByUser([\"alice\"])"
+        ]
+    },
+    "subs index as member": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1
+        },
+        "calls": [
+            "mapper::findByUser([\"alice\"])"
+        ]
+    },
+    "subs index as subadmin": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1
+        },
+        "calls": [
+            "mapper::findByUser([\"alice\"])"
+        ]
+    },
+    "subs index as admin": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1
+        },
+        "calls": [
+            "mapper::findByUser([\"root\"])"
+        ]
+    },
+    "subs create none as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "subs create none as user": {
+        "status": 422,
+        "data": {
+            "error": "needs a scope"
+        },
+        "calls": [
+            "mapper::subscribe([\"alice\",null,null])"
+        ]
+    },
+    "subs create none as member": {
+        "status": 422,
+        "data": {
+            "error": "needs a scope"
+        },
+        "calls": [
+            "mapper::subscribe([\"alice\",null,null])"
+        ]
+    },
+    "subs create none as subadmin": {
+        "status": 422,
+        "data": {
+            "error": "needs a scope"
+        },
+        "calls": [
+            "mapper::subscribe([\"alice\",null,null])"
+        ]
+    },
+    "subs create none as admin": {
+        "status": 422,
+        "data": {
+            "error": "needs a scope"
+        },
+        "calls": [
+            "mapper::subscribe([\"root\",null,null])"
+        ]
+    },
+    "subs create register gone as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "subs create register gone as user": {
+        "status": 404,
+        "data": {
+            "error": "Register not found or not accessible"
+        },
+        "calls": [
+            "RegisterMapperInterface::find([404,true,true])"
+        ]
+    },
+    "subs create register gone as member": {
+        "status": 404,
+        "data": {
+            "error": "Register not found or not accessible"
+        },
+        "calls": [
+            "RegisterMapperInterface::find([404,true,true])"
+        ]
+    },
+    "subs create register gone as subadmin": {
+        "status": 404,
+        "data": {
+            "error": "Register not found or not accessible"
+        },
+        "calls": [
+            "RegisterMapperInterface::find([404,true,true])"
+        ]
+    },
+    "subs create register gone as admin": {
+        "status": 404,
+        "data": {
+            "error": "Register not found or not accessible"
+        },
+        "calls": [
+            "RegisterMapperInterface::find([404,true,true])"
+        ]
+    },
+    "subs create schema gone as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "subs create schema gone as user": {
+        "status": 404,
+        "data": {
+            "error": "Schema not found or not accessible"
+        },
+        "calls": [
+            "RegisterMapperInterface::find([1,true,true])",
+            "SchemaMapperInterface::find([404,[],true,true])"
+        ]
+    },
+    "subs create schema gone as member": {
+        "status": 404,
+        "data": {
+            "error": "Schema not found or not accessible"
+        },
+        "calls": [
+            "RegisterMapperInterface::find([1,true,true])",
+            "SchemaMapperInterface::find([404,[],true,true])"
+        ]
+    },
+    "subs create schema gone as subadmin": {
+        "status": 404,
+        "data": {
+            "error": "Schema not found or not accessible"
+        },
+        "calls": [
+            "RegisterMapperInterface::find([1,true,true])",
+            "SchemaMapperInterface::find([404,[],true,true])"
+        ]
+    },
+    "subs create schema gone as admin": {
+        "status": 404,
+        "data": {
+            "error": "Schema not found or not accessible"
+        },
+        "calls": [
+            "RegisterMapperInterface::find([1,true,true])",
+            "SchemaMapperInterface::find([404,[],true,true])"
+        ]
+    },
+    "subs create as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "subs create as user": {
+        "status": 201,
+        "data": {
+            "id": 1
+        },
+        "calls": [
+            "RegisterMapperInterface::find([1,true,true])",
+            "mapper::subscribe([\"alice\",1,null])"
+        ]
+    },
+    "subs create as member": {
+        "status": 201,
+        "data": {
+            "id": 1
+        },
+        "calls": [
+            "RegisterMapperInterface::find([1,true,true])",
+            "mapper::subscribe([\"alice\",1,null])"
+        ]
+    },
+    "subs create as subadmin": {
+        "status": 201,
+        "data": {
+            "id": 1
+        },
+        "calls": [
+            "RegisterMapperInterface::find([1,true,true])",
+            "mapper::subscribe([\"alice\",1,null])"
+        ]
+    },
+    "subs create as admin": {
+        "status": 201,
+        "data": {
+            "id": 1
+        },
+        "calls": [
+            "RegisterMapperInterface::find([1,true,true])",
+            "mapper::subscribe([\"root\",1,null])"
+        ]
+    },
+    "subs create both as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "subs create both as user": {
+        "status": 201,
+        "data": {
+            "id": 1
+        },
+        "calls": [
+            "RegisterMapperInterface::find([1,true,true])",
+            "SchemaMapperInterface::find([2,[],true,true])",
+            "mapper::subscribe([\"alice\",1,2])"
+        ]
+    },
+    "subs create both as member": {
+        "status": 201,
+        "data": {
+            "id": 1
+        },
+        "calls": [
+            "RegisterMapperInterface::find([1,true,true])",
+            "SchemaMapperInterface::find([2,[],true,true])",
+            "mapper::subscribe([\"alice\",1,2])"
+        ]
+    },
+    "subs create both as subadmin": {
+        "status": 201,
+        "data": {
+            "id": 1
+        },
+        "calls": [
+            "RegisterMapperInterface::find([1,true,true])",
+            "SchemaMapperInterface::find([2,[],true,true])",
+            "mapper::subscribe([\"alice\",1,2])"
+        ]
+    },
+    "subs create both as admin": {
+        "status": 201,
+        "data": {
+            "id": 1
+        },
+        "calls": [
+            "RegisterMapperInterface::find([1,true,true])",
+            "SchemaMapperInterface::find([2,[],true,true])",
+            "mapper::subscribe([\"root\",1,2])"
+        ]
+    },
+    "subs destroy as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "subs destroy as user": {
+        "status": 200,
+        "data": {
+            "deleted": true
+        },
+        "calls": [
+            "mapper::unsubscribe([\"alice\",null,2])"
+        ]
+    },
+    "subs destroy as member": {
+        "status": 200,
+        "data": {
+            "deleted": true
+        },
+        "calls": [
+            "mapper::unsubscribe([\"alice\",null,2])"
+        ]
+    },
+    "subs destroy as subadmin": {
+        "status": 200,
+        "data": {
+            "deleted": true
+        },
+        "calls": [
+            "mapper::unsubscribe([\"alice\",null,2])"
+        ]
+    },
+    "subs destroy as admin": {
+        "status": 200,
+        "data": {
+            "deleted": true
+        },
+        "calls": [
+            "mapper::unsubscribe([\"root\",null,2])"
+        ]
+    },
+    "window index none as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "window index none as user": {
+        "status": 200,
+        "data": {
+            "enabled": false
+        },
+        "calls": [
+            "NotificationDeliveryWindowService::getForUser([\"alice\"])"
+        ]
+    },
+    "window index none as member": {
+        "status": 200,
+        "data": {
+            "enabled": false
+        },
+        "calls": [
+            "NotificationDeliveryWindowService::getForUser([\"alice\"])"
+        ]
+    },
+    "window index none as subadmin": {
+        "status": 200,
+        "data": {
+            "enabled": false
+        },
+        "calls": [
+            "NotificationDeliveryWindowService::getForUser([\"alice\"])"
+        ]
+    },
+    "window index none as admin": {
+        "status": 200,
+        "data": {
+            "enabled": false
+        },
+        "calls": [
+            "NotificationDeliveryWindowService::getForUser([\"root\"])"
+        ]
+    },
+    "window update off as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "window update off as user": {
+        "status": 200,
+        "data": {
+            "enabled": false
+        },
+        "calls": [
+            "NotificationDeliveryWindowService::setForUser([\"alice\",null])"
+        ]
+    },
+    "window update off as member": {
+        "status": 200,
+        "data": {
+            "enabled": false
+        },
+        "calls": [
+            "NotificationDeliveryWindowService::setForUser([\"alice\",null])"
+        ]
+    },
+    "window update off as subadmin": {
+        "status": 200,
+        "data": {
+            "enabled": false
+        },
+        "calls": [
+            "NotificationDeliveryWindowService::setForUser([\"alice\",null])"
+        ]
+    },
+    "window update off as admin": {
+        "status": 200,
+        "data": {
+            "enabled": false
+        },
+        "calls": [
+            "NotificationDeliveryWindowService::setForUser([\"root\",null])"
+        ]
+    },
+    "window update invalid as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "window update invalid as user": {
+        "status": 422,
+        "data": {
+            "error": "start must be HH:MM",
+            "code": "notification-delivery-window-invalid"
+        },
+        "calls": [
+            "NotificationDeliveryWindowService::setForUser([\"alice\",{\"start\":\"bad\"}])"
+        ]
+    },
+    "window update invalid as member": {
+        "status": 422,
+        "data": {
+            "error": "start must be HH:MM",
+            "code": "notification-delivery-window-invalid"
+        },
+        "calls": [
+            "NotificationDeliveryWindowService::setForUser([\"alice\",{\"start\":\"bad\"}])"
+        ]
+    },
+    "window update invalid as subadmin": {
+        "status": 422,
+        "data": {
+            "error": "start must be HH:MM",
+            "code": "notification-delivery-window-invalid"
+        },
+        "calls": [
+            "NotificationDeliveryWindowService::setForUser([\"alice\",{\"start\":\"bad\"}])"
+        ]
+    },
+    "window update invalid as admin": {
+        "status": 422,
+        "data": {
+            "error": "start must be HH:MM",
+            "code": "notification-delivery-window-invalid"
+        },
+        "calls": [
+            "NotificationDeliveryWindowService::setForUser([\"root\",{\"start\":\"bad\"}])"
+        ]
+    },
+    "window update as anonymous": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "window update as user": {
+        "status": 200,
+        "data": {
+            "start": "22:00",
+            "end": "07:00"
+        },
+        "calls": [
+            "NotificationDeliveryWindowService::setForUser([\"alice\",{\"start\":\"22:00\",\"end\":\"07:00\"}])",
+            "NotificationDeliveryWindowService::getForUser([\"alice\"])"
+        ]
+    },
+    "window update as member": {
+        "status": 200,
+        "data": {
+            "start": "22:00",
+            "end": "07:00"
+        },
+        "calls": [
+            "NotificationDeliveryWindowService::setForUser([\"alice\",{\"start\":\"22:00\",\"end\":\"07:00\"}])",
+            "NotificationDeliveryWindowService::getForUser([\"alice\"])"
+        ]
+    },
+    "window update as subadmin": {
+        "status": 200,
+        "data": {
+            "start": "22:00",
+            "end": "07:00"
+        },
+        "calls": [
+            "NotificationDeliveryWindowService::setForUser([\"alice\",{\"start\":\"22:00\",\"end\":\"07:00\"}])",
+            "NotificationDeliveryWindowService::getForUser([\"alice\"])"
+        ]
+    },
+    "window update as admin": {
+        "status": 200,
+        "data": {
+            "start": "22:00",
+            "end": "07:00"
+        },
+        "calls": [
+            "NotificationDeliveryWindowService::setForUser([\"root\",{\"start\":\"22:00\",\"end\":\"07:00\"}])",
+            "NotificationDeliveryWindowService::getForUser([\"root\"])"
+        ]
+    }
+}

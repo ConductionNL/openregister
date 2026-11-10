@@ -21,7 +21,9 @@ use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\MappingService;
+use OCA\OpenRegister\Service\WebhookDispatchServices;
 use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Service\WebhookStores;
 use OCP\BackgroundJob\IJobList;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -62,12 +64,16 @@ class WebhookServiceSendRequestGoldenTest extends TestCase {
 	#[DataProvider('cases')]
 	public function testSendRequestMatchesGolden(array $case): void {
 		$service = new WebhookService(
-			webhookMapper: $this->createMock(WebhookMapper::class),
-			logger: $this->createMock(LoggerInterface::class),
-			webhookLogMapper: $this->createMock(WebhookLogMapper::class),
-			mappingService: $this->createMock(MappingService::class),
-			mappingMapper: $this->createMock(MappingMapper::class),
-			jobList: $this->createMock(IJobList::class)
+			stores: new WebhookStores(
+				webhookMapper: $this->createMock(WebhookMapper::class),
+				webhookLogMapper: $this->createMock(WebhookLogMapper::class),
+				mappingMapper: $this->createMock(MappingMapper::class),
+				mappingService: $this->createMock(MappingService::class)
+			),
+			dispatch: new WebhookDispatchServices(
+				jobList: $this->createMock(IJobList::class)
+			),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 		$seen = [];
 		$client = $this->createMock(GuzzleClient::class);
@@ -112,7 +118,7 @@ class WebhookServiceSendRequestGoldenTest extends TestCase {
 		}
 
 		try {
-			$result = (new ReflectionMethod(WebhookService::class, 'sendRequest'))->invoke($service, $webhook, ['kind' => 'thing', 'id' => 5], $case['cap'] ?? null);
+			$result = (new ReflectionMethod(WebhookService::class, 'sendRequest'))->invoke($service, new \OCA\OpenRegister\Service\WebhookDelivery(webhook: $webhook, event: new \OCA\OpenRegister\Service\WebhookEvent(name: 'Golden\\Event', payload: []), timeoutCapSeconds: $case['cap'] ?? null), ['kind' => 'thing', 'id' => 5]);
 			$actual = ['result' => $result, 'sent' => $seen];
 		} catch (Throwable $e) {
 			$actual = ['error' => [get_class($e), $e->getMessage()], 'sent' => $seen];

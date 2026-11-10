@@ -49,20 +49,33 @@ use UnexpectedValueException;
 class UserTaskPerformers {
 
 	/**
+	 * Resolves a reference to who it currently means.
+	 *
+	 * @var PrincipalResolverRegistry|null
+	 */
+	private readonly ?PrincipalResolverRegistry $principals;
+
+	/**
+	 * Where an agent's turn is asked for.
+	 *
+	 * @var IEventDispatcher|null
+	 */
+	private readonly ?IEventDispatcher $events;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param UserTaskConfig                 $config     Reads the step's performer fields.
-	 * @param PrincipalResolverRegistry|null $principals Resolves a reference to who it currently means.
-	 * @param IEventDispatcher|null          $events     Where an agent's turn is asked for.
+	 * @param UserTaskConfig $config Reads the step's performer fields.
+	 * @param UserTaskHooks  $hooks  The principal resolvers and the event dispatcher an agent's turn is asked on.
 	 *
 	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
 	 */
 	public function __construct(
 		private readonly UserTaskConfig $config,
-		private readonly ?PrincipalResolverRegistry $principals = null,
-		private readonly ?IEventDispatcher $events = null,
+		UserTaskHooks $hooks=new UserTaskHooks(),
 	) {
-
+		$this->principals = $hooks->principals;
+		$this->events     = $hooks->events;
 	}//end __construct()
 
 	/**
@@ -132,9 +145,8 @@ class UserTaskPerformers {
 	 * declared and never fired by anything — an event nobody sends is a
 	 * contract nobody can rely on.
 	 *
-	 * @param array<string, mixed> $config  The step configuration.
-	 * @param Task                 $task    The task just created.
-	 * @param array<string, mixed> $context The run context.
+	 * @param UserTaskStep $step The step configuration and run context.
+	 * @param Task         $task The task just created.
 	 *
 	 * @return void
 	 *
@@ -144,10 +156,13 @@ class UserTaskPerformers {
 	 *
 	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
 	 */
-	public function askAnyAgent(array $config, Task $task, array $context): void {
+	public function askAnyAgent(UserTaskStep $step, Task $task): void {
 		if ($this->events === null) {
 			return;
 		}
+
+		$config  = $step->config;
+		$context = $step->context;
 
 		$agent = null;
 		foreach (PrincipalReference::listFrom(value: ($config['assignee'] ?? null)) as $reference) {

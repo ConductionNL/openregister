@@ -22,12 +22,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
-use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
+use OCA\OpenRegister\Service\Quota\ObjectQuotaServiceInterface;
+use OCA\OpenRegister\Listener\Support\EventSchemaLookup;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -70,16 +71,14 @@ class ObjectQuotaListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectQuotaService $quotas  Reads the cap and counts.
-	 * @param SchemaMapperInterface       $schemas Resolves the object's schema.
-	 * @param LoggerInterface    $logger  Logger.
+	 * @param ObjectQuotaServiceInterface $quotas  Reads the cap and counts.
+	 * @param EventSchemaLookup $lookup Resolves the object's schema and logs a failure.
 	 *
 	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md
 	 */
 	public function __construct(
-		private readonly ObjectQuotaService $quotas,
-		private readonly SchemaMapperInterface $schemas,
-		private readonly LoggerInterface $logger,
+		private readonly ObjectQuotaServiceInterface $quotas,
+		private readonly EventSchemaLookup $lookup,
 	) {
 	}//end __construct()
 
@@ -97,69 +96,145 @@ class ObjectQuotaListener implements IEventListener {
 			return;
 		}
 
-		$object = $event->getObject();
-		$organisation = (string)($object->getOrganisation() ?? '');
-		$schemaRef = (string)($object->getSchema() ?? '');
-		$registerRef = (string)($object->getRegister() ?? '');
-		if ($organisation === '' || $schemaRef === '' || is_numeric($registerRef) === false) {
-			return;
+		$refusal = $this->refusalFor(object: $event->getObject());
+		if ($refusal !== null) {
+			$event->setErrors($refusal);
+			$event->stopPropagation();
+		}
+	}//end handle()
+
+	/**
+	 * The refusal this create earns under its schema's quota, or null when it may go ahead.
+	 *
+	 * @param ObjectEntity $object The object being created.
+	 *
+	 * @return array<string, mixed>|null The refusal.
+	 */
+	private function refusalFor(ObjectEntity $object): ?array {
+		$scope = $this->quotaScopeOf(object: $object);
+		if ($scope === null) {
+			return null;
 		}
 
+		$schema = $this->schemaOf(reference: $scope['schema']);
+		if ($schema === null) {
+			return null;
+		}
+
+		$scope['limit'] = $this->quotas->limitFor(schema: $schema);
+		if ($scope['limit'] === null) {
+			return null;
+		}
+
+		return $this->countRefusal(scope: $scope, schema: $schema);
+	}//end refusalFor()
+
+	/**
+	 * The schema a create names, or null when there is none to read a quota from.
+	 *
+	 * @param string $reference The schema reference.
+	 *
+	 * @return Schema|null The schema.
+	 */
+	private function schemaOf(string $reference): ?Schema {
 		try {
-			$schema = $this->schemas->find(id: $schemaRef, _rbac: false, _multitenancy: false);
+			return $this->lookup->catalog->schemas()->find(id: $reference, _rbac: false, _multitenancy: false);
 		} catch (Throwable $failure) {
 			// No schema, no quota to read: the save path refuses an unknown schema itself.
-			return;
+			return null;
+		}
+	}//end schemaOf()
+
+	/**
+	 * The organisation, schema and register a create is counted in, or null when it is not counted.
+	 *
+	 * @param ObjectEntity $object The object being created.
+	 *
+	 * @return array{organisation: string, schema: string, register: string}|null The scope.
+	 */
+	private function quotaScopeOf(ObjectEntity $object): ?array {
+		$scope = [
+			'organisation' => (string)($object->getOrganisation() ?? ''),
+			'schema' => (string)($object->getSchema() ?? ''),
+			'register' => (string)($object->getRegister() ?? ''),
+		];
+		if ($scope['organisation'] === '' || $scope['schema'] === '' || is_numeric($scope['register']) === false) {
+			return null;
 		}
 
-		$limit = $this->quotas->limitFor(schema: $schema);
-		if ($limit === null) {
-			return;
-		}
+		return $scope;
+	}//end quotaScopeOf()
 
+	/**
+	 * Count the organisation's objects of the schema and refuse at the limit.
+	 *
+	 * A count that fails refuses the create: a quota that cannot be checked is
+	 * not a quota that holds.
+	 *
+	 * @param array{organisation: string, schema: string, register: string, limit: int} $scope  The scope and its limit.
+	 * @param Schema                                                                      $schema The object's schema.
+	 *
+	 * @return array<string, mixed>|null The refusal.
+	 */
+	private function countRefusal(array $scope, Schema $schema): ?array {
 		try {
-			$count = $this->quotas->count(
-				registerId: (int)$registerRef,
-				schema: $schema,
-				organisationUuid: $organisation
-			);
+			$count = $this->quotas->count(registerId: (int)$scope['register'], schema: $schema, organisationUuid: $scope['organisation']);
 		} catch (Throwable $failure) {
-			$this->logger->error(
-				message: '[ObjectQuotaListener] The quota count failed, refusing the create: ' . $failure->getMessage(),
-				context: ['app' => 'openregister', 'schema' => $schemaRef, 'organisation' => $organisation]
-			);
-			$event->setErrors(
-				[
-					'code' => self::ERROR_CODE_UNCHECKED,
-					'message' => sprintf(
-						'Schema "%s" limits how many objects one organisation holds, and that limit could not be checked just now, so nothing was created. Try again.',
-						$schemaRef
-					),
-				]
-			);
-			$event->stopPropagation();
-			return;
+			return $this->uncheckedRefusal(scope: $scope, failure: $failure);
 		}
 
-		if ($count < $limit) {
-			return;
+		if ($count < $scope['limit']) {
+			return null;
 		}
 
-		$event->setErrors(
-			[
-				'code' => self::ERROR_CODE,
-				'message' => sprintf(
-					'This organisation already holds %d of at most %d objects of schema "%s".',
-					$count,
-					$limit,
-					(string)$schema->getSlug()
-				),
-				'schema' => (string)$schema->getSlug(),
-				'organisation' => $organisation,
-				'count' => $count,
-				'limit' => $limit,
-			]
+		$scope['count'] = $count;
+		return self::exceededRefusal(scope: $scope, schema: $schema);
+	}//end countRefusal()
+
+	/**
+	 * Log a failed count, and the refusal it earns.
+	 *
+	 * @param array{organisation: string, schema: string} $scope   The scope.
+	 * @param Throwable                                   $failure Why the count failed.
+	 *
+	 * @return array<string, string> The refusal.
+	 */
+	private function uncheckedRefusal(array $scope, Throwable $failure): array {
+		$this->lookup->logger->error(
+			message: '[ObjectQuotaListener] The quota count failed, refusing the create: ' . $failure->getMessage(),
+			context: ['app' => 'openregister', 'schema' => $scope['schema'], 'organisation' => $scope['organisation']]
 		);
-		$event->stopPropagation();
-	}//end handle()
+
+		return [
+			'code' => self::ERROR_CODE_UNCHECKED,
+			'message' => sprintf(
+				'Schema "%s" limits how many objects one organisation holds, and that limit could not be checked just now, so nothing was created. Try again.',
+				$scope['schema']
+			),
+		];
+	}//end uncheckedRefusal()
+
+	/**
+	 * The refusal of a create at the limit.
+	 *
+	 * @param array{organisation: string, limit: int, count: int} $scope  The scope, its limit and how many objects the organisation holds.
+	 * @param Schema                                              $schema The object's schema.
+	 *
+	 * @return array<string, mixed> The refusal.
+	 */
+	private static function exceededRefusal(array $scope, Schema $schema): array {
+		return [
+			'code' => self::ERROR_CODE,
+			'message' => sprintf(
+				'This organisation already holds %d of at most %d objects of schema "%s".',
+				$scope['count'],
+				$scope['limit'],
+				(string)$schema->getSlug()
+			),
+			'schema' => (string)$schema->getSlug(),
+			'organisation' => $scope['organisation'],
+			'count' => $scope['count'],
+			'limit' => $scope['limit'],
+		];
+	}//end exceededRefusal()
 }//end class

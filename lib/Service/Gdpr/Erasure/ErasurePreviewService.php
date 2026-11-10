@@ -42,16 +42,9 @@ namespace OCA\OpenRegister\Service\Gdpr\Erasure;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
-use OCA\OpenRegister\Service\Deletion\DestructionScopeService;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
-use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\IDBConnection;
-use Psr\Log\LoggerInterface;
-use Throwable;
+use OCA\OpenRegister\Service\Gdpr\SubjectQuery;
+use OCA\OpenRegister\Service\Gdpr\SubjectMatch;
 
 /**
  * Counts what an erasure would touch, split three ways, writing nothing.
@@ -59,36 +52,22 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Gdpr\Erasure
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The preview's whole job is to
- * ask every existing authority its own question rather than re-derive any of
- * them, so it holds one collaborator per authority.
- *
  * @spec openspec/specs/gdpr-data-subject-rights/spec.md
  */
-class ErasurePreviewService {
+class ErasurePreviewService implements ErasurePreviewServiceInterface {
 	/**
 	 * Wire the authorities the preview asks.
 	 *
-	 * @param DataSubjectRequestService $subjects       Cross-register discovery.
-	 * @param ArchivalRetentionGuard    $archivalGuard  Retention and legal-hold refusal, with its wording.
-	 * @param RetentionServiceInterface          $retention      Immutable archival status.
-	 * @param DestructionScopeService   $scopeService   What goes with an object.
-	 * @param SchemaMapperInterface              $schemaMapper   Schema resolution for the scope.
-	 * @param SubjectPartyCounter       $parties        Party records naming the subject.
-	 * @param IDBConnection             $db             The PII index, for other subjects on a record.
-	 * @param LoggerInterface           $logger         PSR logger.
+	 * @param DataSubjectRequestService $subjects     Cross-register discovery.
+	 * @param ErasureProtectionResolver $protection   Legal hold, retention and immutable status, in that order.
+	 * @param ErasureCounters $counters Co-subjects, the destruction scope and the party records.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly DataSubjectRequestService $subjects,
-		private readonly ArchivalRetentionGuard $archivalGuard,
-		private readonly RetentionServiceInterface $retention,
-		private readonly DestructionScopeService $scopeService,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly SubjectPartyCounter $parties,
-		private readonly IDBConnection $db,
-		private readonly LoggerInterface $logger,
+		private readonly ErasureProtectionResolver $protection,
+		private readonly ErasureCounters $counters,
 	) {
 	}//end __construct()
 
@@ -100,67 +79,21 @@ class ErasurePreviewService {
 	 * retention service — are called inside a catch that counts an unanswerable
 	 * question as PROTECTED (D-2).
 	 *
-	 * @param string      $subjectId Subject identifier value (email, bsn, …).
-	 * @param string|null $type      Optional GdprEntity type filter.
-	 * @param string      $eraseMode `pseudonymise` or `whole-object`.
+	 * @param SubjectQuery $subject   Subject identifier value (email, bsn, …) and optional GdprEntity type
+	 *                                filter; the match is always exact.
+	 * @param string       $eraseMode `pseudonymise` or `whole-object`.
 	 *
 	 * @return array<string, mixed> The preview: counts, items, protected, digest.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ErasureBucket is a closed vocabulary,
-	 * the same shape as DestructionScope. Its members are compile-time constants
-	 * and emptyCounts() derives the zeroed block from them, so injecting it would
-	 * add a collaborator that can never vary.
 	 *
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function preview(
-		string $subjectId,
-		?string $type = null,
+		SubjectQuery $subject,
 		string $eraseMode = DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE,
 	): array {
-		$subjectId = trim($subjectId);
-		$eraseMode = $this->normaliseMode(eraseMode: $eraseMode);
+		$run = new ErasurePreviewRun(subjectId: trim($subject->subjectId), type: $subject->type, eraseMode: $this->normaliseMode(eraseMode: $eraseMode));
 
-		$counts = ErasureBucket::emptyCounts();
-		$items = [];
-		$protected = [];
-
-		foreach ($this->subjects->findSubjectObjects($subjectId, $type, 'exact') as $hit) {
-			$object = $hit['object'];
-			$item = $this->classify(
-				object: $object,
-				subjectId: $subjectId,
-				matched: $hit['gdprEntities'],
-				eraseMode: $eraseMode
-			);
-
-			foreach ($item['counts'] as $kind => $value) {
-				$counts[$item['bucket']][$kind] += $value;
-			}
-
-			$items[] = $item;
-			if ($item['bucket'] === ErasureBucket::PROTECTED) {
-				$protected[] = $item;
-			}
-		}
-
-		$preview = [
-			'subject' => $subjectId,
-			'type' => $type,
-			'eraseMode' => $eraseMode,
-			'generatedAt' => (new DateTimeImmutable())->format(DATE_ATOM),
-			'matchedCount' => count($items),
-			'counts' => $counts,
-			'items' => $items,
-			// D-1: the protected records are listed again, by name, because the
-			// count alone does not let a handler write the sentence the data
-			// subject is owed.
-			'protected' => $protected,
-		];
-
-		$preview['digest'] = $this->digest(preview: $preview);
-
-		return $preview;
+		return $this->assemble(run: $run, items: $this->classifyAll(run: $run));
 	}//end preview()
 
 	/**
@@ -177,313 +110,233 @@ class ErasurePreviewService {
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function digest(array $preview): string {
+		$items = [];
+		foreach (($preview['items'] ?? []) as $item) {
+			$items[] = $this->digestItem(item: $item);
+		}
+
+		usort($items, static fn (array $left, array $right): int => strcmp((string)$left['uuid'], (string)$right['uuid']));
+
 		$material = [
 			'subject' => ($preview['subject'] ?? ''),
 			'type' => ($preview['type'] ?? null),
 			'eraseMode' => ($preview['eraseMode'] ?? ''),
-			'items' => [],
+			'items' => $items,
 		];
-
-		foreach (($preview['items'] ?? []) as $item) {
-			$material['items'][] = [
-				'uuid' => ($item['uuid'] ?? ''),
-				'bucket' => ($item['bucket'] ?? ''),
-				'ground' => ($item['ground'] ?? null),
-				'counts' => ($item['counts'] ?? []),
-			];
-		}
-
-		usort(
-			$material['items'],
-			static function (array $left, array $right): int {
-				return strcmp((string)$left['uuid'], (string)$right['uuid']);
-			}
-		);
 
 		return hash('sha256', (string)json_encode($material));
 	}//end digest()
 
 	/**
+	 * The part of one preview item the digest covers.
+	 *
+	 * @param array<string, mixed> $item The preview item.
+	 *
+	 * @return array<string, mixed> Its uuid, bucket, ground and counts.
+	 */
+	private function digestItem(array $item): array {
+		return [
+			'uuid' => ($item['uuid'] ?? ''),
+			'bucket' => ($item['bucket'] ?? ''),
+			'ground' => ($item['ground'] ?? null),
+			'counts' => ($item['counts'] ?? []),
+		];
+	}//end digestItem()
+
+	/**
+	 * Classify every object the subject is found on.
+	 *
+	 * @param ErasurePreviewRun $run The subject, type filter and normalised mode.
+	 *
+	 * @return array<int, array<string, mixed>> The preview items, in discovery order.
+	 */
+	private function classifyAll(ErasurePreviewRun $run): array {
+		$items = [];
+		foreach ($this->subjects->findSubjectObjects($run->query()) as $hit) {
+			$items[] = $this->classify(match: new SubjectMatch(object: $hit['object'], matched: $hit['gdprEntities']), run: $run);
+		}
+
+		return $items;
+	}//end classifyAll()
+
+	/**
+	 * Put the classified items together into the preview, digest included.
+	 *
+	 * @param ErasurePreviewRun                $run   The subject, type filter and normalised mode.
+	 * @param array<int, array<string, mixed>> $items The classified items.
+	 *
+	 * @return array<string, mixed> The preview.
+	 */
+	private function assemble(ErasurePreviewRun $run, array $items): array {
+		$preview = [
+			'subject' => $run->subjectId,
+			'type' => $run->type,
+			'eraseMode' => $run->eraseMode,
+			'generatedAt' => (new DateTimeImmutable())->format(DATE_ATOM),
+			'matchedCount' => count($items),
+			'counts' => $this->tally(items: $items),
+			'items' => $items,
+			// D-1: the protected records are listed again, by name, because the
+			// count alone does not let a handler write the sentence the data
+			// subject is owed.
+			'protected' => $this->protectedOf(items: $items),
+		];
+
+		$preview['digest'] = $this->digest(preview: $preview);
+
+		return $preview;
+	}//end assemble()
+
+	/**
+	 * The protected items, in order.
+	 *
+	 * @param array<int, array<string, mixed>> $items The classified items.
+	 *
+	 * @return array<int, array<string, mixed>> The protected ones.
+	 */
+	private function protectedOf(array $items): array {
+		return array_values(array_filter($items, static fn (array $item): bool => $item['bucket'] === ErasureBucket::PROTECTED));
+	}//end protectedOf()
+
+	/**
+	 * Sum every item's counts into its bucket.
+	 *
+	 * @param array<int, array<string, mixed>> $items The classified items.
+	 *
+	 * @return array<string, array<string, int>> The counts per bucket and kind.
+	 */
+	private function tally(array $items): array {
+		$counts = ErasureBucket::emptyCounts();
+		foreach ($items as $item) {
+			foreach ($item['counts'] as $kind => $value) {
+				$counts[$item['bucket']][$kind] += $value;
+			}
+		}
+
+		return $counts;
+	}//end tally()
+
+	/**
 	 * Classify one object and count what an erasure would cost on it.
 	 *
-	 * @param ObjectEntity      $object    The object.
-	 * @param string            $subjectId The subject value.
-	 * @param array<int, array> $matched   The PII hits that pulled it in.
-	 * @param string            $eraseMode The requested mode.
+	 * @param SubjectMatch      $match The object and the PII hits that pulled it in.
+	 * @param ErasurePreviewRun $run   The subject value and the requested mode.
 	 *
 	 * @return array<string, mixed> One preview item.
 	 */
-	private function classify(ObjectEntity $object, string $subjectId, array $matched, string $eraseMode): array {
-		$item = [
-			'uuid' => (string)($object->getUuid() ?? ''),
-			'register' => $object->getRegister(),
-			'schema' => $object->getSchema(),
-			'matchedOn' => array_values(array_unique(array_filter(array_column($matched, 'type')))),
-		];
-
-		$ground = $this->protectionFor(object: $object);
+	private function classify(SubjectMatch $match, ErasurePreviewRun $run): array {
+		$item = $this->baseItem(match: $match);
+		$ground = $this->protection->protectionFor(object: $match->object);
 		if ($ground !== null) {
-			return array_merge(
-				$item,
-				$ground,
-				[
-					'bucket' => ErasureBucket::PROTECTED,
-					// A protected record is not destroyed and not scrubbed, so
-					// the only thing it costs is itself. Counting its files here
-					// would read as "these files go", which is the opposite of
-					// what protected means.
-					'counts' => [ErasureBucket::OBJECTS => 1],
-				]
-			);
+			// A protected record is not destroyed and not scrubbed, so the only
+			// thing it costs is itself. Counting its files here would read as
+			// "these files go", which is the opposite of what protected means.
+			return array_merge($item, $ground, ['bucket' => ErasureBucket::PROTECTED, 'counts' => [ErasureBucket::OBJECTS => 1]]);
 		}
 
-		$parties = $this->countPartyRecords(object: $object, subjectId: $subjectId, matched: $matched);
-
-		if ($eraseMode === DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT) {
-			$shared = $this->otherSubjectsOn(object: $object, subjectId: $subjectId, matched: $matched);
-			if ($shared === []) {
-				$scope = $this->scopeCounts(object: $object);
-
-				return array_merge(
-					$item,
-					[
-						'bucket' => ErasureBucket::ERASABLE,
-						'counts' => [
-							ErasureBucket::OBJECTS => 1,
-							ErasureBucket::FILES => $scope[ErasureBucket::FILES],
-							ErasureBucket::TIMELINE => $scope[ErasureBucket::TIMELINE],
-							ErasureBucket::PARTIES => $parties,
-						],
-					]
-				);
-			}
-
-			// DESTROYING A SHARED RECORD ERASES SOMEBODY WHO DID NOT ASK.
-			// A record carrying another person's identifier of the same kind is
-			// not this subject's record to destroy, so the whole-object request
-			// is downgraded to a scrub and the downgrade is named.
-			return array_merge(
-				$item,
-				[
-					'bucket' => ErasureBucket::PSEUDONYMISED,
-					'ground' => ErasureBucket::GROUND_SHARED_RECORD,
-					'message' => 'This record also holds another person\'s data, so it is scrubbed rather than destroyed.',
-					'sharedWith' => $shared,
-					'counts' => [
-						ErasureBucket::OBJECTS => 1,
-						ErasureBucket::PARTIES => $parties,
-					],
-				]
-			);
-		}//end if
+		if ($run->eraseMode === DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT) {
+			return array_merge($item, $this->wholeObject(match: $match, subjectId: $run->subjectId));
+		}
 
 		// Pseudonymisation leaves the object, its folder and its timeline where
 		// they are: only the subject's values inside the payload move.
-		return array_merge(
-			$item,
-			[
-				'bucket' => ErasureBucket::PSEUDONYMISED,
-				'counts' => [
-					ErasureBucket::OBJECTS => 1,
-					ErasureBucket::PARTIES => $parties,
-				],
-			]
-		);
+		$parties = $this->countPartyRecords(match: $match, subjectId: $run->subjectId);
+
+		return array_merge($item, ['bucket' => ErasureBucket::PSEUDONYMISED, 'counts' => $this->scrubCounts(parties: $parties)]);
 	}//end classify()
 
 	/**
-	 * The ground this object is protected under, or null when it is not.
+	 * What every preview item says about its object, whatever its bucket.
 	 *
-	 * D-2 IS THE WHOLE POINT OF THE CATCH. The archival guard already answers
-	 * `SCHEMA_UNRESOLVED` for a question it can ask and not answer. What it
-	 * cannot report is a failure to ask at all — a database that will not
-	 * answer, a schema row that throws on read. That case used to surface as an
-	 * exception out of the preview, or worse as a record that looked erasable.
-	 * It counts as protected and it is named.
+	 * @param SubjectMatch $match The object and the PII hits that pulled it in.
 	 *
-	 * @param ObjectEntity $object The object.
-	 *
-	 * @return array<string, mixed>|null The ground block, or null when erasable.
+	 * @return array<string, mixed> The uuid, register, schema and matched types.
 	 */
-	private function protectionFor(ObjectEntity $object): ?array {
-		try {
-			$refusal = $this->archivalGuard->erasureRefusal(object: $object);
-			if ($refusal !== null) {
-				return [
-					'ground' => (string)($refusal['ground'] ?? ArchivalRetentionGuard::GROUND_UNRESOLVED),
-					'message' => (string)($refusal['message'] ?? ''),
-					'basis' => (string)($refusal['basis'] ?? ''),
-					'action' => (string)($refusal['action'] ?? ''),
-				];
-			}
-		} catch (Throwable $e) {
-			return $this->unresolvable(object: $object, error: $e);
-		}
-
-		try {
-			$immutable = $this->retention->validateNotImmutable(object: $object);
-			if ($immutable !== null) {
-				return [
-					'ground' => ErasureBucket::GROUND_IMMUTABLE,
-					'message' => 'This record is in an archival status that cannot be changed, so we did not erase it.',
-					'basis' => 'Archiefwet: status ' . $immutable . '.',
-					'action' => 'Name this record in your answer to the requester.',
-				];
-			}
-		} catch (Throwable $e) {
-			return $this->unresolvable(object: $object, error: $e);
-		}
-
-		return null;
-	}//end protectionFor()
+	private function baseItem(SubjectMatch $match): array {
+		return [
+			'uuid' => (string)($match->object->getUuid() ?? ''),
+			'register' => $match->object->getRegister(),
+			'schema' => $match->object->getSchema(),
+			'matchedOn' => array_values(array_unique(array_filter(array_column($match->matched, 'type')))),
+		];
+	}//end baseItem()
 
 	/**
-	 * The ground block for a hold nobody could resolve.
+	 * The outcome of a whole-object request on an unprotected object.
 	 *
-	 * @param ObjectEntity $object The object.
-	 * @param Throwable    $error  What went wrong resolving it.
+	 * DESTROYING A SHARED RECORD ERASES SOMEBODY WHO DID NOT ASK. A record
+	 * carrying another person's identifier of the same kind is not this
+	 * subject's record to destroy, so the whole-object request is downgraded to
+	 * a scrub and the downgrade is named.
 	 *
-	 * @return array<string, mixed> The ground block.
+	 * @param SubjectMatch $match     The object and the PII hits.
+	 * @param string       $subjectId The subject value.
+	 *
+	 * @return array<string, mixed> The bucket, any downgrade ground, and the counts.
 	 */
-	private function unresolvable(ObjectEntity $object, Throwable $error): array {
-		$this->logger->warning(
-			message: '[ErasurePreview] Could not resolve the hold on an object, counting it as protected',
-			context: ['uuid' => $object->getUuid(), 'error' => $error->getMessage()]
-		);
+	private function wholeObject(SubjectMatch $match, string $subjectId): array {
+		$parties = $this->countPartyRecords(match: $match, subjectId: $subjectId);
+		$shared = $this->counters->coSubjects->otherSubjectsOn(match: $match, subjectId: $subjectId);
+		if ($shared !== []) {
+			return [
+				'bucket' => ErasureBucket::PSEUDONYMISED,
+				'ground' => ErasureBucket::GROUND_SHARED_RECORD,
+				'message' => 'This record also holds another person\'s data, so it is scrubbed rather than destroyed.',
+				'sharedWith' => $shared,
+				'counts' => $this->scrubCounts(parties: $parties),
+			];
+		}
+
+		return ['bucket' => ErasureBucket::ERASABLE, 'counts' => $this->destroyCounts(object: $match->object, parties: $parties)];
+	}//end wholeObject()
+
+	/**
+	 * The counts of a destroyed object: itself, its scope and its party records.
+	 *
+	 * @param ObjectEntity $object  The object.
+	 * @param int          $parties Party records naming the subject.
+	 *
+	 * @return array<string, int> The counts.
+	 */
+	private function destroyCounts(ObjectEntity $object, int $parties): array {
+		$scope = $this->counters->scopeCounter->scopeCounts(object: $object);
 
 		return [
-			'ground' => ErasureBucket::GROUND_UNRESOLVABLE,
-			'message' => 'We could not establish whether this record is held, so we left it alone.',
-			'basis' => 'Precaution: erasing on an unknown is the one failure that cannot be undone.',
-			'action' => 'Ask an administrator to repair this record, then run the preview again.',
+			ErasureBucket::OBJECTS => 1,
+			ErasureBucket::FILES => $scope[ErasureBucket::FILES],
+			ErasureBucket::TIMELINE => $scope[ErasureBucket::TIMELINE],
+			ErasureBucket::PARTIES => $parties,
 		];
-	}//end unresolvable()
+	}//end destroyCounts()
 
 	/**
-	 * The destruction scope counts for an object, as files and timeline rows.
+	 * The counts of a scrubbed object: itself and its party records.
 	 *
-	 * @param ObjectEntity $object The object.
+	 * @param int $parties Party records naming the subject.
 	 *
-	 * @return array<string, int> Files and timeline counts.
+	 * @return array<string, int> The counts.
 	 */
-	private function scopeCounts(ObjectEntity $object): array {
-		$empty = [
-			ErasureBucket::FILES => 0,
-			ErasureBucket::TIMELINE => 0,
-		];
-
-		try {
-			$scope = $this->scopeService->preview(object: $object, schema: $this->schemaOf(object: $object));
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[ErasurePreview] Could not read the destruction scope',
-				context: ['uuid' => $object->getUuid(), 'error' => $e->getMessage()]
-			);
-			return $empty;
-		}
-
+	private function scrubCounts(int $parties): array {
 		return [
-			ErasureBucket::FILES => (int)($scope['counts']['files'] ?? 0),
-			ErasureBucket::TIMELINE => (int)($scope['counts']['timeline'] ?? 0),
+			ErasureBucket::OBJECTS => 1,
+			ErasureBucket::PARTIES => $parties,
 		];
-	}//end scopeCounts()
-
-	/**
-	 * Resolve an object's schema, or null when it does not resolve.
-	 *
-	 * @param ObjectEntity $object The object.
-	 *
-	 * @return Schema|null The schema.
-	 */
-	private function schemaOf(ObjectEntity $object): ?Schema {
-		$schemaId = $object->getSchema();
-		if ($schemaId === null || $schemaId === '') {
-			return null;
-		}
-
-		try {
-			return $this->schemaMapper->find((int)$schemaId);
-		} catch (Throwable $e) {
-			return null;
-		}
-	}//end schemaOf()
+	}//end scrubCounts()
 
 	/**
 	 * Count the party records inside an object that name this subject.
 	 *
-	 * @param ObjectEntity      $object    The object.
-	 * @param string            $subjectId The subject value.
-	 * @param array<int, array> $matched   The PII hits.
+	 * @param SubjectMatch $match     The object and the PII hits.
+	 * @param string       $subjectId The subject value.
 	 *
 	 * @return int The number of party records naming the subject.
 	 */
-	private function countPartyRecords(ObjectEntity $object, string $subjectId, array $matched): int {
-		return $this->parties->count(
-			payload: ($object->getObject() ?? []),
-			needles: $this->parties->needles(subjectId: $subjectId, matched: $matched)
+	private function countPartyRecords(SubjectMatch $match, string $subjectId): int {
+		return $this->counters->parties->count(
+			payload: ($match->object->getObject() ?? []),
+			needles: $this->counters->parties->needles(subjectId: $subjectId, matched: $match->matched)
 		);
 	}//end countPartyRecords()
-
-	/**
-	 * Other people's identifiers of the SAME KIND on this object.
-	 *
-	 * Same kind matters. One person's record routinely carries an email, a
-	 * phone number and a bsn, and counting those as three subjects would
-	 * downgrade every record to a scrub. A SECOND email on the record is the
-	 * signal that a second person is in it.
-	 *
-	 * @param ObjectEntity      $object    The object.
-	 * @param string            $subjectId The subject value.
-	 * @param array<int, array> $matched   The PII hits for this subject.
-	 *
-	 * @return array<int, string> The other subjects' PII types, deduplicated.
-	 */
-	private function otherSubjectsOn(ObjectEntity $object, string $subjectId, array $matched): array {
-		$types = array_values(array_unique(array_filter(array_column($matched, 'type'))));
-		if ($types === []) {
-			return [];
-		}
-
-		$needles = $this->parties->needles(subjectId: $subjectId, matched: $matched);
-		$uuid = (string)($object->getUuid() ?? '');
-		if ($uuid === '') {
-			return [];
-		}
-
-		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->selectDistinct(['e.type', 'e.value'])
-				->from('openregister_entities', 'e')
-				->innerJoin('e', 'openregister_entity_relations', 'r', $qb->expr()->eq('r.entity_id', 'e.id'))
-				->where($qb->expr()->eq('r.object_uuid', $qb->createNamedParameter($uuid)))
-				->andWhere($qb->expr()->in('e.type', $qb->createNamedParameter($types, IQueryBuilder::PARAM_STR_ARRAY)));
-
-			$result = $qb->executeQuery();
-			$rows = $result->fetchAll();
-			$result->closeCursor();
-		} catch (Throwable $e) {
-			// FAILING CLOSED HERE MEANS "ASSUME SHARED". An index we cannot read
-			// is not evidence that the record is this subject's alone, and the
-			// cheaper mistake is a scrub where a destruction would have done.
-			$this->logger->warning(
-				message: '[ErasurePreview] Could not read the PII index for co-subjects, assuming the record is shared',
-				context: ['uuid' => $uuid, 'error' => $e->getMessage()]
-			);
-			return $types;
-		}//end try
-
-		$others = [];
-		foreach ($rows as $row) {
-			$value = strtolower(trim((string)($row['value'] ?? '')));
-			if ($value === '' || in_array($value, $needles, true) === true) {
-				continue;
-			}
-
-			$others[] = (string)($row['type'] ?? '');
-		}
-
-		return array_values(array_unique(array_filter($others)));
-	}//end otherSubjectsOn()
 
 	/**
 	 * Fold an unknown mode onto the safe one.

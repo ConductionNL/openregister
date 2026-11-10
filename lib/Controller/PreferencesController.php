@@ -24,32 +24,44 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\PreferencesControllerServices;
+use OCA\OpenRegister\Controller\Support\PreferencesUserValues;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IConfig;
 use OCP\IRequest;
-use OCP\IUserSession;
 
 /**
  * Per-user preferences controller.
  */
 class PreferencesController extends Controller {
 	/**
+	 * The preference values of this app.
+	 *
+	 * @var PreferencesUserValues
+	 */
+	private readonly PreferencesUserValues $values;
+
+	/**
+	 * The controller's collaborators.
+	 *
+	 * @var PreferencesControllerServices
+	 */
+	private readonly PreferencesControllerServices $services;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IRequest $request The request.
-	 * @param IConfig $config The Nextcloud config (user values).
-	 * @param IUserSession $userSession The user session.
+	 * @param IRequest                      $request  The request.
+	 * @param PreferencesControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly IConfig $config,
-		private readonly IUserSession $userSession,
+		PreferencesControllerServices $services,
 	) {
-		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
-
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->services = $services;
+		$this->values   = new PreferencesUserValues(config: $services->config, appName: Application::APP_ID);
 	}//end __construct()
 
 	/**
@@ -65,29 +77,12 @@ class PreferencesController extends Controller {
 	 * @spec openspec/specs/apphost-boilerplate/spec.md#requirement-generic-preferences-controller
 	 */
 	public function getPreference(string $key): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(data: ['message' => 'Not logged in'], statusCode: Http::STATUS_UNAUTHORIZED);
+		$slot = $this->values->slotFor(user: $this->services->session->userSession->getUser(), key: $key);
+		if ($slot instanceof JSONResponse) {
+			return $slot;
 		}
 
-		$safeKey = $this->sanitizeKey(key: $key);
-		if ($safeKey === '') {
-			return new JSONResponse(data: ['message' => 'Invalid key'], statusCode: Http::STATUS_BAD_REQUEST);
-		}
-
-		$value = $this->config->getUserValue(
-			userId: $user->getUID(),
-			appName: AppIdentity::APP_ID,
-			key: 'pref_' . $safeKey,
-			default: ''
-		);
-
-		$stored = null;
-		if ($value !== '') {
-			$stored = $value;
-		}
-
-		return new JSONResponse(data: ['value' => $stored]);
+		return new JSONResponse(data: ['value' => $this->values->read(slot: $slot)]);
 	}//end getPreference()
 
 	/**
@@ -104,45 +99,11 @@ class PreferencesController extends Controller {
 	 * @spec openspec/specs/apphost-boilerplate/spec.md#requirement-generic-preferences-controller
 	 */
 	public function setPreference(string $key, string $value = ''): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(data: ['message' => 'Not logged in'], statusCode: Http::STATUS_UNAUTHORIZED);
+		$slot = $this->values->slotFor(user: $this->services->session->userSession->getUser(), key: $key);
+		if ($slot instanceof JSONResponse) {
+			return $slot;
 		}
 
-		$safeKey = $this->sanitizeKey(key: $key);
-		if ($safeKey === '') {
-			return new JSONResponse(data: ['message' => 'Invalid key'], statusCode: Http::STATUS_BAD_REQUEST);
-		}
-
-		if ($value === '') {
-			$this->config->deleteUserValue(
-				userId: $user->getUID(),
-				appName: AppIdentity::APP_ID,
-				key: 'pref_' . $safeKey
-			);
-			return new JSONResponse(data: ['value' => null]);
-		}
-
-		$this->config->setUserValue(
-			userId: $user->getUID(),
-			appName: AppIdentity::APP_ID,
-			key: 'pref_' . $safeKey,
-			value: $value
-		);
-
-		return new JSONResponse(data: ['value' => $value]);
+		return new JSONResponse(data: ['value' => $this->values->write(slot: $slot, value: $value)]);
 	}//end setPreference()
-
-	/**
-	 * Restrict keys to a safe charset so callers cannot reach arbitrary
-	 * IConfig user values outside the `pref_` namespace.
-	 *
-	 * @param string $key The raw key.
-	 *
-	 * @return string The sanitised key, or '' when nothing safe remains.
-	 */
-	private function sanitizeKey(string $key): string {
-		$safe = preg_replace(pattern: '/[^a-z0-9-]/', replacement: '', subject: strtolower($key));
-		return substr((string)$safe, offset: 0, length: 64);
-	}//end sanitizeKey()
 }//end class

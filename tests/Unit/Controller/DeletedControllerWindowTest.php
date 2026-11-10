@@ -42,7 +42,10 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
+use OCA\OpenRegister\Service\Deletion\DeletionRetention;
 use OCA\OpenRegister\Service\Deletion\DeletionServiceBundle;
+use OCA\OpenRegister\Service\Deletion\DestructionServices;
 use OCA\OpenRegister\Service\Deletion\DeletionWindow;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCA\OpenRegister\Service\Deletion\DestroyRightService;
@@ -156,15 +159,13 @@ final class DeletedControllerWindowTest extends TestCase {
 		$deletion = new DeletionServiceBundle(
 			$this->windows,
 			$this->rights,
-			$this->scopes,
-			$this->recorder,
 			$this->clocks,
+			new DestructionServices($this->scopes, $this->recorder),
 		);
 
 		$authorizer = new DeletedObjectAuthorizer(
 			$this->schemaMapper,
-			$session,
-			$groups,
+			new CallerContext($session, $groups),
 			$this->createMock(PermissionHandler::class),
 		);
 
@@ -194,8 +195,7 @@ final class DeletedControllerWindowTest extends TestCase {
 		return new DeletionWindow(
 			new DateTimeImmutable('2026-04-18T09:00:00+00:00'),
 			$daysRemaining,
-			30,
-			DeletionWindow::SOURCE_INSTANCE,
+			new DeletionRetention(30, DeletionWindow::SOURCE_INSTANCE),
 			new DateTimeImmutable('2026-03-19T09:00:00+00:00')
 		);
 	}//end window()

@@ -34,7 +34,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<BulkJob>
  */
-class BulkJobMapper extends QBMapper {
+class BulkJobMapper extends QBMapper implements BulkJobMapperInterface {
 	/**
 	 * Constructor.
 	 *
@@ -129,20 +129,30 @@ class BulkJobMapper extends QBMapper {
 	 * @return BulkJob[] The actor's jobs.
 	 */
 	public function findByActor(string $startedBy, ?string $state = null, ?int $limit = null, ?int $offset = null): array {
+		return $this->findJobsOf(
+			startedBy: $startedBy,
+			query: new ListQuery(limit: $limit ?? ListQuery::UNBOUNDED, offset: $offset, filters: ['state' => $state])
+		);
+	}//end findByActor()
+
+	/**
+	 * List the jobs of one actor, newest first.
+	 *
+	 * @param string    $startedBy The actor's uid.
+	 * @param ListQuery $query     The page (unbounded for every job) and an optional `state` filter.
+	 *
+	 * @return BulkJob[] The actor's jobs.
+	 *
+	 * @spec exclude ADR-011 ListQuery variant of findByActor(), no capability of its own
+	 */
+	public function findJobsOf(string $startedBy, ListQuery $query): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
-			->where($qb->expr()->eq('started_by', $qb->createNamedParameter($startedBy)))
-			->orderBy('id', 'DESC');
+			->where($qb->expr()->eq('started_by', $qb->createNamedParameter($startedBy)));
 
-		if ($state !== null) {
-			$qb->andWhere($qb->expr()->eq('state', $qb->createNamedParameter($state)));
-		}
-
-		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
-
-		return $this->findEntities(query: $qb);
-	}//end findByActor()
+		return $this->findListed(qb: $qb, query: $query);
+	}//end findJobsOf()
 
 	/**
 	 * List every job, newest first. For the administrator's console.
@@ -154,19 +164,45 @@ class BulkJobMapper extends QBMapper {
 	 * @return BulkJob[] The jobs.
 	 */
 	public function findAllJobs(?string $state = null, ?int $limit = null, ?int $offset = null): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->orderBy('id', 'DESC');
+		return $this->findJobs(query: new ListQuery(limit: $limit ?? ListQuery::UNBOUNDED, offset: $offset, filters: ['state' => $state]));
+	}//end findAllJobs()
 
+	/**
+	 * List every job, newest first. For the administrator's console.
+	 *
+	 * @param ListQuery $query The page (unbounded for every job) and an optional `state` filter.
+	 *
+	 * @return BulkJob[] The jobs.
+	 *
+	 * @spec exclude ADR-011 ListQuery variant of findAllJobs(), no capability of its own
+	 */
+	public function findJobs(ListQuery $query): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')->from($this->getTableName());
+
+		return $this->findListed(qb: $qb, query: $query);
+	}//end findJobs()
+
+	/**
+	 * Order a job select newest first, narrow it to the listing's state and page it.
+	 *
+	 * @param IQueryBuilder $qb    The select.
+	 * @param ListQuery     $query The page and an optional `state` filter.
+	 *
+	 * @return BulkJob[] The jobs.
+	 */
+	private function findListed(IQueryBuilder $qb, ListQuery $query): array {
+		$qb->orderBy('id', 'DESC');
+
+		$state = $query->filters['state'] ?? null;
 		if ($state !== null) {
 			$qb->andWhere($qb->expr()->eq('state', $qb->createNamedParameter($state)));
 		}
 
-		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
+		(new QueryPage(limit: $query->limitOrNull(), offset: $query->offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
-	}//end findAllJobs()
+	}//end findListed()
 
 	/**
 	 * Read just the state of a job.

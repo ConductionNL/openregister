@@ -88,12 +88,7 @@ class MdtoDocumentWriter {
 		$dom = new DOMDocument('1.0', 'UTF-8');
 		$dom->formatOutput = true;
 
-		$root = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX . ':MDTO');
-		$root->setAttributeNS(
-			self::XSI_NAMESPACE,
-			'xsi:schemaLocation',
-			self::MDTO_NAMESPACE . ' ' . self::SCHEMA_LOCATION
-		);
+		$root = self::rootElement(dom: $dom);
 		$dom->appendChild($root);
 
 		$content = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX . ':' . $kind);
@@ -141,28 +136,28 @@ class MdtoDocumentWriter {
 	}//end text()
 
 	/**
-	 * Add a text element, or nothing when there is no content.
+	 * Add text elements, leaving out each one that has no content.
 	 *
 	 * MDTO's rule for an optional element is the same everywhere: write it
 	 * when the object supplies a value, omit it entirely otherwise, never an
 	 * empty element. Having it in one place keeps that rule from drifting
 	 * between the elements that follow it.
 	 *
-	 * @param DOMElement $parent The parent element.
-	 * @param string $name The element name, without prefix.
-	 * @param string|null $content The text content, or null to write nothing.
+	 * @param DOMElement                $parent The parent element.
+	 * @param array<string, string|null> $texts  Element name (without prefix) to text content, in order;
+	 *                                           a null content writes nothing for that element.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
 	 */
-	public function textIfPresent(DOMElement $parent, string $name, ?string $content): void {
-		if ($content === null) {
-			return;
+	public function textsIfPresent(DOMElement $parent, array $texts): void {
+		foreach ($texts as $name => $content) {
+			if ($content !== null) {
+				$this->text(parent: $parent, name: (string)$name, content: $content);
+			}
 		}
-
-		$this->text(parent: $parent, name: $name, content: $content);
-	}//end textIfPresent()
+	}//end textsIfPresent()
 
 	/**
 	 * Add an empty element to be filled by the caller.
@@ -194,57 +189,80 @@ class MdtoDocumentWriter {
 	 *
 	 * @param DOMElement $parent The parent element.
 	 * @param string $name The element name, without prefix.
-	 * @param string $label The begripLabel.
-	 * @param string|null $code The begripCode, omitted when null or empty.
-	 * @param string $list The begrippenlijst name.
+	 * @param MdtoBegrip $begrip The term.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
 	 */
-	public function begrip(DOMElement $parent, string $name, string $label, ?string $code, string $list): void {
-		$element = $this->element(parent: $parent, name: $name);
+	public function begrip(DOMElement $parent, string $name, MdtoBegrip $begrip): void {
+		$this->fillBegrip(element: $this->element(parent: $parent, name: $name), begrip: $begrip);
+	}//end begrip()
 
-		$this->text(parent: $element, name: 'begripLabel', content: $label);
-		if (($code ?? '') !== '') {
-			$this->text(parent: $element, name: 'begripCode', content: (string)$code);
+	/**
+	 * Fill an empty `begripGegevens` element with the term's label, code and list.
+	 *
+	 * @param DOMElement $element The element, as {@see element()} created it.
+	 * @param MdtoBegrip $begrip  The term.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
+	 */
+	public function fillBegrip(DOMElement $element, MdtoBegrip $begrip): void {
+		$this->text(parent: $element, name: 'begripLabel', content: $begrip->label);
+		if (($begrip->code ?? '') !== '') {
+			$this->text(parent: $element, name: 'begripCode', content: (string)$begrip->code);
 		}
 
-		$this->verwijzing(parent: $element, name: 'begripBegrippenlijst', verwijzingNaam: $list);
-	}//end begrip()
+		$this->fillVerwijzing(element: $this->element(parent: $element, name: 'begripBegrippenlijst'), verwijzing: new MdtoVerwijzing(naam: $begrip->list));
+	}//end fillBegrip()
+
+	/**
+	 * The `MDTO` root element with its schema location.
+	 *
+	 * @param DOMDocument $dom The document.
+	 *
+	 * @return DOMElement The root.
+	 */
+	private static function rootElement(DOMDocument $dom): DOMElement {
+		$root = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX . ':MDTO');
+		$root->setAttributeNS(self::XSI_NAMESPACE, 'xsi:schemaLocation', self::MDTO_NAMESPACE . ' ' . self::SCHEMA_LOCATION);
+
+		return $root;
+	}//end rootElement()
 
 	/**
 	 * Add a `verwijzingGegevens` element.
 	 *
 	 * @param DOMElement $parent The parent element.
 	 * @param string $name The element name, without prefix.
-	 * @param string $verwijzingNaam The name of the referenced object.
-	 * @param string|null $kenmerk The reference key, omitted with its bron when null or empty.
-	 * @param string|null $bron The source within which the key is unique.
+	 * @param MdtoVerwijzing $verwijzing The reference.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
 	 */
-	public function verwijzing(
-		DOMElement $parent,
-		string $name,
-		string $verwijzingNaam,
-		?string $kenmerk = null,
-		?string $bron = null,
-	): void {
-		$element = $this->element(parent: $parent, name: $name);
-		$this->text(parent: $element, name: 'verwijzingNaam', content: $verwijzingNaam);
-
-		if (($kenmerk ?? '') !== '' && ($bron ?? '') !== '') {
-			$this->identificatie(
-				parent: $element,
-				name: 'verwijzingIdentificatie',
-				kenmerk: (string)$kenmerk,
-				bron: (string)$bron
-			);
-		}
+	public function verwijzing(DOMElement $parent, string $name, MdtoVerwijzing $verwijzing): void {
+		$this->fillVerwijzing(element: $this->element(parent: $parent, name: $name), verwijzing: $verwijzing);
 	}//end verwijzing()
+
+	/**
+	 * Fill an empty `verwijzingGegevens` element with the reference's name and, when known, its identification.
+	 *
+	 * @param DOMElement     $element    The element, as {@see element()} created it.
+	 * @param MdtoVerwijzing $verwijzing The reference.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
+	 */
+	public function fillVerwijzing(DOMElement $element, MdtoVerwijzing $verwijzing): void {
+		$this->text(parent: $element, name: 'verwijzingNaam', content: $verwijzing->naam);
+		if (($verwijzing->kenmerk ?? '') !== '' && ($verwijzing->bron ?? '') !== '') {
+			$this->identificatie(parent: $element, name: 'verwijzingIdentificatie', kenmerk: (string)$verwijzing->kenmerk, bron: (string)$verwijzing->bron);
+		}
+	}//end fillVerwijzing()
 
 	/**
 	 * Add an `identificatieGegevens` element.

@@ -44,8 +44,16 @@ use OCA\OpenRegister\Service\Rules\RuleVocabulary;
  * transition conditions use, so a refusal reads the same wherever it came from.
  *
  * @spec openspec/specs/object-lifecycle/spec.md
+ *
+ * @phpstan-type StateConditionFailure array{
+ *   state: string,
+ *   key: string,
+ *   condition: mixed,
+ *   message: string|null,
+ *   document: array<string, mixed>
+ * }
  */
-class StateConditionEvaluator {
+class StateConditionEvaluator implements StateConditionEvaluatorInterface {
 
 	/**
 	 * The refusal code an `entry` condition produces.
@@ -58,19 +66,27 @@ class StateConditionEvaluator {
 	public const CODE_EXIT = 'lifecycle-state-exit-refused';
 
 	/**
+	 * Names the clause that decided a refusal.
+	 *
+	 * @var ConditionTracer
+	 */
+	private readonly ConditionTracer $tracer;
+
+	/**
 	 * Constructor.
 	 *
+	 * The tracer only reads the dialect, so it is built over the same one.
+	 *
 	 * @param StateFieldRuleResolver $resolver Reads the annotation and builds the evaluation document.
-	 * @param ConditionDialect $dialect Decides whether a condition holds, in either dialect.
-	 * @param ConditionTracer $tracer Names the clause that decided a refusal.
+	 * @param ConditionDialect       $dialect  Decides whether a condition holds, in either dialect.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly StateFieldRuleResolver $resolver,
 		private readonly ConditionDialect $dialect,
-		private readonly ConditionTracer $tracer,
 	) {
+		$this->tracer = new ConditionTracer(dialect: $dialect);
 	}//end __construct()
 
 	/**
@@ -81,94 +97,87 @@ class StateConditionEvaluator {
 	 * ahead of an `entry` one. A move that stays in the same state is not a
 	 * move and is evaluated as neither.
 	 *
-	 * @param array<string, mixed> $annotation The lifecycle annotation.
-	 * @param array<string, mixed> $newData The object as it would be saved.
-	 * @param string|null $from The state being left, null on a create.
-	 * @param string|null $to The state being entered.
+	 * @param StateSave     $save     The lifecycle annotation and the object as it would be saved.
+	 * @param StateCrossing $crossing The state being left (null on a create) and the state being entered.
 	 *
 	 * @return array<string, mixed>|null The structured refusal, or null.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function refusal(array $annotation, array $newData, ?string $from, ?string $to): ?array {
-		if ($from === $to) {
+	public function refusal(StateSave $save, StateCrossing $crossing): ?array {
+		if ($crossing->from === $crossing->to) {
 			return null;
 		}
 
-		if ($from !== null && $from !== '') {
-			$refusal = $this->check(
-				annotation: $annotation,
-				newData: $newData,
-				state: $from,
-				key: 'exit',
-				code: self::CODE_EXIT
-			);
-			if ($refusal !== null) {
-				return $refusal;
-			}
-		}
-
-		if ($to !== null && $to !== '') {
-			return $this->check(
-				annotation: $annotation,
-				newData: $newData,
-				state: $to,
-				key: 'entry',
-				code: self::CODE_ENTRY
-			);
-		}
-
-		return null;
+		return ($this->check(save: $save, half: ['state' => $crossing->from, 'key' => 'exit'])
+			?? $this->check(save: $save, half: ['state' => $crossing->to, 'key' => 'entry']));
 	}//end refusal()
 
 	/**
 	 * Evaluate one half, and shape its refusal.
 	 *
-	 * @param array<string, mixed> $annotation The lifecycle annotation.
-	 * @param array<string, mixed> $newData The object as it would be saved.
-	 * @param string $state The state carrying the condition.
-	 * @param string $key Either `entry` or `exit`.
-	 * @param string $code The refusal code to report.
+	 * @param StateSave                              $save The annotation and the object as it would be saved.
+	 * @param array{state: string|null, key: string} $half The state carrying the condition, and `entry` or `exit`.
 	 *
 	 * @return array<string, mixed>|null The structured refusal, or null.
 	 */
-	private function check(array $annotation, array $newData, string $state, string $key, string $code): ?array {
-		$block = $this->resolver->blockFor(annotation: $annotation, state: $state);
+	private function check(StateSave $save, array $half): ?array {
+		$failure = $this->declaredCondition(save: $save, half: $half);
+		if ($failure === null) {
+			return null;
+		}
+
+		$failure['document'] = $this->resolver->document(data: $save->newData, state: $failure['state']);
+		if ($this->dialect->holds(node: $failure['condition'], document: $failure['document']) === true) {
+			return null;
+		}
+
+		return $this->refusalFor(failure: $failure, annotation: $save->annotation);
+	}//end check()
+
+	/**
+	 * The condition and message a half declares, or null when its state declares none.
+	 *
+	 * @param StateSave                              $save The annotation and the object as it would be saved.
+	 * @param array{state: string|null, key: string} $half The state carrying the condition, and `entry` or `exit`.
+	 *
+	 * @return array{state: string, key: string, condition: mixed, message: string|null}|null The declaration.
+	 */
+	private function declaredCondition(StateSave $save, array $half): ?array {
+		if ($half['state'] === null || $half['state'] === '') {
+			return null;
+		}
+
+		$block = $this->resolver->blockFor(annotation: $save->annotation, state: $half['state']);
 		if ($block === null) {
 			return null;
 		}
 
-		[$condition, $message] = $this->declarationOf(block: $block, key: $key);
+		[$condition, $message] = $this->declarationOf(block: $block, key: $half['key']);
 		if ($condition === null) {
 			return null;
 		}
 
-		$document = $this->resolver->document(data: $newData, state: $state);
-		if ($this->dialect->holds(node: $condition, document: $document) === true) {
-			return null;
-		}
+		return ['state' => $half['state'], 'key' => $half['key'], 'condition' => $condition, 'message' => $message];
+	}//end declaredCondition()
 
-		$trace = $this->tracer->trace(
-			condition: $condition,
-			document: $document,
-			verdict: RuleVocabulary::VERDICT_REFUSED,
-			message: $message
-		);
-
-		// The tracer names the operand for a comparison and for the clauses of
-		// an `and`, but not for the single-argument `{"!!": {"var": "x"}}`
-		// idiom the lifecycle docs themselves use: its walk iterates a list of
-		// arguments, and that shape's argument is one object rather than a
-		// list, so the reference is never reached. Falling back to a local walk
-		// keeps the promise that a refusal names the clause that failed.
-		// Naming it here rather than widening ConditionTracer is deliberate:
-		// that file belongs to the rules engine and is owned by another lane.
-		$operand = ($trace->getOperand() ?? $this->decidingReference(node: $condition, document: $document));
+	/**
+	 * Shape the refusal of a condition that does not hold.
+	 *
+	 * @param array<string, mixed> $failure    The failed declaration and its document.
+	 * @param array<string, mixed> $annotation The lifecycle annotation.
+	 *
+	 * @phpstan-param StateConditionFailure $failure
+	 *
+	 * @return array<string, mixed> The structured refusal.
+	 */
+	private function refusalFor(array $failure, array $annotation): array {
+		$operand = $this->operandOf(failure: $failure);
 		$refusal = [
-			'code' => $code,
+			'code' => self::codeFor(key: $failure['key']),
 			'field' => $this->resolver->fieldOf(annotation: $annotation),
-			'state' => $state,
-			'message' => ($message ?? $this->sentence(key: $key, state: $state, operand: $operand)),
+			'state' => $failure['state'],
+			'message' => ($failure['message'] ?? self::sentence(failure: $failure, operand: $operand)),
 		];
 
 		if ($operand !== null) {
@@ -176,7 +185,51 @@ class StateConditionEvaluator {
 		}
 
 		return $refusal;
-	}//end check()
+	}//end refusalFor()
+
+	/**
+	 * The refusal code of a half: {@see CODE_EXIT} for `exit`, {@see CODE_ENTRY} for `entry`.
+	 *
+	 * @param string $key Either `entry` or `exit`.
+	 *
+	 * @return string The code.
+	 */
+	private static function codeFor(string $key): string {
+		if ($key === 'exit') {
+			return self::CODE_EXIT;
+		}
+
+		return self::CODE_ENTRY;
+	}//end codeFor()
+
+	/**
+	 * The property the clause that refused reads, or null when none is nameable.
+	 *
+	 * The tracer names the operand for a comparison and for the clauses of
+	 * an `and`, but not for the single-argument `{"!!": {"var": "x"}}`
+	 * idiom the lifecycle docs themselves use: its walk iterates a list of
+	 * arguments, and that shape's argument is one object rather than a
+	 * list, so the reference is never reached. Falling back to a local walk
+	 * keeps the promise that a refusal names the clause that failed.
+	 * Naming it here rather than widening ConditionTracer is deliberate:
+	 * that file belongs to the rules engine and is owned by another lane.
+	 *
+	 * @param array<string, mixed> $failure The failed declaration and its document.
+	 *
+	 * @phpstan-param StateConditionFailure $failure
+	 *
+	 * @return string|null The reference path.
+	 */
+	private function operandOf(array $failure): ?string {
+		$trace = $this->tracer->trace(
+			condition: $failure['condition'],
+			document: $failure['document'],
+			verdict: RuleVocabulary::VERDICT_REFUSED,
+			message: $failure['message']
+		);
+
+		return ($trace->getOperand() ?? $this->decidingReference(node: $failure['condition'], document: $failure['document']));
+	}//end operandOf()
 
 	/**
 	 * The condition and its message, in either declared shape.
@@ -197,23 +250,29 @@ class StateConditionEvaluator {
 			return [null, null];
 		}
 
-		$message = ($block[($key . 'Message')] ?? null);
-		if (is_string($message) === false || $message === '') {
-			$message = null;
-		}
-
-		$nested = ($declared['condition'] ?? ($declared['when'] ?? null));
+		$message = self::nonEmptyString(value: ($block[($key . 'Message')] ?? null));
+		$nested  = ($declared['condition'] ?? ($declared['when'] ?? null));
 		if (is_array($nested) === true && $nested !== []) {
-			$own = ($declared['message'] ?? null);
-			if (is_string($own) === true && $own !== '') {
-				$message = $own;
-			}
-
-			return [$nested, $message];
+			return [$nested, (self::nonEmptyString(value: ($declared['message'] ?? null)) ?? $message)];
 		}
 
 		return [$declared, $message];
 	}//end declarationOf()
+
+	/**
+	 * A value when it is a non-empty string, else null.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return string|null The string.
+	 */
+	private static function nonEmptyString(mixed $value): ?string {
+		if (is_string($value) === false || $value === '') {
+			return null;
+		}
+
+		return $value;
+	}//end nonEmptyString()
 
 	/**
 	 * The property the clause that failed reads, walked locally.
@@ -234,27 +293,49 @@ class StateConditionEvaluator {
 	 * @return string|null The reference path, or null when the condition reads nothing.
 	 */
 	private function decidingReference(mixed $node, array $document): ?string {
-		if (is_array($node) === false || count($node) !== 1) {
+		if (self::isJunction(node: $node) === false) {
 			return self::firstReferenceOf(node: $node);
 		}
 
-		$op = (string)array_key_first($node);
-		$args = $node[$op];
-
-		if (($op === 'and' || $op === 'or') && is_array($args) === true) {
-			foreach ($args as $clause) {
-				if ($op === 'and' && $this->dialect->holds(node: $clause, document: $document) === true) {
-					continue;
-				}
-
-				return $this->decidingReference(node: $clause, document: $document);
-			}
-
+		$found = $this->failingClause(junction: $node, document: $document);
+		if ($found === []) {
 			return null;
 		}
 
-		return self::firstReferenceOf(node: $node);
+		return $this->decidingReference(node: $found[0], document: $document);
 	}//end decidingReference()
+
+	/**
+	 * Whether a node is a single `and` or `or` over a list of clauses.
+	 *
+	 * @param mixed $node The condition node.
+	 *
+	 * @return bool True when it is.
+	 */
+	private static function isJunction(mixed $node): bool {
+		return is_array($node) === true && count($node) === 1
+			&& in_array(array_key_first($node), ['and', 'or'], true) === true
+			&& is_array($node[array_key_first($node)]) === true;
+	}//end isJunction()
+
+	/**
+	 * The clause of a junction to descend into: an `and`'s first clause that does not hold, an `or`'s first.
+	 *
+	 * @param array<string, array<mixed>> $junction The `and` or `or` node.
+	 * @param array<string, mixed>        $document The evaluation document.
+	 *
+	 * @return array<int, mixed> The clause as a one-item list, or an empty list when there is none.
+	 */
+	private function failingClause(array $junction, array $document): array {
+		$op = array_key_first($junction);
+		foreach ($junction[$op] as $clause) {
+			if ($op === 'or' || $this->dialect->holds(node: $clause, document: $document) === false) {
+				return [$clause];
+			}
+		}
+
+		return [];
+	}//end failingClause()
 
 	/**
 	 * The first property a condition reads, by its declared path.
@@ -265,9 +346,6 @@ class StateConditionEvaluator {
 	 * @param mixed $node The condition node.
 	 *
 	 * @return string|null The reference path, or null when the condition reads nothing.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Two dialects, each with a scalar and a
-	 *   list spelling of a reference, plus the recursive descent.
 	 */
 	private static function firstReferenceOf(mixed $node): ?string {
 		if (is_array($node) === false) {
@@ -275,21 +353,9 @@ class StateConditionEvaluator {
 		}
 
 		foreach ($node as $key => $value) {
-			if ($key === 'var' || $key === 'prop') {
-				if (is_string($value) === true && $value !== '') {
-					return $value;
-				}
-
-				if (is_array($value) === true && is_string(($value[0] ?? null)) === true && $value[0] !== '') {
-					return $value[0];
-				}
-
-				continue;
-			}
-
-			$nested = self::firstReferenceOf(node: $value);
-			if ($nested !== null) {
-				return $nested;
+			$found = self::referenceUnder(key: $key, value: $value);
+			if ($found !== null) {
+				return $found;
 			}
 		}
 
@@ -297,27 +363,43 @@ class StateConditionEvaluator {
 	}//end firstReferenceOf()
 
 	/**
+	 * The reference one node entry declares, or the first one nested in it.
+	 *
+	 * A `var` or `prop` entry is a reference, never descended into, even when
+	 * its path is unusable.
+	 *
+	 * @param int|string $key   The entry key.
+	 * @param mixed      $value The entry value.
+	 *
+	 * @return string|null The reference path.
+	 */
+	private static function referenceUnder(int|string $key, mixed $value): ?string {
+		if ($key !== 'var' && $key !== 'prop') {
+			return self::firstReferenceOf(node: $value);
+		}
+
+		$path = $value;
+		if (is_array($value) === true) {
+			$path = ($value[0] ?? null);
+		}
+
+		return self::nonEmptyString(value: $path);
+	}//end referenceUnder()
+
+	/**
 	 * The sentence a refusal carries when the author declared none.
 	 *
-	 * @param string $key Either `entry` or `exit`.
-	 * @param string $state The state carrying the condition.
-	 * @param string|null $operand The clause that decided, when one is nameable.
+	 * @param array{state: string, key: string} $failure The state carrying the condition, and `entry` or `exit`.
+	 * @param string|null                       $operand The clause that decided, when one is nameable.
 	 *
 	 * @return string The refusal text.
 	 */
-	private function sentence(string $key, string $state, ?string $operand): string {
-		if ($key === 'exit') {
-			if ($operand === null) {
-				return sprintf('The exit condition of state "%s" does not hold.', $state);
-			}
-
-			return sprintf('The exit condition of state "%s" does not hold: "%s".', $state, $operand);
-		}
-
+	private static function sentence(array $failure, ?string $operand): string {
+		$text = sprintf('The %s condition of state "%s" does not hold', $failure['key'], $failure['state']);
 		if ($operand === null) {
-			return sprintf('The entry condition of state "%s" does not hold.', $state);
+			return $text . '.';
 		}
 
-		return sprintf('The entry condition of state "%s" does not hold: "%s".', $state, $operand);
+		return sprintf('%s: "%s".', $text, $operand);
 	}//end sentence()
 }//end class

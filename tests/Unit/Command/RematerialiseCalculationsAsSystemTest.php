@@ -26,6 +26,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Command;
 
 use OCA\OpenRegister\Command\RematerialiseCalculationsCommand;
+use OCA\OpenRegister\Command\Support\RematerialiseEvaluation;
+use OCA\OpenRegister\Command\Support\RematerialiseStorage;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -38,7 +41,6 @@ use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
 use ReflectionNamedType;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
@@ -52,7 +54,8 @@ class RematerialiseCalculationsAsSystemTest extends TestCase {
 	 */
 	private function permissions(): PermissionHandler {
 		$args = [];
-		foreach ((new ReflectionClass(PermissionHandler::class))->getConstructor()->getParameters() as $param) {
+		$factory = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::class;
+		foreach ((new \ReflectionMethod($factory, 'args'))->getParameters() as $param) {
 			if ($param->isOptional() === true) {
 				$args[] = $param->getDefaultValue();
 				continue;
@@ -63,7 +66,7 @@ class RematerialiseCalculationsAsSystemTest extends TestCase {
 			$args[] = $this->createMock($type->getName());
 		}
 
-		return new PermissionHandler(...$args);
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(...$args);
 	}//end permissions()
 
 	/**
@@ -130,13 +133,9 @@ class RematerialiseCalculationsAsSystemTest extends TestCase {
 		);
 
 		$command = new RematerialiseCalculationsCommand(
-			$registers,
-			$schemas,
-			$magic,
-			$objects,
-			$evaluator,
-			$this->createMock(ReferenceResolver::class),
-			$this->createMock(AggregateReferenceResolver::class)
+			new RematerialiseStorage(new SchemaCatalog($registers, $schemas, $magic), $objects),
+			new RematerialiseEvaluation($evaluator, $this->createMock(ReferenceResolver::class), $this->createMock(AggregateReferenceResolver::class)),
+			new \OCA\OpenRegister\Service\Object\SchemaTypeConverter()
 		);
 
 		$output = new BufferedOutput();

@@ -8,7 +8,7 @@
  *
  * Read-only. Exists because provisioning solved half the problem: a declared
  * group now always EXISTS, but one nobody belongs to still denies every caller,
- * and `PermissionHandler::hasGroupPermission()` decides by membership test
+ * and `PermissionHandlerInterface::hasGroupPermission()` decides by membership test
  * alone — so an unpopulated group is indistinguishable from a correctly
  * configured one until someone is refused.
  *
@@ -33,7 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
-use OCA\OpenRegister\Service\Authorization\DeclaredGroupInventoryService;
+use OCA\OpenRegister\Service\Authorization\DeclaredGroupInventoryInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -49,10 +49,10 @@ class DeclaredGroupsCommand extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param DeclaredGroupInventoryService $inventory Declared-group inventory.
+	 * @param DeclaredGroupInventoryInterface $inventory Declared-group inventory.
 	 */
 	public function __construct(
-		private readonly DeclaredGroupInventoryService $inventory,
+		private readonly DeclaredGroupInventoryInterface $inventory,
 	) {
 		parent::__construct();
 	}//end __construct()

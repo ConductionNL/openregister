@@ -27,14 +27,19 @@ use OCA\OpenRegister\Exception\CaseAccessDeniedException;
 use OCA\OpenRegister\Exception\CaseTransitionException;
 use OCA\OpenRegister\Service\Case\CaseAnchorReader;
 use OCA\OpenRegister\Service\Case\CaseBusinessStateWriter;
+use OCA\OpenRegister\Service\Case\CaseCascadeReaders;
 use OCA\OpenRegister\Service\Case\CasePlanAuthorizationService;
 use OCA\OpenRegister\Service\Case\CasePlanCascade;
 use OCA\OpenRegister\Service\Case\CasePlanDefinition;
+use OCA\OpenRegister\Service\Case\CasePlanAnchorAccess;
+use OCA\OpenRegister\Service\Case\CasePlanBringOver;
+use OCA\OpenRegister\Service\Case\CasePlanMechanics;
+use OCA\OpenRegister\Service\Case\CasePlanStore;
 use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Service\Case\CasePlanStateMachine;
-use OCA\OpenRegister\Service\Case\CasePlanTransitions;
 use OCA\OpenRegister\Service\Case\CaseRealisationService;
 use OCA\OpenRegister\Service\Case\CaseSentryEvaluator;
+use OCA\OpenRegister\Service\Case\CaseTransitionEffects;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunAsScope;
@@ -42,6 +47,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNode;
 use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNode;
+use OCA\OpenRegister\Service\Case\Nodes\CaseStepRunner;
 use OCA\OpenRegister\Tests\Unit\Service\Case\CaseFixtures;
 use OCA\OpenRegister\Tests\Unit\Service\Case\FakeCaseItemMapper;
 use OCA\OpenRegister\Tests\Unit\Service\Case\RecordingAuditMapper;
@@ -100,20 +106,27 @@ class CaseFlowNodesTest extends TestCase {
 		$anchor->method('mayRead')->willReturn(true);
 		$writer = $this->createMock(CaseBusinessStateWriter::class);
 		$sentries = new CaseSentryEvaluator(catalog: new EventCatalogService());
-		$machine = new CasePlanStateMachine(items: $this->items, audits: $this->audits, table: new CasePlanTransitions(), realiser: $realiser, writer: $writer, db: $db, logger: new NullLogger());
+		$machine = new CasePlanStateMachine(store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $db, logger: new NullLogger()), effects: new CaseTransitionEffects(realiser: $realiser, writer: $writer));
 
 		return new CasePlanService(
-			items: $this->items,
-			audits: $this->audits,
-			machine: $machine,
-			cascade: new CasePlanCascade(items: $this->items, machine: $machine, sentries: $sentries, realiser: $realiser, anchor: $anchor, db: $db, logger: new NullLogger()),
-			sentries: $sentries,
-			authorization: new CasePlanAuthorizationService(groupManager: $groups),
-			anchor: $anchor,
-			writer: $writer,
-			definitions: new CasePlanDefinition(sentries: $sentries),
-			db: $db,
-			logger: new NullLogger()
+			store: new CasePlanStore(
+				items: $this->items,
+				audits: $this->audits,
+				db: $db,
+				logger: new NullLogger()
+			),
+			mechanics: new CasePlanMechanics(
+				machine: $machine,
+				cascade: new CasePlanCascade(machine: $machine, readers: new CaseCascadeReaders(sentries: $sentries, realiser: $realiser, anchor: $anchor)),
+				sentries: $sentries,
+				definitions: new CasePlanDefinition(sentries: $sentries)
+			),
+			anchorAccess: new CasePlanAnchorAccess(
+				authorization: new CasePlanAuthorizationService(groupManager: $groups),
+				anchor: $anchor,
+				writer: $writer
+			),
+			bringOver: new CasePlanBringOver()
 		);
 	}//end plans()
 
@@ -143,7 +156,7 @@ class CaseFlowNodesTest extends TestCase {
 		$urls = $this->createMock(IURLGenerator::class);
 		$urls->method('imagePath')->willReturn('/icon.svg');
 
-		return ['plans' => $this->plans(), 'scope' => $scope, 'session' => $session, 'l10n' => $l10n, 'urls' => $urls];
+		return ['steps' => new CaseStepRunner(plans: $this->plans(), scope: $scope, session: $session), 'presentation' => new \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation($l10n, $urls)];
 	}//end collaborators()
 
 	/**

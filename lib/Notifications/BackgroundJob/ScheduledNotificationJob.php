@@ -35,19 +35,17 @@ namespace OCA\OpenRegister\Notifications\BackgroundJob;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeZone;
-use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
-use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterEvaluator;
+use OCA\OpenRegister\Notifications\Db\DedupeSighting;
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
+use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterTarget;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
-use OCP\IAppConfig;
 use OCP\ICache;
 use OCP\ICacheFactory;
-use Psr\Log\LoggerInterface;
 
 /**
  * Scheduled notification background job.
@@ -88,28 +86,18 @@ final class ScheduledNotificationJob extends TimedJob {
 	/**
 	 * Wire collaborators and configure the timed-job interval.
 	 *
-	 * @param ITimeFactory $time Nextcloud time factory.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param MagicMapperInterface $objectMapper Magic object mapper.
-	 * @param AnnotationNotificationDispatcher $dispatcher Notification dispatcher.
-	 * @param LoggerInterface $logger PSR logger.
-	 * @param ICacheFactory $cacheFactory Distributed cache factory.
-	 * @param ScheduledFilterEvaluator $filterEvaluator Operator-aware filter evaluator.
-	 * @param NotificationDedupeStateMapper $dedupeMapper Per-object dedup state mapper.
-	 * @param IAppConfig $appConfig App config for tunable retention window.
+	 * @param ITimeFactory                  $time         Nextcloud time factory.
+	 * @param ScheduledObjectSources        $sources      Schemas, objects and the filter evaluator.
+	 * @param ScheduledNotificationDelivery $delivery     Dispatcher, dedup state, app config and logger.
+	 * @param ICacheFactory                 $cacheFactory Distributed cache factory.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapperInterface $objectMapper,
-		private readonly AnnotationNotificationDispatcher $dispatcher,
-		private readonly LoggerInterface $logger,
+		private readonly ScheduledObjectSources $sources,
+		private readonly ScheduledNotificationDelivery $delivery,
 		ICacheFactory $cacheFactory,
-		private readonly ScheduledFilterEvaluator $filterEvaluator,
-		private readonly NotificationDedupeStateMapper $dedupeMapper,
-		private readonly IAppConfig $appConfig,
 	) {
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: 60);
@@ -120,6 +108,16 @@ final class ScheduledNotificationJob extends TimedJob {
 			$this->stateCache = null;
 		}
 	}//end __construct()
+
+	/**
+	 * The object finder, typed against the role this job needs: it only reads
+	 * a schema's objects.
+	 *
+	 * @return MagicObjectFinderInterface The magic mapper of the schema catalog.
+	 */
+	private function objectFinder(): MagicObjectFinderInterface {
+		return $this->sources->catalog->tables();
+	}//end objectFinder()
 
 	/**
 	 * Iterate every schema and fire any due scheduled notifications.
@@ -161,9 +159,9 @@ final class ScheduledNotificationJob extends TimedJob {
 	 */
 	private function loadSchemas(): ?array {
 		try {
-			return $this->schemaMapper->findAll();
+			return $this->sources->catalog->schemas()->findAll();
 		} catch (\Throwable $e) {
-			$this->logger->warning(sprintf('[ScheduledNotificationJob] schema list failed: %s', $e->getMessage()));
+			$this->delivery->logger->warning(sprintf('[ScheduledNotificationJob] schema list failed: %s', $e->getMessage()));
 			return null;
 		}
 	}//end loadSchemas()
@@ -184,7 +182,7 @@ final class ScheduledNotificationJob extends TimedJob {
 		$cutoff = DateTime::createFromImmutable($nowDt);
 		$cutoff->modify(sprintf('-%d days', $days));
 
-		$this->dedupeMapper->deleteSeenBefore(cutoff: $cutoff);
+		$this->delivery->dedupeMapper->deleteSeenBefore(cutoff: $cutoff);
 	}//end runRetentionSweep()
 
 	/**
@@ -195,7 +193,7 @@ final class ScheduledNotificationJob extends TimedJob {
 	private function retentionDays(): int {
 		$default = (string)NotificationDedupeStateMapper::DEFAULT_RETENTION_DAYS;
 		try {
-			return (int)$this->appConfig->getValueString('openregister', 'notification_dedupe_retention_days', $default);
+			return (int)$this->delivery->appConfig->getValueString('openregister', 'notification_dedupe_retention_days', $default);
 		} catch (\Throwable $e) {
 			return NotificationDedupeStateMapper::DEFAULT_RETENTION_DAYS;
 		}
@@ -305,7 +303,13 @@ final class ScheduledNotificationJob extends TimedJob {
 		try {
 			$this->stateCache->set($this->stateKey(fire: $fire), $fire->nowDt->getTimestamp(), (60 * 60 * 24 * 30));
 		} catch (\Throwable $e) {
-			// Don't escalate.
+			// The cache only suppresses repeats; a lost write is not escalated.
+			$this->delivery->logger->debug(
+				message: '[ScheduledNotificationJob] Could not mark the fire in the state cache',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 	}//end markFired()
 
@@ -340,7 +344,7 @@ final class ScheduledNotificationJob extends TimedJob {
 		}
 
 		$message = '[ScheduledNotificationJob] fired "%s" on schema %d: matched=%d dispatched=%d deduped=%d of %d';
-		$this->logger->info(
+		$this->delivery->logger->info(
 			sprintf($message, $fire->name, $fire->schema->getId(), $fire->matched, $fire->dispatched, $fire->deduplicated, count($objects))
 		);
 	}//end fire()
@@ -354,10 +358,10 @@ final class ScheduledNotificationJob extends TimedJob {
 	 */
 	private function loadObjects(ScheduledFire $fire): ?array {
 		try {
-			return $this->objectMapper->findBySchema($fire->schemaId);
+			return $this->objectFinder()->findBySchema($fire->schemaId);
 		} catch (\Throwable $e) {
 			$message = '[ScheduledNotificationJob] findBySchema(%d, "%s") failed: %s';
-			$this->logger->warning(sprintf($message, $fire->schema->getId(), $fire->name, $e->getMessage()));
+			$this->delivery->logger->warning(sprintf($message, $fire->schema->getId(), $fire->name, $e->getMessage()));
 			return null;
 		}
 	}//end loadObjects()
@@ -386,7 +390,7 @@ final class ScheduledNotificationJob extends TimedJob {
 		$message = '[ScheduledNotificationJob] schema %d / "%s" returned %d objects; '
 			.'processing rotating window [%d, %d) this run (PERF-3 SQL filter pushdown pending)';
 		$end     = min($offset + self::MAX_OBJECTS_PER_FIRE, $total);
-		$this->logger->warning(sprintf($message, $fire->schema->getId(), $fire->name, $total, $offset, $end));
+		$this->delivery->logger->warning(sprintf($message, $fire->schema->getId(), $fire->name, $total, $offset, $end));
 
 		// Advance the cursor for the next run; wrap once the schema is swept.
 		$this->writeOffset(fire: $fire, offset: $end % $total);
@@ -403,7 +407,7 @@ final class ScheduledNotificationJob extends TimedJob {
 	 */
 	private function readOffset(ScheduledFire $fire, int $total): int {
 		try {
-			$offset = (int)$this->appConfig->getValueString('openregister', $fire->offsetKey(), '0');
+			$offset = (int)$this->delivery->appConfig->getValueString('openregister', $fire->offsetKey(), '0');
 		} catch (\Throwable $e) {
 			$offset = 0;
 		}
@@ -425,10 +429,10 @@ final class ScheduledNotificationJob extends TimedJob {
 	 */
 	private function writeOffset(ScheduledFire $fire, int $offset): void {
 		try {
-			$this->appConfig->setValueString('openregister', $fire->offsetKey(), (string)$offset);
+			$this->delivery->appConfig->setValueString('openregister', $fire->offsetKey(), (string)$offset);
 		} catch (\Throwable $e) {
 			$message = '[ScheduledNotificationJob] failed to persist rotation offset for schema %d / "%s": %s';
-			$this->logger->warning(sprintf($message, $fire->schema->getId(), $fire->name, $e->getMessage()));
+			$this->delivery->logger->warning(sprintf($message, $fire->schema->getId(), $fire->name, $e->getMessage()));
 		}
 	}//end writeOffset()
 
@@ -446,7 +450,8 @@ final class ScheduledNotificationJob extends TimedJob {
 		}
 
 		$objectData = (array)($object->getObject() ?? []);
-		if ($this->filterEvaluator->matches(objectData: $objectData, filter: $fire->filter, now: $fire->nowDt) === true) {
+		$target     = new ScheduledFilterTarget(objectData: $objectData, now: $fire->nowDt);
+		if ($this->sources->filterEvaluator->matchesTarget(filter: $fire->filter, target: $target) === true) {
 			$fire->matched++;
 			$this->fireOnMatch(fire: $fire, object: $object);
 		}
@@ -480,7 +485,8 @@ final class ScheduledNotificationJob extends TimedJob {
 	 * @return void
 	 */
 	private function dispatchUnlessUnchanged(ScheduledFire $fire, ObjectEntity $object): void {
-		$existing = $this->dedupeMapper->findOne(schemaId: $fire->schemaId, ruleKey: $fire->name, objectUuid: $fire->objectUuid);
+		$key      = new NotificationDedupeKey(schemaId: $fire->schemaId, ruleKey: $fire->name, objectUuid: $fire->objectUuid);
+		$existing = $this->delivery->dedupeMapper->findByKey(key: $key);
 		if ($existing === null || (string)$existing->getFingerprint() !== $fire->fingerprint) {
 			$this->dispatch(fire: $fire, object: $object);
 			return;
@@ -491,6 +497,13 @@ final class ScheduledNotificationJob extends TimedJob {
 			$this->upsertState(fire: $fire, dispatched: false);
 		} catch (\Throwable $e) {
 			// Non-fatal — sweep will reclaim eventually.
+			$this->delivery->logger->warning(
+				message: '[ScheduledNotificationJob] Could not touch the dedupe state, the sweep reclaims it',
+				context: [
+					'objectUuid' => $fire->objectUuid,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		$fire->deduplicated++;
@@ -506,12 +519,12 @@ final class ScheduledNotificationJob extends TimedJob {
 	 */
 	private function dispatch(ScheduledFire $fire, ObjectEntity $object): void {
 		try {
-			$this->dispatcher->dispatch($object, 'scheduled', ['notificationName' => $fire->name]);
+			$this->delivery->dispatcher->dispatch($object, 'scheduled', ['notificationName' => $fire->name]);
 			$this->upsertState(fire: $fire, dispatched: true);
 			$fire->dispatched++;
 		} catch (\Throwable $e) {
 			$message = '[ScheduledNotificationJob] dispatch failed for object %s: %s';
-			$this->logger->warning(sprintf($message, $fire->objectUuid, $e->getMessage()));
+			$this->delivery->logger->warning(sprintf($message, $fire->objectUuid, $e->getMessage()));
 		}
 	}//end dispatch()
 
@@ -524,13 +537,9 @@ final class ScheduledNotificationJob extends TimedJob {
 	 * @return void
 	 */
 	private function upsertState(ScheduledFire $fire, bool $dispatched): void {
-		$this->dedupeMapper->upsert(
-			schemaId: $fire->schemaId,
-			ruleKey: $fire->name,
-			objectUuid: $fire->objectUuid,
-			fingerprint: $fire->fingerprint,
-			now: $fire->seenAt,
-			dispatched: $dispatched
+		$this->delivery->dedupeMapper->upsert(
+			key: new NotificationDedupeKey(schemaId: $fire->schemaId, ruleKey: $fire->name, objectUuid: $fire->objectUuid),
+			sighting: new DedupeSighting(fingerprint: $fire->fingerprint, now: $fire->seenAt, dispatched: $dispatched)
 		);
 	}//end upsertState()
 

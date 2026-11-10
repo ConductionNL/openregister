@@ -94,7 +94,6 @@ namespace OCA\OpenRegister\Tests\Unit\Controller {
 			$this->subscriptionService = $this->createMock(SubscriptionService::class);
 
 			$this->controller = new GraphQLSubscriptionController(
-				'openregister',
 				$this->request,
 				$this->subscriptionService
 			);

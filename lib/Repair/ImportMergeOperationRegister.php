@@ -46,7 +46,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\Configuration\DescriptorConfigIds;
+use OCA\OpenRegister\Service\Configuration\DescriptorConfigIdsInterface;
 
 /**
  * Imports the merge-operation register descriptor idempotently.
@@ -91,7 +91,7 @@ class ImportMergeOperationRegister extends AbstractRegisterImportStep {
 	 *
 	 * @var string
 	 */
-	protected const CONFIG_APP_ID = DescriptorConfigIds::MERGE_OPERATION;
+	protected const CONFIG_APP_ID = DescriptorConfigIdsInterface::MERGE_OPERATION;
 
 	/**
 	 * Get the name of this repair step.

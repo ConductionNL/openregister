@@ -58,6 +58,7 @@ namespace OCA\OpenRegister\Files\Service\File\Pdf\Fallback;
 
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
+use OCA\OpenRegister\Files\Service\File\Pdf\RedactionPlan;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -154,9 +155,7 @@ class PdfOdtFallbackOrchestrator {
 	 * if Path B itself fails (any sub-step throws OR the re-run validation
 	 * gate also rejects the output).
 	 *
-	 * @param string $pdfBytes The original input PDF bytes.
-	 * @param array<string, string> $substitutions The substitution map applied by Path A.
-	 * @param PdfAnonymisationException $cause The Path A exception that triggered the fallback.
+	 * @param OdtRoundTripRequest $request The PDF bytes, the Path A substitutions and the Path A exception.
 	 *
 	 * @return string Anonymised PDF bytes from Path B.
 	 *
@@ -166,7 +165,8 @@ class PdfOdtFallbackOrchestrator {
 	 *
 	 * @spec openspec/specs/pdf-anonymisation-odt-fallback/spec.md
 	 */
-	public function attempt(string $pdfBytes, array $substitutions, PdfAnonymisationException $cause): string {
+	public function attempt(OdtRoundTripRequest $request): string {
+		$cause = $request->cause;
 		// Guard: never trigger Path B on encrypted-in or text-layer-missing.
 		if ($cause->getReason() !== PdfAnonymisationException::REASON_VALIDATION_FAILED) {
 			throw $cause;
@@ -183,13 +183,13 @@ class PdfOdtFallbackOrchestrator {
 
 		$this->logger->info(
 			'[PdfOdtFallbackOrchestrator] Path A validation_failed — attempting Path B ODT round-trip',
-			['inputBytes' => strlen($pdfBytes)]
+			['inputBytes' => strlen($request->pdfBytes)]
 		);
 
 		try {
-			$odt = $this->converter->pdfToOdt(pdfBytes: $pdfBytes);
+			$odt = $this->converter->pdfToOdt(pdfBytes: $request->pdfBytes);
 		} catch (Throwable $e) {
-			throw $this->wrapAfterFallback(cause: $cause, stage: 'pdf_to_odt', previous: $e);
+			throw $this->wrapAfterFallback(stage: 'pdf_to_odt', previous: $e);
 		}
 
 		// Re-run the SAPP-side replacer against the round-tripped PDF. The
@@ -201,17 +201,16 @@ class PdfOdtFallbackOrchestrator {
 		try {
 			$pdf = $this->converter->odtToPdf(odtBytes: $odt);
 		} catch (Throwable $e) {
-			throw $this->wrapAfterFallback(cause: $cause, stage: 'odt_to_pdf', previous: $e);
+			throw $this->wrapAfterFallback(stage: 'odt_to_pdf', previous: $e);
 		}
 
 		try {
 			$output = $this->pdfTextReplacer->replaceInPdf(
 				pdfBytes: $pdf,
-				substitutions: $substitutions,
-				strict: true
-			);
+				plan: new RedactionPlan(substitutions: $request->substitutions, strict: true)
+			)->bytes;
 		} catch (PdfAnonymisationException $e) {
-			throw $this->wrapAfterFallback(cause: $cause, stage: 'rerun_replace', previous: $e);
+			throw $this->wrapAfterFallback(stage: 'rerun_replace', previous: $e);
 		}
 
 		$this->logger->info(
@@ -225,21 +224,19 @@ class PdfOdtFallbackOrchestrator {
 	/**
 	 * Wrap a Path-B-side failure with the after-fallback reason code.
 	 *
-	 * @param PdfAnonymisationException $cause The original Path A exception (preserved as previous).
+	 * Only a Path A `validation_failed` reaches Path B, so that is the Path A
+	 * reason the diagnostic records.
+	 *
 	 * @param string $stage Which Path B step failed (`pdf_to_odt`, `odt_to_pdf`, `rerun_replace`).
 	 * @param Throwable $previous The Path-B-side exception.
 	 *
 	 * @return PdfAnonymisationException A new exception carrying
 	 *                                   REASON_VALIDATION_FAILED_AFTER_FALLBACK.
 	 */
-	private function wrapAfterFallback(
-		PdfAnonymisationException $cause,
-		string $stage,
-		Throwable $previous,
-	): PdfAnonymisationException {
+	private function wrapAfterFallback(string $stage, Throwable $previous): PdfAnonymisationException {
 		$diagnostic = [
 			'pathB_stage' => $stage,
-			'pathA_reason' => $cause->getReason(),
+			'pathA_reason' => PdfAnonymisationException::REASON_VALIDATION_FAILED,
 			'pathB_previous' => $previous::class,
 		];
 

@@ -36,7 +36,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 /**
  * Resolves the entities a permission report runs over.
  */
-class PermissionReportScope {
+class PermissionReportScope implements PermissionReportScopeInterface {
 	/**
 	 * Constructor.
 	 *

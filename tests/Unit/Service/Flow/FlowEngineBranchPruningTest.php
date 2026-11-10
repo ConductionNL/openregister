@@ -10,14 +10,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
+use OCA\OpenRegister\Service\Flow\FlowEngineServices;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
+use OCA\OpenRegister\Service\Flow\FlowRunStart;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\FlowTaskMootness;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Symfony\Component\Workflow\MarkingStore\MethodMarkingStore;
+use OCA\OpenRegister\Service\Flow\PlacesPruning;
 
 /**
  * Holds the marking for one walk.
@@ -84,12 +88,10 @@ class FlowEngineBranchPruningTest extends TestCase {
 
 	private function walk(FlowEngine $engine, PruningDispatcher $dispatcher, array $context, array $flow): array {
 		return $engine->run(
-			flow: $flow,
-			store: new MethodMarkingStore(false, 'marking'),
-			subject: new PruningSubject(),
-			dispatcher: $dispatcher,
-			context: $context,
-			items: [FlowItems::item(json: ['n' => 42])]
+			start: (new FlowRunStart(flow: $flow, store: new MethodMarkingStore(false, 'marking'), subject: new PruningSubject(), dispatcher: $dispatcher))->withContext(context: $context),
+			origin: new FlowRunOrigin(
+				items: [FlowItems::item(json: ['n' => 42])]
+			)
 		);
 	}//end walk()
 
@@ -102,9 +104,9 @@ class FlowEngineBranchPruningTest extends TestCase {
 		$mootness = $this->createMock(FlowTaskMootness::class);
 		$mootness->expects($this->once())
 			->method('placesPruned')
-			->with($this->anything(), ['lo'], 's');
+			->with($this->anything(), new PlacesPruning(places: ['lo'], byTransition: 's'));
 
-		$engine = new FlowEngine(new FlowDefinitionBuilder(), new NullLogger(), null, null, null, null, $mootness);
+		$engine = new FlowEngine(new FlowDefinitionBuilder(), new NullLogger(), services: new FlowEngineServices(mootness: $mootness));
 
 		$state = new FlowResumeState();
 		$state->forNode(nodeId: 'lo')->set(key: 'taskUuid', value: 't-lo');
@@ -122,7 +124,7 @@ class FlowEngineBranchPruningTest extends TestCase {
 		$mootness = $this->createMock(FlowTaskMootness::class);
 		$mootness->expects($this->never())->method('placesPruned');
 
-		$engine = new FlowEngine(new FlowDefinitionBuilder(), new NullLogger(), null, null, null, null, $mootness);
+		$engine = new FlowEngine(new FlowDefinitionBuilder(), new NullLogger(), services: new FlowEngineServices(mootness: $mootness));
 
 		$this->walk($engine, new PruningDispatcher(), [], $this->linearFlow());
 	}//end testALinearFlowReportsNoPruning()

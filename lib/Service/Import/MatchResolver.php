@@ -34,8 +34,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Import;
 
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -55,6 +53,13 @@ class MatchResolver {
 	 * @var int
 	 */
 	private const CANDIDATE_CAP = 3;
+
+	/**
+	 * Key properties filtered under another name: `@self.id` is the id filter.
+	 *
+	 * @var array<string, string>
+	 */
+	private const FILTER_ALIASES = ['@self.id' => 'id'];
 
 	/**
 	 * Constructor.
@@ -104,33 +109,39 @@ class MatchResolver {
 	 * properties, matches nothing: a row with a blank key is a new record,
 	 * not a match against every object whose property is also blank.
 	 *
-	 * @param array<string, mixed> $object The mapped object, in the shape the save path takes.
-	 * @param array<int, string> $matchKey The declared key's property names.
-	 * @param Register $register The target register.
-	 * @param Schema $schema The target schema.
+	 * @param MatchQuery $query The mapped object, the declared key and the target table.
 	 *
 	 * @return array<int, string> The uuids the key hit, capped.
 	 *
+	 * @throws MatchLookupFailedException When the lookup cannot run.
+	 *
 	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
 	 */
-	public function resolve(array $object, array $matchKey, Register $register, Schema $schema): array {
-		if ($matchKey === []) {
+	public function matchesOf(MatchQuery $query): array {
+		if ($query->matchKey === []) {
 			return [];
 		}
 
-		$filters = $this->buildFilters(
-			object: $object,
-			matchKey: $matchKey,
-			register: $register,
-			schema: $schema
-		);
-
+		$filters = $this->buildFilters(query: $query);
 		if ($filters === null) {
 			return [];
 		}
 
+		return $this->uuidsOf(found: $this->find(filters: $filters));
+	}//end matchesOf()
+
+	/**
+	 * Run one capped lookup.
+	 *
+	 * @param array<string, mixed> $filters The lookup's filters.
+	 *
+	 * @return array<int|string, mixed> The lookup's entries.
+	 *
+	 * @throws MatchLookupFailedException When the lookup cannot run.
+	 */
+	private function find(array $filters): array {
 		try {
-			$found = $this->objectService->findAll(
+			return $this->objectService->findAll(
 				config: [
 					'filters' => $filters,
 					'limit' => self::CANDIDATE_CAP,
@@ -140,18 +151,39 @@ class MatchResolver {
 			// A lookup that cannot run is not "no match": treating it as one
 			// would create a duplicate of every object in the register. It is
 			// reported to the caller as a failed match so the row is refused.
-			$this->logger->warning(
-				message: '[MatchResolver] Match lookup failed: '.$exception->getMessage(),
-				context: ['filters' => array_keys($filters)]
-			);
+			throw $this->lookupFailed(exception: $exception, filters: $filters);
+		}
+	}//end find()
 
-			throw new MatchLookupFailedException(
-				'The match key could not be resolved: '.$exception->getMessage(),
-				0,
-				$exception
-			);
-		}//end try
+	/**
+	 * Log a lookup that could not run and say so as a failed match.
+	 *
+	 * @param Throwable            $exception The lookup's failure.
+	 * @param array<string, mixed> $filters   The lookup's filters; only their names are logged.
+	 *
+	 * @return MatchLookupFailedException The failure to throw.
+	 */
+	private function lookupFailed(Throwable $exception, array $filters): MatchLookupFailedException {
+		$this->logger->warning(
+			message: '[MatchResolver] Match lookup failed: '.$exception->getMessage(),
+			context: ['filters' => array_keys($filters)]
+		);
 
+		return new MatchLookupFailedException(
+			'The match key could not be resolved: '.$exception->getMessage(),
+			0,
+			$exception
+		);
+	}//end lookupFailed()
+
+	/**
+	 * The distinct uuids of the entries a lookup returned.
+	 *
+	 * @param array<int|string, mixed> $found The lookup's entries.
+	 *
+	 * @return array<int, string> The uuids, in the order found.
+	 */
+	private function uuidsOf(array $found): array {
 		$uuids = [];
 		foreach ($found as $entry) {
 			$uuid = $this->readUuid(entry: $entry);
@@ -161,7 +193,7 @@ class MatchResolver {
 		}
 
 		return array_values(array_unique($uuids));
-	}//end resolve()
+	}//end uuidsOf()
 
 	/**
 	 * The filter set for one row's lookup, or null when the row carries no
@@ -171,32 +203,24 @@ class MatchResolver {
 	 * object whose property is also blank, so the whole lookup is abandoned
 	 * rather than run with the blank in it.
 	 *
-	 * @param array<string, mixed> $object The mapped object.
-	 * @param array<int, string> $matchKey The declared key's property names.
-	 * @param Register $register The target register.
-	 * @param Schema $schema The target schema.
+	 * @param MatchQuery $query The mapped object, the declared key and the target table.
 	 *
 	 * @return array<string, mixed>|null The filters, or null when the row cannot be matched.
 	 */
-	private function buildFilters(array $object, array $matchKey, Register $register, Schema $schema): ?array {
+	private function buildFilters(MatchQuery $query): ?array {
 		$filters = [
-			'register' => $register->getId(),
-			'schema' => $schema->getId(),
+			'register' => $query->table->register->getId(),
+			'schema' => $query->table->schema->getId(),
 		];
 
-		foreach ($matchKey as $property) {
-			$value = $this->readValue(object: $object, property: $property);
+		foreach ($query->matchKey as $property) {
+			$value = $this->readValue(object: $query->object, property: $property);
 
 			if ($value === null || $value === '') {
 				return null;
 			}
 
-			$key = $property;
-			if ($property === 'id' || $property === '@self.id') {
-				$key = 'id';
-			}
-
-			$filters[$key] = $value;
+			$filters[(self::FILTER_ALIASES[$property] ?? $property)] = $value;
 		}
 
 		return $filters;
@@ -237,11 +261,7 @@ class MatchResolver {
 	 */
 	private function readUuid(mixed $entry): ?string {
 		if (is_array($entry) === false) {
-			if (is_object($entry) === true && method_exists($entry, 'getUuid') === true) {
-				return $entry->getUuid();
-			}
-
-			return null;
+			return self::readEntityUuid(entry: $entry);
 		}
 
 		$uuid = ($entry['@self']['id'] ?? $entry['uuid'] ?? $entry['id'] ?? null);
@@ -252,4 +272,19 @@ class MatchResolver {
 
 		return (string)$uuid;
 	}//end readUuid()
+
+	/**
+	 * Read the uuid off an entry that is not an array, such as an entity.
+	 *
+	 * @param mixed $entry The entry.
+	 *
+	 * @return string|null The uuid, or null when the entry offers none.
+	 */
+	private static function readEntityUuid(mixed $entry): ?string {
+		if (is_object($entry) === true && method_exists($entry, 'getUuid') === true) {
+			return $entry->getUuid();
+		}
+
+		return null;
+	}//end readEntityUuid()
 }//end class

@@ -35,6 +35,8 @@ use DOMNode;
 use DOMXPath;
 use OCA\OpenRegister\Exception\SanitizationException;
 use OCA\OpenRegister\Files\Service\File\SanitizationReport;
+use OCA\OpenRegister\Files\Service\File\SanitizationRevisionCounts;
+use OCA\OpenRegister\Files\Service\File\SanitizationStructureCounts;
 use ZipArchive;
 
 /**
@@ -115,14 +117,51 @@ class OdtSanitizer implements SanitizerInterface {
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
 	public function sanitize(string $sourcePath, string $destPath): SanitizationReport {
-		if ($sourcePath !== $destPath) {
-			if (copy($sourcePath, $destPath) === false) {
-				throw new SanitizationException(
-					reason: SanitizationException::REASON_INTERNAL,
-					message: 'Could not copy source document to destination'
-				);
-			}
-		}
+		$zip = $this->openPackage(sourcePath: $sourcePath, destPath: $destPath);
+
+		$counts = [
+			'commentsRemoved' => 0,
+			'trackedChangesAccepted' => 0,
+			'trackedChangesDropped' => 0,
+			'hyperlinksFlattened' => 0,
+			'metadataFieldsScrubbed' => 0,
+			'fieldCodesStripped' => 0,
+		];
+
+		$this->sanitizeContent(zip: $zip, counts: $counts);
+		$this->scrubMetadata(zip: $zip, counts: $counts);
+
+		$zip->close();
+
+		return new SanitizationReport(
+			revisions: new SanitizationRevisionCounts(
+				commentsRemoved: $counts['commentsRemoved'],
+				trackedChangesAccepted: $counts['trackedChangesAccepted'],
+				trackedChangesDropped: $counts['trackedChangesDropped'],
+				revisionAttributesStripped: 0
+			),
+			structure: new SanitizationStructureCounts(
+				hyperlinksFlattened: $counts['hyperlinksFlattened'],
+				metadataFieldsScrubbed: $counts['metadataFieldsScrubbed'],
+				customXmlPartsDropped: 0,
+				fieldCodesStripped: $counts['fieldCodesStripped']
+			),
+			sentinelApplied: $this->sentinel
+		);
+	}//end sanitize()
+
+	/**
+	 * Copy the source to the destination (when they differ) and open it.
+	 *
+	 * @param string $sourcePath Path to the source ODT.
+	 * @param string $destPath Path the sanitized ODT is written to.
+	 *
+	 * @return ZipArchive The open destination archive.
+	 *
+	 * @throws SanitizationException When the copy fails or the package cannot be opened.
+	 */
+	private function openPackage(string $sourcePath, string $destPath): ZipArchive {
+		$this->copyToDestination(sourcePath: $sourcePath, destPath: $destPath);
 
 		$zip = new ZipArchive();
 		$code = $zip->open($destPath);
@@ -141,44 +180,56 @@ class OdtSanitizer implements SanitizerInterface {
 			);
 		}
 
-		$counts = [
-			'commentsRemoved' => 0,
-			'trackedChangesAccepted' => 0,
-			'trackedChangesDropped' => 0,
-			'hyperlinksFlattened' => 0,
-			'metadataFieldsScrubbed' => 0,
-			'fieldCodesStripped' => 0,
-		];
+		return $zip;
+	}//end openPackage()
 
-		$contentXml = $zip->getFromName('content.xml');
-		if ($contentXml !== false) {
-			$dom = $this->loadXml(xml: $contentXml);
-			$xpath = $this->xpath(dom: $dom);
-
-			$this->removeAnnotations(xpath: $xpath, counts: $counts);
-			$this->acceptTrackedChanges(xpath: $xpath, counts: $counts);
-			$this->flattenHyperlinks(xpath: $xpath, counts: $counts);
-			$this->removeIdentityPlaceholders(xpath: $xpath, counts: $counts);
-
-			$zip->addFromString('content.xml', $dom->saveXML());
+	/**
+	 * Copy the source document to the destination when the paths differ.
+	 *
+	 * @param string $sourcePath Path to the source ODT.
+	 * @param string $destPath Path the sanitized ODT is written to.
+	 *
+	 * @return void
+	 *
+	 * @throws SanitizationException When the copy fails.
+	 */
+	private function copyToDestination(string $sourcePath, string $destPath): void {
+		if ($sourcePath === $destPath) {
+			return;
 		}
 
-		$this->scrubMetadata(zip: $zip, counts: $counts);
+		if (copy($sourcePath, $destPath) === false) {
+			throw new SanitizationException(
+				reason: SanitizationException::REASON_INTERNAL,
+				message: 'Could not copy source document to destination'
+			);
+		}
+	}//end copyToDestination()
 
-		$zip->close();
+	/**
+	 * Run the content.xml passes (one load / one save).
+	 *
+	 * @param ZipArchive $zip The open archive.
+	 * @param array<string, int> $counts Mutable counter map.
+	 *
+	 * @return void
+	 */
+	private function sanitizeContent(ZipArchive $zip, array &$counts): void {
+		$contentXml = $zip->getFromName('content.xml');
+		if ($contentXml === false) {
+			return;
+		}
 
-		return new SanitizationReport(
-			commentsRemoved: $counts['commentsRemoved'],
-			trackedChangesAccepted: $counts['trackedChangesAccepted'],
-			trackedChangesDropped: $counts['trackedChangesDropped'],
-			revisionAttributesStripped: 0,
-			hyperlinksFlattened: $counts['hyperlinksFlattened'],
-			metadataFieldsScrubbed: $counts['metadataFieldsScrubbed'],
-			customXmlPartsDropped: 0,
-			fieldCodesStripped: $counts['fieldCodesStripped'],
-			sentinelApplied: $this->sentinel
-		);
-	}//end sanitize()
+		$dom = $this->loadXml(xml: $contentXml);
+		$xpath = $this->xpath(dom: $dom);
+
+		$this->removeAnnotations(xpath: $xpath, counts: $counts);
+		$this->acceptTrackedChanges(xpath: $xpath, counts: $counts);
+		$this->flattenHyperlinks(xpath: $xpath, counts: $counts);
+		$this->removeIdentityPlaceholders(xpath: $xpath, counts: $counts);
+
+		$zip->addFromString('content.xml', $dom->saveXML());
+	}//end sanitizeContent()
 
 	/**
 	 * Remove office:annotation comments.

@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\Archival\RetentionScanStores;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -36,7 +37,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
+use OCA\OpenRegister\Service\RetentionRules;
 use OCA\OpenRegister\Service\RetentionService;
+use OCA\OpenRegister\Service\RetentionStores;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -47,6 +50,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 
 /**
  * Tests for the retention scan and the two eligibility sweeps built on it.
@@ -114,26 +118,25 @@ class RetentionSweepTest extends TestCase {
 		);
 
 		$this->service = new RetentionService(
-			$this->objectMapper,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->createMock(AuditTrailMapper::class),
-			$this->settingsHandler,
+			new RetentionStores(
+				new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper),
+				$this->createMock(AuditTrailMapper::class)
+			),
+			new RetentionRules(
+				$this->settingsHandler,
+				// The REAL scanner over the SAME mocks these tests program, not a
+				// mock of its own: what is under test here is which tables get
+				// walked and how, and a mocked scanner would assert only that this
+				// service called something.
+				new RetentionRowScanner(
+					new RetentionScanStores(db: $this->db, catalog: new SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper)),
+					$this->logger
+				),
+				new ArchiveActionDateCalculator($this->objectMapper, $this->logger),
+				$this->createMock(SelectielijstResolver::class)
+			),
 			$this->createMock(IUserSession::class),
 			$this->logger,
-			// The REAL scanner over the SAME mocks these tests program, not a
-			// mock of its own: what is under test here is which tables get
-			// walked and how, and a mocked scanner would assert only that this
-			// service called something.
-			new RetentionRowScanner(
-				$this->db,
-				$this->registerMapper,
-				$this->schemaMapper,
-				$this->objectMapper,
-				$this->logger
-			),
-			new ArchiveActionDateCalculator($this->objectMapper, $this->logger),
-			$this->createMock(SelectielijstResolver::class),
 		);
 	}//end setUp()
 

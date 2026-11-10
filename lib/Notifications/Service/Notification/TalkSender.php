@@ -136,9 +136,8 @@ class TalkSender implements TalkSenderInterface {
 	 * already be a participant of the conversation; "not a participant" is a
 	 * failure with that reason, never an auto-join.
 	 *
-	 * @param string $token The Talk conversation token.
-	 * @param string $message The message text.
-	 * @param string $actorUid The acting user's uid.
+	 * @param TalkMessage $talkMessage The message and its conversation.
+	 * @param string      $actorUid    The acting user's uid.
 	 *
 	 * @return string OUTCOME_DISPATCHED or OUTCOME_KILL_SWITCH.
 	 *
@@ -148,8 +147,8 @@ class TalkSender implements TalkSenderInterface {
 	 *
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
 	 */
-	public function postAsUser(string $token, string $message, string $actorUid): string {
-		if ($token === '') {
+	public function postAsUser(TalkMessage $talkMessage, string $actorUid): string {
+		if ($talkMessage->token === '') {
 			throw new TalkSendException('No Talk conversation token was given.');
 		}
 
@@ -157,7 +156,7 @@ class TalkSender implements TalkSenderInterface {
 			return self::OUTCOME_KILL_SWITCH;
 		}
 
-		$this->postViaTalkApp(token: $token, message: $message, actorUid: $actorUid);
+		$this->postViaTalkApp(talkMessage: $talkMessage, actorUid: $actorUid);
 
 		return self::OUTCOME_DISPATCHED;
 	}//end postAsUser()
@@ -174,9 +173,8 @@ class TalkSender implements TalkSenderInterface {
 	 * Protected so unit tests can substitute the Talk side without a Talk
 	 * installation; the decision logic above it stays under test either way.
 	 *
-	 * @param string $token The conversation token.
-	 * @param string $message The message text.
-	 * @param string $actorUid The acting user's uid.
+	 * @param TalkMessage $talkMessage The message and its conversation.
+	 * @param string      $actorUid    The acting user's uid.
 	 *
 	 * @return void
 	 *
@@ -184,7 +182,8 @@ class TalkSender implements TalkSenderInterface {
 	 *
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
 	 */
-	protected function postViaTalkApp(string $token, string $message, string $actorUid): void {
+	protected function postViaTalkApp(TalkMessage $talkMessage, string $actorUid): void {
+		$token = $talkMessage->token;
 		if ($this->serverContainer === null) {
 			throw new TalkSendException('Talk posting is unavailable: no server container to reach the Talk app.');
 		}
@@ -202,7 +201,7 @@ class TalkSender implements TalkSenderInterface {
 			$participantService = $this->serverContainer->get('OCA\\Talk\\Service\\ParticipantService');
 			$participant = $participantService->getParticipant($room, $actorUid, false);
 			$chatManager = $this->serverContainer->get('OCA\\Talk\\Chat\\ChatManager');
-			$chatManager->sendMessage($room, $participant, 'users', $actorUid, $message, new DateTime());
+			$chatManager->sendMessage($room, $participant, 'users', $actorUid, $talkMessage->message, new DateTime());
 		} catch (TalkSendException $e) {
 			throw $e;
 		} catch (\Throwable $e) {

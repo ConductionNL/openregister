@@ -36,7 +36,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/specs/row-field-level-security/spec.md
  */
-class UnknownRuleKeyFindings {
+class UnknownRuleKeyFindings implements UnknownRuleKeyFindingsInterface {
 
 	/**
 	 * Reads rule lists, principals and stored blocks.
@@ -99,9 +99,8 @@ class UnknownRuleKeyFindings {
 		}
 
 		$this->blocks->assertNone(
-			findings: $this->registerFindings(
-				authorization: $register->getAuthorization(),
-				context: $subject,
+			findings: $this->findingsIn(
+				block: self::registerBlock(authorization: $register->getAuthorization(), context: $subject),
 				stored: $this->stored->registerAuthorization(id: $register->getId())
 			)
 		);
@@ -124,7 +123,7 @@ class UnknownRuleKeyFindings {
 			block: ['authorization' => $schema->getAuthorization(), 'context' => $name, 'columns' => $columns],
 			stored: $stored?->getAuthorization()
 		);
-		foreach ($this->stored->propertyBlocks(schema: $schema, stored: $stored, name: $name) as $block) {
+		foreach ($this->stored->propertyBlocks(save: new SchemaSave(schema: $schema, stored: $stored), name: $name) as $block) {
 			$block['columns'] = $columns;
 			$findings = array_merge($findings, $this->findingsIn(block: $block, stored: $block['stored']));
 		}
@@ -137,18 +136,26 @@ class UnknownRuleKeyFindings {
 	 *
 	 * @param array|null $authorization The block.
 	 * @param string     $context       What the block belongs to, for the message.
-	 * @param array|null $stored        The block as stored, when saving over one.
 	 *
 	 * @return array<int, string> The findings.
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
-	public function registerFindings(?array $authorization, string $context, ?array $stored = null): array {
-		return $this->findingsIn(
-			block: ['authorization' => $authorization, 'context' => $context, 'columns' => new RuleColumns()],
-			stored: $stored
-		);
+	public function registerFindings(?array $authorization, string $context): array {
+		return $this->findingsIn(block: self::registerBlock(authorization: $authorization, context: $context), stored: null);
 	}//end registerFindings()
+
+	/**
+	 * A register's block, judged by the columns every register shares.
+	 *
+	 * @param array|null $authorization The block.
+	 * @param string     $context       What the block belongs to, for the message.
+	 *
+	 * @return array{authorization: ?array, context: string, columns: RuleColumns} The block and how to judge it.
+	 */
+	private static function registerBlock(?array $authorization, string $context): array {
+		return ['authorization' => $authorization, 'context' => $context, 'columns' => new RuleColumns()];
+	}//end registerBlock()
 
 	/**
 	 * One sentence per condition of a block that its columns refuse and the stored block does not hold.

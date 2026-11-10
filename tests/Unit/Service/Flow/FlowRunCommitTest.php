@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use DateTime;
+use OCA\OpenRegister\Service\Flow\FlowRunEnding;
 use OCA\OpenRegister\Db\FlowClaim;
 use OCA\OpenRegister\Db\FlowClaimMapper;
 use OCA\OpenRegister\Db\FlowRun;
@@ -41,6 +42,7 @@ use OCA\OpenRegister\Db\FlowStreamMapper;
 use OCA\OpenRegister\Service\Flow\FlowFiring;
 use OCA\OpenRegister\Service\Flow\FlowHopAudit;
 use OCA\OpenRegister\Service\Flow\FlowRunCommit;
+use OCA\OpenRegister\Service\Flow\FlowRunCommitRows;
 use OCA\OpenRegister\Service\Flow\FlowStreamClosure;
 use OCA\OpenRegister\Service\Flow\FlowStreamRef;
 use OCA\OpenRegister\Service\Flow\FlowStreamRelease;
@@ -155,10 +157,7 @@ class FlowRunCommitTest extends TestCase {
 
 		$this->commit = new FlowRunCommit(
 			db: $db,
-			runs: $runs,
-			streams: $streams,
-			claims: $claims,
-			steps: $steps,
+			rows: new FlowRunCommitRows(runs: $runs, streams: $streams, claims: $claims, steps: $steps),
 			logger: new NullLogger(),
 			hopAudit: $this->hopAudit
 		);
@@ -344,7 +343,7 @@ class FlowRunCommitTest extends TestCase {
 		$this->stream('s1', '0001', 'a');
 		$this->claim('a', 'other-pass');
 
-		$status = $this->commit->finalize(run: $this->row, owner: 'me', enabled: false);
+		$status = $this->commit->end(run: $this->row, ending: new FlowRunEnding(owner: 'me', enabled: false, forcedTerminal: null, endedAt: new DateTime()));
 
 		$this->assertSame(FlowRun::STATUS_RUNNING, $status);
 	}//end testStatusIsRunningWhileAnotherPassHoldsAClaim()
@@ -354,7 +353,7 @@ class FlowRunCommitTest extends TestCase {
 		// is fired by the next pass, and the run is never reported completed
 		// in between.
 		$this->stream('s1', '0001', 'j#e1');
-		$status = $this->commit->finalize(run: $this->row, owner: 'me', enabled: true);
+		$status = $this->commit->end(run: $this->row, ending: new FlowRunEnding(owner: 'me', enabled: true, forcedTerminal: null, endedAt: new DateTime()));
 		$this->assertSame(FlowRun::STATUS_QUEUED, $status);
 	}//end testAnEnabledUnclaimedFiringLeavesTheRunQueuedNeverCompleted()
 
@@ -365,7 +364,7 @@ class FlowRunCommitTest extends TestCase {
 		$this->stream('s1', '0001.0001', 'w', FlowRun::STATUS_SUSPENDED, null);
 		$this->stream('s2', '0001.0002', 't', FlowRun::STATUS_SUSPENDED, $timer);
 
-		$status = $this->commit->finalize(run: $this->row, owner: 'me', enabled: false);
+		$status = $this->commit->end(run: $this->row, ending: new FlowRunEnding(owner: 'me', enabled: false, forcedTerminal: null, endedAt: new DateTime()));
 
 		$this->assertSame(FlowRun::STATUS_SUSPENDED, $status);
 		$this->assertEquals($timer, $this->row->getResumeAt());
@@ -373,7 +372,7 @@ class FlowRunCommitTest extends TestCase {
 
 	public function testOnlySignalWaitersLeavesResumeAtNull(): void {
 		$this->stream('s1', '0001', 'w', FlowRun::STATUS_SUSPENDED, null);
-		$this->commit->finalize(run: $this->row, owner: 'me', enabled: false);
+		$this->commit->end(run: $this->row, ending: new FlowRunEnding(owner: 'me', enabled: false, forcedTerminal: null, endedAt: new DateTime()));
 		$this->assertSame(FlowRun::STATUS_SUSPENDED, $this->row->getStatus());
 		$this->assertNull($this->row->getResumeAt());
 	}//end testOnlySignalWaitersLeavesResumeAtNull()
@@ -383,7 +382,7 @@ class FlowRunCommitTest extends TestCase {
 		$this->stream('s2', '0001.0002', 'x', FlowRun::STATUS_RUNNING);
 		$this->claim('x', 'sibling-pass');
 
-		$status = $this->commit->finalize(run: $this->row, owner: 'me', enabled: false);
+		$status = $this->commit->end(run: $this->row, ending: new FlowRunEnding(owner: 'me', enabled: false, forcedTerminal: null, endedAt: new DateTime()));
 
 		$this->assertSame(FlowRun::STATUS_RUNNING, $status);
 		// The per-branch detail still says which branch waits.
@@ -395,13 +394,13 @@ class FlowRunCommitTest extends TestCase {
 		$this->stream('s2', '0001.0002', 'f', FlowRun::STATUS_STOPPED);
 		$this->stream('s3', '0001.0003', 'g', FlowRun::STATUS_FAILED);
 
-		$this->assertSame(FlowRun::STATUS_FAILED, $this->commit->finalize(run: $this->row, owner: 'me', enabled: false));
+		$this->assertSame(FlowRun::STATUS_FAILED, $this->commit->end(run: $this->row, ending: new FlowRunEnding(owner: 'me', enabled: false, forcedTerminal: null, endedAt: new DateTime())));
 
 		$this->streams['s3']->setStatus(FlowRun::STATUS_COMPLETED);
-		$this->assertSame(FlowRun::STATUS_STOPPED, $this->commit->finalize(run: $this->row, owner: 'me', enabled: false));
+		$this->assertSame(FlowRun::STATUS_STOPPED, $this->commit->end(run: $this->row, ending: new FlowRunEnding(owner: 'me', enabled: false, forcedTerminal: null, endedAt: new DateTime())));
 
 		$this->streams['s2']->setStatus(FlowRun::STATUS_COMPLETED);
-		$this->assertSame(FlowRun::STATUS_COMPLETED, $this->commit->finalize(run: $this->row, owner: 'me', enabled: false));
+		$this->assertSame(FlowRun::STATUS_COMPLETED, $this->commit->end(run: $this->row, ending: new FlowRunEnding(owner: 'me', enabled: false, forcedTerminal: null, endedAt: new DateTime())));
 	}//end testTerminalProjectionTakesTheMostSevereStream()
 
 	public function testARunLevelStopEndsEveryStream(): void {
@@ -409,7 +408,7 @@ class FlowRunCommitTest extends TestCase {
 		$this->stream('s2', '0001.0002', 'b', FlowRun::STATUS_SUSPENDED);
 		$this->claim('a', 'me');
 
-		$status = $this->commit->finalize(run: $this->row, owner: 'me', enabled: true, forcedTerminal: FlowRun::STATUS_STOPPED);
+		$status = $this->commit->end(run: $this->row, ending: new FlowRunEnding(owner: 'me', enabled: true, forcedTerminal: FlowRun::STATUS_STOPPED, endedAt: new DateTime()));
 
 		$this->assertSame(FlowRun::STATUS_STOPPED, $status);
 		$this->assertSame(FlowRun::STATUS_STOPPED, $this->streams['s1']->getStatus());
@@ -422,7 +421,7 @@ class FlowRunCommitTest extends TestCase {
 		$this->stream('s1', '0001', 'a', FlowRun::STATUS_COMPLETED);
 		$this->claim('a', 'me');
 
-		$status = $this->commit->finalize(run: $this->row, owner: 'me', enabled: false);
+		$status = $this->commit->end(run: $this->row, ending: new FlowRunEnding(owner: 'me', enabled: false, forcedTerminal: null, endedAt: new DateTime()));
 
 		$this->assertSame(FlowRun::STATUS_COMPLETED, $status);
 		$this->assertSame([], $this->claims);
@@ -432,9 +431,9 @@ class FlowRunCommitTest extends TestCase {
 		$allowed = [FlowRun::STATUS_QUEUED, FlowRun::STATUS_RUNNING, FlowRun::STATUS_SUSPENDED, FlowRun::STATUS_COMPLETED, FlowRun::STATUS_STOPPED, FlowRun::STATUS_DEAD_LETTER, FlowRun::STATUS_FAILED];
 		$this->stream('s1', '0001.0001', 'a', FlowRun::STATUS_DEAD_LETTER);
 		$this->stream('s2', '0001.0002', 'b', FlowRun::STATUS_SUSPENDED, new DateTime('+1 hour'));
-		$this->assertContains($this->commit->finalize(run: $this->row, owner: 'me', enabled: false), $allowed);
+		$this->assertContains($this->commit->end(run: $this->row, ending: new FlowRunEnding(owner: 'me', enabled: false, forcedTerminal: null, endedAt: new DateTime())), $allowed);
 		$this->streams['s2']->setStatus(FlowRun::STATUS_COMPLETED);
-		$this->assertContains($this->commit->finalize(run: $this->row, owner: 'me', enabled: false), $allowed);
+		$this->assertContains($this->commit->end(run: $this->row, ending: new FlowRunEnding(owner: 'me', enabled: false, forcedTerminal: null, endedAt: new DateTime())), $allowed);
 	}//end testAStatusValueOutsideTheSevenIsNeverProduced()
 	/**
 	 * Close one stream through the commit path and read back what it left.

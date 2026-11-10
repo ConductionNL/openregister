@@ -20,6 +20,8 @@ use OCA\OpenRegister\Db\CalendarLink;
 use OCA\OpenRegister\Db\CalendarLinkMapper;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\CalendarLinkService;
+use OCA\OpenRegister\Service\CalendarPickerWindow;
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -135,7 +137,7 @@ class CalendarLinkServiceLookupGoldenTest extends TestCase {
 	private function exercise(CalendarLinkService $service, string $kind, array $args): array {
 		if ($kind === 'events') {
 			$after = $args[3] === null ? null : new DateTime($args[3]);
-			return $service->getEventsForCalendar($args[1], $args[2], $after);
+			return $service->getEventsForCalendar($args[1], new CalendarPickerWindow($after, $args[2]));
 		}
 
 		$link = $service->linkEvent('obj-1', 3, 4, $args[1], $args[2]);
@@ -187,6 +189,6 @@ class CalendarLinkServiceLookupGoldenTest extends TestCase {
 		);
 		$mapper = $this->createMock(CalendarLinkMapper::class);
 		$mapper->method('insert')->willReturnArgument(0);
-		return new CalendarLinkService($mapper, $this->createMock(CalendarEventService::class), $backend, $session, $logger);
+		return new CalendarLinkService($mapper, $this->createMock(CalendarEventService::class), $backend, new LinkSessionRuntime($session, $logger));
 	}//end makeService()
 }//end class

@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicSlugStoreInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use Throwable;
@@ -47,12 +47,12 @@ class ObjectSlugStore {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapperInterface    $magicMapper    Slug queries on the magic tables.
+	 * @param MagicSlugStoreInterface    $magicMapper    Slug queries on the magic tables.
 	 * @param RegisterMapperInterface $registerMapper Resolves the register of an entity.
 	 * @param ObjectSlugLog  $log            Receives a register that does not resolve.
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $magicMapper,
+		private readonly MagicSlugStoreInterface $magicMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly ObjectSlugLog $log,
 	) {
@@ -61,39 +61,40 @@ class ObjectSlugStore {
 	/**
 	 * The live object, other than the one asking, that holds a slug in a scope.
 	 *
-	 * @param ObjectSlugScope $scope       Register and schema (register resolved).
-	 * @param string          $slug        The slug.
-	 * @param string          $excludeUuid The object asking.
+	 * @param ObjectSlugWant $want The object asking, in its scope (register resolved).
+	 * @param string         $slug The slug.
 	 *
 	 * @return string|null The holder's uuid, or null when the slug is free.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
-	public function holderOf(ObjectSlugScope $scope, string $slug, string $excludeUuid): ?string {
+	public function holderOf(ObjectSlugWant $want, string $slug): ?string {
+		$scope = $want->scope;
 		if ($scope->register === null) {
 			return null;
 		}
 
-		return ($this->magicMapper->findSlugHolders(register: $scope->register, schema: $scope->schema, slug: $slug, excludeUuid: $excludeUuid)[0] ?? null);
+		$holders = $this->magicMapper->findSlugHolders(register: $scope->register, schema: $scope->schema, slug: $slug, excludeUuid: $want->objectUuid);
+
+		return ($holders[0] ?? null);
 	}//end holderOf()
 
 	/**
 	 * Holders of some slugs and the stored slugs of some objects, in one round trip.
 	 *
-	 * @param ObjectSlugScope $scope Register and schema (register resolved).
-	 * @param list<string>    $slugs Slugs to look up.
-	 * @param list<string>    $uuids Objects whose stored slug is wanted.
+	 * @param ObjectSlugScope  $scope  Register and schema (register resolved).
+	 * @param ObjectSlugClaims $claims Slugs to look up and objects whose stored slug is wanted.
 	 *
 	 * @return array{holders: array<string, list<string>>, stored: array<string, string|null>}
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
-	public function state(ObjectSlugScope $scope, array $slugs, array $uuids): array {
+	public function state(ObjectSlugScope $scope, ObjectSlugClaims $claims): array {
 		if ($scope->register === null) {
 			return ['holders' => [], 'stored' => []];
 		}
 
-		return $this->magicMapper->findSlugState(register: $scope->register, schema: $scope->schema, slugs: $slugs, uuids: $uuids);
+		return $this->magicMapper->findSlugState(register: $scope->register, schema: $scope->schema, slugs: $claims->slugs, uuids: $claims->uuids);
 	}//end state()
 
 	/**
@@ -105,21 +106,32 @@ class ObjectSlugStore {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
-	public function register(int|string|null $registerId): ?Register {
+	public function register(int|string|null $registerId): Register|null {
 		if ($registerId === null || $registerId === '') {
 			return null;
 		}
 
 		$key = (string)$registerId;
 		if (array_key_exists($key, $this->registers) === false) {
-			try {
-				$this->registers[$key] = $this->registerMapper->find(id: (int)$registerId, _rbac: false, _multitenancy: false);
-			} catch (Throwable $e) {
-				$this->log->registerLookupFailed(registerId: $key, reason: $e->getMessage());
-				$this->registers[$key] = null;
-			}
+			$this->registers[$key] = $this->lookup(key: $key);
 		}
 
 		return $this->registers[$key];
 	}//end register()
+
+	/**
+	 * Find a register, logging the failure when it does not resolve.
+	 *
+	 * @param string $key The register id.
+	 *
+	 * @return Register|null The register, or null.
+	 */
+	private function lookup(string $key): Register|null {
+		try {
+			return $this->registerMapper->find(id: (int)$key, _rbac: false, _multitenancy: false);
+		} catch (Throwable $e) {
+			$this->log->registerLookupFailed(registerId: $key, reason: $e->getMessage());
+			return null;
+		}
+	}//end lookup()
 }//end class

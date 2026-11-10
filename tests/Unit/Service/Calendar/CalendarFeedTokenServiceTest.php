@@ -81,12 +81,30 @@ class CalendarFeedTokenServiceTest extends TestCase {
 		return $row;
 	}
 
+	/**
+	 * An unsaved token naming a scope and, optionally, a label.
+	 *
+	 * @param string      $scopeType The scope type.
+	 * @param string      $scopeId   The scope id.
+	 * @param string|null $label     The label.
+	 *
+	 * @return CalendarFeedToken The draft.
+	 */
+	private static function draft(string $scopeType, string $scopeId, ?string $label=null): CalendarFeedToken {
+		$draft = new CalendarFeedToken();
+		$draft->setScopeType($scopeType);
+		$draft->setScopeId($scopeId);
+		$draft->setLabel($label);
+
+		return $draft;
+	}
+
 	public function testMintingBindsTheTokenToTheCallerAndReturnsItsUrl(): void {
 		$this->mapper->method('insert')->willReturnCallback(
 			static fn (CalendarFeedToken $row): CalendarFeedToken => $row
 		);
 
-		$minted = $this->service->mint(userId: 'caseworker', scopeType: 'schema', scopeId: '9', label: 'Mijn termijnen');
+		$minted = $this->service->mint(userId: 'caseworker', draft: self::draft(scopeType: 'schema', scopeId: '9', label: 'Mijn termijnen'));
 
 		$this->assertSame('caseworker', $minted['userId']);
 		$this->assertSame('schema', $minted['scopeType']);
@@ -98,14 +116,14 @@ class CalendarFeedTokenServiceTest extends TestCase {
 	public function testAnAnonymousCallerCannotMint(): void {
 		$this->expectException(InvalidArgumentException::class);
 
-		$this->service->mint(userId: '', scopeType: 'schema', scopeId: '9');
+		$this->service->mint(userId: '', draft: self::draft(scopeType: 'schema', scopeId: '9'));
 	}
 
 	public function testAnUnknownScopeTypeIsRefused(): void {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessageMatches('/is not a feed scope/');
 
-		$this->service->mint(userId: 'caseworker', scopeType: 'register', scopeId: '9');
+		$this->service->mint(userId: 'caseworker', draft: self::draft(scopeType: 'register', scopeId: '9'));
 	}
 
 	public function testALiveTokenResolves(): void {

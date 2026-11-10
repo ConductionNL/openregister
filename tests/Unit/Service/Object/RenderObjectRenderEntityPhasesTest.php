@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\TranslationScope;
 use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -111,29 +112,41 @@ class RenderObjectRenderEntityPhasesTest extends TestCase {
 		?LensResolver $lens = null
 	): RenderObject {
 		return new RenderObject(
-			$this->createMock(FileMapper::class),
-			$this->createMock(MagicMapper::class),
-			$this->registers,
-			$this->schemaMapper,
-			$this->createMock(ISystemTagManager::class),
-			$this->createMock(ISystemTagObjectMapper::class),
-			$this->createMock(CacheHandler::class),
-			$this->createMock(PropertyRbacHandler::class),
-			$this->logger,
-			$this->createMock(FileService::class),
-			$this->createMock(ComputedFieldHandler::class),
-			$this->translationHandler,
-			$this->enricher,
-			$this->evaluator,
-			$this->urnService,
-			$this->translationStatus,
-			$this->createMock(TranslationMapper::class),
-			$this->createMock(LanguageService::class),
-			$request,
-			null,
-			null,
-			$container,
-			$lens
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					objectEntityMapper: $this->createMock(MagicMapper::class),
+					registerMapper: $this->registers,
+					schemaMapper: $this->schemaMapper,
+					objectCacheService: $this->createMock(CacheHandler::class)
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $this->createMock(FileMapper::class),
+					fileService: $this->createMock(FileService::class),
+					systemTagManager: $this->createMock(ISystemTagManager::class),
+					systemTagMapper: $this->createMock(ISystemTagObjectMapper::class)
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $this->translationHandler,
+					translationStatusService: $this->translationStatus,
+					translationMapper: $this->createMock(TranslationMapper::class),
+					languageService: $this->createMock(LanguageService::class)
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $this->createMock(ComputedFieldHandler::class),
+					calculationEvaluator: $this->evaluator,
+					linkedEntityEnricher: $this->enricher,
+					urnService: $this->urnService
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: $this->logger,
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(objectSourceRegistry: null, fieldEncryptionHandler: null, lensResolver: $lens),
+				request: $request,
+				container: $container
+			),
+			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class)
 		);
 	}//end render()
 
@@ -387,8 +400,8 @@ class RenderObjectRenderEntityPhasesTest extends TestCase {
 		$seen = [];
 		$this->translationHandler = $this->createMock(TranslationHandler::class);
 		$this->translationHandler->method('resolveTranslationsForRender')->willReturnCallback(
-			static function (array $objectData, Schema $schema, ?Register $register) use (&$seen): array {
-				$seen[] = [$schema, $register];
+			static function (array $objectData, TranslationScope $scope) use (&$seen): array {
+				$seen[] = [$scope->schema, $scope->register];
 				$objectData['translated'] = true;
 
 				return $objectData;
@@ -421,6 +434,107 @@ class RenderObjectRenderEntityPhasesTest extends TestCase {
 		$this->assertSame('Z-1', $rows[0]->getObject()['title']);
 		$this->assertSame(['@self' => ['schema' => 7]], $rows[2]);
 	}//end testARowWithoutAKnownSchemaStaysAsItIs()
+
+	/**
+	 * A declared link that can be filled lands on `@self.externalLinks`, next to what `@self` holds.
+	 *
+	 * @return void
+	 */
+	public function testAFilledLinkLandsOnSelf(): void {
+		$this->givenSchema(
+			['x-openregister-external-links' => [['title' => 'Viewer', 'url' => 'https://example.org/{title}'], ['title' => 'Other', 'url' => 'https://example.org/{gone}'], 'nope']]
+		);
+
+		$data = $this->render()->renderEntity(entity: $this->entity(['title' => 'Z-1', '@self' => ['kept' => 1]]))->getObject();
+
+		$this->assertSame([['title' => 'Viewer', 'url' => 'https://example.org/Z-1']], $data['@self']['externalLinks']);
+		$this->assertSame(1, $data['@self']['kept']);
+	}//end testAFilledLinkLandsOnSelf()
+
+	/**
+	 * No declared link, or none that can be filled, leaves no key behind.
+	 *
+	 * @return void
+	 */
+	public function testNoLinkLeavesNoKey(): void {
+		$this->givenSchema(['x-openregister-external-links' => [['title' => 'Other', 'url' => 'https://example.org/{gone}']]]);
+
+		$data = $this->render()->renderEntity(entity: $this->entity())->getObject();
+
+		$this->assertArrayNotHasKey('externalLinks', ($data['@self'] ?? []));
+	}//end testNoLinkLeavesNoKey()
+
+	/**
+	 * The annotation block joins what the row's retention already held.
+	 *
+	 * @return void
+	 */
+	public function testTheRetentionBlockJoinsTheRowsRetention(): void {
+		$this->givenSchema(['x-openregister-archival' => ['retention' => ['default' => 'P1Y']]]);
+		$entity = $this->entity();
+		$entity->setCreated(new \DateTime('2026-01-02T00:00:00+00:00'));
+		$entity->setRetention(['kept' => 1]);
+
+		$retention = $this->render()->renderEntity(entity: $entity)->getRetention();
+
+		$this->assertSame(1, $retention['kept']);
+		$this->assertSame('P1Y', $retention['annotation']['effectiveRetention']);
+		$this->assertStringStartsWith('2027-01-02', (string)$retention['annotation']['expiresAt']);
+	}//end testTheRetentionBlockJoinsTheRowsRetention()
+
+	/**
+	 * A row without a creation date gets no annotation block.
+	 *
+	 * @return void
+	 */
+	public function testARowWithoutACreationDateGetsNoRetentionBlock(): void {
+		$this->givenSchema(['x-openregister-archival' => ['retention' => ['default' => 'P1Y']]]);
+		$entity = $this->entity();
+		$entity->setCreated(null);
+		$messages = $this->collectDebugMessages();
+
+		$retention = ($this->render()->renderEntity(entity: $entity)->getRetention() ?? []);
+
+		$this->assertArrayNotHasKey('annotation', $retention);
+		$this->assertStringNotContainsString('archival retention', implode("\n", (array)$messages));
+	}//end testARowWithoutACreationDateGetsNoRetentionBlock()
+
+	/**
+	 * A malformed annotation is a debug line, not a failed render.
+	 *
+	 * @return void
+	 */
+	public function testAMalformedAnnotationIsOnlyLogged(): void {
+		$this->givenSchema(['x-openregister-archival' => ['nope' => true]]);
+		$entity = $this->entity();
+		$entity->setCreated(new \DateTime('2026-01-02T00:00:00+00:00'));
+		$messages = $this->collectDebugMessages();
+
+		$data = $this->render()->renderEntity(entity: $entity)->getObject();
+
+		$this->assertSame('Z-1', $data['title']);
+		$this->assertStringContainsString(
+			'[RenderObject] archival retention compute failed for ' . self::UUID . ': ',
+			implode("\n", (array)$messages)
+		);
+	}//end testAMalformedAnnotationIsOnlyLogged()
+
+	/**
+	 * The archival decision of a row with a retention block lands on the entity.
+	 *
+	 * @return void
+	 */
+	public function testTheArchivalDecisionLandsOnTheEntity(): void {
+		$this->givenSchema(['x-openregister-archival' => ['retention' => ['default' => 'P1Y']]]);
+		$entity = $this->entity();
+		$entity->setCreated(new \DateTime('2026-01-02T00:00:00+00:00'));
+
+		$retention = $this->render()->renderEntity(entity: $entity)->getArchivalRetention();
+		$this->assertIsArray($retention);
+		// The schema's default of one year runs from the creation date.
+		$this->assertSame('P1Y', $retention['retentionPeriod']);
+		$this->assertSame('2027-01-02T00:00:00+00:00', $retention['disposalDate']);
+	}//end testTheArchivalDecisionLandsOnTheEntity()
 
 	/**
 	 * The lens is applied on every render and receives the rbac flag.

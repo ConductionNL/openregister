@@ -35,6 +35,7 @@ jest.mock('../../eventBus.js', () => ({
 }))
 jest.mock('vue-material-design-icons/ChartLine.vue', () => ({}))
 jest.mock('vue-material-design-icons/CogOutline.vue', () => ({}))
+jest.mock('vue-material-design-icons/Delete.vue', () => ({}))
 jest.mock('vue-material-design-icons/Eye.vue', () => ({}))
 jest.mock('vue-material-design-icons/FilterOffOutline.vue', () => ({}))
 jest.mock('vue-material-design-icons/FilterOutline.vue', () => ({}))
@@ -114,7 +115,11 @@ function stores(state) {
  * @return {object} The computeds
  */
 function computedOf(component) {
-	const fields = component.components?.ScopeFilterFields
+	const fields =
+		component.components?.ScopeFilterFields
+		|| component.components?.ScopeFiltersTab?.components?.ScopeFilterFields
+		|| component.mixins?.find((mixin) => mixin.components?.ScopeFiltersTab)
+			?.components.ScopeFiltersTab.components.ScopeFilterFields
 	const mixed = [...(component.mixins || []), ...(fields?.mixins || [])].map(
 		(mixin) => mixin.computed,
 	)
@@ -140,7 +145,10 @@ function methodsOf(component) {
  * @return {object} The context
  */
 function sidebar(component, route) {
-	const ctx = { ...component.data.call({ t: (a, s) => s }), $route: route }
+	const data = [...(component.mixins || []), component]
+		.filter((part) => part.data)
+		.map((part) => part.data.call({ t: (a, s) => s }))
+	const ctx = { ...Object.assign({}, ...data), $route: route }
 	ctx.$router = { replace: (to) => mockLog.push(['router.replace', to]) }
 	for (const [name, getter] of Object.entries(computedOf(component))) {
 		Object.defineProperty(ctx, name, {

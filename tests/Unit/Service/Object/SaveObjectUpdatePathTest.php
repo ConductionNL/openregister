@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\RecordUpdate;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -77,6 +78,8 @@ use Stringable;
  * @uses \OCA\OpenRegister\Service\OrganisationContext
  * @uses \OCA\OpenRegister\Service\WriteCause
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass
+ * @uses \OCA\OpenRegister\Service\Rbac\AdminGate
  */
 final class SaveObjectUpdatePathTest extends TestCase {
 
@@ -239,7 +242,6 @@ final class SaveObjectUpdatePathTest extends TestCase {
 			schema: $schema,
 			data: array_merge(['title' => 'new'], ($case['data'] ?? [])),
 			uuid: self::UUID,
-			folderId: ($args['folderId'] ?? null),
 			_rbac: ($args['_rbac'] ?? true),
 			persist: ($args['persist'] ?? true),
 			silent: ($args['silent'] ?? false),
@@ -292,7 +294,7 @@ final class SaveObjectUpdatePathTest extends TestCase {
 			return $entity;
 		});
 		$files = $this->createMock(FilePropertyHandler::class);
-		$files->method('isFileProperty')->willReturnCallback(static fn ($value, $schema = null, $propertyName = null): bool => $propertyName === 'doc');
+		$files->method('isFileInSchema')->willReturnCallback(static fn ($schema, $propertyName): bool => $propertyName === 'doc');
 		$files->method('handleFileProperty')->willReturnCallback(function (ObjectEntity $objectEntity, array &$object, string $propertyName) use ($case): void {
 			$this->trace[] = ['file', $propertyName, $object[$propertyName]];
 			if (($case['fileFails'] ?? false) === true) {
@@ -316,7 +318,7 @@ final class SaveObjectUpdatePathTest extends TestCase {
 		});
 		$unified->method('getLastWriteAction')->willReturn($case['action'] ?? 'insert');
 		$cache = $this->createMock(CacheHandler::class);
-		$cache->method('setObjectName')->willReturnCallback(function (string $identifier, string $name, int $ttl = 0, ?string $organisation = null): void {
+		$cache->method('setObjectName')->willReturnCallback(function (string $identifier, string $name, ?string $organisation = null): void {
 			$this->trace[] = ['cacheName', $identifier, $name, $organisation];
 		});
 		$settings = $this->createMock(SettingsService::class);
@@ -334,9 +336,9 @@ final class SaveObjectUpdatePathTest extends TestCase {
 		$retention->method('guardClassificationOverride')->willReturnCallback(function (Schema $schema, array $data): void {
 			$this->trace[] = ['retentionGuard', $schema->getId(), array_key_exists('title', $data)];
 		});
-		$retention->method('applyClassificationOnUpdate')->willReturnCallback(function (ObjectEntity $object, Schema $schema, array $previousData): ObjectEntity {
-			$this->trace[] = ['classification', $previousData];
-			return $object;
+		$retention->method('applyClassification')->willReturnCallback(function (RecordUpdate $update): ObjectEntity {
+			$this->trace[] = ['classification', $update->previousData];
+			return $update->object;
 		});
 		$retention->method('applyArchivalMetadata')->willReturnCallback(function (ObjectEntity $object): ObjectEntity {
 			$this->trace[] = ['archival'];
@@ -345,8 +347,8 @@ final class SaveObjectUpdatePathTest extends TestCase {
 		});
 		$container = $this->createMock(ContainerInterface::class);
 		$hints = $this->createMock(\OCA\OpenRegister\Service\Quality\UniqueHintChecker::class);
-		$hints->method('check')->willReturnCallback(function (array $configuration, $register, $schema, array $data, ?string $selfUuid = null): void {
-			$this->trace[] = ['hints', $register, $schema, $selfUuid];
+		$hints->method('check')->willReturnCallback(function (array $configuration, \OCA\OpenRegister\Service\Quality\UniqueHintScope $scope, array $data, ?string $selfUuid = null): void {
+			$this->trace[] = ['hints', $scope->register, $scope->schema, $selfUuid];
 		});
 		$services = [RetentionServiceInterface::class => $retention, \OCA\OpenRegister\Service\Quality\UniqueHintChecker::class => $hints];
 		$container->method('get')->willReturnCallback(static fn (string $id): object => $services[$id] ?? throw new \RuntimeException('no ' . $id));
@@ -363,29 +365,47 @@ final class SaveObjectUpdatePathTest extends TestCase {
 		$organisations->method('getOrganisationForNewEntity')->willReturn('org-1');
 
 		return new SaveObject(
-			$mapper,
-			$unified,
-			$this->createMock(MetadataHydrationHandler::class),
-			$files,
-			$this->createMock(LinkedEntityPropertyHandler::class),
-			$session,
-			$audit,
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(IURLGenerator::class),
-			$organisations,
-			$cache,
-			$settings,
-			$this->createMock(PropertyRbacHandler::class),
-			$this->createMock(ComputedFieldHandler::class),
-			$translations,
-			$this->createMock(TranslationProjectionService::class),
-			$this->createMock(TranslationStatusService::class),
-			$logger,
-			$this->createMock(TmloService::class),
-			$folders,
-			$this->createMock(PermissionHandler::class),
-			container: $container
+			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
+				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
+					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $mapper),
+						unifiedObjectMapper: $unified
+					),
+					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
+						auditTrailMapper: $audit,
+						settingsService: $settings,
+						tmloService: $this->createMock(TmloService::class)
+					),
+					runtime: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime(
+						cacheHandler: $cache,
+						container: $container
+					)
+				),
+				handlers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers(
+					properties: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers(
+						metaHydrationHandler: $this->createMock(MetadataHydrationHandler::class),
+						filePropertyHandler: $files,
+						linkedEntityHandler: $this->createMock(LinkedEntityPropertyHandler::class),
+						computedFieldHandler: $this->createMock(ComputedFieldHandler::class)
+					),
+					values: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers(
+						translationHandler: $translations,
+						translationProjectionService: $this->createMock(TranslationProjectionService::class),
+						translationStatusService: $this->createMock(TranslationStatusService::class)
+					)
+				),
+				platform: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform(
+					userSession: $session,
+					urlGenerator: $this->createMock(IURLGenerator::class),
+					logger: $logger
+				),
+				tenancy: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy(
+					organisationService: $organisations
+				)
+			),
+			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class),
+			permissionHandler: $this->createMock(PermissionHandler::class),
+			folderManagementHandler: $folders
 		);
 	}
 }

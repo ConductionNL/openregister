@@ -41,6 +41,10 @@ jest.mock('vue-material-design-icons/Eye.vue', () => ({
 	__esModule: true,
 	default: {},
 }))
+jest.mock('vue-material-design-icons/TrashCanOutline.vue', () => ({
+	__esModule: true,
+	default: {},
+}))
 jest.mock('../../store/store.js', () => ({
 	navigationStore: { dialog: null, setDialog: () => {} },
 	registerStore: {},
@@ -135,5 +139,19 @@ describe.each(MODALS)('%s count', (name, component) => {
 		answer.reject(new Error('down'))
 		await flushPromises()
 		expect(wrapper.text()).not.toContain('Counting objects...')
+		expect(wrapper.text()).not.toContain('No objects found')
+		expect(wrapper.text()).toContain('We could not count the objects.')
+	})
+
+	it('drops the failure when a new count starts', async () => {
+		const { wrapper, answer } = open(modal)
+		await flushPromises()
+		answer.reject(new Error('down'))
+		await flushPromises()
+		wrapper.vm.$.proxy.loadObjectCount()
+		answer.resolve({ objects: { total: 0 } })
+		await flushPromises()
+		expect(wrapper.text()).not.toContain('We could not count the objects.')
+		expect(wrapper.text()).toContain('No objects found')
 	})
 })

@@ -26,9 +26,11 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowItemPlacement;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowRunStart;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -97,12 +99,10 @@ class FlowOrMergeTest extends TestCase {
 		$dispatcher = new AccumulatingDispatcher();
 		$engine = new FlowEngine(new FlowDefinitionBuilder(), $this->createMock(LoggerInterface::class));
 		$engine->run(
-			flow: $flow,
-			store: new MethodMarkingStore(false, 'marking'),
-			subject: new OrMergeSubject(),
-			dispatcher: $dispatcher,
-			context: [],
-			items: [FlowItems::item(json: ['page' => 1])]
+			start: (new FlowRunStart(flow: $flow, store: new MethodMarkingStore(false, 'marking'), subject: new OrMergeSubject(), dispatcher: $dispatcher)),
+			origin: new FlowRunOrigin(
+				items: [FlowItems::item(json: ['page' => 1])]
+			)
 		);
 
 		// Each shard fired once with the trigger's item.
@@ -128,17 +128,13 @@ class FlowOrMergeTest extends TestCase {
 		$first = FlowItems::item(json: ['shard' => 1]);
 		$second = FlowItems::item(json: ['shard' => 2]);
 
-		$placeItems = $placement->advanceItems(
-			transition: new Transition('s1', ['s1'], ['hits']),
-			placeItems: ['s1' => [$first], 's2' => [$second]],
-			items: [$first],
-			taken: ['hits']
+		$placeItems = $placement->advance(
+			firing: new \OCA\OpenRegister\Service\Flow\ItemFiring(transition: new Transition('s1', ['s1'], ['hits']), items: [$first], taken: ['hits']),
+			placeItems: ['s1' => [$first], 's2' => [$second]]
 		);
-		$placeItems = $placement->advanceItems(
-			transition: new Transition('s2', ['s2'], ['hits']),
-			placeItems: $placeItems,
-			items: [$second],
-			taken: ['hits']
+		$placeItems = $placement->advance(
+			firing: new \OCA\OpenRegister\Service\Flow\ItemFiring(transition: new Transition('s2', ['s2'], ['hits']), items: [$second], taken: ['hits']),
+			placeItems: $placeItems
 		);
 
 		$this->assertSame([1, 2], array_column(array_column($placeItems['hits'], 'json'), 'shard'));

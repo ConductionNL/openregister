@@ -20,13 +20,7 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 			:viewMode="organisationStore.viewMode"
 			:selectable="true"
 			:selectedIds="selectedOrganisations"
-			:showEditAction="false"
-			:showCopyAction="false"
-			:showDeleteAction="false"
-			:showMassImport="false"
-			:showMassExport="false"
-			:showMassCopy="false"
-			:showMassDelete="false"
+			v-bind="builtinActionsOff"
 			showViewToggle
 			:addLabel="t('openregister', 'Create Organisation')"
 			rowKey="uuid"
@@ -148,11 +142,7 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 							t('openregister', 'Active')
 						}}</span>
 					</div>
-					<span
-						v-if="row.description"
-						class="textDescription textEllipsis"
-						>{{ row.description }}</span
-					>
+					<IndexRowDescription :text="row.description" />
 				</div>
 			</template>
 
@@ -216,12 +206,18 @@ import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 import SwapHorizontal from 'vue-material-design-icons/SwapHorizontal.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import SwitchOrganisationModal from '../../modals/organisation/SwitchOrganisationModal.vue'
+import IndexRowDescription from '../IndexRowDescription.vue'
 import { reloadAppData } from '../../services/AppInitializationService.js'
 import { deleteAction, editAction, viewAction } from '../../services/menuActions.js'
+import {
+	BUILTIN_ACTIONS_OFF,
+	timestampColumns,
+} from '../indexPageOptions.js'
 
 export default {
 	name: 'OrganisationsIndex',
 	components: {
+		IndexRowDescription,
 		ActionMenu,
 		NcActionButton,
 		NcAppContent,
@@ -235,6 +231,7 @@ export default {
 
 	data() {
 		return {
+			builtinActionsOff: BUILTIN_ACTIONS_OFF,
 			selectedOrganisations: [],
 			showOrganisationSwitcher: false,
 			isRefreshing: false,
@@ -254,16 +251,7 @@ export default {
 				{ key: 'users', label: t('openregister', 'Members') },
 				{ key: 'owner', label: t('openregister', 'Owner') },
 				{ key: 'status', label: t('openregister', 'Status') },
-				{
-					key: 'created',
-					label: t('openregister', 'Created'),
-					sortable: true,
-				},
-				{
-					key: 'updated',
-					label: t('openregister', 'Updated'),
-					sortable: true,
-				},
+				...timestampColumns(),
 			]
 		},
 

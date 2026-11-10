@@ -32,7 +32,7 @@ namespace OCA\OpenRegister\Notifications\Service;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -62,20 +62,16 @@ class TimelineVisibilityService implements TimelineVisibilityServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapperInterface     $schemaMapper     Resolves the object's schema for the permission check.
-	 * @param PermissionHandler $permissionHandler Canonical RBAC verdict.
-	 * @param AuditTrailMapperInterface $auditTrailMapper Writes the audit entry on a change.
-	 * @param IUserSession     $userSession      Current caller.
-	 * @param LoggerInterface  $logger           Logger for the fail-closed paths.
+	 * @param TimelineVisibilityPlatform $platform          The schema mapper, the caller's session and the logger.
+	 * @param PermissionCheckInterface   $permissionHandler Canonical RBAC verdict.
+	 * @param AuditTrailMapperInterface  $auditTrailMapper  Writes the audit entry on a change.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly PermissionHandler $permissionHandler,
+		private readonly TimelineVisibilityPlatform $platform,
+		private readonly PermissionCheckInterface $permissionHandler,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
@@ -179,13 +175,13 @@ class TimelineVisibilityService implements TimelineVisibilityServiceInterface {
 		}
 
 		try {
-			$schema = $this->schemaMapper->find(
+			$schema = $this->platform->schemaMapper->find(
 				id: (string)$object->getSchema(),
 				_rbac: false,
 				_multitenancy: false
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning(
+			$this->platform->logger->warning(
 				'[TimelineVisibilityService] Schema for object ' . (string)$object->getUuid()
 					. ' could not be resolved; refusing ' . $action,
 				['exception' => $e]
@@ -194,7 +190,7 @@ class TimelineVisibilityService implements TimelineVisibilityServiceInterface {
 		}
 
 		$userId = null;
-		$user = $this->userSession->getUser();
+		$user = $this->platform->userSession->getUser();
 		if ($user !== null) {
 			$userId = $user->getUID();
 		}
@@ -292,49 +288,36 @@ class TimelineVisibilityService implements TimelineVisibilityServiceInterface {
 	}//end isTimelineIntegration()
 
 	/**
-	 * Record that someone moved a note across the counter.
+	 * Record a note's move across the counter on the object's audit trail.
 	 *
-	 * Making an internal note public is the act a supervisor will ask about,
-	 * so it is written on the object's own audit trail naming the note and
-	 * both values. Nothing is written when the value did not move.
+	 * Nothing is written when the normalised value did not move. A failed write
+	 * is logged loudly and answers false: the flag has already been written, and
+	 * losing the trail entry must not lose the change itself.
 	 *
-	 * @param ObjectEntity $object The object the note hangs on.
-	 * @param integer      $noteId The note that moved.
-	 * @param string       $from   The value before.
-	 * @param string       $to     The value after.
+	 * @param ObjectEntity       $object The object the note hangs on.
+	 * @param NoteVisibilityMove $move   The note and its values before and after.
 	 *
 	 * @return boolean True when an audit entry was written.
 	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
 	 */
-	public function auditVisibilityChange(ObjectEntity $object, int $noteId, string $from, string $to): bool {
-		$before = $this->normalise(value: $from);
-		$after = $this->normalise(value: $to);
-		if ($before === $after) {
+	public function auditNoteMove(ObjectEntity $object, NoteVisibilityMove $move): bool {
+		$context = ['noteId' => $move->noteId, 'from' => $this->normalise(value: $move->from), 'to' => $this->normalise(value: $move->to)];
+		if ($context['from'] === $context['to']) {
 			return false;
 		}
 
 		try {
-			$this->auditTrailMapper->createAuditTrailEntry(
-				object: $object,
-				action: self::AUDIT_ACTION,
-				context: [
-					'noteId' => $noteId,
-					'from' => $before,
-					'to' => $after,
-				]
-			);
+			$this->auditTrailMapper->createAuditTrailEntry(object: $object, action: self::AUDIT_ACTION, context: $context);
 		} catch (Throwable $e) {
-			// The flag has already been written; losing the trail entry must
-			// not lose the change itself. It is logged loudly instead.
-			$this->logger->error(
-				'[TimelineVisibilityService] Visibility of note ' . $noteId . ' moved from ' . $before
-					. ' to ' . $after . ' but the audit entry could not be written',
+			$this->platform->logger->error(
+				'[TimelineVisibilityService] Visibility of note ' . $move->noteId . ' moved from ' . $context['from']
+					. ' to ' . $context['to'] . ' but the audit entry could not be written',
 				['exception' => $e]
 			);
 			return false;
-		}//end try
+		}
 
 		return true;
-	}//end auditVisibilityChange()
+	}//end auditNoteMove()
 }//end class

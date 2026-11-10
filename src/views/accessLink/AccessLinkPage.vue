@@ -144,6 +144,7 @@ import {
 	NcPasswordField,
 	NcTextArea,
 } from '@nextcloud/vue'
+import { refusalMessage } from '../../components/access-links/refusalMessage.js'
 import {
 	fileAsBase64,
 	passwordOptions,
@@ -304,9 +305,7 @@ export default {
 				await work()
 				await this.open()
 			} catch (e) {
-				this.error =
-					e?.response?.data?.message
-					|| t('openregister', 'That did not work. Try again later.')
+				this.error = refusalMessage(e)
 			} finally {
 				this.busy = false
 			}

@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
@@ -50,7 +51,6 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use RuntimeException;
 use UnexpectedValueException;
 
@@ -62,7 +62,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-two-built-in-nodes-cover-transitions-and-linked-objects
  */
-class LinkObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class LinkObjectNode extends ObjectNodeBase implements IFlowNode, LinkObjectNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 
 	/**
 	 * The step type.
@@ -139,19 +139,6 @@ class LinkObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 	}//end getIcon()
 
 	/**
-	 * Available in both scopes: every write is checked against the run's identity.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return bool Whether it is available.
-	 *
-	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-two-built-in-nodes-cover-transitions-and-linked-objects
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
-
-	/**
 	 * The config vocabulary.
 	 *
 	 * @return array<int, string> The accepted config keys.
@@ -208,6 +195,18 @@ class LinkObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 	public function execute(array $items, array $config, array $context): array {
 		$this->validateConfig(config: $config);
 
+		return $this->linkEach(items: $items, config: $config);
+	}//end execute()
+
+	/**
+	 * Create and link, or hand over, for every item in order.
+	 *
+	 * @param array $items  The input items.
+	 * @param array $config The validated step configuration.
+	 *
+	 * @return array The items, each carrying what was linked under `linked`.
+	 */
+	private function linkEach(array $items, array $config): array {
 		$out = [];
 		foreach ($items as $index => $item) {
 			$json = (array)($item[FlowItems::JSON] ?? []);
@@ -222,7 +221,7 @@ class LinkObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 		}
 
 		return $out;
-	}//end execute()
+	}//end linkEach()
 
 	/**
 	 * Run a declared handoff on the item's object.
@@ -270,7 +269,7 @@ class LinkObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 
 		$relation = trim((string)($config['relation'] ?? ''));
 		if ($relation !== '') {
-			$this->writeRelation(json: $json, relation: $relation, uuid: (string)$created->getUuid());
+			$this->writeRelation(json: $json, link: new RelationLink(relation: $relation, uuid: (string)$created->getUuid()));
 		}
 
 		return $created->jsonSerialize();
@@ -279,13 +278,32 @@ class LinkObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 	/**
 	 * Write a uuid into a relation property of the item's object.
 	 *
-	 * @param array<string, mixed> $json     The item's record.
-	 * @param string               $relation The property.
-	 * @param string               $uuid     The related object's uuid.
+	 * @param array<string, mixed> $json The item's record.
+	 * @param RelationLink         $link The property and the related object's uuid.
 	 *
 	 * @return void
 	 */
-	private function writeRelation(array $json, string $relation, string $uuid): void {
+	private function writeRelation(array $json, RelationLink $link): void {
+		$source = $this->linkSource(json: $json);
+
+		$this->objects->saveObject(
+			object: $this->withRelation(data: $source->getObject(), link: $link),
+			register: $source->getRegister(),
+			schema: $source->getSchema(),
+			uuid: (string)$source->getUuid()
+		);
+	}//end writeRelation()
+
+	/**
+	 * The item's object, looked up to write back to.
+	 *
+	 * @param array<string, mixed> $json The item's record.
+	 *
+	 * @return ObjectEntity The object to link from.
+	 *
+	 * @throws RuntimeException When the object no longer exists.
+	 */
+	private function linkSource(array $json): ObjectEntity {
 		$subject = $this->subjectOf(json: $json);
 		// A lookup to write back to, not a person opening the object.
 		$source = WriteCause::asLookup(fn () => $this->objects->find(id: $subject['uuid']));
@@ -293,20 +311,27 @@ class LinkObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 			throw new RuntimeException($this->l10n->t('The object to link to no longer exists.'));
 		}
 
-		$data = $source->getObject();
-		$current = ($data[$relation] ?? null);
-		$data[$relation] = $uuid;
+		return $source;
+	}//end linkSource()
+
+	/**
+	 * The object's data with the uuid written into the relation: appended
+	 * (once) to a list relation, otherwise set.
+	 *
+	 * @param array<string, mixed> $data The object's data.
+	 * @param RelationLink         $link The property and the related object's uuid.
+	 *
+	 * @return array<string, mixed> The data to save.
+	 */
+	private function withRelation(array $data, RelationLink $link): array {
+		$current = ($data[$link->relation] ?? null);
+		$data[$link->relation] = $link->uuid;
 		if (is_array($current) === true) {
-			$data[$relation] = array_values(array_unique(array_merge($current, [$uuid])));
+			$data[$link->relation] = array_values(array_unique(array_merge($current, [$link->uuid])));
 		}
 
-		$this->objects->saveObject(
-			object: $data,
-			register: $source->getRegister(),
-			schema: $source->getSchema(),
-			uuid: (string)$source->getUuid()
-		);
-	}//end writeRelation()
+		return $data;
+	}//end withRelation()
 
 	/**
 	 * The uuid, register and schema of the object an item is about.
@@ -330,26 +355,4 @@ class LinkObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 			'schema' => (string)($self['schema'] ?? ''),
 		];
 	}//end subjectOf()
-
-	/**
-	 * The BPMN kind.
-	 *
-	 * @return string The kind.
-	 *
-	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-two-built-in-nodes-cover-transitions-and-linked-objects
-	 */
-	public function getKind(): string {
-		return IFlowNodeTaxonomy::KIND_SERVICE_TASK;
-	}//end getKind()
-
-	/**
-	 * The palette category.
-	 *
-	 * @return string The category.
-	 *
-	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-two-built-in-nodes-cover-transitions-and-linked-objects
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_OBJECTS;
-	}//end getCategory()
 }//end class

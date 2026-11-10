@@ -100,7 +100,6 @@ class CalculationsControllerTest extends TestCase {
 		);
 
 		return CalculationsControllerFactory::create(
-			'openregister',
 			$request,
 			new OperatorCatalogue(),
 			$trials,

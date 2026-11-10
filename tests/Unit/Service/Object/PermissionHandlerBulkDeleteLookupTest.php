@@ -70,7 +70,7 @@ class PermissionHandlerBulkDeleteLookupTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willThrowException(new \RuntimeException('no organisation service'));
 
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			userSession: $this->createMock(IUserSession::class),
 			userManager: $this->createMock(IUserManager::class),
 			groupManager: $this->createMock(IGroupManager::class),
@@ -109,7 +109,7 @@ class PermissionHandlerBulkDeleteLookupTest extends TestCase {
 	 */
 	public function testResolvedUuidSurvivesTheFilter(): void {
 		$mapper = $this->createMock(MagicMapper::class);
-		$mapper->method('findAll')->willReturn([]);
+		$mapper->method('findAllListed')->willReturn([]);
 		$mapper->method('findMultipleAcrossAllMagicTables')
 			->willReturn([$this->entity('uuid-alpha')]);
 
@@ -132,7 +132,7 @@ class PermissionHandlerBulkDeleteLookupTest extends TestCase {
 	 */
 	public function testLookupIncludesSoftDeletedRows(): void {
 		$mapper = $this->createMock(MagicMapper::class);
-		$mapper->method('findAll')->willReturn([]);
+		$mapper->method('findAllListed')->willReturn([]);
 		$mapper->expects($this->once())
 			->method('findMultipleAcrossAllMagicTables')
 			->with(['uuid-alpha'], true)
@@ -155,7 +155,7 @@ class PermissionHandlerBulkDeleteLookupTest extends TestCase {
 	 */
 	public function testUnresolvableUuidIsDropped(): void {
 		$mapper = $this->createMock(MagicMapper::class);
-		$mapper->method('findAll')->willReturn([]);
+		$mapper->method('findAllListed')->willReturn([]);
 		$mapper->method('findMultipleAcrossAllMagicTables')
 			->willReturn([$this->entity('uuid-alpha')]);
 
@@ -220,7 +220,7 @@ class PermissionHandlerBulkDeleteLookupTest extends TestCase {
 		$groupManager->method('getUserGroupIds')->willReturn($groups);
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willThrowException(new \RuntimeException('no organisation service'));
-		$handler = new PermissionHandler(
+		$handler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			userSession: $session,
 			userManager: $this->createMock(IUserManager::class),
 			groupManager: $groupManager,

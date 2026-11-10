@@ -42,7 +42,7 @@ namespace OCA\OpenRegister\Service\BulkJob;
 /**
  * Class ReversibilityAnnotationValidator
  */
-final class ReversibilityAnnotationValidator {
+final class ReversibilityAnnotationValidator implements ReversibilityAnnotationValidatorInterface {
 
 	/**
 	 * The configuration key holding a schema's declared actions.
@@ -223,7 +223,7 @@ final class ReversibilityAnnotationValidator {
 		}
 
 		if ($window !== null) {
-			$errors = array_merge($errors, $this->validateWindow(key: $key, window: $window, reversible: $reversible));
+			$errors = array_merge($errors, $this->validateWindow(key: $key, definition: $definition));
 		}
 
 		return $errors;
@@ -232,13 +232,13 @@ final class ReversibilityAnnotationValidator {
 	/**
 	 * Check a reversal window is a bound somebody can act inside.
 	 *
-	 * @param string $key        The action key.
-	 * @param mixed  $window     The declared window.
-	 * @param mixed  $reversible The declared reversibility.
+	 * @param string               $key        The action key.
+	 * @param array<string, mixed> $definition The declaration, carrying the window and the reversibility.
 	 *
 	 * @return array<int, array{code: string, message: string}> The refusals.
 	 */
-	private function validateWindow(string $key, mixed $window, mixed $reversible): array {
+	private function validateWindow(string $key, array $definition): array {
+		$window = ($definition['reversalWindow'] ?? null);
 		if (is_int($window) === false || $window < 1 || $window > self::MAX_WINDOW) {
 			return [
 				[
@@ -252,7 +252,7 @@ final class ReversibilityAnnotationValidator {
 			];
 		}
 
-		if ($reversible === true) {
+		if (($definition['reversible'] ?? null) === true) {
 			return [];
 		}
 

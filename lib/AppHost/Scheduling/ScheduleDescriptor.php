@@ -36,25 +36,53 @@ namespace OCA\OpenRegister\AppHost\Scheduling;
  */
 final class ScheduleDescriptor {
 	/**
+	 * Positive interval in seconds, or null for cron schedules.
+	 *
+	 * @var integer|null
+	 */
+	public readonly ?int $intervalSeconds;
+
+	/**
+	 * Cron expression, or null for interval schedules.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $cron;
+
+	/**
+	 * Allow-listed action type (e.g. `openconnector:synchronization`).
+	 *
+	 * @var string
+	 */
+	public readonly string $action;
+
+	/**
+	 * Arguments passed to the resolved action.
+	 *
+	 * @var array<string, mixed>
+	 */
+	public readonly array $arguments;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $id Stable schedule id (unique per application).
-	 * @param int|null $intervalSeconds Positive interval in seconds, or null for cron schedules.
-	 * @param string|null $cron Cron expression, or null for interval schedules.
-	 * @param string $action Allow-listed action type (e.g. `openconnector:synchronization`).
-	 * @param array<string, mixed> $arguments Arguments passed to the resolved action.
-	 * @param bool $enabled Whether the schedule is active (default true).
+	 * @param string          $id      Stable schedule id (unique per application).
+	 * @param ScheduleCadence $cadence When the schedule fires.
+	 * @param ScheduleCall    $call    The action it runs, with its arguments.
+	 * @param bool            $enabled Whether the schedule is active (default true).
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
 	 */
 	public function __construct(
 		public readonly string $id,
-		public readonly ?int $intervalSeconds,
-		public readonly ?string $cron,
-		public readonly string $action,
-		public readonly array $arguments = [],
+		ScheduleCadence $cadence,
+		ScheduleCall $call,
 		public readonly bool $enabled = true,
 	) {
+		$this->intervalSeconds = $cadence->intervalSeconds;
+		$this->cron = $cadence->cron;
+		$this->action = $call->action;
+		$this->arguments = $call->arguments;
 	}//end __construct()
 
 	/**
@@ -132,10 +160,8 @@ final class ScheduleDescriptor {
 
 		return new self(
 			id: $id,
-			intervalSeconds: $intervalSeconds,
-			cron: $cron,
-			action: $action,
-			arguments: $arguments,
+			cadence: new ScheduleCadence(intervalSeconds: $intervalSeconds, cron: $cron),
+			call: new ScheduleCall(action: $action, arguments: $arguments),
 			enabled: (($raw['enabled'] ?? true) !== false)
 		);
 	}//end fromArray()

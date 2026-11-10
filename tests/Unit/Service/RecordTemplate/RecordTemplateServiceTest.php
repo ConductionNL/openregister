@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\RecordTemplate;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\RecordTemplate;
 use OCA\OpenRegister\Db\RecordTemplateMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -39,6 +40,7 @@ use OCA\OpenRegister\Exception\RecordTemplateRefused;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
+use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateCollaborators;
 use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
@@ -299,10 +301,10 @@ class RecordTemplateServiceTest extends TestCase {
 			return $this->rows[$uuid];
 		});
 		$mapper->method('findCandidates')->willReturnCallback(
-			fn (string $userId, ?string $register=null, ?string $schema=null): array => array_values(
+			fn (string $userId, ?ListQuery $query=null): array => array_values(
 				array_filter(
 					$this->rows,
-					static fn (RecordTemplate $row): bool => ($schema === null || $row->getSchema() === $schema)
+					static fn (RecordTemplate $row): bool => (($query?->filters['schema'] ?? null) === null || $row->getSchema() === $query->filters['schema'])
 				)
 			)
 		);
@@ -326,17 +328,14 @@ class RecordTemplateServiceTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('groupExists')->willReturnCallback(static fn (string $gid): bool => $gid === 'kcc');
 		$viewers = new ViewerReachResolver(
-			userSession: $this->createMock(IUserSession::class),
-			groupManager: $groups,
+			caller: new \OCA\OpenRegister\Service\Rbac\CallerContext($this->createMock(IUserSession::class), $groups),
 			logger: new NullLogger()
 		);
 
 		return new RecordTemplateService(
-			mapper: $mapper,
-			schemas: $schemas,
+			store: new RecordTemplateCollaborators(mapper: $mapper, schemas: $schemas, logger: new NullLogger()),
 			permissions: $permissions,
-			viewers: $viewers,
-			logger: new NullLogger()
+			viewers: $viewers
 		);
 	}//end service()
 }//end class

@@ -3,7 +3,7 @@
 /**
  * DSAR case retention-sweep TimedJob.
  *
- * Daily job that drives {@see RetentionSweepService::runSweep()}: hard-deletes
+ * Daily job that drives {@see RetentionSweepInterface::runSweep()}: hard-deletes
  * data-subject-request case dossiers past their `retainUntil`, scrubs their
  * evidence PII via the erase pseudonymise primitive, and is legal-hold aware.
  * Mirrors {@see AvgRetentionJob}'s IAppConfig enabled + dry-run toggle contract.
@@ -33,10 +33,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\Gdpr\Retention\RetentionSweepService;
-use OCP\AppFramework\Utility\ITimeFactory;
+use OCA\OpenRegister\Service\Gdpr\Retention\RetentionSweepInterface;
 use OCP\IAppConfig;
-use Psr\Log\LoggerInterface;
 
 /**
  * Daily DSAR-case retention sweep.
@@ -81,20 +79,16 @@ class DsarRetentionSweepJob extends AbstractRetentionJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Time factory required by parent.
-	 * @param IAppConfig $appConfig App-config reader.
-	 * @param RetentionSweepService $sweepService Domain sweep service.
-	 * @param LoggerInterface $logger Logger.
+	 * @param ConfiguredJobRuntime $runtime The job runtime: scheduler clock, app settings and run log.
+	 * @param RetentionSweepInterface $sweepService Domain sweep service.
 	 *
 	 * @spec openspec/specs/dsar-retention-sweep/spec.md
 	 */
 	public function __construct(
-		ITimeFactory $time,
-		IAppConfig $appConfig,
-		private readonly RetentionSweepService $sweepService,
-		LoggerInterface $logger,
+		ConfiguredJobRuntime $runtime,
+		private readonly RetentionSweepInterface $sweepService,
 	) {
-		parent::__construct(time: $time, appConfig: $appConfig, logger: $logger);
+		parent::__construct(runtime: $runtime);
 	}//end __construct()
 
 	/**

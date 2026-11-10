@@ -38,7 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Lifecycle;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\Schema;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -47,6 +47,8 @@ use Throwable;
  * Reads the referenced row behind a lifecycle value and answers whether it ends.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 class LifecycleFinalStateResolver {
 
@@ -61,21 +63,26 @@ class LifecycleFinalStateResolver {
 	private array $memo = [];
 
 	/**
+	 * Tells the two forms of `final` apart.
+	 *
+	 * @var LifecycleDeclarationForms
+	 */
+	private readonly LifecycleDeclarationForms $declaration;
+
+	/**
 	 * Constructor.
 	 *
-	 * The declaration reader is defaulted rather than required because it is a
-	 * pure shape check with no collaborators; the parameter exists so a test
-	 * can substitute one.
+	 * The declaration reader is a pure shape check with no collaborators, so
+	 * the resolver builds it itself.
 	 *
-	 * @param MagicMapperInterface                $objects     Loads the referenced row.
-	 * @param LoggerInterface            $logger      Where an unresolvable reference is reported.
-	 * @param LifecycleDeclarationForms  $declaration Tells the two forms of `final` apart.
+	 * @param MagicObjectFinderInterface $objects Loads the referenced row.
+	 * @param LoggerInterface            $logger  Where an unresolvable reference is reported.
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $objects,
+		private readonly MagicObjectFinderInterface $objects,
 		private readonly LoggerInterface $logger,
-		private readonly LifecycleDeclarationForms $declaration = new LifecycleDeclarationForms(),
 	) {
+		$this->declaration = new LifecycleDeclarationForms();
 	}//end __construct()
 
 	/**
@@ -121,7 +128,7 @@ class LifecycleFinalStateResolver {
 			return $this->memo[$key];
 		}
 
-		$this->memo[$key] = $this->read(from: $from, field: $field, state: $state);
+		$this->memo[$key] = $this->read(reference: new FinalStateReference(from: $from, field: $field, state: $state));
 
 		return $this->memo[$key];
 	}//end isFinalByReference()
@@ -129,29 +136,15 @@ class LifecycleFinalStateResolver {
 	/**
 	 * Read the named property off the referenced row.
 	 *
-	 * @param string $from  The schema the referenced row belongs to.
-	 * @param string $field The property on that row that says whether it ends.
-	 * @param string $state The lifecycle value, which identifies the row.
+	 * @param FinalStateReference $reference The schema, property and lifecycle value to read.
 	 *
 	 * @return bool True when the property is true.
 	 */
-	private function read(string $from, string $field, string $state): bool {
-		try {
-			// Read as the system: see the file header for why terminality must
-			// not depend on the actor who made the transition.
-			$resolved = $this->objects->findAcrossAllSources(
-				identifier: $state,
-				includeDeleted: false,
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (Throwable $error) {
-			$this->logger->warning(
-				'[LifecycleFinalStateResolver] lifecycle value "' . $state
-				. '" resolves to no ' . $from . ' row, so nothing can say whether it is an end: '
-				. $error->getMessage()
-			);
-
+	private function read(FinalStateReference $reference): bool {
+		$from     = $reference->from;
+		$state    = $reference->state;
+		$resolved = $this->fetch(from: $from, state: $state);
+		if ($resolved === null) {
 			return false;
 		}
 
@@ -164,18 +157,59 @@ class LifecycleFinalStateResolver {
 			return false;
 		}
 
-		$data = ($resolved['object']->getObject() ?? []);
-		if (is_array($data) === false || array_key_exists($field, $data) === false) {
+		return $this->flagOn(row: $resolved['object'], reference: $reference);
+	}//end read()
+
+	/**
+	 * Look the row behind a lifecycle value up, as the system.
+	 *
+	 * @param string $from  The schema the referenced row belongs to, for the log line.
+	 * @param string $state The lifecycle value, which identifies the row.
+	 *
+	 * @return array<string, mixed>|null The lookup's answer, or null when it found no row.
+	 */
+	private function fetch(string $from, string $state): ?array {
+		try {
+			// Read as the system: see the file header for why terminality must
+			// not depend on the actor who made the transition.
+			return $this->objects->findAcrossAllSources(
+				identifier: $state,
+				includeDeleted: false,
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (Throwable $error) {
 			$this->logger->warning(
-				'[LifecycleFinalStateResolver] the ' . $from . ' row behind lifecycle value "'
-				. $state . '" declares no "' . $field . '" property.'
+				'[LifecycleFinalStateResolver] lifecycle value "' . $state
+				. '" resolves to no ' . $from . ' row, so nothing can say whether it is an end: '
+				. $error->getMessage()
+			);
+
+			return null;
+		}
+	}//end fetch()
+
+	/**
+	 * Read the named property off the resolved row, reporting a row that declares none.
+	 *
+	 * @param mixed               $row       The resolved object entity.
+	 * @param FinalStateReference $reference The schema (for the log line), the property to read and the lifecycle value.
+	 *
+	 * @return bool True when the property is true.
+	 */
+	private function flagOn(mixed $row, FinalStateReference $reference): bool {
+		$data = ($row->getObject() ?? []);
+		if (is_array($data) === false || array_key_exists($reference->field, $data) === false) {
+			$this->logger->warning(
+				'[LifecycleFinalStateResolver] the ' . $reference->from . ' row behind lifecycle value "'
+				. $reference->state . '" declares no "' . $reference->field . '" property.'
 			);
 
 			return false;
 		}
 
-		return $this->truthy(value: $data[$field]);
-	}//end read()
+		return $this->truthy(value: $data[$reference->field]);
+	}//end flagOn()
 
 	/**
 	 * Is the resolved row's schema the one the annotation named?

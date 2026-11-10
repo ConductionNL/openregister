@@ -138,49 +138,151 @@ class StoreManifest {
 	public const DEFAULT_SOURCE = 'openregister';
 
 	/**
+	 * The calling leaf app id.
+	 *
+	 * @var string
+	 */
+	public readonly string $appId;
+
+	/**
+	 * Whether the app declared a store block at all.
+	 *
+	 * @var bool
+	 */
+	public readonly bool $enabled;
+
+	/**
+	 * Remote schema slug the registry serves.
+	 *
+	 * @var string
+	 */
+	public readonly string $schema;
+
+	/**
+	 * Default remote register slug.
+	 *
+	 * @var string
+	 */
+	public readonly string $register;
+
+	/**
+	 * Local register an install writes into.
+	 *
+	 * @var string
+	 */
+	public readonly string $localRegister;
+
+	/**
+	 * Schema slugs an install may write.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $installable;
+
+	/**
+	 * Kind quick-filters offered on the page.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $kinds;
+
+	/**
+	 * Remote field to card field map.
+	 *
+	 * @var array<string, string>
+	 */
+	public readonly array $cardFields;
+
+	/**
+	 * The app's own items, for the no-registry case.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	public readonly array $builtIn;
+
+	/**
+	 * Shareable configuration type ids this store surfaces.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $types;
+
+	/**
+	 * Discovery source: one of self::SOURCES.
+	 *
+	 * @var string
+	 */
+	public readonly string $source;
+
+	/**
+	 * GitHub topics searched when $source is `github`.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $topics;
+
+	/**
+	 * Who may install: see self::INSTALL_AUTH.
+	 *
+	 * @var string
+	 */
+	public readonly string $installAuth;
+
+	/**
+	 * Config keys an install may write.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $configurable;
+
+	/**
+	 * Item properties a publish may send, next to the slug.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $publishFields;
+
+	/**
+	 * Groups whose members may publish.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $publishGroups;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string                     $appId       The calling leaf app id.
-	 * @param bool                       $enabled     Whether the app declared a store block at all.
-	 * @param string                     $schema      Remote schema slug the registry serves.
-	 * @param string                     $register      Default remote register slug.
-	 * @param string                     $localRegister Local register an install writes into.
-	 * @param array<int, string>         $installable Schema slugs an install may write.
-	 * @param array<int, string>         $kinds       Kind quick-filters offered on the page.
-	 * @param array<string, string>      $cardFields  Remote field to card field map.
-	 * @param array<int, array<string, mixed>> $builtIn The app's own items, for the no-registry case.
-	 * @param array<int, string>         $types       Shareable configuration type ids this store surfaces.
-	 * @param string                     $source      Discovery source: one of self::SOURCES.
-	 * @param array<int, string>         $topics      GitHub topics searched when $source is `github`.
-	 * @param string                     $installAuth Who may install: see self::INSTALL_AUTH.
-	 * @param array<int, string>         $configurable Config keys an install may write.
-	 * @param array<int, string>         $publishFields Item properties a publish may send, next to the slug.
-	 * @param array<int, string>         $publishGroups Groups whose members may publish.
+	 * The manifest's `store` block arrives grouped as it reads: what the store
+	 * reads, offers and discovers, and who may install and publish. Every key
+	 * is still exposed as its own property, so no reader goes through a group.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) This is a value object
-	 * mirroring the manifest's `store` block one key to one parameter, so the
-	 * count is the block's, not a design choice. Grouping them into sub-objects
-	 * would put a translation layer between what an app declares and what the
-	 * engine reads, which is exactly where a silently dropped key hides.
+	 * @param string                   $appId       The calling leaf app id.
+	 * @param bool                     $enabled     Whether the app declared a store block at all.
+	 * @param StoreManifestContent     $content     Target, catalogue and discovery.
+	 * @param StoreManifestPermissions $permissions Install and publish posture.
 	 */
 	public function __construct(
-		public readonly string $appId,
-		public readonly bool $enabled,
-		public readonly string $schema = '',
-		public readonly string $register = '',
-		public readonly string $localRegister = '',
-		public readonly array $installable = [],
-		public readonly array $kinds = [],
-		public readonly array $cardFields = self::DEFAULT_CARD_FIELDS,
-		public readonly array $builtIn = [],
-		public readonly array $types = [],
-		public readonly string $source = self::DEFAULT_SOURCE,
-		public readonly array $topics = [],
-		public readonly string $installAuth = self::DEFAULT_INSTALL_AUTH,
-		public readonly array $configurable = [],
-		public readonly array $publishFields = [],
-		public readonly array $publishGroups = [],
+		string $appId,
+		bool $enabled,
+		StoreManifestContent $content=new StoreManifestContent(),
+		StoreManifestPermissions $permissions=new StoreManifestPermissions(),
 	) {
+		$this->appId         = $appId;
+		$this->enabled       = $enabled;
+		$this->schema        = $content->target->schema;
+		$this->register      = $content->target->register;
+		$this->localRegister = $content->target->localRegister;
+		$this->installable   = $content->catalogue->installable;
+		$this->kinds         = $content->catalogue->kinds;
+		$this->cardFields    = $content->catalogue->cardFields;
+		$this->builtIn       = $content->catalogue->builtIn;
+		$this->types         = $content->discovery->types;
+		$this->source        = $content->discovery->source;
+		$this->topics        = $content->discovery->topics;
+		$this->installAuth   = $permissions->installAuth;
+		$this->configurable  = $permissions->configurable;
+		$this->publishFields = $permissions->publishFields;
+		$this->publishGroups = $permissions->publishGroups;
 	}//end __construct()
 
 	/**
@@ -239,37 +341,47 @@ class StoreManifest {
 		return new self(
 			appId: $appId,
 			enabled: true,
-			schema: (string)($block['schema'] ?? ''),
-			register: (string)($block['register'] ?? ''),
-			// 🔴 SCOPE THE LOCAL WRITE BY REGISTER. A schema slug is NOT unique
-			// across the fleet — `case`, `task` and `document` exist in several
-			// apps at once — so resolving an install target by slug alone can
-			// land in another app's register. Defaults to the app id, which is
-			// the fleet's register-slug convention, and an app whose register
-			// slug differs from its app id says so here.
-			localRegister: (string)($block['localRegister'] ?? $appId),
-			installable: self::stringList(value: ($block['installable'] ?? [])),
-			// Declared ONCE, beside the allowlist, and served to the page in the
-			// search response. An app that names its kinds here and nowhere else
-			// must get them: a schema key nothing reads is the silent-no-op this
-			// whole plane is built to avoid.
-			kinds: self::stringList(value: ($block['kinds'] ?? [])),
-			cardFields: array_map(callback: static fn ($v): string => (string)$v, array: $cardFields),
-			builtIn: self::objectList(value: ($block['builtIn'] ?? [])),
-			source: $source,
-			topics: $topics,
-			installAuth: $installAuth,
-			configurable: self::stringList(value: ($block['configurable'] ?? [])),
-			// Shareable configuration type ids (store-over-federated-config).
-			// Declaring these selects federated discovery, where an item is a
-			// configuration set, a flow or a schema that marked itself
-			// shareable. An app that declares none keeps the remote objects
-			// API it has today, so nothing that ships now changes.
-			types: self::stringList(value: ($block['types'] ?? [])),
-			// What a publish may send and who may send it. Both empty, the
-			// default, keeps the store read-only (StoreDescriptor::isPublishable).
-			publishFields: self::stringList(value: ($block['publish']['fields'] ?? [])),
-			publishGroups: self::stringList(value: ($block['publish']['groups'] ?? [])),
+			content: new StoreManifestContent(
+				target: new StoreManifestTarget(
+					schema: (string)($block['schema'] ?? ''),
+					register: (string)($block['register'] ?? ''),
+					// 🔴 SCOPE THE LOCAL WRITE BY REGISTER. A schema slug is NOT unique
+					// across the fleet — `case`, `task` and `document` exist in several
+					// apps at once — so resolving an install target by slug alone can
+					// land in another app's register. Defaults to the app id, which is
+					// the fleet's register-slug convention, and an app whose register
+					// slug differs from its app id says so here.
+					localRegister: (string)($block['localRegister'] ?? $appId)
+				),
+				catalogue: new StoreManifestCatalogue(
+					installable: self::stringList(value: ($block['installable'] ?? [])),
+					// Declared ONCE, beside the allowlist, and served to the page in the
+					// search response. An app that names its kinds here and nowhere else
+					// must get them: a schema key nothing reads is the silent-no-op this
+					// whole plane is built to avoid.
+					kinds: self::stringList(value: ($block['kinds'] ?? [])),
+					cardFields: array_map(callback: static fn ($v): string => (string)$v, array: $cardFields),
+					builtIn: self::objectList(value: ($block['builtIn'] ?? []))
+				),
+				discovery: new StoreManifestDiscovery(
+					// Shareable configuration type ids (store-over-federated-config).
+					// Declaring these selects federated discovery, where an item is a
+					// configuration set, a flow or a schema that marked itself
+					// shareable. An app that declares none keeps the remote objects
+					// API it has today, so nothing that ships now changes.
+					types: self::stringList(value: ($block['types'] ?? [])),
+					source: $source,
+					topics: $topics
+				)
+			),
+			permissions: new StoreManifestPermissions(
+				installAuth: $installAuth,
+				configurable: self::stringList(value: ($block['configurable'] ?? [])),
+				// What a publish may send and who may send it. Both empty, the
+				// default, keeps the store read-only (StoreDescriptor::isPublishable).
+				publishFields: self::stringList(value: ($block['publish']['fields'] ?? [])),
+				publishGroups: self::stringList(value: ($block['publish']['groups'] ?? []))
+			)
 		);
 	}//end fromManifest()
 

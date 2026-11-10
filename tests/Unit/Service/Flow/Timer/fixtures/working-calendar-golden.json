@@ -1,0 +1,1278 @@
+{
+    "nl-national": {
+        "slug": "nl-national",
+        "organisation": null,
+        "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "hours": 8,
+        "start": 540,
+        "end": 1020,
+        "timezone": "Europe/Amsterdam",
+        "serviceHoursDeclared": false,
+        "nonWorking": {
+            "2024": {
+                "2024-01-01": "Nieuwjaarsdag",
+                "2024-03-29": "Goede Vrijdag",
+                "2024-04-01": "Tweede Paasdag",
+                "2024-04-27": "Koningsdag",
+                "2024-05-09": "Hemelvaartsdag",
+                "2024-05-20": "Tweede Pinksterdag",
+                "2024-12-25": "Eerste Kerstdag",
+                "2024-12-26": "Tweede Kerstdag"
+            },
+            "2025": {
+                "2025-01-01": "Nieuwjaarsdag",
+                "2025-04-18": "Goede Vrijdag",
+                "2025-04-21": "Tweede Paasdag",
+                "2025-04-26": "Koningsdag",
+                "2025-05-29": "Hemelvaartsdag",
+                "2025-06-09": "Tweede Pinksterdag",
+                "2025-12-25": "Eerste Kerstdag",
+                "2025-12-26": "Tweede Kerstdag"
+            },
+            "2026": {
+                "2026-01-01": "Nieuwjaarsdag",
+                "2026-04-03": "Goede Vrijdag",
+                "2026-04-06": "Tweede Paasdag",
+                "2026-04-27": "Koningsdag",
+                "2026-05-14": "Hemelvaartsdag",
+                "2026-05-25": "Tweede Pinksterdag",
+                "2026-12-25": "Eerste Kerstdag",
+                "2026-12-26": "Tweede Kerstdag"
+            },
+            "2027": {
+                "2027-01-01": "Nieuwjaarsdag",
+                "2027-03-26": "Goede Vrijdag",
+                "2027-03-29": "Tweede Paasdag",
+                "2027-04-27": "Koningsdag",
+                "2027-05-06": "Hemelvaartsdag",
+                "2027-05-17": "Tweede Pinksterdag",
+                "2027-12-25": "Eerste Kerstdag",
+                "2027-12-26": "Tweede Kerstdag"
+            },
+            "2028": {
+                "2028-01-01": "Nieuwjaarsdag",
+                "2028-04-14": "Goede Vrijdag",
+                "2028-04-17": "Tweede Paasdag",
+                "2028-04-27": "Koningsdag",
+                "2028-05-25": "Hemelvaartsdag",
+                "2028-06-05": "Tweede Pinksterdag",
+                "2028-12-25": "Eerste Kerstdag",
+                "2028-12-26": "Tweede Kerstdag"
+            },
+            "2031": {
+                "2031-01-01": "Nieuwjaarsdag",
+                "2031-04-11": "Goede Vrijdag",
+                "2031-04-14": "Tweede Paasdag",
+                "2031-04-26": "Koningsdag",
+                "2031-05-22": "Hemelvaartsdag",
+                "2031-06-02": "Tweede Pinksterdag",
+                "2031-12-25": "Eerste Kerstdag",
+                "2031-12-26": "Tweede Kerstdag"
+            }
+        },
+        "isWorkingDay": {
+            "2026-04-27": false,
+            "2026-04-25": false,
+            "2026-12-25": false,
+            "2027-01-01": false,
+            "2026-05-04": true,
+            "2026-05-05": true,
+            "2026-05-06": true,
+            "2027-03-01": true,
+            "2028-04-26": true
+        },
+        "nonWorkingAgain2026": {
+            "2026-01-01": "Nieuwjaarsdag",
+            "2026-04-03": "Goede Vrijdag",
+            "2026-04-06": "Tweede Paasdag",
+            "2026-04-27": "Koningsdag",
+            "2026-05-14": "Hemelvaartsdag",
+            "2026-05-25": "Tweede Pinksterdag",
+            "2026-12-25": "Eerste Kerstdag",
+            "2026-12-26": "Tweede Kerstdag"
+        }
+    },
+    "minimal": {
+        "slug": "g",
+        "organisation": null,
+        "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "hours": 8,
+        "start": 540,
+        "end": 1020,
+        "timezone": "UTC",
+        "serviceHoursDeclared": false,
+        "nonWorking": {
+            "2024": [],
+            "2025": [],
+            "2026": [],
+            "2027": [],
+            "2028": [],
+            "2031": []
+        },
+        "isWorkingDay": {
+            "2026-04-27": true,
+            "2026-04-25": false,
+            "2026-12-25": true,
+            "2027-01-01": true,
+            "2026-05-04": true,
+            "2026-05-05": true,
+            "2026-05-06": true,
+            "2027-03-01": true,
+            "2028-04-26": true
+        },
+        "nonWorkingAgain2026": []
+    },
+    "slug trimmed, organisation trimmed": {
+        "slug": "g",
+        "organisation": "org-1",
+        "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "hours": 8,
+        "start": 540,
+        "end": 1020,
+        "timezone": "UTC",
+        "serviceHoursDeclared": false,
+        "nonWorking": {
+            "2024": [],
+            "2025": [],
+            "2026": [],
+            "2027": [],
+            "2028": [],
+            "2031": []
+        },
+        "isWorkingDay": {
+            "2026-04-27": true,
+            "2026-04-25": false,
+            "2026-12-25": true,
+            "2027-01-01": true,
+            "2026-05-04": true,
+            "2026-05-05": true,
+            "2026-05-06": true,
+            "2027-03-01": true,
+            "2028-04-26": true
+        },
+        "nonWorkingAgain2026": []
+    },
+    "blank slug": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "A working calendar requires a non-empty slug."
+    },
+    "missing slug": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "A working calendar requires a non-empty slug."
+    },
+    "organisation blank": {
+        "slug": "g",
+        "organisation": null,
+        "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "hours": 8,
+        "start": 540,
+        "end": 1020,
+        "timezone": "UTC",
+        "serviceHoursDeclared": false,
+        "nonWorking": {
+            "2024": [],
+            "2025": [],
+            "2026": [],
+            "2027": [],
+            "2028": [],
+            "2031": []
+        },
+        "isWorkingDay": {
+            "2026-04-27": true,
+            "2026-04-25": false,
+            "2026-12-25": true,
+            "2027-01-01": true,
+            "2026-05-04": true,
+            "2026-05-05": true,
+            "2026-05-06": true,
+            "2027-03-01": true,
+            "2028-04-26": true
+        },
+        "nonWorkingAgain2026": []
+    },
+    "hours string": {
+        "slug": "g",
+        "organisation": null,
+        "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "hours": 7.5,
+        "start": 540,
+        "end": 990,
+        "timezone": "UTC",
+        "serviceHoursDeclared": false,
+        "nonWorking": {
+            "2024": [],
+            "2025": [],
+            "2026": [],
+            "2027": [],
+            "2028": [],
+            "2031": []
+        },
+        "isWorkingDay": {
+            "2026-04-27": true,
+            "2026-04-25": false,
+            "2026-12-25": true,
+            "2027-01-01": true,
+            "2026-05-04": true,
+            "2026-05-05": true,
+            "2026-05-06": true,
+            "2027-03-01": true,
+            "2028-04-26": true
+        },
+        "nonWorkingAgain2026": []
+    },
+    "hours zero": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' requires hoursPerWorkingDay between 0 and 24; without it hours and businessDays are not commensurable."
+    },
+    "hours 24": {
+        "slug": "g",
+        "organisation": null,
+        "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "hours": 24,
+        "start": 540,
+        "end": 1440,
+        "timezone": "UTC",
+        "serviceHoursDeclared": false,
+        "nonWorking": {
+            "2024": [],
+            "2025": [],
+            "2026": [],
+            "2027": [],
+            "2028": [],
+            "2031": []
+        },
+        "isWorkingDay": {
+            "2026-04-27": true,
+            "2026-04-25": false,
+            "2026-12-25": true,
+            "2027-01-01": true,
+            "2026-05-04": true,
+            "2026-05-05": true,
+            "2026-05-06": true,
+            "2027-03-01": true,
+            "2028-04-26": true
+        },
+        "nonWorkingAgain2026": []
+    },
+    "hours 25": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' requires hoursPerWorkingDay between 0 and 24; without it hours and businessDays are not commensurable."
+    },
+    "hours text": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' requires hoursPerWorkingDay between 0 and 24; without it hours and businessDays are not commensurable."
+    },
+    "hours missing": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' requires hoursPerWorkingDay between 0 and 24; without it hours and businessDays are not commensurable."
+    },
+    "weekdays missing": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' must declare its workingWeekdays (ISO 1..7)."
+    },
+    "weekdays empty": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' must declare its workingWeekdays (ISO 1..7)."
+    },
+    "weekdays not array": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' must declare its workingWeekdays (ISO 1..7)."
+    },
+    "weekdays duplicates": {
+        "slug": "g",
+        "organisation": null,
+        "weekdays": [
+            5,
+            1,
+            3
+        ],
+        "hours": 8,
+        "start": 540,
+        "end": 1020,
+        "timezone": "UTC",
+        "serviceHoursDeclared": false,
+        "nonWorking": {
+            "2024": [],
+            "2025": [],
+            "2026": [],
+            "2027": [],
+            "2028": [],
+            "2031": []
+        },
+        "isWorkingDay": {
+            "2026-04-27": true,
+            "2026-04-25": false,
+            "2026-12-25": true,
+            "2027-01-01": true,
+            "2026-05-04": true,
+            "2026-05-05": false,
+            "2026-05-06": true,
+            "2027-03-01": true,
+            "2028-04-26": true
+        },
+        "nonWorkingAgain2026": []
+    },
+    "weekday zero": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' has an invalid weekday '0'; use ISO 1..7."
+    },
+    "weekday eight": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' has an invalid weekday '8'; use ISO 1..7."
+    },
+    "weekday string": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' has an invalid weekday ''1''; use ISO 1..7."
+    },
+    "rules not array": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' rules must be an array."
+    },
+    "rule unknown kind": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' has a rule of unknown kind 'lunar'; known kinds: fixed, easter, observedShift."
+    },
+    "rule no kind": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' has a rule of unknown kind ''; known kinds: fixed, easter, observedShift."
+    },
+    "rule not array": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' has a rule of unknown kind ''; known kinds: fixed, easter, observedShift."
+    },
+    "easter rule": {
+        "slug": "g",
+        "organisation": null,
+        "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "hours": 8,
+        "start": 540,
+        "end": 1020,
+        "timezone": "UTC",
+        "serviceHoursDeclared": false,
+        "nonWorking": {
+            "2024": {
+                "2024-03-29": "Goede Vrijdag",
+                "2024-05-09": "easter"
+            },
+            "2025": {
+                "2025-04-18": "Goede Vrijdag",
+                "2025-05-29": "easter"
+            },
+            "2026": {
+                "2026-04-03": "Goede Vrijdag",
+                "2026-05-14": "easter"
+            },
+            "2027": {
+                "2027-03-26": "Goede Vrijdag",
+                "2027-05-06": "easter"
+            },
+            "2028": {
+                "2028-04-14": "Goede Vrijdag",
+                "2028-05-25": "easter"
+            },
+            "2031": {
+                "2031-04-11": "Goede Vrijdag",
+                "2031-05-22": "easter"
+            }
+        },
+        "isWorkingDay": {
+            "2026-04-27": true,
+            "2026-04-25": false,
+            "2026-12-25": true,
+            "2027-01-01": true,
+            "2026-05-04": true,
+            "2026-05-05": true,
+            "2026-05-06": true,
+            "2027-03-01": true,
+            "2028-04-26": true
+        },
+        "nonWorkingAgain2026": {
+            "2026-04-03": "Goede Vrijdag",
+            "2026-05-14": "easter"
+        }
+    },
+    "easter no offset": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g': an easter rule requires an integer offset."
+    },
+    "easter string offset": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g': an easter rule requires an integer offset."
+    },
+    "fixed rule": {
+        "slug": "g",
+        "organisation": null,
+        "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "hours": 8,
+        "start": 540,
+        "end": 1020,
+        "timezone": "UTC",
+        "serviceHoursDeclared": false,
+        "nonWorking": {
+            "2024": {
+                "2024-01-01": "fixed",
+                "2024-12-25": "Kerst"
+            },
+            "2025": {
+                "2025-01-01": "fixed",
+                "2025-12-25": "Kerst"
+            },
+            "2026": {
+                "2026-01-01": "fixed",
+                "2026-12-25": "Kerst"
+            },
+            "2027": {
+                "2027-01-01": "fixed",
+                "2027-12-25": "Kerst"
+            },
+            "2028": {
+                "2028-01-01": "fixed",
+                "2028-12-25": "Kerst"
+            },
+            "2031": {
+                "2031-01-01": "fixed",
+                "2031-12-25": "Kerst"
+            }
+        },
+        "isWorkingDay": {
+            "2026-04-27": true,
+            "2026-04-25": false,
+            "2026-12-25": false,
+            "2027-01-01": false,
+            "2026-05-04": true,
+            "2026-05-05": true,
+            "2026-05-06": true,
+            "2027-03-01": true,
+            "2028-04-26": true
+        },
+        "nonWorkingAgain2026": {
+            "2026-01-01": "fixed",
+            "2026-12-25": "Kerst"
+        }
+    },
+    "fixed month 13": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g': a fixed rule requires an integer month 1..12 and day 1..31."
+    },
+    "fixed month 0": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g': a fixed rule requires an integer month 1..12 and day 1..31."
+    },
+    "fixed day 32": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g': a fixed rule requires an integer month 1..12 and day 1..31."
+    },
+    "fixed day 0": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g': a fixed rule requires an integer month 1..12 and day 1..31."
+    },
+    "fixed day string": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g': a fixed rule requires an integer month 1..12 and day 1..31."
+    },
+    "fixed with shift by name": {
+        "slug": "g",
+        "organisation": null,
+        "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "hours": 8,
+        "start": 540,
+        "end": 1020,
+        "timezone": "UTC",
+        "serviceHoursDeclared": false,
+        "nonWorking": {
+            "2024": {
+                "2024-04-27": "Koningsdag"
+            },
+            "2025": {
+                "2025-04-26": "Koningsdag"
+            },
+            "2026": {
+                "2026-04-27": "Koningsdag"
+            },
+            "2027": {
+                "2027-04-27": "Koningsdag"
+            },
+            "2028": {
+                "2028-04-27": "Koningsdag"
+            },
+            "2031": {
+                "2031-04-26": "Koningsdag"
+            }
+        },
+        "isWorkingDay": {
+            "2026-04-27": false,
+            "2026-04-25": false,
+            "2026-12-25": true,
+            "2027-01-01": true,
+            "2026-05-04": true,
+            "2026-05-05": true,
+            "2026-05-06": true,
+            "2027-03-01": true,
+            "2028-04-26": true
+        },
+        "nonWorkingAgain2026": {
+            "2026-04-27": "Koningsdag"
+        }
+    },
+    "fixed with shift by number": {
+        "slug": "g",
+        "organisation": null,
+        "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "hours": 8,
+        "start": 540,
+        "end": 1020,
+        "timezone": "UTC",
+        "serviceHoursDeclared": false,
+        "nonWorking": {
+            "2024": {
+                "2024-04-29": "fixed"
+            },
+            "2025": {
+                "2025-04-27": "fixed"
+            },
+            "2026": {
+                "2026-04-27": "fixed"
+            },
+            "2027": {
+                "2027-04-27": "fixed"
+            },
+            "2028": {
+                "2028-04-27": "fixed"
+            },
+            "2031": {
+                "2031-04-27": "fixed"
+            }
+        },
+        "isWorkingDay": {
+            "2026-04-27": false,
+            "2026-04-25": false,
+            "2026-12-25": true,
+            "2027-01-01": true,
+            "2026-05-04": true,
+            "2026-05-05": true,
+            "2026-05-06": true,
+            "2027-03-01": true,
+            "2028-04-26": true
+        },
+        "nonWorkingAgain2026": {
+            "2026-04-27": "fixed"
+        }
+    },
+    "fixed with non-array shift": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g': an observed shift requires whenWeekday and an integer days."
+    },
+    "observedShift flat": {
+        "slug": "g",
+        "organisation": null,
+        "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "hours": 8,
+        "start": 540,
+        "end": 1020,
+        "timezone": "UTC",
+        "serviceHoursDeclared": false,
+        "nonWorking": {
+            "2024": {
+                "2024-05-05": "observedShift"
+            },
+            "2025": {
+                "2025-05-05": "observedShift"
+            },
+            "2026": {
+                "2026-05-05": "observedShift"
+            },
+            "2027": {
+                "2027-05-05": "observedShift"
+            },
+            "2028": {
+                "2028-05-05": "observedShift"
+            },
+            "2031": {
+                "2031-05-05": "observedShift"
+            }
+        },
+        "isWorkingDay": {
+            "2026-04-27": true,
+            "2026-04-25": false,
+            "2026-12-25": true,
+            "2027-01-01": true,
+            "2026-05-04": true,
+            "2026-05-05": false,
+            "2026-05-06": true,
+            "2027-03-01": true,
+            "2028-04-26": true
+        },
+        "nonWorkingAgain2026": {
+            "2026-05-05": "observedShift"
+        }
+    },
+    "observedShift nested": {
+        "slug": "g",
+        "organisation": null,
+        "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "hours": 8,
+        "start": 540,
+        "end": 1020,
+        "timezone": "UTC",
+        "serviceHoursDeclared": false,
+        "nonWorking": {
+            "2024": {
+                "2024-05-06": "observedShift"
+            },
+            "2025": {
+                "2025-05-05": "observedShift"
+            },
+            "2026": {
+                "2026-05-05": "observedShift"
+            },
+            "2027": {
+                "2027-05-05": "observedShift"
+            },
+            "2028": {
+                "2028-05-05": "observedShift"
+            },
+            "2031": {
+                "2031-05-05": "observedShift"
+            }
+        },
+        "isWorkingDay": {
+            "2026-04-27": true,
+            "2026-04-25": false,
+            "2026-12-25": true,
+            "2027-01-01": true,
+            "2026-05-04": true,
+            "2026-05-05": false,
+            "2026-05-06": true,
+            "2027-03-01": true,
+            "2028-04-26": true
+        },
+        "nonWorkingAgain2026": {
+            "2026-05-05": "observedShift"
+        }
+    },
+    "observedShift missing days": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g': an observed shift requires whenWeekday and an integer days."
+    },
+    "observedShift string days": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g': an observed shift requires whenWeekday and an integer days."
+    },
+    "observedShift bad weekday name": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g': observed shift whenWeekday must be a weekday name or ISO 1..7."
+    },
+    "observedShift weekday 8": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g': observed shift whenWeekday must be a weekday name or ISO 1..7."
+    },
+    "observedShift weekday 0": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g': observed shift whenWeekday must be a weekday name or ISO 1..7."
+    },
+    "observedShift weekday missing": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g': observed shift whenWeekday must be a weekday name or ISO 1..7."
+    },
+    "exceptions only": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' consists only of enumerated dates and would expire after '2027-03-01'; declare computed rules."
+    },
+    "exceptions with rules": {
+        "slug": "g",
+        "organisation": null,
+        "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "hours": 8,
+        "start": 540,
+        "end": 1020,
+        "timezone": "UTC",
+        "serviceHoursDeclared": false,
+        "nonWorking": {
+            "2024": {
+                "2024-12-25": "Kerst"
+            },
+            "2025": {
+                "2025-06-06": "exception",
+                "2025-12-25": "Kerst"
+            },
+            "2026": {
+                "2026-12-25": "Kerst",
+                "2026-12-28": "Sluiting"
+            },
+            "2027": {
+                "2027-03-01": "exception",
+                "2027-12-25": "Kerst"
+            },
+            "2028": {
+                "2028-12-25": "Kerst"
+            },
+            "2031": {
+                "2031-12-25": "Kerst"
+            }
+        },
+        "isWorkingDay": {
+            "2026-04-27": true,
+            "2026-04-25": false,
+            "2026-12-25": false,
+            "2027-01-01": true,
+            "2026-05-04": true,
+            "2026-05-05": true,
+            "2026-05-06": true,
+            "2027-03-01": false,
+            "2028-04-26": true
+        },
+        "nonWorkingAgain2026": {
+            "2026-12-25": "Kerst",
+            "2026-12-28": "Sluiting"
+        }
+    },
+    "exceptions not array": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' exceptions must be an array."
+    },
+    "exception malformed": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' has an exception that is not a Y-m-d date: ''1-1-2026''."
+    },
+    "exception object no date": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' has an exception that is not a Y-m-d date: 'NULL'."
+    },
+    "exception int": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' has an exception that is not a Y-m-d date: '20260101'."
+    },
+    "exception duplicate date": {
+        "slug": "g",
+        "organisation": null,
+        "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "hours": 8,
+        "start": 540,
+        "end": 1020,
+        "timezone": "UTC",
+        "serviceHoursDeclared": false,
+        "nonWorking": {
+            "2024": {
+                "2024-12-25": "Kerst"
+            },
+            "2025": {
+                "2025-12-25": "Kerst"
+            },
+            "2026": {
+                "2026-05-01": "b",
+                "2026-12-25": "Kerst"
+            },
+            "2027": {
+                "2027-12-25": "Kerst"
+            },
+            "2028": {
+                "2028-12-25": "Kerst"
+            },
+            "2031": {
+                "2031-12-25": "Kerst"
+            }
+        },
+        "isWorkingDay": {
+            "2026-04-27": true,
+            "2026-04-25": false,
+            "2026-12-25": false,
+            "2027-01-01": true,
+            "2026-05-04": true,
+            "2026-05-05": true,
+            "2026-05-06": true,
+            "2027-03-01": true,
+            "2028-04-26": true
+        },
+        "nonWorkingAgain2026": {
+            "2026-05-01": "b",
+            "2026-12-25": "Kerst"
+        }
+    },
+    "exception on rule date": {
+        "slug": "g",
+        "organisation": null,
+        "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "hours": 8,
+        "start": 540,
+        "end": 1020,
+        "timezone": "UTC",
+        "serviceHoursDeclared": false,
+        "nonWorking": {
+            "2024": {
+                "2024-12-25": "Kerst"
+            },
+            "2025": {
+                "2025-12-25": "Kerst"
+            },
+            "2026": {
+                "2026-12-25": "own"
+            },
+            "2027": {
+                "2027-12-25": "Kerst"
+            },
+            "2028": {
+                "2028-12-25": "Kerst"
+            },
+            "2031": {
+                "2031-12-25": "Kerst"
+            }
+        },
+        "isWorkingDay": {
+            "2026-04-27": true,
+            "2026-04-25": false,
+            "2026-12-25": false,
+            "2027-01-01": true,
+            "2026-05-04": true,
+            "2026-05-05": true,
+            "2026-05-06": true,
+            "2027-03-01": true,
+            "2028-04-26": true
+        },
+        "nonWorkingAgain2026": {
+            "2026-12-25": "own"
+        }
+    },
+    "dayStartsAt 08:30": {
+        "slug": "g",
+        "organisation": null,
+        "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "hours": 8,
+        "start": 510,
+        "end": 990,
+        "timezone": "UTC",
+        "serviceHoursDeclared": false,
+        "nonWorking": {
+            "2024": [],
+            "2025": [],
+            "2026": [],
+            "2027": [],
+            "2028": [],
+            "2031": []
+        },
+        "isWorkingDay": {
+            "2026-04-27": true,
+            "2026-04-25": false,
+            "2026-12-25": true,
+            "2027-01-01": true,
+            "2026-05-04": true,
+            "2026-05-05": true,
+            "2026-05-06": true,
+            "2027-03-01": true,
+            "2028-04-26": true
+        },
+        "nonWorkingAgain2026": []
+    },
+    "dayStartsAt padded": {
+        "slug": "g",
+        "organisation": null,
+        "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "hours": 8,
+        "start": 1439,
+        "end": 1440,
+        "timezone": "UTC",
+        "serviceHoursDeclared": false,
+        "nonWorking": {
+            "2024": [],
+            "2025": [],
+            "2026": [],
+            "2027": [],
+            "2028": [],
+            "2031": []
+        },
+        "isWorkingDay": {
+            "2026-04-27": true,
+            "2026-04-25": false,
+            "2026-12-25": true,
+            "2027-01-01": true,
+            "2026-05-04": true,
+            "2026-05-05": true,
+            "2026-05-06": true,
+            "2027-03-01": true,
+            "2028-04-26": true
+        },
+        "nonWorkingAgain2026": []
+    },
+    "dayStartsAt blank": {
+        "slug": "g",
+        "organisation": null,
+        "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "hours": 8,
+        "start": 540,
+        "end": 1020,
+        "timezone": "UTC",
+        "serviceHoursDeclared": false,
+        "nonWorking": {
+            "2024": [],
+            "2025": [],
+            "2026": [],
+            "2027": [],
+            "2028": [],
+            "2031": []
+        },
+        "isWorkingDay": {
+            "2026-04-27": true,
+            "2026-04-25": false,
+            "2026-12-25": true,
+            "2027-01-01": true,
+            "2026-05-04": true,
+            "2026-05-05": true,
+            "2026-05-06": true,
+            "2027-03-01": true,
+            "2028-04-26": true
+        },
+        "nonWorkingAgain2026": []
+    },
+    "dayStartsAt 9": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' declares dayStartsAt '9'; it must be HH:MM in 24-hour form."
+    },
+    "dayStartsAt 24:00": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' declares dayStartsAt '24:00'; it must be HH:MM in 24-hour form."
+    },
+    "dayStartsAt int": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' declares dayStartsAt '9'; it must be HH:MM in 24-hour form."
+    },
+    "dayStartsAt array": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' declares dayStartsAt 'array'; it must be HH:MM in 24-hour form."
+    },
+    "dayStartsAt late clamps end": {
+        "slug": "g",
+        "organisation": null,
+        "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "hours": 12,
+        "start": 1080,
+        "end": 1440,
+        "timezone": "UTC",
+        "serviceHoursDeclared": false,
+        "nonWorking": {
+            "2024": [],
+            "2025": [],
+            "2026": [],
+            "2027": [],
+            "2028": [],
+            "2031": []
+        },
+        "isWorkingDay": {
+            "2026-04-27": true,
+            "2026-04-25": false,
+            "2026-12-25": true,
+            "2027-01-01": true,
+            "2026-05-04": true,
+            "2026-05-05": true,
+            "2026-05-06": true,
+            "2027-03-01": true,
+            "2028-04-26": true
+        },
+        "nonWorkingAgain2026": []
+    },
+    "timezone amsterdam": {
+        "slug": "g",
+        "organisation": null,
+        "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "hours": 8,
+        "start": 540,
+        "end": 1020,
+        "timezone": "Europe/Amsterdam",
+        "serviceHoursDeclared": false,
+        "nonWorking": {
+            "2024": [],
+            "2025": [],
+            "2026": [],
+            "2027": [],
+            "2028": [],
+            "2031": []
+        },
+        "isWorkingDay": {
+            "2026-04-27": true,
+            "2026-04-25": false,
+            "2026-12-25": true,
+            "2027-01-01": true,
+            "2026-05-04": true,
+            "2026-05-05": true,
+            "2026-05-06": true,
+            "2027-03-01": true,
+            "2028-04-26": true
+        },
+        "nonWorkingAgain2026": []
+    },
+    "timezone blank": {
+        "slug": "g",
+        "organisation": null,
+        "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "hours": 8,
+        "start": 540,
+        "end": 1020,
+        "timezone": "UTC",
+        "serviceHoursDeclared": false,
+        "nonWorking": {
+            "2024": [],
+            "2025": [],
+            "2026": [],
+            "2027": [],
+            "2028": [],
+            "2031": []
+        },
+        "isWorkingDay": {
+            "2026-04-27": true,
+            "2026-04-25": false,
+            "2026-12-25": true,
+            "2027-01-01": true,
+            "2026-05-04": true,
+            "2026-05-05": true,
+            "2026-05-06": true,
+            "2027-03-01": true,
+            "2028-04-26": true
+        },
+        "nonWorkingAgain2026": []
+    },
+    "timezone unknown": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' declares timezone 'Mars/Olympus', which is not an IANA zone name."
+    },
+    "timezone int": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' declares a timezone that is not a string."
+    },
+    "service hours": {
+        "slug": "g",
+        "organisation": null,
+        "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "hours": 7.5,
+        "start": 540,
+        "end": 990,
+        "timezone": "UTC",
+        "serviceHoursDeclared": true,
+        "nonWorking": {
+            "2024": [],
+            "2025": [],
+            "2026": [],
+            "2027": [],
+            "2028": [],
+            "2031": []
+        },
+        "isWorkingDay": {
+            "2026-04-27": true,
+            "2026-04-25": false,
+            "2026-12-25": true,
+            "2027-01-01": true,
+            "2026-05-04": true,
+            "2026-05-05": true,
+            "2026-05-06": true,
+            "2027-03-01": true,
+            "2028-04-26": true
+        },
+        "nonWorkingAgain2026": []
+    },
+    "fault order: rules before exceptions": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' rules must be an array."
+    },
+    "fault order: service hours before dayStartsAt": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' declares serviceHours that is not a map of weekday to windows."
+    },
+    "fault order: dayStartsAt before timezone": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' declares dayStartsAt 'x'; it must be HH:MM in 24-hour form."
+    },
+    "fault order: weekdays before rules": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' must declare its workingWeekdays (ISO 1..7)."
+    },
+    "fixed 31 February": {
+        "slug": "g",
+        "organisation": null,
+        "weekdays": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "hours": 8,
+        "start": 540,
+        "end": 1020,
+        "timezone": "UTC",
+        "serviceHoursDeclared": false,
+        "nonWorking": {
+            "2024": {
+                "2024-03-02": "fixed"
+            },
+            "2025": {
+                "2025-03-03": "fixed"
+            },
+            "2026": {
+                "2026-03-03": "fixed"
+            },
+            "2027": {
+                "2027-03-03": "fixed"
+            },
+            "2028": {
+                "2028-03-02": "fixed"
+            },
+            "2031": {
+                "2031-03-03": "fixed"
+            }
+        },
+        "isWorkingDay": {
+            "2026-04-27": true,
+            "2026-04-25": false,
+            "2026-12-25": true,
+            "2027-01-01": true,
+            "2026-05-04": true,
+            "2026-05-05": true,
+            "2026-05-06": true,
+            "2027-03-01": true,
+            "2028-04-26": true
+        },
+        "nonWorkingAgain2026": {
+            "2026-03-03": "fixed"
+        }
+    },
+    "service hours off-day": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'g' declares service hours on Saturday, which is not one of its working weekdays."
+    },
+    "easter 1583": "1583-04-10 00:00:00 UTC",
+    "easter 1900": "1900-04-15 00:00:00 UTC",
+    "easter 2000": "2000-04-23 00:00:00 UTC",
+    "easter 2026": "2026-04-05 00:00:00 UTC",
+    "easter 2100": "2100-03-28 00:00:00 UTC",
+    "easter 2400": "2400-04-16 00:00:00 UTC",
+    "easter 4099": "4099-04-19 00:00:00 UTC"
+}

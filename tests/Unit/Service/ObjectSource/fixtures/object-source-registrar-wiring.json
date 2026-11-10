@@ -17,16 +17,25 @@
             "logger": "Psr\\Log\\LoggerInterface"
         }
     },
-    "OCA\\OpenRegister\\Service\\ObjectSource\\CalDavVtodoObjectSourceProvider": {
+    "OCA\\OpenRegister\\Service\\ObjectSource\\OptionalAppBridge": {
         "asked": [
-            "OCA\\OpenRegister\\Service\\TaskService",
             "OCP\\App\\IAppManager",
             "Psr\\Log\\LoggerInterface"
         ],
         "params": {
-            "taskService": "OCA\\OpenRegister\\Service\\TaskService",
             "appManager": "OCP\\App\\IAppManager",
+            "container": "(container)",
             "logger": "Psr\\Log\\LoggerInterface"
+        }
+    },
+    "OCA\\OpenRegister\\Service\\ObjectSource\\CalDavVtodoObjectSourceProvider": {
+        "asked": [
+            "OCA\\OpenRegister\\Service\\TaskService",
+            "OCA\\OpenRegister\\Service\\ObjectSource\\OptionalAppBridge"
+        ],
+        "params": {
+            "taskService": "OCA\\OpenRegister\\Service\\TaskService",
+            "app": "(no property)"
         }
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\UserDirectoryObjectSourceProvider": {
@@ -46,27 +55,33 @@
     "OCA\\OpenRegister\\Service\\ObjectSource\\GroupObjectSourceProvider": {
         "asked": [
             "OCP\\IGroupManager",
-            "OCP\\IUserSession",
-            "Psr\\Log\\LoggerInterface"
+            "OCA\\OpenRegister\\Service\\LinkSessionRuntime"
         ],
         "params": {
             "groupManager": "OCP\\IGroupManager",
+            "session": "(no property)"
+        }
+    },
+    "OCA\\OpenRegister\\Service\\ObjectSource\\OrganisationActingUser": {
+        "asked": [
+            "OCP\\IUserSession",
+            "OCP\\IGroupManager"
+        ],
+        "params": {
             "userSession": "OCP\\IUserSession",
-            "logger": "Psr\\Log\\LoggerInterface"
+            "groupManager": "OCP\\IGroupManager"
         }
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\OrganisationObjectSourceProvider": {
         "asked": [
-            "OCA\\OpenRegister\\Db\\OrganisationMapper",
-            "OCP\\IUserSession",
-            "OCP\\IGroupManager",
+            "OCA\\OpenRegister\\Db\\OrganisationMapperInterface",
+            "OCA\\OpenRegister\\Service\\ObjectSource\\OrganisationActingUser",
             "Psr\\Log\\LoggerInterface",
             "OCA\\OpenRegister\\Service\\OrganisationService"
         ],
         "params": {
-            "organisationMapper": "OCA\\OpenRegister\\Db\\OrganisationMapper",
-            "userSession": "OCP\\IUserSession",
-            "groupManager": "OCP\\IGroupManager",
+            "organisationMapper": "OCA\\OpenRegister\\Db\\OrganisationMapperInterface",
+            "actingUser": "OCA\\OpenRegister\\Service\\ObjectSource\\OrganisationActingUser",
             "logger": "Psr\\Log\\LoggerInterface",
             "organisationService": "OCA\\OpenRegister\\Service\\OrganisationService"
         }
@@ -74,63 +89,51 @@
     "OCA\\OpenRegister\\Service\\ObjectSource\\ContactsObjectSourceProvider": {
         "asked": [
             "OCP\\Contacts\\IManager",
-            "OCP\\App\\IAppManager",
-            "Psr\\Log\\LoggerInterface"
+            "OCA\\OpenRegister\\Service\\ObjectSource\\OptionalAppBridge"
         ],
         "params": {
             "contactsManager": "OCP\\Contacts\\IManager",
-            "appManager": "OCP\\App\\IAppManager",
-            "logger": "Psr\\Log\\LoggerInterface"
+            "app": "(no property)"
         }
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\CalendarEventObjectSourceProvider": {
         "asked": [
             "OCA\\OpenRegister\\Service\\CalendarEventService",
-            "OCP\\App\\IAppManager",
-            "Psr\\Log\\LoggerInterface"
+            "OCA\\OpenRegister\\Service\\ObjectSource\\OptionalAppBridge"
         ],
         "params": {
             "calendarEventService": "OCA\\OpenRegister\\Service\\CalendarEventService",
-            "appManager": "OCP\\App\\IAppManager",
-            "logger": "Psr\\Log\\LoggerInterface"
+            "app": "(no property)"
         }
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\FilesObjectSourceProvider": {
         "asked": [
             "OCP\\Files\\IRootFolder",
-            "OCP\\IUserSession",
-            "Psr\\Log\\LoggerInterface"
+            "OCA\\OpenRegister\\Service\\LinkSessionRuntime"
         ],
         "params": {
             "rootFolder": "OCP\\Files\\IRootFolder",
-            "userSession": "OCP\\IUserSession",
-            "logger": "Psr\\Log\\LoggerInterface"
+            "session": "(no property)"
         }
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\DeckObjectSourceProvider": {
         "asked": [
-            "OCP\\App\\IAppManager",
-            "OCP\\IUserSession",
-            "Psr\\Log\\LoggerInterface"
+            "OCA\\OpenRegister\\Service\\ObjectSource\\OptionalAppBridge",
+            "OCP\\IUserSession"
         ],
         "params": {
-            "appManager": "OCP\\App\\IAppManager",
-            "userSession": "OCP\\IUserSession",
-            "container": "(container)",
-            "logger": "Psr\\Log\\LoggerInterface"
+            "app": "(no property)",
+            "userSession": "OCP\\IUserSession"
         }
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\TalkObjectSourceProvider": {
         "asked": [
-            "OCP\\App\\IAppManager",
-            "OCP\\IUserSession",
-            "Psr\\Log\\LoggerInterface"
+            "OCA\\OpenRegister\\Service\\ObjectSource\\OptionalAppBridge",
+            "OCP\\IUserSession"
         ],
         "params": {
-            "appManager": "OCP\\App\\IAppManager",
-            "userSession": "OCP\\IUserSession",
-            "container": "(container)",
-            "logger": "Psr\\Log\\LoggerInterface"
+            "app": "(no property)",
+            "userSession": "OCP\\IUserSession"
         }
     },
     "OCA\\OpenRegister\\Service\\Dbal\\DbalConnectionFactory": {
@@ -153,30 +156,26 @@
     },
     "OCA\\OpenRegister\\Service\\Dbal\\DatabaseIntrospectionService": {
         "asked": [
-            "OCA\\OpenRegister\\Service\\Dbal\\DbalConnectionFactory",
-            "OCA\\OpenRegister\\Service\\Dbal\\SqlTypeMapper",
-            "OCA\\OpenRegister\\Db\\RegisterMapper",
-            "OCA\\OpenRegister\\Db\\SchemaMapper",
-            "OCA\\OpenRegister\\Service\\Schema\\SchemaDiffService",
+            "OCA\\OpenRegister\\Service\\Dbal\\IntrospectionTools",
+            "OCA\\OpenRegister\\Db\\RegisterMapperInterface",
+            "OCA\\OpenRegister\\Db\\SchemaMapperInterface",
             "Psr\\Log\\LoggerInterface"
         ],
         "params": {
-            "connectionFactory": "OCA\\OpenRegister\\Service\\Dbal\\DbalConnectionFactory",
-            "typeMapper": "OCA\\OpenRegister\\Service\\Dbal\\SqlTypeMapper",
-            "registerMapper": "OCA\\OpenRegister\\Db\\RegisterMapper",
-            "schemaMapper": "OCA\\OpenRegister\\Db\\SchemaMapper",
-            "diffService": "OCA\\OpenRegister\\Service\\Schema\\SchemaDiffService",
+            "tools": "OCA\\OpenRegister\\Service\\Dbal\\IntrospectionTools",
+            "registerMapper": "OCA\\OpenRegister\\Db\\RegisterMapperInterface",
+            "schemaMapper": "OCA\\OpenRegister\\Db\\SchemaMapperInterface",
             "logger": "Psr\\Log\\LoggerInterface"
         }
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\DbalObjectSourceProvider": {
         "asked": [
-            "OCA\\OpenRegister\\Db\\SourceMapper",
+            "OCA\\OpenRegister\\Db\\SourceMapperInterface",
             "OCA\\OpenRegister\\Service\\Dbal\\DbalConnectionFactory",
             "Psr\\Log\\LoggerInterface"
         ],
         "params": {
-            "sourceMapper": "OCA\\OpenRegister\\Db\\SourceMapper",
+            "sourceMapper": "OCA\\OpenRegister\\Db\\SourceMapperInterface",
             "connectionFactory": "OCA\\OpenRegister\\Service\\Dbal\\DbalConnectionFactory",
             "logger": "Psr\\Log\\LoggerInterface"
         }
@@ -187,13 +186,10 @@
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\TablesTableReader": {
         "asked": [
-            "OCP\\App\\IAppManager",
-            "Psr\\Log\\LoggerInterface"
+            "OCA\\OpenRegister\\Service\\ObjectSource\\OptionalAppBridge"
         ],
         "params": {
-            "appManager": "OCP\\App\\IAppManager",
-            "container": "(container)",
-            "logger": "Psr\\Log\\LoggerInterface"
+            "app": "(no property)"
         }
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\TablesColumnMapper": {
@@ -208,34 +204,40 @@
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\TablesSchemaSyncService": {
         "asked": [
-            "OCA\\OpenRegister\\Db\\RegisterMapper",
-            "OCA\\OpenRegister\\Db\\SchemaMapper",
+            "OCA\\OpenRegister\\Db\\RegisterMapperInterface",
+            "OCA\\OpenRegister\\Db\\SchemaMapperInterface",
             "OCA\\OpenRegister\\Service\\ObjectSource\\TablesColumnMapper",
             "Psr\\Log\\LoggerInterface"
         ],
         "params": {
-            "registerMapper": "OCA\\OpenRegister\\Db\\RegisterMapper",
-            "schemaMapper": "OCA\\OpenRegister\\Db\\SchemaMapper",
+            "registerMapper": "OCA\\OpenRegister\\Db\\RegisterMapperInterface",
+            "schemaMapper": "OCA\\OpenRegister\\Db\\SchemaMapperInterface",
             "columnMapper": "OCA\\OpenRegister\\Service\\ObjectSource\\TablesColumnMapper",
             "logger": "Psr\\Log\\LoggerInterface"
         }
     },
-    "OCA\\OpenRegister\\Service\\ObjectSource\\TablesObjectSourceProvider": {
+    "OCA\\OpenRegister\\Service\\ObjectSource\\TablesProviderParts": {
         "asked": [
             "OCA\\OpenRegister\\Service\\ObjectSource\\TablesTableReader",
             "OCA\\OpenRegister\\Service\\ObjectSource\\TablesColumnMapper",
             "OCA\\OpenRegister\\Service\\ObjectSource\\TablesUuidDeriver",
-            "OCA\\OpenRegister\\Service\\ObjectSource\\TablesSchemaSyncService",
-            "OCP\\IUserSession",
-            "Psr\\Log\\LoggerInterface"
+            "OCA\\OpenRegister\\Service\\ObjectSource\\TablesSchemaSyncService"
         ],
         "params": {
             "reader": "OCA\\OpenRegister\\Service\\ObjectSource\\TablesTableReader",
             "columnMapper": "OCA\\OpenRegister\\Service\\ObjectSource\\TablesColumnMapper",
             "uuidDeriver": "OCA\\OpenRegister\\Service\\ObjectSource\\TablesUuidDeriver",
-            "syncService": "OCA\\OpenRegister\\Service\\ObjectSource\\TablesSchemaSyncService",
-            "userSession": "OCP\\IUserSession",
-            "logger": "Psr\\Log\\LoggerInterface"
+            "syncService": "OCA\\OpenRegister\\Service\\ObjectSource\\TablesSchemaSyncService"
+        }
+    },
+    "OCA\\OpenRegister\\Service\\ObjectSource\\TablesObjectSourceProvider": {
+        "asked": [
+            "OCA\\OpenRegister\\Service\\ObjectSource\\TablesProviderParts",
+            "OCA\\OpenRegister\\Service\\LinkSessionRuntime"
+        ],
+        "params": {
+            "parts": "OCA\\OpenRegister\\Service\\ObjectSource\\TablesProviderParts",
+            "session": "(no property)"
         }
     }
 }

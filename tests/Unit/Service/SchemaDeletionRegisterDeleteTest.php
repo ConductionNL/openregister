@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -45,6 +46,7 @@ use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Service\SchemaDeletionService;
+use OCA\OpenRegister\Service\SchemaDeletionStores;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -114,6 +116,8 @@ class SchemaDeletionRegisterDeleteTest extends TestCase {
 		parent::setUp();
 
 		$this->db = $this->createMock(IDBConnection::class);
+
+		$this->db->method('getDatabaseProvider')->willReturn(IDBConnection::PLATFORM_SQLITE);
 		$this->magicMapper = $this->createMock(MagicMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
@@ -138,10 +142,10 @@ class SchemaDeletionRegisterDeleteTest extends TestCase {
 
 		$this->service = new SchemaDeletionService(
 			$this->db,
-			$this->magicMapper,
-			$this->createMock(RegisterMapper::class),
-			$this->schemaMapper,
-			$this->auditTrailMapper,
+			new SchemaDeletionStores(
+				new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->schemaMapper, tables: $this->magicMapper),
+				$this->auditTrailMapper
+			),
 			$this->createMock(LoggerInterface::class)
 		);
 
@@ -280,12 +284,33 @@ class SchemaDeletionRegisterDeleteTest extends TestCase {
 
 		$this->magicMapper->expects($this->never())->method('deleteObjectsBySchema');
 		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
-		$this->db->expects($this->never())->method('beginTransaction');
+		$this->db->expects($this->never())->method('commit');
 
 		$this->expectException(ObjectStateWriteException::class);
 
 		$this->service->deleteObjectsByRegister(register: $this->register([42, 43]));
 	}//end testOneFrozenRowRefusesTheWholeRegisterAndDeletesNothing()
+
+	/**
+	 * A row frozen as the transaction opens still refuses: the check reads inside it.
+	 *
+	 * @return void
+	 */
+	public function testARowFrozenAsTheTransactionOpensRefusesTheRegister(): void {
+		$this->givenSchema(id: 42, uuids: ['a-1']);
+		$this->db->method('beginTransaction')->willReturnCallback(
+			function (): void {
+				$this->rows[42][0]->setFrozen(['by' => 'alice', 'at' => '2026-01-01T00:00:00+00:00', 'reason' => 'kept']);
+			}
+		);
+
+		$this->magicMapper->expects($this->never())->method('deleteObjectsBySchema');
+		$this->db->expects($this->once())->method('rollBack');
+
+		$this->expectException(ObjectStateWriteException::class);
+
+		$this->service->deleteObjectsByRegister(register: $this->register([42]));
+	}//end testARowFrozenAsTheTransactionOpensRefusesTheRegister()
 
 	/**
 	 * An archived row refuses a table delete as well.
@@ -349,7 +374,7 @@ class SchemaDeletionRegisterDeleteTest extends TestCase {
 
 		$this->expectException(ObjectStateWriteException::class);
 
-		$this->service->deleteObjectsBySchema(registerId: self::REGISTER_ID, schemaId: 42);
+		$this->service->deleteObjectsBySchema(table: new RegisterSchemaRef(register: self::REGISTER_ID, schema: 42));
 	}//end testOneFrozenRowRefusesTheSchemaWideDelete()
 
 	/**

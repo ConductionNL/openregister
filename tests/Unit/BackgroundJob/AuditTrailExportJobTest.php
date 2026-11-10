@@ -17,11 +17,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\RecordedJobRuntime;
+use OCA\OpenRegister\BackgroundJob\AuditExportDelivery;
+use OCA\OpenRegister\BackgroundJob\AuditExportSource;
 use OCA\OpenRegister\BackgroundJob\AuditTrailExportJob;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailPageQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\LogService;
@@ -70,9 +74,7 @@ class AuditTrailExportJobTest extends TestCase {
 
 		$logService = new LogService(
 			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(MagicMapper::class),
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(SchemaMapper::class)
+			new SchemaCatalog($this->createMock(RegisterMapper::class), $this->createMock(SchemaMapper::class), $this->createMock(MagicMapper::class))
 		);
 
 		$written = [];
@@ -101,12 +103,9 @@ class AuditTrailExportJobTest extends TestCase {
 		$notifications->expects($this->once())->method('notify');
 
 		$job = new AuditTrailExportJob(
-			$this->createMock(ITimeFactory::class),
-			$this->createMock(JobRunRecorder::class),
-			$pageQuery,
-			$logService,
-			$root,
-			$notifications
+			new RecordedJobRuntime($this->createMock(ITimeFactory::class), $this->createMock(JobRunRecorder::class)),
+			new AuditExportSource(pageQuery: $pageQuery, logService: $logService),
+			new AuditExportDelivery(rootFolder: $root, notifications: $notifications)
 		);
 
 		$path = $job->deliver(['actor' => 'admin', 'filters' => ['actor' => 'anna'], 'format' => 'csv']);
@@ -130,12 +129,9 @@ class AuditTrailExportJobTest extends TestCase {
 	 */
 	public function testAJobWithoutARequesterRefuses(): void {
 		$job = new AuditTrailExportJob(
-			$this->createMock(ITimeFactory::class),
-			$this->createMock(JobRunRecorder::class),
-			$this->createMock(AuditTrailPageQuery::class),
-			$this->createMock(LogService::class),
-			$this->createMock(IRootFolder::class),
-			$this->createMock(IManager::class)
+			new RecordedJobRuntime($this->createMock(ITimeFactory::class), $this->createMock(JobRunRecorder::class)),
+			new AuditExportSource(pageQuery: $this->createMock(AuditTrailPageQuery::class), logService: $this->createMock(LogService::class)),
+			new AuditExportDelivery(rootFolder: $this->createMock(IRootFolder::class), notifications: $this->createMock(IManager::class))
 		);
 
 		$this->expectException(\RuntimeException::class);

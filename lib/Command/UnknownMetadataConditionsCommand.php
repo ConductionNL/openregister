@@ -29,8 +29,7 @@ namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Rbac\MetadataConditionFindings;
-use OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings;
+use OCA\OpenRegister\Service\Rbac\RbacChecks;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -85,8 +84,8 @@ class UnknownMetadataConditionsCommand extends Command {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Symfony's signature; the command takes no input.
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$conditions = new MetadataConditionFindings();
-		$keys = new UnknownRuleKeyFindings();
+		$conditions = RbacChecks::metadataConditions();
+		$keys = RbacChecks::unknownRuleKeys();
 		$found = 0;
 
 		foreach ($this->schemaMapper->findAll(_rbac: false, _multitenancy: false) as $schema) {

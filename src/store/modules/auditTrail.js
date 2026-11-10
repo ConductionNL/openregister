@@ -34,6 +34,9 @@ function emptyStatistics() {
  * Store for managing audit trail logs
  * Provides functionality for retrieving, filtering, and managing audit trail entries
  */
+let pendingRefresh = null
+let requestInFlight = null
+
 export const useAuditTrailStore = defineStore('auditTrail', {
 	state: () => ({
 		// Loading states
@@ -235,17 +238,48 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		},
 
 		/**
-		 * Refresh audit trail list with current filters
+		 * Refresh audit trail list with current filters. The page and its
+		 * sidebar both ask for this while mounting, so the refreshes of one
+		 * tick share one request, which reads the filters as they end up.
 		 *
 		 * @return {Promise} The refresh promise
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
-		async refreshAuditTrailList() {
-			return this.fetchAuditTrails({
-				limit: this.auditTrailPagination.limit,
-				page: this.auditTrailPagination.page,
+		refreshAuditTrailList() {
+			pendingRefresh ??= Promise.resolve().then(() => {
+				pendingRefresh = null
+				return this.sharedListRequest()
 			})
+			return pendingRefresh
+		},
+
+		/**
+		 * The list request for the current query: one already on its way is
+		 * shared, so a sidebar and a page that mount a moment apart ask once.
+		 *
+		 * @return {Promise} The request
+		 *
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-has
+		 */
+		sharedListRequest() {
+			const { limit, page } = this.auditTrailPagination
+			const key = JSON.stringify([
+				this.auditTrailFilters,
+				this.auditTrailSearch,
+				this.auditTrailSort,
+				limit,
+				page,
+			])
+			if (requestInFlight?.key === key) {
+				return requestInFlight.promise
+			}
+			const request = { key }
+			request.promise = this.fetchAuditTrails({ limit, page }).finally(() => {
+				if (requestInFlight === request) requestInFlight = null
+			})
+			requestInFlight = request
+			return request.promise
 		},
 
 		/**

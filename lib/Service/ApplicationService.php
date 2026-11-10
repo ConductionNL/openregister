@@ -23,7 +23,8 @@
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Application;
-use OCA\OpenRegister\Db\ApplicationMapper;
+use OCA\OpenRegister\Db\ApplicationMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 
@@ -44,16 +45,16 @@ use Psr\Log\LoggerInterface;
  *
  * @link https://OpenRegister.app
  */
-class ApplicationService {
+class ApplicationService implements ApplicationServiceInterface {
 
 	/**
 	 * Application mapper for database operations
 	 *
 	 * Handles all database CRUD operations for application entities.
 	 *
-	 * @var ApplicationMapper Application mapper instance
+	 * @var ApplicationMapperInterface Application mapper instance
 	 */
-	private readonly ApplicationMapper $applicationMapper;
+	private readonly ApplicationMapperInterface $applicationMapper;
 
 	/**
 	 * Logger instance
@@ -69,13 +70,13 @@ class ApplicationService {
 	 *
 	 * Initializes service with required dependencies for application operations.
 	 *
-	 * @param ApplicationMapper $applicationMapper Application mapper for database operations
+	 * @param ApplicationMapperInterface $applicationMapper Application mapper for database operations
 	 * @param LoggerInterface $logger Logger for error tracking
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		ApplicationMapper $applicationMapper,
+		ApplicationMapperInterface $applicationMapper,
 		LoggerInterface $logger,
 	) {
 		// Store dependencies for use in service methods.
@@ -89,23 +90,17 @@ class ApplicationService {
 	 * Retrieves a list of all applications with optional pagination and filtering.
 	 * Supports limit/offset pagination and custom filter conditions.
 	 *
-	 * @param int|null $limit Maximum number of results to return (null for all)
-	 * @param int|null $offset Number of results to skip for pagination (null for no offset)
-	 * @param array $filters Filter conditions as key-value pairs (default: empty array)
+	 * @param ListQuery $query The page (unbounded for all rows), offset and filter conditions.
 	 *
 	 * @return Application[] Array of application entities
 	 *
 	 * @psalm-return array<int, Application>
 	 *
-	 * @spec exclude Facade plumbing: thin delegation to ApplicationMapper::findAll, no standalone behavioral contract.
+	 * @spec exclude Facade plumbing: thin delegation to ApplicationMapperInterface::findAll, no standalone behavioral contract.
 	 */
-	public function findAll(?int $limit = null, ?int $offset = null, array $filters = []): array {
+	public function findAll(ListQuery $query): array {
 		// Delegate to mapper to retrieve applications with pagination and filters.
-		return $this->applicationMapper->findAll(
-			limit: $limit,
-			offset: $offset,
-			filters: $filters
-		);
+		return $this->applicationMapper->findAll(limit: $query->limitOrNull(), offset: $query->offset, filters: $query->filters);
 	}//end findAll()
 
 	/**
@@ -122,7 +117,7 @@ class ApplicationService {
 	 *
 	 * @psalm-return Application
 	 *
-	 * @spec exclude Facade plumbing: thin delegation to ApplicationMapper::find, no standalone behavioral contract.
+	 * @spec exclude Facade plumbing: thin delegation to ApplicationMapperInterface::find, no standalone behavioral contract.
 	 */
 	public function find(int $id): Application {
 		// Delegate to mapper to find application by ID.
@@ -141,16 +136,16 @@ class ApplicationService {
 	 *
 	 * @psalm-return Application
 	 *
-	 * @spec exclude Facade plumbing: log + delegate to ApplicationMapper::createFromArray, no standalone behavioral contract.
+	 * @spec exclude Facade plumbing: log + delegate to ApplicationMapperInterface::createFromArray, no standalone behavioral contract.
 	 */
 	public function create(array $data): Application {
-		// Log creation attempt with provided data.
+		// Log creation attempt.
 		$this->logger->info(
 			message: '[ApplicationService] Creating new application',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'data' => $data,
+				'fields' => array_keys($data),
 			]
 		);
 
@@ -186,17 +181,17 @@ class ApplicationService {
 	 *
 	 * @psalm-return Application
 	 *
-	 * @spec exclude Facade plumbing: log + delegate to ApplicationMapper::updateFromArray, no standalone behavioral contract.
+	 * @spec exclude Facade plumbing: log + delegate to ApplicationMapperInterface::updateFromArray, no standalone behavioral contract.
 	 */
 	public function update(int $id, array $data): Application {
-		// Log update attempt with ID and data.
+		// Log update attempt with ID.
 		$this->logger->info(
 			message: '[ApplicationService] Updating application',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'id' => $id,
-				'data' => $data,
+				'fields' => array_keys($data),
 			]
 		);
 
@@ -230,7 +225,7 @@ class ApplicationService {
 	 *
 	 * @throws DoesNotExistException If application not found with the given ID
 	 *
-	 * @spec exclude Facade plumbing: find-then-delete delegation to ApplicationMapper, no standalone behavioral contract.
+	 * @spec exclude Facade plumbing: find-then-delete delegation to ApplicationMapperInterface, no standalone behavioral contract.
 	 */
 	public function delete(int $id): void {
 		// Log deletion attempt.
@@ -270,7 +265,7 @@ class ApplicationService {
 	 *
 	 * @psalm-return int
 	 *
-	 * @spec exclude Facade plumbing: thin delegation to ApplicationMapper::countAll, no standalone behavioral contract.
+	 * @spec exclude Facade plumbing: thin delegation to ApplicationMapperInterface::countAll, no standalone behavioral contract.
 	 */
 	public function countAll(): int {
 		// Delegate to mapper to count all applications.
