@@ -104,7 +104,9 @@ lease_release() {
 	st_sync || return 2
 	[ "$(_lease_field "$name" holder)" = "$ST_ME" ] || return 0
 	_g rm -q "$f"
-	_st_push "lease: $name released by $ST_ME" || { _g merge --abort 2>/dev/null; _g fetch -q origin "$ST_BRANCH"; _g reset -q --hard "origin/$ST_BRANCH"; }
+	# Never reset here: unpushed verdict commits would be lost. A failed release stays local and goes out with the next write; the lease expires anyway.
+	_st_push "lease: $name released by $ST_ME" || _g merge --abort 2>/dev/null
+	return 0
 }
 
 # Latest verdict for a PR at a sha, from verdicts.txt: prints APPROVE, BLOCK or nothing. Any BLOCK at that sha wins.
