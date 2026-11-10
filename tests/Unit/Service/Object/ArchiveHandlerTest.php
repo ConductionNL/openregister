@@ -164,7 +164,7 @@ final class ArchiveHandlerTest extends TestCase {
 		$this->resolvesTo(object: $object);
 		$this->persistsVerbatim();
 
-		$result = $this->handler()->archive(identifier: self::OBJ, reason: 'afgehandeld');
+		$result = $this->handler()->archive(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: self::OBJ, reason: 'afgehandeld', register: null, schema: null));
 
 		$this->assertSame('anna', $result['archived']['by']);
 		$this->assertSame('afgehandeld', $result['archived']['reason']);
@@ -198,7 +198,7 @@ final class ArchiveHandlerTest extends TestCase {
 				'archive'
 			);
 
-		$this->handler()->archive(identifier: self::OBJ);
+		$this->handler()->archive(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: self::OBJ, reason: null, register: null, schema: null));
 	}//end testArchiveWritesAnAuditEntry()
 
 	/**
@@ -216,7 +216,7 @@ final class ArchiveHandlerTest extends TestCase {
 			->method('createAuditTrail')
 			->with($this->anything(), $this->anything(), 'unarchive');
 
-		$result = $this->handler()->unarchive(identifier: self::OBJ);
+		$result = $this->handler()->unarchive(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: self::OBJ, reason: null, register: null, schema: null));
 
 		$this->assertNull($result['archived']);
 		$this->assertFalse($object->isArchived());
@@ -242,7 +242,7 @@ final class ArchiveHandlerTest extends TestCase {
 		$this->resolvesTo(object: $object);
 		$this->audit->expects($this->never())->method('createAuditTrail');
 
-		$result = $this->handler()->archive(identifier: self::OBJ, reason: 'tweede');
+		$result = $this->handler()->archive(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: self::OBJ, reason: 'tweede', register: null, schema: null));
 
 		$this->assertSame('bert', $result['archived']['by']);
 		$this->assertSame('eerste', $result['archived']['reason']);
@@ -262,7 +262,7 @@ final class ArchiveHandlerTest extends TestCase {
 		$this->expectException(ArchiveNotOfferedException::class);
 
 		try {
-			$this->handler()->archive(identifier: self::OBJ);
+			$this->handler()->archive(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: self::OBJ, reason: null, register: null, schema: null));
 		} finally {
 			$this->assertFalse($object->isArchived());
 		}
@@ -295,7 +295,7 @@ final class ArchiveHandlerTest extends TestCase {
 		$this->expectException(NotAuthorizedException::class);
 
 		try {
-			$this->handler()->archive(identifier: self::OBJ);
+			$this->handler()->archive(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: self::OBJ, reason: null, register: null, schema: null));
 		} finally {
 			$this->assertFalse($object->isArchived());
 		}
@@ -326,7 +326,7 @@ final class ArchiveHandlerTest extends TestCase {
 				$this->anything()
 			);
 
-		$this->handler()->archive(identifier: self::OBJ);
+		$this->handler()->archive(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: self::OBJ, reason: null, register: null, schema: null));
 	}//end testTheGateAsksForUpdate()
 
 	/**
@@ -371,7 +371,7 @@ final class ArchiveHandlerTest extends TestCase {
 		$this->expectException(DoesNotExistException::class);
 
 		try {
-			$this->handler()->archive(identifier: self::OBJ, register: '99');
+			$this->handler()->archive(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: self::OBJ, reason: null, register: '99', schema: null));
 		} finally {
 			$this->assertFalse($object->isArchived());
 		}
@@ -395,11 +395,7 @@ final class ArchiveHandlerTest extends TestCase {
 		$this->resolvesTo(object: $this->object());
 		$this->persistsVerbatim();
 
-		$result = $this->handler()->archive(
-			identifier: self::OBJ,
-			register: $register,
-			schema: $schema
-		);
+		$result = $this->handler()->archive(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: self::OBJ, reason: null, register: $register, schema: $schema));
 
 		$this->assertSame('anna', $result['archived']['by']);
 	}//end testBothRouteSpellingsAreInScope()
@@ -431,7 +427,7 @@ final class ArchiveHandlerTest extends TestCase {
 			->method('createAuditTrail')
 			->with($this->anything(), $this->anything(), 'unfreeze');
 
-		$result = $this->handler()->unfreeze(identifier: self::OBJ);
+		$result = $this->handler()->unfreeze(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: self::OBJ, reason: null, register: null, schema: null));
 
 		$this->assertNull($result['frozen']);
 		$this->assertFalse($object->isFrozen());

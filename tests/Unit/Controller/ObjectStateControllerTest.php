@@ -277,7 +277,7 @@ final class ObjectStateControllerTest extends TestCase {
 
 		$this->handler->expects($this->once())
 			->method('archive')
-			->with(self::OBJ, null, self::REGISTER, self::SCHEMA)
+			->with(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(self::OBJ, null, self::REGISTER, self::SCHEMA))
 			->willReturn(['uuid' => self::OBJ, 'archived' => []]);
 
 		$this->controller()->archive(register: self::REGISTER, schema: self::SCHEMA, id: self::OBJ);

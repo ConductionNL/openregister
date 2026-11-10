@@ -126,11 +126,11 @@ final class ObjectStateControllerA24GoldenTest extends TestCase {
 	public function testAllowedCallsAnswerTheMarker(): void {
 		$params = ['reason' => ' done ', 'state' => ' woo '];
 		$controller = $this->controller(signedIn: true, params: $params);
-		$this->handler->expects($this->once())->method('archive')->with('o', 'done', '1', '2')->willReturn(['archived' => true]);
+		$this->handler->expects($this->once())->method('archive')->with(new ObjectStateRequest('o', 'done', '1', '2'))->willReturn(['archived' => true]);
 		$this->assertSame(['archived' => true], $controller->archive('1', '2', 'o')->getData());
 
 		$controller = $this->controller(signedIn: true, params: $params);
-		$this->handler->expects($this->once())->method('unarchive')->with('o', 'done', '1', '2')->willReturn(['archived' => false]);
+		$this->handler->expects($this->once())->method('unarchive')->with(new ObjectStateRequest('o', 'done', '1', '2'))->willReturn(['archived' => false]);
 		$this->assertSame(['archived' => false], $controller->unarchive('1', '2', 'o')->getData());
 
 		$controller = $this->controller(signedIn: true, params: $params);
@@ -138,7 +138,7 @@ final class ObjectStateControllerA24GoldenTest extends TestCase {
 		$this->assertSame(['frozen' => true], $controller->freeze('1', '2', 'o')->getData());
 
 		$controller = $this->controller(signedIn: true, params: ['reason' => '  ']);
-		$this->handler->expects($this->once())->method('unfreeze')->with('o', null, '1', '2')->willReturn(['frozen' => false]);
+		$this->handler->expects($this->once())->method('unfreeze')->with(new ObjectStateRequest('o', null, '1', '2'))->willReturn(['frozen' => false]);
 		$response = $controller->unfreeze('1', '2', 'o');
 		$this->assertSame([200, ['frozen' => false]], [$response->getStatus(), $response->getData()]);
 	}//end testAllowedCallsAnswerTheMarker()

@@ -35,13 +35,11 @@ use OCP\AppFramework\Db\DoesNotExistException;
 interface ArchiveHandlerInterface {
 
 	/**
-	 * Archive an object.
+	 * Archive the object a request names.
 	 *
-	 * @param string $identifier Object id, uuid, slug or uri.
-	 * @param string|null $reason Why it is being archived.
-	 * @param string|null $register The register the url names, so an object in
-	 *                              another one is not reachable from this address.
-	 * @param string|null $schema The schema the url names, checked the same way.
+	 * @param ObjectStateRequest $request The object (id, uuid, slug or uri), the register and schema
+	 *                                    the url names (so an object in another one is not reachable
+	 *                                    from this address) and why it is being archived.
 	 *
 	 * @throws ArchiveNotOfferedException When the schema does not declare archiving.
 	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the caller lacks `update`.
@@ -51,21 +49,14 @@ interface ArchiveHandlerInterface {
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
-	public function archive(
-		string $identifier,
-		?string $reason = null,
-		?string $register = null,
-		?string $schema = null,
-	): array;
+	public function archive(ObjectStateRequest $request): array;
 
 	/**
-	 * Restore an object from the archive.
+	 * Take the object a request names out of the archive.
 	 *
-	 * @param string $identifier Object id, uuid, slug or uri.
-	 * @param string|null $reason Why it is being restored.
-	 * @param string|null $register The register the url names, so an object in
-	 *                              another one is not reachable from this address.
-	 * @param string|null $schema The schema the url names, checked the same way.
+	 * @param ObjectStateRequest $request The object (id, uuid, slug or uri), the register and schema
+	 *                                    the url names (so an object in another one is not reachable
+	 *                                    from this address) and why it is being restored.
 	 *
 	 * @throws ArchiveNotOfferedException When the schema does not declare archiving.
 	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the caller lacks `update`.
@@ -75,12 +66,7 @@ interface ArchiveHandlerInterface {
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
-	public function unarchive(
-		string $identifier,
-		?string $reason = null,
-		?string $register = null,
-		?string $schema = null,
-	): array;
+	public function unarchive(ObjectStateRequest $request): array;
 
 	/**
 	 * Freeze the object a request names.
@@ -101,13 +87,11 @@ interface ArchiveHandlerInterface {
 	public function freeze(ObjectStateRequest $request, ?string $state = null): array;
 
 	/**
-	 * Unfreeze an object.
+	 * Unfreeze the object a request names.
 	 *
-	 * @param string $identifier Object id, uuid, slug or uri.
-	 * @param string|null $reason Why it is being unfrozen.
-	 * @param string|null $register The register the url names, so an object in
-	 *                              another one is not reachable from this address.
-	 * @param string|null $schema The schema the url names, checked the same way.
+	 * @param ObjectStateRequest $request The object (id, uuid, slug or uri), the register and schema
+	 *                                    the url names (so an object in another one is not reachable
+	 *                                    from this address) and why it is being unfrozen.
 	 *
 	 * @throws ArchiveNotOfferedException When the schema does not declare archiving.
 	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the caller lacks `update`.
@@ -117,10 +101,5 @@ interface ArchiveHandlerInterface {
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
-	public function unfreeze(
-		string $identifier,
-		?string $reason = null,
-		?string $register = null,
-		?string $schema = null,
-	): array;
+	public function unfreeze(ObjectStateRequest $request): array;
 }//end interface
