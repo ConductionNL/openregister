@@ -153,6 +153,18 @@ final class RegistryAnnotationValidator implements RegistryAnnotationValidatorIn
 			return [self::ownedMissing()];
 		}
 
+		return self::ownedFindings(owned: $owned, properties: $properties);
+	}//end validateOwned()
+
+	/**
+	 * One finding per `owned` entry that is malformed or not declared, in list order.
+	 *
+	 * @param array<int|string, mixed> $owned      The non-empty `owned` list.
+	 * @param array<string, mixed>     $properties The schema's own properties.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private static function ownedFindings(array $owned, array $properties): array {
 		$errors = [];
 		foreach ($owned as $index => $property) {
 			if (is_string($property) === false || $property === '') {
@@ -166,7 +178,7 @@ final class RegistryAnnotationValidator implements RegistryAnnotationValidatorIn
 		}
 
 		return $errors;
-	}//end validateOwned()
+	}//end ownedFindings()
 
 	/**
 	 * The finding for a missing or empty `owned` list.
