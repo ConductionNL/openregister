@@ -4,6 +4,8 @@
  * OpenRegister Object Change Listener
  *
  * Listens for object creation and update events to queue asynchronous text extraction.
+ * In background mode the objects are deferred in chunks (ObjectTextExtractionChunkJob),
+ * never one job per object (openregister#4241).
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -24,14 +26,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\BackgroundJob\ObjectTextExtractionChunkJob;
 use OCA\OpenRegister\BackgroundJob\ObjectTextExtractionJob;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
+use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -39,7 +44,12 @@ use Psr\Log\LoggerInterface;
  *
  * Listens for object creation and update events to queue asynchronous text extraction.
  * Instead of processing objects synchronously (which would block user requests),
- * this listener queues a background job for each object that needs processing.
+ * this listener hands each object to ListenerDeferralService, which collects the
+ * objects of one process (single saves, a flow writing item by item, a bulk save
+ * with events) and queues one ObjectTextExtractionChunkJob per chunk. The chunk
+ * size is the app config `textExtractionChunkSize` (default 100). With the
+ * deferral kill switch `listenerDeferral` set to `inline` the listener queues one
+ * ObjectTextExtractionJob per object, as before.
  *
  * @category Listener
  * @package  OCA\OpenRegister\Listener
@@ -50,12 +60,28 @@ use Psr\Log\LoggerInterface;
  */
 class ObjectChangeListener implements IEventListener {
 	/**
+	 * App-config key of the maximum number of objects per deferred extraction job.
+	 *
+	 * @var string
+	 */
+	public const CHUNK_SIZE_KEY = 'textExtractionChunkSize';
+
+	/**
+	 * Default number of objects per deferred extraction job.
+	 *
+	 * @var integer
+	 */
+	public const DEFAULT_CHUNK_SIZE = 100;
+
+	/**
 	 * Constructor
 	 *
 	 * @param TextExtractionService $textExtractSvc Text extraction service
 	 * @param SettingsService $settingsService Settings service
 	 * @param IJobList $jobList Job list for queuing background jobs
 	 * @param LoggerInterface $logger Logger
+	 * @param ListenerDeferralService $deferral Buffers object ids into chunk jobs
+	 * @param IAppConfig $appConfig App config holding the chunk size
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
@@ -64,6 +90,8 @@ class ObjectChangeListener implements IEventListener {
 		private readonly SettingsService $settingsService,
 		private readonly IJobList $jobList,
 		private readonly LoggerInterface $logger,
+		private readonly ListenerDeferralService $deferral,
+		private readonly IAppConfig $appConfig,
 	) {
 	}//end __construct()
 
@@ -203,14 +231,19 @@ class ObjectChangeListener implements IEventListener {
 	}//end processImmediateExtraction()
 
 	/**
-	 * Queue background job for extraction
+	 * Queue the object for background extraction.
+	 *
+	 * Deferral on (the default): the object id goes into the deferral buffer
+	 * and reaches the job list in a chunk job of at most the configured chunk
+	 * size. Kill switch `listenerDeferral=inline`: one ObjectTextExtractionJob
+	 * for this object, the behaviour before chunking.
 	 *
 	 * @param int $objectId Object ID to extract.
 	 * @param string $objectUuid Object UUID for logging.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-object-text-extraction-in-background-mode-is-deferred-in-chunks
 	 */
 	private function processBackgroundExtraction(int $objectId, string $objectUuid): void {
 		$this->logger->info(
@@ -224,7 +257,7 @@ class ObjectChangeListener implements IEventListener {
 		);
 
 		try {
-			$this->jobList->add(job: ObjectTextExtractionJob::class, argument: ['object_id' => $objectId]);
+			$this->enqueue(objectId: $objectId);
 			$this->logger->debug(
 				message: '[ObjectChangeListener] Background extraction job queued',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'object_id' => $objectId]
@@ -241,6 +274,57 @@ class ObjectChangeListener implements IEventListener {
 			);
 		}
 	}//end processBackgroundExtraction()
+
+	/**
+	 * Hand the object to the deferral buffer, or under the kill switch queue
+	 * one ObjectTextExtractionJob for it.
+	 *
+	 * The entry is the object id only, so a chunk of 100 stays under the job
+	 * argument limit of Nextcloud 32 and 33; the id is also the dedupe key, so
+	 * an object saved twice in one process is extracted once.
+	 *
+	 * @param int $objectId Object ID to extract.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-object-text-extraction-in-background-mode-is-deferred-in-chunks
+	 */
+	private function enqueue(int $objectId): void {
+		if ($this->deferral->isDeferralEnabled() === true) {
+			$this->deferral->defer(
+				jobClass: ObjectTextExtractionChunkJob::class,
+				entry: ['id' => $objectId],
+				chunkSize: $this->chunkSize(),
+				dedupeKey: (string)$objectId
+			);
+			return;
+		}
+
+		$this->jobList->add(job: ObjectTextExtractionJob::class, argument: ['object_id' => $objectId]);
+	}//end enqueue()
+
+	/**
+	 * The maximum number of objects per deferred extraction job: the app config
+	 * `textExtractionChunkSize`, the default when it is unset or below 1.
+	 *
+	 * @return int
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-object-text-extraction-in-background-mode-is-deferred-in-chunks
+	 */
+	private function chunkSize(): int {
+		try {
+			$size = $this->appConfig->getValueInt('openregister', self::CHUNK_SIZE_KEY, self::DEFAULT_CHUNK_SIZE);
+		} catch (\Exception $e) {
+			// A type conflict (the key stored as another type) is an Exception.
+			return self::DEFAULT_CHUNK_SIZE;
+		}
+
+		if ($size < 1) {
+			return self::DEFAULT_CHUNK_SIZE;
+		}
+
+		return $size;
+	}//end chunkSize()
 
 	/**
 	 * Handle cron mode (skip processing)
@@ -295,6 +379,6 @@ class ObjectChangeListener implements IEventListener {
 			]
 		);
 
-		$this->jobList->add(job: ObjectTextExtractionJob::class, argument: ['object_id' => $objectId]);
+		$this->enqueue(objectId: $objectId);
 	}//end processUnknownMode()
 }//end class
