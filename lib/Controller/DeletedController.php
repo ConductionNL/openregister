@@ -44,6 +44,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Service\Deletion\RecordDestructionCommand;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowQuery;
 
 /**
@@ -776,14 +777,16 @@ class DeletedController extends Controller {
 		$object = $purge->object;
 		try {
 			$scopeReport = $this->services->store->deletion->destruction->scope->destroy(object: $object, schema: $purge->schema);
-			$record = $this->services->store->deletion->destruction->recorder->record(
-				object: $object,
-				scope: $scopeReport,
-				rule: 'destroy-right-granted',
-				context: [
-					'deletionWindow' => $purge->window?->toArray(),
-					'windowWaived' => ($purge->force === true),
-				]
+			$record = $this->services->store->deletion->destruction->recorder->recordDestruction(
+				command: new RecordDestructionCommand(
+					object: $object,
+					scope: $scopeReport,
+					rule: 'destroy-right-granted',
+					context: [
+						'deletionWindow' => $purge->window?->toArray(),
+						'windowWaived' => ($purge->force === true),
+					]
+				)
 			);
 		} catch (DestructionRefusedException $e) {
 			return new JSONResponse(

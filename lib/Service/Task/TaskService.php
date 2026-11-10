@@ -1368,9 +1368,8 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * checks in the same order as every verb (exists, authorized, open), so a
 	 * denial here reads in the audit exactly as a denial from the verb would.
 	 *
-	 * @param string $verb The verb about to be attempted.
-	 * @param string $uuid The task uuid.
-	 * @param string|null $actor The acting identity.
+	 * @param TaskAct $act  The verb about to be attempted and the acting identity.
+	 * @param string  $uuid The task uuid.
 	 *
 	 * @return Task The open, authorized task.
 	 *
@@ -1380,8 +1379,8 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-only-the-matched-party-completes-fail-closed
 	 */
-	public function openFor(string $verb, string $uuid, ?string $actor): Task {
-		return $this->openTaskFor(act: new TaskAct(verb: $verb, actor: $actor), uuid: $uuid);
+	public function openFor(TaskAct $act, string $uuid): Task {
+		return $this->openTaskFor(act: $act, uuid: $uuid);
 	}//end openFor()
 
 	/**

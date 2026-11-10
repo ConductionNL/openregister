@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -342,7 +343,10 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 		$this->checks = [];
 		$handler = $this->createMock(PermissionHandler::class);
 		$handler->method('checkPermission')->willReturnCallback(
-			function (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true, ?ObjectEntity $object = null): void {
+			function (Schema $schema, string $action, PermissionCheckOptions $options = new PermissionCheckOptions(), bool $_rbac = true): void {
+				$userId = $options->userId;
+				$objectOwner = $options->objectOwner;
+				$object = $options->object;
 				$this->checks[] = [$action, $userId, $objectOwner, $_rbac, $object?->getUuid()];
 				if ($this->updateNeedsOwner === true && $action === 'update' && ($userId ?? 'mallory') !== $objectOwner) {
 					throw new NotAuthorizedException(message: 'no update');
