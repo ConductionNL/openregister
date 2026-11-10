@@ -459,7 +459,7 @@ class CacheSettingsHandler {
 	 * @param string      $type   The cache type asked for.
 	 * @param string|null $userId The user the clear is for.
 	 *
-	 * @return array{type: string, userId: string|null, timestamp: string, results: array, errors: array, totalCleared: int}
+	 * @return array{type: string, userId: string|null, timestamp: string, results: array<never, never>, errors: array<never, never>, totalCleared: 0}
 	 */
 	private static function emptyClearResults(string $type, ?string $userId): array {
 		return [
