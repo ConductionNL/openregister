@@ -40,6 +40,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use OCA\OpenRegister\Service\OrganisationContext;
+use OCA\OpenRegister\Service\DeclaredPair;
 use OCA\OpenRegister\Service\SharedMasterDataServiceInterface;
 use OCA\OpenRegister\Service\TenancyCollaborators;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -409,8 +410,7 @@ class MagicOrganizationHandler implements OrganisationScopeResolverInterface {
 		}
 
 		return $resolver->holdersForResource(
-			registerId: $table->registerId,
-			schemaId: $table->schemaId,
+			pair: new DeclaredPair(registerId: $table->registerId, schemaId: $table->schemaId),
 			consumerOrgUuids: $consumerOrgUuids
 		);
 

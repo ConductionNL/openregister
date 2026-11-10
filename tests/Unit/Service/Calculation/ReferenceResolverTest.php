@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\ReferenceTenantGuard;
+use OCA\OpenRegister\Service\DeclaredPair;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -323,7 +324,7 @@ class ReferenceResolverTest extends TestCase {
 	public function testASharedMasterDataReferenceResolves(): void {
 		$this->sharedMasterData->expects($this->once())
 			->method('holdersForResource')
-			->with(22, 237, ['org-a'])
+			->with(new DeclaredPair(22, 237), ['org-a'])
 			->willReturn(['org-holder']);
 		$this->objectService->method('find')->willReturn($this->entity(['processingDeadline' => 'P8W'], 'org-holder'));
 
