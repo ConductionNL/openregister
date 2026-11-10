@@ -1274,3 +1274,4 @@
 8424 b5f57a363c7d7f5f966b36a80c79e708ee3a10ae APPROVE integrator: main merge on top of 77494941e50d497bd417386e62b1e48cd4a1db10, conflicts only in use lines or map entries of lib/Controller/OperationsConsoleController.php,
 8470 75a31c8476c8371307f90e5b5bd7f77d41d9d417 APPROVE integrator: main merge on top of 873070aee8d86487285a1cb0b95541b28ab69fba, conflicts only in use lines or map entries of lib/Db/MagicMapper.php,
 8456 ad4f891cdb33571c61f9e56e0ab868a665209d78 APPROVE integrator: main merge on top of faead05e841c3370398de4bbef7015598c333eff, conflicts only in use lines or map entries of lib/Controller/ConfigurationsController.php,
+8663 1030a98c8faca6ac21650287ec8478de727dd5be APPROVE ExampleSetStore ObjectRef/RegisterSchemaRef refactor: bodies identical, legal-hold delete order kept, slug delegates kept, no fleet callers; phpstan clean, guard+ExampleSet suites green merged with main
