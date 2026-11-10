@@ -2670,3 +2670,4 @@
 2026-11-10T17:34:36Z integrator-20261110T111852-c9674639 CONFLICT-DEV #9029 34e90443
 2026-11-10T17:35:17Z integrator-20261110T111852-c9674639 RESOLVED #9053 d38e0aef -> cb443049 use/map lines only
 2026-11-10T17:35:53Z precheck-20261110T113644-b00458ca GREEN tree 5bf018a84b on dev f7f4c9be53 prs 1 front=skip: Tests: 54839, Assertions: 181618, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 17.
+2026-11-10T17:36:17Z precheck-20261110T113712-a8af1fdb GREEN tree a6744c669c on dev 07c4352d50 prs 1 front=skip: Tests: 54838, Assertions: 181616, Errors: 6, Failures: 11, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 17.
