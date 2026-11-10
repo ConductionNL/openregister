@@ -20,7 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\ObjectListRequest;
-use OCA\OpenRegister\Service\Object\ObjectSelection;
+use OCA\OpenRegister\Kernel\Contracts\ObjectSelection;
 use OCA\OpenRegister\Service\Object\ReadScope;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;

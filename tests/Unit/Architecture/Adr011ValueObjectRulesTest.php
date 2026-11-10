@@ -35,15 +35,19 @@ class Adr011ValueObjectRulesTest extends TestCase {
 	 * @var array<int, string>
 	 */
 	private const VALUE_OBJECTS = [
-		'Db/ListQuery.php',
+		'Kernel/Contracts/ListQuery.php',
 		'Db/RegisterSchema.php',
+		'Kernel/Contracts/ObjectMigration.php',
 		'Kernel/Contracts/ContactDetails.php',
 		'Kernel/Contracts/KeywordChunkSearch.php',
 		'Kernel/Contracts/MergeInstruction.php',
 		'Kernel/Contracts/ObjectRef.php',
+		'Kernel/Contracts/ObjectSelection.php',
+		'Kernel/Contracts/RegisterSchemaRef.php',
+		'Kernel/Contracts/SearchOptions.php',
 		'Kernel/Contracts/PreferenceAddress.php',
 		'Kernel/Contracts/PreferenceWrite.php',
-		'Kernel/Contracts/RegisterSchemaRef.php',
+		'Kernel/Contracts/RenderSelection.php',
 		'Kernel/Contracts/ReportCaller.php',
 		'Kernel/Contracts/ScheduledReportUpdate.php',
 		'Kernel/Contracts/TimerSubjectRef.php',
@@ -55,13 +59,18 @@ class Adr011ValueObjectRulesTest extends TestCase {
 	 * @var array<int, string>
 	 */
 	private const KERNEL_LEAVES = [
+		'Kernel/Contracts/ListQuery.php',
+		'Kernel/Contracts/ObjectMigration.php',
 		'Kernel/Contracts/ContactDetails.php',
 		'Kernel/Contracts/KeywordChunkSearch.php',
 		'Kernel/Contracts/MergeInstruction.php',
 		'Kernel/Contracts/ObjectRef.php',
+		'Kernel/Contracts/ObjectSelection.php',
+		'Kernel/Contracts/RegisterSchemaRef.php',
+		'Kernel/Contracts/SearchOptions.php',
 		'Kernel/Contracts/PreferenceAddress.php',
 		'Kernel/Contracts/PreferenceWrite.php',
-		'Kernel/Contracts/RegisterSchemaRef.php',
+		'Kernel/Contracts/RenderSelection.php',
 		'Kernel/Contracts/ReportCaller.php',
 		'Kernel/Contracts/ScheduledReportUpdate.php',
 		'Kernel/Contracts/RelationDecisionUpdate.php',
@@ -203,7 +212,7 @@ class Adr011ValueObjectRulesTest extends TestCase {
 	}//end testTheChecksAcceptAWellFormedClass()
 
 	/**
-	 * The offenders of one source check across the five classes.
+	 * The offenders of one source check across the listed classes.
 	 *
 	 * @param string $check The name of the check method.
 	 *

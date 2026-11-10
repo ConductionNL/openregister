@@ -55,6 +55,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
@@ -529,8 +530,7 @@ class RuntimeSchemaReloadTest extends TestCase {
 		// we just need to prove the slug path doesn't throw DoesNotExistException
 		// on a freshly-created pair, which would expose a missed invalidation).
 		$result = $this->objectService->searchObjectsBySlug(
-			$register->getSlug(),
-			$schema->getSlug(),
+			new RegisterSchemaRef(register: $register->getSlug(), schema: $schema->getSlug()),
 			[]
 		);
 		$this->assertIsArray($result);

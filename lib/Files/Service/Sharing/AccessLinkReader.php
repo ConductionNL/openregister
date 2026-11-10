@@ -44,6 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\Sharing;
 
+use OCA\OpenRegister\Kernel\Contracts\SearchOptions;
 use OCA\OpenRegister\Service\Sharing\AccessLinkReaderFilters;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
@@ -237,7 +238,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 		}
 
 		try {
-			// `_viewScopeRequired: true` is not decoration. RBAC and multitenancy
+			// `viewScopeRequired: true` is not decoration. RBAC and multitenancy
 			// are off here because there is no session to judge, which leaves the
 			// view as the ONLY bound on this query. The shared search path used to
 			// log an unresolvable view and carry on with the query unchanged - and
@@ -252,8 +253,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 				query: ['_limit' => self::MAX_VIEW_OBJECTS],
 				_rbac: false,
 				_multitenancy: false,
-				views: [$viewId],
-				_viewScopeRequired: true
+				options: new SearchOptions(views: [$viewId], viewScopeRequired: true)
 			);
 		} catch (Throwable $missing) {
 			$this->logger->info(

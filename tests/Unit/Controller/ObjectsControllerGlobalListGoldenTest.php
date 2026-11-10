@@ -21,6 +21,7 @@ use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\SearchOptions;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\RenderObjectInterface;
 use OCA\OpenRegister\Service\ObjectService;
@@ -156,7 +157,8 @@ class ObjectsControllerGlobalListGoldenTest extends TestCase {
 			$this->calls[] = ['buildSearchQuery' => $args];
 			return ($setup['query'] ?? ['built' => true]);
 		});
-		$service->method('searchObjectsPaginated')->willReturnCallback(function (...$args) use ($setup): array {
+		$service->method('searchObjectsPaginated')->willReturnCallback(function (array $query = [], bool $_rbac = true, bool $_multitenancy = true, SearchOptions $options = new SearchOptions()) use ($setup): array {
+			$args = [$query, $_rbac, $_multitenancy, $options->deleted, $options->selection->ids, $options->selection->uses, $options->views];
 			$this->calls[] = ['searchObjectsPaginated' => $args];
 			if (($setup['refuse'] ?? false) === true) {
 				throw new NotAuthorizedException('no');

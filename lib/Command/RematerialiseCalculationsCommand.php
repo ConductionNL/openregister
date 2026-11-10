@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Command;
 use DateTimeInterface;
 use OCA\OpenRegister\Command\Support\RematerialiseEvaluation;
 use OCA\OpenRegister\Command\Support\RematerialiseStorage;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Calculation\CalculationPayload;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;

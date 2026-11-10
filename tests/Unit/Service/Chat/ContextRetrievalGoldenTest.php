@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace Unit\Service\Chat;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\SearchOptions;
 use OCA\OpenRegister\Search\Service\Vectorization\SemanticSearchRequest;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -153,7 +154,8 @@ class ContextRetrievalGoldenTest extends TestCase {
 			}
 		);
 		$objects->method('searchObjects')->willReturnCallback(
-			function (array $query, ...$rest) use ($case): array {
+			function (array $query, bool $_rbac = true, bool $_multitenancy = true, SearchOptions $options = new SearchOptions()) use ($case): array {
+				$rest = [$_rbac, $_multitenancy, $options->selection->ids, $options->selection->uses, $options->views, $options->viewScopeRequired];
 				$this->calls[] = ['inView', $query, $rest];
 				if (($case['inViewThrows'] ?? false) === true) {
 					throw new Exception('view gone');

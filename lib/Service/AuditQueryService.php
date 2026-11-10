@@ -31,12 +31,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use DateTime;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -344,8 +345,7 @@ class AuditQueryService implements AuditQueryServiceInterface {
 		[$register, $schema] = $pair;
 		try {
 			$result = $this->objectService->searchObjectsBySlug(
-				registerSlug: (string)$register->getSlug(),
-				schemaSlug: (string)$schema->getSlug(),
+				target: new RegisterSchemaRef(register: (string)$register->getSlug(), schema: (string)$schema->getSlug()),
 				filters: $objectFilters
 			);
 		} catch (DoesNotExistException $e) {

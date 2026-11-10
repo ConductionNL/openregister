@@ -35,7 +35,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Controller\Support\OrganisationControllerServices;
 use OCA\OpenRegister\Controller\Support\OrganisationEdit;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\TenantUsage\UsageRange;

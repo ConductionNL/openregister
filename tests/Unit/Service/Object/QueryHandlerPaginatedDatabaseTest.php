@@ -23,6 +23,7 @@ namespace Unit\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\ObjectSelection;
 use OCA\OpenRegister\Service\Object\ContentSearchHandler;
 use OCA\OpenRegister\Service\Object\ContentSearchWidening;
 use OCA\OpenRegister\Service\Object\FacetHandler;
@@ -160,9 +161,7 @@ class QueryHandlerPaginatedDatabaseTest extends TestCase {
 			query: $case['query'] ?? [],
 			_rbac: $case['rbac'] ?? true,
 			_multitenancy: $case['multitenancy'] ?? false,
-			deleted: $case['deleted'] ?? false,
-			ids: $case['ids'] ?? null,
-			uses: $case['uses'] ?? null
+			selection: new ObjectSelection(ids: $case['ids'] ?? null, uses: $case['uses'] ?? null)
 		);
 
 		$response['@self']['metrics'] = array_keys($response['@self']['metrics']);

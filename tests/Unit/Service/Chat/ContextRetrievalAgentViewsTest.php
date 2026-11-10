@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Chat;
 
+use OCA\OpenRegister\Kernel\Contracts\SearchOptions;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Mcp\Service\Chat\ContextRetrievalHandler;
@@ -57,8 +58,9 @@ class ContextRetrievalAgentViewsTest extends TestCase {
 
 		// The view `open-cases` holds only the object `in-view`.
 		$this->objects->method('searchObjects')->willReturnCallback(
-			function (array $query=[], bool $_rbac=true, bool $_multitenancy=true, ?array $ids=null, ?string $uses=null, ?array $views=null, bool $_viewScopeRequired=false): array {
-				$this->scopedCalls[] = ['ids' => $ids, 'views' => $views, 'required' => $_viewScopeRequired, 'rbac' => $_rbac];
+			function (array $query=[], bool $_rbac=true, bool $_multitenancy=true, SearchOptions $options=new SearchOptions()): array {
+				[$ids, $views] = [$options->selection->ids, $options->views];
+				$this->scopedCalls[] = ['ids' => $ids, 'views' => $views, 'required' => $options->viewScopeRequired, 'rbac' => $_rbac];
 				$found = [];
 				foreach (($ids ?? []) as $uuid) {
 					if ($uuid === 'in-view' && in_array('open-cases', ($views ?? []), true) === true) {

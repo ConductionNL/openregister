@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\SearchOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimeline;
@@ -271,7 +272,7 @@ class AccessLinkReaderTest extends TestCase {
 	public function testAViewLinkServesTheViewsObjectsEachFiltered(): void {
 		$this->objects->expects($this->once())
 			->method('searchObjects')
-			->with($this->anything(), false, false, null, null, ['view-uuid'])
+			->with($this->anything(), false, false, $this->equalTo(new SearchOptions(views: ['view-uuid'], viewScopeRequired: true)))
 			->willReturn([$this->object(), $this->object()]);
 		$this->properties->method('filterReadableProperties')->willReturn(['onderwerp' => 'Bezwaar']);
 

@@ -6,8 +6,8 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category  Service
- * @package   OCA\OpenRegister
+ * @category  Contract
+ * @package   OCA\OpenRegister\Kernel\Contracts
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
@@ -16,7 +16,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Object;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * What a render call asks to see of an object: the relations to extend, the filter it must match, the fields to keep and the properties to drop.

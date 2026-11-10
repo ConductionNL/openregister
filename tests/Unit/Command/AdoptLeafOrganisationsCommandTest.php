@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Command;
 use OCA\OpenRegister\Command\AdoptLeafOrganisationsCommand;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -322,7 +323,7 @@ class AdoptLeafOrganisationsCommandTest extends TestCase {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->expects($this->once())
 			->method('searchObjectsBySlug')
-			->with('register', 'schema', ['_limit' => false], false, false)
+			->with($this->equalTo(new RegisterSchemaRef(register: 'register', schema: 'schema')), ['_limit' => false], false, false)
 			->willReturn([]);
 
 		$command = new AdoptLeafOrganisationsCommand(

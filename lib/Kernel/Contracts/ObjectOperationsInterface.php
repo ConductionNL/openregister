@@ -561,17 +561,15 @@ interface ObjectOperationsInterface {
      *                                   _ids: Array of
      *                                   IDs/UUIDs to filter by - _count: Return count instead
      *                                   of objects (boolean)
-     * @param bool        $_rbac         Whether to apply RBAC checks (default: true)
-     * @param bool        $_multitenancy Whether to apply multitenancy filtering (default: true)
-     * @param array|null  $ids           Optional array of IDs to filter by
-     * @param string|null $uses          Optional filter by object usage
-     * @param array|null  $views         Optional view IDs to apply
-     * @param bool $_viewScopeRequired   Whether the view filter is this caller's ONLY bound.
-     *                                   A caller that switches `$_rbac` and `$_multitenancy`
-     *                                   off because it carries its own authorization (a
-     *                                   published access link naming one view) MUST set this:
-     *                                   it makes an unresolvable or non-narrowing view throw
-     *                                   instead of silently yielding an unbounded search.
+     * @param bool          $_rbac         Whether to apply RBAC checks (default: true)
+     * @param bool          $_multitenancy Whether to apply multitenancy filtering (default: true)
+     * @param SearchOptions $options       The id and uses selection, the view ids, and whether the
+     *                                     view filter is this caller's ONLY bound. A caller that
+     *                                     switches `$_rbac` and `$_multitenancy` off because it
+     *                                     carries its own authorization (a published access link
+     *                                     naming one view) MUST set `viewScopeRequired`: it makes an
+     *                                     unresolvable or non-narrowing view throw instead of
+     *                                     silently yielding an unbounded search.
      *
      * @psalm-param array<string, mixed> $query
      *
@@ -580,7 +578,7 @@ interface ObjectOperationsInterface {
      * @return \OCA\OpenRegister\Db\ObjectEntity[]|int
      *
      * @throws \OCP\DB\Exception If a database error occurs
-     * @throws \Exception If `$_viewScopeRequired` is set and the view cannot be applied
+     * @throws \Exception If `viewScopeRequired` is set and the view cannot be applied
      *
      * @psalm-return int<0, max>|list<\OCA\OpenRegister\Db\ObjectEntity>
      *
@@ -589,8 +587,7 @@ interface ObjectOperationsInterface {
      * @spec exclude One-line delegation to QueryHandler::searchObjects(); search behavior owned by zoeken-filteren.
      */
     public function searchObjects(
-    	array $query=[], bool $_rbac=true, bool $_multitenancy=true, ?array $ids=null, ?string $uses=null, ?array $views=null,
-    	bool $_viewScopeRequired=false
+    	array $query=[], bool $_rbac=true, bool $_multitenancy=true, SearchOptions $options=new SearchOptions()
     ): array|int;
 
     /**
@@ -615,13 +612,12 @@ interface ObjectOperationsInterface {
      * the caller's MUST throw `DoesNotExistException` (the mappers do
      * this via the standard organisation filter).
      *
-     * @param string $registerSlug  The register slug (must exist in caller's org).
-     * @param string $schemaSlug    The schema slug (must exist in caller's org).
-     * @param array  $filters       Additional filters merged into the @self block.
-     *                              Direct keys like 'status' are merged at the top
-     *                              level.
-     * @param bool   $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool   $_multitenancy Whether to apply multi-tenancy filter (default: true).
+     * @param RegisterSchemaRef $target        The register and schema slugs (both must exist in caller's org).
+     * @param array             $filters       Additional filters merged into the @self block.
+     *                                         Direct keys like 'status' are merged at the top
+     *                                         level.
+     * @param bool              $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool              $_multitenancy Whether to apply multi-tenancy filter (default: true).
      *
      * @psalm-param array<string, mixed> $filters
      *
@@ -641,7 +637,7 @@ interface ObjectOperationsInterface {
      * @spec exclude Slug-resolution bridge delegating to searchObjects(); search behavior owned by zoeken-filteren.
      */
     public function searchObjectsBySlug(
-    	string $registerSlug, string $schemaSlug, array $filters=[], bool $_rbac=true, bool $_multitenancy=true
+    	RegisterSchemaRef $target, array $filters=[], bool $_rbac=true, bool $_multitenancy=true
     ): array|int;
 
     /**
@@ -658,8 +654,7 @@ interface ObjectOperationsInterface {
      *                                            - _search: Full-text search term
      * @param bool                 $_rbac         Whether to apply RBAC checks (default: true)
      * @param bool                 $_multitenancy Whether to apply multitenancy filtering (default: true)
-     * @param array|null           $ids           Optional array of object IDs to filter by
-     * @param string|null          $uses          Optional uses parameter for filtering
+     * @param ObjectSelection      $selection     The object ids and the uses filter the count is restricted to
      *
      * @psalm-param   array<string, mixed> $query
      * @phpstan-param array<string, mixed> $query
@@ -673,7 +668,9 @@ interface ObjectOperationsInterface {
      *
      * @spec exclude Resolves org context then delegates to ObjectMapper::countSearchObjects(); count behavior owned by zoeken-filteren.
      */
-    public function countSearchObjects(array $query=[], bool $_rbac=true, bool $_multitenancy=true, ?array $ids=null, ?string $uses=null): int;
+    public function countSearchObjects(
+    	array $query=[], bool $_rbac=true, bool $_multitenancy=true, ObjectSelection $selection=new ObjectSelection()
+    ): int;
 
     /**
      * Get facets for objects matching the given criteria
@@ -815,12 +812,12 @@ interface ObjectOperationsInterface {
      *                                   `ChunkMapper::searchByKeyword()`; absent/false is
      *                                   byte-identical to pre-change behaviour (see
      *                                   openspec/specs/zoeken-filteren/spec.md)
-     * @param bool        $_rbac         Whether to apply RBAC checks (default: true)
-     * @param bool        $_multitenancy Whether to apply multitenancy filtering (default: true)
-     * @param bool        $deleted       Whether to include deleted objects (default: false)
-     * @param array|null  $ids           Optional array of object IDs to filter by
-     * @param string|null $uses          Optional uses parameter for filtering
-     * @param array|null  $views         Optional array of view IDs to apply filters from
+     * @param bool          $_rbac         Whether to apply RBAC checks (default: true)
+     * @param bool          $_multitenancy Whether to apply multitenancy filtering (default: true)
+     * @param SearchOptions $options       The id and uses selection, the view ids whose filters
+     *                                     apply (refused when `viewScopeRequired` is set and no view
+     *                                     narrows the query) and the deleted flag echoed as
+     *                                     `@self.deleted`
      *
      * @psalm-param   array<string, mixed> $query
      * @phpstan-param array<string, mixed> $query
@@ -847,8 +844,7 @@ interface ObjectOperationsInterface {
      *   behavior owned by zoeken-filteren / faceting-configuration.
      */
     public function searchObjectsPaginated(
-    	array $query=[], bool $_rbac=true, bool $_multitenancy=true, bool $deleted=false, ?array $ids=null, ?string $uses=null,
-    	?array $views=null
+    	array $query=[], bool $_rbac=true, bool $_multitenancy=true, SearchOptions $options=new SearchOptions()
     ): array;
 
     /**
@@ -885,26 +881,19 @@ interface ObjectOperationsInterface {
     /**
      * Renders the rendered object.
      *
-     * @param ObjectEntity $entity        The entity to be rendered
-     * @param array|null   $_extend       Optional array to extend the entity
-     * @param int|null     $depth         Optional depth for rendering
-     * @param array|null   $filter        Optional filters to apply
-     * @param array|null   $fields        Optional fields to include
-     * @param array|null   $unset         Optional fields to exclude
-     * @param bool         $_rbac         Whether to apply RBAC checks (default: true)
-     * @param bool         $_multitenancy Whether to apply multitenancy filtering (default: true)
+     * A top-level render: depth 0, nothing preloaded.
+     *
+     * @param ObjectEntity         $entity        The entity to be rendered
+     * @param RenderSelection|null $selection     The extend, filter, fields and unset lists; null renders the plain object
+     * @param bool                 $_rbac         Whether to apply RBAC checks (default: true)
+     * @param bool                 $_multitenancy Whether to apply multitenancy filtering (default: true)
      *
      * @return array Rendered entity data
-     *
-     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      *
      * @spec exclude Facade delegating object rendering to the render handler;
      *   render contract owned by files-render-extension / schema-driven-read-coercion.
      */
-    public function renderEntity(
-    	ObjectEntity $entity, ?array $_extend=[], ?int $depth=0, ?array $filter=[], ?array $fields=[], ?array $unset=[], bool $_rbac=true,
-    	bool $_multitenancy=true
-    ): array;
+    public function renderEntity(ObjectEntity $entity, ?RenderSelection $selection=null, bool $_rbac=true, bool $_multitenancy=true): array;
 
     /**
      * Get the objects cache containing all extended/related objects indexed by UUID.
@@ -1065,12 +1054,7 @@ interface ObjectOperationsInterface {
      * This method migrates multiple objects from one register/schema combination
      * to another register/schema combination with property mapping.
      *
-     * @param string|int $sourceRegister The source register ID or slug
-     * @param string|int $sourceSchema   The source schema ID or slug
-     * @param string|int $targetRegister The target register ID or slug
-     * @param string|int $targetSchema   The target schema ID or slug
-     * @param array      $objectIds      Array of object IDs to migrate
-     * @param array      $mapping        Mapping where keys are target properties, values are source properties
+     * @param ObjectMigration $migration Which objects move, from where to where, and the target-to-source property mapping.
      *
      * The caller needs create permission on the target schema. Only the source
      * objects the caller may read (RBAC and multitenancy of the source table) and
@@ -1084,10 +1068,7 @@ interface ObjectOperationsInterface {
      *
      * @spec openspec/specs/object-lifecycle/spec.md
      */
-    public function migrateObjects(
-    	string|int $sourceRegister, string|int $sourceSchema, string|int $targetRegister, string|int $targetSchema, array $objectIds,
-    	array $mapping
-    ): array;
+    public function migrate(ObjectMigration $migration): array;
 
     /**
      * Perform bulk delete operations on objects by UUID
@@ -1152,9 +1133,8 @@ interface ObjectOperationsInterface {
      * constructed on virtually every request, and this is the only method that needs
      * it.
      *
-     * @param int  $registerId The ID of the register
-     * @param int  $schemaId   The ID of the schema whose objects should be deleted
-     * @param bool $hardDelete Whether to force hard delete (default: false)
+     * @param RegisterSchemaRef $table      The register and schema ids whose objects are deleted
+     * @param bool              $hardDelete Whether to force hard delete (default: false)
      *
      * @return (int|string[])[]
      *
@@ -1168,7 +1148,7 @@ interface ObjectOperationsInterface {
      *
      * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
      */
-    public function deleteObjectsBySchema(int $registerId, int $schemaId, bool $hardDelete=false): array;
+    public function deleteObjectsOfTable(RegisterSchemaRef $table, bool $hardDelete=false): array;
 
     /**
      * Delete all objects belonging to a specific register
@@ -1177,7 +1157,7 @@ interface ObjectOperationsInterface {
      * transaction, snapshotting each object to the audit trail first. Refuses the
      * whole request with ArchivalImmutableException, before touching any row, when
      * any of those schemas is archival. The work lives in SchemaDeletionService,
-     * resolved lazily for the reason deleteObjectsBySchema() gives.
+     * resolved lazily for the reason deleteObjectsOfTable() gives.
      *
      * @param int  $registerId The ID of the register whose objects should be deleted
      * @param bool $hardDelete Whether to force hard delete (default: false)
@@ -1271,13 +1251,9 @@ interface ObjectOperationsInterface {
     /**
      * List objects with filtering and pagination
      *
-     * @param array       $query         Search query parameters
-     * @param bool        $_rbac         Apply RBAC filters
-     * @param bool        $_multitenancy Apply multitenancy filters
-     * @param bool        $_deleted      Include deleted objects
-     * @param array|null  $_ids          Optional array of object IDs to filter
-     * @param string|null $_uses         Optional object ID that results must use
-     * @param array|null  $_views        Optional view filters
+     * @param array $query         Search query parameters
+     * @param bool  $_rbac         Apply RBAC filters
+     * @param bool  $_multitenancy Apply multitenancy filters
      *
      * @return \OCA\OpenRegister\Db\ObjectEntity[]|int
      *
@@ -1287,10 +1263,7 @@ interface ObjectOperationsInterface {
      *
      * @spec exclude Facade alias delegating to searchObjects(); listing behavior owned by zoeken-filteren.
      */
-    public function listObjects(
-    	array $query=[], bool $_rbac=true, bool $_multitenancy=true, bool $_deleted=false, ?array $_ids=null, ?string $_uses=null,
-    	?array $_views=null
-    ): array|int;
+    public function listObjects(array $query=[], bool $_rbac=true, bool $_multitenancy=true): array|int;
 
     /**
      * Create new object
@@ -1415,22 +1388,19 @@ interface ObjectOperationsInterface {
     public function validateObjectsBySchema(int $schemaId): array;
 
     /**
-     * Validate and save all objects by schema, updating metadata like _name.
+     * Validate and save one page of a register and schema's objects, updating metadata like _name.
      *
-     * This method validates all objects belonging to the specified schema and saves them
-     * to update metadata fields. This is useful for bulk updating object metadata after
-     * schema changes or imports.
+     * This is useful for bulk updating object metadata after schema changes or imports.
+     * An unbounded query processes every object.
      *
-     * @param int      $registerId Register ID
-     * @param int      $schemaId   Schema ID
-     * @param int|null $limit      Maximum number of objects to process (null = all)
-     * @param int      $offset     Number of objects to skip before processing
+     * @param RegisterSchemaRef $table The register and schema ids
+     * @param ListQuery         $query The page: its limit (or unbounded) and offset
      *
      * @return array{processed: int, updated: int, failed: int, total: int, errors: array} Validation statistics
      *
      * @spec exclude Delegation to ValidationHandler::validateAndSaveObjectsBySchema() with a saveObject callback; handler owns the loop.
      */
-    public function validateAndSaveObjectsBySchema(int $registerId, int $schemaId, ?int $limit=null, int $offset=0): array;
+    public function validateAndSaveTable(RegisterSchemaRef $table, ListQuery $query): array;
 
     /**
      * Reset the current register, schema, and object context.

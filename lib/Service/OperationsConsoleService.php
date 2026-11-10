@@ -52,7 +52,7 @@ use DateTime;
 use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\BackgroundJob\RecordsItsRuns;
 use OCA\OpenRegister\Db\BulkJob;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\RuleRun;
 use OCA\OpenRegister\Db\RuleRunSummary;
 use OCP\BackgroundJob\IJob;

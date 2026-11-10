@@ -30,6 +30,10 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectSelection;
+use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
+use OCA\OpenRegister\Kernel\Contracts\SearchOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Export\ExportRequest;
@@ -863,8 +867,7 @@ class ExportService implements ObjectExporterInterface {
 			// Apply RBAC filtering.
 			_multitenancy: $multitenancy,
 			// Apply multi-tenancy filtering (respects explicit _multi parameter).
-			ids: $selectedIds,
-			uses: null
+			options: new SearchOptions(selection: new ObjectSelection(ids: $selectedIds))
 		);
 	}//end fetchObjectsForExport()
 
