@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
@@ -180,11 +181,9 @@ class MagicBulkHandlerBulkUpsertGoldenTest extends TestCase {
 		$config->method('getSystemValue')->willReturn('oc_');
 
 		return new MagicBulkHandler(
-			db: $db,
-			logger: $logger,
+			sql: new MagicTableSql(db: $db, config: $config, logger: $logger),
 			eventDispatcher: $this->createMock(IEventDispatcher::class),
-			dateTimeNormalizer: $this->createMock(DateTimeNormalizer::class),
-			config: $config
+			dateTimeNormalizer: $this->createMock(DateTimeNormalizer::class)
 		);
 	}//end makeHandler()
 

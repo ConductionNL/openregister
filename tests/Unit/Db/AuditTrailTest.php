@@ -183,8 +183,8 @@ class AuditTrailTest extends TestCase {
 
 		$json = $this->auditTrail->jsonSerialize();
 
-		$this->assertNotNull($json['created']);
-		$this->assertNotNull($json['expires']);
+		$this->assertSame('2024-01-01T12:00:00+00:00', $json['created']);
+		$this->assertSame('2029-01-01T12:00:00+00:00', $json['expires']);
 	}
 
 	public function testToStringWithUuid(): void {

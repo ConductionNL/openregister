@@ -38,8 +38,10 @@ final class ConfigurationsControllerFactory {
 		return [
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ConfigurationsControllerServices(
-				configurationMapper: $configurationMapper,
-				configurationService: $configurationService,
+				records: new \OCA\OpenRegister\Service\Config\ConfigurationRecords(
+					configurationMapper: $configurationMapper,
+					configurationService: $configurationService,
+				),
 				uploadService: $uploadService,
 				session: new \OCA\OpenRegister\Controller\Support\ControllerSession(
 					userSession: $userSession,

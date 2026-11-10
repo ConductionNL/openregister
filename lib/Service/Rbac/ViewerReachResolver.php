@@ -177,27 +177,14 @@ class ViewerReachResolver implements ViewerReachResolverInterface, ViewerReachCh
 	 * them one at a time from the controller left the third free to be called
 	 * with the wrong answer to the first two.
 	 *
-	 * @param array<string, mixed> $view   The serialised view.
-	 * @param ViewerReach          $reach  The caller's reach.
-	 * @param array<string, mixed> $update The fields the caller sent; only those whose value changes are judged.
+	 * @param ReachedView          $reached The serialised view and the caller's reach.
+	 * @param array<string, mixed> $update  The fields the caller sent; only those whose value changes are judged.
 	 *
 	 * @return array<int, string> The refused field names, empty when the update may proceed.
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
-	public function refusedFields(array $view, ViewerReach $reach, array $update): array {
-		return $this->refusedFieldsOf(reached: new ReachedView(view: $view, reach: $reach), update: $update);
-	}//end refusedFields()
-
-	/**
-	 * The fields of an update the reach may not change on the view.
-	 *
-	 * @param ReachedView          $reached The view and the caller's reach.
-	 * @param array<string, mixed> $update  The fields the caller sent.
-	 *
-	 * @return array<int, string> The refused field names, empty when the update may proceed.
-	 */
-	private function refusedFieldsOf(ReachedView $reached, array $update): array {
+	public function refusedFields(ReachedView $reached, array $update): array {
 		// An owner or an administrator may change everything: no difference
 		// to compute.
 		if ($this->shares()->mayAdministerAs(view: $reached->view, reach: $reached->reach) === true) {
@@ -210,7 +197,7 @@ class ViewerReachResolver implements ViewerReachResolverInterface, ViewerReachCh
 			update: $this->shares()->changedFields(update: $update, view: $reached->view),
 			access: ($access ?? '')
 		);
-	}//end refusedFieldsOf()
+	}//end refusedFields()
 
 	/**
 	 * Refuse a save whose alert names recipients this caller may not add.
@@ -221,9 +208,8 @@ class ViewerReachResolver implements ViewerReachResolverInterface, ViewerReachCh
 	 * will write. The stored alert's recipients are not judged as additions, but
 	 * one the save itself stops reaching is refused.
 	 *
-	 * @param array<string, mixed> $view  The stored view, or `['owner' => <uid>]` on create.
-	 * @param ViewerReach          $reach The caller's reach.
-	 * @param array<string, mixed> $data  The request body.
+	 * @param ReachedView          $reached The stored view (or `['owner' => <uid>]` on create) and the caller's reach.
+	 * @param array<string, mixed> $data    The request body.
 	 *
 	 * @return void
 	 *
@@ -231,26 +217,12 @@ class ViewerReachResolver implements ViewerReachResolverInterface, ViewerReachCh
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
-	public function assertMayNameRecipients(array $view, ViewerReach $reach, array $data): void {
-		$this->assertRecipientsOnSave(reached: new ReachedView(view: $view, reach: $reach), data: $data);
-	}//end assertMayNameRecipients()
-
-	/**
-	 * Refuse a save that would leave recipients on the view's alert it may not name.
-	 *
-	 * @param ReachedView          $reached The stored view and the caller's reach.
-	 * @param array<string, mixed> $data    The request body.
-	 *
-	 * @return void
-	 *
-	 * @throws ViewAlertRecipientException Naming every refused recipient.
-	 */
-	private function assertRecipientsOnSave(ReachedView $reached, array $data): void {
+	public function assertMayNameRecipients(ReachedView $reached, array $data): void {
 		$refused = $this->refusedOnSave(reached: $reached, data: $data);
 		if ($refused !== []) {
 			throw new ViewAlertRecipientException(recipients: $refused);
 		}
-	}//end assertRecipientsOnSave()
+	}//end assertMayNameRecipients()
 
 	/**
 	 * The recipients a save may not leave on the view's alert.
@@ -345,7 +317,7 @@ class ViewerReachResolver implements ViewerReachResolverInterface, ViewerReachCh
 	public function recipientReads(array $view, string $recipient): bool {
 		if (str_starts_with($recipient, ViewAlert::USER_PREFIX) === false) {
 			// A group reads the view when the view is shared with it or public.
-			return $this->shares()->accessFor(view: $view, userId: '', userGroups: [$recipient]) !== null;
+			return $this->shares()->accessOf(view: $view, reach: new ViewerReach(userId: '', groups: [$recipient], isAdmin: false)) !== null;
 		}
 
 		$uid = substr($recipient, strlen(ViewAlert::USER_PREFIX));
@@ -373,7 +345,7 @@ class ViewerReachResolver implements ViewerReachResolverInterface, ViewerReachCh
 			return false;
 		}
 
-		return $this->shares()->accessFor(view: $view, userId: $uid, userGroups: $groups) !== null;
+		return $this->shares()->accessOf(view: $view, reach: new ViewerReach(userId: $uid, groups: $groups, isAdmin: false)) !== null;
 	}//end recipientReads()
 
 }//end class

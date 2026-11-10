@@ -25,7 +25,10 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Edepot\TransferListService;
+use OCA\OpenRegister\Service\Edepot\TransferExclusion;
 use OCA\OpenRegister\Service\Edepot\TransferRecordService;
+use OCA\OpenRegister\Service\Edepot\TransferRejection;
+use OCA\OpenRegister\Service\Edepot\TransferStores;
 use OCP\IAppConfig;
 use OCP\Notification\IManager as INotificationManager;
 use OCP\Notification\INotification;
@@ -129,6 +132,12 @@ class TransferListServiceGoldenTest extends TestCase {
 			INotificationManager::class => $notifications,
 			LoggerInterface::class => $logger,
 		];
+		$this->deps[TransferStores::class] = new TransferStores(
+			objects: $this->deps[MagicMapperInterface::class],
+			records: $records,
+			settings: $config,
+			logger: $logger
+		);
 	}//end setUp()
 
 	/**
@@ -252,23 +261,23 @@ class TransferListServiceGoldenTest extends TestCase {
 
 	public function testRejectIsAllowedOnlyInReviewAndWithAReason(): void {
 		foreach (self::statuses() as $status) {
-			$this->outcome(fn (TransferListService $s): array => $s->rejectTransferList(self::listIn(status: $status), 'archivist-1', 'not ready'));
+			$this->outcome(fn (TransferListService $s): array => $s->reject(self::listIn(status: $status), new TransferRejection(archivistId: 'archivist-1', reason: 'not ready')));
 		}
 
-		$this->outcome(fn (TransferListService $s): array => $s->rejectTransferList(self::listIn(status: 'in_review'), 'archivist-1', ''));
-		$this->outcome(fn (TransferListService $s): array => $s->rejectTransferList(self::listIn(status: 'approved'), 'archivist-1', ''));
-		$this->outcome(fn (TransferListService $s): array => $s->rejectTransferList(self::listIn(status: 'in_review'), 'archivist-1', '0'));
+		$this->outcome(fn (TransferListService $s): array => $s->reject(self::listIn(status: 'in_review'), new TransferRejection(archivistId: 'archivist-1', reason: '')));
+		$this->outcome(fn (TransferListService $s): array => $s->reject(self::listIn(status: 'approved'), new TransferRejection(archivistId: 'archivist-1', reason: '')));
+		$this->outcome(fn (TransferListService $s): array => $s->reject(self::listIn(status: 'in_review'), new TransferRejection(archivistId: 'archivist-1', reason: '0')));
 
 		$this->assertMatchesGolden(name: 'reject');
 	}
 
 	public function testExcludeIsAllowedOnlyInReview(): void {
 		foreach (self::statuses() as $status) {
-			$this->outcome(fn (TransferListService $s): array => $s->excludeObjects(self::listIn(status: $status), ['b', 'x'], 'legal hold'));
+			$this->outcome(fn (TransferListService $s): array => $s->exclude(self::listIn(status: $status), new TransferExclusion(objectUuids: ['b', 'x'], reason: 'legal hold')));
 		}
 
 		$single = ['uuid' => 'l2', 'status' => 'in_review', 'objectReferences' => [['uuid' => 'a']]];
-		$this->outcome(fn (TransferListService $s): array => $s->excludeObjects($single, [], 'nothing'));
+		$this->outcome(fn (TransferListService $s): array => $s->exclude($single, new TransferExclusion(objectUuids: [], reason: 'nothing')));
 
 		$this->assertMatchesGolden(name: 'exclude');
 	}

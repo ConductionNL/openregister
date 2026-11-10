@@ -72,7 +72,10 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
+use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
+use OCA\OpenRegister\Service\Sharing\ShareGrantee;
+use OCA\OpenRegister\Service\Sharing\ShareListCheck;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\Http\Client\IClientService;
@@ -357,18 +360,49 @@ class CredentialBrokerService {
 		?string $actingUserId = null,
 		?string $actingOrganisationId = null,
 	): ?string {
+		return $this->resolveInjectableFor(
+			request: new InjectableSecretRequest($credentialId, $appId, $actingUserId, $actingOrganisationId)
+		);
+	}//end resolveInjectable()
+
+	/**
+	 * Resolve the raw secret of an inject-only credential; see {@see resolveInjectable()} for the contract.
+	 *
+	 * @param InjectableSecretRequest $request The credential, the calling app and the identities a sessionless caller asserts.
+	 *
+	 * @return string|null The raw secret for an inject-only credential, or null when the credential is a proxy credential.
+	 *
+	 * @throws CredentialAccessDeniedException When Guard 1 or 2 fails, or an inject-only credential has no stored secret.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 * @spec openspec/specs/credential-broker/spec.md#requirement-a-token-set-is-never-resolved-app-side
+	 */
+	public function resolveInjectableFor(InjectableSecretRequest $request): ?string {
 		// Guard 1 — access (per-object IDOR): scope-dispatched owner/membership check.
 		$credential = $this->loadAdmittedCredential(
-			credentialId: $credentialId,
-			actingUserId: $actingUserId,
-			actingOrganisationId: $actingOrganisationId
+			credentialId: $request->credentialId,
+			actingUserId: $request->actingUserId,
+			actingOrganisationId: $request->actingOrganisationId
 		);
 		$data = $credential->jsonSerialize();
-		$scope = $this->scopeOf(data: $data);
 
 		// Guard 2 — allowed app.
-		$this->assertAppAllowed(data: $data, appId: $appId, credentialId: $credentialId);
+		$this->assertAppAllowed(data: $data, appId: $request->appId, credentialId: $request->credentialId);
 
+		return $this->injectableSecret(data: $data, credentialId: $request->credentialId);
+	}//end resolveInjectableFor()
+
+	/**
+	 * The stored secret of an admitted credential, or null when its provider keeps it inside OpenRegister.
+	 *
+	 * @param array<string, mixed> $data         The admitted credential's data.
+	 * @param string               $credentialId The `credential` object UUID.
+	 *
+	 * @return string|null The raw secret for an inject-only credential, or null for a proxy credential or a token set.
+	 *
+	 * @throws CredentialAccessDeniedException When the provider is unknown or an inject-only credential has no stored secret.
+	 */
+	private function injectableSecret(array $data, string $credentialId): ?string {
 		// Only inject-only credentials may be resolved app-side; a proxy credential's secret
 		// stays inside OR — signal that with null so the caller routes to request() instead.
 		$provider = $this->resolveProvider(data: $data, credentialId: $credentialId);
@@ -394,13 +428,13 @@ class CredentialBrokerService {
 			return null;
 		}
 
-		$secret = $this->credentialStore->get($credentialId, $scope);
+		$secret = $this->credentialStore->get($credentialId, $this->scopeOf(data: $data));
 		if ($secret === null) {
 			$this->deny(reason: 'no secret stored for inject-only credential', credentialId: $credentialId);
 		}
 
 		return (string)$secret;
-	}//end resolveInjectable()
+	}//end injectableSecret()
 
 	/**
 	 * Mint a credential: persist its metadata object and store its secret to the vault.
@@ -497,7 +531,7 @@ class CredentialBrokerService {
 		// stores the same normalised value. An all-whitespace secret trims
 		// to '', which the empty-secret branch below already treats as
 		// "metadata only, no vault write".
-		$secret = $this->trimmedSecret(secret: $options->secret);
+		$secret = $this->trimmedSecret(secret: $options->secret());
 
 		// Persist the credential-metadata object in system context. Mint is a trusted,
 		// caller-authorized operation ("authorization is the caller's" — the controller
@@ -913,10 +947,8 @@ class CredentialBrokerService {
 		// applied to stored data, so an entry that omits `permission` is treated
 		// as the default here rather than being silently dropped.
 		return $deriver->grants(
-			sharedWith: $sharedWith,
-			userId: $uid,
-			userGroups: $this->groupsOf(uid: $uid),
-			permissions: ['use', null]
+			grantee: new ShareGrantee(userId: $uid, groups: $this->groupsOf(uid: $uid)),
+			check: new ShareListCheck(sharedWith: $sharedWith, permissions: ['use', null])
 		);
 	}//end sharedPrincipalAdmits()
 
@@ -960,11 +992,7 @@ class CredentialBrokerService {
 			return false;
 		}
 
-		return $this->objectGrants->grantCarriesVerb(
-			userId: $this->userSession->getUser()?->getUID(),
-			objectUuid: $uuid,
-			verb: 'use'
-		);
+		return $this->objectGrants->grantCarriesVerb(lookup: new GrantLookup(userId: $this->userSession->getUser()?->getUID(), objectUuid: $uuid), verb: 'use');
 	}//end objectGrantAdmits()
 
 	/**
@@ -1251,12 +1279,10 @@ class CredentialBrokerService {
 			$this->deny(reason: 'oauth2 refresh service is unavailable', credentialId: $credentialId);
 		}
 
+		$address = new TokenSetAddress(credentialId: $credentialId, scope: $scope);
+
 		return $this->oauth2Refresh->accessTokenFor(
-			credential: $data,
-			provider: $provider,
-			credentialId: $credentialId,
-			scope: $scope,
-			actingUserId: $actingUserId
+			target: new OAuth2RefreshTarget(credential: $data, provider: $provider, address: $address, actingUserId: $actingUserId)
 		);
 	}//end injectionSecret()
 

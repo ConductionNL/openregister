@@ -86,9 +86,8 @@ class EdepotTransferServiceFilesTest extends TestCase {
 		$object->method('getObject')->willReturn(['_files' => [$fileRef]]);
 
 		$gatherer = new TransferObjectGatherer(
-			objectMapper: $this->createMock(originalClassName: MagicMapperInterface::class),
-			packagedFileChecksum: new PackagedFileChecksum(),
-			logger: new NullLogger()
+			stores: new \OCA\OpenRegister\Service\Edepot\TransferStores(objects: $this->createMock(originalClassName: MagicMapperInterface::class), records: $this->createMock(\OCA\OpenRegister\Service\Edepot\TransferRecordService::class), settings: $this->createMock(\OCP\IAppConfig::class), logger: new NullLogger()),
+			packagedFileChecksum: new PackagedFileChecksum()
 		);
 
 		return $gatherer->filesOf(object: $object);

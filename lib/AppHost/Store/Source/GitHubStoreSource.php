@@ -137,7 +137,24 @@ class GitHubStoreSource implements StoreSourceInterface {
 	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
 	 */
 	public function search(StoreManifest $manifest, string $query, ?string $kind): array {
-		$topics = $this->topicsFor(manifest: $manifest, kind: $kind);
+		return $this->find(manifest: $manifest, search: new StoreSearch(query: $query, kind: $kind));
+	}//end search()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * Topic search per configured topic, merged and de-duplicated. Answers
+	 * are cached briefly per app, topics and query, failures included.
+	 *
+	 * @param StoreManifest $manifest The declaring app's store block.
+	 * @param StoreSearch   $search   The free text and the kind filter.
+	 *
+	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/changes/store-plane-declarative-sources/specs/apphost-store-plane/spec.md#requirement-a-store-must-declare-its-discovery-source-defaulting-to-openregister
+	 */
+	public function find(StoreManifest $manifest, StoreSearch $search): array {
+		$topics = $this->topicsFor(manifest: $manifest, kind: $search->kind);
 		if ($topics === []) {
 			// A kind that maps to no topic found nothing. That is an empty
 			// answer, not a broken one.
@@ -146,7 +163,7 @@ class GitHubStoreSource implements StoreSourceInterface {
 
 		// Scoped by app id: two apps searching the same topic still get their
 		// own entry, so a change to one app's block cannot serve stale cards.
-		$key = $manifest->appId . ':' . md5(implode(',', $topics) . '|' . $query);
+		$key = $manifest->appId . ':' . hash(algo: 'xxh128', data: implode(',', $topics) . '|' . $search->query);
 		$hit = ($this->cache()?->get($key) ?? null);
 		if (is_string($hit) === true) {
 			$decoded = json_decode($hit, true);
@@ -155,7 +172,7 @@ class GitHubStoreSource implements StoreSourceInterface {
 			}
 		}
 
-		$answer = $this->fetchTopics(topics: $topics, query: $query);
+		$answer = $this->fetchTopics(topics: $topics, query: $search->query);
 
 		// 🔴 CACHE THE FAILURES TOO. A rate-limited answer that is not cached
 		// sends the very next keystroke back at an API that just said stop,
@@ -163,7 +180,7 @@ class GitHubStoreSource implements StoreSourceInterface {
 		$this->cache()?->set($key, json_encode($answer), self::SEARCH_TTL);
 
 		return $answer;
-	}//end search()
+	}//end find()
 
 	/**
 	 * Which topics to search for a given kind filter.

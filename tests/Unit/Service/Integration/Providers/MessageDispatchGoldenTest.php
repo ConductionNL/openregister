@@ -74,7 +74,7 @@ class MessageDispatchGoldenTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
-		$provider = new MessageDispatchProvider($router, $this->createMock(IAppManager::class), $l10n, $logger);
+		$provider = new MessageDispatchProvider(new \OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting($router, $this->createMock(IAppManager::class), $l10n), $logger);
 		$result   = $provider->dispatch(...$args);
 
 		return [

@@ -191,9 +191,8 @@ class ViewPresentationService {
 	 * visible range, spanning to `endDateField` when configured
 	 * (REQ-VIEW-CAL-04).
 	 *
-	 * @param View $view The calendar view
-	 * @param string $rangeStart Inclusive range start (ISO 8601 date/datetime)
-	 * @param string $rangeEnd Inclusive range end (ISO 8601 date/datetime)
+	 * @param View          $view  The calendar view
+	 * @param CalendarRange $range The visible range, both ends inclusive
 	 *
 	 * @return array{viewType: string, dateField: string, endDateField: string|null,
 	 *     rangeStart: string, rangeEnd: string, objects: array<int, mixed>, total: int}
@@ -202,10 +201,10 @@ class ViewPresentationService {
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md#requirement-calendar-plots-objects-by-a-date-field-over-a-range-req-view-cal-04
 	 */
-	public function getCalendarObjects(View $view, string $rangeStart, string $rangeEnd): array {
+	public function getCalendarObjects(View $view, CalendarRange $range): array {
 		$calendar = $this->calendarSpec(view: $view);
 		$baseQuery = $this->calendarBaseQuery(query: ($view->getQuery() ?? []));
-		$calendar += ['rangeStart' => $rangeStart, 'rangeEnd' => $rangeEnd];
+		$calendar += ['rangeStart' => $range->start, 'rangeEnd' => $range->end];
 
 		$objectsById = $this->mergeByIdentity(queries: $this->calendarQueries(baseQuery: $baseQuery, calendar: $calendar));
 
@@ -445,7 +444,7 @@ class ViewPresentationService {
 			return (string) $id;
 		}
 
-		return md5(serialize($row));
+		return hash(algo: 'xxh128', data: serialize($row));
 	}//end rowIdentity()
 
 	/**

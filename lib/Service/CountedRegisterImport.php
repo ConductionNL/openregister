@@ -68,7 +68,7 @@ class CountedRegisterImport {
 	 */
 	public function run(string $slug, array $slugs, string $version, int $fragments, string $via, callable $import): array {
 		$document = (new RegisterImportDocument(slug: $slug, slugs: $slugs))->release(version: $version, fragments: $fragments);
-		return $this->runCall(document: $document, call: new RegisterImportCall(via: $via, operation: \Closure::fromCallable($import)));
+		return $this->runCall(document: $document, call: new RegisterImportCall(via: $via, operation: $import(...)));
 	}//end run()
 
 	/**
@@ -271,8 +271,9 @@ class CountedRegisterImport {
 		$schemas = array_map('strval', array_filter($register->getSchemas(), 'is_scalar'));
 		sort($schemas);
 
-		return md5(
-			(string)json_encode(
+		return hash(
+			algo: 'xxh128',
+			data: (string)json_encode(
 				[$register->getVersion(), $register->getTitle(), $register->getDescription(), $schemas]
 			)
 		);
@@ -286,8 +287,9 @@ class CountedRegisterImport {
 	 * @return string The fingerprint.
 	 */
 	private function schemaFingerprint(Schema $schema): string {
-		return md5(
-			(string)json_encode(
+		return hash(
+			algo: 'xxh128',
+			data: (string)json_encode(
 				[
 					$schema->getVersion(),
 					$schema->getTitle(),

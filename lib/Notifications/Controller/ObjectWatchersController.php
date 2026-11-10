@@ -44,6 +44,7 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Controller\Support\ObjectWatchersControllerServices;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Interaction\AddressedObject;
 use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
@@ -156,9 +157,7 @@ class ObjectWatchersController extends Controller {
 	private function watchObject(ObjectEntity $object, array $scope): JSONResponse {
 		try {
 			$watcher = $this->watchers->watch(
-				object: $object,
-				register: $scope['register'],
-				schema: $scope['schema'],
+				target: new AddressedObject(object: $object, register: $scope['register'], schema: $scope['schema']),
 				notify: $this->notifyParam()
 			);
 		} catch (NotAuthorizedException $e) {
@@ -339,10 +338,8 @@ class ObjectWatchersController extends Controller {
 
 		try {
 			$added = $this->watchers->addWatcher(
-				object: $object,
-				userId: $watcher['userId'],
-				register: $watcher['register'],
-				schema: $watcher['schema']
+				target: new AddressedObject(object: $object, register: $watcher['register'], schema: $watcher['schema']),
+				userId: $watcher['userId']
 			);
 		} catch (NotAuthorizedException $e) {
 			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);

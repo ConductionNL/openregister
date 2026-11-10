@@ -90,7 +90,7 @@ class ProblemDetailsBuilderTest extends TestCase {
 				['path' => 'email', 'message' => 'must be a valid email'],
 				['path' => 'age', 'message' => 'must be >= 18'],
 			],
-			detail: '2 fields failed validation'
+			description: new ProblemDescription(detail: '2 fields failed validation')
 		);
 
 		$this->assertSame(422, $problem['status']);
@@ -134,7 +134,7 @@ class ProblemDetailsBuilderTest extends TestCase {
 	}//end testEmptyTypeFallsBackToAboutBlankAndReservedExtensionsAreDropped()
 
 	public function testValidationFailedCarriesInstanceAndErrorsLast(): void {
-		$problem = $this->builder->validationFailed(errors: [], detail: '', instance: '/api/x');
+		$problem = $this->builder->validationFailed(errors: [], description: new ProblemDescription(instance: '/api/x'));
 
 		$this->assertSame(
 			['type' => 'about:blank', 'title' => 'Validation failed', 'status' => 422, 'instance' => '/api/x', 'errors' => []],

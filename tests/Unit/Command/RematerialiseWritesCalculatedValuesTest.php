@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Calculation\ReferringObject;
 use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
@@ -202,7 +203,7 @@ class RematerialiseWritesCalculatedValuesTest extends TestCase {
 			}
 		);
 		$resolver = new AggregateReferenceResolver(aggregationRunner: $runner, logger: $this->createMock(LoggerInterface::class));
-		$this->assertSame(['completed' => 4], $resolver->resolveAll(payload: [], aggregates: $schema->getConfiguration()['x-openregister-aggregate-refs'], registerRef: '5'));
+		$this->assertSame(['completed' => 4], $resolver->resolveAll(referrer: new ReferringObject(payload: [], register: '5'), aggregates: $schema->getConfiguration()['x-openregister-aggregate-refs']));
 
 		$broken = $this->createMock(AggregationRunner::class);
 		$broken->method('runAdhocByRef')->willThrowException(new RuntimeException('database went away'));

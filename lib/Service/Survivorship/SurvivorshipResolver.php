@@ -431,8 +431,7 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 		$baseline = $this->baselineTier(tuple: $tuple, run: $run);
 
 		return $trust->trustResolver->applyFreshnessDecay(
-			tier: $baseline['tier'],
-			tierOrder: $run->policy->tierOrder,
+			position: new TierPosition(tier: $baseline['tier'], tierOrder: $run->policy->tierOrder),
 			freshness: new SourceFreshness(decayDays: $baseline['decayDays'], anchor: $source->anchor, asOf: $trust->asOf)
 		);
 	}//end effectiveTier()

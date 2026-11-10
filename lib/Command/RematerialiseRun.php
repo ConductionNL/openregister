@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -94,22 +95,37 @@ final class RematerialiseRun {
 	public int $failed = 0;
 
 	/**
+	 * The register the rows live in.
+	 *
+	 * @var Register
+	 */
+	public readonly Register $register;
+
+	/**
+	 * The schema that declares the calculations.
+	 *
+	 * @var Schema
+	 */
+	public readonly Schema $schema;
+
+	/**
 	 * Read the calculations, references and aggregate-references off the schema.
 	 *
-	 * @param Register        $register The register the rows live in.
-	 * @param Schema          $schema   The schema that declares the calculations.
-	 * @param OutputInterface $output   The console the run reports to.
+	 * @param RegisterSchema  $table  The register the rows live in and the schema that declares the calculations.
+	 * @param OutputInterface $output The console the run reports to.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function __construct(
-		public readonly Register $register,
-		public readonly Schema $schema,
+		RegisterSchema $table,
 		public readonly OutputInterface $output,
 	) {
-		$config = ($schema->getConfiguration() ?? []);
+		$this->register = $table->register;
+		$this->schema   = $table->schema;
+
+		$config = ($table->schema->getConfiguration() ?? []);
 		$calculations = ($config['x-openregister-calculations'] ?? null);
 		if (is_array($calculations) === false) {
 			$calculations = [];

@@ -34,6 +34,7 @@ use OCA\OpenRegister\Controller\Support\RegisterStatistics;
 use OCA\OpenRegister\Controller\Support\RegisterUpdate;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -50,6 +51,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Rbac\RbacRuleChecks;
 use OCA\OpenRegister\Service\RegisterServiceInterface;
+use OCA\OpenRegister\Service\Serializer\RegisterListExtension;
 use OCA\OpenRegister\Service\Lifecycle\KeepLifecycleStatesScope;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -383,7 +385,10 @@ class RegistersController extends Controller {
 			$statsByRegisterId = $this->statistics->schemaCounts(registers: $registers);
 		}
 
-		$serialized = $this->services->registers->registerSerializer->serializeMany($registers, $extend, $statsByRegisterId);
+		$serialized = $this->services->registers->registerSerializer->serializePage(
+			$registers,
+			new RegisterListExtension(extend: $extend, schemaStatsByRegisterId: $statsByRegisterId)
+		);
 		if ($wantsStats === true) {
 			return $this->withRegisterStats(registers: $serialized, statsByRegisterId: $statsByRegisterId);
 		}
@@ -520,7 +525,7 @@ class RegistersController extends Controller {
 	 */
 	private function shownStats(mixed $registerId): array {
 		return [
-			'objects' => $this->services->mappers->objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null),
+			'objects' => $this->services->mappers->objectEntityMapper->getStatistics(scope: new StatisticsScope(registerId: $registerId)),
 			'logs' => $this->auditLogStats(registerId: (int)$registerId),
 			'files' => [ 'total' => 0, 'size' => 0 ],
 		];
@@ -727,6 +732,13 @@ class RegistersController extends Controller {
 			$audit->log(service: $this->container->get(AuthorizationAuditService::class), after: $updated);
 		} catch (\Throwable $e) {
 			// Audit logging should not break the update operation.
+			$this->logger->warning(
+				message: '[RegistersController] Register access change not written to the audit trail',
+				context: [
+					'registerId' => $updated->getId(),
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 	}//end logAccessChanges()
 
@@ -851,7 +863,7 @@ class RegistersController extends Controller {
 	 * @return int Total object count.
 	 */
 	private function countRegisterObjects(int $registerId): int {
-		$stats = $this->services->mappers->objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null);
+		$stats = $this->services->mappers->objectEntityMapper->getStatistics(scope: new StatisticsScope(registerId: $registerId));
 		return (int)$stats['total'];
 	}//end countRegisterObjects()
 

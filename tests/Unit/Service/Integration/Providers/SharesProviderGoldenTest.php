@@ -31,10 +31,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 use DateTimeImmutable;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Service\Integration\Providers\SharesProvider;
-use OCP\App\IAppManager;
 use OCP\Files\Folder;
 use OCP\Files\Node;
-use OCP\IDBConnection;
 use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -74,8 +72,6 @@ class SharesProviderGoldenTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 
 		return new SharesProvider(
-			db: $this->createMock(IDBConnection::class),
-			appManager: $this->createMock(IAppManager::class),
 			l10n: $l10n,
 			container: $container,
 		);
