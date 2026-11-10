@@ -238,7 +238,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 		}
 
 		try {
-			// `_viewScopeRequired: true` is not decoration. RBAC and multitenancy
+			// `viewScopeRequired: true` is not decoration. RBAC and multitenancy
 			// are off here because there is no session to judge, which leaves the
 			// view as the ONLY bound on this query. The shared search path used to
 			// log an unresolvable view and carry on with the query unchanged - and
