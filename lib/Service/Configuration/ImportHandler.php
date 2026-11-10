@@ -4620,11 +4620,11 @@ class ImportHandler {
 			return null;
 		}
 
-		$candidate = $this->slugHandler->candidate(
-			objectData: $this->withoutSeedMetadataKeys(objectData: $objectData, schema: $schema),
-			schema: $schema,
-			clientSlug: $this->seedClientSlug(objectData: $objectData)
-		);
+		$candidate = $this->slugHandler->clientCandidate(clientSlug: $this->seedClientSlug(objectData: $objectData))
+			?? $this->slugHandler->candidate(
+				objectData: $this->withoutSeedMetadataKeys(objectData: $objectData, schema: $schema),
+				schema: $schema
+			);
 		if ($candidate === null) {
 			return null;
 		}
@@ -4671,11 +4671,11 @@ class ImportHandler {
 			return $slug;
 		}
 
-		$candidate = $this->slugHandler->candidate(
-			objectData: $this->withoutSeedMetadataKeys(objectData: $object->data, schema: $object->schema),
-			schema: $object->schema,
-			clientSlug: $this->seedClientSlug(objectData: $object->data)
-		);
+		$candidate = $this->slugHandler->clientCandidate(clientSlug: $this->seedClientSlug(objectData: $object->data))
+			?? $this->slugHandler->candidate(
+				objectData: $this->withoutSeedMetadataKeys(objectData: $object->data, schema: $object->schema),
+				schema: $object->schema
+			);
 
 		return ($candidate ?? $slug);
 	}//end seedLookupSlug()
