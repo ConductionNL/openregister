@@ -714,6 +714,50 @@ function softDeletionPrompt(counts) {
 }
 
 /**
+ * Say a schema's objects are about to be deleted, permanently or softly.
+ *
+ * @param {object} schema The schema
+ * @param {boolean} hardDelete Whether the objects are deleted permanently
+ * @return {void}
+ */
+function announceDeletionStart(schema, hardDelete) {
+	const action = hardDelete ? 'permanently deleting' : 'soft-deleting'
+	showSuccess(
+		t('openregister', 'Starting {action} for {schema}...', {
+			action,
+			schema: schema.title,
+		}),
+	)
+}
+
+/**
+ * Why deleting a schema's objects failed.
+ *
+ * @param {object} schema The schema
+ * @param {Error} error What went wrong
+ * @return {string} The message
+ */
+function deletionFailureText(schema, error) {
+	return t(
+		'openregister',
+		'Failed to delete objects for {schema}: {error}',
+		schemaFailure(schema, error),
+	)
+}
+
+/**
+ * Refresh the register list and the dashboard's registers together.
+ *
+ * @return {Promise<void>}
+ */
+async function refreshRegisterViews() {
+	await Promise.all([
+		registerStore.refreshRegisterList(),
+		dashboardStore.fetchRegisters(),
+	])
+}
+
+/**
  * The toast for a bulk delete response.
  *
  * @param {object} data The response body
@@ -1218,32 +1262,17 @@ export default {
 		async runSchemaDeletion(schema, hardDelete) {
 			const url = apiUrl(`bulk/${this.item.id}/${schema.id}/delete-objects`)
 			try {
-				const action = hardDelete ? 'permanently deleting' : 'soft-deleting'
-				showSuccess(
-					t('openregister', 'Starting {action} for {schema}...', {
-						action,
-						schema: schema.title,
-					}),
-				)
+				announceDeletionStart(schema, hardDelete)
 				const response = await axios.post(
 					url,
 					{ hardDelete },
 					{ headers: JSON_HEADERS },
 				)
 				showSuccess(deletionResult(response.data, schema))
-				await Promise.all([
-					registerStore.refreshRegisterList(),
-					dashboardStore.fetchRegisters(),
-				])
+				await refreshRegisterViews()
 			} catch (error) {
 				console.error('Error deleting schema objects:', error)
-				showError(
-					t(
-						'openregister',
-						'Failed to delete objects for {schema}: {error}',
-						schemaFailure(schema, error),
-					),
-				)
+				showError(deletionFailureText(schema, error))
 			}
 		},
 
