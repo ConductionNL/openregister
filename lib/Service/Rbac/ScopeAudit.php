@@ -68,35 +68,59 @@ class ScopeAudit implements ScopeAuditInterface {
 	 */
 	public function rows(array $registers, array $schemas): array {
 		$rows = [];
-
 		foreach ($registers as $register) {
-			$registerSchemaIds = ($register->getSchemas() ?? []);
-
-			foreach ($schemas as $schema) {
-				if (in_array($schema->getId(), $registerSchemaIds, false) === false) {
-					continue;
-				}
-
-				$set = $this->holders->holders(
-					blocks: [
-						'schema' => $schema->getAuthorization(),
-						'register' => $register->getAuthorization(),
-					],
-					roleDefinitions: $this->roleDefinitionsOf(register: $register)
-				);
-
-				$rows[] = [
-					'register' => $register->getSlug(),
-					'schema' => $schema->getSlug(),
-					'holders' => $set['holders'],
-					'denied' => $set['denied'],
-					'byAction' => $this->byAction(holders: $set['holders']),
-				];
-			}
-		}//end foreach
+			$rows = array_merge($rows, $this->rowsForRegister(register: $register, schemas: $schemas));
+		}
 
 		return $rows;
 	}//end rows()
+
+	/**
+	 * One row per schema the register holds, in schema order.
+	 *
+	 * @param Register           $register The register.
+	 * @param array<int, Schema> $schemas  The schemas to consider.
+	 *
+	 * @return array<int, array<string, mixed>> The rows.
+	 */
+	private function rowsForRegister(Register $register, array $schemas): array {
+		$registerSchemaIds = ($register->getSchemas() ?? []);
+
+		$rows = [];
+		foreach ($schemas as $schema) {
+			if (in_array($schema->getId(), $registerSchemaIds, false) === true) {
+				$rows[] = $this->row(register: $register, schema: $schema);
+			}
+		}
+
+		return $rows;
+	}//end rowsForRegister()
+
+	/**
+	 * The principals holding and denied each verb on one schema of one register.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 *
+	 * @return array<string, mixed> The row.
+	 */
+	private function row(Register $register, Schema $schema): array {
+		$set = $this->holders->holders(
+			blocks: [
+				'schema' => $schema->getAuthorization(),
+				'register' => $register->getAuthorization(),
+			],
+			roleDefinitions: $this->roleDefinitionsOf(register: $register)
+		);
+
+		return [
+			'register' => $register->getSlug(),
+			'schema' => $schema->getSlug(),
+			'holders' => $set['holders'],
+			'denied' => $set['denied'],
+			'byAction' => $this->byAction(holders: $set['holders']),
+		];
+	}//end row()
 
 	/**
 	 * The same rules, indexed by verb.
