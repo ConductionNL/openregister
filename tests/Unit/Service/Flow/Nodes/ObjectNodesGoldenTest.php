@@ -91,8 +91,7 @@ final class ObjectNodesGoldenTest extends TestCase {
 			new ObjectReadNode(
 				sources: new ObjectNodeSources(objects: $objects, registers: $registers, schemas: $schemas),
 				userManager: $users,
-				l10n: $l10n,
-				urls: $urls
+				presentation: new FlowNodePresentation(l10n: $l10n, urls: $urls)
 			),
 			new ObjectWriteNode(
 				stores: new ObjectWriteStores(objects: $objects, registers: $registers, schemas: $schemas),

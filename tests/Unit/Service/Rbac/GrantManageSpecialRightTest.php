@@ -148,7 +148,7 @@ class GrantManageSpecialRightTest extends TestCase {
 		$folders->method('getObjectFolder')->willReturn($folder);
 
 		$this->trail = $this->createMock(AuditTrailMapper::class);
-		$auditor = new GrantChangeAuditor($this->trail, $this->createMock(SettingsChangeAuditor::class), new NullLogger());
+		$auditor = new GrantChangeAuditor(new \OCA\OpenRegister\Service\Object\AuditRecording($this->trail, new NullLogger()), $this->createMock(SettingsChangeAuditor::class));
 
 		$this->sharing = new ObjectSharingService(
 			shares: new \OCA\OpenRegister\Service\Rbac\ObjectShareSurface(folders: $folders, shareManager: $this->shareManager),

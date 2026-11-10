@@ -36,10 +36,9 @@ use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\SourceMapper;
-use OCA\OpenRegister\Db\SqlSearchClause;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -79,18 +78,6 @@ final class FindAllMappersGoldenTest extends TestCase {
 	}//end readCases()
 
 	/**
-	 * The findSources() arguments for one findAll() argument set.
-	 *
-	 * @param array<int, mixed> $args Limit, offset, filters, search conditions, search params.
-	 *
-	 * @return array{0: ListQuery, 1: SqlSearchClause}
-	 */
-	private function sourceArgs(array $args): array {
-		[$limit, $offset, $filters, $conditions, $params] = ($args + [null, null, [], [], []]);
-		return [new ListQuery(($limit ?? ListQuery::UNBOUNDED), $offset, ($filters ?? [])), new SqlSearchClause($conditions, $params)];
-	}//end sourceArgs()
-
-	/**
 	 * The callers a read is made as.
 	 *
 	 * @return array<string, array<string, mixed>>
@@ -121,7 +108,7 @@ final class FindAllMappersGoldenTest extends TestCase {
 
 			foreach (self::personas() as $who => $persona) {
 				$actual['application ' . $who . ': ' . $name] = $this->recorded(fn () => $this->applicationMapper(persona: $persona)->findAll(...$this->applicationArgs($args)));
-				$actual['source ' . $who . ': ' . $name] = $this->recorded(fn () => $this->sourceMapper(persona: $persona)->findSources(...$this->sourceArgs($args)));
+				$actual['source ' . $who . ': ' . $name] = $this->recorded(fn () => $this->sourceMapper(persona: $persona)->findAll(...$args));
 			}
 		}
 
@@ -227,7 +214,8 @@ final class FindAllMappersGoldenTest extends TestCase {
 	 * @return array<int, mixed>
 	 */
 	private function applicationArgs(array $args): array {
-		foreach ([2, 3, 4] as $index) {
+		$args = array_slice($args, 0, 3);
+		foreach ([2] as $index) {
 			if (array_key_exists($index, $args) === true && $args[$index] === null) {
 				$args[$index] = [];
 			}
@@ -363,7 +351,7 @@ final class FindAllMappersGoldenTest extends TestCase {
 	 */
 	private function applicationMapper(array $persona): ApplicationMapper {
 		[$session, $groups, $organisations] = $this->caller(persona: $persona);
-		return new ApplicationMapper($this->connection(), new TenancyServices($organisations, $session, $groups), $this->createMock(IEventDispatcher::class));
+		return new ApplicationMapper($this->connection(), new TenancyServices($organisations, $session, $groups), new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class)));
 	}//end applicationMapper()
 
 	/**
@@ -375,7 +363,7 @@ final class FindAllMappersGoldenTest extends TestCase {
 	 */
 	private function sourceMapper(array $persona): SourceMapper {
 		[$session, $groups, $organisations] = $this->caller(persona: $persona);
-		return new SourceMapper($this->connection(), new TenancyServices($organisations, $session, $groups), $this->createMock(IEventDispatcher::class), $this->createMock(IAppConfig::class));
+		return new SourceMapper($this->connection(), new TenancyServices($organisations, $session, $groups), new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class)), $this->createMock(IAppConfig::class));
 	}//end sourceMapper()
 
 	/**

@@ -49,8 +49,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ProcessingLogEntry;
 use OCA\OpenRegister\Db\ProcessingLogMapperInterface;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
 use OCP\IUserSession;
@@ -105,16 +104,14 @@ class ProcessingLogService {
 	 *
 	 * @param ProcessingLogMapperInterface $logMapper Append-only log mapper.
 	 * @param VerwerkingsactiviteitMapperInterface $vrwMapper Activity resolver + fallback seed.
-	 * @param SchemaMapperInterface $schemaMapper Schema annotation reader.
-	 * @param RegisterMapperInterface $registerMapper Register annotation reader (inheritance).
+	 * @param SchemaCatalogInterface $catalog Schema and register annotation readers (register inheritance).
 	 * @param IUserSession $userSession Actor identity.
 	 * @param LoggerInterface $logger Fail-soft diagnostics.
 	 */
 	public function __construct(
 		private readonly ProcessingLogMapperInterface $logMapper,
 		private readonly VerwerkingsactiviteitMapperInterface $vrwMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
@@ -626,7 +623,7 @@ class ProcessingLogService {
 			return null;
 		}
 
-		$schema = $this->schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
+		$schema = $this->catalog->schemas()->find($schemaId, _rbac: false, _multitenancy: false);
 		return $schema->getConfiguration();
 	}//end loadSchemaConfig()
 
@@ -642,7 +639,7 @@ class ProcessingLogService {
 			return null;
 		}
 
-		$register = $this->registerMapper->find($registerId, _multitenancy: false);
+		$register = $this->catalog->registers()->find($registerId, _multitenancy: false);
 		return $register->getConfiguration();
 	}//end loadRegisterConfig()
 

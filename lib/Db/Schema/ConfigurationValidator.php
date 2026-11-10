@@ -80,7 +80,9 @@ final class ConfigurationValidator {
 	public function validate(array $configuration): array {
 		$validatedConfig = [];
 		foreach ($configuration as $key => $value) {
-			$validatedConfig = $this->withEntry(validated: $validatedConfig, key: $key, value: $value);
+			foreach ($this->keptValues(key: $key, value: $value) as $kept) {
+				$validatedConfig[$key] = $kept;
+			}
 		}
 
 		return $validatedConfig;
@@ -96,7 +98,7 @@ final class ConfigurationValidator {
 	}//end droppedKeys()
 
 	/**
-	 * The configuration so far with one key validated into it.
+	 * The values one key keeps in the validated configuration (the last one wins).
 	 *
 	 * Per-key isolation (#419): a bad VALUE for one config key must never
 	 * lose the whole configuration. Direct API saves surface the throw as
@@ -107,31 +109,26 @@ final class ConfigurationValidator {
 	 * entire config incl. its MCP tools). Drop the offending key, record it
 	 * so SchemaMapper can warn, and keep the rest of the configuration.
 	 *
-	 * @param array      $validated The configuration validated so far.
-	 * @param int|string $key       Configuration key.
-	 * @param mixed      $value     Raw value for the key.
+	 * @param int|string $key   Configuration key.
+	 * @param mixed      $value Raw value for the key.
 	 *
 	 * @throws \InvalidArgumentException If a key that must fail the whole save is invalid
 	 *
-	 * @return array The configuration with this key added when it is kept.
+	 * @return array The values the key keeps; empty when it is dropped.
 	 */
-	private function withEntry(array $validated, int|string $key, mixed $value): array {
+	private function keptValues(int|string $key, mixed $value): array {
 		try {
 			$accepted = $this->entries->validateConfigurationEntry(key: $key, value: $value);
 		} catch (InvalidArgumentException $e) {
-			return $this->afterRefusal(validated: $validated, key: $key, refusal: $e);
-		}
-
-		foreach ($accepted as $kept) {
-			$validated[$key] = $kept;
+			return $this->afterRefusal(key: $key, refusal: $e);
 		}
 
 		if ($accepted === [] && $this->vocabulary->isUnknownAnnotation(key: (string)$key) === true) {
 			$this->dropped[] = (string)$key;
 		}
 
-		return $validated;
-	}//end withEntry()
+		return $accepted;
+	}//end keptValues()
 
 	/**
 	 * Drop a refused key, or fail the whole save when the key must not degrade.
@@ -163,27 +160,27 @@ final class ConfigurationValidator {
 	 * Nobody reads an empty agenda and concludes the schema is
 	 * wrong. So this one fails loudly, naming the property.
 	 *
-	 * @param array                    $validated The configuration validated so far.
-	 * @param int|string               $key       The refused key.
-	 * @param InvalidArgumentException $refusal   Why it was refused.
+	 * @param int|string               $key     The refused key.
+	 * @param InvalidArgumentException $refusal Why it was refused.
 	 *
 	 * @throws \InvalidArgumentException The refusal, for a key that must fail the whole save.
 	 *
-	 * @return array The configuration without the key, or with `draftLifetimeDays` kept as false.
+	 * @return array The values the key keeps: none, or `false` for `draftLifetimeDays`.
 	 */
-	private function afterRefusal(array $validated, int|string $key, InvalidArgumentException $refusal): array {
+	private function afterRefusal(int|string $key, InvalidArgumentException $refusal): array {
 		if ((string)$key === Schema::WRITEONLY_PATHS_ANNOTATION || $refusal instanceof CalendarDateKindException) {
 			throw $refusal;
 		}
 
 		// An unreadable `draftLifetimeDays` is kept as `false` (drafts kept):
 		// dropping it would turn a typing error into "remove after 30 days".
+		$kept = [];
 		if ($key === 'draftLifetimeDays') {
-			$validated[$key] = false;
+			$kept = [false];
 		}
 
 		$this->dropped[] = (string)$key;
 
-		return $validated;
+		return $kept;
 	}//end afterRefusal()
 }//end class

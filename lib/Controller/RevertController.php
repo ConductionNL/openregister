@@ -112,12 +112,23 @@ class RevertController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-11
 	 */
 	public function revert(string $register, string $schema, string $id): JSONResponse {
+		return $this->revertOrRefuse(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
+	}//end revert()
+
+	/**
+	 * Revert the object the route names to the requested point, or answer the refusal.
+	 *
+	 * @param ObjectLinkRoute $route The object as the route names it.
+	 *
+	 * @return JSONResponse The reverted object, or the refusal.
+	 */
+	private function revertOrRefuse(ObjectLinkRoute $route): JSONResponse {
 		try {
-			return $this->revertTo(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), data: $this->request->getParams());
+			return $this->revertTo(route: $route, data: $this->request->getParams());
 		} catch (\Exception $e) {
 			return self::refusal(exception: $e);
 		}
-	}//end revert()
+	}//end revertOrRefuse()
 
 	/**
 	 * Revert an object to the point the request names, and answer the read.

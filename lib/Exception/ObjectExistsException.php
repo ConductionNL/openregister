@@ -69,34 +69,25 @@ use Throwable;
 class ObjectExistsException extends Exception {
 
 	/**
-	 * The identifier of the object that already existed.
-	 *
-	 * @var string|null
-	 */
-	private ?string $uuid = null;
-
-	/**
 	 * Constructor for ObjectExistsException
 	 *
-	 * @param string $message The error message describing the conflict
-	 * @param string|null $uuid The identifier that already existed
-	 * @param int $code The error code (default: 409 Conflict)
+	 * HTTP 409 Conflict by default: the caller asked to create, and creating
+	 * would have overwritten something that was already there.
+	 *
+	 * @param string         $message  The error message describing the conflict
+	 * @param string|null    $uuid     The identifier that already existed
+	 * @param int            $code     The error code (default: 409 Conflict)
 	 * @param Throwable|null $previous The previous exception that caused this one
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $message = 'An object with this identifier already exists',
-		?string $uuid = null,
-		int $code = 409,
-		?Throwable $previous = null,
+		string $message='An object with this identifier already exists',
+		private readonly ?string $uuid=null,
+		int $code=409,
+		?Throwable $previous=null,
 	) {
-		$this->uuid = $uuid;
-
-		// HTTP 409 Conflict — the caller asked to create, and creating would
-		// have overwritten something that was already there.
 		parent::__construct(message: $message, code: $code, previous: $previous);
-
 	}//end __construct()
 
 	/**

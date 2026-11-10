@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\IL10N;
@@ -140,11 +141,22 @@ class AuditTrailProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-history-of-one-object-is-readable-by-whoever-may-read-that-object
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+		return $this->historyOf(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId));
+	}//end list()
+
+	/**
+	 * The object's audit entries as this caller may read them; none when the history cannot be read.
+	 *
+	 * @param ObjectRef $ref The object, by the register and schema path it was listed under.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function historyOf(ObjectRef $ref): array {
 		try {
 			$page = $this->history->page(
-				register: $register,
-				schema: $schema,
-				id: $objectId,
+				register: (string)$ref->register,
+				schema: (string)$ref->schema,
+				id: $ref->id,
 				params: ['limit' => PHP_INT_MAX]
 			);
 		} catch (Throwable $e) {
@@ -156,5 +168,5 @@ class AuditTrailProvider extends AbstractIntegrationProvider {
 		}
 
 		return array_values($page['results']);
-	}//end list()
+	}//end historyOf()
 }//end class

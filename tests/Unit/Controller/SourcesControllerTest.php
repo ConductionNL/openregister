@@ -96,7 +96,7 @@ class SourcesControllerTest extends TestCase {
 	public function testIndexReturnsSourcesWithEmptyParams(): void {
 		$source = new Source();
 		$this->request->method('getParams')->willReturn([]);
-		$this->sourceMapper->method('findSources')->willReturn([$source]);
+		$this->sourceMapper->method('findList')->willReturn([$source]);
 
 		$result = $this->controller->index();
 
@@ -109,7 +109,7 @@ class SourcesControllerTest extends TestCase {
 
 	public function testIndexReturnsEmptyResults(): void {
 		$this->request->method('getParams')->willReturn([]);
-		$this->sourceMapper->method('findSources')->willReturn([]);
+		$this->sourceMapper->method('findList')->willReturn([]);
 
 		$result = $this->controller->index();
 
@@ -124,7 +124,7 @@ class SourcesControllerTest extends TestCase {
 			'_offset' => '5',
 		]);
 		$this->sourceMapper->expects($this->once())
-			->method('findSources')
+			->method('findList')
 			->with($this->equalTo(new ListQuery(10, 5, [])))
 			->willReturn([]);
 
@@ -140,7 +140,7 @@ class SourcesControllerTest extends TestCase {
 		]);
 		// page 3 with limit 10 => offset = (3-1)*10 = 20
 		$this->sourceMapper->expects($this->once())
-			->method('findSources')
+			->method('findList')
 			->with($this->equalTo(new ListQuery(10, 20, [])))
 			->willReturn([]);
 
@@ -156,7 +156,7 @@ class SourcesControllerTest extends TestCase {
 		]);
 		// page 1 with limit 5 => offset = (1-1)*5 = 0
 		$this->sourceMapper->expects($this->once())
-			->method('findSources')
+			->method('findList')
 			->with($this->equalTo(new ListQuery(5, 0, [])))
 			->willReturn([]);
 
@@ -169,7 +169,7 @@ class SourcesControllerTest extends TestCase {
 		]);
 		// Without _limit, page should not be converted to offset
 		$this->sourceMapper->expects($this->once())
-			->method('findSources')
+			->method('findList')
 			->with($this->equalTo(new ListQuery(ListQuery::UNBOUNDED, null, [])))
 			->willReturn([]);
 
@@ -187,7 +187,7 @@ class SourcesControllerTest extends TestCase {
 			'status' => 'active',
 		]);
 		$this->sourceMapper->expects($this->once())
-			->method('findSources')
+			->method('findList')
 			->with($this->equalTo(new ListQuery(10, 0, ['type' => 'api', 'status' => 'active'])))
 			->willReturn([]);
 
@@ -201,7 +201,7 @@ class SourcesControllerTest extends TestCase {
 			'_limit' => '25',
 		]);
 		$this->sourceMapper->expects($this->once())
-			->method('findSources')
+			->method('findList')
 			->with($this->equalTo(new ListQuery(25, null, [])))
 			->willReturn([]);
 
@@ -213,7 +213,7 @@ class SourcesControllerTest extends TestCase {
 			'_offset' => '15',
 		]);
 		$this->sourceMapper->expects($this->once())
-			->method('findSources')
+			->method('findList')
 			->with($this->equalTo(new ListQuery(ListQuery::UNBOUNDED, 15, [])))
 			->willReturn([]);
 
@@ -225,7 +225,7 @@ class SourcesControllerTest extends TestCase {
 		$source2 = new Source();
 		$source3 = new Source();
 		$this->request->method('getParams')->willReturn([]);
-		$this->sourceMapper->method('findSources')->willReturn([$source1, $source2, $source3]);
+		$this->sourceMapper->method('findList')->willReturn([$source1, $source2, $source3]);
 
 		$result = $this->controller->index();
 

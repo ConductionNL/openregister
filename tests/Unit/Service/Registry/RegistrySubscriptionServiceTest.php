@@ -10,6 +10,7 @@ use OCA\OpenRegister\Db\RegistrySubscription;
 use OCA\OpenRegister\Db\RegistrySubscriptionMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Registry\RegistryIdentity;
 use OCA\OpenRegister\Service\Registry\RegistryInboundServices;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionNotifier;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
@@ -108,8 +109,7 @@ class RegistrySubscriptionServiceTest extends TestCase {
 			->method('requested')
 			->with(
 				$this->callback(fn (ObjectEntity $object): bool => $object->getRegister() === 'dossiq' && $object->getSchema() === 'brpPerson'),
-				'brp',
-				'999990019',
+				new RegistryIdentity('brp', '999990019'),
 			);
 
 		$row = $this->service->requestSubscription($this->personObject(), $this->brpSchema());
@@ -146,7 +146,7 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		$this->subscriptionMapper->method('findForObject')->willReturn($row);
 		$this->subscriptionMapper->method('save')->willReturnArgument(0);
 
-		$this->notifier->expects($this->once())->method('ended')->with($this->anything(), 'brp', '999990019');
+		$this->notifier->expects($this->once())->method('ended')->with($this->anything(), new RegistryIdentity('brp', '999990019'));
 
 		$result = $this->service->endSubscription($this->personObject());
 
@@ -205,11 +205,11 @@ class RegistrySubscriptionServiceTest extends TestCase {
 
 		$this->notifier->expects($this->once())
 			->method('auditInboundUpdate')
-			->willReturnCallback(function ($object, $registry, $eventReference, $properties) use ($saved) {
+			->willReturnCallback(function ($object, $update) use ($saved) {
 				$this->assertSame($saved, $object);
-				$this->assertSame('brp', $registry);
-				$this->assertSame('evt-1', $eventReference);
-				$this->assertSame(['address'], $properties);
+				$this->assertSame('brp', $update->identity->registry);
+				$this->assertSame('evt-1', $update->eventReference);
+				$this->assertSame(['address'], $update->propertyNames());
 			});
 
 		$result = $this->service->applyInboundUpdate('brp', '999990019', ['address' => 'Dam 1'], 'evt-1');

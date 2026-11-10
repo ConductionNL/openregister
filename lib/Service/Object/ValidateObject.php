@@ -1167,7 +1167,7 @@ class ValidateObject implements ValidateObjectInterface {
 		// they must be left untouched - replacing their properties with a bare {id} stub while
 		// an authored `additionalProperties: false` survives the clean would reject every one
 		// of the schema's own sub-properties. See or#290.
-		if (self::isInlineValueObject(handling: $handling, hasRef: $hasRef, itemsSchema: $itemsSchema) === true) {
+		if (self::isInlineValueObject(itemsSchema: $itemsSchema) === true) {
 			return $itemsSchema;
 		}
 
@@ -1202,16 +1202,19 @@ class ValidateObject implements ValidateObjectInterface {
 	/**
 	 * Whether object items are an inline value object: own properties and no relation marker.
 	 *
-	 * @param mixed  $handling    The objectConfiguration handling, or null.
-	 * @param bool   $hasRef      Whether the items carry a $ref.
+	 * The markers are the ones transformArrayItemsForValidation() reads: objectConfiguration
+	 * handling and a $ref.
+	 *
 	 * @param object $itemsSchema The items schema.
 	 *
 	 * @return bool True for an inline value object
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	private static function isInlineValueObject(mixed $handling, bool $hasRef, object $itemsSchema): bool {
-		return $handling === null && $hasRef === false && isset($itemsSchema->properties) === true;
+	private static function isInlineValueObject(object $itemsSchema): bool {
+		return self::objectConfigurationHandling(itemsSchema: $itemsSchema) === null
+			&& ($itemsSchema->{'$ref'} ?? null) === null
+			&& isset($itemsSchema->properties) === true;
 	}//end isInlineValueObject()
 
 	/**
@@ -1372,13 +1375,28 @@ class ValidateObject implements ValidateObjectInterface {
 		object $schemaObject = new stdClass(),
 		array $plannedUsers = [],
 	): ValidationResult {
-		$this->plannedUsers = array_values(array_filter($plannedUsers, 'is_string'));
+		$check = new PlannedAccountsCheck(schema: $schema, schemaObject: $schemaObject, plannedUsers: $plannedUsers);
+		return $this->validateWithPlannedAccounts(object: $object, check: $check);
+	}//end validateObjectWithPlannedUsers()
+
+	/**
+	 * Validates an object against a schema, letting a `user` format accept the accounts a check plans to create.
+	 *
+	 * @param array                $object The object to validate.
+	 * @param PlannedAccountsCheck $check  The schema to validate against and the account ids to accept.
+	 *
+	 * @return ValidationResult The result of the validation.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+	 */
+	public function validateWithPlannedAccounts(array $object, PlannedAccountsCheck $check): ValidationResult {
+		$this->plannedUsers = array_values(array_filter($check->plannedUsers, 'is_string'));
 		try {
-			return $this->validateObject(object: $object, schema: $schema, schemaObject: $schemaObject);
+			return $this->validateObject(object: $object, schema: $check->schema, schemaObject: $check->schemaObject);
 		} finally {
 			$this->plannedUsers = [];
 		}
-	}//end validateObjectWithPlannedUsers()
+	}//end validateWithPlannedAccounts()
 
 	/**
 	 * Validates an object against a schema.

@@ -88,7 +88,7 @@ class MagicBulkHandlerPreUpdateStateTest extends TestCase {
 	public static function plumbedMethods(): array {
 		return [
 			'handler bulkUpsert' => [MagicBulkHandler::class, 'bulkUpsert', 4],
-			'handler executeUpsertChunk' => [MagicBulkHandler::class, 'executeUpsertChunk', 3],
+			'handler upsert command' => [\OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand::class, '__construct', 3],
 			'mapper bulkUpsert' => [\OCA\OpenRegister\Db\MagicMapper::class, 'bulkUpsert', 4],
 			'mapper ultraFastBulkSave' => [\OCA\OpenRegister\Db\MagicMapper::class, 'ultraFastBulkSave', 4],
 			'bulk save group' => [\OCA\OpenRegister\Db\MagicMapper\MagicBulkSaveGroup::class, '__construct', 1],

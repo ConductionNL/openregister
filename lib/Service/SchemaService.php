@@ -27,10 +27,9 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -104,13 +103,11 @@ class SchemaService implements SchemaExplorationInterface {
 	/**
 	 * SchemaService constructor
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations.
-	 * @param MagicMapperInterface $objectEntityMapper Object entity mapper for object queries.
-	 * @param LoggerInterface $logger Logger for debugging and monitoring.
+	 * @param SchemaCatalogInterface $catalog The schema mapper (schema operations) and the magic mapper (object queries).
+	 * @param LoggerInterface        $logger  Logger for debugging and monitoring.
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapperInterface $objectEntityMapper,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -144,7 +141,7 @@ class SchemaService implements SchemaExplorationInterface {
 
 		// Get the schema to validate it exists.
 		try {
-			$schema = $this->schemaMapper->find($schemaId);
+			$schema = $this->catalog->schemas()->find($schemaId);
 		} catch (\Exception $e) {
 			throw new Exception('Schema not found with ID: ' . $schemaId);
 		}
@@ -152,7 +149,7 @@ class SchemaService implements SchemaExplorationInterface {
 		// Sample a bounded set of objects for this schema. Exploration is
 		// statistical, so a capped sample avoids loading the full (potentially
 		// huge) object set into memory (bound-unbounded-query-memory).
-		$objects = $this->objectEntityMapper->findBySchema($schemaId, self::SCHEMA_EXPLORE_SAMPLE_SIZE);
+		$objects = $this->catalog->tables()->findBySchema($schemaId, self::SCHEMA_EXPLORE_SAMPLE_SIZE);
 
 		$this->logger->info(
 			message: '[SchemaService] Analyzing a sample of ' . count($objects) . ' objects (cap ' . self::SCHEMA_EXPLORE_SAMPLE_SIZE . ')',
@@ -1961,7 +1958,7 @@ class SchemaService implements SchemaExplorationInterface {
 
 		try {
 			// Get existing schema.
-			$schema = $this->schemaMapper->find($schemaId);
+			$schema = $this->catalog->schemas()->find($schemaId);
 			$existingProperties = $schema->getProperties();
 
 			// Merge new properties with existing ones.
@@ -1976,7 +1973,7 @@ class SchemaService implements SchemaExplorationInterface {
 			$schema->regenerateFacetsFromProperties();
 
 			// Save updated schema.
-			$updatedSchema = $this->schemaMapper->update($schema);
+			$updatedSchema = $this->catalog->schemas()->update($schema);
 
 			$this->logger->info(
 				message: '[SchemaService] Schema ' . $schemaId . ' successfully updated with exploration results',

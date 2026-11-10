@@ -183,20 +183,32 @@ class ExampleSetTalkStore {
 	public function heldCall(string $token, string $owner, array $call, array $joined): void {
 		$start = new DateTime((string) $call['start']);
 		$end   = new DateTime((string) $call['end']);
-		$room = $this->container->get(self::MANAGER)->getRoomByToken($token);
-		$chat = $this->container->get(self::CHAT);
+		$room  = $this->container->get(self::MANAGER)->getRoomByToken($token);
+		$chat  = $this->container->get(self::CHAT);
 		$chat->addSystemMessage($room, null, 'users', $owner, (string) json_encode(['message' => 'call_started', 'parameters' => []]), $start, false);
-		$ended = [
+		$ended = self::callEnded(joined: $joined, seconds: max(0, $end->getTimestamp() - $start->getTimestamp()));
+		$chat->addSystemMessage($room, null, 'users', $owner, (string) json_encode($ended), $end, false);
+	}//end heldCall()
+
+	/**
+	 * The system message that ends a held call.
+	 *
+	 * @param array<int, string> $joined  Who joined it.
+	 * @param int                $seconds How long it lasted.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function callEnded(array $joined, int $seconds): array {
+		return [
 			'message'    => 'call_ended',
 			'parameters' => [
 				'users'    => array_values($joined),
 				'cloudIds' => [],
 				'guests'   => 0,
-				'duration' => max(0, $end->getTimestamp() - $start->getTimestamp()),
+				'duration' => $seconds,
 			],
 		];
-		$chat->addSystemMessage($room, null, 'users', $owner, (string) json_encode($ended), $end, false);
-	}//end heldCall()
+	}//end callEnded()
 
 	/**
 	 * Whether the conversation still exists.

@@ -179,7 +179,7 @@ class SourcesController extends Controller {
 			offset: $this->pageOffset(params: $params, limit: $limit),
 			filters: $filters
 		);
-		$sources = $this->sourceMapper->findSources(query: $query);
+		$sources = $this->sourceMapper->findList(query: $query);
 		return new JSONResponse(
 			data: ['results' => array_map(fn (Source $src) => $this->serializeSource(source: $src), $sources)]
 		);

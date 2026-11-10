@@ -6,7 +6,7 @@
  * The widened `list()` flattens activity rows so `CnActivityTab` can
  * read `type`, `timestamp`, `affecteduser`, and `subject` at the leaf
  * row root rather than walking the nested `data` envelope. This test
- * stubs the trait-level `findByMarker()` via a test subclass and
+ * stubs the trait-level `scanMarker()` via a test subclass and
  * asserts the contract.
  *
  * Metadata + isEnabled are exercised by the leaf-providers metadata
@@ -36,6 +36,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Service\Integration\Providers\ActivityProvider;
+use OCA\OpenRegister\Service\Integration\Providers\MarkerScan;
+use OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IL10N;
@@ -44,7 +46,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Test double that injects pre-baked rows in place of the trait's
- * actual `findByMarker()` DB call.
+ * actual `scanMarker()` DB call.
  */
 class TestableActivityProvider extends ActivityProvider {
 
@@ -55,16 +57,9 @@ class TestableActivityProvider extends ActivityProvider {
 	 */
 	public array $stubRows = [];
 
-	protected function findByMarker(
-		IDBConnection $db,
-		string $table,
-		string $markerColumn,
-		string $marker,
-		array $extraColumns = [],
-		string $idColumn = 'id',
-	): array {
+	protected function scanMarker(IDBConnection $db, MarkerScan $scan): array {
 		return $this->stubRows;
-	}//end findByMarker()
+	}//end scanMarker()
 }//end class
 
 /**
@@ -79,7 +74,7 @@ class ActivityProviderTest extends TestCase {
 		$apps->method('isInstalled')->willReturn($installed);
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
-		return new TestableActivityProvider(db: $db, appManager: $apps, l10n: $l10n, logger: $this->createMock(LoggerInterface::class));
+		return new TestableActivityProvider(leaf: new LeafMarkerScanning(db: $db, appManager: $apps, l10n: $l10n, logger: $this->createMock(LoggerInterface::class)));
 	}//end buildProvider()
 
 	public function testListEmptyWhenAppMissing(): void {

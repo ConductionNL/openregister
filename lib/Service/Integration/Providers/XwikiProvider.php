@@ -45,6 +45,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\XwikiLink;
 use OCA\OpenRegister\Db\XwikiLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
@@ -185,14 +186,26 @@ class XwikiProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/specs/integration-xwiki/spec.md
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		if ($this->xwikiLinkMapper !== null && $objectId !== '') {
-			$scope = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: []);
+		return $this->linkedOrSourced(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId), filters: $filters);
+	}//end list()
+
+	/**
+	 * The object's pages: the link table when there is one, else the external source.
+	 *
+	 * @param ObjectRef           $ref     The owning object.
+	 * @param array<string,mixed> $filters Caller filters, passed to the source.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function linkedOrSourced(ObjectRef $ref, array $filters): array {
+		if ($this->xwikiLinkMapper !== null && $ref->id !== '') {
+			$scope = $this->contextQuery(ref: $ref, filters: []);
 			return $this->listLinkedPages(mapper: $this->xwikiLinkMapper, scope: $scope);
 		}
 
-		$query = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: $filters);
+		$query = $this->contextQuery(ref: $ref, filters: $filters);
 		return $this->listFromSource(query: $query);
-	}//end list()
+	}//end linkedOrSourced()
 
 	/**
 	 * List the locally-linked xWiki pages for an object, enriching each

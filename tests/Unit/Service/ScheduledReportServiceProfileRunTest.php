@@ -101,7 +101,7 @@ class ScheduledReportServiceProfileRunTest extends TestCase {
 		);
 
 		return new ScheduledReportService(
-			new ScheduledReportStores($this->mapper, $this->createMock(RegisterMapper::class), $this->createMock(SchemaMapper::class)),
+			new ScheduledReportStores($this->mapper, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
 			new ScheduledReportExporters($this->exportService, $profiles, $runs),
 			new ScheduledReportDelivery(
 				new ScheduledReportOwnerServices($this->userManager, $this->createMock(IUserSession::class), $this->rootFolder, $this->notificationManager),

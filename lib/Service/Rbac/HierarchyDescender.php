@@ -44,6 +44,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -396,25 +397,23 @@ class HierarchyDescender {
 	 * something an import writes, and a walk that does not expect one never
 	 * returns.
 	 *
-	 * @param integer $registerId The register the object is in.
-	 * @param integer $schemaId The object's schema.
-	 * @param string $objectUuid The object to walk up from.
+	 * @param ObjectRef $ref The object to walk up from, by register id, schema id and uuid.
 	 *
 	 * @return string[] The ancestor UUIDs, nearest first, empty when the schema declares no hierarchy.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function ancestorsOf(int $registerId, int $schemaId, string $objectUuid): array {
-		if ($objectUuid === '') {
+	public function ancestorsOf(ObjectRef $ref): array {
+		if ($ref->id === '') {
 			return [];
 		}
 
-		$hierarchy = $this->hierarchyFor(registerId: $registerId, schemaId: $schemaId);
+		$hierarchy = $this->hierarchyFor(registerId: (int)$ref->register, schemaId: (int)$ref->schema);
 		if ($hierarchy === null) {
 			return [];
 		}
 
-		return $this->walkUp(hierarchy: $hierarchy, objectUuid: $objectUuid);
+		return $this->walkUp(hierarchy: $hierarchy, objectUuid: $ref->id);
 	}//end ancestorsOf()
 
 	/**

@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime;
 use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\BackgroundJob\FlowTimerWorker;
@@ -53,7 +54,7 @@ class FlowTimerWorkerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$time = $this->createMock(ITimeFactory::class);
 		$time->method('getDateTime')->willReturn(new DateTime('2026-09-01 10:00:00'));
-		$this->worker = new FlowTimerWorker(time: $time, sweep: $this->sweep, appConfig: $this->appConfig, logger: $this->logger);
+		$this->worker = new FlowTimerWorker(runtime: new ConfiguredJobRuntime(time: $time, appConfig: $this->appConfig, logger: $this->logger), sweep: $this->sweep);
 	}//end setUp()
 
 	private function tick(): void {

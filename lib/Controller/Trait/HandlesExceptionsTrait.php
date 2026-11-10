@@ -95,7 +95,7 @@ trait HandlesExceptionsTrait {
 			return $this->errorResponse(e: $e, context: $context);
 		}
 
-		$this->logTranslatedException(e: $e, status: $status, context: $context);
+		$this->logTranslatedException(e: $e, context: $context);
 
 		return new JSONResponse(
 			data: [
@@ -196,13 +196,13 @@ trait HandlesExceptionsTrait {
 	/**
 	 * Log a translated (typed, non-500) exception at warning level.
 	 *
-	 * @param Throwable $e The caught exception.
-	 * @param int $status The HTTP status it was translated to.
+	 * @param Throwable $e The caught exception; its class maps to a status.
 	 * @param string $context Optional short context label for the log line.
 	 *
 	 * @return void
 	 */
-	private function logTranslatedException(Throwable $e, int $status, string $context): void {
+	private function logTranslatedException(Throwable $e, string $context): void {
+		$status = $this->exceptionStatus(e: $e);
 		$this->exceptionLogger()?->warning(
 			message: $this->exceptionLogLine(e: $e, context: $context) . ' (translated to HTTP ' . $status . ')',
 			context: [

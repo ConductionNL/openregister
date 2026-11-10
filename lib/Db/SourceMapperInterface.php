@@ -64,35 +64,32 @@ interface SourceMapperInterface {
 	public function find(int $id): Source;
 
 	/**
-	 * Finds all sources matching column filters, without a page size.
+	 * Finds all sources
 	 *
-	 * @param array|null $filters The column filters to apply.
+	 * @param int|null   $limit   The limit of the results, null for all.
+	 * @param int|null   $offset  The offset of the results
+	 * @param array|null $filters The filters to apply
 	 *
 	 * @return Source[]
 	 *
 	 * @throws \Exception If user doesn't have read permission
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\Source>
-	 *
-	 * @spec openspec/specs/source-management/spec.md
 	 */
-	public function findAll(?array $filters = []): array;
+	public function findAll(?int $limit=null, ?int $offset=null, ?array $filters=[]): array;
 
 	/**
-	 * One page of sources matching the listing's column filters.
+	 * Finds the sources one list query asks for.
 	 *
-	 * @param ListQuery            $query  The page (limit, offset) and the column filters.
-	 * @param SqlSearchClause|null $search Raw search fragments OR'd into the query; none when null.
+	 * @param ListQuery $query The limit (unbounded for all), offset and column filters.
 	 *
 	 * @return Source[]
 	 *
 	 * @throws \Exception If user doesn't have read permission
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\Source>
-	 *
-	 * @spec openspec/specs/source-management/spec.md
 	 */
-	public function findSources(ListQuery $query, ?SqlSearchClause $search=null): array;
+	public function findList(ListQuery $query): array;
 
 	/**
 	 * Find all sources that have scheduled sync enabled.

@@ -111,7 +111,7 @@ class RegisterServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new RegisterService(
-			storage: new RegisterServiceStorage(registerMapper: $this->registerMapper, schemaMapper: $this->schemaMapper, db: $this->db),
+			storage: new RegisterServiceStorage(db: $this->db, catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
 			helpers: new RegisterServiceHelpers(
 				$this->fileService,
 				new \OCA\OpenRegister\Service\Serializer\RegisterSerializer($this->schemaMapper, $this->logger)

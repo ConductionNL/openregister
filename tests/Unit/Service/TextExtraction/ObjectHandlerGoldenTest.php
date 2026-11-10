@@ -180,11 +180,11 @@ class ObjectHandlerGoldenTest extends TestCase {
 			}
 		};
 
+		$objects = $this->objectMapper(scenario: $scenario);
+		$schemas = $this->schemaMapper(spec: ($scenario['schema'] ?? null));
 		$handler = new ObjectHandler(
 			new TextExtractionObjects(
-				$this->objectMapper(scenario: $scenario),
-				$this->schemaMapper(spec: ($scenario['schema'] ?? null)),
-				$this->registerMapper(spec: ($scenario['register'] ?? null))
+				new \OCA\OpenRegister\Db\SchemaCatalog($this->registerMapper(spec: ($scenario['register'] ?? null)), $schemas, $objects)
 			),
 			$this->chunkMapper(scenario: $scenario),
 			$logger

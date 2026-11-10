@@ -329,6 +329,33 @@ final class PresenceServiceTest extends TestCase {
 	}
 
 	/**
+	 * A beat without a reader or an object is no beat, and is not written.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md#requirement-an-object-knows-who-has-it-open
+	 */
+	public function testABlankReaderOrObjectIsNoBeat(): void {
+		$this->mapper->expects($this->never())->method('insert');
+
+		self::assertSame(['arrived' => false, 'presence' => null], $this->service()->heartbeat(userId: ' ', objectUuid: self::OBJ, now: $this->at(0)));
+		self::assertSame(['arrived' => false, 'presence' => null], $this->service()->heartbeat(userId: 'anna', objectUuid: '', now: $this->at(0)));
+	}
+
+	/**
+	 * A presence list that cannot be read is empty, not an error.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md#requirement-an-object-knows-who-has-it-open
+	 */
+	public function testAnUnreadableListIsEmpty(): void {
+		$this->mapper->method('findPresent')->willThrowException(new RuntimeException('table is gone'));
+
+		self::assertSame([], $this->service()->present(objectUuid: self::OBJ, now: $this->at(0)));
+	}
+
+	/**
 	 * A row for one reader.
 	 *
 	 * @param string $user The reader.

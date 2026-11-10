@@ -24,15 +24,12 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
-use OCA\OpenRegister\Event\SourceCreatedEvent;
-use OCA\OpenRegister\Event\SourceDeletedEvent;
-use OCA\OpenRegister\Event\SourceUpdatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
@@ -86,11 +83,11 @@ class SourceMapper extends QBMapper implements SourceMapperInterface {
 	protected IGroupManager $groupManager;
 
 	/**
-	 * Event dispatcher for dispatching source events
+	 * Announces source events
 	 *
-	 * @var IEventDispatcher
+	 * @var EntityEventsInterface
 	 */
-	private IEventDispatcher $eventDispatcher;
+	private EntityEventsInterface $entityEvents;
 
 	/**
 	 * Organisation mapper for multi-tenancy
@@ -111,20 +108,20 @@ class SourceMapper extends QBMapper implements SourceMapperInterface {
 	 *
 	 * @param IDBConnection $db Database connection
 	 * @param TenancyServices $tenancy Organisation mapper, session and groups
-	 * @param IEventDispatcher $eventDispatcher Event dispatcher
+	 * @param EntityEventsInterface $entityEvents Announces source events
 	 * @param IAppConfig $appConfig App configuration
 	 */
 	public function __construct(
 		IDBConnection $db,
 		TenancyServices $tenancy,
-		IEventDispatcher $eventDispatcher,
+		EntityEventsInterface $entityEvents,
 		IAppConfig $appConfig,
 	) {
 		parent::__construct(db: $db, tableName: 'openregister_sources', entityClass: Source::class);
 		$this->organisationMapper = $tenancy->organisationMapper;
 		$this->userSession = $tenancy->userSession;
 		$this->groupManager = $tenancy->groupManager;
-		$this->eventDispatcher = $eventDispatcher;
+		$this->entityEvents = $entityEvents;
 		$this->appConfig = $appConfig;
 	}//end __construct()
 
@@ -155,39 +152,37 @@ class SourceMapper extends QBMapper implements SourceMapperInterface {
 	}//end find()
 
 	/**
-	 * Finds all sources matching column filters, without a page size.
+	 * Finds all sources
 	 *
-	 * @param array|null $filters The column filters to apply.
+	 * Kept for callers outside this lane (SourcesController); builds the ListQuery and delegates.
+	 *
+	 * @param int|null   $limit   The limit of the results, null for all.
+	 * @param int|null   $offset  The offset of the results
+	 * @param array|null $filters The filters to apply
 	 *
 	 * @return Source[]
 	 *
 	 * @throws \Exception If user doesn't have read permission
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\Source>
-	 *
-	 * @spec openspec/specs/source-management/spec.md
 	 */
-	public function findAll(array|null $filters = []): array {
-		return $this->findSources(query: ListQuery::unbounded(filters: ($filters ?? [])));
+	public function findAll(int|null $limit=null, int|null $offset=null, array|null $filters=[]): array {
+		$limit = ($limit ?? ListQuery::UNBOUNDED);
+		return $this->findList(query: new ListQuery(limit: $limit, offset: $offset, filters: ($filters ?? [])));
 	}//end findAll()
 
 	/**
-	 * One page of sources matching the listing's column filters.
+	 * Finds the sources one list query asks for.
 	 *
-	 * Reads the listing's limit (null when unbounded), offset and filters.
-	 *
-	 * @param ListQuery            $query  The page and the column filters.
-	 * @param SqlSearchClause|null $search Raw search fragments OR'd into the query; none when null.
+	 * @param ListQuery $query The limit (unbounded for all), offset and column filters.
 	 *
 	 * @return Source[]
 	 *
 	 * @throws \Exception If user doesn't have read permission
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\Source>
-	 *
-	 * @spec openspec/specs/source-management/spec.md
 	 */
-	public function findSources(ListQuery $query, ?SqlSearchClause $search=null): array {
+	public function findList(ListQuery $query): array {
 		// Verify RBAC permission to read.
 		$this->verifyRbacPermission(action: 'read', entityType: 'source');
 
@@ -199,13 +194,12 @@ class SourceMapper extends QBMapper implements SourceMapperInterface {
 			->setFirstResult($query->offset);
 
 		$this->applyColumnFilters(qb: $qb, filters: $query->filters);
-		$search?->applyTo(qb: $qb);
 
 		// Apply organisation filter (all users including admins must have active org).
 		$this->applyOrganisationFilter(qb: $qb);
 
 		return $this->findEntities(query: $qb);
-	}//end findSources()
+	}//end findList()
 
 	/**
 	 * Find all sources that have scheduled sync enabled.
@@ -316,7 +310,7 @@ class SourceMapper extends QBMapper implements SourceMapperInterface {
 		$entity = parent::insert(entity: $entity);
 
 		// Dispatch creation event.
-		$this->eventDispatcher->dispatchTyped(new SourceCreatedEvent(source: $entity));
+		$this->entityEvents->sourceCreated(source: $entity);
 
 		return $entity;
 	}//end insert()
@@ -346,7 +340,7 @@ class SourceMapper extends QBMapper implements SourceMapperInterface {
 		$entity = parent::update(entity: $entity);
 
 		// Dispatch update event.
-		$this->eventDispatcher->dispatchTyped(new SourceUpdatedEvent(newSource: $entity, oldSource: $oldEntity));
+		$this->entityEvents->sourceUpdated(newSource: $entity, oldSource: $oldEntity);
 
 		return $entity;
 	}//end update()
@@ -371,7 +365,7 @@ class SourceMapper extends QBMapper implements SourceMapperInterface {
 		$entity = parent::delete(entity: $entity);
 
 		// Dispatch deletion event.
-		$this->eventDispatcher->dispatchTyped(new SourceDeletedEvent(source: $entity));
+		$this->entityEvents->sourceDeleted(source: $entity);
 
 		return $entity;
 	}//end delete()

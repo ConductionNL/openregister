@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -76,7 +77,7 @@ final class TriggerNodesGoldenTest extends TestCase {
 		$nodes = [
 			new TriggerManualNode($l10n, $urls),
 			new TriggerObjectNode($l10n, $urls),
-			new TriggerScheduleNode($l10n, $urls, $users),
+			new TriggerScheduleNode(new FlowNodePresentation($l10n, $urls), $users),
 		];
 
 		$items = [['json' => ['a' => 1]]];

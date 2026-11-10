@@ -86,21 +86,21 @@ final class FlowSubjectItems {
 	 * REQ-FR-003 true. An item that is some OTHER object (a fan-out read)
 	 * carries its own identity and is never smeared with the subject's data.
 	 *
-	 * @param array<int, array<string, mixed>> $items The stored items.
-	 * @param object $subject The live subject.
-	 * @param string $subjectUuid The run's subject uuid, matching items by identity.
+	 * @param array<int, array<string, mixed>> $items   The stored items.
+	 * @param LiveSubject                      $subject The live subject and the run's subject uuid,
+	 *                                                  matching items by identity.
 	 *
 	 * @return array<int, array<string, mixed>> The items, subject fields refreshed.
 	 *
 	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md#requirement-resuming-carries-the-runs-own-items-req-fr-003
 	 */
-	public static function refreshSubjectProjection(array $items, object $subject, string $subjectUuid): array {
-		$subjectUuid = trim($subjectUuid);
+	public static function refreshSubjectProjection(array $items, LiveSubject $subject): array {
+		$subjectUuid = trim($subject->uuid);
 		if ($subjectUuid === '' || $items === []) {
 			return $items;
 		}
 
-		$live = (array)(self::fromSubject(subject: $subject)[0][FlowItemShape::JSON] ?? []);
+		$live = (array)(self::fromSubject(subject: $subject->subject)[0][FlowItemShape::JSON] ?? []);
 		if ($live === []) {
 			return $items;
 		}
