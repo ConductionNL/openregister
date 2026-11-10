@@ -342,14 +342,25 @@ class CacheSettingsHandler {
 				'size' => 'Unknown',
 			];
 		} catch (Exception $e) {
-			return [
-				'type' => 'none',
-				'backend' => 'fallback',
-				'available' => false,
-				'error' => $e->getMessage(),
-			];
+			return self::unavailableDistributed(error: $e);
 		}
 	}//end getDistributedCacheStats()
+
+	/**
+	 * The distributed-cache statistics when no distributed cache can be created.
+	 *
+	 * @param Exception $error Why the cache could not be created.
+	 *
+	 * @return array{type: string, backend: string, available: bool, error: string}
+	 */
+	private static function unavailableDistributed(Exception $error): array {
+		return [
+			'type' => 'none',
+			'backend' => 'fallback',
+			'available' => false,
+			'error' => $error->getMessage(),
+		];
+	}//end unavailableDistributed()
 
 	/**
 	 * Get cache performance metrics for the last period
@@ -526,23 +537,35 @@ class CacheSettingsHandler {
 			$objectCacheService->clearCache();
 			$afterStats = $objectCacheService->getStats();
 
-			// CacheHandler::getStats() reports cache_size, query_cache_size and
-			// name_cache_size, and never an `entries` key. Reading `entries`
-			// produced two "Undefined array key" warnings per call and a cleared
-			// count of 0 - 0, so the admin action always reported clearing
-			// nothing. clearCache() empties all three in-memory caches, so all
-			// three are what it cleared.
-			return [
-				'service' => 'object',
-				'cleared' => ($this->countCacheEntries(stats: $beforeStats) - $this->countCacheEntries(stats: $afterStats)),
-				'before' => $beforeStats,
-				'after' => $afterStats,
-				'success' => true,
-			];
+			return $this->objectClearReport(beforeStats: $beforeStats, afterStats: $afterStats);
 		} catch (Exception $e) {
 			return $this->clearFailed(service: 'object', error: $e);
 		}//end try
 	}//end clearObjectCache()
+
+	/**
+	 * The report of an object cache clear, from the statistics either side of it.
+	 *
+	 * @param array $beforeStats The object cache statistics before the clear.
+	 * @param array $afterStats  The object cache statistics after the clear.
+	 *
+	 * @return array{service: string, cleared: int, before: array, after: array, success: bool}
+	 */
+	private function objectClearReport(array $beforeStats, array $afterStats): array {
+		// CacheHandler::getStats() reports cache_size, query_cache_size and
+		// name_cache_size, and never an `entries` key. Reading `entries`
+		// produced two "Undefined array key" warnings per call and a cleared
+		// count of 0 - 0, so the admin action always reported clearing
+		// nothing. clearCache() empties all three in-memory caches, so all
+		// three are what it cleared.
+		return [
+			'service' => 'object',
+			'cleared' => ($this->countCacheEntries(stats: $beforeStats) - $this->countCacheEntries(stats: $afterStats)),
+			'before' => $beforeStats,
+			'after' => $afterStats,
+			'success' => true,
+		];
+	}//end objectClearReport()
 
 	/**
 	 * Total in-memory entries a CacheHandler stats payload reports.
@@ -665,21 +688,33 @@ class CacheSettingsHandler {
 			$this->schemaCaches->schemaCache->clearAllCaches();
 			$afterStats = $this->schemaCaches->schemaCache->getCacheStatistics();
 
-			// Stats arrays may contain 'entries' key even if not in type definition.
-			$beforeEntries = $beforeStats['entries'] ?? 0;
-			$afterEntries = $afterStats['entries'] ?? 0;
-
-			return [
-				'service' => 'schema',
-				'cleared' => $beforeEntries - $afterEntries,
-				'before' => $beforeStats,
-				'after' => $afterStats,
-				'success' => true,
-			];
+			return self::schemaClearReport(beforeStats: $beforeStats, afterStats: $afterStats);
 		} catch (Exception $e) {
 			return $this->clearFailed(service: 'schema', error: $e);
 		}//end try
 	}//end clearSchemaCache()
+
+	/**
+	 * The report of a schema cache clear, from the statistics either side of it.
+	 *
+	 * @param array $beforeStats The schema cache statistics before the clear.
+	 * @param array $afterStats  The schema cache statistics after the clear.
+	 *
+	 * @return array{service: string, cleared: mixed, before: array, after: array, success: bool}
+	 */
+	private static function schemaClearReport(array $beforeStats, array $afterStats): array {
+		// Stats arrays may contain 'entries' key even if not in type definition.
+		$beforeEntries = $beforeStats['entries'] ?? 0;
+		$afterEntries = $afterStats['entries'] ?? 0;
+
+		return [
+			'service' => 'schema',
+			'cleared' => $beforeEntries - $afterEntries,
+			'before' => $beforeStats,
+			'after' => $afterStats,
+			'success' => true,
+		];
+	}//end schemaClearReport()
 
 	/**
 	 * Clear facet cache service
