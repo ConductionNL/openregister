@@ -49,6 +49,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Service\MailboxPage;
 
 /**
  * Tier-2 Email links controller.
@@ -329,12 +330,8 @@ class EmailLinksController extends Controller {
 			$cursorStr = $this->requestedCursor();
 			$limit     = (int)$this->request->getParam('limit', 50);
 
-			$result = $this->emailLinkService->getMessagesForMailbox(
-				(int)$accountId,
-				$mailbox,
-				$cursorStr,
-				$limit
-			);
+			$page   = (new MailboxPage(accountId: (int)$accountId, mailbox: $mailbox))->startingAfter(afterCursor: $cursorStr, limit: $limit);
+			$result = $this->emailLinkService->getMessagesForMailbox(page: $page);
 
 			return new JSONResponse($result);
 		} catch (Exception $e) {

@@ -11,6 +11,8 @@ use OCA\OpenRegister\Search\Service\VectorizationService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\HybridSearchRequest;
+use OCA\OpenRegister\Search\Service\Vectorization\EmbeddingProbe;
 
 class VectorizationServiceTest extends TestCase {
 	private VectorizationService $service;
@@ -196,7 +198,7 @@ class VectorizationServiceTest extends TestCase {
 		$expected = ['results' => []];
 		$this->vectorService->method('hybridSearch')->willReturn($expected);
 
-		$result = $this->service->hybridSearch('query');
+		$result = $this->service->hybridSearch(new HybridSearchRequest(query: 'query'));
 		$this->assertSame($expected, $result);
 	}
 
@@ -212,7 +214,7 @@ class VectorizationServiceTest extends TestCase {
 		$expected = ['success' => true, 'message' => 'OK'];
 		$this->vectorService->method('testEmbedding')->willReturn($expected);
 
-		$result = $this->service->testEmbedding('openai', []);
+		$result = $this->service->testEmbedding(new EmbeddingProbe(provider: 'openai', config: []));
 		$this->assertSame($expected, $result);
 	}
 

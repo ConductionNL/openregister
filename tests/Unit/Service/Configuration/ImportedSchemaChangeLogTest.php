@@ -11,6 +11,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Configuration\ImportedSchemaChangeLog;
+use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use PHPUnit\Framework\TestCase;
@@ -135,7 +136,7 @@ class ImportedSchemaChangeLogTest extends TestCase {
 	public function testAChangeIsWrittenNamingTheImportingApp(): void {
 		$changes = $this->changes();
 		$versioning = $this->createMock(SchemaVersioningService::class);
-		$versioning->expects($this->once())->method('recordChangelog')->with(12, '1.2.3', $changes, false, 'configuration import of dossiq');
+		$versioning->expects($this->once())->method('recordChange')->with(12, new SchemaChangeRecord($changes, false, '1.2.3', 'configuration import of dossiq'));
 		$log = new ImportedSchemaChangeLog(versioning: $versioning, logger: $this->createMock(LoggerInterface::class), appId: 'dossiq');
 
 		$log->record(schema: $this->stored(), changeSet: $changes);
@@ -149,7 +150,7 @@ class ImportedSchemaChangeLogTest extends TestCase {
 	public function testAChangeWithoutAnAppHasAPlainOrigin(): void {
 		$changes = $this->changes();
 		$versioning = $this->createMock(SchemaVersioningService::class);
-		$versioning->expects($this->once())->method('recordChangelog')->with(12, '1.2.3', $changes, false, 'configuration import');
+		$versioning->expects($this->once())->method('recordChange')->with(12, new SchemaChangeRecord($changes, false, '1.2.3', 'configuration import'));
 		$log = new ImportedSchemaChangeLog(versioning: $versioning, logger: $this->createMock(LoggerInterface::class), appId: null);
 
 		$log->record(schema: $this->stored(), changeSet: $changes);
@@ -162,7 +163,7 @@ class ImportedSchemaChangeLogTest extends TestCase {
 	 */
 	public function testNothingIsWrittenWithoutAChange(): void {
 		$versioning = $this->createMock(SchemaVersioningService::class);
-		$versioning->expects($this->never())->method('recordChangelog');
+		$versioning->expects($this->never())->method('recordChange');
 		$log = new ImportedSchemaChangeLog(versioning: $versioning, logger: $this->createMock(LoggerInterface::class), appId: 'dossiq');
 
 		$log->record(schema: $this->stored(), changeSet: null);

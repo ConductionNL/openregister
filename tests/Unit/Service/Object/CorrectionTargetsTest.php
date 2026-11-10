@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Object\CorrectionTargets;
 use PHPUnit\Framework\TestCase;
 
@@ -34,7 +35,7 @@ class CorrectionTargetsTest extends TestCase {
 	 * @return void
 	 */
 	public function testEachIdentifierKeepsItsSlot(): void {
-		$target = (new CorrectionTargets())->forRecord('zaken', 'zaak', 'uuid-42');
+		$target = (new CorrectionTargets())->forRecord(new ObjectRef(register: 'zaken', schema: 'zaak', id: 'uuid-42'));
 
 		$this->assertSame(
 			['register' => 'zaken', 'schema' => 'zaak', 'id' => 'uuid-42'],

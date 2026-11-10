@@ -30,9 +30,14 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Service\RecordUpdate;
+use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
 use Adbar\Dot;
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
+use OCA\OpenRegister\Db\AuditTrail\NamedActor;
+use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusal;
+use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusalOptions;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -85,6 +90,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\SaveLookups;
 use OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\LifecycleSeed;
+use OCA\OpenRegister\Service\Object\SaveObject\SharedWriteAttempt;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSourceChange;
 use OCA\OpenRegister\Service\Object\SaveObject\FolderBind;
 use OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget;
@@ -102,6 +108,7 @@ use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
 use OCA\OpenRegister\Service\Quality\UniqueHintChecker;
 use OCA\OpenRegister\Service\Quality\UniqueHintScope;
+use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolvers;
@@ -109,6 +116,7 @@ use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCA\OpenRegister\Service\TenantLogRedactor;
 use OCA\OpenRegister\Service\TmloService;
+use OCA\OpenRegister\Service\File\FolderAccessCheck;
 use OCA\OpenRegister\Service\TranslationProjectionService;
 use OCA\OpenRegister\Service\TranslationStatusService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -526,10 +534,10 @@ class SaveObject implements SaveObjectInterface {
 		$values = $services->handlers->values;
 		$platform = $services->platform;
 		$tenancy = $services->tenancy;
-		$this->objectEntityMapper = $mappers->objectEntityMapper;
+		$this->objectEntityMapper = $mappers->catalog->tables();
 		$this->unifiedObjectMapper = $mappers->unifiedObjectMapper;
-		$this->schemaMapper = $mappers->schemaMapper;
-		$this->registerMapper = $mappers->registerMapper;
+		$this->schemaMapper = $mappers->catalog->schemas();
+		$this->registerMapper = $mappers->catalog->registers();
 		$this->auditTrailMapper = $records->auditTrailMapper;
 		$this->settingsService = $records->settingsService;
 		$this->tmloService = $records->tmloService;
@@ -626,8 +634,7 @@ class SaveObject implements SaveObjectInterface {
 		} catch (SharedMasterDataWriteException $refusal) {
 			$this->recordSharedMasterDataRefusal(
 				refusal: $refusal,
-				target: $target,
-				activeOrgUuid: ($activeOrgUuids[0] ?? null)
+				attempt: new SharedWriteAttempt(target: $target, sourceOrganisation: ($activeOrgUuids[0] ?? null))
 			);
 
 			throw $refusal;
@@ -638,8 +645,7 @@ class SaveObject implements SaveObjectInterface {
 	 * Record one refused cross-entity write, on the audit trail and in the log.
 	 *
 	 * @param SharedMasterDataWriteException $refusal The refusal.
-	 * @param ObjectWriteTarget $target The register and schema being written, and the object uuid when named.
-	 * @param string|null $activeOrgUuid The organisation that attempted the write.
+	 * @param SharedWriteAttempt             $attempt Where the write was aimed, and the organisation that attempted it.
 	 *
 	 * @return void
 	 *
@@ -647,9 +653,10 @@ class SaveObject implements SaveObjectInterface {
 	 */
 	private function recordSharedMasterDataRefusal(
 		SharedMasterDataWriteException $refusal,
-		ObjectWriteTarget $target,
-		?string $activeOrgUuid,
+		SharedWriteAttempt $attempt,
 	): void {
+		$target        = $attempt->target;
+		$activeOrgUuid = $attempt->sourceOrganisation;
 		$registerId = $target->registerId;
 		$schemaId   = $target->schemaId;
 		$uuid       = $target->uuid;
@@ -681,16 +688,18 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		try {
-			$this->auditTrailMapper->createSharedMasterDataRefusalEntry(
-				holderOrganisation: $refusal->getHolderUuid(),
-				sourceOrganisation: ($activeOrgUuid ?? ''),
-				resourceType: $refusal->getResourceType(),
+			$options = new SharedMasterDataRefusalOptions(
 				context: $redactor->redact(context: $context),
-				register: $registerId,
-				schema: $schemaId,
-				objectUuid: $uuid,
-				actorId: $actorId,
-				actorReference: $redactor->pseudonym(userId: $actorId)
+				target: new AuditedObject(register: $registerId, schema: $schemaId, objectUuid: $uuid),
+				actor: new NamedActor(id: $actorId, name: $redactor->pseudonym(userId: $actorId))
+			);
+			$this->auditTrailMapper->recordSharedMasterDataRefusal(
+				refusal: new SharedMasterDataRefusal(
+					holderOrganisation: $refusal->getHolderUuid(),
+					sourceOrganisation: ($activeOrgUuid ?? ''),
+					resourceType: $refusal->getResourceType(),
+					options: $options
+				)
 			);
 		} catch (\Throwable $e) {
 			// Best effort by design: see the docblock on the caller. The write
@@ -1291,6 +1300,13 @@ class SaveObject implements SaveObjectInterface {
 			throw $e;
 		} catch (Exception $e) {
 			// Continue with other properties even if one fails.
+			$this->logger->warning(
+				message: '[SaveObject] Cascade of an object property failed, continuing with the other properties',
+				context: [
+					'property' => $run->property,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 	}//end cascadeObjectProperty()
 
@@ -1335,6 +1351,13 @@ class SaveObject implements SaveObjectInterface {
 			throw $e;
 		} catch (Exception $e) {
 			// Continue with other properties even if one fails.
+			$this->logger->warning(
+				message: '[SaveObject] Cascade of an array property failed, continuing with the other properties',
+				context: [
+					'property' => $run->property,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 	}//end cascadeArrayProperty()
 
@@ -1448,6 +1471,12 @@ class SaveObject implements SaveObjectInterface {
 				throw $e;
 			} catch (Exception $e) {
 				// Continue with other objects even if one fails.
+				$this->logger->warning(
+					message: '[SaveObject] Cascade of a nested object failed, continuing with the others',
+					context: [
+						'exception' => $e->getMessage(),
+					]
+				);
 			}
 		}
 
@@ -1951,8 +1980,7 @@ class SaveObject implements SaveObjectInterface {
 		// Normalize translatable properties (wrap simple values under default language).
 		$call->data = $this->translationHandler->normalizeTranslationsForSave(
 			objectData: $call->data,
-			schema: $call->schema,
-			register: $call->register
+			scope: new TranslationScope(schema: $call->schema, register: $call->register)
 		);
 
 		// Skip when _rbac is false (internal/system calls bypass all authorization).
@@ -2210,10 +2238,12 @@ class SaveObject implements SaveObjectInterface {
 		$dedupPolicy = $this->resolveDedupCreatePolicy();
 		if ($dedupPolicy !== null) {
 			$dedupOverriddenMatches = $dedupPolicy->guardCreate(
-				register: $call->registerId,
-				schema: $call->schemaId,
-				data: $call->data,
-				overrideRequested: $call->flags->dedupOverride
+				candidate: new CreateCandidate(
+					register: $call->registerId,
+					schema: $call->schemaId,
+					data: $call->data,
+					overrideRequested: $call->flags->dedupOverride
+				)
 			);
 		}
 
@@ -3309,10 +3339,8 @@ class SaveObject implements SaveObjectInterface {
 	private function decideSlug(ObjectEntity $entity, Schema $schema, ?string $stored, array $sent): void {
 		[$selfData, $data] = $sent;
 		$this->slugHandler->applyOnSave(
-			entity: $entity,
-			schema: $schema,
-			originalSlug: $stored,
-			clientSlug: $this->clientSlug(selfData: $selfData, data: $data)
+			request: new SlugRequest(entity: $entity, schema: $schema, clientSlug: $this->clientSlug(selfData: $selfData, data: $data)),
+			originalSlug: $stored
 		);
 	}//end decideSlug()
 
@@ -3498,9 +3526,7 @@ class SaveObject implements SaveObjectInterface {
 			// passing while another denies because of session vs explicit
 			// user disagreement.
 			$this->folderManagementHandler->assertFolderIsAccessible(
-				folderId: $folderValue,
-				currentUser: $bind->actingUser,
-				objectEntity: $objectEntity
+				check: new FolderAccessCheck(folderId: $folderValue, currentUser: $bind->actingUser, objectEntity: $objectEntity)
 			);
 
 			// Normalise to the canonical integer string so the persisted

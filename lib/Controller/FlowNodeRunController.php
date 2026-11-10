@@ -171,7 +171,7 @@ class FlowNodeRunController extends Controller {
 	 * @param FlowNodeRunControllerServices $services The flow node run controller services.
 	 *                              {@see FlowRunService::executeNode()}'s
 	 *                              version pin) — NOT used for its
-	 *                              `resolveSubject()`, which loads with RBAC
+	 *                              `resolveObject()`, which loads with RBAC
 	 *                              off and is for background paths only; the
 	 *                              subject here is loaded via `$objects`
 	 *                              instead, under this caller's own RBAC and

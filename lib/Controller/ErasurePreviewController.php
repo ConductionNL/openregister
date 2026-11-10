@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewServiceInterface;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewStoreInterface;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRefusedException;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRunnerInterface;
+use OCA\OpenRegister\Service\Gdpr\SubjectQuery;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -115,8 +116,7 @@ class ErasurePreviewController extends Controller {
 		}
 
 		$preview = $this->previewService->preview(
-			subjectId: $subject,
-			type: $this->optionalType(),
+			subject: new SubjectQuery(subjectId: $subject, type: $this->optionalType()),
 			eraseMode: (string)($this->request->getParam(key: 'eraseMode')
 				?? DataSubjectRequestServiceInterface::ERASE_MODE_PSEUDONYMISE)
 		);

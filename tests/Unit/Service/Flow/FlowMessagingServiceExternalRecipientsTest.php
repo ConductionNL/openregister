@@ -36,7 +36,7 @@ use OCA\OpenRegister\Service\Flow\FlowMessagingService;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowStepReport;
-use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityFactory;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicy;
@@ -69,6 +69,7 @@ use OCA\OpenRegister\Service\Flow\FlowMessagingChannels;
 use OCA\OpenRegister\Service\Flow\FlowMessagingOverrides;
 use OCA\OpenRegister\Service\Flow\FlowMessagingPlatform;
 use OCA\OpenRegister\Service\Flow\FlowMessagingRecipients;
+use OCA\OpenRegister\Service\Flow\FlowRunFrame;
 
 /**
  * External recipients, FlowEmailSentEvent and role fields.
@@ -339,7 +340,7 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 			),
 			overrides: new FlowMessagingOverrides(
 				runContext: $this->runContext,
-				optOut: OptOutAuthorityFactory::create(eventDispatcher: $this->dispatcher, appConfig: $this->appConfig, logger: $logger)
+				optOut: new OptOutAuthority(eventDispatcher: $this->dispatcher, appConfig: $this->appConfig, logger: $logger)
 			)
 		);
 	}//end makeService()
@@ -488,7 +489,7 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 	// ---- FlowEmailSentEvent ------------------------------------------------
 
 	public function testEachSentEmailIsAnnouncedWithTheWholeContract(): void {
-		$this->runContext->push(runUuid: 'run-7', nodeId: 'mail-the-citizen', sequence: 3);
+		$this->runContext->push(frame: new FlowRunFrame(runUuid: 'run-7', nodeId: 'mail-the-citizen', sequence: 3));
 		try {
 			$this->sendEmail(
 				config: ['recipients' => ['bob', 'x@example.org'], 'externalRecipients' => 'any'],

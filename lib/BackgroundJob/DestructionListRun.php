@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\DestructionReviewServiceInterface;
 use OCA\OpenRegister\Service\Archival\RecordStateInterface;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
@@ -316,8 +317,9 @@ final class DestructionListRun {
 		$object->setRetention($retention);
 		$this->audit(object: $object, objRef: $objRef);
 
+		$request = new DeletionRequest(register: $object->getRegister(), schema: $object->getSchema(), uuid: (string)$uuid);
 		$this->retentionDestruction->run(
-			fn (): bool => $this->deleteObject->deleteObject($object->getRegister(), $object->getSchema(), (string)$uuid, null, false, false)
+			fn (): bool => $this->deleteObject->deleteObject($request, false, false)
 		);
 		$this->count['destroyed']++;
 	}//end destroyObject()

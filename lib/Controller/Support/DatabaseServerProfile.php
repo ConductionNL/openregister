@@ -179,6 +179,12 @@ final class DatabaseServerProfile {
 			$profile['version'] = $this->semanticVersion(version: $version);
 		} catch (Exception $e) {
 			// Reported as MySQL/MariaDB of unknown version.
+			$this->logger->debug(
+				message: '[DatabaseServerProfile] Could not read the MySQL server version',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return $profile;

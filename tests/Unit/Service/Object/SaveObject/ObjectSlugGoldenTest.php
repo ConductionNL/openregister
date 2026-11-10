@@ -26,6 +26,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
 use DateTimeImmutable;
 use DateTimeZone;
 use Exception;
@@ -177,7 +179,7 @@ final class ObjectSlugGoldenTest extends TestCase {
 		$this->holders['hello-world'] = [self::UUID_A];
 		$entity = $this->entity(self::UUID_B, ['title' => 'Hello World']);
 
-		$this->handler->applyOnSave($entity, $this->schema(['objectSlugField' => 'title']), null, null);
+		$this->handler->applyOnSave(new SlugRequest($entity, $this->schema(['objectSlugField' => 'title']), null), null);
 
 		$this->assertNull($entity->getSlug());
 		$this->assertSame(
@@ -198,7 +200,7 @@ final class ObjectSlugGoldenTest extends TestCase {
 		$this->holders['hello-world-20261022120000'] = [self::UUID_C];
 		$entity = $this->entity(self::UUID_B, ['title' => 'Hello World']);
 
-		$this->handler->applyOnSave($entity, $this->schema(['objectSlugField' => 'title', 'objectSlugSuffix' => true]), '', null);
+		$this->handler->applyOnSave(new SlugRequest($entity, $this->schema(['objectSlugField' => 'title', 'objectSlugSuffix' => true]), null), '');
 
 		$this->assertNull($entity->getSlug());
 		$this->assertSame(
@@ -215,7 +217,7 @@ final class ObjectSlugGoldenTest extends TestCase {
 		$this->holders['hello-world'] = [self::UUID_A];
 		$entity = $this->entity(self::UUID_B, ['title' => 'Hello World']);
 
-		$this->handler->applyOnSave($entity, $this->schema(['objectSlugField' => 'title', 'objectSlugSuffix' => true]), null, '');
+		$this->handler->applyOnSave(new SlugRequest($entity, $this->schema(['objectSlugField' => 'title', 'objectSlugSuffix' => true]), ''), null);
 
 		$this->assertSame('hello-world-20261022120000', $entity->getSlug());
 		$this->assertSame([], $this->warnings);
@@ -225,7 +227,7 @@ final class ObjectSlugGoldenTest extends TestCase {
 		$this->resolvingRegister();
 		$entity = $this->entity(self::UUID_B, ['title' => 'Other']);
 
-		$this->handler->applyOnSave($entity, $this->schema(['objectSlugField' => 'title']), 'kept', 'Wanted Now');
+		$this->handler->applyOnSave(new SlugRequest($entity, $this->schema(['objectSlugField' => 'title']), 'Wanted Now'), 'kept');
 
 		$this->assertSame('kept', $entity->getSlug());
 		$this->assertSame(
@@ -244,7 +246,7 @@ final class ObjectSlugGoldenTest extends TestCase {
 		$this->resolvingRegister();
 		foreach ([null, '', 'kept', 'KEPT', '!!!'] as $sent) {
 			$entity = $this->entity(self::UUID_B, ['title' => 'Other']);
-			$this->handler->applyOnSave($entity, $this->schema(['objectSlugField' => 'title']), 'kept', $sent);
+			$this->handler->applyOnSave(new SlugRequest($entity, $this->schema(['objectSlugField' => 'title']), $sent), 'kept');
 			$this->assertSame('kept', $entity->getSlug());
 		}
 
@@ -256,9 +258,9 @@ final class ObjectSlugGoldenTest extends TestCase {
 		$schema = $this->schema(['objectSlugField' => 'title']);
 		$entity = $this->entity(self::UUID_B, ['title' => 'Hello World']);
 
-		$this->handler->applyOnSave($entity, $schema, null, null);
+		$this->handler->applyOnSave(new SlugRequest($entity, $schema, null), null);
 		$second = $this->entity(self::UUID_C, ['title' => 'Hello World']);
-		$this->handler->applyOnSave($second, $schema, null, null);
+		$this->handler->applyOnSave(new SlugRequest($second, $schema, null), null);
 
 		$this->assertNull($entity->getSlug());
 		$this->assertNull($second->getSlug());
@@ -284,7 +286,7 @@ final class ObjectSlugGoldenTest extends TestCase {
 		$this->registerMapper->expects($this->never())->method('find');
 		$entity = $this->entity(self::UUID_B, ['title' => 'Hello World'], null, '');
 
-		$this->handler->applyOnSave($entity, $this->schema(['objectSlugField' => 'title']), null, null);
+		$this->handler->applyOnSave(new SlugRequest($entity, $this->schema(['objectSlugField' => 'title']), null), null);
 
 		$this->assertNull($entity->getSlug());
 		$this->assertCount(1, $this->warnings);
@@ -294,7 +296,7 @@ final class ObjectSlugGoldenTest extends TestCase {
 		$this->resolvingRegister();
 		$entity = $this->entity(self::UUID_B, ['title' => '  '], 'stale');
 
-		$this->handler->applyOnSave($entity, $this->schema(['objectSlugField' => 'title']), null, null);
+		$this->handler->applyOnSave(new SlugRequest($entity, $this->schema(['objectSlugField' => 'title']), null), null);
 
 		$this->assertNull($entity->getSlug());
 		$this->assertSame([], $this->warnings);
@@ -302,10 +304,10 @@ final class ObjectSlugGoldenTest extends TestCase {
 
 	public function testTheLegacyBranchWritesOnlyANonEmptyClientSlug(): void {
 		$entity = $this->entity(self::UUID_B, ['title' => 'Hello'], 'old');
-		$this->handler->applyOnSave($entity, $this->schema([]), null, '');
+		$this->handler->applyOnSave(new SlugRequest($entity, $this->schema([]), ''), null);
 		$this->assertSame('old', $entity->getSlug());
 
-		$this->handler->applyOnSeed($entity, $this->schema(['objectSlugField' => '  ']), 'Raw Client');
+		$this->handler->applyOnSeed(new SlugRequest($entity, $this->schema(['objectSlugField' => '  ']), 'Raw Client'));
 		$this->assertSame('Raw Client', $entity->getSlug());
 		$this->assertSame([], $this->warnings);
 	}
@@ -330,8 +332,8 @@ final class ObjectSlugGoldenTest extends TestCase {
 
 		$result = match ($path) {
 			'seed' => $this->seed(entity: $this->entity(self::UUID_B, ['title' => 'Hello World']), schema: $schema),
-			'restore' => $this->handler->slugForRestore($entity, $this->register, $schema),
-			default => $this->handler->slugForMove($entity, $this->register, $schema),
+			'restore' => $this->handler->slugForRestore($entity, new RegisterSchema($this->register, $schema)),
+			default => $this->handler->slugForMove($entity, new RegisterSchema($this->register, $schema)),
 		};
 
 		$this->assertSame('hello-world-20261022120000', $result);
@@ -353,7 +355,7 @@ final class ObjectSlugGoldenTest extends TestCase {
 	}
 
 	private function seed(ObjectEntity $entity, Schema $schema): ?string {
-		$this->handler->applyOnSeed($entity, $schema, null);
+		$this->handler->applyOnSeed(new SlugRequest($entity, $schema, null));
 		return $entity->getSlug();
 	}//end seed()
 
@@ -380,7 +382,7 @@ final class ObjectSlugGoldenTest extends TestCase {
 			path: $path
 		);
 
-		$result = $this->handler->decide($want, static fn (string $slug): ?string => self::UUID_A);
+		$result = $this->handler->decide(decision: new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugDecision(want: $want, holderOf: static fn (string $slug): ?string => self::UUID_A, log: true));
 
 		$this->assertNull($result);
 		$this->assertSame(
@@ -404,9 +406,9 @@ final class ObjectSlugGoldenTest extends TestCase {
 			return $slug === 'a' ? self::UUID_A : null;
 		};
 
-		$this->assertSame('given', $this->handler->decide($want, $holderOf, false, 'given'));
+		$this->assertSame('given', $this->handler->decide(decision: new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugDecision(want: $want, holderOf: $holderOf, log: false, suffixed: 'given')));
 		$this->assertSame(['a', 'given'], $asked);
-		$this->assertNull($this->handler->decide($want, static fn (string $s): ?string => self::UUID_A, false, 'given'));
+		$this->assertNull($this->handler->decide(decision: new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugDecision(want: $want, holderOf: static fn (string $s): ?string => self::UUID_A, log: false, suffixed: 'given')));
 		$this->assertSame([], $this->warnings);
 	}
 
@@ -414,9 +416,9 @@ final class ObjectSlugGoldenTest extends TestCase {
 		$managed = $this->schema(['objectSlugField' => 'title']);
 		$this->magicMapper->expects($this->never())->method('findSlugHolders');
 
-		$this->assertNull($this->handler->slugForRestore($this->entity(self::UUID_B, []), $this->register, $managed));
-		$this->assertSame('', $this->handler->slugForMove($this->entity(self::UUID_B, [], ''), $this->register, $managed));
-		$this->assertSame('x', $this->handler->slugForMove($this->entity(self::UUID_B, [], 'x'), $this->register, $this->schema([])));
+		$this->assertNull($this->handler->slugForRestore($this->entity(self::UUID_B, []), new RegisterSchema($this->register, $managed)));
+		$this->assertSame('', $this->handler->slugForMove($this->entity(self::UUID_B, [], ''), new RegisterSchema($this->register, $managed)));
+		$this->assertSame('x', $this->handler->slugForMove($this->entity(self::UUID_B, [], 'x'), new RegisterSchema($this->register, $this->schema([]))));
 	}
 
 	/**
