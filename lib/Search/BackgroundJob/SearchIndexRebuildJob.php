@@ -29,6 +29,7 @@ use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
 use OCP\AppFramework\Utility\ITimeFactory;
 use RuntimeException;
 use OCA\OpenRegister\BackgroundJob\RecordedQueuedJob;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexPass;
 
 /**
  * Rebuilds the search index and leaves a run row behind.
@@ -81,7 +82,8 @@ class SearchIndexRebuildJob extends RecordedQueuedJob {
 			$registerId = (int)$argument['registerId'];
 		}
 
-		$report = $this->index->rebuild(registerId: $registerId, apply: true);
+		$pass   = new SearchIndexPass(apply: true, progress: null);
+		$report = $this->index->rebuild(registerId: $registerId, pass: $pass);
 
 		if (($report['state'] ?? null) === 'refused') {
 			throw new RuntimeException((string)($report['reason'] ?? 'The rebuild was refused.'));

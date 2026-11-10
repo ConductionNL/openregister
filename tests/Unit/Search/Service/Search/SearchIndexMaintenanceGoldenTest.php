@@ -40,6 +40,7 @@ use Psr\Log\AbstractLogger;
 use RuntimeException;
 use Stringable;
 use Throwable;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexPass;
 
 /**
  * Pins every public answer of SearchIndexMaintenance, with the statements it
@@ -193,18 +194,18 @@ class SearchIndexMaintenanceGoldenTest extends TestCase {
 			'index names pg' => fn () => $pg()->indexNamesFor(['t_1_2', 't_1_3', 't_none', 7]),
 			'index names pg none' => fn () => $pg()->indexNamesFor([]),
 			'index names mariadb' => fn () => $my()->indexNamesFor(['t_1_2']),
-			'rebuild refused dry' => fn () => $my()->rebuild(null, false, $progress),
-			'rebuild refused apply' => fn () => $my()->rebuild(null, true),
-			'rebuild dry run' => fn () => $pg()->rebuild(null, false, $progress),
-			'rebuild dry run no progress' => fn () => $pg()->rebuild(1),
-			'rebuild apply' => fn () => $pg()->rebuild(1, true, $progress),
+			'rebuild refused dry' => fn () => $my()->rebuild(registerId: null, pass: new SearchIndexPass(apply: false, progress: $progress)),
+			'rebuild refused apply' => fn () => $my()->rebuild(registerId: null, pass: new SearchIndexPass(apply: true, progress: null)),
+			'rebuild dry run' => fn () => $pg()->rebuild(registerId: null, pass: new SearchIndexPass(apply: false, progress: $progress)),
+			'rebuild dry run no progress' => fn () => $pg()->rebuild(registerId: 1),
+			'rebuild apply' => fn () => $pg()->rebuild(registerId: 1, pass: new SearchIndexPass(apply: true, progress: $progress)),
 			'rebuild apply with failures' => function () use ($pg, $progress) {
 				$this->failOn = ['"idx_b"', 'idx_b_ccnew', '"idx_c"'];
-				return $pg()->rebuild(null, true, $progress);
+				return $pg()->rebuild(registerId: null, pass: new SearchIndexPass(apply: true, progress: $progress));
 			},
 			'rebuild apply bad index name' => function () use ($pg) {
 				$this->catalogue['oc_t_1_3']['bad name'] = 'CREATE INDEX "bad name"';
-				return $pg()->rebuild(1, true);
+				return $pg()->rebuild(registerId: 1, pass: new SearchIndexPass(apply: true, progress: null));
 			},
 			'snapshot' => function () use ($pg) {
 				$path = $this->dir . '/out.json';
