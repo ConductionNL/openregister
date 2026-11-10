@@ -80,31 +80,69 @@ final class ConsentEnvelopeEvaluator implements ConsentEnvelopeEvaluatorInterfac
 	 * @return string|null
 	 */
 	private function appendOnlyViolation(ConsentPropertyWrite $write): ?string {
-		$name      = $write->name;
 		$incoming  = $write->incomingEntries();
 		$persisted = $write->persistedEntries();
-		$persistedCount = count($persisted);
-		$incomingCount = count($incoming);
 
-		if ($incomingCount < $persistedCount) {
-			return sprintf(
-				'Property "%s" is append-only (x-openregister-consent): the submitted value has fewer entries than the persisted value.',
-				$name
-			);
+		if (count($incoming) < count($persisted)) {
+			return $this->shortenedRefusal(name: $write->name);
 		}
 
+		$changed = $this->firstChangedEntry(incoming: $incoming, persisted: $persisted);
+		if ($changed === null) {
+			return null;
+		}
+
+		return $this->changedEntryRefusal(name: $write->name, index: $changed);
+	}//end appendOnlyViolation()
+
+	/**
+	 * The index of the first persisted entry the submitted value does not repeat unchanged.
+	 *
+	 * @param array<int, mixed> $incoming  The submitted entries.
+	 * @param array<int, mixed> $persisted The persisted entries.
+	 *
+	 * @return int|null The index, or null when every persisted entry is kept as it was.
+	 */
+	private function firstChangedEntry(array $incoming, array $persisted): ?int {
+		$persistedCount = count($persisted);
 		for ($index = 0; $index < $persistedCount; $index++) {
 			if (($incoming[$index] ?? null) !== $persisted[$index]) {
-				return sprintf(
-					'Property "%s" is append-only (x-openregister-consent): entry %d cannot be changed, only new entries may be appended.',
-					$name,
-					$index
-				);
+				return $index;
 			}
 		}
 
 		return null;
-	}//end appendOnlyViolation()
+	}//end firstChangedEntry()
+
+	/**
+	 * The refusal for a submitted value with fewer entries than the persisted one.
+	 *
+	 * @param string $name The property.
+	 *
+	 * @return string The refusal.
+	 */
+	private function shortenedRefusal(string $name): string {
+		return sprintf(
+			'Property "%s" is append-only (x-openregister-consent): the submitted value has fewer entries than the persisted value.',
+			$name
+		);
+	}//end shortenedRefusal()
+
+	/**
+	 * The refusal for a persisted entry the submitted value changes.
+	 *
+	 * @param string $name  The property.
+	 * @param int    $index The changed entry.
+	 *
+	 * @return string The refusal.
+	 */
+	private function changedEntryRefusal(string $name, int $index): string {
+		return sprintf(
+			'Property "%s" is append-only (x-openregister-consent): entry %d cannot be changed, only new entries may be appended.',
+			$name,
+			$index
+		);
+	}//end changedEntryRefusal()
 
 	/**
 	 * Fill evidence on every entry appended beyond the previously persisted length.

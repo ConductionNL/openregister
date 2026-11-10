@@ -112,30 +112,53 @@ class MdtoMappingResolver {
 			return [];
 		}
 
+		$mandatory = $this->mandatoryElements();
+		if ($mandatory === null) {
+			return [];
+		}
+
+		$row = $this->recordRow(object: $object);
+
+		return array_values(
+			array_filter(
+				$mandatory,
+				fn (string|int $element): bool => $this->isFilled(entry: ($mapping[$element] ?? null), row: $row) === false
+			)
+		);
+	}//end unfilledMandatoryElements()
+
+	/**
+	 * The elements MDTO demands, or null (logged) when the catalogue cannot establish them.
+	 *
+	 * @return array<int, string>|null The mandatory element names.
+	 */
+	private function mandatoryElements(): ?array {
 		try {
-			$mandatory = $this->catalogue->mandatory();
+			return $this->catalogue->mandatory();
 		} catch (Throwable $e) {
 			// The catalogue refuses rather than reporting an empty set, and an
 			// empty set here would wave every transfer through. Reported, and
 			// treated as "cannot establish", which is not the same as "fine".
 			$this->lookup->logger->error('[MdtoMappingResolver] ' . $e->getMessage());
+			return null;
+		}
+	}//end mandatoryElements()
+
+	/**
+	 * The record's data, or an empty row.
+	 *
+	 * @param ObjectEntity $object The record.
+	 *
+	 * @return array<string, mixed> The row.
+	 */
+	private function recordRow(ObjectEntity $object): array {
+		$row = ($object->getObject() ?? []);
+		if (is_array($row) === false) {
 			return [];
 		}
 
-		$row = ($object->getObject() ?? []);
-		if (is_array($row) === false) {
-			$row = [];
-		}
-
-		$unfilled = [];
-		foreach ($mandatory as $element) {
-			if ($this->isFilled(entry: ($mapping[$element] ?? null), row: $row) === false) {
-				$unfilled[] = $element;
-			}
-		}
-
-		return $unfilled;
-	}//end unfilledMandatoryElements()
+		return $row;
+	}//end recordRow()
 
 	/**
 	 * Does this mapping entry put a value on this record?
