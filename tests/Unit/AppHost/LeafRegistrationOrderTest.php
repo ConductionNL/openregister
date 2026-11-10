@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\Bootstrap;
+use OCA\OpenRegister\AppHost\LeafAdoption;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -24,11 +25,11 @@ class LeafRegistrationOrderTest extends TestCase {
 
 	public function testRegistrationOrderAndSharedFactories(): void {
 		$context = new RecordingRegistrationContext();
-		Bootstrap::register($context, 'petstore', [
+		Bootstrap::register(context: $context, adoption: new LeafAdoption(appId: 'petstore', options: [
 			'namespace' => 'OCA\\PetStoreFixture',
 			'observability' => true,
 			'deepLinks' => true,
-		]);
+		]));
 
 		$this->assertSame(
 			[
