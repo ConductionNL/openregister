@@ -99,10 +99,11 @@ class ErasureRunner implements ErasureRunnerInterface {
 	 */
 	public function run(ErasurePreview $record): array {
 		$run = new ApprovedErasureRun(record: $record);
-		$fresh = $this->previewService->preview(subjectId: $run->subject(), type: $record->getSubjectType(), eraseMode: $run->mode());
+		$subject = new SubjectQuery(subjectId: $run->subject(), type: $record->getSubjectType());
+		$fresh = $this->previewService->preview(subject: $subject, eraseMode: $run->mode());
 		$this->refuseIfStale(record: $record, freshDigest: $fresh['digest']);
 
-		$run->hits = $this->hitsByUuid(subject: $run->subject(), type: $record->getSubjectType());
+		$run->hits = $this->hitsByUuid(subject: $subject);
 		$run->outcome = $this->emptyOutcome(run: $run);
 		foreach ($fresh['items'] as $item) {
 			$this->runOne(run: $run, item: $item);
@@ -143,14 +144,13 @@ class ErasureRunner implements ErasureRunnerInterface {
 	/**
 	 * The subject's discovery hits, indexed by object uuid.
 	 *
-	 * @param string      $subject The subject value.
-	 * @param string|null $type    Optional GdprEntity type filter.
+	 * @param SubjectQuery $subject The subject value and optional GdprEntity type filter, exact match.
 	 *
 	 * @return array<string, array> The hits.
 	 */
-	private function hitsByUuid(string $subject, ?string $type): array {
+	private function hitsByUuid(SubjectQuery $subject): array {
 		$hits = [];
-		foreach ($this->subjects->findSubjectObjects(new SubjectQuery(subjectId: $subject, type: $type)) as $hit) {
+		foreach ($this->subjects->findSubjectObjects($subject) as $hit) {
 			$hits[(string)($hit['object']->getUuid() ?? '')] = $hit;
 		}
 

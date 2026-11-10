@@ -22,8 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use DateTime;
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\TenantUsage\UsageBucket;
+use OCA\OpenRegister\Db\TenantUsage\UsageRange;
 
 /**
  * The hourly tenant usage store: read an organisation's history, record an
@@ -37,24 +38,22 @@ interface TenantUsageMapperInterface {
 	/**
 	 * Find usage records for an organisation within a date range.
 	 *
-	 * @param string   $organisationUuid Organisation UUID
-	 * @param DateTime $from             Start date
-	 * @param DateTime $to               End date
+	 * @param string     $organisationUuid Organisation UUID
+	 * @param UsageRange $range            The first and last bucket, inclusive
 	 *
 	 * @return TenantUsage[] Array of usage records
 	 */
-	public function findByOrgAndDateRange(string $organisationUuid, DateTime $from, DateTime $to): array;
+	public function findByOrgAndDateRange(string $organisationUuid, UsageRange $range): array;
 
 	/**
 	 * Record one hour's reading for an organisation (insert, or add to the hour's row).
 	 *
-	 * @param string           $organisationUuid Organisation UUID
-	 * @param DateTime         $period           Hourly bucket
-	 * @param UsageMeasurement $measurement      The traffic and storage measured
+	 * @param UsageBucket      $bucket      The organisation and the hourly bucket
+	 * @param UsageMeasurement $measurement The traffic and storage measured
 	 *
 	 * @return TenantUsage The upserted entity
 	 */
-	public function upsertUsage(string $organisationUuid, DateTime $period, UsageMeasurement $measurement): TenantUsage;
+	public function upsertUsage(UsageBucket $bucket, UsageMeasurement $measurement): TenantUsage;
 
 	/**
 	 * Delete all usage records of one organisation, and nothing else.
