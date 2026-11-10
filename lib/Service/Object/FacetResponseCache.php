@@ -181,7 +181,7 @@ class FacetResponseCache {
 			'freshness' => $this->facetFreshnessToken(facetQuery: $facetQuery),
 		];
 
-		return 'facet_rbac_' . hash(algo: 'xxh128', data: json_encode($cacheData));
+		return 'facet_rbac_' . md5(json_encode($cacheData));
 	}//end keyFor()
 
 	/**
