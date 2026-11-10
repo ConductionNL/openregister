@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableTarget;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -85,10 +86,8 @@ class ExplicitFacetsObeyThePropertyReadRuleTest extends TestCase {
 
 	public function testAnExplicitFacetOnAWithheldPropertyIsOmitted(): void {
 		$facets = $this->anonymousHandler()->getSimpleFacets(
-			tableName: 'openregister_table_21_119',
-			query: ['_facets' => ['contactPerson' => ['type' => 'terms']]],
-			register: new Register(),
-			schema: $this->schema()
+			target: self::facetTarget('openregister_table_21_119', new Register(), $this->schema()),
+			query: ['_facets' => ['contactPerson' => ['type' => 'terms']]]
 		);
 
 		$this->assertArrayNotHasKey('contactPerson', $facets);
@@ -118,4 +117,15 @@ class ExplicitFacetsObeyThePropertyReadRuleTest extends TestCase {
 
 		$this->assertTrue($rbac->canReadProperty(schema: $this->schema(), property: 'contactPerson', object: []));
 	}
+
+	/**
+	 * The facet target of one magic table.
+	 *
+	 * @return MagicTableTarget
+	 */
+	private static function facetTarget(string $tableName, Register $register, Schema $schema): MagicTableTarget {
+		$target            = new MagicTableTarget(register: $register, schema: $schema);
+		$target->tableName = $tableName;
+		return $target;
+	}//end facetTarget()
 }

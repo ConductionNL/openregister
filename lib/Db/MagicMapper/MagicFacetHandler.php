@@ -396,18 +396,17 @@ class MagicFacetHandler {
 	 * This method provides faceting capabilities for dynamically created
 	 * schema-based tables, optimized for column-based storage.
 	 *
-	 * @param string $tableName The magic mapper table name (without oc_ prefix).
-	 * @param array $query The search query array containing filters and facet configuration.
-	 * @param Register $register The register context.
-	 * @param Schema $schema The schema context.
+	 * @param MagicTableTarget $target The register, schema and magic mapper table name (without oc_ prefix).
+	 * @param array            $query  The search query array containing filters and facet configuration.
 	 *
 	 * @return array Facet results with buckets.
 	 *
 	 * @throws \OCP\DB\Exception If a database error occurs.
 	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
 	 */
-	public function getSimpleFacets(string $tableName, array $query, Register $register, Schema $schema): array {
-		$table = new TermsFacetTable(tableName: $tableName, baseQuery: $this->withoutFacets(query: $query), register: $register, schema: $schema);
+	public function getSimpleFacets(MagicTableTarget $target, array $query): array {
+		$baseQuery = $this->withoutFacets(query: $query);
+		$table     = new TermsFacetTable(tableName: $target->tableName, baseQuery: $baseQuery, register: $target->register, schema: $target->schema);
 		return $this->tableFacets(table: $table, facetConfig: $query['_facets'] ?? []);
 	}//end getSimpleFacets()
 
