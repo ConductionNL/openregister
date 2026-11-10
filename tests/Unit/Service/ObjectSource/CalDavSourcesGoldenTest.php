@@ -32,6 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\CalendarEventService;
@@ -106,8 +107,9 @@ class CalDavSourcesGoldenTest extends TestCase {
 	 */
 	private function vtodo(?array $rows, ?array $apps = ['dav']): CalDavVtodoObjectSourceProvider {
 		$service = $this->createMock(TaskService::class);
-		$service->method('getAllUserTasks')->willReturnCallback(
-			function (?string $status = null, int $limit = 50, int $offset = 0) use ($rows): array {
+		$service->method('listUserTasks')->willReturnCallback(
+			function (?string $status, ListQuery $query) use ($rows): array {
+				[$limit, $offset] = [$query->limit, (int)$query->offset];
 				$this->log[] = ['getAllUserTasks', $status, $limit, $offset];
 				if ($rows === null) {
 					throw new RuntimeException('caldav down');

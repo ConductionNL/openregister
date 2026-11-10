@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ObjectSource;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -210,7 +211,7 @@ class CalDavVtodoObjectSourceProvider implements ObjectSourceProvider {
 		$limit  = (int)($query['limit'] ?? 200);
 		$offset = (int)($query['offset'] ?? 0);
 		try {
-			$result = $this->taskService->getAllUserTasks(status: $status, limit: $limit, offset: $offset);
+			$result = $this->taskService->listUserTasks(status: $status, query: new ListQuery(limit: $limit, offset: $offset));
 			return array_values($result['results']);
 		} catch (Throwable $e) {
 			$this->logger->warning('[ObjectSource:caldav-vtodo] could not read VTODOs: ' . $e->getMessage());

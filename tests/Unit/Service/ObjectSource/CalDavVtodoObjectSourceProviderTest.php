@@ -47,7 +47,7 @@ class CalDavVtodoObjectSourceProviderTest extends TestCase {
 	 */
 	private function provider(array $tasks, bool $appsThere = true): CalDavVtodoObjectSourceProvider {
 		$taskService = $this->createMock(TaskService::class);
-		$taskService->method('getAllUserTasks')->willReturn(['results' => $tasks, 'total' => count($tasks)]);
+		$taskService->method('listUserTasks')->willReturn(['results' => $tasks, 'total' => count($tasks)]);
 
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('isInstalled')->willReturn($appsThere);
