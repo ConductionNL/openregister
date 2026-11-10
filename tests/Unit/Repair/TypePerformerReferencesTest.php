@@ -204,6 +204,20 @@ final class TypePerformerReferencesTest extends TestCase {
 	}//end storedConfig()
 
 	/**
+	 * In a list, an empty entry is dropped and the rest typed; a scalar field stays a scalar.
+	 *
+	 * @return void
+	 */
+	public function testAnEmptyListEntryIsDroppedAndAScalarStaysAScalar(): void {
+		$this->flows = [$this->flowWith(['candidateGroups' => ['', 'bezwaar'], 'routingFallback' => 'alice'])];
+
+		$this->runStep([new NamedResolver('user', ['alice']), new NamedResolver('group', ['bezwaar'])]);
+
+		$this->assertSame([['type' => 'group', 'id' => 'bezwaar']], $this->storedConfig()['candidateGroups']);
+		$this->assertSame(['type' => 'user', 'id' => 'alice'], $this->storedConfig()['routingFallback']);
+	}//end testAnEmptyListEntryIsDroppedAndAScalarStaysAScalar()
+
+	/**
 	 * A string only one kind answers to is rewritten to that kind.
 	 *
 	 * @return void
