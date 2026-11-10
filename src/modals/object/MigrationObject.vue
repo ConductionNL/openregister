@@ -626,15 +626,25 @@ export default {
 				this.step = 4
 				refreshObjectLists()
 			} catch (error) {
-				console.error('Error performing migration:', error)
-				this.migrationResult = failedTransfer(
-					error,
-					'An error occurred during migration',
-				)
-				this.step = 4
+				this.showMigrationFailure(error)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Log a failed migration and show it on the report step.
+		 *
+		 * @param {Error} error What went wrong
+		 * @return {void}
+		 */
+		showMigrationFailure(error) {
+			console.error('Error performing migration:', error)
+			this.migrationResult = failedTransfer(
+				error,
+				'An error occurred during migration',
+			)
+			this.step = 4
 		},
 
 		/**

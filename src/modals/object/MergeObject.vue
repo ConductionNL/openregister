@@ -1002,28 +1002,47 @@ export default {
 
 			this.loading = true
 			try {
-				const result = await objectStore.mergeObjects(
-					objectStore.currentType,
-					this.sourceObject['@self'].id,
-					this.mergeRequest(),
-				)
-				if (!result) {
-					throw new Error(objectStore.lifecycleError?.message)
-				}
-
-				this.mergeResult = result
+				this.mergeResult = await this.requestMerge()
 				this.step = 3
 				refreshObjectLists()
 			} catch (error) {
-				console.error('Error performing merge:', error)
-				this.mergeResult = failedTransfer(
-					error,
-					'An error occurred during merge',
-				)
-				this.step = 3
+				this.showMergeFailure(error)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Ask the store to merge the source into the target.
+		 *
+		 * @return {Promise<object>} The merge result
+		 * @throws {Error} With the store's lifecycle error when the merge is refused
+		 */
+		async requestMerge() {
+			const result = await objectStore.mergeObjects(
+				objectStore.currentType,
+				this.sourceObject['@self'].id,
+				this.mergeRequest(),
+			)
+			if (!result) {
+				throw new Error(objectStore.lifecycleError?.message)
+			}
+			return result
+		},
+
+		/**
+		 * Log a failed merge and show it on the report step.
+		 *
+		 * @param {Error} error What went wrong
+		 * @return {void}
+		 */
+		showMergeFailure(error) {
+			console.error('Error performing merge:', error)
+			this.mergeResult = failedTransfer(
+				error,
+				'An error occurred during merge',
+			)
+			this.step = 3
 		},
 
 		/**
