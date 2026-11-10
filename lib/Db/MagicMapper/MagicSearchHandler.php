@@ -104,6 +104,21 @@ class MagicSearchHandler {
 	private const COMPARISON_OPERATORS = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne', 'isnull', LikeOperator::KEY];
 
 	/**
+	 * The expression-builder method of each comparison operator on a metadata column, in binding order.
+	 */
+	private const METADATA_COMPARISON_METHODS = ['gte' => 'gte', 'lte' => 'lte', 'gt' => 'gt', 'lt' => 'lt', 'ne' => 'neq'];
+
+	/**
+	 * The builder of the translatable ORDER BY expression per platform-class fragment, first match wins.
+	 */
+	private const TRANSLATABLE_SORT_BUILDERS = [
+		'PostgreSQL' => 'postgresTranslatableSortSql',
+		'MySQL'      => 'mysqlTranslatableSortSql',
+		'MariaDB'    => 'mysqlTranslatableSortSql',
+		'Sqlite'     => 'sqliteTranslatableSortSql',
+	];
+
+	/**
 	 * Metadata columns a search may order by under their own name.
 	 *
 	 * @var array<int, string>
@@ -1515,7 +1530,7 @@ class MagicSearchHandler {
 	 * @return string|null SQL condition or null if no RBAC filtering needed
 	 */
 	private function buildRbacConditionSql(Schema $schema, ?string $tableName = null): ?string {
-		$rbacResult = $this->rbacHandler->buildRbacConditionsSql(schema: $schema, action: 'read', tableName: $tableName);
+		$rbacResult = $this->rbacHandler->buildRbacConditionsSql(call: (new RbacAccessCall(schema: $schema))->onTable(tableName: $tableName));
 
 		if ($rbacResult['bypass'] === false) {
 			// User doesn't have unconditional access.
@@ -1918,7 +1933,6 @@ class MagicSearchHandler {
 	 *
 	 * @return string[] The conditions, to be ANDed
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity) A flat sequence of independent, ANDed operator checks
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function objectOperatorConditionsSql(array $value, RawObjectFieldFilter $field): array {
@@ -1926,53 +1940,108 @@ class MagicSearchHandler {
 		foreach (['gte' => '>=', 'lte' => '<=', 'gt' => '>', 'lt' => '<'] as $operator => $sqlOperator) {
 			if (isset($value[$operator]) === true) {
 				$colRef = $this->rawColumnRef(field: $field, value: $value[$operator]);
-				$fieldConditions[] = "{$colRef} {$sqlOperator} " . $field->quote(value: $value[$operator]);
+				$fieldConditions[] = "{$colRef} {$sqlOperator} ".$field->quote(value: $value[$operator]);
 			}
 		}
 
-		if (isset($value['in']) === true) {
-			$inValues = [$value['in']];
-			if (is_array($value['in']) === true) {
-				$inValues = $value['in'];
-			}
-
-			$colRef = $this->rawColumnRef(field: $field, value: $inValues);
-			$fieldConditions[] = "{$colRef} IN (" . $field->quoteList(values: $inValues) . ')';
-		}
-
-		if (isset($value['notIn']) === true) {
-			$notInValues = [$value['notIn']];
-			if (is_array($value['notIn']) === true) {
-				$notInValues = $value['notIn'];
-			}
-
-			// An empty exclusion list excludes nothing — skip the
-			// clause rather than emit `NOT IN ()`.
-			if (count($notInValues) > 0) {
-				$colRef = $this->rawColumnRef(field: $field, value: $notInValues);
-				$fieldConditions[] = "{$colRef} NOT IN (" . $field->quoteList(values: $notInValues) . ')';
-			}
-		}
-
-		if (isset($value['ne']) === true) {
-			$colRef = $this->rawColumnRef(field: $field, value: $value['ne']);
-			$fieldConditions[] = "{$colRef} <> " . $field->quote(value: $value['ne']);
-		}
-
-		if (isset($value['isnull']) === true) {
-			// No column-ref cast: a null check is about the column's
-			// presence, not its type, and casting a NULL would only
-			// obscure it.
-			$predicate = 'IS NOT NULL';
-			if ($this->isNullOperatorAsksForNull(value: $value['isnull']) === true) {
-				$predicate = 'IS NULL';
-			}
-
-			$fieldConditions[] = "{$field->quotedCol} {$predicate}";
-		}
-
-		return $fieldConditions;
+		return array_merge(
+			$fieldConditions,
+			$this->rawInConditionsSql(value: $value, field: $field),
+			$this->rawNotInConditionsSql(value: $value, field: $field),
+			$this->rawNeConditionsSql(value: $value, field: $field),
+			$this->rawIsNullConditionsSql(value: $value, field: $field)
+		);
 	}//end objectOperatorConditionsSql()
+
+	/**
+	 * The `in` condition of a raw-path operator bag, when it carries one
+	 *
+	 * @param array                $value The operator bag.
+	 * @param RawObjectFieldFilter $field The field being filtered.
+	 *
+	 * @return string[] The condition, or none
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function rawInConditionsSql(array $value, RawObjectFieldFilter $field): array {
+		if (isset($value['in']) === false) {
+			return [];
+		}
+
+		$inValues = $this->operandList(value: $value['in']);
+		$colRef   = $this->rawColumnRef(field: $field, value: $inValues);
+		return ["{$colRef} IN (".$field->quoteList(values: $inValues).')'];
+	}//end rawInConditionsSql()
+
+	/**
+	 * The `notIn` condition of a raw-path operator bag, when it excludes anything
+	 *
+	 * @param array                $value The operator bag.
+	 * @param RawObjectFieldFilter $field The field being filtered.
+	 *
+	 * @return string[] The condition, or none
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function rawNotInConditionsSql(array $value, RawObjectFieldFilter $field): array {
+		if (isset($value['notIn']) === false) {
+			return [];
+		}
+
+		$notInValues = $this->operandList(value: $value['notIn']);
+		// An empty exclusion list excludes nothing — skip the
+		// clause rather than emit `NOT IN ()`.
+		if (count($notInValues) === 0) {
+			return [];
+		}
+
+		$colRef = $this->rawColumnRef(field: $field, value: $notInValues);
+		return ["{$colRef} NOT IN (".$field->quoteList(values: $notInValues).')'];
+	}//end rawNotInConditionsSql()
+
+	/**
+	 * The `ne` condition of a raw-path operator bag, when it carries one
+	 *
+	 * @param array                $value The operator bag.
+	 * @param RawObjectFieldFilter $field The field being filtered.
+	 *
+	 * @return string[] The condition, or none
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function rawNeConditionsSql(array $value, RawObjectFieldFilter $field): array {
+		if (isset($value['ne']) === false) {
+			return [];
+		}
+
+		$colRef = $this->rawColumnRef(field: $field, value: $value['ne']);
+		return ["{$colRef} <> ".$field->quote(value: $value['ne'])];
+	}//end rawNeConditionsSql()
+
+	/**
+	 * The `isnull` condition of a raw-path operator bag, when it carries one
+	 *
+	 * No column-ref cast: a null check is about the column's presence, not
+	 * its type, and casting a NULL would only obscure it.
+	 *
+	 * @param array                $value The operator bag.
+	 * @param RawObjectFieldFilter $field The field being filtered.
+	 *
+	 * @return string[] The condition, or none
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function rawIsNullConditionsSql(array $value, RawObjectFieldFilter $field): array {
+		if (isset($value['isnull']) === false) {
+			return [];
+		}
+
+		if ($this->isNullOperatorAsksForNull(value: $value['isnull']) === true) {
+			return ["{$field->quotedCol} IS NULL"];
+		}
+
+		return ["{$field->quotedCol} IS NOT NULL"];
+	}//end rawIsNullConditionsSql()
 
 	/**
 	 * The column reference of a raw-path field, text-cast when a value is not numeric.
@@ -2683,12 +2752,7 @@ class MagicSearchHandler {
 
 		// Apply RBAC filtering if enabled.
 		if ($posture->rbac === true) {
-			$this->rbacHandler->applyRbacFilters(
-				qb: $qb,
-				schema: $schema,
-				action: 'read',
-				tableName: $table->tableName
-			);
+			$this->rbacHandler->applyRbacFilters(call: (new RbacFilterCall(qb: $qb, schema: $schema))->onTable(tableName: $table->tableName));
 		}
 	}//end applyAccessControlFilters()
 
@@ -2794,19 +2858,12 @@ class MagicSearchHandler {
 	 *
 	 * @return list<string|\Stringable> The predicates
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity) A flat sequence of independent, ANDed operator checks
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
 	private function metadataOperatorPredicates(BoundQueryColumn $column, array $value): array {
-		$qb        = $column->qb;
-		$columnRef = $column->ref;
 		$predicates = [];
 		if (array_key_exists(LikeOperator::KEY, $value) === true) {
-			$likeCondition = $this->likeCondition(column: $column, value: $value[LikeOperator::KEY]);
-			if ($likeCondition !== null) {
-				$predicates[] = $likeCondition;
-			}
-
+			$predicates = $this->metadataLikePredicates(column: $column, value: $value[LikeOperator::KEY]);
 			unset($value[LikeOperator::KEY]);
 			if ($value === []) {
 				return $predicates;
@@ -2815,54 +2872,158 @@ class MagicSearchHandler {
 
 		// No operator key at all: a bare list keeps its historical IN(...) meaning.
 		if (empty(array_intersect(array_keys($value), self::COMPARISON_OPERATORS)) === true) {
-			$predicates[] = $qb->expr()->in($columnRef, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY));
-
+			$predicates[] = $this->metadataInPredicate(column: $column, values: $value);
 			return $predicates;
 		}
 
-		// Multiple operators AND together, so {"gte":a,"lte":b} is a range.
-		$comparisons = ['gte' => 'gte', 'lte' => 'lte', 'gt' => 'gt', 'lt' => 'lt', 'ne' => 'neq'];
-		foreach ($comparisons as $operator => $method) {
-			if (isset($value[$operator]) === true) {
-				$predicates[] = $qb->expr()->$method($columnRef, $qb->createNamedParameter($value[$operator]));
-			}
-		}
-
-		if (isset($value['in']) === true) {
-			$inValues = $value['in'];
-			if (is_array($inValues) === false) {
-				$inValues = [$inValues];
-			}
-
-			$predicates[] = $qb->expr()->in($columnRef, $qb->createNamedParameter($inValues, IQueryBuilder::PARAM_STR_ARRAY));
-		}
-
-		if (isset($value['notIn']) === true) {
-			$notInValues = $value['notIn'];
-			if (is_array($notInValues) === false) {
-				$notInValues = [$notInValues];
-			}
-
-			// An empty NOT IN () is a SQL syntax error and means "exclude nothing".
-			if (empty($notInValues) === false) {
-				$predicates[] = $qb->expr()->notIn(
-					$columnRef,
-					$qb->createNamedParameter($notInValues, IQueryBuilder::PARAM_STR_ARRAY)
-				);
-			}
-		}
-
-		if (isset($value['isnull']) === true) {
-			$predicate = $qb->expr()->isNotNull($columnRef);
-			if ($this->isNullOperatorAsksForNull(value: $value['isnull']) === true) {
-				$predicate = $qb->expr()->isNull($columnRef);
-			}
-
-			$predicates[] = $predicate;
-		}
-
-		return $predicates;
+		return array_merge($predicates, $this->metadataComparisonPredicates(column: $column, value: $value));
 	}//end metadataOperatorPredicates()
+
+	/**
+	 * The `like` predicate of a metadata operator bag, when a term is left
+	 *
+	 * @param BoundQueryColumn $column The column and the query builder that binds values.
+	 * @param mixed            $value  The `like` operand.
+	 *
+	 * @return list<string> The predicate, or none
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 */
+	private function metadataLikePredicates(BoundQueryColumn $column, mixed $value): array {
+		$likeCondition = $this->likeCondition(column: $column, value: $value);
+		if ($likeCondition === null) {
+			return [];
+		}
+
+		return [$likeCondition];
+	}//end metadataLikePredicates()
+
+	/**
+	 * The comparison, `in`, `notIn` and `isnull` predicates of a metadata operator bag
+	 *
+	 * Multiple operators AND together, so {"gte":a,"lte":b} is a range.
+	 *
+	 * @param BoundQueryColumn     $column The column and the query builder that binds values.
+	 * @param array<string, mixed> $value  The operator bag.
+	 *
+	 * @return list<string|\Stringable> The predicates, in binding order
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function metadataComparisonPredicates(BoundQueryColumn $column, array $value): array {
+		$qb         = $column->qb;
+		$predicates = [];
+		foreach (self::METADATA_COMPARISON_METHODS as $operator => $method) {
+			if (isset($value[$operator]) === true) {
+				$predicates[] = $qb->expr()->$method($column->ref, $qb->createNamedParameter($value[$operator]));
+			}
+		}
+
+		return array_merge(
+			$predicates,
+			$this->metadataInPredicates(column: $column, value: $value),
+			$this->metadataNotInPredicates(column: $column, value: $value),
+			$this->metadataIsNullPredicates(column: $column, value: $value)
+		);
+	}//end metadataComparisonPredicates()
+
+	/**
+	 * The `in` predicate of a metadata operator bag, when it carries one
+	 *
+	 * @param BoundQueryColumn     $column The column and the query builder that binds values.
+	 * @param array<string, mixed> $value  The operator bag.
+	 *
+	 * @return list<string|\Stringable> The predicate, or none
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function metadataInPredicates(BoundQueryColumn $column, array $value): array {
+		if (isset($value['in']) === false) {
+			return [];
+		}
+
+		return [$this->metadataInPredicate(column: $column, values: $this->operandList(value: $value['in']))];
+	}//end metadataInPredicates()
+
+	/**
+	 * The `notIn` predicate of a metadata operator bag, when it excludes anything
+	 *
+	 * @param BoundQueryColumn     $column The column and the query builder that binds values.
+	 * @param array<string, mixed> $value  The operator bag.
+	 *
+	 * @return list<string|\Stringable> The predicate, or none
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function metadataNotInPredicates(BoundQueryColumn $column, array $value): array {
+		if (isset($value['notIn']) === false) {
+			return [];
+		}
+
+		$notInValues = $this->operandList(value: $value['notIn']);
+		// An empty NOT IN () is a SQL syntax error and means "exclude nothing".
+		if (empty($notInValues) === true) {
+			return [];
+		}
+
+		$qb = $column->qb;
+		return [$qb->expr()->notIn($column->ref, $qb->createNamedParameter($notInValues, IQueryBuilder::PARAM_STR_ARRAY))];
+	}//end metadataNotInPredicates()
+
+	/**
+	 * The `isnull` predicate of a metadata operator bag, when it carries one
+	 *
+	 * @param BoundQueryColumn     $column The column and the query builder that binds values.
+	 * @param array<string, mixed> $value  The operator bag.
+	 *
+	 * @return list<string|\Stringable> The predicate, or none
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function metadataIsNullPredicates(BoundQueryColumn $column, array $value): array {
+		if (isset($value['isnull']) === false) {
+			return [];
+		}
+
+		$expr = $column->qb->expr();
+		if ($this->isNullOperatorAsksForNull(value: $value['isnull']) === true) {
+			return [$expr->isNull($column->ref)];
+		}
+
+		return [$expr->isNotNull($column->ref)];
+	}//end metadataIsNullPredicates()
+
+	/**
+	 * An IN predicate on a metadata column, binding the values as a string list
+	 *
+	 * @param BoundQueryColumn $column The column and the query builder that binds values.
+	 * @param array            $values The values.
+	 *
+	 * @return string The predicate
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function metadataInPredicate(BoundQueryColumn $column, array $values): string {
+		$qb = $column->qb;
+		return $qb->expr()->in($column->ref, $qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY));
+	}//end metadataInPredicate()
+
+	/**
+	 * An operator operand as a list: a list stays, a single value is wrapped
+	 *
+	 * @param mixed $value The operand.
+	 *
+	 * @return array The operand as a list
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function operandList(mixed $value): array {
+		if (is_array($value) === true) {
+			return $value;
+		}
+
+		return [$value];
+	}//end operandList()
 
 	/**
 	 * Resolve a `@self` field name to its magic-table metadata column
@@ -4044,6 +4205,27 @@ class MagicSearchHandler {
 	 * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
 	 */
 	private function buildTranslatableSortSql(string $column, array $languages): string {
+		$codes    = $this->sortLanguageCodes(languages: $languages);
+		$platform = $this->db->getDatabasePlatform()::class;
+		foreach (self::TRANSLATABLE_SORT_BUILDERS as $platformName => $builder) {
+			if (stripos($platform, $platformName) !== false) {
+				return $this->$builder(column: $column, codes: $codes);
+			}
+		}
+
+		return $column;
+	}//end buildTranslatableSortSql()
+
+	/**
+	 * The language chain reduced to distinct `[a-z0-9-]` codes, safe to put in SQL
+	 *
+	 * @param array<int, string> $languages Language chain, first wins.
+	 *
+	 * @return list<string> The codes, first wins.
+	 *
+	 * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
+	 */
+	private function sortLanguageCodes(array $languages): array {
 		$codes = [];
 		foreach ($languages as $language) {
 			$code = preg_replace('/[^a-z0-9-]/', '', strtolower((string) $language));
@@ -4052,53 +4234,84 @@ class MagicSearchHandler {
 			}
 		}
 
-		$platform = $this->db->getDatabasePlatform()::class;
+		return $codes;
+	}//end sortLanguageCodes()
 
-		if (stripos($platform, 'PostgreSQL') !== false) {
-			// One JSON string value: quotes around anything but an unescaped quote.
-			$valuePattern = '\s*:\s*"((?:[^"\\\\]|\\\\.)*)"';
-			$text = "CAST({$column} AS TEXT)";
-			$picks = [];
-			foreach ($codes as $code) {
-				$picks[] = "substring({$text} from '\"{$code}\"{$valuePattern}')";
-			}
-
-			$picks[] = "substring({$text} from '^\\{\\s*\"[^\"]*\"{$valuePattern}')";
-			$picks[] = $text;
-
-			return "CASE WHEN {$text} LIKE '{%' THEN COALESCE(".implode(', ', $picks).") ELSE {$text} END";
+	/**
+	 * The translatable ORDER BY expression on PostgreSQL
+	 *
+	 * Extracts with a regular expression rather than a jsonb cast, because a
+	 * plain value that happens to start with a brace would make a cast fail.
+	 *
+	 * @param string       $column The quoted column reference.
+	 * @param list<string> $codes  Cleaned language codes, first wins.
+	 *
+	 * @return string The SQL expression.
+	 *
+	 * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
+	 */
+	private function postgresTranslatableSortSql(string $column, array $codes): string {
+		// One JSON string value: quotes around anything but an unescaped quote.
+		$valuePattern = '\s*:\s*"((?:[^"\\\\]|\\\\.)*)"';
+		$text = "CAST({$column} AS TEXT)";
+		$picks = [];
+		foreach ($codes as $code) {
+			$picks[] = "substring({$text} from '\"{$code}\"{$valuePattern}')";
 		}
 
-		if (stripos($platform, 'MySQL') !== false || stripos($platform, 'MariaDB') !== false) {
-			$picks = [];
-			foreach ($codes as $code) {
-				$picks[] = "JSON_UNQUOTE(JSON_EXTRACT({$column}, '$.\"{$code}\"'))";
-			}
+		$picks[] = "substring({$text} from '^\\{\\s*\"[^\"]*\"{$valuePattern}')";
+		$picks[] = $text;
 
-			$picks[] = "JSON_UNQUOTE(JSON_EXTRACT(JSON_EXTRACT({$column}, '$.*'), '$[0]'))";
-			$picks[] = $column;
+		return "CASE WHEN {$text} LIKE '{%' THEN COALESCE(".implode(', ', $picks).") ELSE {$text} END";
+	}//end postgresTranslatableSortSql()
 
-			// Nested rather than AND: JSON_TYPE() raises an error on a value that
-			// is not JSON, and only CASE promises not to evaluate it then.
-			return "CASE WHEN JSON_VALID({$column}) THEN CASE WHEN JSON_TYPE({$column}) = 'OBJECT'"
-				." THEN COALESCE(".implode(', ', $picks).") ELSE {$column} END ELSE {$column} END";
+	/**
+	 * The translatable ORDER BY expression on MySQL and MariaDB
+	 *
+	 * @param string       $column The quoted column reference.
+	 * @param list<string> $codes  Cleaned language codes, first wins.
+	 *
+	 * @return string The SQL expression.
+	 *
+	 * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
+	 */
+	private function mysqlTranslatableSortSql(string $column, array $codes): string {
+		$picks = [];
+		foreach ($codes as $code) {
+			$picks[] = "JSON_UNQUOTE(JSON_EXTRACT({$column}, '$.\"{$code}\"'))";
 		}
 
-		if (stripos($platform, 'Sqlite') !== false) {
-			$picks = [];
-			foreach ($codes as $code) {
-				$picks[] = "json_extract({$column}, '$.\"{$code}\"')";
-			}
+		$picks[] = "JSON_UNQUOTE(JSON_EXTRACT(JSON_EXTRACT({$column}, '$.*'), '$[0]'))";
+		$picks[] = $column;
 
-			$picks[] = "(SELECT value FROM json_each({$column}) LIMIT 1)";
-			$picks[] = $column;
+		// Nested rather than AND: JSON_TYPE() raises an error on a value that
+		// is not JSON, and only CASE promises not to evaluate it then.
+		return "CASE WHEN JSON_VALID({$column}) THEN CASE WHEN JSON_TYPE({$column}) = 'OBJECT'"
+			." THEN COALESCE(".implode(', ', $picks).") ELSE {$column} END ELSE {$column} END";
+	}//end mysqlTranslatableSortSql()
 
-			return "CASE WHEN json_valid({$column}) THEN CASE WHEN json_type({$column}) = 'object'"
-				." THEN COALESCE(".implode(', ', $picks).") ELSE {$column} END ELSE {$column} END";
+	/**
+	 * The translatable ORDER BY expression on SQLite
+	 *
+	 * @param string       $column The quoted column reference.
+	 * @param list<string> $codes  Cleaned language codes, first wins.
+	 *
+	 * @return string The SQL expression.
+	 *
+	 * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
+	 */
+	private function sqliteTranslatableSortSql(string $column, array $codes): string {
+		$picks = [];
+		foreach ($codes as $code) {
+			$picks[] = "json_extract({$column}, '$.\"{$code}\"')";
 		}
 
-		return $column;
-	}//end buildTranslatableSortSql()
+		$picks[] = "(SELECT value FROM json_each({$column}) LIMIT 1)";
+		$picks[] = $column;
+
+		return "CASE WHEN json_valid({$column}) THEN CASE WHEN json_type({$column}) = 'object'"
+			." THEN COALESCE(".implode(', ', $picks).") ELSE {$column} END ELSE {$column} END";
+	}//end sqliteTranslatableSortSql()
 
 	/**
 	 * The ORDER BY expression for a metadata column.

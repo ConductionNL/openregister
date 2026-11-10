@@ -23,11 +23,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
-use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * A history that cannot be read lists nothing; one that can is listed in full, reindexed.
@@ -47,7 +47,7 @@ class AuditTrailProviderFailureTest extends TestCase {
 
 		$provider = new AuditTrailProvider(history: $history, l10n: $this->createMock(IL10N::class));
 
-		$this->assertSame([], $provider->list(register: 'r', schema: 's', objectId: 'o'));
+		$this->assertSame([], $provider->list(ref: new ObjectRef(register: 'r', schema: 's', id: 'o')));
 	}//end testFailingHistoryListsNothing()
 
 	/**
@@ -63,6 +63,6 @@ class AuditTrailProviderFailureTest extends TestCase {
 
 		$provider = new AuditTrailProvider(history: $history, l10n: $this->createMock(IL10N::class));
 
-		$this->assertSame([['id' => 'b'], ['id' => 'a']], $provider->list(register: 'r', schema: 's', objectId: 'o'));
+		$this->assertSame([['id' => 'b'], ['id' => 'a']], $provider->list(ref: new ObjectRef(register: 'r', schema: 's', id: 'o')));
 	}//end testHistoryIsAskedInFullAndReindexed()
 }//end class

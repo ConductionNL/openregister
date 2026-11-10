@@ -9,14 +9,15 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
-use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\Object\SchemaRevalidation;
 use Exception;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\ValidateObject;
@@ -241,7 +242,9 @@ class ValidationHandlerSchemaRunGoldenTest extends TestCase {
 
 		$magic = $this->createMock(MagicMapper::class);
 		$magic->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			function (Register $register, Schema $schema, ...$rest): array {
+			function (RegisterSchema $table, ListQuery $listing): array {
+				[$register, $schema] = [$table->register, $table->schema];
+				$rest = [$listing->limitOrNull(), $listing->offset, ($listing->filters === [] ? null : $listing->filters), $listing->sort];
 				$this->calls[] = ['findAllInRegisterSchemaTable', $register->getId(), $schema->getId(), $rest];
 				if (($this->world['tableFails'] ?? false) === true) {
 					throw new Exception('no table');
