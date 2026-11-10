@@ -1323,17 +1323,9 @@ class SchemasController extends Controller {
 
 		// Every update needs manage permission, not just authorization changes;
 		// reading schema metadata stays open for frontends.
-		try {
-			$existingSchema = $this->schemaMapper->find($id);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
-		}
-
-		if ($this->checkSchemaManagePermission(schema: $existingSchema) === false) {
-			return new JSONResponse(
-				data: ['error' => 'User does not have permission to manage this schema'],
-				statusCode: Http::STATUS_FORBIDDEN
-			);
+		$existingSchema = $this->requireManageableSchema(id: $id);
+		if ($existingSchema instanceof JSONResponse) {
+			return $existingSchema;
 		}
 
 		$data = $this->withAuthorizationAsStored(document: $data);
@@ -1587,17 +1579,9 @@ class SchemasController extends Controller {
 	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 	 */
 	private function saveDraft(int $id, array $data): JSONResponse {
-		try {
-			$schema = $this->schemaMapper->find($id);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
-		}
-
-		if ($this->checkSchemaManagePermission(schema: $schema) === false) {
-			return new JSONResponse(
-				data: ['error' => 'User does not have permission to manage this schema'],
-				statusCode: Http::STATUS_FORBIDDEN
-			);
+		$schema = $this->requireManageableSchema(id: $id);
+		if ($schema instanceof JSONResponse) {
+			return $schema;
 		}
 
 		unset($data['id'], $data['organisation'], $data['owner'], $data['created']);
@@ -1671,17 +1655,9 @@ class SchemasController extends Controller {
 	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 	 */
 	public function discardDraft(int $id): JSONResponse {
-		try {
-			$schema = $this->schemaMapper->find($id);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
-		}
-
-		if ($this->checkSchemaManagePermission(schema: $schema) === false) {
-			return new JSONResponse(
-				data: ['error' => 'User does not have permission to manage this schema'],
-				statusCode: Http::STATUS_FORBIDDEN
-			);
+		$schema = $this->requireManageableSchema(id: $id);
+		if ($schema instanceof JSONResponse) {
+			return $schema;
 		}
 
 		$schema->setDraft(null);
@@ -2425,17 +2401,9 @@ class SchemasController extends Controller {
 			// surface undefined properties — a schema-introspection operation that
 			// MUST require manage permission (same authority as editing the schema),
 			// so an arbitrary user cannot probe another schema's data shape (IDOR).
-			try {
-				$existingSchema = $this->schemaMapper->find($id);
-			} catch (DoesNotExistException $e) {
-				return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
-			}
-
-			if ($this->checkSchemaManagePermission(schema: $existingSchema) === false) {
-				return new JSONResponse(
-					data: ['error' => 'User does not have permission to manage this schema'],
-					statusCode: Http::STATUS_FORBIDDEN
-				);
+			$existingSchema = $this->requireManageableSchema(id: $id);
+			if ($existingSchema instanceof JSONResponse) {
+				return $existingSchema;
 			}
 
 			$this->logger->info(
@@ -2484,17 +2452,9 @@ class SchemasController extends Controller {
 			// definition is a schema mutation and MUST require manage permission,
 			// exactly like update()/upload(). Without this guard any authenticated
 			// user could rewrite an arbitrary schema's properties (IDOR).
-			try {
-				$existingSchema = $this->schemaMapper->find($id);
-			} catch (DoesNotExistException $e) {
-				return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
-			}
-
-			if ($this->checkSchemaManagePermission(schema: $existingSchema) === false) {
-				return new JSONResponse(
-					data: ['error' => 'User does not have permission to manage this schema'],
-					statusCode: Http::STATUS_FORBIDDEN
-				);
+			$existingSchema = $this->requireManageableSchema(id: $id);
+			if ($existingSchema instanceof JSONResponse) {
+				return $existingSchema;
 			}
 
 			// Get property updates from request.
@@ -2835,6 +2795,30 @@ class SchemasController extends Controller {
 			return false;
 		}
 	}//end checkSchemaManagePermission()
+
+	/**
+	 * The schema with this id, when the caller may manage it.
+	 *
+	 * @param int $id The schema id.
+	 *
+	 * @return Schema|JSONResponse The schema, or the 404 / 403 refusal.
+	 */
+	private function requireManageableSchema(int $id): Schema|JSONResponse {
+		try {
+			$schema = $this->schemaMapper->find($id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
+		}
+
+		if ($this->checkSchemaManagePermission(schema: $schema) === false) {
+			return new JSONResponse(
+				data: ['error' => 'User does not have permission to manage this schema'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		return $schema;
+	}//end requireManageableSchema()
 
 	/**
 	 * Read the list surface a schema declares: its columns and its search fields.
