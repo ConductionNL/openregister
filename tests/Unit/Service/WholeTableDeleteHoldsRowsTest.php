@@ -31,6 +31,7 @@ use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Service\SchemaDeletionService;
 use OCA\OpenRegister\Service\SchemaDeletionStores;
 use OCA\OpenRegister\Service\SchemaTeardownGuard;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -161,13 +162,13 @@ final class WholeTableDeleteHoldsRowsTest extends TestCase {
 				return count($this->rows[(int)$schema->getId()]);
 			}
 		);
-		$this->audit->method('createAuditTrailEntry')->willReturnCallback(
+		$this->audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (): AuditTrail {
 				$this->steps[] = 'audit';
 
 				return new AuditTrail();
 			}
-		);
+		));
 
 		$this->service = new SchemaDeletionService(
 			$this->db,

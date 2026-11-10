@@ -231,7 +231,7 @@ class SchemaDeletionRegisterDeleteTest extends TestCase {
 		$this->magicMapper->method('deleteObjectsBySchema')->willReturnCallback(
 			fn (Register $register, Schema $schema, bool $hardDelete): int => count($this->rows[(int)$schema->getId()])
 		);
-		$this->auditTrailMapper->expects($this->exactly(3))->method('createAuditTrailEntry');
+		$this->auditTrailMapper->expects($this->exactly(3))->method('recordObjectEvent');
 		$this->db->expects($this->once())->method('beginTransaction');
 		$this->db->expects($this->once())->method('commit');
 		$this->db->expects($this->never())->method('rollBack');
@@ -258,7 +258,7 @@ class SchemaDeletionRegisterDeleteTest extends TestCase {
 		$this->givenSchema(id: 43, uuids: ['b-1'], archival: true);
 
 		$this->magicMapper->expects($this->never())->method('deleteObjectsBySchema');
-		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrailMapper->expects($this->never())->method('recordObjectEvent');
 		$this->db->expects($this->never())->method('beginTransaction');
 
 		try {
@@ -282,7 +282,7 @@ class SchemaDeletionRegisterDeleteTest extends TestCase {
 		$this->rows[43][1]->setFrozen(['by' => 'alice', 'at' => '2026-01-01T00:00:00+00:00', 'reason' => 'kept']);
 
 		$this->magicMapper->expects($this->never())->method('deleteObjectsBySchema');
-		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrailMapper->expects($this->never())->method('recordObjectEvent');
 		$this->db->expects($this->never())->method('commit');
 
 		$this->expectException(ObjectStateWriteException::class);
@@ -369,7 +369,7 @@ class SchemaDeletionRegisterDeleteTest extends TestCase {
 		$this->rows[42][0]->setFrozen(['by' => 'alice', 'at' => '2026-01-01T00:00:00+00:00', 'reason' => 'kept']);
 
 		$this->magicMapper->expects($this->never())->method('deleteObjectsBySchema');
-		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrailMapper->expects($this->never())->method('recordObjectEvent');
 
 		$this->expectException(ObjectStateWriteException::class);
 

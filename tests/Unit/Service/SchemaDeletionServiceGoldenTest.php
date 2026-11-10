@@ -36,6 +36,7 @@ use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Service\SchemaDeletionService;
 use OCA\OpenRegister\Service\SchemaDeletionStores;
 use OCA\OpenRegister\Service\SchemaTeardownOverride;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IFunctionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -186,12 +187,12 @@ final class SchemaDeletionServiceGoldenTest extends TestCase {
 		});
 
 		$audit = $this->createMock(AuditTrailMapperInterface::class);
-		$audit->method('createAuditTrailEntry')->willReturnCallback(function ($object, $action, $context = []) {
+		$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(function ($object, $action, $context = []) {
 			$this->trace[] = 'audit ' . $action . ' ' . $object->getUuid();
 			unset($context['snapshot']);
 			$this->audits[] = [$action, $object->getUuid(), $context];
 			return new AuditTrail();
-		});
+		}));
 
 		$logger = $this->createMock(LoggerInterface::class);
 		foreach (['info', 'warning', 'error'] as $level) {
