@@ -1324,10 +1324,7 @@ class OrganisationController extends Controller {
 			$result = $this->tenantLifecycleService->suspend($organisation);
 			return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
 		} catch (Exception $e) {
-			$statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;
-			if ($e->getCode() >= 400) {
-				$statusCode = $e->getCode();
-			}
+			$statusCode = $this->lifecycleStatus(error: $e);
 
 			return new JSONResponse(
 				data: [
@@ -1367,15 +1364,7 @@ class OrganisationController extends Controller {
 			$result = $this->tenantLifecycleService->reactivate($organisation);
 			return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
 		} catch (Exception $e) {
-			$statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;
-			if ($e->getCode() >= 400) {
-				$statusCode = $e->getCode();
-			}
-
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: $statusCode
-			);
+			return $this->lifecycleFailure(error: $e);
 		}//end try
 	}//end activate()
 
@@ -1397,15 +1386,7 @@ class OrganisationController extends Controller {
 			$result = $this->tenantLifecycleService->deprovision($organisation);
 			return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
 		} catch (Exception $e) {
-			$statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;
-			if ($e->getCode() >= 400) {
-				$statusCode = $e->getCode();
-			}
-
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: $statusCode
-			);
+			return $this->lifecycleFailure(error: $e);
 		}
 	}//end deprovision()
 
@@ -1426,17 +1407,38 @@ class OrganisationController extends Controller {
 			$result = $this->tenantLifecycleService->retain($organisation);
 			return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
 		} catch (Exception $e) {
-			$statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;
-			if ($e->getCode() >= 400) {
-				$statusCode = $e->getCode();
-			}
-
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: $statusCode
-			);
+			return $this->lifecycleFailure(error: $e);
 		}
 	}//end retain()
+
+	/**
+	 * The answer to a lifecycle action that failed: the error, under its status.
+	 *
+	 * @param Exception $error The failure.
+	 *
+	 * @return JSONResponse The error response.
+	 */
+	private function lifecycleFailure(Exception $error): JSONResponse {
+		return new JSONResponse(
+			data: ['error' => $error->getMessage()],
+			statusCode: $this->lifecycleStatus(error: $error)
+		);
+	}//end lifecycleFailure()
+
+	/**
+	 * The status a failed lifecycle action answers: the exception code when it is an HTTP error, else 500.
+	 *
+	 * @param Exception $error The failure.
+	 *
+	 * @return int The HTTP status.
+	 */
+	private function lifecycleStatus(Exception $error): int {
+		if ($error->getCode() >= 400) {
+			return (int)$error->getCode();
+		}
+
+		return Http::STATUS_INTERNAL_SERVER_ERROR;
+	}//end lifecycleStatus()
 
 	/**
 	 * Get usage data for an organisation.
