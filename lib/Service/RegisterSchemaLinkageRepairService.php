@@ -219,21 +219,6 @@ class RegisterSchemaLinkageRepairService implements RegisterSchemaLinkageRepairS
 		$merged = $this->mergeIds(current: $current, additions: $this->normaliseIds(candidates: $schemaIds));
 		$register->setSchemas($merged);
 		$this->registerMapper->update($register);
-		$this->logRepair(registerId: $registerId, current: $current, merged: $merged);
-
-		return $merged;
-	}//end apply()
-
-	/**
-	 * Record a repaired register's before and after schema lists.
-	 *
-	 * @param int   $registerId The repaired register.
-	 * @param int[] $current    The ids before the repair.
-	 * @param int[] $merged     The ids after the repair.
-	 *
-	 * @return void
-	 */
-	private function logRepair(int $registerId, array $current, array $merged): void {
 		$this->logger->warning(
 			message: sprintf(
 				'[RegisterSchemaLinkageRepair] Register %d schemas list repaired: %s -> %s.',
@@ -243,7 +228,9 @@ class RegisterSchemaLinkageRepairService implements RegisterSchemaLinkageRepairS
 			),
 			context: ['file' => __FILE__, 'line' => __LINE__, 'register' => $registerId]
 		);
-	}//end logRepair()
+
+		return $merged;
+	}//end apply()
 
 	/**
 	 * Merge additional ids into the current ones, keeping every current id, sorted.

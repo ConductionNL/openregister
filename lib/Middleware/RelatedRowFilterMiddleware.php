@@ -55,6 +55,19 @@ class RelatedRowFilterMiddleware extends Middleware {
 	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	public function afterException(Controller $controller, string $methodName, Exception $exception): Response {
+		return $this->badRequestOrRethrow(exception: $exception);
+	}//end afterException()
+
+	/**
+	 * The 400 for a refused related-row or reveal query; anything else is rethrown.
+	 *
+	 * @param Exception $exception The exception that was thrown.
+	 *
+	 * @return JSONResponse The 400 response.
+	 *
+	 * @throws Exception Rethrows every other exception.
+	 */
+	private function badRequestOrRethrow(Exception $exception): JSONResponse {
 		if ($exception instanceof RelatedRowFilterNotSupportedException === false
 			&& $exception instanceof ExplicitRevealQueryException === false
 		) {
@@ -62,5 +75,5 @@ class RelatedRowFilterMiddleware extends Middleware {
 		}
 
 		return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 400);
-	}//end afterException()
+	}//end badRequestOrRethrow()
 }//end class

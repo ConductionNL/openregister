@@ -90,7 +90,7 @@ class ObjectAccessHistory {
 			$changes[] = $change;
 
 			if ($asOf === null) {
-				$asOf = $this->setAsOf(asked: $asked, change: $change, changes: $changes);
+				$asOf = $this->setAsOf(asked: $asked, changes: $changes);
 			}
 		}
 
@@ -105,12 +105,13 @@ class ObjectAccessHistory {
 	 * everything after it had not happened yet.
 	 *
 	 * @param integer|null                     $asked   The moment asked about.
-	 * @param array<string, mixed>             $change  The change under consideration.
-	 * @param array<int, array<string, mixed>> $changes Every change collected so far, newest first.
+	 * @param array<int, array<string, mixed>> $changes Every change collected so far, newest first; the
+	 *                                                  last one is the change under consideration.
 	 *
 	 * @return array<string, mixed>|null The set, or null when this change is not the one.
 	 */
-	private function setAsOf(?int $asked, array $change, array $changes): ?array {
+	private function setAsOf(?int $asked, array $changes): ?array {
+		$change = $changes[array_key_last($changes)];
 		if ($asked === null || $change['at'] === null) {
 			return null;
 		}

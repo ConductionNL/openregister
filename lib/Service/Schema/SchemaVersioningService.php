@@ -46,8 +46,6 @@ use OCA\OpenRegister\Db\SchemaChangelog;
 use OCA\OpenRegister\Db\SchemaChangelogMapperInterface;
 use OCA\OpenRegister\Db\SchemaRun;
 use OCA\OpenRegister\Db\SchemaRunEntry;
-use OCA\OpenRegister\Db\SchemaRunEntryMapperInterface;
-use OCA\OpenRegister\Db\SchemaRunMapperInterface;
 use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -59,22 +57,19 @@ class SchemaVersioningService {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaDiffService $diffService Pure diff/classification.
+	 * @param SchemaDiffService              $diffService     Pure diff/classification.
 	 * @param SchemaChangelogMapperInterface $changelogMapper Changelog persistence.
-	 * @param SchemaRunMapperInterface $runMapper Run persistence (for invalid counts).
-	 * @param SchemaRunEntryMapperInterface $runEntryMapper Per-object run entries.
-	 * @param IUserSession $userSession Current user resolution.
-	 * @param LoggerInterface $logger Logger.
+	 * @param SchemaPopulationRuns           $runs            The run ledger (for invalid counts).
+	 * @param IUserSession                   $userSession     Current user resolution.
+	 * @param LoggerInterface                $logger          Logger.
 	 */
 	public function __construct(
 		private readonly SchemaDiffService $diffService,
 		private readonly SchemaChangelogMapperInterface $changelogMapper,
-		private readonly SchemaRunMapperInterface $runMapper,
-		private readonly SchemaRunEntryMapperInterface $runEntryMapper,
+		private readonly SchemaPopulationRuns $runs,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
-
 	}//end __construct()
 
 	/**
@@ -296,7 +291,7 @@ class SchemaVersioningService {
 	 */
 	private function latestInvalidCount(int $schemaId): ?int {
 		try {
-			$runs = $this->runMapper->findBySchema($schemaId, 25);
+			$runs = $this->runs->runMapper->findBySchema($schemaId, 25);
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -335,7 +330,7 @@ class SchemaVersioningService {
 		}
 
 		try {
-			return count($this->runEntryMapper->findByRun(runId: $run->getId(), filter: new OutcomeFilter(outcome: SchemaRunEntry::OUTCOME_INVALID)));
+			return count($this->runs->runEntryMapper->findByRun(runId: $run->getId(), filter: new OutcomeFilter(outcome: SchemaRunEntry::OUTCOME_INVALID)));
 		} catch (\Throwable $e) {
 			return null;
 		}

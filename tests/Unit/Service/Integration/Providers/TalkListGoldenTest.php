@@ -239,7 +239,7 @@ class TalkListGoldenTest extends TestCase {
 				$mapper->method('findByObjectUuid')->willReturn($links);
 			}
 		}
-		return new TalkProvider($this->container($mode), $apps, $session, $l10n, $mapper);
+		return new TalkProvider($this->container($mode), new \OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription($apps, $l10n), $session, $mapper);
 	}//end provider()
 
 	/**
