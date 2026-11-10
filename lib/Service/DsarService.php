@@ -80,45 +80,73 @@ class DsarService implements DsarServiceInterface {
 	public const DEFAULT_DSAR_ACTIVITY_CODE = 'dsar';
 
 	/**
+	 * Database connection for the GdprEntity and entity_relations lookup.
+	 *
+	 * @var IDBConnection
+	 */
+	private readonly IDBConnection $db;
+
+	/**
+	 * Object-routing mapper used to load found objects.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $objectMapper;
+
+	/**
+	 * Resolves the configured DSAR activity reference.
+	 *
+	 * @var VerwerkingsactiviteitMapperInterface
+	 */
+	private readonly VerwerkingsactiviteitMapperInterface $vrwMapper;
+
+	/**
+	 * App-config reader.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Current user, for soft-delete metadata and the in-service privilege guard.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager used by the in-service admin guard.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * Refuses erasure of a legally retained record and puts the refusal into words.
+	 *
+	 * @var ArchivalRetentionGuard
+	 */
+	private readonly ArchivalRetentionGuard $archivalGuard;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection $db Database connection
-	 *                          used for the
-	 *                          GdprEntity +
-	 *                          entity_relations
-	 *                          lookup.
-	 * @param MagicMapperInterface $objectMapper Object-routing
-	 *                                  mapper used to
-	 *                                  load found
-	 *                                  objects.
-	 * @param VerwerkingsactiviteitMapperInterface $vrwMapper Resolves the
-	 *                                               configured DSAR
-	 *                                               activity reference.
-	 * @param IAppConfig $appConfig App-config reader.
-	 * @param IUserSession $userSession Current user (for
-	 *                                  soft-delete
-	 *                                  metadata + the
-	 *                                  in-service
-	 *                                  privilege guard).
+	 * @param DsarStores      $stores The relation tables, the object mapper, the activity mapper and app config.
+	 * @param DsarGuards      $guards The current user, the group manager and the archival retention guard.
 	 * @param LoggerInterface $logger Logger.
-	 * @param IGroupManager $groupManager Group manager used
-	 *                                    by the in-service
-	 *                                    admin guard.
-	 * @param ArchivalRetentionGuard $archivalGuard Refuses erasure of a legally
-	 *                                              retained record and puts the
-	 *                                              refusal into words.
 	 */
 	public function __construct(
-		private readonly IDBConnection $db,
-		private readonly MagicMapperInterface $objectMapper,
-		private readonly VerwerkingsactiviteitMapperInterface $vrwMapper,
-		private readonly IAppConfig $appConfig,
-		private readonly IUserSession $userSession,
+		DsarStores $stores,
+		DsarGuards $guards,
 		private readonly LoggerInterface $logger,
-		private readonly IGroupManager $groupManager,
-		private readonly ArchivalRetentionGuard $archivalGuard,
 	) {
-
+		$this->db = $stores->db;
+		$this->objectMapper = $stores->objectMapper;
+		$this->vrwMapper = $stores->vrwMapper;
+		$this->appConfig = $stores->appConfig;
+		$this->userSession = $guards->userSession;
+		$this->groupManager = $guards->groupManager;
+		$this->archivalGuard = $guards->archivalGuard;
 	}//end __construct()
 
 	/**
