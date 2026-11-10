@@ -112,7 +112,7 @@ class PartyNotificationService {
 	 * @param string      $objectUuid The object.
 	 * @param string|null $role       Only the parties in this role, or null for all of them.
 	 *
-	 * @return array<int, \OCA\OpenRegister\Db\ContactLink> The links, in the order the mapper returned them.
+	 * @return array<int, ContactLink> The links, in the order the mapper returned them.
 	 */
 	private function linksInRole(string $objectUuid, ?string $role): array {
 		$links = [];
