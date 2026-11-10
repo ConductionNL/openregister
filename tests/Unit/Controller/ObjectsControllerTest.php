@@ -6639,7 +6639,7 @@ class ObjectsControllerTest extends TestCase {
 	 */
 	public function testDestroyPassesTheRouteScope(): void {
 		$this->setupAdminUser();
-		$this->objectService->expects($this->once())->method('deleteObject')->with('id', 'r', 's', false, false)->willReturn(true);
+		$this->objectService->expects($this->once())->method('deleteObject')->with(new \OCA\OpenRegister\Service\Object\ObjectDeletion(uuid: 'id', target: new \OCA\OpenRegister\Service\Object\ObjectFindTarget(register: 'r', schema: 's')), false, false)->willReturn(true);
 
 		$this->assertSame(204, $this->controller->destroy('id', 'r', 's', $this->objectService)->getStatus());
 	}
@@ -6651,7 +6651,7 @@ class ObjectsControllerTest extends TestCase {
 	 */
 	public function testDestroyScopesANonAdmin(): void {
 		$this->userSession->method('getUser')->willReturn($this->createMock(\OCP\IUser::class));
-		$this->objectService->expects($this->once())->method('deleteObject')->with('id', 'r', 's', true, true)->willReturn(true);
+		$this->objectService->expects($this->once())->method('deleteObject')->with(new \OCA\OpenRegister\Service\Object\ObjectDeletion(uuid: 'id', target: new \OCA\OpenRegister\Service\Object\ObjectFindTarget(register: 'r', schema: 's')), true, true)->willReturn(true);
 
 		$this->assertSame(204, $this->controller->destroy('id', 'r', 's', $this->objectService)->getStatus());
 	}
