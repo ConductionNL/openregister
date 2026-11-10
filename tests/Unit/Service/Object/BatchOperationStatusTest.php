@@ -66,7 +66,7 @@ class BatchOperationStatusTest extends TestCase {
 		$status->recordCreated('c-2');
 		$status->recordUpdated('u-1');
 		$status->recordUnchanged('n-1');
-		$status->recordFailed(new RowFailure(null, 'invalid', 'RuntimeException', 4));
+		$status->recordFailed(new RowFailure(uuid: null, message: 'invalid', exceptionClass: 'RuntimeException', index: 4));
 		$status->recordReferenceCacheHit();
 		$status->recordReferenceCacheHit();
 		$status->recordReferenceCacheMiss();

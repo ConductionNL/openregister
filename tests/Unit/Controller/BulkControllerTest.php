@@ -813,10 +813,10 @@ class BulkControllerTest extends TestCase {
 		$status->recordCreated('created-uuid');
 		$status->recordFailed(
 			new \OCA\OpenRegister\Service\Object\RowFailure(
-				'failed-uuid',
-				"resolutiondate: The data must match the 'date-time' format",
-				\OCA\OpenRegister\Exception\ValidationException::class,
-				1
+				uuid: 'failed-uuid',
+				message: "resolutiondate: The data must match the 'date-time' format",
+				exceptionClass: \OCA\OpenRegister\Exception\ValidationException::class,
+				index: 1
 			)
 		);
 		$status->complete();

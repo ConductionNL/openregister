@@ -164,7 +164,11 @@ class ObjectVersionGuardRefusalTest extends TestCase {
 		$report->expects($this->once())
 			->method('build')
 			->with(
-				$this->callback(static fn (RefusedWrite $write): bool => $write->stored instanceof ObjectEntity && $write->schema === $schema && $write->sent === ['title' => 'mine']),
+				$this->callback(
+					callback: static fn (RefusedWrite $write): bool => $write->stored instanceof ObjectEntity
+						&& $write->schema === $schema
+						&& $write->sent === ['title' => 'mine']
+				),
 				[]
 			)
 			->willReturn(['error' => 'detailed', 'conflicts' => ['title' => ['theirs', 'mine', 'base']]]);
