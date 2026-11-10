@@ -93,6 +93,29 @@ class RunActionActionSchemaLookupTest extends TestCase {
 		$this->assertSame('no-schema', $result->getReason());
 	}//end testAnUnreadableSchemaRefusesTheMember()
 
+	public function testACommitWithoutAnActorRunsDirectlyAndPassesTheCallersRefs(): void {
+		$this->schemas->method('find')->willReturn(new Schema());
+		$objects = $this->createMock(ObjectOperationsInterface::class);
+		$objects->expects($this->never())->method('runAs');
+		$seen = [];
+		$this->runner->method('target')->willReturnCallback(
+			function (ObjectEntity $object, Schema $schema, string $register, string $schemaRef) use (&$seen): \OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget {
+				$seen = [$register, $schemaRef];
+				return new \OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget($object, $schema, $register, $schemaRef);
+			}
+		);
+		$this->runner->expects($this->once())->method('run')
+			->with($this->anything(), 'close', ['note' => 'x'])
+			->willReturn(['status' => Http::STATUS_CONFLICT, 'body' => ['message' => 'already closed']]);
+		$action = new RunActionAction($this->runner, new BulkObjectAccess($objects, $this->schemas, new NullLogger()));
+
+		$result = $action->apply($this->object(), ['action' => 'close', 'inputs' => ['note' => 'x'], 'register' => 'zaken'], true);
+
+		$this->assertSame(['zaken', '7'], $seen);
+		$this->assertSame(BulkJobMember::OUTCOME_SKIPPED, $result->getOutcome());
+		$this->assertSame('already closed', $result->getReason());
+	}//end testACommitWithoutAnActorRunsDirectlyAndPassesTheCallersRefs()
+
 	public function testAReadableSchemaIsNotRefused(): void {
 		$this->schemas->method('find')->willReturn(new Schema());
 		$this->runner->method('check')->willReturn(['refusal' => ['status' => Http::STATUS_FORBIDDEN, 'body' => ['message' => 'nope']]]);

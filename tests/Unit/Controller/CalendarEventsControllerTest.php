@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\CalendarLinkService;
+use OCA\OpenRegister\Service\CalendarPickerWindow;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\CalendarEventsControllerFactory;
@@ -215,7 +216,7 @@ class CalendarEventsControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn([]);
 		$this->calendarLinkService->expects($this->once())
 			->method('getEventsForCalendar')
-			->with('personal', 100, $this->isInstanceOf(\DateTimeInterface::class))
+			->with('personal', $this->callback(static fn (CalendarPickerWindow $window): bool => $window->limit === 100 && $window->after instanceof \DateTimeInterface))
 			->willReturn([
 				['uid' => 'ev-1', 'summary' => 'S', 'calendarUri' => 'personal'],
 			]);

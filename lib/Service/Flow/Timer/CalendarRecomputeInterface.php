@@ -22,8 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Timer;
 
-use OCA\OpenRegister\Db\FlowTimer;
-
 /**
  * Re-projects the timers a changed calendar governs, once per calendar version.
  *
@@ -70,12 +68,10 @@ interface CalendarRecomputeInterface {
 	/**
 	 * Re-project every timer in this batch that the changed calendar governs.
 	 *
-	 * @param string                   $slug      The calendar that changed.
-	 * @param string                   $version   Its object version.
-	 * @param iterable<FlowTimer>      $timers    The candidate timers.
-	 * @param callable(FlowTimer):void $supersede What to do with a timer whose moment moved.
+	 * @param CalendarBatch $batch The calendar that changed, its object version, the candidate timers and
+	 *                             what to do with a timer whose moment moved.
 	 *
 	 * @return array{examined: int, moved: int, unchanged: int, unresolvable: int, deferred: int, skipped: bool} The counts.
 	 */
-	public function recomputeBatch(string $slug, string $version, iterable $timers, callable $supersede): array;
+	public function recompute(CalendarBatch $batch): array;
 }//end interface

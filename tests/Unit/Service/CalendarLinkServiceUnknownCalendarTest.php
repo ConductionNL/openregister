@@ -31,6 +31,7 @@ use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Db\CalendarLinkMapper;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\CalendarLinkService;
+use OCA\OpenRegister\Service\CalendarPickerWindow;
 use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -71,7 +72,7 @@ class CalendarLinkServiceUnknownCalendarTest extends TestCase {
 	 */
 	public function testUnknownCalendarIsRefusedWithCode404(): void {
 		try {
-			$this->service()->getEventsForCalendar('nope', 10, new DateTimeImmutable('2026-01-01T00:00:00+00:00'));
+			$this->service()->getEventsForCalendar('nope', new CalendarPickerWindow(new DateTimeImmutable('2026-01-01T00:00:00+00:00'), 10));
 			$this->fail('An unknown calendar must be refused.');
 		} catch (Exception $e) {
 			$this->assertSame(404, $e->getCode());
@@ -85,7 +86,7 @@ class CalendarLinkServiceUnknownCalendarTest extends TestCase {
 	 * @return void
 	 */
 	public function testOwnCalendarListsItsEvents(): void {
-		$rows = $this->service()->getEventsForCalendar('work', 10, new DateTimeImmutable('2026-01-01T00:00:00+00:00'));
+		$rows = $this->service()->getEventsForCalendar('work', new CalendarPickerWindow(new DateTimeImmutable('2026-01-01T00:00:00+00:00'), 10));
 
 		$this->assertSame([], $rows);
 	}//end testOwnCalendarListsItsEvents()

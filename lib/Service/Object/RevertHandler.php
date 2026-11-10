@@ -22,8 +22,6 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -52,48 +50,6 @@ use Psr\Container\ContainerInterface;
 class RevertHandler implements RevertHandlerInterface {
 
 	/**
-	 * Audit trail mapper
-	 *
-	 * @var AuditTrailMapperInterface
-	 */
-	private AuditTrailMapperInterface $auditTrailMapper;
-
-	/**
-	 * Container
-	 *
-	 * @var ContainerInterface
-	 */
-	private ContainerInterface $container;
-
-	/**
-	 * Event dispatcher
-	 *
-	 * @var IEventDispatcher
-	 */
-	private IEventDispatcher $eventDispatcher;
-
-	/**
-	 * Object entity mapper
-	 *
-	 * @var MagicMapperInterface
-	 */
-	private MagicMapperInterface $objectEntityMapper;
-
-	/**
-	 * Permission handler for RBAC enforcement
-	 *
-	 * @var PermissionCheckInterface
-	 */
-	private PermissionCheckInterface $permissionHandler;
-
-	/**
-	 * Validator the save path uses, so a revert meets the same schema.
-	 *
-	 * @var ObjectValidatorInterface
-	 */
-	private ObjectValidatorInterface $validateHandler;
-
-	/**
 	 * RevertHandler constructor.
 	 *
 	 * @param RevertStores $stores The audit trail, the object mapper and the save-path validator.
@@ -102,17 +58,11 @@ class RevertHandler implements RevertHandlerInterface {
 	 * @param PermissionCheckInterface $permissionHandler Permission handler for RBAC.
 	 */
 	public function __construct(
-		RevertStores $stores,
-		ContainerInterface $container,
-		IEventDispatcher $eventDispatcher,
-		PermissionCheckInterface $permissionHandler,
+		private readonly RevertStores $stores,
+		private readonly ContainerInterface $container,
+		private readonly IEventDispatcher $eventDispatcher,
+		private readonly PermissionCheckInterface $permissionHandler,
 	) {
-		$this->auditTrailMapper = $stores->auditTrailMapper;
-		$this->container = $container;
-		$this->eventDispatcher = $eventDispatcher;
-		$this->objectEntityMapper = $stores->objectEntityMapper;
-		$this->permissionHandler = $permissionHandler;
-		$this->validateHandler = $stores->validateHandler;
 	}//end __construct()
 
 	/**
@@ -152,12 +102,12 @@ class RevertHandler implements RevertHandlerInterface {
 	 */
 	private function revertAt(ObjectRef $ref, RevertPoint $point): ObjectEntity {
 		// Get the object with RBAC and multitenancy enforced (tenant-scoped find).
-		$context = $this->objectEntityMapper->findAcrossAllSources(identifier: $ref->id, includeDeleted: false);
+		$context = $this->stores->objectEntityMapper->findAcrossAllSources(identifier: $ref->id, includeDeleted: false);
 		$this->assertAddressed(ref: $ref, context: $context);
 		$this->assertMayRevert(context: $context);
 
 		// Revert from the object just checked: looked up again, the URL id could name another row.
-		$revertedObject = $this->auditTrailMapper->revertObject(
+		$revertedObject = $this->stores->auditTrailMapper->revertObject(
 			identifier: $context['object'],
 			until: $point->until,
 			overwriteVersion: $point->overwriteVersion
@@ -239,10 +189,10 @@ class RevertHandler implements RevertHandlerInterface {
 	 */
 	private function saveReverted(ObjectEntity $reverted, array $context): ObjectEntity {
 		$this->validateAgainstCurrentSchema(object: $reverted, schema: $context['schema']);
-		$savedObject = $this->objectEntityMapper->update(entity: $reverted, register: $context['register'], schema: $context['schema']);
+		$savedObject = $this->stores->objectEntityMapper->update(entity: $reverted, register: $context['register'], schema: $context['schema']);
 
 		if ($this->isAuditTrailsEnabled() === true) {
-			$this->auditTrailMapper->createAuditTrail(old: $context['object'], new: $savedObject, action: 'revert');
+			$this->stores->auditTrailMapper->createAuditTrail(old: $context['object'], new: $savedObject, action: 'revert');
 		}
 
 		return $savedObject;
@@ -295,7 +245,7 @@ class RevertHandler implements RevertHandlerInterface {
 
 		$notSupplied = new NotSuppliedHandler();
 		$data = ($object->getObject() ?? []);
-		$result = $this->validateHandler->validateObject(
+		$result = $this->stores->validateHandler->validateObject(
 			object: $notSupplied->stripForValidation(object: $data),
 			schema: $schema,
 			notSupplied: $notSupplied->declared(object: $data)
@@ -303,7 +253,7 @@ class RevertHandler implements RevertHandlerInterface {
 
 		if ($result->isValid() === false) {
 			throw new ValidationException(
-				message: $this->validateHandler->generateErrorMessage(result: $result),
+				message: $this->stores->validateHandler->generateErrorMessage(result: $result),
 				errors: $result->error()
 			);
 		}

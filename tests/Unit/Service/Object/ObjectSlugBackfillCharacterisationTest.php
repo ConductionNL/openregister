@@ -122,7 +122,7 @@ class ObjectSlugBackfillCharacterisationTest extends TestCase {
 			writer: new ObjectSlugBackfillWriter(
 				magicMapper: $this->magicMapper,
 				db: $db,
-				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->cacheHandler, auditTrail: $this->auditTrail, logger: $logger),
+				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->cacheHandler, audit: new \OCA\OpenRegister\Service\Object\AuditRecording(trail: $this->auditTrail, logger: $logger)),
 				logger: $logger
 			),
 			logger: $logger
@@ -355,7 +355,7 @@ class ObjectSlugBackfillCharacterisationTest extends TestCase {
 			writer: new ObjectSlugBackfillWriter(
 				magicMapper: $this->magicMapper,
 				db: $this->createMock(IDBConnection::class),
-				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->cacheHandler, auditTrail: $this->auditTrail, logger: $logger),
+				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->cacheHandler, audit: new \OCA\OpenRegister\Service\Object\AuditRecording(trail: $this->auditTrail, logger: $logger)),
 				logger: $logger
 			),
 			logger: $logger

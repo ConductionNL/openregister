@@ -26,6 +26,7 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\LinkedEntityControllerServices;
 use OCA\OpenRegister\Controller\Support\LinkRemoval;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\EntityLink;
 use OCA\OpenRegister\Service\LinkedEntityServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -140,7 +141,7 @@ class LinkedEntityController extends Controller {
 				return new JSONResponse(['error' => 'Missing required field: id'], 400);
 			}
 
-			$result = $this->linkedEntityService->addLink($uuid, $type, (string)$entityId);
+			$result = $this->linkedEntityService->addLink(objectUuid: $uuid, link: new EntityLink(type: $type, entityId: (string)$entityId));
 
 			return new JSONResponse(['_' . $type => $result]);
 		} catch (NotAuthorizedException $e) {
@@ -237,7 +238,7 @@ class LinkedEntityController extends Controller {
 				return new JSONResponse(['error' => 'Missing required field: id'], 400);
 			}
 
-			$result = $this->linkedEntityService->addLinkToRegister($uuid, $type, (string)$entityId);
+			$result = $this->linkedEntityService->addLinkToRegister(registerUuid: $uuid, link: new EntityLink(type: $type, entityId: (string)$entityId));
 
 			return new JSONResponse(['_' . $type => $result]);
 		} catch (Exception $e) {
@@ -276,7 +277,7 @@ class LinkedEntityController extends Controller {
 				return new JSONResponse(['error' => 'Missing required field: id'], 400);
 			}
 
-			$result = $this->linkedEntityService->addLinkToSchema($uuid, $type, (string)$entityId);
+			$result = $this->linkedEntityService->addLinkToSchema(schemaUuid: $uuid, link: new EntityLink(type: $type, entityId: (string)$entityId));
 
 			return new JSONResponse(['_' . $type => $result]);
 		} catch (Exception $e) {
