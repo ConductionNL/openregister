@@ -19,6 +19,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectSource\CalDavVtodoObjectSourceProvider;
@@ -45,8 +47,8 @@ class CalDavVtodoObjectSourceProviderFailureTest extends TestCase {
 		$logger->expects($this->exactly(2))->method('warning')->with('[ObjectSource:caldav-vtodo] could not read VTODOs: caldav down');
 		$provider = new CalDavVtodoObjectSourceProvider(taskService: $tasks, app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $this->createMock(IAppManager::class), container: $this->createMock(\Psr\Container\ContainerInterface::class), logger: $logger));
 
-		$this->assertSame([], $provider->findAll(register: new Register(), schema: new Schema()));
-		$this->assertNull($provider->find(register: new Register(), schema: new Schema(), id: 't-1'));
+		$this->assertSame([], $provider->findAll(source: new SourcedTable(new RegisterSchema(new Register(), new Schema()))));
+		$this->assertNull($provider->find(source: new SourcedTable(new RegisterSchema(new Register(), new Schema())), id: 't-1'));
 	}//end testAFailingTaskListReadsAsNoTasks()
 
 	/**
@@ -59,8 +61,8 @@ class CalDavVtodoObjectSourceProviderFailureTest extends TestCase {
 		$tasks->method('getAllUserTasks')->with(null, 1000, 0)->willReturn(['results' => [['id' => '7', 'uid' => 'u-7', 'summary' => 'Call back']]]);
 		$provider = new CalDavVtodoObjectSourceProvider(taskService: $tasks, app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $this->createMock(IAppManager::class), container: $this->createMock(\Psr\Container\ContainerInterface::class), logger: $this->createMock(LoggerInterface::class)));
 
-		$this->assertSame('Call back', $provider->find(register: new Register(), schema: new Schema(), id: '7')?->getObject()['title']);
-		$this->assertSame('u-7', $provider->find(register: new Register(), schema: new Schema(), id: 'u-7')?->getUuid());
-		$this->assertNull($provider->find(register: new Register(), schema: new Schema(), id: '8'));
+		$this->assertSame('Call back', $provider->find(source: new SourcedTable(new RegisterSchema(new Register(), new Schema())), id: '7')?->getObject()['title']);
+		$this->assertSame('u-7', $provider->find(source: new SourcedTable(new RegisterSchema(new Register(), new Schema())), id: 'u-7')?->getUuid());
+		$this->assertNull($provider->find(source: new SourcedTable(new RegisterSchema(new Register(), new Schema())), id: '8'));
 	}//end testFindMatchesIdOrUidOnly()
 }//end class
