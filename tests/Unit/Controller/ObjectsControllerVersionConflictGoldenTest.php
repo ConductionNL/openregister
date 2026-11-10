@@ -22,6 +22,7 @@ use OCA\OpenRegister\Service\Object\ConflictReport;
 use OCA\OpenRegister\Service\Object\RefusedWrite;
 use OCA\OpenRegister\Service\Object\ConflictReportInterface;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Support\AuditTrailListing;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
@@ -196,10 +197,10 @@ class ObjectsControllerVersionConflictGoldenTest extends TestCase {
 		$undated = new AuditTrail();
 
 		$mapper = $this->createMock(AuditTrailMapper::class);
-		$mapper->method('findAll')->willReturnCallback(function (...$args) use ($before, $after, $undated): array {
+		$mapper->method('findTrail')->willReturnCallback(AuditTrailListing::positional(function (...$args) use ($before, $after, $undated): array {
 			$this->trail[] = ['findAll' => $args];
 			return [$before, $after, $undated, 'not an entry'];
-		});
+		}));
 		$mapper->method('createAuditTrailEntry')->willReturnCallback(function (...$args) use ($fails) {
 			if ($fails !== null) {
 				throw $fails;
