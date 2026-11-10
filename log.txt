@@ -1452,3 +1452,4 @@
 2026-11-10T07:36:58Z precheck-20261110T063045-17ba94e0 RESOLVED #8868 1092c73d -> 22c66979 use/map lines only
 2026-11-10T07:37:04Z precheck-20261110T063108-b0ef6a24 NORESULT tree 0a29069a7a prs 1: php-1.log: no Tests line
 2026-11-10T07:37:06Z precheck-20261110T063040-46909641 GREEN tree 2c374d6985 on dev 5fa7046217 prs 1 front=skip: Tests: 54764, Assertions: 180833, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
+2026-11-10T07:37:23Z precheck-20261110T063543-bf60aaeb GREEN tree d07221a2cc on dev 5fa7046217 prs 1 front=skip: Tests: 54764, Assertions: 180836, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
