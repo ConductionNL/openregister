@@ -139,13 +139,7 @@ class DismissedPairStore {
 		try {
 			$objects = $this->objectService->findAll(
 				[
-					'filters' => [
-						'register' => self::REGISTER,
-						'schema' => self::SCHEMA,
-						'registerSlug' => $registerSlug,
-						'schemaSlug' => $schemaSlug,
-						'active' => true,
-					],
+					'filters' => $this->scopeFilters(registerSlug: $registerSlug, schemaSlug: $schemaSlug) + ['active' => true],
 					'limit' => self::MAX_DISMISSALS,
 				]
 			);
@@ -154,6 +148,34 @@ class DismissedPairStore {
 			return [];
 		}
 
+		return $this->rowsByPairKey(objects: $objects);
+	}//end activeFor()
+
+	/**
+	 * The filters that scope a lookup to the dismissals of one register/schema.
+	 *
+	 * @param string $registerSlug Register the pairs were reviewed in.
+	 * @param string $schemaSlug   Schema the pairs were reviewed under.
+	 *
+	 * @return array<string, string>
+	 */
+	private function scopeFilters(string $registerSlug, string $schemaSlug): array {
+		return [
+			'register' => self::REGISTER,
+			'schema' => self::SCHEMA,
+			'registerSlug' => $registerSlug,
+			'schemaSlug' => $schemaSlug,
+		];
+	}//end scopeFilters()
+
+	/**
+	 * Key the dismissal rows by canonical pair; rows without both uuids are skipped.
+	 *
+	 * @param array<int, mixed> $objects The stored dismissal objects.
+	 *
+	 * @return array<string, array<string, mixed>> Dismissal rows (with the row's uuid as `id`) by pair key.
+	 */
+	private function rowsByPairKey(array $objects): array {
 		$rows = [];
 		foreach ($objects as $object) {
 			if ($object instanceof ObjectEntity === false) {
@@ -172,7 +194,7 @@ class DismissedPairStore {
 		}
 
 		return $rows;
-	}//end activeFor()
+	}//end rowsByPairKey()
 
 	/**
 	 * Record that two objects were reviewed and are not the same.
@@ -275,19 +297,11 @@ class DismissedPairStore {
 	 */
 	private function findRow(ReviewedPair $pair): ?ObjectEntity {
 		[$first, $second] = self::canonical(first: $pair->first, second: $pair->second);
-		$registerSlug = $pair->registerSlug;
-		$schemaSlug = $pair->schemaSlug;
+		$scope = $this->scopeFilters(registerSlug: $pair->registerSlug, schemaSlug: $pair->schemaSlug);
 		try {
 			$objects = $this->objectService->findAll(
 				[
-					'filters' => [
-						'register' => self::REGISTER,
-						'schema' => self::SCHEMA,
-						'registerSlug' => $registerSlug,
-						'schemaSlug' => $schemaSlug,
-						'objectA' => $first,
-						'objectB' => $second,
-					],
+					'filters' => $scope + ['objectA' => $first, 'objectB' => $second],
 					'limit' => 1,
 				]
 			);
@@ -296,6 +310,17 @@ class DismissedPairStore {
 			return null;
 		}
 
+		return $this->firstEntity(objects: $objects);
+	}//end findRow()
+
+	/**
+	 * The first object entity in a lookup result.
+	 *
+	 * @param array<int, mixed> $objects The lookup result.
+	 *
+	 * @return ObjectEntity|null
+	 */
+	private function firstEntity(array $objects): ?ObjectEntity {
 		foreach ($objects as $object) {
 			if ($object instanceof ObjectEntity) {
 				return $object;
@@ -303,5 +328,5 @@ class DismissedPairStore {
 		}
 
 		return null;
-	}//end findRow()
+	}//end firstEntity()
 }//end class
