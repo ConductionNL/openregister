@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Interaction\AddressedObject;
 use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -63,7 +64,7 @@ final class TaskListenersAccessGoldenTest extends TestCase {
 			->with(self::isInstanceOf(Schema::class), 'read', 'jan', 'owner-1', true, $object)
 			->willReturn(true);
 		$watchers = $this->createMock(WatcherServiceInterface::class);
-		$watchers->expects(self::once())->method('followAssigned')->with($object, 'jan', '3', '12');
+		$watchers->expects(self::once())->method('followAssigned')->with(new AddressedObject(object: $object, register: '3', schema: '12'), 'jan');
 
 		$this->assigneeListener($permissions, $watchers)->handle(new ObjectCreatedEvent($object));
 	}//end testAReadableAssigneeIsFollowed()
