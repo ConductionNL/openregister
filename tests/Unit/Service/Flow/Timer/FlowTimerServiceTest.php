@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Timer;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Flow\Timer\SlaAddition;
 use DateTimeZone;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerEvent;
@@ -281,12 +282,7 @@ class FlowTimerServiceTest extends TestCase {
 			// where the deadline IS: fire_at = roll(add(...)). Left out, this
 			// would fail every rolling timer and, worse, would keep passing if
 			// the roll silently stopped being applied.
-			$expected = $this->calculator->roll(moment: $this->calculator->add(
-					from: $timer->getRunningSince(),
-					value: (float)$timer->getBudgetValue() - (float)$timer->getConsumedValue(),
-					unit: (string)$timer->getBudgetUnit(),
-					calendar: $calendar
-				), rule: new RollRule(roll: (string)($timer->getRollToWorkingDay() ?? 'none'), calendar: $calendar))['at'];
+			$expected = $this->calculator->roll(moment: $this->calculator->add(new SlaAddition(start: DateTimeImmutable::createFromInterface($timer->getRunningSince()), value: (float)$timer->getBudgetValue() - (float)$timer->getConsumedValue(), unit: (string)$timer->getBudgetUnit(), calendar: $calendar)), rule: new RollRule(roll: (string)($timer->getRollToWorkingDay() ?? 'none'), calendar: $calendar))['at'];
 			self::assertNotNull($timer->getFireAt());
 			self::assertEqualsWithDelta($expected->getTimestamp(), $timer->getFireAt()->getTimestamp(), 1, 'fire_at = roll(add(running_since, budget - consumed))');
 		}
