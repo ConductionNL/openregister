@@ -32,6 +32,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Search\Service\Quality\PairDismissal;
 
 class DismissedPairStoreTest extends TestCase {
 
@@ -154,9 +155,7 @@ class DismissedPairStoreTest extends TestCase {
 
 		$stored = $this->store->dismiss(
 			pair: new ReviewedPair('bbb', 'aaa', 'reg', 'party'),
-			fingerprint: 'fp1',
-			reason: 'different people, same street',
-			dismissedBy: 'reviewer'
+			dismissal: new PairDismissal(fingerprint: 'fp1', reason: 'different people, same street', dismissedBy: 'reviewer')
 		);
 
 		$this->assertSame('aaa', $written['objectA']);
@@ -196,9 +195,7 @@ class DismissedPairStoreTest extends TestCase {
 
 		$this->store->dismiss(
 			pair: new ReviewedPair('aaa', 'bbb', 'reg', 'party'),
-			fingerprint: 'fp2',
-			reason: 'still different',
-			dismissedBy: 'reviewer'
+			dismissal: new PairDismissal(fingerprint: 'fp2', reason: 'still different', dismissedBy: 'reviewer')
 		);
 
 		$this->assertSame('existing-row', $uuidPassed);

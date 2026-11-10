@@ -101,6 +101,7 @@ use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
 use OCA\OpenRegister\Service\Quality\UniqueHintChecker;
 use OCA\OpenRegister\Service\Quality\UniqueHintScope;
+use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolvers;
@@ -2209,10 +2210,12 @@ class SaveObject implements SaveObjectInterface {
 		$dedupPolicy = $this->resolveDedupCreatePolicy();
 		if ($dedupPolicy !== null) {
 			$dedupOverriddenMatches = $dedupPolicy->guardCreate(
-				register: $call->registerId,
-				schema: $call->schemaId,
-				data: $call->data,
-				overrideRequested: $call->flags->dedupOverride
+				candidate: new CreateCandidate(
+					register: $call->registerId,
+					schema: $call->schemaId,
+					data: $call->data,
+					overrideRequested: $call->flags->dedupOverride
+				)
 			);
 		}
 

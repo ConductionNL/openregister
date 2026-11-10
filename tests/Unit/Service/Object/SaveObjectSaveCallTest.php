@@ -43,6 +43,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
 
 /**
  * The branches of SaveObject::saveObject() that decide between update, create
@@ -187,8 +188,8 @@ final class SaveObjectSaveCallTest extends TestCase {
 	private function stoppingDedupPolicy(array &$seen): void {
 		$policy = $this->createMock(DedupCreatePolicy::class);
 		$policy->method('guardCreate')->willReturnCallback(
-			static function ($register, $schema, array $data, bool $overrideRequested) use (&$seen): array {
-				$seen = ['register' => $register, 'schema' => $schema, 'data' => $data, 'override' => $overrideRequested];
+			static function (CreateCandidate $candidate) use (&$seen): array {
+				$seen = ['register' => $candidate->register, 'schema' => $candidate->schema, 'data' => $candidate->data, 'override' => $candidate->overrideRequested];
 				throw new RuntimeException('stop');
 			}
 		);
