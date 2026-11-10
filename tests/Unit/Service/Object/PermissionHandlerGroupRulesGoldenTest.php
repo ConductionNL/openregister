@@ -13,6 +13,7 @@ namespace Unit\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\GroupRuleRequest;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
@@ -188,7 +189,12 @@ class PermissionHandlerGroupRulesGoldenTest extends TestCase {
 		})->call($handler);
 
 		try {
-			$verdict = $handler->hasGroupPermission(...$args);
+			$verdict = $handler->hasGroupPermission(
+				(new GroupRuleRequest(authorization: $args['authorization'], action: $args['action']))
+					->forGroup(groupId: $args['groupId'], userGroup: $args['userGroup'])
+					->forUser(userId: $args['userId'], objectOwner: $args['objectOwner'])
+					->onObject(data: $args['objectData'], organisation: $args['objectOrganisation'])
+			);
 		} catch (Throwable $e) {
 			$verdict = get_class($e);
 		}
@@ -282,7 +288,10 @@ class PermissionHandlerGroupRulesGoldenTest extends TestCase {
 		$handler  = $this->newHandler(null);
 		$warnings = [];
 		foreach (['create', 'create', 'update', 'create'] as $action) {
-			$this->assertTrue($handler->hasGroupPermission(authorization: null, groupId: 'editors', action: $action));
+			$this->assertTrue($handler->hasGroupPermission(
+				request: (new GroupRuleRequest(authorization: null, action: $action))
+					->forGroup(groupId: 'editors', userGroup: null)
+			));
 			$warnings = array_merge($warnings, $this->warnings);
 			$this->warnings = [];
 		}

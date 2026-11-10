@@ -531,9 +531,8 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 	/**
 	 * Refuse an event that is not one of the caller's events on the given object.
 	 *
-	 * @param string $objectUuid The object the caller addressed.
-	 * @param string $calendarId The calendar the caller named.
-	 * @param string $eventUri   The event the caller named.
+	 * @param string                $objectUuid The object the caller addressed.
+	 * @param CalendarObjectAddress $event      The calendar and event the caller named.
 	 *
 	 * @return void
 	 *
@@ -541,8 +540,8 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function requireEventOf(string $objectUuid, string $calendarId, string $eventUri): void {
-		if (in_array([$calendarId, $eventUri], $this->heldEvents(objectUuid: $objectUuid), true) === false) {
+	public function requireEventOf(string $objectUuid, CalendarObjectAddress $event): void {
+		if (in_array([$event->calendarId, $event->uri], $this->heldEvents(objectUuid: $objectUuid), true) === false) {
 			throw new Exception('Calendar event not found', 404);
 		}
 	}//end requireEventOf()

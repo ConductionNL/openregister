@@ -956,12 +956,9 @@ class MagicFacetHandler {
 	 * @return string|null The conditions, or null when the filters rule the table out.
 	 */
 	private function tableWhereSql(array $baseQuery, array $tableConfig): ?string {
-		$whereConditions = $this->searchHandler->buildWhereConditionsSql(
-			query: $baseQuery,
-			schema: $tableConfig['schema'],
-			registerId: ($tableConfig['register'] ?? null)?->getId(),
-			tableName: $tableConfig['tableName']
-		);
+		$registerId      = ($tableConfig['register'] ?? null)?->getId();
+		$table           = new MagicReadTable(schema: $tableConfig['schema'], registerId: $registerId, tableName: $tableConfig['tableName']);
+		$whereConditions = $this->searchHandler->buildWhereClause(request: new WhereClauseRequest(query: $baseQuery, table: $table));
 
 		return $this->conditionsSql(whereConditions: $whereConditions);
 	}//end tableWhereSql()
@@ -1914,9 +1911,7 @@ class MagicFacetHandler {
 		// answers to a different question.
 		$queryBuilder = $this->searchHandler->buildFilteredQuery(
 			query: $facet->baseQuery,
-			schema: $facet->schema,
-			tableName: $facet->tableName,
-			registerId: $facet->register->getId()
+			table: new MagicReadTable(schema: $facet->schema, registerId: $facet->register->getId(), tableName: $facet->tableName)
 		);
 		$columnRef = "t.{$facet->field}";
 		$queryBuilder->selectAlias($columnRef, 'facet_value')
@@ -2208,9 +2203,7 @@ class MagicFacetHandler {
 		// draws a shape of the unfiltered set beside a filtered list.
 		$queryBuilder = $this->searchHandler->buildFilteredQuery(
 			query: $facet->baseQuery,
-			schema: $facet->schema,
-			tableName: $facet->tableName,
-			registerId: $facet->register->getId()
+			table: new MagicReadTable(schema: $facet->schema, registerId: $facet->register->getId(), tableName: $facet->tableName)
 		);
 
 		// The date-key SQL expression is platform-specific; buildFilteredQuery aliases the table as 't'.

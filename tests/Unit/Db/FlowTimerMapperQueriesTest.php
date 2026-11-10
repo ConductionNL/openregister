@@ -28,6 +28,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapper;
+use OCA\OpenRegister\Db\FlowTimer\TimerSubject;
 use OCA\OpenRegister\Db\IdCursor;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
@@ -128,7 +129,7 @@ class FlowTimerMapperQueriesTest extends TestCase {
 
 	public function testSubjectRunSuccessorAndPagedReadsFilterWhatTheyClaim(): void {
 		$mapper = new FlowTimerMapper(db: $this->connectionWith(rows: [$this->row()]));
-		$mapper->findBySubject(subjectType: 'task', subjectUuid: 'task-1', states: [FlowTimer::STATE_ARMED]);
+		$mapper->findBySubject(subject: new TimerSubject(type: 'task', uuid: 'task-1'), states: [FlowTimer::STATE_ARMED]);
 		self::assertTrue($this->saw('expr.eq', 'subject_type'));
 		self::assertTrue($this->saw('expr.eq', 'subject_uuid'));
 		self::assertTrue($this->saw('expr.in', 'state'));
@@ -145,7 +146,7 @@ class FlowTimerMapperQueriesTest extends TestCase {
 
 	public function testAnUnrestrictedSubjectReadCarriesNoStatePredicate(): void {
 		$mapper = new FlowTimerMapper(db: $this->connectionWith(rows: []));
-		$mapper->findBySubject(subjectType: 'task', subjectUuid: 'task-1');
+		$mapper->findBySubject(subject: new TimerSubject(type: 'task', uuid: 'task-1'));
 		self::assertTrue($this->saw('expr.eq', 'subject_type'));
 		self::assertFalse($this->saw('expr.in', 'state'), 'no state restriction when none is asked');
 	}//end testAnUnrestrictedSubjectReadCarriesNoStatePredicate()

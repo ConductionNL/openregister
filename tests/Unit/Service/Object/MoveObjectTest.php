@@ -42,6 +42,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ObjectLeavingEvent;
 use OCA\OpenRegister\Service\Object\MoveObject;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\EventDispatcher\IEventDispatcher;
 use Opis\JsonSchema\ValidationResult;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -90,7 +91,7 @@ final class MoveObjectTest extends TestCase {
 		$this->objects = $this->createMock(MagicMapper::class);
 		$this->validator = $this->createMock(ValidateObject::class);
 		$this->audit = $this->createMock(AuditTrailMapper::class);
-		$this->audit->method('createAuditTrailEntry')->willReturn(new AuditTrail());
+		$this->audit->method('recordObjectEvent')->willReturn(new AuditTrail());
 
 		$this->objects->method('update')->willReturnCallback(
 			function (ObjectEntity $entity): ObjectEntity {
@@ -597,12 +598,12 @@ final class MoveObjectTest extends TestCase {
 	public function testOneMovedEntryNamesBothAddresses(): void {
 		$recorded = [];
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('createAuditTrailEntry')->willReturnCallback(
+		$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context = [], ?string $actorId = null) use (&$recorded): AuditTrail {
 				$recorded[] = ['action' => $action, 'context' => $context, 'actor' => $actorId];
 				return new AuditTrail();
 			}
-		);
+		));
 
 		$service = new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->objects, $audit, new NullLogger(), $this->createStub(IEventDispatcher::class)), $this->validator);
 		$service->move(

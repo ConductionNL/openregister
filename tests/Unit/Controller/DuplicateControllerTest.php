@@ -242,7 +242,7 @@ class DuplicateControllerTest extends TestCase {
 
 		$this->duplicates->expects($this->once())
 			->method('checkCandidate')
-			->with('reg', 'sch', ['requester' => 'bsn:123', 'subject' => 'Kapvergunning'], null)
+			->with(new DedupRun(register: 'reg', schema: 'sch', threshold: null), ['requester' => 'bsn:123', 'subject' => 'Kapvergunning'])
 			->willReturn($matches);
 		$this->duplicates->method('effectiveThreshold')->willReturn(0.85);
 
@@ -270,7 +270,7 @@ class DuplicateControllerTest extends TestCase {
 
 		$this->duplicates->expects($this->once())
 			->method('checkCandidate')
-			->with('reg', 'sch', ['requester' => 'bsn:123'], 0.9)
+			->with(new DedupRun(register: 'reg', schema: 'sch', threshold: 0.9), ['requester' => 'bsn:123'])
 			->willReturn([]);
 		$this->duplicates->method('effectiveThreshold')->willReturn(0.9);
 
@@ -296,7 +296,7 @@ class DuplicateControllerTest extends TestCase {
 
 		$this->duplicates->expects($this->once())
 			->method('checkCandidate')
-			->with('reg', 'sch', ['threshold' => '30 dagen', 'requester' => 'bsn:123'], null)
+			->with(new DedupRun(register: 'reg', schema: 'sch', threshold: null), ['threshold' => '30 dagen', 'requester' => 'bsn:123'])
 			->willReturn([]);
 		$this->duplicates->method('effectiveThreshold')->willReturn(0.85);
 
