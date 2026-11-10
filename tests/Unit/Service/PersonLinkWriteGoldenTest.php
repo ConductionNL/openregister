@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\PersonLinkEvents;
 use OCA\OpenRegister\Service\PersonLinkService;
 use OCA\OpenRegister\Service\PersonLinkTargets;
+use OCA\OpenRegister\Service\UserLinkRequest;
 use OCA\OpenRegister\Service\UserLinkWriter;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IURLGenerator;
@@ -104,8 +105,8 @@ class PersonLinkWriteGoldenTest extends TestCase {
 		);
 		$userLinks = $this->createMock(UserLinkWriter::class);
 		$userLinks->method('write')->willReturnCallback(
-			function (...$args): ContactLink {
-				$this->calls[] = 'user:'.json_encode($args);
+			function (UserLinkRequest $request, ?string $role): ContactLink {
+				$this->calls[] = 'user:'.json_encode([$request->objectUuid, $request->registerId, $request->schemaId, $request->userId, $role]);
 				return new ContactLink();
 			}
 		);
@@ -219,11 +220,11 @@ class PersonLinkWriteGoldenTest extends TestCase {
 		$urls->method('linkToRoute')->willReturnCallback(fn (string $route, array $args): string => $route.'?'.http_build_query($args));
 		$writer = new UserLinkWriter($links, new \OCA\OpenRegister\Service\UserDirectory(session: $session, users: $users, groups: $this->createMock(\OCP\IGroupManager::class)), $urls);
 
-		$writer->write('case-1', 5, null, 'jan', null);
-		$writer->write('case-1', 5, 7, 'jan', 'handler');
-		$this->assertRefused(fn () => $writer->write('case-1', 5, 7, 'ghost', 'handler'), 404, 'User not found');
-		$this->assertRefused(fn () => $writer->write('case-1', 5, 7, 'jan', 'handler'), 401, 'No user logged in');
-		$this->assertRefused(fn () => $writer->write('case-1', 5, 7, 'ghost', 'handler'), 404, 'User not found');
+		$writer->write(new UserLinkRequest('case-1', 5, null, 'jan'), null);
+		$writer->write(new UserLinkRequest('case-1', 5, 7, 'jan'), 'handler');
+		$this->assertRefused(fn () => $writer->write(new UserLinkRequest('case-1', 5, 7, 'ghost'), 'handler'), 404, 'User not found');
+		$this->assertRefused(fn () => $writer->write(new UserLinkRequest('case-1', 5, 7, 'jan'), 'handler'), 401, 'No user logged in');
+		$this->assertRefused(fn () => $writer->write(new UserLinkRequest('case-1', 5, 7, 'ghost'), 'handler'), 404, 'User not found');
 		$this->assertSame(
 			[
 				'find:["case-1","user:jan",null]',

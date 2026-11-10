@@ -290,10 +290,7 @@ class PersonLinkService implements PersonLinkServiceInterface {
 		$userId = trim((string)($payload['userId'] ?? ''));
 		if ($userId !== '') {
 			return $this->targets->userLinks->write(
-				objectUuid: $target->objectUuid,
-				registerId: $target->registerId,
-				schemaId: $target->schemaId,
-				userId: $userId,
+				request: new UserLinkRequest(objectUuid: $target->objectUuid, registerId: $target->registerId, schemaId: $target->schemaId, userId: $userId),
 				role: $role
 			);
 		}
