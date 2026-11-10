@@ -32,6 +32,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 /**
  * Unit tests for ObjectsController
@@ -6819,9 +6820,7 @@ class ObjectsControllerTest extends TestCase {
 			static fn (string $key, $default = null) => ($key === 'type') ? 'json' : $default
 		);
 		$this->exportService->expects($this->once())->method('exportToJson')->with(
-			$registerEntity,
-			$schemaEntity,
-			['status' => 'open']
+			new ObjectExportRequest(register: $registerEntity, schema: $schemaEntity, filters: ['status' => 'open'])
 		)->willReturn('{"results":[1,2]}');
 
 		$result = $this->controller->export('1', '2', $this->objectService);
