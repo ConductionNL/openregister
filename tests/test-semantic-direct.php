@@ -17,7 +17,7 @@ $vectorService = \OCP\Server::get(VectorEmbeddingService::class);
 echo "Test 1: Search 'mokum' WITHOUT filters\n";
 echo "----------------------------------------\n";
 try {
-	$results = $vectorService->semanticSearch('mokum', 5, []);
+	$results = $vectorService->semanticSearch(new \OCA\OpenRegister\Search\Service\Vectorization\SemanticSearchRequest('mokum', 5, []));
 	echo 'Found ' . count($results) . " results\n";
 	foreach ($results as $i => $result) {
 		echo "\n" . ($i + 1) . '. ';
@@ -46,7 +46,7 @@ try {
 echo "\n\nTest 2: Search 'mokum' WITH object filter\n";
 echo "-------------------------------------------\n";
 try {
-	$results = $vectorService->semanticSearch('mokum', 5, ['entity_type' => ['object']]);
+	$results = $vectorService->semanticSearch(new \OCA\OpenRegister\Search\Service\Vectorization\SemanticSearchRequest('mokum', 5, ['entity_type' => ['object']]));
 	echo 'Found ' . count($results) . " results\n";
 	foreach ($results as $i => $result) {
 		echo "\n" . ($i + 1) . '. ';

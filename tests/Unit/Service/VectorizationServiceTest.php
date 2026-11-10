@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Unit\Service;
 
 use Exception;
+use OCA\OpenRegister\Search\Service\Vectorization\SemanticSearchRequest;
 use OCA\OpenRegister\Service\Vectorization\Strategies\VectorizationStrategyInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
 use OCA\OpenRegister\Search\Service\VectorizationService;
@@ -190,7 +191,7 @@ class VectorizationServiceTest extends TestCase {
 		$expected = [['id' => 1, 'score' => 0.9]];
 		$this->vectorService->method('semanticSearch')->willReturn($expected);
 
-		$result = $this->service->semanticSearch('query');
+		$result = $this->service->semanticSearch(new SemanticSearchRequest('query'));
 		$this->assertSame($expected, $result);
 	}
 
