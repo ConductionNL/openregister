@@ -111,15 +111,14 @@ class QualityAnnotationValidator implements QualityAnnotationValidatorInterface 
 			return [['code' => 'quality.rule-not-object', 'message' => sprintf('Rule #%d must be an object.', $index)]];
 		}
 
-		$type = (string)($rule['type'] ?? '');
-		$refusal = $this->typeOrFieldRefusal(rule: $rule, type: $type, index: $index);
+		$refusal = $this->typeOrFieldRefusal(rule: $rule, index: $index);
 		if ($refusal !== []) {
 			return $refusal;
 		}
 
 		return array_merge(
 			$this->weightErrors(rule: $rule, index: $index),
-			$this->typeSpecificErrors(rule: $rule, type: $type, index: $index)
+			$this->typeSpecificErrors(rule: $rule, index: $index)
 		);
 	}//end validateRule()
 
@@ -127,12 +126,12 @@ class QualityAnnotationValidator implements QualityAnnotationValidatorInterface 
 	 * The single error for a rule whose type is unknown or whose field is missing.
 	 *
 	 * @param array<string, mixed> $rule Rule definition.
-	 * @param string $type Rule type token.
 	 * @param int $index Position in the rules array (for messaging).
 	 *
 	 * @return array<int, array{code: string, message: string}> Empty when type and field are usable.
 	 */
-	private function typeOrFieldRefusal(array $rule, string $type, int $index): array {
+	private function typeOrFieldRefusal(array $rule, int $index): array {
+		$type = self::typeOf(rule: $rule);
 		if (in_array($type, self::VALID_TYPES, true) === false) {
 			return [
 				[
@@ -149,6 +148,17 @@ class QualityAnnotationValidator implements QualityAnnotationValidatorInterface 
 
 		return [];
 	}//end typeOrFieldRefusal()
+
+	/**
+	 * The rule's declared type, '' when absent.
+	 *
+	 * @param array<string, mixed> $rule The rule.
+	 *
+	 * @return string The type token.
+	 */
+	private static function typeOf(array $rule): string {
+		return (string)($rule['type'] ?? '');
+	}//end typeOf()
 
 	/**
 	 * The error for a present but non-numeric weight.
@@ -170,13 +180,12 @@ class QualityAnnotationValidator implements QualityAnnotationValidatorInterface 
 	 * The errors for the fields only one rule type reads.
 	 *
 	 * @param array<string, mixed> $rule Rule definition.
-	 * @param string $type Rule type token.
 	 * @param int $index Position in the rules array (for messaging).
 	 *
 	 * @return array<int, array{code: string, message: string}>
 	 */
-	private function typeSpecificErrors(array $rule, string $type, int $index): array {
-		return match ($type) {
+	private function typeSpecificErrors(array $rule, int $index): array {
+		return match (self::typeOf(rule: $rule)) {
 			'format' => $this->formatSpecErrors(rule: $rule, index: $index),
 			'freshness' => $this->halfLifeErrors(rule: $rule, index: $index),
 			default => [],

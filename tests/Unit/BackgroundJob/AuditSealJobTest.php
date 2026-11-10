@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\JobRuntime;
 use OCA\OpenRegister\BackgroundJob\AuditSealJob;
 use OCA\OpenRegister\Service\AuditHashService;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -54,7 +55,7 @@ class AuditSealJobTest extends TestCase {
 
 		$logger = $this->createMock(LoggerInterface::class);
 
-		$job = new AuditSealJob($this->createMock(ITimeFactory::class), $hashes, $logger);
+		$job = new AuditSealJob(new JobRuntime($this->createMock(ITimeFactory::class), $logger), $hashes);
 
 		$run = new ReflectionMethod($job, 'run');
 		$run->setAccessible(true);
@@ -85,7 +86,7 @@ class AuditSealJobTest extends TestCase {
 			->method('warning')
 			->with($this->stringContains('not closing'));
 
-		$job = new AuditSealJob($this->createMock(ITimeFactory::class), $hashes, $logger);
+		$job = new AuditSealJob(new JobRuntime($this->createMock(ITimeFactory::class), $logger), $hashes);
 		$run = new ReflectionMethod($job, 'run');
 		$run->setAccessible(true);
 		$run->invoke($job, null);
@@ -110,7 +111,7 @@ class AuditSealJobTest extends TestCase {
 		$logger->expects($this->never())->method('warning');
 		$logger->expects($this->never())->method('info');
 
-		$job = new AuditSealJob($this->createMock(ITimeFactory::class), $hashes, $logger);
+		$job = new AuditSealJob(new JobRuntime($this->createMock(ITimeFactory::class), $logger), $hashes);
 		$run = new ReflectionMethod($job, 'run');
 		$run->setAccessible(true);
 		$run->invoke($job, null);
@@ -133,7 +134,7 @@ class AuditSealJobTest extends TestCase {
 			->with($this->stringContains('Sealed 1000 audit row(s)'));
 		$logger->expects($this->never())->method('warning');
 
-		$job = new AuditSealJob($this->createMock(ITimeFactory::class), $hashes, $logger);
+		$job = new AuditSealJob(new JobRuntime($this->createMock(ITimeFactory::class), $logger), $hashes);
 		$run = new ReflectionMethod($job, 'run');
 		$run->setAccessible(true);
 		$run->invoke($job, null);
@@ -154,7 +155,7 @@ class AuditSealJobTest extends TestCase {
 			->method('error')
 			->with($this->stringContains('Seal sweep failed'));
 
-		$job = new AuditSealJob($this->createMock(ITimeFactory::class), $hashes, $logger);
+		$job = new AuditSealJob(new JobRuntime($this->createMock(ITimeFactory::class), $logger), $hashes);
 		$run = new ReflectionMethod($job, 'run');
 		$run->setAccessible(true);
 		$run->invoke($job, null);

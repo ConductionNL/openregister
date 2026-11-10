@@ -18,8 +18,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Middleware;
 
 use OCA\OpenRegister\Middleware\AuthRateLimitExceededException;
+use OCA\OpenRegister\Middleware\InboundCall;
 use OCA\OpenRegister\Middleware\RateLimitMiddleware;
-use OCA\OpenRegister\Middleware\Support\RateLimitPlatform;
 use OCA\OpenRegister\Service\InboundAuthRateLimitInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Response;
@@ -62,8 +62,7 @@ class RateLimitMiddlewareBehaviourTest extends TestCase {
 		);
 
 		return new RateLimitMiddleware(
-			$request,
-			new RateLimitPlatform($this->session, $this->reflector, $this->logger),
+			new InboundCall($request, $this->session, $this->reflector, $this->logger),
 			$this->security
 		);
 	}

@@ -121,6 +121,19 @@ class ObjectHandler implements TextExtractionHandlerInterface {
 	 * @spec openspec/specs/text-extraction/spec.md
 	 */
 	public function extractText(int $sourceId, array $sourceMeta, bool $force = false): array {
+		return $this->extractObject(sourceId: $sourceId);
+	}//end extractText()
+
+	/**
+	 * Extract the text of one object, whatever the metadata or force flag said.
+	 *
+	 * @param int $sourceId Object ID.
+	 *
+	 * @return array<string, mixed> The extraction row, as extractText() describes it.
+	 *
+	 * @throws Exception When extraction fails.
+	 */
+	private function extractObject(int $sourceId): array {
 		$this->logger->info(
 			message: '[ObjectHandler] Extracting text from object',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'objectId' => $sourceId]
@@ -135,7 +148,7 @@ class ObjectHandler implements TextExtractionHandlerInterface {
 			...$this->textFields(text: $text),
 			...$this->objectFields(object: $object),
 		];
-	}//end extractText()
+	}//end extractObject()
 
 	/**
 	 * The lines of an object's text: id, version, schema, register, content and organisation.
@@ -330,11 +343,18 @@ class ObjectHandler implements TextExtractionHandlerInterface {
 	 * @spec openspec/specs/text-extraction/spec.md
 	 */
 	public function needsExtraction(int $sourceId, int $sourceTimestamp, bool $force): bool {
-		if ($force === true) {
-			return true;
-		}
+		return $force === true || $this->chunksOutdated(sourceId: $sourceId, sourceTimestamp: $sourceTimestamp);
+	}//end needsExtraction()
 
-		// Check if chunks exist and are up-to-date.
+	/**
+	 * Whether the object has no chunks, or only chunks older than it.
+	 *
+	 * @param int $sourceId        Object ID.
+	 * @param int $sourceTimestamp Object modification timestamp.
+	 *
+	 * @return bool True if extraction is needed.
+	 */
+	private function chunksOutdated(int $sourceId, int $sourceTimestamp): bool {
 		$latestChunkTimestamp = $this->chunkMapper->getLatestUpdatedTimestamp(sourceType: 'object', sourceId: $sourceId);
 
 		if ($latestChunkTimestamp === null) {
@@ -342,7 +362,7 @@ class ObjectHandler implements TextExtractionHandlerInterface {
 		}
 
 		return $latestChunkTimestamp < $sourceTimestamp;
-	}//end needsExtraction()
+	}//end chunksOutdated()
 
 	/**
 	 * Get object metadata.

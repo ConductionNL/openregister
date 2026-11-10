@@ -36,6 +36,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ImportDuplicates;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\ImportRun;
+use OCA\OpenRegister\Service\Configuration\SeedImport;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -222,13 +224,10 @@ class ImportHandlerCoverageTest extends TestCase {
 		$this->mappingMapper->method('createFromArray')
 			->willReturn($newMapping);
 
-		$result = $this->invokeMethod($this->handler, 'importMapping', [
-			['slug' => 'test-mapping', 'name' => 'Test'],
-			['test-mapping' => 5],
-			$config,
-			'1.0.0',
-			false,
-		]);
+		$run = new ImportRun(data: [], configuration: $config);
+		$run->slugsAndIdsMap = ['test-mapping' => 5];
+		$run->version = '1.0.0';
+		$result = $this->invokeMethod($this->handler, 'importMapping', [$run, ['slug' => 'test-mapping', 'name' => 'Test']]);
 
 		$this->assertInstanceOf(Mapping::class, $result);
 		$this->assertSame(10, $result->getId());
@@ -250,13 +249,10 @@ class ImportHandlerCoverageTest extends TestCase {
 				return $mapping;
 			});
 
-		$result = $this->invokeMethod($this->handler, 'importMapping', [
-			['slug' => 'no-version-mapping', 'name' => 'Test'],
-			[],
-			$config,
-			'2.0.0',
-			false,
-		]);
+		$run = new ImportRun(data: [], configuration: $config);
+		$run->slugsAndIdsMap = [];
+		$run->version = '2.0.0';
+		$result = $this->invokeMethod($this->handler, 'importMapping', [$run, ['slug' => 'no-version-mapping', 'name' => 'Test']]);
 
 		$this->assertInstanceOf(Mapping::class, $result);
 
@@ -1157,9 +1153,9 @@ class ImportHandlerCoverageTest extends TestCase {
 		];
 
 		$result = ['objects' => []];
-		$this->invokeMethod($this->handler, 'importSeedData', [
-			$configData, 'owner', 'ext-app', $config, &$result,
-		]);
+		$seed = new SeedImport(configData: $configData, result: $result);
+		$seed->appId = 'ext-app';
+		$this->invokeMethod($this->handler, 'importSeedData', [$seed, $config]);
 
 		$this->assertNotEmpty($result['objects']);
 
@@ -1211,9 +1207,9 @@ class ImportHandlerCoverageTest extends TestCase {
 		];
 
 		$result = ['objects' => []];
-		$this->invokeMethod($this->handler, 'importSeedData', [
-			$configData, null, 'miss-reg-app', $config, &$result,
-		]);
+		$seed = new SeedImport(configData: $configData, result: $result);
+		$seed->appId = 'miss-reg-app';
+		$this->invokeMethod($this->handler, 'importSeedData', [$seed, $config]);
 
 		$this->assertNotEmpty($result['objects']);
 
@@ -1268,9 +1264,9 @@ class ImportHandlerCoverageTest extends TestCase {
 		];
 
 		$result = ['objects' => []];
-		$this->invokeMethod($this->handler, 'importSeedData', [
-			$configData, null, 'miss-schema-app', $config, &$result,
-		]);
+		$seed = new SeedImport(configData: $configData, result: $result);
+		$seed->appId = 'miss-schema-app';
+		$this->invokeMethod($this->handler, 'importSeedData', [$seed, $config]);
 
 		$this->assertNotEmpty($result['objects']);
 
@@ -1329,9 +1325,9 @@ class ImportHandlerCoverageTest extends TestCase {
 		];
 
 		$result = ['objects' => []];
-		$this->invokeMethod($this->handler, 'importSeedData', [
-			$configData, null, 'err-reg-app', $config, &$result,
-		]);
+		$seed = new SeedImport(configData: $configData, result: $result);
+		$seed->appId = 'err-reg-app';
+		$this->invokeMethod($this->handler, 'importSeedData', [$seed, $config]);
 
 		$this->assertNotEmpty($result['objects']);
 
@@ -1386,9 +1382,9 @@ class ImportHandlerCoverageTest extends TestCase {
 		];
 
 		$result = ['objects' => []];
-		$this->invokeMethod($this->handler, 'importSeedData', [
-			$configData, null, 'err-schema-app', $config, &$result,
-		]);
+		$seed = new SeedImport(configData: $configData, result: $result);
+		$seed->appId = 'err-schema-app';
+		$this->invokeMethod($this->handler, 'importSeedData', [$seed, $config]);
 
 		$this->assertNotEmpty($result['objects']);
 
@@ -1438,9 +1434,9 @@ class ImportHandlerCoverageTest extends TestCase {
 		];
 
 		$result = ['objects' => []];
-		$this->invokeMethod($this->handler, 'importSeedData', [
-			$configData, null, 'db-schema-app', $config, &$result,
-		]);
+		$seed = new SeedImport(configData: $configData, result: $result);
+		$seed->appId = 'db-schema-app';
+		$this->invokeMethod($this->handler, 'importSeedData', [$seed, $config]);
 
 		$this->assertNotEmpty($result['objects']);
 
@@ -1751,9 +1747,9 @@ class ImportHandlerCoverageTest extends TestCase {
 		];
 
 		$result = ['objects' => []];
-		$this->invokeMethod($this->handler, 'importSeedData', [
-			$configData, null, 'blob-app', $config, &$result,
-		]);
+		$seed = new SeedImport(configData: $configData, result: $result);
+		$seed->appId = 'blob-app';
+		$this->invokeMethod($this->handler, 'importSeedData', [$seed, $config]);
 
 		$this->assertNotEmpty($result['objects']);
 

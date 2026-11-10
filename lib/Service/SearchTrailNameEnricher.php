@@ -64,48 +64,62 @@ final class SearchTrailNameEnricher {
 	 */
 	public function enrich(array $trails): array {
 		$registerIds = array_map(fn ($trail) => $trail->getRegister(), $trails);
-		$registerNames = $this->titles(ids: $registerIds, mapper: $this->registerMapper, label: 'Register');
+		$registerNames = $this->titles(ids: $registerIds, label: 'Register');
 		$schemaIds = array_map(fn ($trail) => $trail->getSchema(), $trails);
-		$schemaNames = $this->titles(ids: $schemaIds, mapper: $this->schemaMapper, label: 'Schema');
+		$schemaNames = $this->titles(ids: $schemaIds, label: 'Schema');
 
 		foreach ($trails as $trail) {
-			$this->applyNames(trail: $trail, registerNames: $registerNames, schemaNames: $schemaNames);
+			$this->applyRegisterName(trail: $trail, names: $registerNames);
+			$this->applySchemaName(trail: $trail, names: $schemaNames);
 		}
 
 		return $trails;
 	}//end enrich()
 
 	/**
-	 * Set the register name, then the schema name, on one trail where one is known.
+	 * Set the register name on one trail when one is known.
 	 *
-	 * @param SearchTrail $trail         The trail to enrich
-	 * @param array       $registerNames Register names by id
-	 * @param array       $schemaNames   Schema names by id
+	 * @param SearchTrail $trail The trail to enrich
+	 * @param array       $names Register names by id
 	 *
 	 * @return void
 	 */
-	private function applyNames($trail, array $registerNames, array $schemaNames): void {
-		$registerName = $this->nameFor(id: $trail->getRegister(), names: $registerNames);
+	private function applyRegisterName($trail, array $names): void {
+		$registerName = $this->nameFor(id: $trail->getRegister(), names: $names);
 		if ($registerName !== null) {
 			$trail->setRegisterName($registerName);
 		}
+	}//end applyRegisterName()
 
-		$schemaName = $this->nameFor(id: $trail->getSchema(), names: $schemaNames);
+	/**
+	 * Set the schema name on one trail when one is known.
+	 *
+	 * @param SearchTrail $trail The trail to enrich
+	 * @param array       $names Schema names by id
+	 *
+	 * @return void
+	 */
+	private function applySchemaName($trail, array $names): void {
+		$schemaName = $this->nameFor(id: $trail->getSchema(), names: $names);
 		if ($schemaName !== null) {
 			$trail->setSchemaName($schemaName);
 		}
-	}//end applyNames()
+	}//end applySchemaName()
 
 	/**
 	 * Look up the title of each distinct, non-null id.
 	 *
-	 * @param array                                         $ids    Ids in trail order, null for none
-	 * @param RegisterMapperInterface|SchemaMapperInterface $mapper Mapper to look the ids up with
-	 * @param string                                        $label  Fallback label
+	 * @param array  $ids   Ids in trail order, null for none
+	 * @param string $label 'Register' or 'Schema': picks the mapper and is the fallback label
 	 *
 	 * @return array Titles (or fallbacks) by id
 	 */
-	private function titles(array $ids, RegisterMapperInterface|SchemaMapperInterface $mapper, string $label): array {
+	private function titles(array $ids, string $label): array {
+		$mapper = $this->schemaMapper;
+		if ($label === 'Register') {
+			$mapper = $this->registerMapper;
+		}
+
 		$names = [];
 		foreach (array_unique(array_filter($ids, fn ($id) => $id !== null)) as $id) {
 			try {

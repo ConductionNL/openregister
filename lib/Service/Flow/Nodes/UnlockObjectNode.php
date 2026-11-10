@@ -230,28 +230,75 @@ class UnlockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-step-takes-a-lock-or-parks-the-run-and-retries
 	 */
 	public function execute(array $items, array $config, array $context): array {
-		if ($items === []) {
-			return $items;
+		if ($items !== []) {
+			$actor = $this->actorFor(config: $config, context: $context);
+			$this->unlockAll(actor: $actor, targets: $this->targetsOf(items: $items, config: $config));
 		}
 
+		return $items;
+	}//end execute()
+
+	/**
+	 * Refuse a configuration or a run the step cannot act for; who it unlocks as otherwise.
+	 *
+	 * The order of the refusals is the step's contract: configuration, then run, then identity.
+	 *
+	 * @param array                $config  The step configuration.
+	 * @param array<string, mixed> $context The run context.
+	 *
+	 * @return UnlockActor The run and the identity.
+	 *
+	 * @throws RuntimeException When the run or its identity is missing.
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-step-takes-a-lock-or-parks-the-run-and-retries
+	 */
+	private function actorFor(array $config, array $context): UnlockActor {
 		$this->validateConfig(config: $config);
 
 		$runUuid = $this->lockContext->runUuid(context: $context, refusal: $this->l10n->t(self::REFUSE_NO_RUN));
 		$owner = $this->lockContext->owner(context: $context, refusal: $this->l10n->t(self::REFUSE_NO_IDENTITY));
 
-		foreach ($this->lockContext->targets(items: $items, config: $config, refusal: $this->l10n->t(self::REFUSE_NO_TARGET)) as $uuid) {
+		return new UnlockActor(runUuid: $runUuid, owner: $owner);
+	}//end actorFor()
+
+	/**
+	 * The objects to unlock, refused when the items and the configuration name none.
+	 *
+	 * @param array $items  The incoming items.
+	 * @param array $config The step configuration.
+	 *
+	 * @return array<int, string> The object uuids.
+	 *
+	 * @throws RuntimeException When there is no target.
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-step-takes-a-lock-or-parks-the-run-and-retries
+	 */
+	private function targetsOf(array $items, array $config): array {
+		return $this->lockContext->targets(items: $items, config: $config, refusal: $this->l10n->t(self::REFUSE_NO_TARGET));
+	}//end targetsOf()
+
+	/**
+	 * Release the run's lock on every target, as the run's identity.
+	 *
+	 * @param UnlockActor        $actor   The run and the identity.
+	 * @param array<int, string> $targets The object uuids.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-step-takes-a-lock-or-parks-the-run-and-retries
+	 */
+	private function unlockAll(UnlockActor $actor, array $targets): void {
+		foreach ($targets as $uuid) {
 			$this->objects->runAs(
-				$owner,
+				$actor->owner,
 				fn (): bool => $this->objects->unlockObject(
 					identifier: $uuid,
 					advisory: false,
-					runUuid: $runUuid
+					runUuid: $actor->runUuid
 				)
 			);
 		}
-
-		return $items;
-	}//end execute()
+	}//end unlockAll()
 
 	/**
 	 * What kind of step this is. Calls the register to unlock.

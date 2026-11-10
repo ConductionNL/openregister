@@ -100,10 +100,7 @@ class UpdateFileHandler {
 	 * / `setCategoryForFile` / `setLabelsForFile`, each of which is
 	 * lazy-create-on-miss so no pre-existing OR-side row is required.
 	 *
-	 * @param int $fileId The Nextcloud filecache fileid.
-	 * @param string|null $description The new description, empty string to clear, null to skip.
-	 * @param string|null $category The new category, empty string to clear, null to skip.
-	 * @param array<string>|null $labels The new labels, empty array to clear, null to skip.
+	 * @param FileMetadataChange $change The file id and the description, category and labels to write.
 	 *
 	 * @return \OCA\OpenRegister\Files\Db\File The persisted entity reflecting the updated state.
 	 *
@@ -111,15 +108,9 @@ class UpdateFileHandler {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function updateFileMetadata(
-		int $fileId,
-		?string $description = null,
-		?string $category = null,
-		?array $labels = null,
-	): \OCA\OpenRegister\Files\Db\File {
-		$values = ['description' => $description, 'category' => $category, 'labels' => $labels];
-		$entity = $this->writeMetadata(fileId: $fileId, values: $values);
-		$this->logMetadataUpdate(fileId: $fileId, values: $values);
+	public function updateFileMetadata(FileMetadataChange $change): \OCA\OpenRegister\Files\Db\File {
+		$entity = $this->writeMetadata(fileId: $change->fileId, values: $change->values());
+		$this->logMetadataUpdate(fileId: $change->fileId, values: $change->values());
 		return $entity;
 	}//end updateFileMetadata()
 
@@ -228,15 +219,30 @@ class UpdateFileHandler {
 		?ObjectEntity $object = null,
 	): File {
 		$this->note(level: 'debug', message: "Original file path received: '$filePath'");
-
 		$file = $this->findFile(filePath: $filePath, object: $object);
-		if ($content !== null && $file instanceof File) {
-			$this->writeContentIfChanged(file: $file, content: $content);
+		return $this->applyChange(file: $file, change: new FileContentChange(content: $content, tags: $tags));
+	}//end updateFile()
+
+	/**
+	 * Write the new content when it differs, then replace the user tags.
+	 *
+	 * @param Node              $file   The file found for the update.
+	 * @param FileContentChange $change The new content and tags.
+	 *
+	 * @return Node The updated file.
+	 *
+	 * @throws Exception If file operations fail.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function applyChange(Node $file, FileContentChange $change): Node {
+		if ($change->content !== null && $file instanceof File) {
+			$this->writeContentIfChanged(file: $file, content: $change->content);
 		}
 
-		$this->replaceUserTags(file: $file, tags: $tags);
+		$this->replaceUserTags(file: $file, tags: $change->tags);
 		return $file;
-	}//end updateFile()
+	}//end applyChange()
 
 	/**
 	 * Find the file to update by ID or by path.

@@ -40,6 +40,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Interaction;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Lifecycle\SchemaReading;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use Psr\Log\LoggerInterface;
@@ -77,17 +78,35 @@ class SubstantiveChangeEvaluator implements SubstantiveChangeEvaluatorInterface 
 	private array $annotationMemo = [];
 
 	/**
+	 * Resolves the object's schema.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Puts values in the form a reader sees.
+	 *
+	 * @var ValueNormaliser
+	 */
+	private readonly ValueNormaliser $normaliser;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Resolves the object's schema.
-	 * @param LoggerInterface $logger Logger.
-	 * @param ValueNormaliser $normaliser Puts values in the form a reader sees.
+	 * @param SchemaReading $schemas Resolves the object's schema; logs a failed read.
 	 */
-	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly LoggerInterface $logger,
-		private readonly ValueNormaliser $normaliser=new ValueNormaliser(),
-	) {
+	public function __construct(SchemaReading $schemas) {
+		$this->schemaMapper = $schemas->schemaMapper;
+		$this->logger = $schemas->logger;
+		$this->normaliser = new ValueNormaliser();
 	}//end __construct()
 
 	/**

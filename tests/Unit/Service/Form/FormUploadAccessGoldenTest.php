@@ -155,22 +155,22 @@ class FormUploadAccessGoldenTest extends TestCase {
 		$token = $this->store->issue(formId: 'f', property: 'p', rule: ['type' => 'file'], file: $this->upload('%PDF'))['token'];
 		$this->store->claim(tokens: [$token], draftId: 'd');
 		$folder = $this->appData->getFolder('form-uploads');
-		$claims = new FormUploadClaims(time: $this->time);
+		$claims = new FormUploadClaims(time: $this->time, folder: $folder);
 
-		$this->assertTrue($claims->isClaimedBy(folder: $folder, token: $token, claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
-		$this->assertFalse($claims->isClaimedBy(folder: $folder, token: $token, claim: new FormUploadClaim(formId: 'g', property: 'p', draftId: 'd')));
-		$this->assertFalse($claims->isClaimedBy(folder: $folder, token: $token, claim: new FormUploadClaim(formId: 'f', property: 'q', draftId: 'd')));
-		$this->assertFalse($claims->isClaimedBy(folder: $folder, token: $token, claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'e')));
-		$this->assertFalse($claims->isClaimedBy(folder: $folder, token: $token, claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: null)));
-		$this->assertFalse($claims->isClaimedBy(folder: null, token: $token, claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
-		$this->assertFalse($claims->isClaimedBy(folder: $folder, token: strtoupper($token), claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
-		$this->assertFalse($claims->isClaimedBy(folder: $folder, token: str_repeat('b', 32), claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
+		$this->assertTrue($claims->isClaimedBy(token: $token, claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
+		$this->assertFalse($claims->isClaimedBy(token: $token, claim: new FormUploadClaim(formId: 'g', property: 'p', draftId: 'd')));
+		$this->assertFalse($claims->isClaimedBy(token: $token, claim: new FormUploadClaim(formId: 'f', property: 'q', draftId: 'd')));
+		$this->assertFalse($claims->isClaimedBy(token: $token, claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'e')));
+		$this->assertFalse($claims->isClaimedBy(token: $token, claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: null)));
+		$this->assertFalse((new FormUploadClaims(time: $this->time))->isClaimedBy(token: $token, claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
+		$this->assertFalse($claims->isClaimedBy(token: strtoupper($token), claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
+		$this->assertFalse($claims->isClaimedBy(token: str_repeat('b', 32), claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
 		$folder->newFile(str_repeat('c', 32) . FormUploadClaims::SUFFIX, 'not json');
-		$this->assertFalse($claims->isClaimedBy(folder: $folder, token: str_repeat('c', 32), claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
+		$this->assertFalse($claims->isClaimedBy(token: str_repeat('c', 32), claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
 		$this->now += FormUploadStore::TTL - 1;
-		$this->assertTrue($claims->isClaimedBy(folder: $folder, token: $token, claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
+		$this->assertTrue($claims->isClaimedBy(token: $token, claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
 		$this->now += 1;
-		$this->assertFalse($claims->isClaimedBy(folder: $folder, token: $token, claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
+		$this->assertFalse($claims->isClaimedBy(token: $token, claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
 	}//end testWhoAClaimRecordSatisfies()
 
 	public function testWhoGetsARememberedAnswer(): void {

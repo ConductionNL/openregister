@@ -30,6 +30,8 @@ declare(strict_types=1);
 namespace Unit\Service\Rbac;
 
 use OCA\OpenRegister\Exception\ViewAlertRecipientException;
+use OCA\OpenRegister\Service\Rbac\AlertRecipientChange;
+use OCA\OpenRegister\Service\Rbac\ReachedView;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use OCP\IGroupManager;
@@ -78,8 +80,7 @@ class ViewerReachResolverTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->resolver = new ViewerReachResolver(
-			userSession: $this->userSession,
-			groupManager: $this->groupManager,
+			caller: new \OCA\OpenRegister\Service\Rbac\CallerContext($this->userSession, $this->groupManager),
 			logger: $this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()
@@ -203,6 +204,23 @@ class ViewerReachResolverTest extends TestCase {
 	}//end testTheOwnerIsRefusedNothingOnTheirOwnView()
 
 	/**
+	 * An administrator is refused nothing on somebody else's view, and a
+	 * write member is refused the share list on it.
+	 *
+	 * @return void
+	 */
+	public function testAnAdministratorIsRefusedNothingAndAWriteMemberTheShares(): void {
+		$view = ['owner' => 'someone-else', 'isPublic' => false, 'sharedWith' => [['group' => 'sales', 'mode' => 'write']]];
+		$update = ['query' => ['q' => 'x'], 'sharedWith' => []];
+
+		$admin = $this->resolver->refusedFields(view: $view, reach: new ViewerReach(userId: 'root', groups: [], isAdmin: true), update: $update);
+		$member = $this->resolver->refusedFields(view: $view, reach: new ViewerReach(userId: 'pieter', groups: ['sales'], isAdmin: false), update: $update);
+
+		$this->assertSame([], $admin);
+		$this->assertSame(['sharedWith'], $member);
+	}//end testAnAdministratorIsRefusedNothingAndAWriteMemberTheShares()
+
+	/**
 	 * An unreadable membership refuses the recipient rather than admitting it.
 	 *
 	 * @return void
@@ -212,10 +230,11 @@ class ViewerReachResolverTest extends TestCase {
 		$this->groupManager->method('isInGroup')->willThrowException(new RuntimeException('LDAP is down'));
 
 		$refused = $this->resolver->refusedRecipients(
-			view: ['owner' => 'annemarie', 'isPublic' => false, 'sharedWith' => [['group' => 'sales', 'mode' => 'read']]],
-			reach: new ViewerReach(userId: 'annemarie', groups: [], isAdmin: false),
-			alert: ['recipients' => ['user:pieter']],
-			previous: []
+			reached: new ReachedView(
+				view: ['owner' => 'annemarie', 'isPublic' => false, 'sharedWith' => [['group' => 'sales', 'mode' => 'read']]],
+				reach: new ViewerReach(userId: 'annemarie', groups: [], isAdmin: false)
+			),
+			change: new AlertRecipientChange(alert: ['recipients' => ['user:pieter']], previous: [])
 		);
 
 		$this->assertSame(expected: ['user:pieter'], actual: $refused);
@@ -232,8 +251,7 @@ class ViewerReachResolverTest extends TestCase {
 		$users = $this->createMock(IUserManager::class);
 		$users->method('userExists')->willReturnCallback(static fn (string $uid): bool => $uid === 'fatma');
 		$withUsers = new ViewerReachResolver(
-			userSession: $this->userSession,
-			groupManager: $this->groupManager,
+			caller: new \OCA\OpenRegister\Service\Rbac\CallerContext($this->userSession, $this->groupManager),
 			logger: $this->createMock(LoggerInterface::class),
 			userManager: $users
 		);

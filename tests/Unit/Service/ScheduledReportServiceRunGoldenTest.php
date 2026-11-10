@@ -179,7 +179,7 @@ class ScheduledReportServiceRunGoldenTest extends TestCase {
 		}
 
 		$service = new ScheduledReportService(
-			new ScheduledReportStores($mapper, $registers, $this->createMock(SchemaMapper::class)),
+			new ScheduledReportStores($mapper, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registers, schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
 			new ScheduledReportExporters($export, null, $recorder),
 			new ScheduledReportDelivery(
 				new ScheduledReportOwnerServices($users, $this->createMock(IUserSession::class), $this->rootFolderFor($opt), $notifications),

@@ -400,20 +400,32 @@ class ReferentialIntegrityService {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function logRestrictBlock(string $objectUuid, ?string $schemaId, DeletionAnalysis $analysis, string $userId): void {
-		$this->logIntegrityAction(
-			entry: (new IntegrityAuditEntry(
-				action: 'referential_integrity.restrict_blocked',
-				objectUuid: $objectUuid,
-				changed: [
-					'blockerCount' => count($analysis->blockers),
-					'blockerSchema' => self::firstBlockerValue(blockers: $analysis->blockers, key: 'schema'),
-					'blockerProperty' => self::firstBlockerValue(blockers: $analysis->blockers, key: 'property'),
-					'reason' => 'RESTRICT constraint prevents deletion',
-				],
-				userId: $userId
-			))->within(schemaId: $schemaId, registerId: null)
+		$entry = new IntegrityAuditEntry(
+			action: 'referential_integrity.restrict_blocked',
+			objectUuid: $objectUuid,
+			changed: self::restrictBlockChange(analysis: $analysis),
+			userId: $userId
 		);
+		$this->logIntegrityAction(entry: $entry->within(schemaId: $schemaId, registerId: null));
 	}//end logRestrictBlock()
+
+	/**
+	 * What a RESTRICT block records: how many blockers, the first blocker's schema and property, and why.
+	 *
+	 * @param DeletionAnalysis $analysis The analysis containing blocker information.
+	 *
+	 * @return array{blockerCount: int, blockerSchema: mixed, blockerProperty: mixed, reason: string}
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private static function restrictBlockChange(DeletionAnalysis $analysis): array {
+		return [
+			'blockerCount' => count($analysis->blockers),
+			'blockerSchema' => self::firstBlockerValue(blockers: $analysis->blockers, key: 'schema'),
+			'blockerProperty' => self::firstBlockerValue(blockers: $analysis->blockers, key: 'property'),
+			'reason' => 'RESTRICT constraint prevents deletion',
+		];
+	}//end restrictBlockChange()
 
 	/**
 	 * The value the first blocker holds under a key, or 'unknown'.

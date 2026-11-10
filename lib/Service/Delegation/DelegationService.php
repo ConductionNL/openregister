@@ -224,11 +224,6 @@ class DelegationService {
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
 	public function verdictFor(DelegationRequest $request): DelegationVerdict {
-		return $this->resolver->resolve(
-			principal: $request->principal,
-			actingAs: $request->actingAs,
-			now: $request->now,
-			scope: $request->scope
-		);
+		return $this->resolver->resolve(request: $request);
 	}//end verdictFor()
 }//end class

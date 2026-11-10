@@ -47,34 +47,6 @@ use OCP\AppFramework\Http\JSONResponse;
 class ApiVersionRefusedException extends Exception {
 
 	/**
-	 * The HTTP status the refusal answers with.
-	 *
-	 * @var integer
-	 */
-	private readonly int $statusCode;
-
-	/**
-	 * The identifier the caller named.
-	 *
-	 * @var string
-	 */
-	private readonly string $requestedId;
-
-	/**
-	 * The identifier the caller should move to, or null.
-	 *
-	 * @var string|null
-	 */
-	private readonly ?string $successor;
-
-	/**
-	 * The identifiers this instance does serve.
-	 *
-	 * @var array<int, string>
-	 */
-	private readonly array $acceptable;
-
-	/**
 	 * Constructor.
 	 *
 	 * The sentence a human reads follows from the status: 410 names the
@@ -88,17 +60,12 @@ class ApiVersionRefusedException extends Exception {
 	 * @return void
 	 */
 	public function __construct(
-		int $statusCode,
-		string $requestedId,
-		?string $successor = null,
-		array $acceptable = [],
+		private readonly int $statusCode,
+		private readonly string $requestedId,
+		private readonly ?string $successor = null,
+		private readonly array $acceptable = [],
 	) {
-		$this->statusCode = $statusCode;
-		$this->requestedId = $requestedId;
-		$this->successor = $successor;
-		$this->acceptable = $acceptable;
 		parent::__construct(message: $this->sentence(), code: $statusCode);
-
 	}//end __construct()
 
 	/**

@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Notifications\Db;
 
+use OCA\OpenRegister\Notifications\Db\DispatchIdempotencyKey;
 use OCA\OpenRegister\Notifications\Db\HistoryDelivery;
 use OCA\OpenRegister\Notifications\Db\HistoryEntry;
 use OCA\OpenRegister\Notifications\Db\HistoryNotice;
@@ -42,11 +43,14 @@ use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Notifications\Db\ObjectPresenceMapper;
 use OCA\OpenRegister\Notifications\Db\ReferencePatternMapper;
 use OCA\OpenRegister\Notifications\Db\TextBlockMapper;
+use OCA\OpenRegister\Notifications\Service\Notification\OutgoingBroadcast;
 use OCA\OpenRegister\Notifications\Db\TimelineEntryMapper;
 use OCA\OpenRegister\Notifications\Db\TimelineEntryScope;
 use OCA\OpenRegister\Notifications\Db\TimelineKindMapper;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Db\WatcherMapper;
+use OCA\OpenRegister\Notifications\Db\RecipientNotice;
+use OCA\OpenRegister\Notifications\Db\TextBlockScope;
 use OCA\OpenRegister\Tests\Unit\Db\RecordingQueryBuilderTrait;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\Exception as DbException;
@@ -156,8 +160,8 @@ class A26NotificationMappersGoldenTest extends TestCase {
 			'dedupe deleteSeenBefore fail'  => [$dedupe, 'deleteSeenBefore', [$at], [], true],
 			'dedupe listRuleKeys'           => [$dedupe, 'listRuleKeysForSchema', [2], [self::ROWS_TWO], false],
 			'dedupe listRuleKeys failure'   => [$dedupe, 'listRuleKeysForSchema', [2], [], true],
-			'log isDuplicate yes'           => [$log, 'isDuplicate', ['n', 'k', 60], [[['c' => 1]]], false],
-			'log isDuplicate no'            => [$log, 'isDuplicate', ['n', 'k'], [[['c' => 0]]], false],
+			'log isDuplicate yes'           => [$log, 'isDuplicate', [new DispatchIdempotencyKey('n', 'k'), 60], [[['c' => 1]]], false],
+			'log isDuplicate no'            => [$log, 'isDuplicate', [new DispatchIdempotencyKey('n', 'k')], [[['c' => 0]]], false],
 			'log record'                    => [$log, 'record', ['n', 'k'], [], false],
 			'log record duplicate'          => [$logRacing(true), 'record', ['n', 'k'], [], false],
 			'log record other failure'      => [$logRacing(false), 'record', ['n', 'k'], [], false],
@@ -212,8 +216,8 @@ class A26NotificationMappersGoldenTest extends TestCase {
 			'history markRead'               => [$history, 'markRead', [7, 'alice', $at], [], false],
 			'history markReadForSubject'     => [$history, 'markReadForSubject', ['alice', 'o-1', 's-1', $at], [], false],
 			'history markReadForSubject all' => [$history, 'markReadForSubject', ['alice', 'o-1', '', $at], [], false],
-			'history snooze'                 => [$history, 'snooze', [7, 'alice', $at], [], false],
-			'history archive'                => [$history, 'archive', [7, 'alice', $at], [], false],
+			'history snooze'                 => [$history, 'snooze', [new RecipientNotice(7, 'alice'), $at], [], false],
+			'history archive'                => [$history, 'archive', [new RecipientNotice(7, 'alice'), $at], [], false],
 			'history archiveByObject'        => [$history, 'archiveByObject', ['o-1', $at], [], false],
 			'history findOwn found'          => [$history, 'findOwn', [7, 'alice'], [[self::ROW]], false],
 			'history findOwn missing'        => [$history, 'findOwn', [7, 'alice'], [[]], false],
@@ -249,9 +253,9 @@ class A26NotificationMappersGoldenTest extends TestCase {
 			'kind findAll schema only'       => [$kinds, 'findAll', [null, 'sch'], [[]], false],
 			'block findBySlug found'         => [$blocks, 'findBySlug', ['s'], [[self::ROW]], false],
 			'block findBySlug missing'       => [$blocks, 'findBySlug', ['s'], [[]], false],
-			'block findInScope'              => [$blocks, 'findInScope', [], [[self::ROW]], false],
-			'block findInScope groups'       => [$blocks, 'findInScope', ['reg', 'sch', ['g1', 'g2']], [[]], false],
-			'block findInScope register'     => [$blocks, 'findInScope', ['reg', null, []], [[]], false],
+			'block findInScope'              => [$blocks, 'findInScope', [new TextBlockScope()], [[self::ROW]], false],
+			'block findInScope groups'       => [$blocks, 'findInScope', [new TextBlockScope('reg', 'sch', ['g1', 'g2'])], [[]], false],
+			'block findInScope register'     => [$blocks, 'findInScope', [new TextBlockScope('reg', null, [])], [[]], false],
 			'pattern findBySlug found'       => [$patterns, 'findBySlug', ['s'], [[self::ROW]], false],
 			'pattern findBySlug missing'     => [$patterns, 'findBySlug', ['s'], [[]], false],
 			'pattern findAll'                => [$patterns, 'findAll', [], [[self::ROW]], false],
@@ -268,17 +272,17 @@ class A26NotificationMappersGoldenTest extends TestCase {
 			}
 		};
 		return [
-			'broadcast record'               => [$broadcasts, 'record', ['u-1', 'admin', new BroadcastMessage(subject: 'Hi', body: null), new BroadcastWindow(startsAt: $at, endsAt: $at)], [], false],
+			'broadcast record'               => [$broadcasts, 'record', ['u-1', new OutgoingBroadcast(message: new BroadcastMessage(subject: 'Hi', body: null), sender: 'admin', window: new BroadcastWindow(startsAt: $at, endsAt: $at))], [], false],
 			'broadcast findByUuid found'     => [$broadcasts, 'findByUuid', ['u-1'], [[self::ROW]], false],
 			'broadcast findByUuid missing'   => [$broadcasts, 'findByUuid', ['u-1'], [[]], false],
 			'broadcast findAll'              => [$broadcasts, 'findAllBroadcasts', [], [[self::ROW]], false],
 			'broadcast findAll paged'        => [$broadcasts, 'findAllBroadcasts', [5, 10], [[]], false],
 			'broadcast findUnseenFor'        => [$broadcasts, 'findUnseenFor', ['alice', $at], [[self::ROW]], false],
 			'broadcast deleteByUuid'         => [$broadcasts, 'deleteByUuid', ['u-1'], [], false],
-			'receipt acknowledge existing'   => [$receipts, 'acknowledge', ['u-1', 'alice', $at], [[self::ROW]], false],
-			'receipt acknowledge insert'     => [$receipts, 'acknowledge', ['u-1', 'alice', $at], [[]], false],
-			'receipt acknowledge race'       => [$racing, 'acknowledge', ['u-1', 'alice', $at], [[], [self::ROW]], false],
-			'receipt acknowledge race lost'  => [$racing, 'acknowledge', ['u-1', 'alice', $at], [[], []], false],
+			'receipt acknowledge existing'   => [$receipts, 'acknowledge', ['u-1', 'alice'], [[self::ROW]], false],
+			'receipt acknowledge insert'     => [$receipts, 'acknowledge', ['u-1', 'alice'], [[]], false],
+			'receipt acknowledge race'       => [$racing, 'acknowledge', ['u-1', 'alice'], [[], [self::ROW]], false],
+			'receipt acknowledge race lost'  => [$racing, 'acknowledge', ['u-1', 'alice'], [[], []], false],
 			'receipt find missing'           => [$receipts, 'find', ['u-1', 'alice'], [[]], false],
 			'receipt countFor'               => [$receipts, 'countFor', ['u-1'], [[['c' => 2]]], false],
 		];

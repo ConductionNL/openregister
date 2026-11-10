@@ -64,7 +64,7 @@ final class SipArchiveWriter {
 	 */
 	public function write(SipPart $part, array $entries): string {
 		return match ($part->format) {
-			'bagit' => $this->writeBagit(transferId: $part->transferId, entries: $entries, suffix: $part->suffix()),
+			'bagit' => $this->writeBagit(part: $part, entries: $entries),
 			default => $this->writeZip(entries: $entries, suffix: $part->suffix()),
 		};
 	}//end write()
@@ -99,16 +99,15 @@ final class SipArchiveWriter {
 	/**
 	 * Write the entries as a zipped BagIt bag.
 	 *
-	 * @param string                     $transferId The transfer identifier (External-Identifier).
-	 * @param list<array<string, mixed>> $entries    The entries.
-	 * @param string                     $suffix     The file-name suffix.
+	 * @param SipPart                    $part    The package: its transfer identifier (External-Identifier) and file-name suffix.
+	 * @param list<array<string, mixed>> $entries The entries.
 	 *
 	 * @return string The archive path.
 	 *
 	 * @throws InvalidArgumentException When the archive cannot be written or a payload file cannot be checksummed.
 	 */
-	private function writeBagit(string $transferId, array $entries, string $suffix): string {
-		$zipPath = $this->allocate(postFix: ".bag{$suffix}.zip", label: 'BagIt');
+	private function writeBagit(SipPart $part, array $entries): string {
+		$zipPath = $this->allocate(postFix: '.bag'.$part->suffix().'.zip', label: 'BagIt');
 		$zip     = self::open(path: $zipPath, label: 'BagIt');
 
 		// Payload goes under data/; build the payload manifest as we add files.
@@ -117,7 +116,7 @@ final class SipArchiveWriter {
 			$payload->add(zip: $zip, entry: $entry);
 		}
 
-		foreach ($payload->tagFiles(transferId: $transferId) as $name => $content) {
+		foreach ($payload->tagFiles(transferId: $part->transferId) as $name => $content) {
 			$zip->addFromString($name, $content);
 		}
 

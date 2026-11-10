@@ -48,8 +48,10 @@ namespace Unit\Service\Rbac;
 
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\Rbac\PropertyReveal;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
 use OCA\OpenRegister\Service\Rbac\RevealFlusher;
+use OCA\OpenRegister\Service\Rbac\RevealRecording;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -89,9 +91,8 @@ class RevealFlusherTest extends TestCase {
 	 */
 	private function flusher(): RevealFlusher {
 		return new RevealFlusher(
-			collector: $this->collector,
-			mapper: $this->mapper,
-			logger: $this->logger
+			recording: new RevealRecording(logger: $this->logger, reveals: $this->collector),
+			mapper: $this->mapper
 		);
 	}//end flusher()
 
@@ -103,8 +104,8 @@ class RevealFlusherTest extends TestCase {
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
 	public function testEveryRevealBecomesOneSealedRow(): void {
-		$this->collector->record('alice', 'object-1', 'bsn', 24, 14);
-		$this->collector->record('alice', 'object-2', 'bsn', 24, 14);
+		$this->collector->recordReveal(new PropertyReveal('alice', 'object-1', 'bsn', 24), 14);
+		$this->collector->recordReveal(new PropertyReveal('alice', 'object-2', 'bsn', 24), 14);
 
 		$captured = [];
 		$this->mapper->expects($this->once())
@@ -327,4 +328,17 @@ class RevealFlusherTest extends TestCase {
 		$this->assertNull($row->getRegister());
 		$this->assertNotEmpty($row->getUuid());
 	}//end testARevealWithoutContextStillWrites()
+
+	/**
+	 * Without a collector there is nothing to flush, and nothing is written.
+	 *
+	 * @return void
+	 */
+	public function testWithoutACollectorNothingIsWritten(): void {
+		$this->mapper->expects($this->never())->method('insertAuditTrails');
+
+		$flusher = new RevealFlusher(recording: new RevealRecording(logger: $this->logger), mapper: $this->mapper);
+
+		$this->assertSame(0, $flusher->flush());
+	}//end testWithoutACollectorNothingIsWritten()
 }//end class

@@ -34,7 +34,6 @@ use OCA\OpenRegister\Service\Archival\ClassificationOverride;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
-use OCA\OpenRegister\Service\Archival\SelectielijstStores;
 use OCA\OpenRegister\Service\RetentionRules;
 use OCA\OpenRegister\Service\RetentionService;
 use OCA\OpenRegister\Service\RetentionStores;
@@ -43,6 +42,9 @@ use OCP\IAppConfig;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Archival\SelectielijstStorage;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 
 /**
  * Per-object override of the selectielijst category.
@@ -91,24 +93,14 @@ class RetentionClassificationOverrideTest extends TestCase {
 
 		$this->service = new RetentionService(
 			new RetentionStores(
-				$objectMapper,
-				$this->createMock(SchemaMapper::class),
-				$this->createMock(RegisterMapper::class),
+				new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $objectMapper),
 				$this->createMock(AuditTrailMapper::class)
 			),
 			new RetentionRules(
 				$settings,
 				$this->createMock(RetentionRowScanner::class),
 				new ArchiveActionDateCalculator($objectMapper, $logger),
-				new SelectielijstResolver(
-				new SelectielijstStores(
-					$objectMapper,
-					$this->createMock(SchemaMapper::class),
-					$this->createMock(RegisterMapper::class)
-				),
-				$settings,
-				$logger
-			)
+				new SelectielijstResolver(new SelectielijstStorage(settings: $settings, catalog: new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $objectMapper), writer: $this->createMock(SaveObjectWriterInterface::class)), $logger)
 			),
 			$this->createMock(IUserSession::class),
 			$logger

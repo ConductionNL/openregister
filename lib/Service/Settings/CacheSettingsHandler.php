@@ -27,8 +27,6 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\ObjectCacheMaintenanceInterface;
-use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
-use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCP\AppFramework\IAppContainer;
 use OCP\ICacheFactory;
 use RuntimeException;
@@ -138,41 +136,6 @@ class CacheSettingsHandler {
 	];
 
 	/**
-	 * Cache factory
-	 *
-	 * @var ICacheFactory
-	 */
-	private ICacheFactory $cacheFactory;
-
-	/**
-	 * Schema cache handler
-	 *
-	 * @var SchemaCacheHandler
-	 */
-	private SchemaCacheHandler $schemaCacheService;
-
-	/**
-	 * Schema facet cache service
-	 *
-	 * @var FacetResultCacheClearer
-	 */
-	private FacetResultCacheClearer $facetResults;
-
-	/**
-	 * Object cache service (lazy-loaded when needed)
-	 *
-	 * @var ObjectCacheMaintenanceInterface|null
-	 */
-	private ?ObjectCacheMaintenanceInterface $objectCacheService = null;
-
-	/**
-	 * Container for lazy loading services
-	 *
-	 * @var IAppContainer|null
-	 */
-	private ?IAppContainer $container = null;
-
-	/**
 	 * In-process cache for object cache stats with a short TTL to avoid
 	 * calling CacheHandler on every request. Instance-scoped rather than
 	 * method-static so test isolation is preserved.
@@ -199,16 +162,11 @@ class CacheSettingsHandler {
 	 * @return void
 	 */
 	public function __construct(
-		ICacheFactory $cacheFactory,
-		SchemaCacheClearers $schemaCaches,
-		?ObjectCacheMaintenanceInterface $objectCacheService = null,
-		?IAppContainer $container = null,
+		private readonly ICacheFactory $cacheFactory,
+		private readonly SchemaCacheClearers $schemaCaches,
+		private readonly ?ObjectCacheMaintenanceInterface $objectCacheService = null,
+		private readonly ?IAppContainer $container = null,
 	) {
-		$this->cacheFactory = $cacheFactory;
-		$this->schemaCacheService = $schemaCaches->schemaCache;
-		$this->facetResults = $schemaCaches->facetResults;
-		$this->objectCacheService = $objectCacheService;
-		$this->container = $container;
 	}//end __construct()
 
 	/**
@@ -669,9 +627,9 @@ class CacheSettingsHandler {
 	 */
 	private function clearSchemaCache(?string $_userId = null): array {
 		try {
-			$beforeStats = $this->schemaCacheService->getCacheStatistics();
-			$this->schemaCacheService->clearAllCaches();
-			$afterStats = $this->schemaCacheService->getCacheStatistics();
+			$beforeStats = $this->schemaCaches->schemaCache->getCacheStatistics();
+			$this->schemaCaches->schemaCache->clearAllCaches();
+			$afterStats = $this->schemaCaches->schemaCache->getCacheStatistics();
 
 			// Stats arrays may contain 'entries' key even if not in type definition.
 			$beforeEntries = $beforeStats['entries'] ?? 0;
@@ -700,7 +658,7 @@ class CacheSettingsHandler {
 	 */
 	private function clearFacetCache(?string $_userId = null): array {
 		$before = $this->emptyFacetStatistics();
-		$this->facetResults->clearAll();
+		$this->schemaCaches->facetResults->clearAll();
 
 		return [
 			'service' => 'facet',

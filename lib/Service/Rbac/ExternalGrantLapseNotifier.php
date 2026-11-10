@@ -24,8 +24,6 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\Schema;
 use DateTime;
-use OCP\IGroupManager;
-use OCP\IUserManager;
 use OCP\Notification\IManager as INotificationManager;
 use OCP\Notification\INotification;
 
@@ -51,13 +49,11 @@ class ExternalGrantLapseNotifier implements ExternalGrantLapseNotifierInterface 
 	 * Constructor.
 	 *
 	 * @param INotificationManager $notifications Sends the warning.
-	 * @param IUserManager         $users         Resolves a user principal.
-	 * @param IGroupManager        $groups        Resolves a group principal to its members.
+	 * @param PrincipalDirectory   $directory     Resolves a user principal and a group principal to its members.
 	 */
 	public function __construct(
 		private readonly INotificationManager $notifications,
-		private readonly IUserManager $users,
-		private readonly IGroupManager $groups,
+		private readonly PrincipalDirectory $directory,
 	) {
 	}//end __construct()
 
@@ -117,7 +113,7 @@ class ExternalGrantLapseNotifier implements ExternalGrantLapseNotifierInterface 
 	 * @return array<int, string> The user id, or nothing.
 	 */
 	private function namedUser(string $uid): array {
-		if ($this->users->get($uid)?->getUID() === $uid) {
+		if ($this->directory->userManager->get($uid)?->getUID() === $uid) {
 			return [$uid];
 		}
 
@@ -132,7 +128,7 @@ class ExternalGrantLapseNotifier implements ExternalGrantLapseNotifierInterface 
 	 * @return array<int, string> The member user ids.
 	 */
 	private function groupMembers(string $gid): array {
-		$group = $this->groups->get($gid);
+		$group = $this->directory->groupManager->get($gid);
 		if ($group === null) {
 			return [];
 		}

@@ -29,6 +29,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\OperatorEvaluator;
@@ -129,7 +131,7 @@ class ObjectGrantsReportTest extends TestCase {
 		$appConfig->method('getValueString')->willReturn($denyMode);
 
 		$accessReport = new ObjectAccessReport(
-			sources: new ObjectAccessReportSources(registerMapper: $registerMapper, schemaMapper: $schemaMapper, auditTrailMapper: $this->createMock(AuditTrailMapper::class)),
+			sources: new ObjectAccessReportSources(catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), auditTrailMapper: $this->createMock(AuditTrailMapper::class)),
 			holders: new ObjectPermissionsResolver(),
 			history: new ObjectAccessHistory(),
 			enforcement: new DenyEnforcementMode(appConfig: $appConfig, logger: new NullLogger())

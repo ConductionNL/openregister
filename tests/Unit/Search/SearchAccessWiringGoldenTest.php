@@ -165,10 +165,12 @@ class SearchAccessWiringGoldenTest extends TestCase {
 		return new ViewMapper(
 			$this->createMock(IDBConnection::class),
 			new ViewMapperAccess(
-				$organisations,
-				$this->createMock(IAppConfig::class),
-				$this->session($uid),
-				$this->groupManager($groups)
+				new \OCA\OpenRegister\Db\Tenancy\TenancyServices(
+					$organisations,
+					$this->session($uid),
+					$this->groupManager($groups)
+				),
+				$this->createMock(IAppConfig::class)
 			),
 			$this->createMock(IEventDispatcher::class)
 		);
@@ -241,9 +243,8 @@ class SearchAccessWiringGoldenTest extends TestCase {
 
 		return new ObjectsProvider(
 			$objects,
-			$schemas,
-			new ObjectsProviderOutput($l10n, new ObjectSearchResultFormatter($urls, $deepLinks, $preview), $logger),
-			$registers
+			new \OCA\OpenRegister\Db\SchemaCatalog($registers, $schemas, $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)),
+			new ObjectsProviderOutput($l10n, new ObjectSearchResultFormatter($urls, $deepLinks, $preview), $logger)
 		);
 	}//end provider()
 

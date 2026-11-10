@@ -456,9 +456,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		$translationHandler = $this->createMock(TranslationHandler::class);
 
 		return new AggregationRunner(
-			magicMapper: $magicMapper,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magicMapper),
 			placeholders: new PlaceholderResolver($userSession),
 			db: $db,
 			cache: $cache,

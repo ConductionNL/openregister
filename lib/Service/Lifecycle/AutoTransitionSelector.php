@@ -72,17 +72,15 @@ class AutoTransitionSelector implements AutoTransitionSelectorInterface {
 	 * The automatic transition this object is eligible for, or null.
 	 *
 	 * @param array<string, mixed> $annotation The schema's x-openregister-lifecycle block.
-	 * @param array<string, mixed> $objectData The object as stored, after the triggering write.
-	 * @param array<string, mixed> $previous The object as it was before the triggering write.
-	 * @param string $schemaSlug The schema's slug, for the log lines.
+	 * @param AutoTransitionWrite  $write      The object after and before the triggering write, and the schema's slug.
 	 *
 	 * @return AutoTransitionCandidate|null The one eligible move, or null.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function select(array $annotation, array $objectData, array $previous, string $schemaSlug): ?AutoTransitionCandidate {
-		$write = ['objectData' => $objectData, 'previous' => $previous, 'schemaSlug' => $schemaSlug];
-		return $this->selectIn(context: self::contextFor(annotation: $annotation, write: $write));
+	public function select(array $annotation, AutoTransitionWrite $write): ?AutoTransitionCandidate {
+		$read = ['objectData' => $write->objectData, 'previous' => $write->previous, 'schemaSlug' => $write->schemaSlug];
+		return $this->selectIn(context: self::contextFor(annotation: $annotation, write: $read));
 	}//end select()
 
 	/**

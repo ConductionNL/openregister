@@ -31,7 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Gdpr\Regulator;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\Gdpr\Seam\SeamStatus;
+use OCA\OpenRegister\Service\Gdpr\Seam\SeamStatusSet;
 
 /**
  * The outcome of escalating a DSAR case to a supervisory authority.
@@ -81,7 +81,7 @@ final class RegulatorEscalateResult {
 		private readonly string $reference = '',
 		private readonly ?string $message = null,
 	) {
-		SeamStatus::assertAllowed(resultName: 'RegulatorEscalateResult', status: $status, allowed: self::ALLOWED);
+		(new SeamStatusSet(resultName: 'RegulatorEscalateResult', allowed: self::ALLOWED))->assert(status: $status);
 	}//end __construct()
 
 	/**
@@ -96,12 +96,7 @@ final class RegulatorEscalateResult {
 	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
 	 */
 	public static function escalated(string $providerId, string $reference, ?string $message = null): self {
-		return new self(
-			status: self::STATUS_ESCALATED,
-			providerId: $providerId,
-			reference: $reference,
-			message: $message
-		);
+		return new self(status: self::STATUS_ESCALATED, providerId: $providerId, reference: $reference, message: $message);
 	}//end escalated()
 
 	/**

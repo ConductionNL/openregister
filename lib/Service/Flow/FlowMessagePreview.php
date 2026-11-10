@@ -110,10 +110,9 @@ class FlowMessagePreview {
 			$keys = ['subject', 'body'];
 		}
 
-		$resolved = $this->addresses->resolveRecipients(
+		$resolved = $this->addresses->resolveAll(
 			recipients: ($one->config['recipients'] ?? []),
-			json: $json,
-			acceptAddresses: ($channel === 'email')
+			lookup: new RecipientLookup(json: $json, acceptAddresses: ($channel === 'email'))
 		);
 		$addresses = array_map(static fn (array $address): string => $address['address'], $resolved['addresses']);
 
