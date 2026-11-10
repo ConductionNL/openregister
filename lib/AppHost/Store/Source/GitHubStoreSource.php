@@ -163,7 +163,7 @@ class GitHubStoreSource implements StoreSourceInterface {
 
 		// Scoped by app id: two apps searching the same topic still get their
 		// own entry, so a change to one app's block cannot serve stale cards.
-		$key = $manifest->appId . ':' . md5(implode(',', $topics) . '|' . $search->query);
+		$key = $manifest->appId . ':' . hash(algo: 'xxh128', data: implode(',', $topics) . '|' . $search->query);
 		$hit = ($this->cache()?->get($key) ?? null);
 		if (is_string($hit) === true) {
 			$decoded = json_decode($hit, true);
