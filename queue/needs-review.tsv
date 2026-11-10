@@ -60,3 +60,5 @@
 8734	80c8a5287bac3ba8c3ef2439a19463cfa66986ce	-	access title, path or words
 8735	90060d29d4f31dbe43b7984bdf9606e27cdf02f5	-	access title, path or words
 8736	85a3d99a39e83b30b1cdf609cc889bb84d897fad	-	access title, path or words
+8741	8315acd6dc12f77192112ecc9738b5ad6c9a44f8		code moved into a strict_types file
+8742	a1751e8a594f8dbc326a2893f98747b8e942f6c3	-	access title, path or words
