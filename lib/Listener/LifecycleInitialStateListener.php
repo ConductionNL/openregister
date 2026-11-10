@@ -171,6 +171,7 @@ class LifecycleInitialStateListener implements IEventListener {
 	 * @spec openspec/changes/lifecycle-guards-see-the-stored-object/specs/object-lifecycle/spec.md#requirement-a-create-starts-in-the-declared-initial-state
 	 */
 	private function mayStartIn(mixed $chosen, array $states): bool {
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return in_array($chosen, $states, true) === true
 			|| SystemOperationContext::isActive() === true
 			|| KeepLifecycleStatesScope::isActive() === true;

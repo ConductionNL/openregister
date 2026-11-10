@@ -177,6 +177,7 @@ class AggregateVisibility implements AggregateVisibilityInterface {
 			return false;
 		}
 
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		$trusted = ($this->reveal?->isTrusted() ?? SystemOperationContext::isActive());
 
 		return $trusted === false;
