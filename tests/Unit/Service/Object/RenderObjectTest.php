@@ -107,9 +107,7 @@ class RenderObjectTest extends TestCase {
 		$this->handler = new RenderObject(
 			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
 				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
-					objectEntityMapper: $this->objectMapper,
-					registerMapper: $this->registerMapper,
-					schemaMapper: $this->schemaMapper,
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper),
 					objectCacheService: $this->objectCacheService
 				),
 				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
@@ -1664,9 +1662,7 @@ class RenderObjectTest extends TestCase {
 		$handler = new RenderObject(
 			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
 				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
-					objectEntityMapper: $this->objectMapper,
-					registerMapper: $this->registerMapper,
-					schemaMapper: $schemaMapper,
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $schemaMapper, tables: $this->objectMapper),
 					objectCacheService: $this->objectCacheService
 				),
 				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
@@ -1714,9 +1710,7 @@ class RenderObjectTest extends TestCase {
 		$handler = new RenderObject(
 			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
 				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
-					objectEntityMapper: $this->objectMapper,
-					registerMapper: $this->registerMapper,
-					schemaMapper: $schemaMapper,
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $schemaMapper, tables: $this->objectMapper),
 					objectCacheService: $this->objectCacheService
 				),
 				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
@@ -4641,9 +4635,7 @@ class RenderObjectTest extends TestCase {
 		$handler = new RenderObject(
 			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
 				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
-					objectEntityMapper: $this->objectMapper,
-					registerMapper: $this->registerMapper,
-					schemaMapper: $schemaMapper,
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $schemaMapper, tables: $this->objectMapper),
 					objectCacheService: $this->objectCacheService
 				),
 				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
@@ -5019,9 +5011,7 @@ class RenderObjectTest extends TestCase {
 		$handler = new RenderObject(
 			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
 				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
-					objectEntityMapper: $this->objectMapper,
-					registerMapper: $this->registerMapper,
-					schemaMapper: $schemaMapper,
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $schemaMapper, tables: $this->objectMapper),
 					objectCacheService: $this->objectCacheService
 				),
 				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
@@ -6609,9 +6599,7 @@ class RenderObjectTest extends TestCase {
 		return new RenderObject(
 			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
 				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
-					objectEntityMapper: $this->objectMapper,
-					registerMapper: $registerMapper,
-					schemaMapper: $schemaMapper,
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->objectMapper),
 					objectCacheService: $this->objectCacheService
 				),
 				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
@@ -7204,8 +7192,8 @@ class RenderObjectTest extends TestCase {
 		$asked = [];
 		$provider = $this->createMock(\OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider::class);
 		$provider->method('isEnabled')->willReturn($this->sourceEnabled);
-		$provider->method('find')->willReturnCallback(function ($reg, $schema, string $id, array $config = []) use (&$asked): ?ObjectEntity {
-			$asked[] = [$reg->getId(), $schema->getId(), $id, $config];
+		$provider->method('find')->willReturnCallback(function (\OCA\OpenRegister\Service\ObjectSource\SourcedTable $source, string $id) use (&$asked): ?ObjectEntity {
+			$asked[] = [$source->table->register->getId(), $source->table->schema->getId(), $id, $source->config];
 			if ($id === '9') {
 				return null;
 			}
