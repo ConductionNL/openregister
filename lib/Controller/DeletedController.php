@@ -31,6 +31,7 @@ use DateTime;
 use OCA\OpenRegister\Controller\Support\BatchOutcome;
 use OCA\OpenRegister\Controller\Support\DeletedControllerServices;
 use OCA\OpenRegister\Controller\Support\PurgeRequest;
+use OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions;
 use OCA\OpenRegister\Db\AuditTrail\NamedActor;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
@@ -899,9 +900,9 @@ class DeletedController extends Controller {
 
 		try {
 			$records = $this->services->access->authorizer->readableDestructionRecords(
-				records: $this->services->store->auditTrailMapper->findForObjectByAction(
+				records: $this->services->store->auditTrailMapper->findObjectActions(
 					objectUuid: $id,
-					actions: [DestructionActionInterface::DESTRUCTION_ACTION]
+					options: new ActionLookupOptions(actions: [DestructionActionInterface::DESTRUCTION_ACTION])
 				)
 			);
 

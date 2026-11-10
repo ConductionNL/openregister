@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -127,10 +128,9 @@ class ObjectAccessReport implements ObjectAccessReportInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function historyFor(ObjectEntity $object, ?string $moment): array {
-		$entries = $this->sources->auditTrailMapper->findForObjectByAction(
+		$entries = $this->sources->auditTrailMapper->findObjectActions(
 			objectUuid: (string)$object->getUuid(),
-			actions: [],
-			limit: self::HISTORY_LIMIT
+			options: new ActionLookupOptions(actions: [], limit: self::HISTORY_LIMIT)
 		);
 
 		$history = $this->history->forEntries(entries: $entries, moment: $moment);

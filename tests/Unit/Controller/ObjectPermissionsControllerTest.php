@@ -161,7 +161,7 @@ class ObjectPermissionsControllerTest extends TestCase {
 		$schemaMapper->method('find')->willReturn($schema);
 
 		$auditTrailMapper = $this->createMock(originalClassName: AuditTrailMapper::class);
-		$auditTrailMapper->method('findForObjectByAction')->willReturn($trail);
+		$auditTrailMapper->method('findObjectActions')->willReturn($trail);
 
 		$user = $this->createMock(originalClassName: IUser::class);
 		$user->method('getUID')->willReturn($userId);

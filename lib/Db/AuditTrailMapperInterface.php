@@ -296,20 +296,17 @@ interface AuditTrailMapperInterface {
 	public function findByObjectUntil(string $objectUuid, DateTime|int|string|null $until = null): array;
 
 	/**
-	 * Revert an object to a previous state
+	 * Revert an object to a point in its trail.
 	 *
-	 * @param ObjectEntity|string|int $identifier The object itself, or its ID, UUID or URI to look it up by
-	 * @param DateTime|string|null $until DateTime or AuditTrail ID to revert to
-	 * @param bool $overwriteVersion Whether to overwrite the version or increment it
+	 * @param mixed                    $identifier The object itself, or its ID, UUID or URI to look it up by.
+	 * @param AuditTrail\RevertOptions $options    The reversion point and the version handling.
 	 *
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
 	 * @throws \Exception If revert fails
 	 *
 	 * @return ObjectEntity The reverted object (unsaved)
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Controls version handling strategy on revert
 	 */
-	public function revertObject($identifier, $until = null, bool $overwriteVersion = false): ObjectEntity;
+	public function revertObjectWith(mixed $identifier, AuditTrail\RevertOptions $options): ObjectEntity;
 
 	/**
 	 * Get statistics for audit trails with optional filtering
@@ -460,21 +457,20 @@ interface AuditTrailMapperInterface {
 	public function countObjectTrail(string $objectUuid, ActionScope $scope): int;
 
 	/**
-	 * Read the audit rows of one object, by action, newest first.
+	 * One object's entries, optionally only some actions, newest first.
 	 *
 	 * Keyed on `object_uuid` rather than the numeric `object` id, because the
 	 * caller this exists for reads a destruction record AFTER the object row
 	 * is gone and the numeric id resolves to nothing.
 	 *
-	 * @param string $objectUuid The object's UUID.
-	 * @param array<int, string> $actions Actions to return; every action when empty.
-	 * @param int $limit Maximum rows.
+	 * @param string                         $objectUuid The object's UUID.
+	 * @param AuditTrail\ActionLookupOptions $options    The actions to return (every action when empty) and the row cap.
 	 *
 	 * @return array<int, AuditTrail> The matching rows, newest first.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	public function findForObjectByAction(string $objectUuid, array $actions = [], int $limit = 50): array;
+	public function findObjectActions(string $objectUuid, AuditTrail\ActionLookupOptions $options): array;
 
 	/**
 	 * Tombstone the audit rows that belong to one object.
