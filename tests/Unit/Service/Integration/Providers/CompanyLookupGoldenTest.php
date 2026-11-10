@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\CompanySearch;
+use OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting;
 use OCA\OpenRegister\Service\Integration\Providers\KvkProvider;
 use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider;
 use OCP\App\IAppManager;
@@ -83,9 +84,7 @@ final class CompanyLookupGoldenTest extends TestCase {
 		);
 
 		return [
-			'router' => $router,
-			'appManager' => $this->createMock(IAppManager::class),
-			'l10n' => $this->createMock(IL10N::class),
+			'routing' => new ConnectorRouting(router: $router, appManager: $this->createMock(IAppManager::class), l10n: $this->createMock(IL10N::class)),
 			'logger' => $logger,
 		];
 	}//end deps()
