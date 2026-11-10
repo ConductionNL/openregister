@@ -394,14 +394,7 @@ class RechainAuditTrailForFlowAttribution implements IRepairStep {
 	 * @spec openspec/changes/flow-object-attribution/specs/audit-hash-chain/spec.md
 	 */
 	private function recordVerdict(array $verdict, IOutput $output): bool {
-		$payload = json_encode(
-			array_merge($verdict, [
-				'seedFrom' => AuditCanonicalV1::GENESIS_SEED,
-				'seedTo' => 'openregister-genesis-v2',
-				'verifiedAt' => (new DateTime())->format('c'),
-			])
-		);
-
+		$payload = $this->verdictPayload(verdict: $verdict);
 		if ($payload === false) {
 			return false;
 		}
@@ -411,6 +404,39 @@ class RechainAuditTrailForFlowAttribution implements IRepairStep {
 			context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
 		);
 
+		return $this->storeVerdict(payload: $payload, output: $output);
+	}//end recordVerdict()
+
+	/**
+	 * Encode the verdict with the seed change and the verification time.
+	 *
+	 * @param array $verdict The pre-verification result.
+	 *
+	 * @return string|false The JSON payload, or false when it cannot be encoded.
+	 *
+	 * @spec openspec/changes/flow-object-attribution/specs/audit-hash-chain/spec.md
+	 */
+	private function verdictPayload(array $verdict): string|false {
+		return json_encode(
+			array_merge($verdict, [
+				'seedFrom' => AuditCanonicalV1::GENESIS_SEED,
+				'seedTo' => 'openregister-genesis-v2',
+				'verifiedAt' => (new DateTime())->format('c'),
+			])
+		);
+	}//end verdictPayload()
+
+	/**
+	 * Write the verdict payload to the app config and read it back.
+	 *
+	 * @param string  $payload The JSON verdict.
+	 * @param IOutput $output  Progress output.
+	 *
+	 * @return boolean True when the stored value reads back as the payload.
+	 *
+	 * @spec openspec/changes/flow-object-attribution/specs/audit-hash-chain/spec.md
+	 */
+	private function storeVerdict(string $payload, IOutput $output): bool {
 		try {
 			$this->platform->config->setValueString('openregister', self::VERDICT_KEY, $payload);
 		} catch (Throwable $e) {
@@ -421,5 +447,5 @@ class RechainAuditTrailForFlowAttribution implements IRepairStep {
 		// Read it back. "The setter did not throw" is not evidence the value is
 		// there, and this is the one fact the whole step exists to preserve.
 		return ($this->platform->config->getValueString('openregister', self::VERDICT_KEY, '') === $payload);
-	}//end recordVerdict()
+	}//end storeVerdict()
 }//end class

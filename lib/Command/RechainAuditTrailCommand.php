@@ -230,24 +230,48 @@ class RechainAuditTrailCommand extends Command {
 	 * @spec openspec/specs/audit-hash-chain/spec.md
 	 */
 	private function summarise(array $report): string {
-		$valid = 'false';
-		if (($report['valid'] ?? false) === true) {
-			$valid = 'true';
-		}
-
-		$brokenAt = 'none';
-		if (($report['brokenAt'] ?? null) !== null) {
-			$brokenAt = (string)$report['brokenAt'];
-		}
-
 		return sprintf(
 			'  valid=%s  verified=%d  brokenAt=%s  tombstones=%d  unsealed=%d',
-			$valid,
+			$this->validText(report: $report),
 			(int)($report['entriesVerified'] ?? 0),
-			$brokenAt,
+			$this->brokenAtText(report: $report),
 			(int)($report['purgedTombstones'] ?? 0),
 			$this->hashes->countUnsealed()
 		);
 
 	}//end summarise()
+
+	/**
+	 * The report's validity as printed: `true` only for a literal true.
+	 *
+	 * @param array<string, mixed> $report A verifyChain() result.
+	 *
+	 * @return string `true` or `false`.
+	 *
+	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 */
+	private function validText(array $report): string {
+		if (($report['valid'] ?? false) === true) {
+			return 'true';
+		}
+
+		return 'false';
+	}//end validText()
+
+	/**
+	 * The report's first broken entry as printed, or `none`.
+	 *
+	 * @param array<string, mixed> $report A verifyChain() result.
+	 *
+	 * @return string The broken entry id, or `none`.
+	 *
+	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 */
+	private function brokenAtText(array $report): string {
+		if (($report['brokenAt'] ?? null) !== null) {
+			return (string)$report['brokenAt'];
+		}
+
+		return 'none';
+	}//end brokenAtText()
 }//end class
