@@ -17,6 +17,7 @@ namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowDryRunLookups;
 use OCA\OpenRegister\Service\Flow\FlowDryRunService;
@@ -140,6 +141,16 @@ class FlowDryRunServiceTest extends TestCase {
 
 		self::assertSame(['check', 'mark'], array_column($result['steps'], 'nodeId'));
 		self::assertTrue($result['steps'][1]['preview']['performed']);
+	}
+
+	public function testWalksTheReferencedObjectAsTheIdentifierFormDoes(): void {
+		$this->objectIs(['amount' => 5000]);
+
+		$result = $this->service->dryRunObject(flowId: 'f1', ref: new ObjectRef(register: 'dossiq', schema: 'case', id: 'o1'));
+
+		self::assertSame(['check', 'tell'], array_column($result['steps'], 'nodeId'));
+		self::assertSame('completed', $result['status']);
+		self::assertSame(0, $this->mail->runs);
 	}
 
 	public function testReportsAStepThatRefusesItsConfigurationAsTheRealRunWould(): void {
