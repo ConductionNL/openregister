@@ -172,4 +172,23 @@ class ExampleSetTimelineEntriesWriteTest extends TestCase {
 
 		$this->assertSame(['error' => 'db down', 'entry' => null], $this->entries->write(self::row()));
 	}
+	public static function refusals(): array {
+		$good = ['object' => 'o', 'kind' => 'k', 'message' => 'm', 'at' => '2026-10-04T09:12:00+02:00', 'author' => 'esra'];
+		return [
+			'fine' => [$good, ''],
+			'unknown fields' => [[...$good, 'pinned' => true, 'x' => 1], 'field "pinned", "x" is not a timeline entry field a set may write'],
+			'no object' => [[...$good, 'object' => ' '], 'a timeline entry needs the object it is on (object)'],
+			'kind not a string' => [[...$good, 'kind' => 3], 'a timeline entry needs a kind (kind)'],
+			'no message' => [[...$good, 'message' => ''], 'a timeline entry needs a message (message)'],
+			'no moment and no message' => [[...$good, 'message' => '', 'at' => ''], 'a timeline entry needs a message (message)'],
+			'foreign author' => [[...$good, 'author' => 'nobody'], '"nobody" is not an account the set creates or adopts'],
+			'fields a text' => [[...$good, 'fields' => 'x'], 'fields is an object'],
+			'bad moment' => [[...$good, 'at' => 'morgen'], 'at "morgen" is not a date and time'],
+		];
+	}
+
+	#[\PHPUnit\Framework\Attributes\DataProvider('refusals')]
+	public function testRefusalNamesExactlyWhatIsWrong(array $data, string $expected): void {
+		$this->assertSame($expected, $this->entries->refusal($data, ['esra']));
+	}
 }
