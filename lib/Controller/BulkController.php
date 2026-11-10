@@ -895,9 +895,8 @@ class BulkController extends Controller {
 		$this->objectService->setSchema($schema);
 
 		// Perform schema deletion operation.
-		$result = $this->objectService->deleteObjectsBySchema(
-			registerId: (int)$register,
-			schemaId: (int)$schema,
+		$result = $this->objectService->deleteObjectsOfTable(
+			table: new RegisterSchemaRef(register: (int)$register, schema: (int)$schema),
 			hardDelete: $hardDelete
 		);
 
@@ -1034,9 +1033,8 @@ class BulkController extends Controller {
 		$this->objectService->setSchema((string)$resolved['schema']);
 
 		// Perform optimized deletion operation for this register/schema combination.
-		$result = $this->objectService->deleteObjectsBySchema(
-			registerId: $resolved['register'],
-			schemaId: $resolved['schema'],
+		$result = $this->objectService->deleteObjectsOfTable(
+			table: new RegisterSchemaRef(register: $resolved['register'], schema: $resolved['schema']),
 			hardDelete: $hardDelete
 		);
 
