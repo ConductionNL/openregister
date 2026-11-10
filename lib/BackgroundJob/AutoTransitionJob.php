@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolverInterface;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPassInterface;
+use OCA\OpenRegister\Service\Lifecycle\CarriedLineage;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IUserManager;
@@ -229,10 +230,9 @@ class AutoTransitionJob extends ActorForwardedJob {
 			$visitedStates = $visited;
 		}
 
-		$this->pass->resume(
+		$this->pass->resumeLineage(
 			uuid: $uuid,
-			moves: (int)($entry['moves'] ?? 0),
-			visited: $visitedStates
+			lineage: new CarriedLineage(moves: (int)($entry['moves'] ?? 0), visited: $visitedStates)
 		);
 
 		try {

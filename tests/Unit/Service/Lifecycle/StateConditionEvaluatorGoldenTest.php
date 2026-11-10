@@ -25,6 +25,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Lifecycle;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\StateMove;
+use OCA\OpenRegister\Service\Lifecycle\StateSave;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
 use OCP\IGroupManager;
@@ -118,7 +120,7 @@ class StateConditionEvaluatorGoldenTest extends TestCase {
 			foreach (['open', 'besloten', 'gesloten', 'onbekend', '', null] as $from) {
 				foreach (['open', 'besloten', 'gesloten', '', null] as $to) {
 					$key          = sprintf('%s: %s -> %s', $objectName, var_export($from, true), var_export($to, true));
-					$actual[$key] = $evaluator->refusal($annotation, ['status' => $to] + $object, $from, $to);
+					$actual[$key] = $evaluator->refusal(new StateSave($annotation, ['status' => $to] + $object), new StateMove($from, $to));
 				}
 			}
 		}
