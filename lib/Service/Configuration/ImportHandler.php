@@ -621,20 +621,7 @@ class ImportHandler {
 		}
 
 		try {
-			$declared = $this->rbacGroupCollector()->fromDocument(document: $data);
-			if (empty($declared) === true) {
-				return;
-			}
-
-			$this->groupProvisioner->provision(groups: $declared, declaredBy: ($appId ?? 'unknown'));
-
-			if ($appId !== null) {
-				$this->appConfig->setValueString(
-					'openregister',
-					"declared_groups_{$appId}",
-					json_encode(array_values($declared))
-				);
-			}
+			$this->provisionGroupsOf(data: $data, appId: $appId);
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				message: '[ImportHandler] declared-group provisioning failed: ' . $e->getMessage(),
@@ -642,6 +629,46 @@ class ImportHandler {
 			);
 		}//end try
 	}//end provisionDeclaredGroups()
+
+	/**
+	 * Provision the groups a configuration document declares and record them for the app.
+	 *
+	 * @param array<string, mixed> $data  The decoded configuration document.
+	 * @param string|null          $appId The declaring app id, when known.
+	 *
+	 * @return void
+	 *
+	 * @throws \Throwable When the group backend refuses a write.
+	 */
+	private function provisionGroupsOf(array $data, ?string $appId): void {
+		$declared = $this->rbacGroupCollector()->fromDocument(document: $data);
+		if (empty($declared) === true) {
+			return;
+		}
+
+		$this->groupProvisioner->provision(groups: $declared, declaredBy: ($appId ?? 'unknown'));
+		$this->recordDeclaredGroups(declared: $declared, appId: $appId);
+	}//end provisionGroupsOf()
+
+	/**
+	 * Persist an app's declared groups, so the reconciler can restore them later.
+	 *
+	 * @param string[]    $declared The declared group ids.
+	 * @param string|null $appId    The declaring app id; nothing is recorded without one.
+	 *
+	 * @return void
+	 */
+	private function recordDeclaredGroups(array $declared, ?string $appId): void {
+		if ($appId === null) {
+			return;
+		}
+
+		$this->appConfig->setValueString(
+			'openregister',
+			"declared_groups_{$appId}",
+			json_encode(array_values($declared))
+		);
+	}//end recordDeclaredGroups()
 
 	/**
 	 * Resolve the acting user for import-time object/folder operations.
@@ -669,37 +696,25 @@ class ImportHandler {
 			return $sessionUser;
 		}
 
+		return $this->fallbackActingUser();
+	}//end resolveActingUser()
+
+	/**
+	 * The acting user without a session: the first admin, else any first enabled user, else none.
+	 *
+	 * @return IUser|null The fallback acting user, or null when none is resolvable.
+	 */
+	private function fallbackActingUser(): ?IUser {
 		// No session (occ/installer/cron): prefer the first admin.
-		try {
-			if ($this->groupManager !== null) {
-				$adminGroup = $this->groupManager->get('admin');
-				if ($adminGroup !== null) {
-					$admins = $adminGroup->getUsers();
-					if (count($admins) > 0) {
-						return reset($admins);
-					}
-				}
-			}
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				message: '[ImportHandler] Failed to resolve admin acting user from admin group: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+		$adminUser = $this->firstAdminUser();
+		if ($adminUser !== null) {
+			return $adminUser;
 		}
 
 		// Secondary fallback: any first enabled user.
-		try {
-			if ($this->userManager !== null) {
-				$users = $this->userManager->search('', 1, 0);
-				if (count($users) > 0) {
-					return reset($users);
-				}
-			}
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				message: '[ImportHandler] Failed to resolve any fallback acting user: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+		$anyUser = $this->firstEnabledUser();
+		if ($anyUser !== null) {
+			return $anyUser;
 		}
 
 		$this->logger->warning(
@@ -707,7 +722,82 @@ class ImportHandler {
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 		return null;
-	}//end resolveActingUser()
+	}//end fallbackActingUser()
+
+	/**
+	 * The first member of the `admin` group; a failing lookup is logged and gives none.
+	 *
+	 * @return IUser|null The first admin, or null.
+	 */
+	private function firstAdminUser(): ?IUser {
+		try {
+			return $this->firstMemberOfAdminGroup();
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[ImportHandler] Failed to resolve admin acting user from admin group: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}
+	}//end firstAdminUser()
+
+	/**
+	 * The first member of the `admin` group, when there is a group manager and the group has members.
+	 *
+	 * @return IUser|null The first admin, or null.
+	 */
+	private function firstMemberOfAdminGroup(): ?IUser {
+		if ($this->groupManager === null) {
+			return null;
+		}
+
+		$adminGroup = $this->groupManager->get('admin');
+		if ($adminGroup === null) {
+			return null;
+		}
+
+		$admins = $adminGroup->getUsers();
+		if (count($admins) === 0) {
+			return null;
+		}
+
+		return reset($admins);
+	}//end firstMemberOfAdminGroup()
+
+	/**
+	 * Any first enabled user, as the secondary fallback; a failing search is logged and gives none.
+	 *
+	 * @return IUser|null The first user found, or null.
+	 */
+	private function firstEnabledUser(): ?IUser {
+		try {
+			return $this->firstUserFound();
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[ImportHandler] Failed to resolve any fallback acting user: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}
+	}//end firstEnabledUser()
+
+	/**
+	 * The first user a user search finds, when there is a user manager.
+	 *
+	 * @return IUser|null The first user found, or null.
+	 */
+	private function firstUserFound(): ?IUser {
+		if ($this->userManager === null) {
+			return null;
+		}
+
+		$users = $this->userManager->search('', 1, 0);
+		if (count($users) > 0) {
+			return reset($users);
+		}
+
+		return null;
+	}//end firstUserFound()
 
 	/**
 	 * Set the MagicMapper dependency for ensuring magic mapper tables exist.
@@ -1456,16 +1546,11 @@ class ImportHandler {
 	 * @spec openspec/specs/referential-integrity/spec.md
 	 */
 	private function withoutOrphanCleanupForNonAdmin(array $data): array {
-		$user = $this->userSession?->getUser();
-		if ($user === null || $this->groupManager?->isAdmin($user->getUID()) === true) {
+		if ($this->importerKeepsOrphanCleanup() === true) {
 			return $data;
 		}
 
-		$configuration = ($data['configuration'] ?? null);
-		if (is_string($configuration) === true) {
-			$configuration = json_decode($configuration, associative: true);
-		}
-
+		$configuration = $this->decodedConfiguration(configuration: ($data['configuration'] ?? null));
 		if (is_array($configuration) === true && array_key_exists('orphanCleanup', $configuration) === true) {
 			unset($configuration['orphanCleanup']);
 			$data['configuration'] = $configuration;
@@ -1473,6 +1558,32 @@ class ImportHandler {
 
 		return $data;
 	}//end withoutOrphanCleanupForNonAdmin()
+
+	/**
+	 * Whether the importer may keep `orphanCleanup`: no signed-in user, or an administrator.
+	 *
+	 * @return bool True when the flag is kept.
+	 */
+	private function importerKeepsOrphanCleanup(): bool {
+		$user = $this->userSession?->getUser();
+
+		return $user === null || $this->groupManager?->isAdmin($user->getUID()) === true;
+	}//end importerKeepsOrphanCleanup()
+
+	/**
+	 * A schema `configuration` value, decoded when it arrives as a JSON string.
+	 *
+	 * @param mixed $configuration The raw configuration value.
+	 *
+	 * @return mixed The decoded array, or the value as given.
+	 */
+	private function decodedConfiguration(mixed $configuration): mixed {
+		if (is_string($configuration) === true) {
+			return json_decode($configuration, associative: true);
+		}
+
+		return $configuration;
+	}//end decodedConfiguration()
 
 	/**
 	 * Normalise every property of an imported schema and map its slugs to ids.
