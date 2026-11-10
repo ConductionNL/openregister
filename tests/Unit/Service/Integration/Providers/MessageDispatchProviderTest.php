@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention; mirroring KvkProviderTest in this repo.
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider;
 use OCP\App\IAppManager;
@@ -139,10 +140,13 @@ class MessageDispatchProviderTest extends TestCase {
 			->method('call')
 			->with(
 				$this->provider,
-				'POST',
-				'2010-04-01/Accounts/ACxxxx/Messages.json',
 				$this->callback(
-					static function (array $opts) use ($body): bool {
+					static function (UpstreamRequest $request) use ($body): bool {
+						if ($request->method !== 'POST' || $request->path !== '2010-04-01/Accounts/ACxxxx/Messages.json') {
+							return false;
+						}
+
+						$opts = $request->options;
 						return $opts['body'] === $body
 							&& ($opts['headers']['Accept'] ?? null) === 'application/json'
 							&& ($opts['headers']['Content-Type'] ?? null) === 'application/x-www-form-urlencoded';

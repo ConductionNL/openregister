@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention; mirroring XwikiProviderTest in this repo.
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
 use OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\CompanySearch;
@@ -120,10 +121,9 @@ class OpenCorporatesProviderTest extends TestCase {
 			->method('call')
 			->with(
 				$this->provider,
-				'GET',
-				'companies/search',
 				$this->callback(
-					static fn (array $opts): bool => ($opts['query']['q'] ?? null) === 'Acme'
+					static fn (UpstreamRequest $request): bool => $request->method === 'GET' && $request->path === 'companies/search'
+						&& (static fn (array $opts): bool => ($opts['query']['q'] ?? null) === 'Acme')($request->options)
 				)
 			)
 			->willReturn(
@@ -147,10 +147,13 @@ class OpenCorporatesProviderTest extends TestCase {
 			->method('call')
 			->with(
 				$this->provider,
-				'GET',
-				'companies/search',
 				$this->callback(
-					static function (array $opts): bool {
+					static function (UpstreamRequest $request): bool {
+						if ($request->method !== 'GET' || $request->path !== 'companies/search') {
+							return false;
+						}
+
+						$opts = $request->options;
 						return ($opts['query']['jurisdiction_code'] ?? null) === 'nl'
 							&& ($opts['query']['per_page'] ?? null) === '100'
 							&& ($opts['query']['q'] ?? null) === 'Bakery';

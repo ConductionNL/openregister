@@ -60,6 +60,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCP\App\IAppManager;
@@ -245,12 +246,14 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 
 		$response = $this->router->call(
 			provider: $this,
-			method: 'POST',
-			path: 'personen',
-			options: [
-				'body' => $this->buildQueryBody(bsn: $bsn),
-				'headers' => ['Accept' => 'application/hal+json', 'Content-Type' => 'application/json'],
-			]
+			request: new UpstreamRequest(
+				method: 'POST',
+				path: 'personen',
+				options: [
+					'body' => $this->buildQueryBody(bsn: $bsn),
+					'headers' => ['Accept' => 'application/hal+json', 'Content-Type' => 'application/json'],
+				]
+			)
 		);
 
 		return $this->extractPersonen(response: $response);
@@ -289,12 +292,14 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 		try {
 			$envelope = $this->router->callWithMeta(
 				provider: $this,
-				method: 'POST',
-				path: 'personen',
-				options: [
-					'body' => $this->buildQueryBody(bsn: $bsn),
-					'headers' => ['Accept' => 'application/hal+json', 'Content-Type' => 'application/json'],
-				]
+				request: new UpstreamRequest(
+					method: 'POST',
+					path: 'personen',
+					options: [
+						'body' => $this->buildQueryBody(bsn: $bsn),
+						'headers' => ['Accept' => 'application/hal+json', 'Content-Type' => 'application/json'],
+					]
+				)
 			);
 		} catch (ProviderUnavailableException $e) {
 			return $this->degraded(cause: $e->getCause());
@@ -342,17 +347,19 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 
 			$envelope = $this->router->callWithMeta(
 				provider: $this,
-				method: 'POST',
-				path: 'personen',
-				options: [
-					'body' => [
-						'type' => 'ZoekMetAdresseerbaarObjectIdentificatie',
-						'adresseerbaarObjectIdentificatie' => $addressObjectId,
-						'fields' => ['burgerservicenummer'],
-					],
-					'headers' => ['Accept' => 'application/hal+json', 'Content-Type' => 'application/json'],
-					'withholdBodies' => true,
-				]
+				request: new UpstreamRequest(
+					method: 'POST',
+					path: 'personen',
+					options: [
+						'body' => [
+							'type' => 'ZoekMetAdresseerbaarObjectIdentificatie',
+							'adresseerbaarObjectIdentificatie' => $addressObjectId,
+							'fields' => ['burgerservicenummer'],
+						],
+						'headers' => ['Accept' => 'application/hal+json', 'Content-Type' => 'application/json'],
+						'withholdBodies' => true,
+					]
+				)
 			);
 		} catch (ProviderUnavailableException $e) {
 			return ['unavailable' => true, 'cause' => $e->getCause()];

@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use OCA\OpenRegister\Db\XwikiLink;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
 use OCA\OpenRegister\Db\XwikiLinkMapper;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
@@ -96,8 +97,11 @@ class XwikiProviderGoldenTest extends TestCase {
 	private function provider(array $answers, ?array $links = null): XwikiProvider {
 		$router = $this->createMock(ExternalIntegrationRouterInterface::class);
 		$router->method('call')->willReturnCallback(
-			function ($provider, string $method, string $path, array $options = []) use ($answers): array {
-				$this->calls[] = ['method' => $method, 'path' => $path, 'options' => $options];
+			function ($provider, UpstreamRequest $request) use ($answers): array {
+				$method  = $request->method;
+				$path    = $request->path;
+				$options = $request->options;
+$this->calls[] = ['method' => $method, 'path' => $path, 'options' => $options];
 				$answer = $answers[$path] ?? [];
 				if ($answer instanceof \Throwable) {
 					throw $answer;

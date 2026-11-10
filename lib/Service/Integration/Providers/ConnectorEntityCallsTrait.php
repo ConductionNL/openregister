@@ -44,9 +44,11 @@ trait ConnectorEntityCallsTrait {
 	private function listFromSource(array $query): array {
 		$response = $this->router->call(
 			provider: $this,
-			method: 'GET',
-			path: '',
-			options: ['query' => $query, 'headers' => $this->requestHeaders()]
+			request: new UpstreamRequest(
+				method: 'GET',
+				path: '',
+				options: ['query' => $query, 'headers' => $this->requestHeaders()]
+			)
 		);
 
 		return $this->normalizeList(response: $response);
@@ -150,7 +152,7 @@ trait ConnectorEntityCallsTrait {
 		$options = $request->options;
 		$options['headers'] = $this->requestHeaders(withBody: array_key_exists('body', $options));
 
-		return $this->router->call(provider: $this, method: $request->method, path: $request->path, options: $options);
+		return $this->router->call(provider: $this, request: new UpstreamRequest(method: $request->method, path: $request->path, options: $options));
 	}//end callEntity()
 
 	/**

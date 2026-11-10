@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention.
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\CompanySearch;
 use OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting;
@@ -67,8 +68,11 @@ final class CompanyLookupGoldenTest extends TestCase {
 	private function deps(array|\Throwable $answer): array {
 		$router = $this->createMock(ExternalIntegrationRouter::class);
 		$router->method('call')->willReturnCallback(
-			function ($provider, string $method, string $path, array $options) use ($answer): array {
-				$this->calls[] = [$method . ' ' . $path, $options];
+			function ($provider, UpstreamRequest $request) use ($answer): array {
+				$method  = $request->method;
+				$path    = $request->path;
+				$options = $request->options;
+$this->calls[] = [$method . ' ' . $path, $options];
 				if ($answer instanceof \Throwable) {
 					throw $answer;
 				}

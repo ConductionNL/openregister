@@ -36,6 +36,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use OCA\OpenRegister\Db\XwikiLink;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
 use OCA\OpenRegister\Db\XwikiLinkMapper;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
@@ -114,11 +115,13 @@ class XwikiProviderTest extends TestCase {
 		$this->router->expects($this->once())
 			->method('call')
 			->with(
-				$this->provider,
-				'GET',
-				'',
-				['query' => ['_search' => 'foo', 'register' => 'r1', 'schema' => 's1', 'object' => 'obj-1'], 'headers' => ['Accept' => 'application/json']]
-			)
+					$this->provider,
+					new UpstreamRequest(
+						method: 'GET',
+						path: '',
+						options: ['query' => ['_search' => 'foo', 'register' => 'r1', 'schema' => 's1', 'object' => 'obj-1'], 'headers' => ['Accept' => 'application/json']]
+					)
+				)
 			->willReturn([
 				'results' => [
 					[
@@ -202,11 +205,13 @@ class XwikiProviderTest extends TestCase {
 		$this->router->expects($this->once())
 			->method('call')
 			->with(
-				$this->provider,
-				'GET',
-				rawurlencode('Space.Page'),
-				['query' => ['register' => 'r', 'schema' => 's', 'object' => 'o'], 'headers' => ['Accept' => 'application/json']]
-			)
+					$this->provider,
+					new UpstreamRequest(
+						method: 'GET',
+						path: rawurlencode('Space.Page'),
+						options: ['query' => ['register' => 'r', 'schema' => 's', 'object' => 'o'], 'headers' => ['Accept' => 'application/json']]
+					)
+				)
 			->willReturn(['reference' => 'Space.Page', 'title' => 'Page', 'content' => '<p>hello</p>']);
 
 		$row = $this->provider->get('r', 's', 'o', 'Space.Page');
@@ -218,11 +223,13 @@ class XwikiProviderTest extends TestCase {
 		$this->router->expects($this->once())
 			->method('call')
 			->with(
-				$this->provider,
-				'POST',
-				'',
-				['body' => ['reference' => 'https://wiki/bin/view/X/Y', 'register' => 'r', 'schema' => 's', 'object' => 'o'], 'headers' => ['Accept' => 'application/json', 'Content-Type' => 'application/json']]
-			)
+					$this->provider,
+					new UpstreamRequest(
+						method: 'POST',
+						path: '',
+						options: ['body' => ['reference' => 'https://wiki/bin/view/X/Y', 'register' => 'r', 'schema' => 's', 'object' => 'o'], 'headers' => ['Accept' => 'application/json', 'Content-Type' => 'application/json']]
+					)
+				)
 			->willReturn(['reference' => 'X.Y', 'title' => 'Y', 'space' => 'X']);
 
 		$row = $this->provider->create('r', 's', 'o', ['reference' => 'https://wiki/bin/view/X/Y']);
@@ -234,11 +241,13 @@ class XwikiProviderTest extends TestCase {
 		$this->router->expects($this->once())
 			->method('call')
 			->with(
-				$this->provider,
-				'PUT',
-				rawurlencode('Old.Ref'),
-				['body' => ['reference' => 'New.Ref', 'register' => 'r', 'schema' => 's', 'object' => 'o'], 'headers' => ['Accept' => 'application/json', 'Content-Type' => 'application/json']]
-			)
+					$this->provider,
+					new UpstreamRequest(
+						method: 'PUT',
+						path: rawurlencode('Old.Ref'),
+						options: ['body' => ['reference' => 'New.Ref', 'register' => 'r', 'schema' => 's', 'object' => 'o'], 'headers' => ['Accept' => 'application/json', 'Content-Type' => 'application/json']]
+					)
+				)
 			->willReturn(['reference' => 'New.Ref', 'title' => 'New']);
 
 		$row = $this->provider->update('r', 's', 'o', 'Old.Ref', ['reference' => 'New.Ref']);
@@ -249,11 +258,13 @@ class XwikiProviderTest extends TestCase {
 		$this->router->expects($this->once())
 			->method('call')
 			->with(
-				$this->provider,
-				'DELETE',
-				rawurlencode('Space.Page'),
-				['query' => ['register' => 'r', 'schema' => 's', 'object' => 'o'], 'headers' => ['Accept' => 'application/json']]
-			)
+					$this->provider,
+					new UpstreamRequest(
+						method: 'DELETE',
+						path: rawurlencode('Space.Page'),
+						options: ['query' => ['register' => 'r', 'schema' => 's', 'object' => 'o'], 'headers' => ['Accept' => 'application/json']]
+					)
+				)
 			->willReturn([]);
 
 		$this->provider->delete('r', 's', 'o', 'Space.Page');
