@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Query;
 
+use OCA\OpenRegister\Db\MagicMapper\AliasedRows;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
@@ -434,9 +435,9 @@ class RelatedRowQueryGoldenTest extends TestCase {
 
 		$rbac = $this->createMock(MagicRbacHandler::class);
 		$rbac->method('buildRbacPredicateForAlias')->willReturnCallback(
-			static function (Schema $schema, string $alias, string $action, ?string $tableName) use (&$log): string {
-				$log[] = 'rbac ' . $alias . ' ' . $action . ' ' . $tableName;
-				return $alias . '._owner = \'alice\'';
+			static function (Schema $schema, AliasedRows $rows) use (&$log): string {
+				$log[] = 'rbac ' . $rows->alias . ' ' . $rows->action . ' ' . $rows->tableName;
+				return $rows->alias . '._owner = \'alice\'';
 			}
 		);
 

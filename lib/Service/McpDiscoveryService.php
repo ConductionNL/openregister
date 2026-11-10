@@ -29,9 +29,8 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\McpCatalogueInterface;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCP\IURLGenerator;
 
 /**
@@ -646,41 +645,15 @@ class McpDiscoveryService implements McpCatalogueInterface {
 	];
 
 	/**
-	 * Register mapper for fetching live register data
-	 *
-	 * @var RegisterMapperInterface
-	 */
-	private readonly RegisterMapperInterface $registerMapper;
-
-	/**
-	 * Schema mapper for fetching live schema data
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * URL generator for building absolute URLs
-	 *
-	 * @var IURLGenerator
-	 */
-	private readonly IURLGenerator $urlGenerator;
-
-	/**
 	 * Constructor
 	 *
-	 * @param RegisterMapperInterface $registerMapper Register mapper instance
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper instance
-	 * @param IURLGenerator $urlGenerator URL generator instance
+	 * @param SchemaCatalogInterface $catalog      Live register and schema data
+	 * @param IURLGenerator          $urlGenerator URL generator for building absolute URLs
 	 */
 	public function __construct(
-		RegisterMapperInterface $registerMapper,
-		SchemaMapperInterface $schemaMapper,
-		IURLGenerator $urlGenerator,
+		private readonly SchemaCatalogInterface $catalog,
+		private readonly IURLGenerator $urlGenerator,
 	) {
-		$this->registerMapper = $registerMapper;
-		$this->schemaMapper = $schemaMapper;
-		$this->urlGenerator = $urlGenerator;
 	}//end __construct()
 
 	/**
@@ -782,7 +755,7 @@ class McpDiscoveryService implements McpCatalogueInterface {
 	 * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-2-capability-detail-with-live-data
 	 */
 	private function buildRegistersCapability(): array {
-		$registers = $this->registerMapper->findAll();
+		$registers = $this->catalog->registers()->findAll();
 		$context = [];
 		foreach ($registers as $register) {
 			$context[] = [
@@ -811,7 +784,7 @@ class McpDiscoveryService implements McpCatalogueInterface {
 	 * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-2-capability-detail-with-live-data
 	 */
 	private function buildSchemasCapability(): array {
-		$schemas = $this->schemaMapper->findAll();
+		$schemas = $this->catalog->schemas()->findAll();
 		$context = [];
 		foreach ($schemas as $schema) {
 			$properties = $schema->getProperties();
@@ -847,9 +820,9 @@ class McpDiscoveryService implements McpCatalogueInterface {
 	 * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-2-capability-detail-with-live-data
 	 */
 	private function buildObjectsCapability(): array {
-		$registers = $this->registerMapper->findAll();
+		$registers = $this->catalog->registers()->findAll();
 		$schemaIndex = [];
-		foreach ($this->schemaMapper->findAll() as $schema) {
+		foreach ($this->catalog->schemas()->findAll() as $schema) {
 			$schemaIndex[$schema->getId()] = $schema;
 		}
 

@@ -30,7 +30,6 @@ use OCA\OpenRegister\Service\Archival\AnonymisationTarget;
 use OCA\OpenRegister\Service\Archival\SaltedProfile;
 use OCA\OpenRegister\Service\Archival\PayloadChange;
 use OCA\OpenRegister\Service\Archival\AnonymisationClearance;
-use OCA\OpenRegister\Service\Archival\AnonymisationBatch;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -310,7 +309,7 @@ class AnonymisationGoldenTest extends TestCase {
 			return [$this->target('db', $log)];
 		};
 
-		$result = $sweep->run(new AnonymisationBatch(candidates: $candidates, targetsFor: $targetsFor, salt: 'salt'));
+		$result = $sweep->run($candidates, $targetsFor, 'salt');
 
 		$this->assertSame(['ok'], array_column($result['anonymised'], 'uuid'));
 		$this->assertSame('complete', $result['anonymised'][0]['marker']['state']);

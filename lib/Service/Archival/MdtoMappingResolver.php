@@ -39,8 +39,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Archival;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -53,14 +51,12 @@ class MdtoMappingResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapperInterface         $schemaMapper Loads the object's schema.
-	 * @param MdtoElementCatalogue $catalogue    The authority on which elements MDTO demands.
-	 * @param LoggerInterface      $logger       Where an unreadable schema is reported.
+	 * @param ArchivalSchemaLookup $lookup    Loads the object's schema; reports an unreadable one.
+	 * @param MdtoElementCatalogue $catalogue The authority on which elements MDTO demands.
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly ArchivalSchemaLookup $lookup,
 		private readonly MdtoElementCatalogue $catalogue,
-		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
@@ -80,9 +76,9 @@ class MdtoMappingResolver {
 		}
 
 		try {
-			$configuration = ($this->schemaMapper->find($schemaId)->getConfiguration() ?? []);
+			$configuration = ($this->lookup->schemaMapper->find($schemaId)->getConfiguration() ?? []);
 		} catch (Throwable $e) {
-			$this->logger->warning(
+			$this->lookup->logger->warning(
 				'[MdtoMappingResolver] Could not read the schema of ' . (string)$object->getUuid()
 				. ', so its MDTO mapping is unknown: ' . $e->getMessage()
 			);
@@ -122,7 +118,7 @@ class MdtoMappingResolver {
 			// The catalogue refuses rather than reporting an empty set, and an
 			// empty set here would wave every transfer through. Reported, and
 			// treated as "cannot establish", which is not the same as "fine".
-			$this->logger->error('[MdtoMappingResolver] ' . $e->getMessage());
+			$this->lookup->logger->error('[MdtoMappingResolver] ' . $e->getMessage());
 			return [];
 		}
 

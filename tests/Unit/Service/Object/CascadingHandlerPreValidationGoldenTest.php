@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\CascadeTarget;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
@@ -103,8 +104,8 @@ class CascadingHandlerPreValidationGoldenTest extends TestCase {
 				parent::__construct(saveHandler: $save, schemaMapper: $schemas, utilityHandler: $utility, logger: new NullLogger());
 			}
 
-			public function createRelatedObject(array $objectData, array $definition, string $parentUuid, ?int $currentRegister): ?string {
-				$this->test->calls[] = [$objectData, $definition, $parentUuid, $currentRegister];
+			public function createRelatedObject(array $objectData, CascadeTarget $target): ?string {
+				$this->test->calls[] = [$objectData, $target->definition(), $target->parentUuid, $target->register];
 				return ($objectData['fail'] ?? false) === true ? null : 'created-' . count($this->test->calls);
 			}
 		};

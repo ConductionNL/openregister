@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IUserSession;
@@ -41,7 +42,7 @@ class EntityRelationMapperAnonymizedMarkTest extends TestCase {
 			$db,
 			$this->createMock(AuditTrailMapperInterface::class),
 			$this->createMock(IUserSession::class),
-			$this->createMock(IEventDispatcher::class),
+			new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class)),
 			$this->createMock(LoggerInterface::class)
 		);
 	}

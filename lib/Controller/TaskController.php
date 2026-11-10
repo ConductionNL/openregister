@@ -43,8 +43,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Controller\Support\TaskCompletionCommand;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\TaskControllerServices;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\TaskInboxAnchor;
 use OCA\OpenRegister\Db\TaskInboxAudience;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
@@ -297,60 +299,156 @@ class TaskController extends Controller {
 		?string $includeBlocked = null,
 		?string $openFirst = null,
 	): JSONResponse {
+		$filters = compact('state', 'isTerminal', 'priority', 'kind', 'objectUuid', 'runUuid');
+		$flags = compact('overdue', 'dueAfter', 'dueBefore', 'includeBlocked', 'openFirst');
+		$order = [ltrim($sort, '-') => (str_starts_with($sort, '-') === true ? 'desc' : 'asc')];
+
+		return $this->inboxPage(scope: $scope, query: new ListQuery(limit: $limit, offset: $offset, filters: $filters + $flags, sort: $order));
+	}//end index()
+
+	/**
+	 * One page of the session user's inbox in a scope: 401 without a
+	 * session, 400 for an unparseable due instant.
+	 *
+	 * The listing's filters carry the raw query strings of the route; its
+	 * sort is the one sort key with its direction.
+	 *
+	 * @param string    $scope The audience scope.
+	 * @param ListQuery $query The page, filters and sort.
+	 *
+	 * @return JSONResponse The page: results, total, limit, offset.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function inboxPage(string $scope, ListQuery $query): JSONResponse {
 		$uid = $this->uid();
 		if ($uid === null) {
 			return new JSONResponse(['error' => 'No session'], Http::STATUS_UNAUTHORIZED);
 		}
 
-		$states = [];
-		if ($state !== null && trim($state) !== '') {
-			$states = array_values(array_filter(array_map('trim', explode(',', $state))));
-		}
-
-		$terminalFilter = null;
-		if ($isTerminal !== null) {
-			$terminalFilter = filter_var($isTerminal, FILTER_VALIDATE_BOOLEAN);
-		}
-
 		// The derived-overdue filter takes its clock instant from the one
 		// derivation class, so filter and projection cannot disagree.
-		$overdueAt = null;
-		if ($overdue !== null && filter_var($overdue, FILTER_VALIDATE_BOOLEAN) === true) {
-			$overdueAt = $this->temporal->now();
-		}
-
-		// A window over the same effective deadline `overdue` uses.
-		$window = $this->dueWindow(dueAfter: $dueAfter, dueBefore: $dueBefore);
+		$overdueAt = $this->overdueAt(overdue: $query->filters['overdue']);
+		$window = $this->dueWindow(dueAfter: $query->filters['dueAfter'], dueBefore: $query->filters['dueBefore']);
 		if ($window['error'] !== null) {
 			return new JSONResponse(['error' => $window['error']], Http::STATUS_BAD_REQUEST);
 		}
 
-		$dueAfterAt = $window['after'];
-		$dueBeforeAt = $window['before'];
+		$audience = new TaskInboxAudience(uid: $uid, groupIds: $this->groupIds(uid: $uid), isAdmin: $this->isAdmin(uid: $uid), scope: $scope);
+		$due = new TaskInboxDueWindow(overdueAt: $overdueAt, dueAfter: $window['after'], dueBefore: $window['before']);
+		$criteria = new TaskInboxCriteria(audience: $audience, selection: $this->inboxSelection(query: $query, due: $due));
 
-		$descending = str_starts_with($sort, '-');
-		$sortKey = ltrim($sort, '-');
+		return new JSONResponse($this->inbox->inbox(criteria: $criteria, page: new TaskInboxPage(limit: $query->limit, offset: (int)$query->offset)));
+	}//end inboxPage()
 
-		$criteria = new TaskInboxCriteria(
-			audience: new TaskInboxAudience(uid: $uid, groupIds: $this->groupIds(uid: $uid), isAdmin: $this->isAdmin(uid: $uid), scope: $scope),
-			selection: new TaskInboxSelection(
-				filter: new TaskInboxFilter(states: $states, isTerminal: $terminalFilter, priority: $priority, kind: $this->trimmedOrNull(value: $kind)),
-				window: new TaskInboxDueWindow(overdueAt: $overdueAt, dueAfter: $dueAfterAt, dueBefore: $dueBeforeAt),
-				anchor: new TaskInboxAnchor(
-					objectUuid: $objectUuid,
-					runUuid: $this->trimmedOrNull(value: $runUuid),
-					includeBlocked: ($includeBlocked !== null && filter_var($includeBlocked, FILTER_VALIDATE_BOOLEAN) === true)
-				),
-				order: new TaskInboxOrder(
-					sort: $sortKey,
-					sortDescending: $descending,
-					openFirst: ($openFirst !== null && filter_var($openFirst, FILTER_VALIDATE_BOOLEAN) === true)
-				)
-			),
+	/**
+	 * What an inbox listing selects: its filter, due window, anchor and order.
+	 *
+	 * @param ListQuery          $query The listing.
+	 * @param TaskInboxDueWindow $due   The due window and overdue instant.
+	 *
+	 * @return TaskInboxSelection The selection.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function inboxSelection(ListQuery $query, TaskInboxDueWindow $due): TaskInboxSelection {
+		$filters = $query->filters;
+		$filter = new TaskInboxFilter(
+			states: $this->stateList(state: $filters['state']),
+			isTerminal: $this->flagOrNull(value: $filters['isTerminal']),
+			priority: $filters['priority'],
+			kind: $this->trimmedOrNull(value: $filters['kind'])
+		);
+		$anchor = new TaskInboxAnchor(
+			objectUuid: $filters['objectUuid'],
+			runUuid: $this->trimmedOrNull(value: $filters['runUuid']),
+			includeBlocked: $this->isTrue(value: $filters['includeBlocked'])
 		);
 
-		return new JSONResponse($this->inbox->inbox(criteria: $criteria, page: new TaskInboxPage(limit: $limit, offset: $offset)));
-	}//end index()
+		return new TaskInboxSelection(filter: $filter, window: $due, anchor: $anchor, order: $this->inboxOrder(query: $query));
+	}//end inboxSelection()
+
+	/**
+	 * The order of an inbox listing: its sort key and direction, and
+	 * whether open tasks come first.
+	 *
+	 * @param ListQuery $query The listing.
+	 *
+	 * @return TaskInboxOrder The order.
+	 *
+	 * @spec openspec/changes/task-inbox-open-first/specs/flow-tasks/spec.md#requirement-the-inbox-can-list-open-tasks-before-finished-ones
+	 */
+	private function inboxOrder(ListQuery $query): TaskInboxOrder {
+		return new TaskInboxOrder(
+			sort: (string)array_key_first($query->sort),
+			sortDescending: in_array('desc', $query->sort, true),
+			openFirst: $this->isTrue(value: $query->filters['openFirst'])
+		);
+	}//end inboxOrder()
+
+	/**
+	 * The states a comma-separated `state` lists, blanks dropped.
+	 *
+	 * @param string|null $state The parameter.
+	 *
+	 * @return array<int, string> The states; none for an absent or blank parameter.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function stateList(?string $state): array {
+		if ($state === null || trim($state) === '') {
+			return [];
+		}
+
+		return array_values(array_filter(array_map('trim', explode(',', $state))));
+	}//end stateList()
+
+	/**
+	 * A boolean query parameter, or null when it is absent.
+	 *
+	 * @param string|null $value The parameter.
+	 *
+	 * @return bool|null The value ('true'/'1'/'yes'/'on' are true), or null.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function flagOrNull(?string $value): ?bool {
+		if ($value === null) {
+			return null;
+		}
+
+		return filter_var($value, FILTER_VALIDATE_BOOLEAN);
+	}//end flagOrNull()
+
+	/**
+	 * Whether a boolean query parameter is present and true.
+	 *
+	 * @param string|null $value The parameter.
+	 *
+	 * @return bool True for 'true'/'1'/'yes'/'on'.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function isTrue(?string $value): bool {
+		return $value !== null && filter_var($value, FILTER_VALIDATE_BOOLEAN) === true;
+	}//end isTrue()
+
+	/**
+	 * The clock instant of the derived-overdue filter, when `overdue` is true.
+	 *
+	 * @param string|null $overdue The parameter.
+	 *
+	 * @return DateTime|null The instant, or null for no overdue filter.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function overdueAt(?string $overdue): ?DateTime {
+		if ($this->isTrue(value: $overdue) === false) {
+			return null;
+		}
+
+		return $this->temporal->now();
+	}//end overdueAt()
 
 	/**
 	 * One task, visibility-checked, with the form it presents.
@@ -606,20 +704,37 @@ class TaskController extends Controller {
 		?string $comment = null,
 		mixed $data = null,
 	): JSONResponse {
+		$answer = new TaskAnswer(outcome: $outcome, resultText: $resultText, comment: $comment);
+
+		return $this->completeTask(command: new TaskCompletionCommand(uuid: $uuid, answer: $answer, data: $data));
+	}//end complete()
+
+	/**
+	 * Complete a task through the form-aware completion; a `data` that is
+	 * not an object is a 400 before any service is reached.
+	 *
+	 * @param TaskCompletionCommand $command The task, answer and field values.
+	 *
+	 * @return JSONResponse The completed task, or a named refusal.
+	 *
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
+	 */
+	private function completeTask(TaskCompletionCommand $command): JSONResponse {
+		$data = $command->data;
 		if ($data !== null && is_array($data) === false) {
 			return new JSONResponse(['error' => 'Field "data" must be an object of field values.'], Http::STATUS_BAD_REQUEST);
 		}
 
 		return $this->respondWith(
 			verb: fn (): TaskInterface => $this->completion->complete(
-				uuid: $uuid,
-				answer: new TaskAnswer(outcome: $outcome, resultText: $resultText, comment: $comment),
+				uuid: $command->uuid,
+				answer: $command->answer,
 				data: ($data ?? []),
 				actor: $this->uid()
 			),
-			uuid: $uuid
+			uuid: $command->uuid
 		);
-	}//end complete()
+	}//end completeTask()
 
 	/**
 	 * Cancel a task.

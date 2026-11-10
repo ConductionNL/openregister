@@ -64,19 +64,33 @@ class ContactsObjectSourceProvider implements ObjectSourceProvider {
 	private const SEARCH_PROPERTIES = ['FN', 'EMAIL', 'ORG', 'UID'];
 
 	/**
+	 * App availability checks.
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
+	 * Logger for read failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IManager $contactsManager Nextcloud contacts (address book) manager.
-	 * @param IAppManager $appManager App availability checks.
-	 * @param LoggerInterface $logger Logger for read failures.
+	 * @param IManager          $contactsManager Nextcloud contacts (address book) manager.
+	 * @param OptionalAppBridge $app             Whether the app is installed, its services, and the log of failed reads.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IManager $contactsManager,
-		private readonly IAppManager $appManager,
-		private readonly LoggerInterface $logger,
+		OptionalAppBridge $app,
 	) {
+		$this->appManager = $app->appManager;
+		$this->logger = $app->logger;
 	}//end __construct()
 
 	/**
@@ -108,14 +122,26 @@ class ContactsObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
 	 */
 	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
+		return $this->findContact(binding: new SourcedObjectBinding(register: $register, schema: $schema), id: $id);
+	}//end find()
+
+	/**
+	 * Read one object for the bound register and schema.
+	 *
+	 * @param SourcedObjectBinding $binding The register and schema the objects belong to.
+	 * @param string               $id      The object id.
+	 *
+	 * @return ObjectEntity|null The virtual object, or null when absent/denied.
+	 */
+	private function findContact(SourcedObjectBinding $binding, string $id): ?ObjectEntity {
 		foreach ($this->readContacts(search: $id) as $contact) {
 			if ((string)($contact['UID'] ?? '') === $id) {
-				return $this->toObjectEntity(binding: new SourcedObjectBinding(register: $register, schema: $schema), contact: $contact);
+				return $this->toObjectEntity(binding: $binding, contact: $contact);
 			}
 		}
 
 		return null;
-	}//end find()
+	}//end findContact()
 
 	/**
 	 * {@inheritDoc}
@@ -135,12 +161,23 @@ class ContactsObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
 	 */
 	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
+		return $this->listContacts(binding: new SourcedObjectBinding(register: $register, schema: $schema), query: $query);
+	}//end findAll()
+
+	/**
+	 * Read one page of objects for the bound register and schema.
+	 *
+	 * @param SourcedObjectBinding $binding The register and schema the objects belong to.
+	 * @param array<string, mixed> $query   Query (filters/search/limit/offset).
+	 *
+	 * @return ObjectEntity[] The matching virtual objects.
+	 */
+	private function listContacts(SourcedObjectBinding $binding, array $query): array {
 		$search = (string)($query['filters']['search'] ?? $query['_search'] ?? $query['search'] ?? '');
 		$limit = (int)($query['limit'] ?? 200);
 		$offset = (int)($query['offset'] ?? 0);
 
 		$contacts = array_slice($this->readContacts(search: $search), $offset, $limit);
-		$binding = new SourcedObjectBinding(register: $register, schema: $schema);
 
 		$objects = [];
 		foreach ($contacts as $contact) {
@@ -148,7 +185,7 @@ class ContactsObjectSourceProvider implements ObjectSourceProvider {
 		}
 
 		return $objects;
-	}//end findAll()
+	}//end listContacts()
 
 	/**
 	 * Read the contacts visible to the acting user, failing closed to an empty list.

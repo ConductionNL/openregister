@@ -33,8 +33,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use InvalidArgumentException;
-use OCP\IL10N;
-use OCP\IURLGenerator;
 use OCP\IUserManager;
 
 /**
@@ -44,19 +42,17 @@ class TriggerScheduleNode extends TriggerNodeBase implements TriggerScheduleNode
 	/**
 	 * Constructor.
 	 *
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
-	 * @param IUserManager $userManager Resolves the declared `runAs` to prove the
-	 *                                  account exists before the flow is stored.
+	 * @param FlowNodePresentation $presentation Translations and the palette icon.
+	 * @param IUserManager         $userManager  Resolves the declared `runAs` to prove the
+	 *                                           account exists before the flow is stored.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
 	 */
 	public function __construct(
-		IL10N $l10n,
-		IURLGenerator $urls,
+		FlowNodePresentation $presentation,
 		private readonly IUserManager $userManager,
 	) {
-		parent::__construct(l10n: $l10n, urls: $urls);
+		parent::__construct(l10n: $presentation->l10n, urls: $presentation->urls);
 	}//end __construct()
 
 	/**

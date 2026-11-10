@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceHarvestService;
 use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceItem;
 use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceSourceProvider;
 use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceSourceRegistry;
+use OCA\OpenRegister\Service\Gdpr\Redaction\FieldRedaction;
 use OCA\OpenRegister\Service\Gdpr\Redaction\RedactionWriteService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -208,7 +209,7 @@ class CaseWritePathsGoldenTest extends TestCase {
 		$harvest = new EvidenceHarvestService(registry: $registry, accessor: $this->accessor(null), logger: $this->logger());
 		$redact = new RedactionWriteService(accessor: $this->accessor(null));
 
-		foreach ([static fn () => $harvest->harvest(caseUuid: 'gone'), static fn () => $redact->applyRedaction(caseUuid: 'gone', field: 'f', after: 'x', ground: 'g')] as $call) {
+		foreach ([static fn () => $harvest->harvest(caseUuid: 'gone'), static fn () => $redact->applyRedaction(caseUuid: 'gone', redaction: new FieldRedaction(field: 'f', after: 'x', ground: 'g'))] as $call) {
 			try {
 				$call();
 				$this->fail('An unloadable case must be refused.');
@@ -231,7 +232,7 @@ class CaseWritePathsGoldenTest extends TestCase {
 		$case = $this->caseWith(['name' => 42, 'list' => ['a'], 'redactions' => ['k' => ['field' => 'old']]]);
 		$service = new RedactionWriteService(accessor: $this->accessor($case));
 
-		$result = $service->applyRedaction(caseUuid: 'case-1', field: 'name', after: '[x]', ground: 'g1');
+		$result = $service->applyRedaction(caseUuid: 'case-1', redaction: new FieldRedaction(field: 'name', after: '[x]', ground: 'g1'));
 		$this->assertSame(
 			['caseUuid' => 'case-1', 'field' => 'name', 'before' => '42', 'after' => '[x]', 'ground' => 'g1', 'recordType' => 'redaction'],
 			$result
@@ -243,12 +244,12 @@ class CaseWritePathsGoldenTest extends TestCase {
 		);
 
 		$case2 = $this->caseWith(['list' => ['a'], 'redactions' => 'junk']);
-		$result2 = (new RedactionWriteService(accessor: $this->accessor($case2)))->applyRedaction(caseUuid: 'c2', field: 'list', after: '', ground: 'g2');
+		$result2 = (new RedactionWriteService(accessor: $this->accessor($case2)))->applyRedaction(caseUuid: 'c2', redaction: new FieldRedaction(field: 'list', after: '', ground: 'g2'));
 		$this->assertSame('', $result2['before']);
 		$this->assertSame('', $this->saved[1]['list']);
 		$this->assertSame([['field' => 'list', 'before' => '', 'after' => '', 'ground' => 'g2', 'recordType' => 'redaction']], $this->saved[1]['redactions']);
 
-		$result3 = (new RedactionWriteService(accessor: $this->accessor($this->caseWith([]))))->applyRedaction(caseUuid: 'c3', field: 'missing', after: 'y', ground: 'g3');
+		$result3 = (new RedactionWriteService(accessor: $this->accessor($this->caseWith([]))))->applyRedaction(caseUuid: 'c3', redaction: new FieldRedaction(field: 'missing', after: 'y', ground: 'g3'));
 		$this->assertSame('', $result3['before']);
 
 	}//end testRedactionCapturesAndAppends()

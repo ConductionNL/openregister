@@ -53,11 +53,20 @@ class RecordTemplateInput {
 	public const REQUIRED = ['name', 'register', 'schema'];
 
 	/**
+	 * Constructor.
+	 *
+	 * @param \Closure(mixed): array<int, array{code: string, message: string}> $shareFindings Checks `sharedWith`.
+	 */
+	public function __construct(
+		private readonly \Closure $shareFindings,
+	) {
+	}//end __construct()
+
+	/**
 	 * The writable fields of a request, checked.
 	 *
-	 * @param array<string, mixed> $data          The request body.
-	 * @param bool                 $partial       True when absent fields stay as they are (PATCH).
-	 * @param callable(mixed): array<int, array{code: string, message: string}> $shareFindings Checks `sharedWith`.
+	 * @param array<string, mixed> $data    The request body.
+	 * @param bool                 $partial True when absent fields stay as they are (PATCH).
 	 *
 	 * @return array<string, mixed> The fields to set, text fields trimmed.
 	 *
@@ -67,7 +76,7 @@ class RecordTemplateInput {
 	 *
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
-	public function validated(array $data, bool $partial, callable $shareFindings): array {
+	public function validated(array $data, bool $partial): array {
 		$fields = array_intersect_key($data, array_flip(self::WRITABLE));
 		$findings = [];
 
@@ -87,7 +96,7 @@ class RecordTemplateInput {
 
 		$findings = array_merge($findings, $this->shapeFindings(fields: $fields));
 		if (array_key_exists('sharedWith', $fields) === true) {
-			$findings = array_merge($findings, $shareFindings($fields['sharedWith']));
+			$findings = array_merge($findings, ($this->shareFindings)($fields['sharedWith']));
 		}
 
 		if ($findings !== []) {

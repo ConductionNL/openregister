@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\Operations\MaintenanceModeServiceInterface;
 use OCA\OpenRegister\Service\Operations\SupportBundleServiceInterface;
+use OCP\IUserSession;
 
 /**
  * The services of OperationsMaintenanceController, bundled so its constructor stays small.
@@ -36,10 +37,12 @@ final class OperationsMaintenanceControllerServices {
 	 *
 	 * @param MaintenanceModeServiceInterface $maintenance Maintenance mode.
 	 * @param SupportBundleServiceInterface   $bundle      The support bundle and the instance facts.
+	 * @param IUserSession                    $userSession The administrator acting.
 	 */
 	public function __construct(
 		public readonly MaintenanceModeServiceInterface $maintenance,
 		public readonly SupportBundleServiceInterface $bundle,
+		public readonly IUserSession $userSession,
 	) {
 	}//end __construct()
 }//end class

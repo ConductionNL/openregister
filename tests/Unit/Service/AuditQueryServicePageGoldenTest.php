@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use DateTime;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -115,7 +117,7 @@ class AuditQueryServicePageGoldenTest extends TestCase {
 			}
 		);
 
-		return new AuditQueryService($objects, $registerMapper, $schemaMapper);
+		return new AuditQueryService($objects, new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->createMock(MagicMapperInterface::class)));
 	}//end service()
 
 	/**

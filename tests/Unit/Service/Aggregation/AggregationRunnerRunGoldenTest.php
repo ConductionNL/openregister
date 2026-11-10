@@ -240,9 +240,7 @@ class AggregationRunnerRunGoldenTest extends TestCase {
 		$orgHandler->method('resolveOrganizationScope')->willReturn(['mode' => MagicOrganizationHandler::SCOPE_IN, 'uuids' => ['__none__']]);
 
 		return new AggregationRunner(
-			magicMapper: $magic,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magic),
 			placeholders: new PlaceholderResolver($session),
 			db: $db,
 			cache: $cache,

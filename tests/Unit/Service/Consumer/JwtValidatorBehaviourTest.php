@@ -28,6 +28,7 @@ use Jose\Component\Signature\Algorithm\RS512;
 use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\Serializer\CompactSerializer;
 use OCA\OpenRegister\Exception\AuthenticationException;
+use OCA\OpenRegister\Service\Consumer\JwsKey;
 use OCA\OpenRegister\Service\Consumer\JwtValidator;
 use OCA\OpenRegister\Service\Consumer\RsaJwsVerifier;
 use OCP\ICache;
@@ -166,7 +167,7 @@ class JwtValidatorBehaviourTest extends TestCase
         $validator->verifyPinned(self::hs256(['iss' => 'a']), ['alg' => 'HS256'], ['algorithm' => 'HS256', 'publicKey' => self::SECRET]);
         $validator->verifyPinned(self::rs256(['iss' => 'a']), ['alg' => 'RS256'], ['algorithm' => 'RS256', 'publicKey' => self::$publicPem]);
 
-        $this->assertTrue($validator->verifySignature(self::rs256(['iss' => 'a']), 'RS256', base64_encode(self::$publicPem)));
+        $this->assertTrue($validator->verifySignature(self::rs256(['iss' => 'a']), new JwsKey('RS256', base64_encode(self::$publicPem))));
     }//end testVerifyPinnedAcceptsMatchingHmacAndRsaSignatures()
 
     public function testVerifySignatureRefusesWrongShapesKeysAndAlgorithms(): void
@@ -174,12 +175,12 @@ class JwtValidatorBehaviourTest extends TestCase
         $validator = new JwtValidator();
         $rs        = self::rs256(['iss' => 'a']);
 
-        $this->assertFalse($validator->verifySignature('only.two', 'HS256', self::SECRET));
-        $this->assertFalse($validator->verifySignature(self::hs256(['iss' => 'a'], 'short'), 'HS256', 'short'));
-        $this->assertFalse($validator->verifySignature($rs, 'RS384', self::$publicPem));
-        $this->assertFalse($validator->verifySignature($rs, 'RS256', 'not a key at all'));
-        $this->assertFalse((new RsaJwsVerifier())->verify($rs, 'ES256', self::$publicPem));
-        $this->assertFalse((new RsaJwsVerifier())->verify('###.###.###', 'RS256', self::$publicPem));
+        $this->assertFalse($validator->verifySignature('only.two', new JwsKey('HS256', self::SECRET)));
+        $this->assertFalse($validator->verifySignature(self::hs256(['iss' => 'a'], 'short'), new JwsKey('HS256', 'short')));
+        $this->assertFalse($validator->verifySignature($rs, new JwsKey('RS384', self::$publicPem)));
+        $this->assertFalse($validator->verifySignature($rs, new JwsKey('RS256', 'not a key at all')));
+        $this->assertFalse((new RsaJwsVerifier())->verify($rs, new JwsKey('ES256', self::$publicPem)));
+        $this->assertFalse((new RsaJwsVerifier())->verify('###.###.###', new JwsKey('RS256', self::$publicPem)));
     }//end testVerifySignatureRefusesWrongShapesKeysAndAlgorithms()
 
     /**
@@ -203,8 +204,8 @@ class JwtValidatorBehaviourTest extends TestCase
             ->build();
         $token = (new CompactSerializer())->serialize($jws, 0);
 
-        $this->assertTrue((new RsaJwsVerifier())->verify($token, $alg, self::$publicPem));
-        $this->assertFalse((new RsaJwsVerifier())->verify(self::rs256(['iss' => 'a']), $alg, self::$publicPem));
+        $this->assertTrue((new RsaJwsVerifier())->verify($token, new JwsKey($alg, self::$publicPem)));
+        $this->assertFalse((new RsaJwsVerifier())->verify(self::rs256(['iss' => 'a']), new JwsKey($alg, self::$publicPem)));
     }//end testEachRsaAlgorithmVerifiesItsOwnSignatureOnly()
 
     public function testANonRsaPublicKeyIsRefused(): void
@@ -212,7 +213,7 @@ class JwtValidatorBehaviourTest extends TestCase
         $ec = openssl_pkey_new(['private_key_type' => OPENSSL_KEYTYPE_EC, 'curve_name' => 'prime256v1']);
 
         $this->assertFalse(
-            (new RsaJwsVerifier())->verify(self::rs256(['iss' => 'a']), 'RS256', (string) openssl_pkey_get_details($ec)['key'])
+            (new RsaJwsVerifier())->verify(self::rs256(['iss' => 'a']), new JwsKey('RS256', (string) openssl_pkey_get_details($ec)['key']))
         );
     }//end testANonRsaPublicKeyIsRefused()
 

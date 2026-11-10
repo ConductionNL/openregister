@@ -219,10 +219,11 @@ final class ObjectDateDeclaration {
 			);
 		}
 
-		$alarm = self::readAlarmOffsetDays(property: $property, kind: $kind, config: $config);
-		$endProperty = self::readEndProperty(property: $property, kind: $kind, config: $config);
+		$run = new DateDeclarationRun(property: $property, kind: $kind, config: $config);
+		$alarm = self::readAlarmOffsetDays(run: $run);
+		$endProperty = self::readEndProperty(run: $run);
 		$duration = self::readDurationMinutes(property: $property, config: $config);
-		$timerPurpose = self::readTimerPurpose(property: $property, kind: $kind, config: $config);
+		$timerPurpose = self::readTimerPurpose(run: $run);
 
 		return new self(
 			property: $property,
@@ -283,16 +284,16 @@ final class ObjectDateDeclaration {
 	/**
 	 * The alarm offset, in days, refusing a negative or non-integer offset.
 	 *
-	 * @param string $property The property being declared.
-	 * @param string $kind The declared kind.
-	 * @param array<string, mixed> $config The declaration.
+	 * @param DateDeclarationRun $run The property, kind and declaration.
 	 *
 	 * @return int|null The offset, or null when none is declared.
 	 *
 	 * @throws CalendarDateKindException When the offset is unusable.
 	 */
-	private static function readAlarmOffsetDays(string $property, string $kind, array $config): ?int {
-		$raw = ($config['alarmOffsetDays'] ?? null);
+	private static function readAlarmOffsetDays(DateDeclarationRun $run): ?int {
+		$property = $run->property;
+		$kind = $run->kind;
+		$raw = ($run->config['alarmOffsetDays'] ?? null);
 
 		if ($raw === null) {
 			return null;
@@ -337,16 +338,16 @@ final class ObjectDateDeclaration {
 	/**
 	 * The end property, required on a period.
 	 *
-	 * @param string $property The property being declared.
-	 * @param string $kind The declared kind.
-	 * @param array<string, mixed> $config The declaration.
+	 * @param DateDeclarationRun $run The property, kind and declaration.
 	 *
 	 * @return string|null The end property, or null when none is declared.
 	 *
 	 * @throws CalendarDateKindException When a period declares no end.
 	 */
-	private static function readEndProperty(string $property, string $kind, array $config): ?string {
-		$endProperty = self::stringOrNull(value: ($config['endProperty'] ?? null));
+	private static function readEndProperty(DateDeclarationRun $run): ?string {
+		$property = $run->property;
+		$kind = $run->kind;
+		$endProperty = self::stringOrNull(value: ($run->config['endProperty'] ?? null));
 
 		if ($kind === self::KIND_PERIOD && $endProperty === null) {
 			throw new CalendarDateKindException(
@@ -392,16 +393,16 @@ final class ObjectDateDeclaration {
 	/**
 	 * The flow-timer purpose a deadline binds to.
 	 *
-	 * @param string $property The property being declared.
-	 * @param string $kind The declared kind.
-	 * @param array<string, mixed> $config The declaration.
+	 * @param DateDeclarationRun $run The property, kind and declaration.
 	 *
 	 * @return string|null The purpose, or null when the deadline reads its raw date.
 	 *
 	 * @throws CalendarDateKindException When the purpose is not a timer purpose.
 	 */
-	private static function readTimerPurpose(string $property, string $kind, array $config): ?string {
-		$purpose = self::stringOrNull(value: ($config['timerPurpose'] ?? null));
+	private static function readTimerPurpose(DateDeclarationRun $run): ?string {
+		$property = $run->property;
+		$kind = $run->kind;
+		$purpose = self::stringOrNull(value: ($run->config['timerPurpose'] ?? null));
 
 		if ($purpose === null) {
 			return null;

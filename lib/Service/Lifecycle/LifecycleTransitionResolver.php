@@ -64,18 +64,16 @@ class LifecycleTransitionResolver implements LifecycleTransitionResolverInterfac
 	 * The (action, spec) pair this change is, or null when none allows it.
 	 *
 	 * @param array<string, mixed> $transitions The annotation's transition map.
-	 * @param string $uuid The object's uuid, for the declared-action lookup.
-	 * @param string $oldValue The lifecycle value being moved away from.
-	 * @param string $newValue The lifecycle value being moved to.
+	 * @param StateMove $move The object, the state it leaves and the state it enters.
 	 *
 	 * @return array{0: string, 1: array<string, mixed>}|null
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function resolve(array $transitions, string $uuid, string $oldValue, string $newValue): ?array {
-		foreach ($this->candidates(transitions: $transitions, uuid: $uuid) as $candidate) {
+	public function resolve(array $transitions, StateMove $move): ?array {
+		foreach ($this->candidates(transitions: $transitions, uuid: $move->uuid) as $candidate) {
 			$spec = $candidate[1];
-			if (is_array($spec) === true && ($spec['to'] ?? null) === $newValue && self::leaves(spec: $spec, state: $oldValue) === true) {
+			if (is_array($spec) === true && ($spec['to'] ?? null) === $move->to && self::leaves(spec: $spec, state: $move->from) === true) {
 				return [(string)$candidate[0], $spec];
 			}
 		}

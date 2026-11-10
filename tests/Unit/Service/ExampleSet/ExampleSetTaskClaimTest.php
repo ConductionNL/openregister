@@ -89,7 +89,7 @@ class ExampleSetTaskClaimTest extends TestCase {
 	public function testUnclaimedTaskWritesNothing(): void {
 		$mapper = $this->createMock(TaskAuditMapperInterface::class);
 		$mapper->expects($this->never())->method('insert');
-		$this->claim($mapper)->write(new Task(), ['claimedBy' => ''], null);
+		$this->claim($mapper)->write(new Task(), ['claimedBy' => '']);
 	}
 
 	/**
@@ -112,7 +112,7 @@ class ExampleSetTaskClaimTest extends TestCase {
 			}
 		);
 
-		$this->claim($mapper)->write($task, ['claimedBy' => 'alice'], new DateTime('2020-01-02T03:04:05+00:00'));
+		$this->claim($mapper)->write($task, ['claimedBy' => 'alice', 'claimedAt' => '2020-01-02T03:04:05+00:00']);
 
 		$this->assertSame(
 			[42, 'claim', 'claimed', 'alice', 'internal', true, '2020-01-02T03:04:05+00:00'],
@@ -143,7 +143,7 @@ class ExampleSetTaskClaimTest extends TestCase {
 			}
 		);
 		$before = new DateTime();
-		$this->claim($mapper)->write(new Task(), ['claimedBy' => 'alice'], null);
+		$this->claim($mapper)->write(new Task(), ['claimedBy' => 'alice']);
 		$this->assertGreaterThanOrEqual($before->getTimestamp(), $written->getCreated()->getTimestamp());
 	}
 }

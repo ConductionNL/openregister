@@ -127,7 +127,8 @@ class FilePublishingHandlerTest extends TestCase {
 
 		// Should not throw
 		$handler->setFileService($this->fileService);
-		$this->assertTrue(true);
+
+		$this->assertSame($this->fileService, (new \ReflectionProperty($handler, 'fileService'))->getValue($handler));
 	}
 
 	// =========================================================================
