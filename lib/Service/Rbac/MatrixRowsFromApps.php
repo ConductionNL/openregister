@@ -194,24 +194,36 @@ class MatrixRowsFromApps {
 		$validator = $this->validator->withDeclaredActions(declaredActions: $run->schema->declaredActionNames());
 		$kept = [];
 		foreach ($rows as $row) {
-			if ($this->grantsAReservedGroup(row: $row, run: $run) === true) {
-				continue;
+			if ($this->grantsAReservedGroup(row: $row, run: $run) === false
+				&& $this->readsCleanly(findings: $validator->findingsForRow(row: $row, shape: $shape), run: $run) === true
+			) {
+				$kept[] = $row;
 			}
-
-			$findings = $validator->findingsForRow(row: $row, shape: $shape);
-			if ($findings !== []) {
-				$this->logger->warning(
-					message: '[MatrixRowsFromApps] A provider row does not read and was dropped',
-					context: ['provider' => $run->provider, 'findings' => array_column($findings, 'message')]
-				);
-				continue;
-			}
-
-			$kept[] = $row;
 		}
 
 		return $kept;
 	}//end readable()
+
+	/**
+	 * Whether a provider row validated without findings; a row that did not is logged as dropped.
+	 *
+	 * @param array<int, array{message: string}> $findings The row's validation findings.
+	 * @param AppRowsRun                         $run      The provider being read, for the log.
+	 *
+	 * @return bool True when the row has no findings.
+	 */
+	private function readsCleanly(array $findings, AppRowsRun $run): bool {
+		if ($findings === []) {
+			return true;
+		}
+
+		$this->logger->warning(
+			message: '[MatrixRowsFromApps] A provider row does not read and was dropped',
+			context: ['provider' => $run->provider, 'findings' => array_column($findings, 'message')]
+		);
+
+		return false;
+	}//end readsCleanly()
 
 	/**
 	 * Whether a provider row grants a reserved group; such a row is logged and dropped.
