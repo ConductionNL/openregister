@@ -65,7 +65,7 @@ class DraftDiscard {
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-discarded-by-its-owner
 	 */
-	public function discard(DiscardDraftRequest $request): bool {
+	public function discardWith(DiscardDraftRequest $request): bool {
 		$destination = $request->destination;
 		$draftId     = $request->draftId;
 		if ($draftId === '') {
@@ -98,6 +98,21 @@ class DraftDiscard {
 		} catch (Throwable) {
 			return false;
 		}
+	}//end discardWith()
+
+	/**
+	 * Discard the owner's draft with this id, by the loose values other apps pass.
+	 *
+	 * @param array{register?: mixed, schema?: mixed} $destination The destination pair (id, uuid, slug or entity).
+	 * @param string                                  $draftId     The draft's uuid.
+	 * @param DraftOwner                              $owner       The asserted owner.
+	 *
+	 * @return bool As discardWith().
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-discarded-by-its-owner
+	 */
+	public function discard(array $destination, string $draftId, DraftOwner $owner): bool {
+		return $this->discardWith(request: new DiscardDraftRequest(destination: $destination, draftId: $draftId, owner: $owner));
 	}//end discard()
 
 	/**

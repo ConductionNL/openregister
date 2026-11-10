@@ -125,7 +125,7 @@ class DraftDiscardTest extends TestCase {
 	public function testDiscardsTheOwnersDraft(): void {
 		$this->store(uuid: 'd1', owner: 'portal:subject-1', status: 'draft');
 
-		$discarded = $this->discard->discard(
+		$discarded = $this->discard->discardWith(
 			request: new DiscardDraftRequest(
 				destination: ['register' => 'portal', 'schema' => 'case'],
 				draftId: 'd1',
@@ -150,7 +150,7 @@ class DraftDiscardTest extends TestCase {
 		$this->store(uuid: 'd1', owner: 'portal:subject-1', status: 'draft');
 
 		$this->assertTrue(
-			$this->discard->discard(
+			$this->discard->discardWith(
 				request: new DiscardDraftRequest(
 					destination: ['register' => $this->register, 'schema' => $this->schema],
 					draftId: 'd1',
@@ -171,15 +171,30 @@ class DraftDiscardTest extends TestCase {
 		$owner = DraftOwner::portalSubject(subjectRef: 'subject-1');
 		$destination = ['register' => 'portal', 'schema' => 'case'];
 
-		$this->assertFalse($this->discard->discard(request: new DiscardDraftRequest(destination: $destination, draftId: 'theirs', owner: $owner)));
-		$this->assertFalse($this->discard->discard(request: new DiscardDraftRequest(destination: $destination, draftId: 'sent', owner: $owner)));
-		$this->assertFalse($this->discard->discard(request: new DiscardDraftRequest(destination: $destination, draftId: 'nope', owner: $owner)));
-		$this->assertFalse($this->discard->discard(request: new DiscardDraftRequest(destination: $destination, draftId: '', owner: $owner)));
-		$this->assertFalse($this->discard->discard(request: new DiscardDraftRequest(destination: ['register' => 'gone', 'schema' => 'case'], draftId: 'sent', owner: $owner)));
-		$this->assertFalse($this->discard->discard(request: new DiscardDraftRequest(destination: ['register' => 'portal', 'schema' => 'gone'], draftId: 'sent', owner: $owner)));
-		$this->assertFalse($this->discard->discard(request: new DiscardDraftRequest(destination: $destination, draftId: 'stuck', owner: $owner)));
+		$this->assertFalse($this->discard->discardWith(request: new DiscardDraftRequest(destination: $destination, draftId: 'theirs', owner: $owner)));
+		$this->assertFalse($this->discard->discardWith(request: new DiscardDraftRequest(destination: $destination, draftId: 'sent', owner: $owner)));
+		$this->assertFalse($this->discard->discardWith(request: new DiscardDraftRequest(destination: $destination, draftId: 'nope', owner: $owner)));
+		$this->assertFalse($this->discard->discardWith(request: new DiscardDraftRequest(destination: $destination, draftId: '', owner: $owner)));
+		$this->assertFalse($this->discard->discardWith(request: new DiscardDraftRequest(destination: ['register' => 'gone', 'schema' => 'case'], draftId: 'sent', owner: $owner)));
+		$this->assertFalse($this->discard->discardWith(request: new DiscardDraftRequest(destination: ['register' => 'portal', 'schema' => 'gone'], draftId: 'sent', owner: $owner)));
+		$this->assertFalse($this->discard->discardWith(request: new DiscardDraftRequest(destination: $destination, draftId: 'stuck', owner: $owner)));
 		$this->assertSame([], $this->deletes);
 		$this->assertArrayHasKey('theirs', $this->stored);
 		$this->assertArrayHasKey('sent', $this->stored);
 	}//end testRefusesEverythingThatIsNotTheOwnersDraft()
+
+	/**
+	 * The loose-value signature portaliq calls by name, and positionally, still discards.
+	 */
+	public function testTheLooseValueSignatureAnswersByNameAndPositionally(): void {
+		$this->store(uuid: 'd1', owner: 'portal:subject-1', status: 'draft');
+		$this->store(uuid: 'd2', owner: 'portal:subject-1', status: 'draft');
+		$destination = ['register' => 'portal', 'schema' => 'case'];
+		$owner       = DraftOwner::portalSubject(subjectRef: 'subject-1');
+
+		$this->assertTrue($this->discard->discard(destination: $destination, draftId: 'd1', owner: $owner));
+		$this->assertTrue($this->discard->discard($destination, 'd2', $owner));
+		$this->assertFalse($this->discard->discard($destination, 'd1', DraftOwner::portalSubject(subjectRef: 'someone-else')));
+		$this->assertSame(['d1', 'd2'], array_column($this->deletes, 'uuid'));
+	}//end testTheLooseValueSignatureAnswersByNameAndPositionally()
 }//end class
