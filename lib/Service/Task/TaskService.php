@@ -957,17 +957,16 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	/**
 	 * Explicit propagation: a branch decision made this task moot.
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string $reason What made it moot — recorded, because "why did
-	 *                       this disappear from my inbox" must stay answerable.
-	 * @param string $source The propagation source recorded as actor.
+	 * @param string      $uuid    The task uuid.
+	 * @param TaskTrigger $trigger The propagation source recorded as actor, and what made it moot: recorded,
+	 *                             because "why did this disappear from my inbox" must stay answerable.
 	 *
 	 * @return Task The terminated task, or the task untouched when already terminal.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-that-has-become-moot-is-terminated-not-orphaned
 	 */
-	public function terminateAsMoot(string $uuid, string $reason, string $source): Task {
-		$act = new TaskAct(verb: 'terminate', actor: $source, reason: $reason, state: Task::STATE_TERMINATED);
+	public function terminateAsMoot(string $uuid, TaskTrigger $trigger): Task {
+		$act = new TaskAct(verb: 'terminate', actor: $trigger->source, reason: $trigger->reason, state: Task::STATE_TERMINATED);
 
 		return $this->terminateOpen(task: $this->services->tables->tasks->findByUuid(uuid: $uuid), act: $act);
 	}//end terminateAsMoot()
@@ -1005,9 +1004,8 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * task declares none; a completion that neither approves nor rejects is
 	 * refused as undecided.
 	 *
-	 * @param string $uuid The decided task's uuid.
-	 * @param string $source The consuming identity recorded as actor.
-	 * @param string $reason What relied on the approval.
+	 * @param string      $uuid    The decided task's uuid.
+	 * @param TaskTrigger $trigger The consuming identity recorded as actor, and what relied on the approval.
 	 *
 	 * @return Task The task with its consumption recorded.
 	 *
@@ -1016,11 +1014,11 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
 	 * @spec openspec/changes/consume-follows-the-approving-rule/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
 	 */
-	public function consume(string $uuid, string $source, string $reason): Task {
+	public function consume(string $uuid, TaskTrigger $trigger): Task {
 		$task = $this->unconsumedApproval(uuid: $uuid);
-		$this->markConsumed(task: $task, source: $source);
+		$this->markConsumed(task: $task, source: $trigger->source);
 
-		return $this->updateAudited(task: $task, act: new TaskAct(verb: 'consume', actor: $source, reason: $reason));
+		return $this->updateAudited(task: $task, act: new TaskAct(verb: 'consume', actor: $trigger->source, reason: $trigger->reason));
 	}//end consume()
 
 	/**
@@ -1215,10 +1213,9 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * concurrent completion surfaces as {@see TaskConflictException}, which
 	 * the sweep treats as "nothing to do".
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string $outcome `skip`, `error`, `dead_letter` or `transition:<action>`.
-	 * @param string $source The timer identity recorded as actor (`flow-timer:<uuid>`).
-	 * @param string $reason Why, recorded on the audit.
+	 * @param string       $uuid    The task uuid.
+	 * @param TimerOutcome $outcome `skip`, `error`, `dead_letter` or `transition:<action>`, and the timer identity
+	 *                              recorded as actor (`flow-timer:<uuid>`) with why, recorded on the audit.
 	 *
 	 * @return Task The task as left by the outcome, or untouched when already terminal.
 	 *
@@ -1227,9 +1224,9 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-advisory-due-date-notifies-an-enforcing-expiry-transitions
 	 */
-	public function applyTimerOutcome(string $uuid, string $outcome, string $source, string $reason): Task {
-		[$state, $recorded, $action] = $this->timerOutcomeTarget(outcome: $outcome);
-		$act = new TaskAct(verb: $action, actor: $source, reason: $reason, state: $state);
+	public function applyTimerOutcome(string $uuid, TimerOutcome $outcome): Task {
+		[$state, $recorded, $action] = $this->timerOutcomeTarget(outcome: $outcome->outcome);
+		$act = new TaskAct(verb: $action, actor: $outcome->trigger->source, reason: $outcome->trigger->reason, state: $state);
 
 		return $this->closeByTimer(task: $this->services->tables->tasks->findByUuid(uuid: $uuid), closing: new TaskClosing(act: $act, outcome: $recorded));
 	}//end applyTimerOutcome()

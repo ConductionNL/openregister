@@ -311,16 +311,15 @@ interface TaskServiceInterface {
 	/**
 	 * Explicit propagation: a branch decision made this task moot.
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string $reason What made it moot — recorded, because "why did
-	 *                       this disappear from my inbox" must stay answerable.
-	 * @param string $source The propagation source recorded as actor.
+	 * @param string      $uuid    The task uuid.
+	 * @param TaskTrigger $trigger The propagation source recorded as actor, and what made it moot: recorded,
+	 *                             because "why did this disappear from my inbox" must stay answerable.
 	 *
 	 * @return Task The terminated task, or the task untouched when already terminal.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-that-has-become-moot-is-terminated-not-orphaned
 	 */
-	public function terminateAsMoot(string $uuid, string $reason, string $source): Task;
+	public function terminateAsMoot(string $uuid, TaskTrigger $trigger): Task;
 
 	/**
 	 * Consume an approving decision: record that the work it authorized ran.
@@ -338,9 +337,8 @@ interface TaskServiceInterface {
 	 * task declares none; a completion that neither approves nor rejects is
 	 * refused as undecided.
 	 *
-	 * @param string $uuid The decided task's uuid.
-	 * @param string $source The consuming identity recorded as actor.
-	 * @param string $reason What relied on the approval.
+	 * @param string      $uuid    The decided task's uuid.
+	 * @param TaskTrigger $trigger The consuming identity recorded as actor, and what relied on the approval.
 	 *
 	 * @return Task The task with its consumption recorded.
 	 *
@@ -349,7 +347,7 @@ interface TaskServiceInterface {
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
 	 * @spec openspec/changes/consume-follows-the-approving-rule/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
 	 */
-	public function consume(string $uuid, string $source, string $reason): Task;
+	public function consume(string $uuid, TaskTrigger $trigger): Task;
 
 	/**
 	 * Enable a position: the sequence's own promotion verb.
@@ -391,10 +389,9 @@ interface TaskServiceInterface {
 	 * concurrent completion surfaces as {@see TaskConflictException}, which
 	 * the sweep treats as "nothing to do".
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string $outcome `skip`, `error`, `dead_letter` or `transition:<action>`.
-	 * @param string $source The timer identity recorded as actor (`flow-timer:<uuid>`).
-	 * @param string $reason Why, recorded on the audit.
+	 * @param string       $uuid    The task uuid.
+	 * @param TimerOutcome $outcome `skip`, `error`, `dead_letter` or `transition:<action>`, and the timer identity
+	 *                              recorded as actor (`flow-timer:<uuid>`) with why, recorded on the audit.
 	 *
 	 * @return Task The task as left by the outcome, or untouched when already terminal.
 	 *
@@ -403,7 +400,7 @@ interface TaskServiceInterface {
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-advisory-due-date-notifies-an-enforcing-expiry-transitions
 	 */
-	public function applyTimerOutcome(string $uuid, string $outcome, string $source, string $reason): Task;
+	public function applyTimerOutcome(string $uuid, TimerOutcome $outcome): Task;
 
 	/**
 	 * Fetch a task by uuid.
