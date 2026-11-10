@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -108,9 +109,7 @@ class MagicRbacRowPredicateTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAdminGetsNoPredicate(): void {
-		$predicate = $this->handlerFor('root', ['admin'])->buildRbacRowPredicateSql(
-			schema: $this->schemaWith(['read' => ['instructors']])
-		);
+		$predicate = $this->handlerFor('root', ['admin'])->buildRbacRowPredicateSql((new RbacAccessCall(schema: $this->schemaWith(['read' => ['instructors']]))));
 
 		$this->assertNull($predicate);
 	}//end testAnAdminGetsNoPredicate()
@@ -121,9 +120,7 @@ class MagicRbacRowPredicateTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheAuthenticatedSelfRuleNarrowsToTheCallersRows(): void {
-		$predicate = $this->handlerFor('learner-a', ['students'])->buildRbacRowPredicateSql(
-			schema: $this->schemaWith(['read' => ['instructors', self::SELF_RULE]])
-		);
+		$predicate = $this->handlerFor('learner-a', ['students'])->buildRbacRowPredicateSql((new RbacAccessCall(schema: $this->schemaWith(['read' => ['instructors', self::SELF_RULE]]))));
 
 		$this->assertNotNull($predicate);
 		$this->assertStringContainsString("`learner_id` = 'learner-a'", $predicate);
@@ -136,9 +133,7 @@ class MagicRbacRowPredicateTest extends TestCase {
 	 * @return void
 	 */
 	public function testACallerNoRuleAdmitsIsNotGivenAnEmptyPredicate(): void {
-		$predicate = $this->handlerFor('outsider', ['students'])->buildRbacRowPredicateSql(
-			schema: $this->schemaWith(['read' => ['instructors']])
-		);
+		$predicate = $this->handlerFor('outsider', ['students'])->buildRbacRowPredicateSql((new RbacAccessCall(schema: $this->schemaWith(['read' => ['instructors']]))));
 
 		$this->assertNotNull($predicate);
 		$this->assertNotSame('', trim($predicate));

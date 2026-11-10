@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Service\Object;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -244,7 +245,7 @@ class LockHandler {
 		);
 		$this->forgetDisplacedRun(displaced: $displaced, after: $objectAfter);
 		if ($request->break === true) {
-			$this->stores->auditTrailMapper->createAuditTrailEntry(object: $objectAfter, action: 'lock.broken', context: $displaced);
+			$this->stores->auditTrailMapper->recordObjectEvent(event: new ObjectAuditEvent(object: $objectAfter, action: 'lock.broken', context: $displaced));
 		}
 
 		$this->recordUnlock(before: $objectBefore, after: $objectAfter);

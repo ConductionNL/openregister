@@ -27,9 +27,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\TimerAnchorMove;
+use OCA\OpenRegister\Kernel\Contracts\TimerChange;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationTarget;
 use Closure;
-use DateTimeInterface;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunFilter;
 use OCA\OpenRegister\Db\FlowRunListing;
@@ -150,8 +151,9 @@ final class FlowRunMigrationGoldenTest extends TestCase {
 		);
 		$timerService = $this->createMock(FlowTimerService::class);
 		$timerService->method('supersede')->willReturnCallback(
-			function (string $uuid, DateTimeInterface $anchorEventAt, string $reason, ?string $actor) {
-				$this->calls[] = ['supersede', $uuid, $reason, $actor];
+			function (TimerAnchorMove $move, TimerChange $change) {
+				$uuid = $move->uuid;
+				$this->calls[] = ['supersede', $uuid, $change->reason, $change->actor];
 				if ($uuid === 'timer-fails') {
 					throw new RuntimeException('boom');
 				}

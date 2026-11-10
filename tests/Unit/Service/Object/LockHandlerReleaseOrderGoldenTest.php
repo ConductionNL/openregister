@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\LockStores;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
 use OCA\OpenRegister\Tests\Support\AuditChangeCalls;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -75,12 +76,12 @@ final class LockHandlerReleaseOrderGoldenTest extends TestCase {
 	 */
 	private function handler(): LockHandler {
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('createAuditTrailEntry')->willReturnCallback(
+		$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context): AuditTrail {
 				$this->events[] = 'entry:' . $action . ':' . json_encode($context);
 				return new AuditTrail();
 			}
-		);
+		));
 		$audit->method('recordChange')->willReturnCallback(AuditChangeCalls::positional(
 			function (?ObjectEntity $old=null, ?ObjectEntity $new=null, ?string $action='update'): AuditTrail {
 				$this->events[] = 'trail:' . $action . ':' . ($old?->getUuid()) . '>' . ($new?->getUuid());

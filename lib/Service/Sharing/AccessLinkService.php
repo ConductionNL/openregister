@@ -49,6 +49,9 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\AccessLinkMapperInterface;
+use OCA\OpenRegister\Db\AuditTrail\NamedActor;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCP\IURLGenerator;
 use OCP\Security\ISecureRandom;
 use Symfony\Component\Uid\Uuid;
@@ -333,22 +336,22 @@ class AccessLinkService implements AccessLinkServiceInterface {
 	public function recordUse(AccessLink $link, AccessLinkUse $use): void {
 		if ($use->object !== null) {
 			try {
-				$this->useLog->auditTrail->createAuditTrailEntry(
-					object: $use->object,
-					action: $use->act,
-					context: array_merge(
-						$use->context,
-						[
-							'accessLink' => $link->getUuid(),
-							'capabilities' => $link->declaredCapabilities(),
-							'subjectType' => $link->getSubjectType(),
-							'subjectId' => $link->getSubjectId(),
-							'ipAddress' => $use->ipAddress,
-						]
-					),
-					actorId: $link->principalId(),
-					actorName: $link->principalName(),
-					ipAddress: $use->ipAddress
+				$this->useLog->auditTrail->recordObjectEvent(
+					event: new ObjectAuditEvent(
+						object: $use->object,
+						action: $use->act,
+						context: array_merge(
+							$use->context,
+							[
+								'accessLink' => $link->getUuid(),
+								'capabilities' => $link->declaredCapabilities(),
+								'subjectType' => $link->getSubjectType(),
+								'subjectId' => $link->getSubjectId(),
+								'ipAddress' => $use->ipAddress,
+							]
+						),
+						options: new ObjectAuditEventOptions(actor: new NamedActor(id: $link->principalId(), name: $link->principalName()), ipAddress: $use->ipAddress)
+					)
 				);
 			} catch (Throwable $failure) {
 				// An audit write that fails must be visible, and it must not

@@ -6,10 +6,12 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\WebhookLogMapper;
@@ -136,7 +138,7 @@ class DashboardServiceTest extends TestCase {
 	private function setupStatsMappers(): void {
 		$this->objectMapper->method('getStatistics')
 			->willReturn($this->defaultObjectStats());
-		$this->auditTrailMapper->method('getStatistics')
+		$this->auditTrailMapper->method('statisticsTotals')
 			->willReturn($this->defaultLogStats());
 		$this->webhookLogMapper->method('getStatistics')
 			->willReturn($this->defaultWebhookStats());
@@ -225,7 +227,8 @@ class DashboardServiceTest extends TestCase {
 
 		$read = [];
 		$this->objectMapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			function (Register $register, Schema $schema) use (&$read): array {
+			function (RegisterSchema $table, ListQuery $listing) use (&$read): array {
+				[$register, $schema] = [$table->register, $table->schema];
 				$read[] = $register->getId() . '/' . $schema->getId();
 				return [];
 			}
@@ -880,7 +883,7 @@ class DashboardServiceTest extends TestCase {
 
 		$this->auditTrailMapper
 			->expects($this->once())
-			->method('getActionChartData')
+			->method('actionChartData')
 			->willReturn($expected);
 
 		$result = $this->service->auditReads()->getAuditTrailActionChartData((new DashboardScope())->during(null, null));
@@ -898,7 +901,7 @@ class DashboardServiceTest extends TestCase {
 
 		$this->auditTrailMapper
 			->expects($this->once())
-			->method('getActionChartData')
+			->method('actionChartData')
 			->willReturn($expected);
 
 		$result = $this->service->auditReads()->getAuditTrailActionChartData((new DashboardScope(1, 2))->during($from, $till));
@@ -908,7 +911,7 @@ class DashboardServiceTest extends TestCase {
 
 	public function testGetAuditTrailActionChartDataReturnsEmptyOnError(): void {
 		$this->auditTrailMapper
-			->method('getActionChartData')
+			->method('actionChartData')
 			->willThrowException(new Exception('DB error'));
 
 		$result = $this->service->auditReads()->getAuditTrailActionChartData((new DashboardScope())->during(null, null));
@@ -1285,7 +1288,7 @@ class DashboardServiceTest extends TestCase {
 
 		$this->objectMapper->method('getStatistics')
 			->willReturn($this->defaultObjectStats());
-		$this->auditTrailMapper->method('getStatistics')
+		$this->auditTrailMapper->method('statisticsTotals')
 			->willReturn($this->defaultLogStats());
 		// Return empty array without 'total' key.
 		$this->webhookLogMapper->method('getStatistics')

@@ -19,15 +19,64 @@ const BASE = '/index.php/apps/openregister/api/objects'
 /**
  * Build the file metadata endpoint URL.
  *
- * @param {string|number} registerId The register id
- * @param {string|number} schemaId The schema id
- * @param {string} objectId The parent object id
- * @param {string|number} fileId The file id
- * @param {string} [suffix] Optional suffix (e.g. '/labels')
+ * @param {object} file Which file: its register, schema, object and file ids
+ * @param {string|number} file.registerId The register id
+ * @param {string|number} file.schemaId The schema id
+ * @param {string} file.objectId The parent object id
+ * @param {string|number} file.fileId The file id
+ * @param {string} suffix Suffix (e.g. '/labels', or '' for the file itself)
  * @return {string} The full endpoint URL
  */
-function buildFileUrl(registerId, schemaId, objectId, fileId, suffix = '') {
+function buildFileUrl({ registerId, schemaId, objectId, fileId }, suffix) {
 	return `${BASE}/${registerId}/${schemaId}/${objectId}/files/${fileId}${suffix}`
+}
+
+/**
+ * PUT a JSON body to a file endpoint.
+ *
+ * @param {string} url The endpoint
+ * @param {object} body The body
+ * @return {Promise<Response>} The response
+ */
+function putJson(url, body) {
+	return fetch(url, {
+		method: 'PUT',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(body),
+	})
+}
+
+/**
+ * The updated file a response carries.
+ *
+ * @param {Response} response The response
+ * @param {string} what What was updated, for the error (e.g. 'file labels')
+ * @return {Promise<object>} The formatted file response
+ * @throws {Error} When the response is not OK
+ */
+function updatedFile(response, what) {
+	if (!response.ok) {
+		throw new Error(`Failed to update ${what}: HTTP ${response.status}`)
+	}
+	return response.json()
+}
+
+/**
+ * The metadata fields to send: description, category and labels, leaving
+ * out those that are null or undefined.
+ *
+ * @param {object} params The request parameters
+ * @param {string|null} [params.description] Description (or null to skip)
+ * @param {string|null} [params.category] Category (or null to skip)
+ * @param {string[]|null} [params.labels] Labels (or null to skip)
+ * @return {object} The payload
+ */
+function metadataPayload({ description, category, labels }) {
+	return Object.fromEntries(
+		Object.entries({ description, category, labels }).filter(
+			([, value]) => value !== null && value !== undefined,
+		),
+	)
 }
 
 /**
@@ -43,23 +92,10 @@ function buildFileUrl(registerId, schemaId, objectId, fileId, suffix = '') {
  * @throws {Error} On HTTP error or network failure
  * @spec openspec/specs/frontend-app-bootstrap/spec.md
  */
-export async function updateFileLabels({
-	registerId,
-	schemaId,
-	objectId,
-	fileId,
-	labels,
-}) {
-	const url = buildFileUrl(registerId, schemaId, objectId, fileId, '/labels')
-	const response = await fetch(url, {
-		method: 'PUT',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ labels }),
-	})
-	if (!response.ok) {
-		throw new Error(`Failed to update file labels: HTTP ${response.status}`)
-	}
-	return response.json()
+export async function updateFileLabels(params) {
+	const url = buildFileUrl(params, '/labels')
+	const response = await putJson(url, { labels: params.labels })
+	return updatedFile(response, 'file labels')
 }
 
 /**
@@ -79,29 +115,8 @@ export async function updateFileLabels({
  * @throws {Error} On HTTP error or network failure
  * @spec openspec/specs/frontend-app-bootstrap/spec.md
  */
-export async function updateFileMetadata({
-	registerId,
-	schemaId,
-	objectId,
-	fileId,
-	description,
-	category,
-	labels,
-}) {
-	const url = buildFileUrl(registerId, schemaId, objectId, fileId)
-	const payload = Object.fromEntries(
-		Object.entries({ description, category, labels }).filter(
-			([, value]) => value !== null && value !== undefined,
-		),
-	)
-
-	const response = await fetch(url, {
-		method: 'PUT',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify(payload),
-	})
-	if (!response.ok) {
-		throw new Error(`Failed to update file metadata: HTTP ${response.status}`)
-	}
-	return response.json()
+export async function updateFileMetadata(params) {
+	const url = buildFileUrl(params, '')
+	const response = await putJson(url, metadataPayload(params))
+	return updatedFile(response, 'file metadata')
 }

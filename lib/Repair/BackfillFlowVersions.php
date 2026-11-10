@@ -114,51 +114,73 @@ class BackfillFlowVersions implements IRepairStep {
 			return;
 		}
 
-		$published = 0;
-		$pinned = 0;
-		$skipped = 0;
-
-		foreach ($flows as $flow) {
-			try {
-				$result = $this->backfillOne(flow: $flow);
-			} catch (Throwable $e) {
-				// One flow's failure must not cost the other flows their
-				// versions — an aborted loop here is the difference between
-				// one unrunnable flow and an unrunnable instance.
-				$this->logger->error(
-					message: '[BackfillFlowVersions] Could not publish flow "' . $flow->getUuid()
-						. '": ' . $e->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flow->getUuid()]
-				);
-				$output->warning('Flow "' . $flow->getUuid() . '" could not be versioned: ' . $e->getMessage());
-				continue;
-			}
-
-			if ($result['published'] === false) {
-				$skipped++;
-			}
-
-			if ($result['published'] === true) {
-				$published++;
-			}
-
-			$pinned += $result['pinned'];
-		}//end foreach
-
-		$output->info(
-			sprintf(
-				'Flow versions: published version 1 for %d flow(s), %d already versioned, pinned %d in-flight run(s).',
-				$published,
-				$skipped,
-				$pinned
-			)
-		);
+		$this->publishEvery(flows: $flows, output: $output);
 
 		// Sweep version rows whose flow is gone. `FlowService::delete()` now
 		// cascades to them, so no NEW orphan can appear — but an instance that
 		// deleted a flow between the version table landing and that cascade
 		// landing kept the rows, unreachable through any read path because
 		// every version read is keyed by flow.
+		$this->sweepOrphanedVersions(output: $output);
+
+	}//end run()
+
+	/**
+	 * Version every flow, one failure at a time, and print the counts.
+	 *
+	 * @param array<int, Flow> $flows  Every flow on the instance.
+	 * @param IOutput          $output Migration output.
+	 *
+	 * @return void
+	 */
+	private function publishEvery(array $flows, IOutput $output): void {
+		$tally = new FlowVersionBackfillTally();
+
+		foreach ($flows as $flow) {
+			$result = $this->backfillOrWarn(flow: $flow, output: $output);
+			if ($result !== null) {
+				$tally->record(result: $result);
+			}
+		}
+
+		$output->info($tally->summary());
+
+	}//end publishEvery()
+
+	/**
+	 * Version one flow, turning its failure into a log line and a warning.
+	 *
+	 * @param Flow    $flow   The flow.
+	 * @param IOutput $output Migration output.
+	 *
+	 * @return array{published: boolean, pinned: integer}|null What was done, or null when it failed.
+	 */
+	private function backfillOrWarn(Flow $flow, IOutput $output): ?array {
+		try {
+			return $this->backfillOne(flow: $flow);
+		} catch (Throwable $e) {
+			// One flow's failure must not cost the other flows their
+			// versions — an aborted loop here is the difference between
+			// one unrunnable flow and an unrunnable instance.
+			$this->logger->error(
+				message: '[BackfillFlowVersions] Could not publish flow "' . $flow->getUuid()
+					. '": ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flow->getUuid()]
+			);
+			$output->warning('Flow "' . $flow->getUuid() . '" could not be versioned: ' . $e->getMessage());
+			return null;
+		}
+
+	}//end backfillOrWarn()
+
+	/**
+	 * Remove version rows whose flow no longer exists.
+	 *
+	 * @param IOutput $output Migration output.
+	 *
+	 * @return void
+	 */
+	private function sweepOrphanedVersions(IOutput $output): void {
 		try {
 			$orphans = $this->container->get(FlowVersionMapperInterface::class)->deleteOrphaned();
 			if ($orphans > 0) {
@@ -168,7 +190,7 @@ class BackfillFlowVersions implements IRepairStep {
 			$output->warning('Orphaned flow versions could not be swept: ' . $e->getMessage());
 		}
 
-	}//end run()
+	}//end sweepOrphanedVersions()
 
 	/**
 	 * Every flow, paged.

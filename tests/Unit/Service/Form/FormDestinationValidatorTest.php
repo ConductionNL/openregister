@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Form;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Form\FormDestination;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
 use OCA\OpenRegister\Service\Form\FormFieldRules;
 use OCP\IL10N;
@@ -84,8 +85,7 @@ class FormDestinationValidatorTest extends TestCase {
 	 * A complete, well-typed mapping has nothing to report.
 	 */
 	public function testACompleteMappingHasNoFindings(): void {
-		$findings = $this->validator->validate(
-			mapping: [
+		$findings = $this->validator->validate(mapping: [
 				'fields' => [
 					['field' => 'onderwerp', 'property' => 'title', 'type' => 'text', 'maxLength' => 120],
 					['field' => 'mail', 'property' => 'email', 'type' => 'email'],
@@ -93,9 +93,7 @@ class FormDestinationValidatorTest extends TestCase {
 					['field' => 'bedrag', 'property' => 'amount', 'type' => 'integer', 'minimum' => 0, 'maximum' => 500],
 				],
 				'fixed' => ['caseType' => '0b5c1e9e-4f3a-4b8e-9c7d-2a1f0e6d5c4b'],
-			],
-			schema: $this->caseSchema()
-		);
+			], destination: new FormDestination(schema: $this->caseSchema()));
 
 		$this->assertSame([], $findings);
 	}//end testACompleteMappingHasNoFindings()
@@ -104,10 +102,7 @@ class FormDestinationValidatorTest extends TestCase {
 	 * Spec scenario: a required property with no source is reported.
 	 */
 	public function testARequiredPropertyWithNoSourceIsReported(): void {
-		$findings = $this->validator->validate(
-			mapping: ['fields' => [['field' => 'onderwerp', 'property' => 'title', 'type' => 'text', 'maxLength' => 100]]],
-			schema: $this->caseSchema()
-		);
+		$findings = $this->validator->validate(mapping: ['fields' => [['field' => 'onderwerp', 'property' => 'title', 'type' => 'text', 'maxLength' => 100]]], destination: new FormDestination(schema: $this->caseSchema()));
 
 		$this->assertCount(1, $findings);
 		$this->assertSame('caseType', $findings[0]['property']);
@@ -127,10 +122,7 @@ class FormDestinationValidatorTest extends TestCase {
 			required: ['title', 'identifier', 'status', 'deadline']
 		);
 
-		$findings = $this->validator->validate(
-			mapping: ['fields' => [['field' => 'onderwerp', 'property' => 'title', 'type' => 'text', 'maxLength' => 100]]],
-			schema: $schema
-		);
+		$findings = $this->validator->validate(mapping: ['fields' => [['field' => 'onderwerp', 'property' => 'title', 'type' => 'text', 'maxLength' => 100]]], destination: new FormDestination(schema: $schema));
 
 		$this->assertSame([], $findings);
 	}//end testAServerSetDefaultedOrComputedPropertyIsNotReported()
@@ -146,10 +138,7 @@ class FormDestinationValidatorTest extends TestCase {
 			required: ['title', 'caseNumber']
 		);
 
-		$findings = $this->validator->validate(
-			mapping: ['fields' => [['field' => 'onderwerp', 'property' => 'title', 'type' => 'text', 'maxLength' => 100]]],
-			schema: $schema
-		);
+		$findings = $this->validator->validate(mapping: ['fields' => [['field' => 'onderwerp', 'property' => 'title', 'type' => 'text', 'maxLength' => 100]]], destination: new FormDestination(schema: $schema));
 
 		$this->assertSame([], $findings);
 	}//end testAGeneratedIdentifierIsNotReported()
@@ -160,7 +149,7 @@ class FormDestinationValidatorTest extends TestCase {
 	public function testAPropertyLevelRequiredFlagCounts(): void {
 		$schema = $this->caseSchema(extraProperties: ['priority' => ['type' => 'string', 'required' => true]], required: []);
 
-		$findings = $this->validator->validate(mapping: ['fields' => []], schema: $schema);
+		$findings = $this->validator->validate(mapping: ['fields' => []], destination: new FormDestination(schema: $schema));
 
 		$this->assertSame([FormDestinationValidator::REQUIRED_UNMAPPED], $this->codes($findings));
 		$this->assertSame('priority', $findings[0]['property']);
@@ -178,15 +167,12 @@ class FormDestinationValidatorTest extends TestCase {
 			'fixed' => ['caseType' => '0b5c1e9e-4f3a-4b8e-9c7d-2a1f0e6d5c4b'],
 		];
 
-		$closed = $this->validator->validate(mapping: $mapping, schema: $this->caseSchema(required: ['caseType']));
+		$closed = $this->validator->validate(mapping: $mapping, destination: new FormDestination(schema: $this->caseSchema(required: ['caseType'])));
 		$this->assertSame([FormDestinationValidator::PROPERTY_UNKNOWN], $this->codes($closed));
 		$this->assertSame('x', $closed[0]['field']);
 		$this->assertSame('nonsense', $closed[0]['property']);
 
-		$open = $this->validator->validate(
-			mapping: $mapping,
-			schema: $this->caseSchema(required: ['caseType'], configuration: ['additionalProperties' => true])
-		);
+		$open = $this->validator->validate(mapping: $mapping, destination: new FormDestination(schema: $this->caseSchema(required: ['caseType'], configuration: ['additionalProperties' => true])));
 		$this->assertSame([], $open);
 	}//end testAnUnknownPropertyIsReportedUnlessExtrasAreAllowed()
 
@@ -194,10 +180,7 @@ class FormDestinationValidatorTest extends TestCase {
 	 * A field into a read-only property is reported: the save would refuse the value.
 	 */
 	public function testAFieldIntoAReadOnlyPropertyIsReported(): void {
-		$findings = $this->validator->validate(
-			mapping: ['fields' => [['field' => 'nr', 'property' => 'identifier', 'type' => 'text']]],
-			schema: $this->caseSchema(required: [])
-		);
+		$findings = $this->validator->validate(mapping: ['fields' => [['field' => 'nr', 'property' => 'identifier', 'type' => 'text']]], destination: new FormDestination(schema: $this->caseSchema(required: [])));
 
 		$this->assertSame([FormDestinationValidator::PROPERTY_READ_ONLY], $this->codes($findings));
 	}//end testAFieldIntoAReadOnlyPropertyIsReported()
@@ -206,10 +189,7 @@ class FormDestinationValidatorTest extends TestCase {
 	 * A field whose type cannot produce the property's type.
 	 */
 	public function testATypeThatCannotProduceThePropertyIsReported(): void {
-		$findings = $this->validator->validate(
-			mapping: ['fields' => [['field' => 'bedrag', 'property' => 'amount', 'type' => 'text']]],
-			schema: $this->caseSchema(required: [])
-		);
+		$findings = $this->validator->validate(mapping: ['fields' => [['field' => 'bedrag', 'property' => 'amount', 'type' => 'text']]], destination: new FormDestination(schema: $this->caseSchema(required: [])));
 
 		$this->assertSame([FormDestinationValidator::TYPE_MISMATCH], $this->codes($findings));
 		$this->assertSame('bedrag', $findings[0]['field']);
@@ -221,15 +201,12 @@ class FormDestinationValidatorTest extends TestCase {
 	public function testNumberAndIntegerAreJudgedByWhatTheFieldProduces(): void {
 		$schema = $this->caseSchema(extraProperties: ['ratio' => ['type' => 'number']], required: []);
 
-		$findings = $this->validator->validate(
-			mapping: [
+		$findings = $this->validator->validate(mapping: [
 				'fields' => [
 					['field' => 'a', 'property' => 'amount', 'type' => 'number', 'minimum' => 0, 'maximum' => 10],
 					['field' => 'r', 'property' => 'ratio', 'type' => 'integer'],
 				],
-			],
-			schema: $schema
-		);
+			], destination: new FormDestination(schema: $schema));
 
 		$this->assertSame([FormDestinationValidator::TYPE_MISMATCH], $this->codes($findings));
 		$this->assertSame('a', $findings[0]['field']);
@@ -239,10 +216,7 @@ class FormDestinationValidatorTest extends TestCase {
 	 * A plain text field into an e-mail property is a format mismatch.
 	 */
 	public function testAFormatThatCannotProduceThePropertyIsReported(): void {
-		$findings = $this->validator->validate(
-			mapping: ['fields' => [['field' => 'mail', 'property' => 'email', 'type' => 'text']]],
-			schema: $this->caseSchema(required: [])
-		);
+		$findings = $this->validator->validate(mapping: ['fields' => [['field' => 'mail', 'property' => 'email', 'type' => 'text']]], destination: new FormDestination(schema: $this->caseSchema(required: [])));
 
 		$this->assertSame([FormDestinationValidator::FORMAT_MISMATCH], $this->codes($findings));
 	}//end testAFormatThatCannotProduceThePropertyIsReported()
@@ -251,10 +225,7 @@ class FormDestinationValidatorTest extends TestCase {
 	 * A free-text field into an enum property is unconstrained.
 	 */
 	public function testAFreeTextFieldIntoAnEnumIsReported(): void {
-		$findings = $this->validator->validate(
-			mapping: ['fields' => [['field' => 'kanaal', 'property' => 'channel', 'type' => 'text']]],
-			schema: $this->caseSchema(required: [])
-		);
+		$findings = $this->validator->validate(mapping: ['fields' => [['field' => 'kanaal', 'property' => 'channel', 'type' => 'text']]], destination: new FormDestination(schema: $this->caseSchema(required: [])));
 
 		$this->assertSame([FormDestinationValidator::ENUM_UNCONSTRAINED], $this->codes($findings));
 	}//end testAFreeTextFieldIntoAnEnumIsReported()
@@ -263,10 +234,7 @@ class FormDestinationValidatorTest extends TestCase {
 	 * A choice option outside the enum is reported once per option.
 	 */
 	public function testAChoiceOptionOutsideTheEnumIsReported(): void {
-		$findings = $this->validator->validate(
-			mapping: ['fields' => [['field' => 'kanaal', 'property' => 'channel', 'type' => 'choice', 'options' => ['website', 'fax']]]],
-			schema: $this->caseSchema(required: [])
-		);
+		$findings = $this->validator->validate(mapping: ['fields' => [['field' => 'kanaal', 'property' => 'channel', 'type' => 'choice', 'options' => ['website', 'fax']]]], destination: new FormDestination(schema: $this->caseSchema(required: [])));
 
 		$this->assertSame([FormDestinationValidator::ENUM_VALUE_UNKNOWN], $this->codes($findings));
 		$this->assertStringContainsString('fax', $findings[0]['message']);
@@ -276,10 +244,7 @@ class FormDestinationValidatorTest extends TestCase {
 	 * Options given as `{value, label}` objects are read by their value.
 	 */
 	public function testChoiceOptionsAsObjectsAreReadByValue(): void {
-		$findings = $this->validator->validate(
-			mapping: ['fields' => [['field' => 'kanaal', 'property' => 'channel', 'type' => 'choice', 'options' => [['value' => 'phone', 'label' => 'Telefoon']]]]],
-			schema: $this->caseSchema(required: [])
-		);
+		$findings = $this->validator->validate(mapping: ['fields' => [['field' => 'kanaal', 'property' => 'channel', 'type' => 'choice', 'options' => [['value' => 'phone', 'label' => 'Telefoon']]]]], destination: new FormDestination(schema: $this->caseSchema(required: [])));
 
 		$this->assertSame([], $findings);
 	}//end testChoiceOptionsAsObjectsAreReadByValue()
@@ -288,15 +253,12 @@ class FormDestinationValidatorTest extends TestCase {
 	 * A 500-character field into a 200-character property, and an unbounded number into a bounded one.
 	 */
 	public function testAConstraintLooserThanThePropertyIsReported(): void {
-		$findings = $this->validator->validate(
-			mapping: [
+		$findings = $this->validator->validate(mapping: [
 				'fields' => [
 					['field' => 'onderwerp', 'property' => 'title', 'type' => 'text', 'maxLength' => 500],
 					['field' => 'bedrag', 'property' => 'amount', 'type' => 'integer', 'minimum' => 0],
 				],
-			],
-			schema: $this->caseSchema(required: [])
-		);
+			], destination: new FormDestination(schema: $this->caseSchema(required: [])));
 
 		$this->assertSame([FormDestinationValidator::CONSTRAINT_LOOSER, FormDestinationValidator::CONSTRAINT_LOOSER], $this->codes($findings));
 		$this->assertStringContainsString('maxLength', $findings[0]['message']);
@@ -307,10 +269,7 @@ class FormDestinationValidatorTest extends TestCase {
 	 * A fixed value the property refuses: wrong type, outside the enum.
 	 */
 	public function testAFixedValueThePropertyRefusesIsReported(): void {
-		$findings = $this->validator->validate(
-			mapping: ['fields' => [], 'fixed' => ['channel' => 'fax', 'amount' => 'veel']],
-			schema: $this->caseSchema(required: [])
-		);
+		$findings = $this->validator->validate(mapping: ['fields' => [], 'fixed' => ['channel' => 'fax', 'amount' => 'veel']], destination: new FormDestination(schema: $this->caseSchema(required: [])));
 
 		$this->assertSame([FormDestinationValidator::FIXED_VALUE_INVALID, FormDestinationValidator::FIXED_VALUE_INVALID], $this->codes($findings));
 		$this->assertSame('channel', $findings[0]['property']);
@@ -324,14 +283,14 @@ class FormDestinationValidatorTest extends TestCase {
 		$schema = $this->caseSchema(required: []);
 		$schema->setAuthorization(['create' => ['behandelaars'], 'read' => ['behandelaars']]);
 
-		$findings = $this->validator->validate(mapping: ['fields' => []], schema: $schema, options: ['audience' => 'public']);
+		$findings = $this->validator->validate(mapping: ['fields' => []], destination: new FormDestination(schema: $schema, audience: 'public'));
 		$this->assertSame([FormDestinationValidator::DESTINATION_NOT_PUBLIC], $this->codes($findings));
 
 		$schema->setAuthorization(['create' => ['public']]);
-		$this->assertSame([], $this->validator->validate(mapping: ['fields' => []], schema: $schema, options: ['audience' => 'public']));
+		$this->assertSame([], $this->validator->validate(mapping: ['fields' => []], destination: new FormDestination(schema: $schema, audience: 'public')));
 
 		$schema->setAuthorization([]);
-		$this->assertSame([], $this->validator->validate(mapping: ['fields' => []], schema: $schema, options: ['audience' => 'public']));
+		$this->assertSame([], $this->validator->validate(mapping: ['fields' => []], destination: new FormDestination(schema: $schema, audience: 'public')));
 	}//end testAPublicFormIntoANonPublicDestinationIsReported()
 
 	/**
@@ -340,12 +299,12 @@ class FormDestinationValidatorTest extends TestCase {
 	public function testAnAuthenticatedAudienceNeedsAnAuthenticatedOrPublicGrant(): void {
 		$schema = $this->caseSchema(required: []);
 		$schema->setAuthorization(['create' => [['group' => 'authenticated']]]);
-		$this->assertSame([], $this->validator->validate(mapping: ['fields' => []], schema: $schema, options: ['audience' => 'authenticated']));
+		$this->assertSame([], $this->validator->validate(mapping: ['fields' => []], destination: new FormDestination(schema: $schema, audience: 'authenticated')));
 
 		$schema->setAuthorization(['create' => ['admin']]);
 		$this->assertSame(
 			[FormDestinationValidator::DESTINATION_NOT_PUBLIC],
-			$this->codes($this->validator->validate(mapping: ['fields' => []], schema: $schema, options: ['audience' => 'authenticated']))
+			$this->codes($this->validator->validate(mapping: ['fields' => []], destination: new FormDestination(schema: $schema, audience: 'authenticated')))
 		);
 	}//end testAnAuthenticatedAudienceNeedsAnAuthenticatedOrPublicGrant()
 
@@ -353,10 +312,7 @@ class FormDestinationValidatorTest extends TestCase {
 	 * A schema marked as staging is not a destination.
 	 */
 	public function testAStagingSchemaIsNotADestination(): void {
-		$findings = $this->validator->validate(
-			mapping: ['fields' => []],
-			schema: $this->caseSchema(required: [], configuration: ['staging' => true])
-		);
+		$findings = $this->validator->validate(mapping: ['fields' => []], destination: new FormDestination(schema: $this->caseSchema(required: [], configuration: ['staging' => true])));
 
 		$this->assertSame([FormDestinationValidator::DESTINATION_IS_STAGING], $this->codes($findings));
 	}//end testAStagingSchemaIsNotADestination()
@@ -387,10 +343,7 @@ class FormDestinationValidatorTest extends TestCase {
 	 * A mapping entry without a property is refused as malformed, naming the field.
 	 */
 	public function testAFieldWithoutAPropertyIsReportedAsUnknown(): void {
-		$findings = $this->validator->validate(
-			mapping: ['fields' => [['field' => 'losse-vraag']]],
-			schema: $this->caseSchema(required: [], configuration: ['additionalProperties' => true])
-		);
+		$findings = $this->validator->validate(mapping: ['fields' => [['field' => 'losse-vraag']]], destination: new FormDestination(schema: $this->caseSchema(required: [], configuration: ['additionalProperties' => true])));
 
 		$this->assertSame([FormDestinationValidator::PROPERTY_UNKNOWN], $this->codes($findings));
 		$this->assertSame('losse-vraag', $findings[0]['field']);

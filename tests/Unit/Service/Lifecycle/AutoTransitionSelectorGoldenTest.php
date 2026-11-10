@@ -178,6 +178,6 @@ class AutoTransitionSelectorGoldenTest extends TestCase {
 		$l10n->method('getLanguageCode')->willReturn('en');
 		$dialect = new ConditionDialect(new CalculationEvaluator(new PlaceholderResolver($userSession)));
 
-		return new LifecycleConditionEvaluator($userSession, $groupManager, new LifecycleConditionReporting($l10n, $log), $dialect);
+		return new LifecycleConditionEvaluator(new LifecycleConditionReporting($l10n, $log), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck($dialect, new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller($userSession, $groupManager)));
 	}//end evaluator()
 }//end class

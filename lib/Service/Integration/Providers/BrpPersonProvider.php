@@ -60,6 +60,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCP\App\IAppManager;
@@ -211,9 +213,7 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 	 * the consumer maps + validates them (pipelinq `HaalCentraalClient` +
 	 * `BsnValidationService`).
 	 *
-	 * @param string $register Ignored (object-independent leaf).
-	 * @param string $schema Ignored (object-independent leaf).
-	 * @param string $objectId Ignored (object-independent leaf).
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters `_search` carries the BSN.
 	 *
 	 * @return array<int,array<string,mixed>>
@@ -227,7 +227,7 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 	 *   are mandated by the IntegrationProvider contract; this leaf is
 	 *   object-independent so they are intentionally unused.
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
 		return $this->personenFor(bsn: trim((string)($filters['_search'] ?? '')));
 	}//end list()
 
@@ -245,12 +245,14 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 
 		$response = $this->router->call(
 			provider: $this,
-			method: 'POST',
-			path: 'personen',
-			options: [
-				'body' => $this->buildQueryBody(bsn: $bsn),
-				'headers' => ['Accept' => 'application/hal+json', 'Content-Type' => 'application/json'],
-			]
+			request: new UpstreamRequest(
+				method: 'POST',
+				path: 'personen',
+				options: [
+					'body' => $this->buildQueryBody(bsn: $bsn),
+					'headers' => ['Accept' => 'application/hal+json', 'Content-Type' => 'application/json'],
+				]
+			)
 		);
 
 		return $this->extractPersonen(response: $response);
@@ -289,12 +291,14 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 		try {
 			$envelope = $this->router->callWithMeta(
 				provider: $this,
-				method: 'POST',
-				path: 'personen',
-				options: [
-					'body' => $this->buildQueryBody(bsn: $bsn),
-					'headers' => ['Accept' => 'application/hal+json', 'Content-Type' => 'application/json'],
-				]
+				request: new UpstreamRequest(
+					method: 'POST',
+					path: 'personen',
+					options: [
+						'body' => $this->buildQueryBody(bsn: $bsn),
+						'headers' => ['Accept' => 'application/hal+json', 'Content-Type' => 'application/json'],
+					]
+				)
 			);
 		} catch (ProviderUnavailableException $e) {
 			return $this->degraded(cause: $e->getCause());
@@ -342,17 +346,19 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 
 			$envelope = $this->router->callWithMeta(
 				provider: $this,
-				method: 'POST',
-				path: 'personen',
-				options: [
-					'body' => [
-						'type' => 'ZoekMetAdresseerbaarObjectIdentificatie',
-						'adresseerbaarObjectIdentificatie' => $addressObjectId,
-						'fields' => ['burgerservicenummer'],
-					],
-					'headers' => ['Accept' => 'application/hal+json', 'Content-Type' => 'application/json'],
-					'withholdBodies' => true,
-				]
+				request: new UpstreamRequest(
+					method: 'POST',
+					path: 'personen',
+					options: [
+						'body' => [
+							'type' => 'ZoekMetAdresseerbaarObjectIdentificatie',
+							'adresseerbaarObjectIdentificatie' => $addressObjectId,
+							'fields' => ['burgerservicenummer'],
+						],
+						'headers' => ['Accept' => 'application/hal+json', 'Content-Type' => 'application/json'],
+						'withholdBodies' => true,
+					]
+				)
 			);
 		} catch (ProviderUnavailableException $e) {
 			return ['unavailable' => true, 'cause' => $e->getCause()];

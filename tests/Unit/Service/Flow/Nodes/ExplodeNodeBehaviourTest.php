@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
@@ -86,7 +87,7 @@ class ExplodeNodeBehaviourTest extends TestCase {
 	public function testBlankPathIsRefused(): void {
 		$this->expectException(UnexpectedValueException::class);
 		$this->expectExceptionMessage('An explode step needs the path of a list.');
-		$this->node()->execute([['json' => ['a' => [1]]]], ['path' => '  '], []);
+		$this->node()->execute(new FlowNodeCall(items: [['json' => ['a' => [1]]]], config: ['path' => '  '], context: []));
 	}
 
 	/**
@@ -97,7 +98,7 @@ class ExplodeNodeBehaviourTest extends TestCase {
 	public function testSetPathValidates(): void {
 		$node = $this->node();
 		$node->validateConfig(['path' => 'lines']);
-		$this->assertSame([], $node->execute([], ['path' => 'lines'], []));
+		$this->assertSame([], $node->execute(new FlowNodeCall(items: [], config: ['path' => 'lines'], context: [])));
 	}
 
 	/**
@@ -106,11 +107,11 @@ class ExplodeNodeBehaviourTest extends TestCase {
 	 * @return void
 	 */
 	public function testExplodesKeepingTheRecord(): void {
-		$out = $this->node()->execute(
-			[['json' => ['id' => 'a', 'order' => ['lines' => ['x', 'y']]]], ['json' => ['id' => 'b', 'order' => ['lines' => ['z']]]]],
-			['path' => ' order.lines '],
-			[]
-		);
+		$out = $this->node()->execute(new FlowNodeCall(
+			items: [['json' => ['id' => 'a', 'order' => ['lines' => ['x', 'y']]]], ['json' => ['id' => 'b', 'order' => ['lines' => ['z']]]]],
+			config: ['path' => ' order.lines '],
+			context: []
+		));
 
 		$this->assertSame(
 			[
@@ -128,7 +129,7 @@ class ExplodeNodeBehaviourTest extends TestCase {
 	 * @return void
 	 */
 	public function testExplodesWithoutTheRecord(): void {
-		$out = $this->node()->execute([['json' => ['id' => 'a', 'lines' => [1, 2]]]], ['path' => 'lines', 'as' => 'line', 'keepRecord' => false], []);
+		$out = $this->node()->execute(new FlowNodeCall(items: [['json' => ['id' => 'a', 'lines' => [1, 2]]]], config: ['path' => 'lines', 'as' => 'line', 'keepRecord' => false], context: []));
 		$this->assertSame([['line' => 1], ['line' => 2]], array_column($out, 'json'));
 	}
 
@@ -138,7 +139,7 @@ class ExplodeNodeBehaviourTest extends TestCase {
 	 * @return void
 	 */
 	public function testMissingPathYieldsNothing(): void {
-		$out = $this->node()->execute([['json' => ['other' => 1]], ['json' => ['order' => 'scalar']], []], ['path' => 'order.lines'], []);
+		$out = $this->node()->execute(new FlowNodeCall(items: [['json' => ['other' => 1]], ['json' => ['order' => 'scalar']], []], config: ['path' => 'order.lines'], context: []));
 		$this->assertSame([], $out);
 	}
 
@@ -150,6 +151,6 @@ class ExplodeNodeBehaviourTest extends TestCase {
 	public function testNonListIsRefused(): void {
 		$this->expectException(UnexpectedValueException::class);
 		$this->expectExceptionMessage('The explode path "lines" is not a list.');
-		$this->node()->execute([['json' => ['lines' => 'abc']]], ['path' => 'lines'], []);
+		$this->node()->execute(new FlowNodeCall(items: [['json' => ['lines' => 'abc']]], config: ['path' => 'lines'], context: []));
 	}
 }

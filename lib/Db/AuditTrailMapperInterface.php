@@ -321,12 +321,9 @@ interface AuditTrailMapperInterface {
 	public function revertObject($identifier, $until = null, bool $overwriteVersion = false): ObjectEntity;
 
 	/**
-	 * Get statistics for audit trails with optional filtering
+	 * The number and total size of the audit trails in a scope.
 	 *
-	 * @param int|null $registerId The register ID (null for all registers)
-	 * @param int|null $schemaId The schema ID (null for all schemas)
-	 * @param array $exclude Array of register/schema combinations to exclude,
-	 *                       format: [['register' => id, 'schema' => id], ...]
+	 * @param AuditTrail\AuditStatisticsScope $scope The register and schema (null for all) and the combinations to leave out.
 	 *
 	 * @return int[] Array containing total count and size of audit trails:
 	 *               - total: Total number of audit trails
@@ -334,7 +331,7 @@ interface AuditTrailMapperInterface {
 	 *
 	 * @psalm-return array{total: int, size: int}
 	 */
-	public function getStatistics(?int $registerId = null, ?int $schemaId = null, array $exclude = []): array;
+	public function statisticsTotals(AuditTrail\AuditStatisticsScope $scope): array;
 
 	/**
 	 * Updates an entity in the database
@@ -351,19 +348,16 @@ interface AuditTrailMapperInterface {
 	public function update(Entity $entity): AuditTrail;
 
 	/**
-	 * Get chart data for audit trail actions over time
+	 * Chart data for audit trail actions over time
 	 *
-	 * @param DateTime|null $from Start date for the chart data
-	 * @param DateTime|null $till End date for the chart data
-	 * @param int|null $registerId Optional register ID to filter by
-	 * @param int|null $schemaId Optional schema ID to filter by
+	 * @param AuditTrail\AuditStatisticsScope $scope The register and schema (null for all) and the `from`/`till` dates.
 	 *
 	 * @return ((int[]|string)[]|(int|string))[][]
 	 *
 	 * @psalm-return array{labels: list<array-key>,
 	 *     series: list<array{data: list<int>, name: string}>}
 	 */
-	public function getActionChartData(?\DateTime $from = null, ?\DateTime $till = null, ?int $registerId = null, ?int $schemaId = null): array;
+	public function actionChartData(AuditTrail\AuditStatisticsScope $scope): array;
 
 	/**
 	 * Get detailed statistics for audit trails including action counts within timeframe
@@ -541,7 +535,7 @@ interface AuditTrailMapperInterface {
 	 * Get audit trail statistics grouped by schema for multiple schemas in a single query
 	 *
 	 * Returns per-schema statistics using GROUP BY instead of one query per schema.
-	 * This replaces N individual getStatistics() calls with 1 query.
+	 * This replaces N individual statisticsTotals() calls with 1 query.
 	 *
 	 * @param int[] $schemaIds Array of schema IDs to get statistics for
 	 *
@@ -583,6 +577,15 @@ interface AuditTrailMapperInterface {
 		ObjectEntity $object, string $action, array $context = [], ?string $actorId = null, ?string $actorName = null,
 		?string $ipAddress = null
 	): AuditTrail;
+
+	/**
+	 * Record a non-CRUD action on one object, with an explicit actor when one is named.
+	 *
+	 * @param AuditTrail\ObjectAuditEvent $event The object, action, context, and the explicit actor and address.
+	 *
+	 * @return AuditTrail The created audit trail entry
+	 */
+	public function recordObjectEvent(AuditTrail\ObjectAuditEvent $event): AuditTrail;
 
 	/**
 	 * Create one immutable, hash-chained audit record for an MCP tool

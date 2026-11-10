@@ -40,6 +40,46 @@ use RuntimeException;
 
 class TransitionController extends Controller {
 	/**
+	 * Status per engine failure, checked in this order (first match wins).
+	 *
+	 * - NotAuthorizedException: the caller lacks `update` permission on the
+	 *   object. 403, so clients can distinguish "not allowed" from "transition
+	 *   refused" (422) and "object missing" (404).
+	 * - HookStoppedException: the validator listener (or another listener)
+	 *   rejected the save by calling stopPropagation(). Its message as a
+	 *   structured 422 instead of a 500 stack trace.
+	 * - LifecycleSubjectNotFoundException: the object itself is gone. Checked
+	 *   BEFORE the RuntimeException it extends: "someone deleted this case" and
+	 *   "this case cannot take that move" are different things to tell a
+	 *   handler, and they answered the same 422 until this type existed. 404 is
+	 *   what the read half of the same pair already answers. An object the
+	 *   caller may not READ lands here too, by design: GET
+	 *   /api/objects/{register}/{schema}/{id} answers 404 for it so its
+	 *   existence does not leak, and this endpoint must not leak it either. It
+	 *   used to escape as an OCP DoesNotExistException → 500.
+	 * - LifecycleProviderException: a provider-mode lifecycle could not be RUN:
+	 *   the declared tag resolves to nothing, the provider failed in a way it
+	 *   never planned for, or the object could not be read back afterwards.
+	 *   Checked BEFORE the RuntimeException it extends, because a broken
+	 *   provider is not a refused move. 422 would tell a handler the move was
+	 *   considered and declined; 502 says the truthful thing, that OpenRegister
+	 *   asked an upstream and did not get an answer. The provider's own
+	 *   refusals stay 422 below — they are ordinary RuntimeExceptions by
+	 *   contract.
+	 * - RuntimeException: the engine throws on missing schema/transition,
+	 *   disallowed-from-current-state, or a provider refusing the move.
+	 *
+	 * @var array<class-string<\Exception>, int>
+	 */
+	private const TRANSITION_REFUSAL_STATUS = [
+		NotAuthorizedException::class => Http::STATUS_FORBIDDEN,
+		HookStoppedException::class => Http::STATUS_UNPROCESSABLE_ENTITY,
+		LifecycleSubjectNotFoundException::class => Http::STATUS_NOT_FOUND,
+		LifecycleProviderException::class => Http::STATUS_BAD_GATEWAY,
+		RuntimeException::class => Http::STATUS_UNPROCESSABLE_ENTITY,
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The application name.
@@ -79,90 +119,96 @@ class TransitionController extends Controller {
 	public function transition(string $id): JSONResponse {
 		$action = (string)($this->request->getParam('action') ?? '');
 		if ($action === '') {
-			return new JSONResponse(
-				['error' => 'Missing required field "action".'],
-				Http::STATUS_BAD_REQUEST
-			);
+			return $this->badRequest(message: 'Missing required field "action".');
 		}
 
+		return $this->transitionWithInputs(id: $id, action: $action);
+	}//end transition()
+
+	/**
+	 * Read the transition's input values and run the transition.
+	 *
+	 * @param string $id     Object id/uuid/slug.
+	 * @param string $action The transition to apply.
+	 *
+	 * @return JSONResponse The transitioned object, or the refusal.
+	 */
+	private function transitionWithInputs(string $id, string $action): JSONResponse {
 		$data = $this->request->getParam('data') ?? [];
 		if (is_array($data) === false) {
-			return new JSONResponse(
-				['error' => 'Field "data" must be an object of input values.'],
-				Http::STATUS_BAD_REQUEST
-			);
+			return $this->badRequest(message: 'Field "data" must be an object of input values.');
 		}
 
 		try {
 			$object = $this->engine->transition(objectId: $id, action: $action, data: $data);
-		} catch (InvalidTransitionInputException $e) {
-			// The payload violates the transition's declared `inputs`
-			// allowlist (undeclared key, or missing required input). The
-			// request itself is malformed → 400, with the offending field
-			// names machine-readable next to the human message.
+		} catch (InvalidTransitionInputException | NotAuthorizedException | HookStoppedException | RuntimeException $e) {
+			return $this->transitionRefusal(exception: $e);
+		}
+
+		return new JSONResponse($object->jsonSerialize());
+	}//end transitionWithInputs()
+
+	/**
+	 * Answer a malformed transition request.
+	 *
+	 * @param string $message What is wrong with the request.
+	 *
+	 * @return JSONResponse 400 response.
+	 */
+	private function badRequest(string $message): JSONResponse {
+		return new JSONResponse(
+			['error' => $message],
+			Http::STATUS_BAD_REQUEST
+		);
+	}//end badRequest()
+
+	/**
+	 * Answer a transition the engine refused or could not run.
+	 *
+	 * The payload violating the transition's declared `inputs` allowlist
+	 * (undeclared key, or missing required input) is a malformed request → 400,
+	 * with the offending field names machine-readable next to the human message.
+	 * Every other failure answers its message with the status of
+	 * {@see self::TRANSITION_REFUSAL_STATUS}.
+	 *
+	 * @param \Exception $exception The failure.
+	 *
+	 * @return JSONResponse The refusal.
+	 */
+	private function transitionRefusal(\Exception $exception): JSONResponse {
+		if ($exception instanceof InvalidTransitionInputException) {
 			return new JSONResponse(
 				[
-					'error' => $e->getMessage(),
-					'fields' => $e->getFields(),
+					'error' => $exception->getMessage(),
+					'fields' => $exception->getFields(),
 				],
 				Http::STATUS_BAD_REQUEST
 			);
-		} catch (NotAuthorizedException $e) {
-			// Caller lacks `update` permission on the object. Surface
-			// as 403 so clients can distinguish "not allowed" from
-			// "transition refused" (422) and "object missing" (404).
-			return new JSONResponse(
-				['error' => $e->getMessage()],
-				Http::STATUS_FORBIDDEN
-			);
-		} catch (HookStoppedException $e) {
-			// The validator listener (or another listener) rejected the
-			// save by calling stopPropagation(). Surface its message as a
-			// structured 422 instead of a 500 stack trace.
-			return new JSONResponse(
-				['error' => $e->getMessage()],
-				Http::STATUS_UNPROCESSABLE_ENTITY
-			);
-		} catch (LifecycleSubjectNotFoundException $e) {
-			// The object itself is gone. Caught BEFORE the RuntimeException
-			// branch it extends: "someone deleted this case" and "this case
-			// cannot take that move" are different things to tell a handler,
-			// and they answered the same 422 until this type existed. 404 is
-			// what the read half of the same pair already answers.
-			//
-			// An object the caller may not READ lands here too, by design: GET
-			// /api/objects/{register}/{schema}/{id} answers 404 for it so its
-			// existence does not leak, and this endpoint must not leak it
-			// either. It used to escape as an OCP DoesNotExistException → 500.
-			return new JSONResponse(
-				['error' => $e->getMessage()],
-				Http::STATUS_NOT_FOUND
-			);
-		} catch (LifecycleProviderException $e) {
-			// A provider-mode lifecycle could not be RUN: the declared tag
-			// resolves to nothing, the provider failed in a way it never
-			// planned for, or the object could not be read back afterwards.
-			// Caught BEFORE the RuntimeException branch it extends, because a
-			// broken provider is not a refused move. 422 would tell a handler
-			// the move was considered and declined; 502 says the truthful
-			// thing, that OpenRegister asked an upstream and did not get an
-			// answer. The provider's own refusals stay 422 below — they are
-			// ordinary RuntimeExceptions by contract.
-			return new JSONResponse(
-				['error' => $e->getMessage()],
-				Http::STATUS_BAD_GATEWAY
-			);
-		} catch (RuntimeException $e) {
-			// Engine throws on missing schema/transition,
-			// disallowed-from-current-state, or a provider refusing the move.
-			return new JSONResponse(
-				['error' => $e->getMessage()],
-				Http::STATUS_UNPROCESSABLE_ENTITY
-			);
-		}//end try
+		}
 
-		return new JSONResponse($object->jsonSerialize());
-	}//end transition()
+		return new JSONResponse(
+			['error' => $exception->getMessage()],
+			$this->refusalStatus(exception: $exception)
+		);
+	}//end transitionRefusal()
+
+	/**
+	 * The status of a refused transition: the first entry of
+	 * {@see self::TRANSITION_REFUSAL_STATUS} the failure is an instance of.
+	 *
+	 * @param \Exception $exception The failure.
+	 *
+	 * @return int The HTTP status.
+	 */
+	private function refusalStatus(\Exception $exception): int {
+		foreach (self::TRANSITION_REFUSAL_STATUS as $class => $status) {
+			if ($exception instanceof $class) {
+				return $status;
+			}
+		}
+
+		return Http::STATUS_UNPROCESSABLE_ENTITY;
+	}//end refusalStatus()
 
 	/**
 	 * List actions allowed from the object's current state.

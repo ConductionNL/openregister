@@ -451,6 +451,7 @@ class VectorStorageHandler implements VectorStorageHandlerInterface {
 			return false;
 		}
 
+		// NOSEMGREP: php.lang.security.unserialize-use.unserialize-use -- Allowed_classes is false, so no object can be created.
 		return @unserialize($blob, ['allowed_classes' => false]);
 	}//end decodeEmbeddingBlob()
 

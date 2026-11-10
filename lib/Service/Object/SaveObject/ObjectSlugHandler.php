@@ -99,28 +99,36 @@ class ObjectSlugHandler implements ObjectSlugTargetInterface {
 	}//end isManaged()
 
 	/**
-	 * The slug an object would like to have, before any uniqueness check.
+	 * The slug a client asked for, normalised; a non-empty client slug wins over candidate() (BC5).
 	 *
-	 * A non-empty client slug wins (BC5), normalised with the one slugify routine
-	 * that produced every stored slug and cut to the column width; otherwise the
-	 * value of `objectSlugField` (dot path or template) is slugified the same way.
+	 * Normalised with the one slugify routine that produced every stored slug and
+	 * cut to the column width, so `Hello` and `hello` are one slug in both the
+	 * single and the bulk path and the value fits the column.
 	 *
-	 * @param array       $objectData The object's business data.
-	 * @param Schema      $schema     The schema.
 	 * @param string|null $clientSlug `@self.slug` or top-level `slug` as sent.
+	 *
+	 * @return string|null The normalised slug, or null when the client sent none.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
+	 */
+	public function clientCandidate(string|null $clientSlug): string|null {
+		return $this->source->normaliseClient(clientSlug: $clientSlug);
+	}//end clientCandidate()
+
+	/**
+	 * The slug an object would like to have from its data, before any uniqueness check.
+	 *
+	 * The value of `objectSlugField` (dot path or template), slugified like a
+	 * client slug. A client slug wins over it: ask clientCandidate() first.
+	 *
+	 * @param array  $objectData The object's business data.
+	 * @param Schema $schema     The schema.
 	 *
 	 * @return string|null The candidate, or null when there is none.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-an-object-slug-must-come-only-from-the-configured-slug-field-and-must-not-be-written-into-the-object-data
 	 */
-	public function candidate(array $objectData, Schema $schema, string|null $clientSlug): string|null {
-		$normalised = $this->source->normaliseClient(clientSlug: $clientSlug);
-		if ($normalised !== null) {
-			// Normalised like a generated slug, so `Hello` and `hello` are one slug
-			// in both the single and the bulk path and the value fits the column.
-			return $normalised;
-		}
-
+	public function candidate(array $objectData, Schema $schema): string|null {
 		if ($this->isManaged(schema: $schema) === false) {
 			return null;
 		}
@@ -244,7 +252,8 @@ class ObjectSlugHandler implements ObjectSlugTargetInterface {
 	 * @return string|null The slug, or null when the object stays without one.
 	 */
 	private function freshSlug(ObjectSlugWrite $write): string|null {
-		$candidate = $this->candidate(objectData: $write->entity->getObject() ?? [], schema: $write->scope->schema, clientSlug: $write->clientSlug);
+		$candidate = $this->clientCandidate(clientSlug: $write->clientSlug)
+			?? $this->candidate(objectData: $write->entity->getObject() ?? [], schema: $write->scope->schema);
 		if ($candidate === null) {
 			return null;
 		}

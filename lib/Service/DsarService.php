@@ -44,6 +44,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
@@ -78,6 +79,23 @@ class DsarService implements DsarServiceInterface {
 	 * @var string
 	 */
 	public const DEFAULT_DSAR_ACTIVITY_CODE = 'dsar';
+
+	/**
+	 * The entity and relation columns a subject match returns.
+	 *
+	 * @var list<string>
+	 */
+	private const MATCHED_ENTITY_COLUMNS = [
+		'e.id',
+		'e.type',
+		'e.value',
+		'e.category',
+		'e.detected_at',
+		'r.object_id',
+		'r.object_uuid',
+		'r.register_id',
+		'r.schema_id',
+	];
 
 	/**
 	 * Constructor.
@@ -341,28 +359,75 @@ class DsarService implements DsarServiceInterface {
 	private function eraseOneEntry(array $entry, DsarErasureRun $run): void {
 		$object = $this->loadObjectByEntry(entry: $entry);
 		if ($object === null) {
-			// BUG-SVC-2: a matched object we cannot load was NOT erased —
-			// record it as a failure rather than silently skipping it.
-			$run->fail(entry: $entry, error: 'Object could not be loaded for erasure');
-			$this->logger->warning(
-				message: '[DSAR] Matched object could not be loaded during vergetelheid',
-				context: ['object' => $entry]
-			);
+			$this->failUnloadable(entry: $entry, run: $run);
 			return;
 		}
 
-		// RETENTION WINS OVER ERASURE. Vergetelheid is art-17, and art-17(3)(b)
-		// stands down for processing the law requires: an archival record is
-		// kept, the refusal is recorded, and it travels back in `withheld` so
-		// the officer answering the data subject can name it. The refusal is
-		// per row, so every non-archival match in the same request is still
-		// erased.
+		if ($this->withholdArchival(object: $object, run: $run) === true) {
+			return;
+		}
+
+		$error = $this->softDelete(object: $object, run: $run);
+		if ($error !== null) {
+			$run->fail(entry: $entry, error: $error);
+			$this->logSoftDeleteFailure(entry: $entry, error: $error);
+		}
+	}//end eraseOneEntry()
+
+
+	/**
+	 * Record a matched object that could not be loaded as a failure.
+	 *
+	 * BUG-SVC-2: a matched object we cannot load was NOT erased — record it as
+	 * a failure rather than silently skipping it.
+	 *
+	 * @param array<string, mixed> $entry The deduped match (object_id / object_uuid).
+	 * @param DsarErasureRun       $run   The run: stamp, activity and buckets.
+	 *
+	 * @return void
+	 */
+	private function failUnloadable(array $entry, DsarErasureRun $run): void {
+		$run->fail(entry: $entry, error: 'Object could not be loaded for erasure');
+		$this->logger->warning(
+			message: '[DSAR] Matched object could not be loaded during vergetelheid',
+			context: ['object' => $entry]
+		);
+	}//end failUnloadable()
+
+	/**
+	 * Withhold an object held under an archival obligation.
+	 *
+	 * RETENTION WINS OVER ERASURE. Vergetelheid is art-17, and art-17(3)(b)
+	 * stands down for processing the law requires: an archival record is
+	 * kept, the refusal is recorded, and it travels back in `withheld` so
+	 * the officer answering the data subject can name it. The refusal is
+	 * per row, so every non-archival match in the same request is still
+	 * erased.
+	 *
+	 * @param ObjectEntity   $object The loaded object.
+	 * @param DsarErasureRun $run    The run: stamp, activity and buckets.
+	 *
+	 * @return bool True when the object is withheld and must not be erased.
+	 */
+	private function withholdArchival(ObjectEntity $object, DsarErasureRun $run): bool {
 		$refusal = $this->archivalGuard->erasureRefusal(object: $object);
-		if ($refusal !== null) {
-			$run->withheld[] = $refusal;
-			return;
+		if ($refusal === null) {
+			return false;
 		}
 
+		$run->withheld[] = $refusal;
+		return true;
+	}//end withholdArchival()
+
+	/**
+	 * Stamp and soft-delete one object, recording it as erased.
+	 *
+	 * @param ObjectEntity   $object The loaded object.
+	 * @param DsarErasureRun $run    The run: stamp, activity and buckets.
+	 *
+	 * @return string|null Why the update failed, or null when the object was erased.
+	 */
+	private function softDelete(ObjectEntity $object, DsarErasureRun $run): ?string {
 		$run->stamp(object: $object);
 
 		try {
@@ -372,14 +437,26 @@ class DsarService implements DsarServiceInterface {
 				'register' => $object->getRegister(),
 				'schema' => $object->getSchema(),
 			];
+			return null;
 		} catch (\Throwable $e) {
-			$run->fail(entry: $entry, error: $e->getMessage());
-			$this->logger->warning(
-				message: '[DSAR] Soft-delete failed during vergetelheid',
-				context: ['object' => $entry, 'error' => $e->getMessage()]
-			);
+			return $e->getMessage();
 		}
-	}//end eraseOneEntry()
+	}//end softDelete()
+
+	/**
+	 * Log a soft-delete that failed.
+	 *
+	 * @param array<string, mixed> $entry The deduped match (object_id / object_uuid).
+	 * @param string               $error Why the update failed.
+	 *
+	 * @return void
+	 */
+	private function logSoftDeleteFailure(array $entry, string $error): void {
+		$this->logger->warning(
+			message: '[DSAR] Soft-delete failed during vergetelheid',
+			context: ['object' => $entry, 'error' => $error]
+		);
+	}//end logSoftDeleteFailure()
 
 	/**
 	 * A run that erases on behalf of the current user (or `system`) for a subject,
@@ -519,8 +596,30 @@ class DsarService implements DsarServiceInterface {
 	public function rectifyObjectForSubject(int $objectId, array $changes): ?array {
 		$this->assertPrivileged();
 
+		$object = $this->findForRectification(objectId: $objectId);
+		if ($object === null) {
+			return null;
+		}
+
+		$this->applyRectification(object: $object, changes: $changes);
+		if ($this->persistRectification(object: $object, objectId: $objectId) === false) {
+			return null;
+		}
+
+		return $object->jsonSerialize();
+	}//end rectifyObjectForSubject()
+
+
+	/**
+	 * Load the object to rectify, outside RBAC and tenancy.
+	 *
+	 * @param int $objectId Internal id of the object.
+	 *
+	 * @return ObjectEntity|null The object, or null when it cannot be loaded.
+	 */
+	private function findForRectification(int $objectId): ?ObjectEntity {
 		try {
-			$object = $this->objectMapper->find(
+			return $this->objectMapper->find(
 				$objectId,
 				_rbac: false,
 				_multitenancy: false
@@ -528,7 +627,17 @@ class DsarService implements DsarServiceInterface {
 		} catch (\Throwable $e) {
 			return null;
 		}
+	}//end findForRectification()
 
+	/**
+	 * Merge the changes into the object and pin it to the DSAR activity.
+	 *
+	 * @param ObjectEntity         $object  The object to rectify.
+	 * @param array<string, mixed> $changes Property → new value map.
+	 *
+	 * @return void
+	 */
+	private function applyRectification(ObjectEntity $object, array $changes): void {
 		$current = $object->getObject() ?? [];
 		$merged = array_merge($current, $changes);
 		$object->setObject($merged);
@@ -537,19 +646,28 @@ class DsarService implements DsarServiceInterface {
 		if ($dsarActivityUuid !== null) {
 			$object->setProcessingActivityId($dsarActivityUuid);
 		}
+	}//end applyRectification()
 
+	/**
+	 * Save a rectified object.
+	 *
+	 * @param ObjectEntity $object   The rectified object.
+	 * @param int          $objectId Internal id of the object, for the log.
+	 *
+	 * @return bool False when the update failed (logged).
+	 */
+	private function persistRectification(ObjectEntity $object, int $objectId): bool {
 		try {
 			$this->objectMapper->update(entity: $object);
+			return true;
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[DSAR] Rectificatie update failed',
 				context: ['objectId' => $objectId, 'error' => $e->getMessage()]
 			);
-			return null;
+			return false;
 		}
-
-		return $object->jsonSerialize();
-	}//end rectifyObjectForSubject()
+	}//end persistRectification()
 
 	/**
 	 * Get the configured DSAR Verwerkingsactiviteit uuid.
@@ -597,61 +715,9 @@ class DsarService implements DsarServiceInterface {
 	 * @return array<int, array<string, mixed>>
 	 */
 	private function matchEntities(DsarSubjectQuery $query): array {
-		$subject = $query->subject;
-		$type    = $query->type;
-		$mode    = $query->mode;
 		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->selectDistinct(
-				[
-					'e.id',
-					'e.type',
-					'e.value',
-					'e.category',
-					'e.detected_at',
-					'r.object_id',
-					'r.object_uuid',
-					'r.register_id',
-					'r.schema_id',
-				]
-			)
-				->from('openregister_entities', 'e')
-				->innerJoin(
-					'e',
-					'openregister_entity_relations',
-					'r',
-					$qb->expr()->eq('r.entity_id', 'e.id')
-				)
-				->where(
-					$qb->expr()->isNotNull('r.object_id')
-				);
-
-			// SECURITY: escape LIKE wildcards in user-supplied subject before
-			// wrapping with `%`-anchors. Without this, an admin (the
-			// `vergetelheid` endpoint is admin-gated) could pass
-			// `subject=%@%` or `subject=_` to match every PII row in
-			// `openregister_entities.value` — combined with the downstream
-			// `eraseObjectsForSubject()` chain, that's a one-call wildcard
-			// erase well beyond legitimate DSAR semantics.
-			$escapedSubject = $this->db->escapeLikeParameter($subject);
-
-			if ($mode === 'ilike') {
-				$qb->andWhere(
-					$qb->expr()->iLike('e.value', $qb->createNamedParameter('%' . $escapedSubject . '%'))
-				);
-			}
-
-			if ($mode !== 'ilike') {
-				$qb->andWhere(
-					$qb->expr()->iLike('e.value', $qb->createNamedParameter($escapedSubject))
-				);
-			}
-
-			if ($type !== null && $type !== '') {
-				$qb->andWhere(
-					$qb->expr()->eq('e.type', $qb->createNamedParameter($type))
-				);
-			}
+			$qb = $this->entityRelationQuery();
+			$this->filterBySubject(qb: $qb, query: $query);
 
 			$result = $qb->executeQuery();
 			$rows = $result->fetchAll();
@@ -660,10 +726,64 @@ class DsarService implements DsarServiceInterface {
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[DSAR] GdprEntity lookup failed',
-				context: ['subject' => $subject, 'type' => $type, 'error' => $e->getMessage()]
+				context: ['subject' => $query->subject, 'type' => $query->type, 'error' => $e->getMessage()]
 			);
 			return [];
 		}//end try
-
 	}//end matchEntities()
+
+
+	/**
+	 * The join of PII entities to the objects they were found in.
+	 *
+	 * @return IQueryBuilder The query, one row per (entity, object) pair.
+	 */
+	private function entityRelationQuery(): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->selectDistinct(self::MATCHED_ENTITY_COLUMNS)
+			->from('openregister_entities', 'e')
+			->innerJoin(
+				'e',
+				'openregister_entity_relations',
+				'r',
+				$qb->expr()->eq('r.entity_id', 'e.id')
+			)
+			->where(
+				$qb->expr()->isNotNull('r.object_id')
+			);
+
+		return $qb;
+	}//end entityRelationQuery()
+
+	/**
+	 * Restrict the query to the subject value and, when given, the entity type.
+	 *
+	 * @param IQueryBuilder    $qb    The entity relation query.
+	 * @param DsarSubjectQuery $query The subject value, type filter and match mode.
+	 *
+	 * @return void
+	 */
+	private function filterBySubject(IQueryBuilder $qb, DsarSubjectQuery $query): void {
+		// SECURITY: escape LIKE wildcards in user-supplied subject before
+		// wrapping with `%`-anchors. Without this, an admin (the
+		// `vergetelheid` endpoint is admin-gated) could pass
+		// `subject=%@%` or `subject=_` to match every PII row in
+		// `openregister_entities.value` — combined with the downstream
+		// `eraseObjectsForSubject()` chain, that's a one-call wildcard
+		// erase well beyond legitimate DSAR semantics.
+		$pattern = $this->db->escapeLikeParameter($query->subject);
+		if ($query->mode === 'ilike') {
+			$pattern = '%' . $pattern . '%';
+		}
+
+		$qb->andWhere(
+			$qb->expr()->iLike('e.value', $qb->createNamedParameter($pattern))
+		);
+
+		if ($query->type !== null && $query->type !== '') {
+			$qb->andWhere(
+				$qb->expr()->eq('e.type', $qb->createNamedParameter($query->type))
+			);
+		}
+	}//end filterBySubject()
 }//end class

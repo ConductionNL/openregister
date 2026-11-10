@@ -19,7 +19,7 @@
  *     may take it: the handover gives them nothing they did not already have, it
  *     only says out loud who is now answerable for it.
  *  2. An ADMINISTRATOR REASSIGNS one record or many ({@see assign()},
- *     {@see reassignMany()}), which is what a departure looks like in practice.
+ *     {@see reassign()}), which is what a departure looks like in practice.
  *  3. The owner (or an administrator) names the OWNING GROUP
  *     ({@see setOwnerGroup()}), after which every member of that group edits the
  *     record on the same terms as the named owner.
@@ -58,6 +58,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -207,26 +208,6 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	 * whose write fails, is reported in `failed` and the remaining records are
 	 * still moved — a bulk reassignment that stops halfway leaves an
 	 * administrator with no way to know how far it got.
-	 *
-	 * @param string[] $identifiers The records, by uuid, id, slug or uri.
-	 * @param string $newOwner The uid of the new owner.
-	 * @param bool $cascade Whether the change carries to each record's children.
-	 *
-	 * @throws NotAuthorizedException When the caller is not an administrator.
-	 * @throws InvalidArgumentException When no such user exists, or no record was named.
-	 *
-	 * @return array{newOwner: string, transferred: array, failed: array, unchanged: array}
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) As on claim().
-	 *
-	 * @spec openspec/specs/object-ownership/spec.md
-	 */
-	public function reassignMany(array $identifiers, string $newOwner, bool $cascade = false): array {
-		return $this->reassign(identifiers: $identifiers, reassignment: new OwnershipReassignment(newOwner: $newOwner, cascade: $cascade));
-	}//end reassignMany()
-
-	/**
-	 * Reassign many records to one owner, in one action: one audit entry per record, and one refusal does not lose the rest.
 	 *
 	 * @param string[]              $identifiers  The records, by uuid, id, slug or uri.
 	 * @param OwnershipReassignment $reassignment The new owner and whether the change carries to each record's children.
@@ -400,10 +381,8 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 		$block = $this->withOwnerGroup(block: $block, group: $group);
 
 		$this->writers->authorizationWriter->writeAuthorizationBlock(
-			register: $record->register,
-			schema: $record->schema,
-			objectUuid: (string)$object->getUuid(),
-			block: $block
+			table: new RegisterSchema(register: $record->register, schema: $record->schema),
+			assignment: new AuthorizationAssignment(objectUuid: (string)$object->getUuid(), block: $block)
 		);
 
 		$object->setAuthorization($block);
@@ -556,10 +535,8 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 		$before = clone $object;
 
 		$this->writers->ownerWriter->writeOwner(
-			register: $record->register,
-			schema: $record->schema,
-			objectUuid: (string)$object->getUuid(),
-			owner: $handover->newOwner
+			table: new RegisterSchema(register: $record->register, schema: $record->schema),
+			assignment: new OwnerAssignment(objectUuid: (string)$object->getUuid(), owner: $handover->newOwner)
 		);
 		$object->setOwner($handover->newOwner);
 
@@ -818,7 +795,7 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 		$uid = $this->callerUid();
 		$groups = $this->callerGroups();
 
-		$admittedAs = $this->guards->grantManage->admittedAs(userId: $uid, userGroups: $groups, object: $object);
+		$admittedAs = $this->guards->grantManage->admittedAs(caller: new GrantCaller(userId: $uid, userGroups: $groups), object: $object);
 		if ($admittedAs === null) {
 			throw new NotAuthorizedException(
 				message: 'Only the owner or an administrator may change who owns this record'
@@ -827,8 +804,7 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 
 		if ($this->guards->grantManage->letsItselfIn(
 			admittedAs: $admittedAs,
-			userId: $uid,
-			userGroups: $groups,
+			caller: new GrantCaller(userId: $uid, userGroups: $groups),
 			principal: new GrantedPrincipal(group: $group)
 		) === true
 		) {
