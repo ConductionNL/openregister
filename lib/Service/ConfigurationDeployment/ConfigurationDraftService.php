@@ -110,12 +110,7 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 	public function openSet(string $name, ?string $description = null): ConfigurationDraftSet {
 		$name = trim($name);
 		if ($name === '') {
-			throw new DeploymentRefusedException(
-				reason: DeploymentRefusedException::REASON_INVALID,
-				message: 'a draft set needs a name',
-				refusals: [],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+			throw $this->unnamedSet();
 		}
 
 		return $this->sets->createFromArray(
@@ -128,6 +123,21 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 		);
 
 	}//end openSet()
+
+	/**
+	 * The refusal of a draft set without a name.
+	 *
+	 * @return DeploymentRefusedException The refusal.
+	 */
+	private function unnamedSet(): DeploymentRefusedException {
+		return new DeploymentRefusedException(
+			reason: DeploymentRefusedException::REASON_INVALID,
+			message: 'a draft set needs a name',
+			refusals: [],
+			statusCode: Http::STATUS_BAD_REQUEST
+		);
+
+	}//end unnamedSet()
 
 	/**
 	 * Read a set back, or refuse by name.
@@ -324,7 +334,30 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 	public function approveSet(string $setUuid): ConfigurationDraftSet {
 		$set = $this->loadSet(uuid: $setUuid);
 		$this->requireEditable(set: $set);
+		$this->requirePendingValues(set: $set, setUuid: $setUuid);
 
+		$approver = $this->actor();
+		$this->requireSecondPair(set: $set, approver: $approver);
+
+		$set->setState(ConfigurationDraftSet::STATE_APPROVED);
+		$set->setApprovedBy($approver);
+		$set->setApprovedAt(new DateTime());
+
+		return $this->sets->save($set);
+
+	}//end approveSet()
+
+	/**
+	 * Refuse to approve a set that holds no pending value.
+	 *
+	 * @param ConfigurationDraftSet $set     The set.
+	 * @param string                $setUuid The set uuid.
+	 *
+	 * @return void
+	 *
+	 * @throws DeploymentRefusedException When the set is empty.
+	 */
+	private function requirePendingValues(ConfigurationDraftSet $set, string $setUuid): void {
 		if ($this->draftsIn(setUuid: $setUuid) === []) {
 			throw new DeploymentRefusedException(
 				reason: DeploymentRefusedException::REASON_EMPTY,
@@ -332,7 +365,19 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 			);
 		}
 
-		$approver = $this->actor();
+	}//end requirePendingValues()
+
+	/**
+	 * Under four eyes, refuse an approval by the set's own author.
+	 *
+	 * @param ConfigurationDraftSet $set      The set.
+	 * @param string|null           $approver The approving principal.
+	 *
+	 * @return void
+	 *
+	 * @throws DeploymentRefusedException When the author approves their own set under four eyes.
+	 */
+	private function requireSecondPair(ConfigurationDraftSet $set, ?string $approver): void {
 		if ($this->requiresFourEyes() === true && $approver === $set->getCreatedBy()) {
 			throw new DeploymentRefusedException(
 				reason: DeploymentRefusedException::REASON_FOUR_EYES,
@@ -345,13 +390,7 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 			);
 		}
 
-		$set->setState(ConfigurationDraftSet::STATE_APPROVED);
-		$set->setApprovedBy($approver);
-		$set->setApprovedAt(new DateTime());
-
-		return $this->sets->save($set);
-
-	}//end approveSet()
+	}//end requireSecondPair()
 
 	/**
 	 * Abandon a set without deploying it.
@@ -442,8 +481,20 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 			return;
 		}
 
-		$address = $change->address;
-		throw new DeploymentRefusedException(
+		throw $this->invalidAddress(address: $change->address, refusal: $refusal);
+
+	}//end requireDraftableAddress()
+
+	/**
+	 * The refusal of an address that cannot be drafted, naming the address.
+	 *
+	 * @param ConfigurationAddress $address The address.
+	 * @param string               $refusal Why it cannot be drafted.
+	 *
+	 * @return DeploymentRefusedException The refusal.
+	 */
+	private function invalidAddress(ConfigurationAddress $address, string $refusal): DeploymentRefusedException {
+		return new DeploymentRefusedException(
 			reason: DeploymentRefusedException::REASON_INVALID,
 			message: $refusal,
 			refusals: [
@@ -457,7 +508,7 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 			statusCode: Http::STATUS_BAD_REQUEST
 		);
 
-	}//end requireDraftableAddress()
+	}//end invalidAddress()
 
 	/**
 	 * Why a change may not be drafted, or null when it may.
