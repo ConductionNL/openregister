@@ -899,8 +899,8 @@ class ObjectRelationsController extends Controller {
 	 */
 	private function treeOf(ObjectEntity $object, string $direction): array {
 		return $this->trees->tree(
-			root: $object,
 			query: new ObjectTreeQuery(
+				root: $object,
 				direction: $direction,
 				depth: $this->params->optionalDepth(),
 				fields: $this->params->csvParam(name: 'fields')

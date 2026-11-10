@@ -44,6 +44,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\Providers\OutboundMessage;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider;
 use OCP\App\IAppManager;
@@ -130,7 +131,7 @@ class MessageDispatchProviderTest extends TestCase {
 
 	public function testListIsEmptyForSendOnlyLeaf(): void {
 		$this->router->expects($this->never())->method('call');
-		$this->assertSame([], $this->provider->list('', '', '', ['_search' => 'x']));
+		$this->assertSame([], $this->provider->list(new ObjectRef(register: '', schema: '', id: ''), ['_search' => 'x']));
 	}//end testListIsEmptyForSendOnlyLeaf()
 
 	public function testDispatchDelegatesPostToRouterWithBodyAndPath(): void {

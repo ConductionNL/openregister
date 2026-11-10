@@ -314,43 +314,43 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 
 	public function testExtractMetadataValueSimplePath(): void {
 		$data = ['title' => 'Hello World'];
-		$result = $this->metadataHandler->extractMetadataValue($data, 'title');
+		$result = $this->metadataHandler->metadataText(fieldPath: 'title', source: new TemplateSource(data: $data, schemaProperties: []));
 		$this->assertEquals('Hello World', $result);
 	}
 
 	public function testExtractMetadataValueFallbackChain(): void {
 		$data = ['ggm_naam' => 'Fallback Name'];
-		$result = $this->metadataHandler->extractMetadataValue($data, 'name | ggm_naam | identifier');
+		$result = $this->metadataHandler->metadataText(fieldPath: 'name | ggm_naam | identifier', source: new TemplateSource(data: $data, schemaProperties: []));
 		$this->assertEquals('Fallback Name', $result);
 	}
 
 	public function testExtractMetadataValueFallbackChainFirstMatch(): void {
 		$data = ['name' => 'First', 'ggm_naam' => 'Second'];
-		$result = $this->metadataHandler->extractMetadataValue($data, 'name | ggm_naam');
+		$result = $this->metadataHandler->metadataText(fieldPath: 'name | ggm_naam', source: new TemplateSource(data: $data, schemaProperties: []));
 		$this->assertEquals('First', $result);
 	}
 
 	public function testExtractMetadataValueFallbackChainAllEmpty(): void {
 		$data = ['other' => 'value'];
-		$result = $this->metadataHandler->extractMetadataValue($data, 'name | ggm_naam | identifier');
+		$result = $this->metadataHandler->metadataText(fieldPath: 'name | ggm_naam | identifier', source: new TemplateSource(data: $data, schemaProperties: []));
 		$this->assertNull($result);
 	}
 
 	public function testExtractMetadataValueTwigTemplate(): void {
 		$data = ['voornaam' => 'Jan', 'achternaam' => 'de Vries'];
-		$result = $this->metadataHandler->extractMetadataValue($data, '{{ voornaam }} {{ achternaam }}');
+		$result = $this->metadataHandler->metadataText(fieldPath: '{{ voornaam }} {{ achternaam }}', source: new TemplateSource(data: $data, schemaProperties: []));
 		$this->assertEquals('Jan de Vries', $result);
 	}
 
 	public function testExtractMetadataValueTwigTemplateMissingField(): void {
 		$data = ['voornaam' => 'Jan'];
-		$result = $this->metadataHandler->extractMetadataValue($data, '{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}');
+		$result = $this->metadataHandler->metadataText(fieldPath: '{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}', source: new TemplateSource(data: $data, schemaProperties: []));
 		$this->assertEquals('Jan', $result);
 	}
 
 	public function testExtractMetadataValueTwigTemplateAllMissing(): void {
 		$data = ['other' => 'value'];
-		$result = $this->metadataHandler->extractMetadataValue($data, '{{ voornaam }} {{ achternaam }}');
+		$result = $this->metadataHandler->metadataText(fieldPath: '{{ voornaam }} {{ achternaam }}', source: new TemplateSource(data: $data, schemaProperties: []));
 		$this->assertNull($result);
 	}
 
@@ -368,63 +368,51 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 
 	public function testProcessFieldWithFallbacksEmptyFields(): void {
 		$data = ['a' => 'val'];
-		$result = $this->metadataHandler->processFieldWithFallbacks($data, ' | | a');
+		$result = $this->metadataHandler->fallbackValue(fieldChain: ' | | a', source: new TemplateSource(data: $data, schemaProperties: []));
 		$this->assertEquals('val', $result);
 	}
 
 	public function testProcessMapFilter(): void {
 		$data = ['richting' => 'AnaarB'];
-		$result = $this->metadataHandler->processMapFilter(
-			$data,
-			'richting',
-			'AnaarB=arrow-right, BnaarA=arrow-left, bi-directioneel=arrows'
-		);
+		$result = $this->metadataHandler->mapFilterValue(fieldValue: $this->metadataHandler->getValueFromPath(data: $data, path: 'richting'), mapDefinition: 'AnaarB=arrow-right, BnaarA=arrow-left, bi-directioneel=arrows');
 		$this->assertEquals('arrow-right', $result);
 	}
 
 	public function testProcessMapFilterNoMatch(): void {
 		$data = ['richting' => 'Unknown'];
-		$result = $this->metadataHandler->processMapFilter(
-			$data,
-			'richting',
-			'AnaarB=arrow-right, BnaarA=arrow-left'
-		);
+		$result = $this->metadataHandler->mapFilterValue(fieldValue: $this->metadataHandler->getValueFromPath(data: $data, path: 'richting'), mapDefinition: 'AnaarB=arrow-right, BnaarA=arrow-left');
 		// Falls back to the raw field value.
 		$this->assertEquals('Unknown', $result);
 	}
 
 	public function testProcessMapFilterEmptyField(): void {
 		$data = [];
-		$result = $this->metadataHandler->processMapFilter(
-			$data,
-			'richting',
-			'AnaarB=arrow-right, BnaarA=arrow-left'
-		);
+		$result = $this->metadataHandler->mapFilterValue(fieldValue: $this->metadataHandler->getValueFromPath(data: $data, path: 'richting'), mapDefinition: 'AnaarB=arrow-right, BnaarA=arrow-left');
 		// Defaults to first mapped value when field is empty.
 		$this->assertEquals('arrow-right', $result);
 	}
 
 	public function testProcessIfFilledFilterFieldFilled(): void {
 		$data = ['voorziening' => 'some-value'];
-		$result = $this->metadataHandler->processIfFilledFilter($data, 'voorziening', 'extern, intern');
+		$result = $this->metadataHandler->ifFilledValue(fieldValue: $this->metadataHandler->getValueFromPath(data: $data, path: 'voorziening'), definition: 'extern, intern');
 		$this->assertEquals('extern', $result);
 	}
 
 	public function testProcessIfFilledFilterFieldEmpty(): void {
 		$data = [];
-		$result = $this->metadataHandler->processIfFilledFilter($data, 'voorziening', 'extern, intern');
+		$result = $this->metadataHandler->ifFilledValue(fieldValue: $this->metadataHandler->getValueFromPath(data: $data, path: 'voorziening'), definition: 'extern, intern');
 		$this->assertEquals('intern', $result);
 	}
 
 	public function testProcessIfFilledFilterFieldEmptyString(): void {
 		$data = ['voorziening' => ''];
-		$result = $this->metadataHandler->processIfFilledFilter($data, 'voorziening', 'extern, intern');
+		$result = $this->metadataHandler->ifFilledValue(fieldValue: $this->metadataHandler->getValueFromPath(data: $data, path: 'voorziening'), definition: 'extern, intern');
 		$this->assertEquals('intern', $result);
 	}
 
 	public function testProcessIfFilledFilterSingleValue(): void {
 		$data = [];
-		$result = $this->metadataHandler->processIfFilledFilter($data, 'field', 'onlyvalue');
+		$result = $this->metadataHandler->ifFilledValue(fieldValue: $this->metadataHandler->getValueFromPath(data: $data, path: 'field'), definition: 'onlyvalue');
 		$this->assertEquals('onlyvalue', $result);
 	}
 

@@ -180,27 +180,19 @@ class BatchOperationStatus implements BatchOperationStatusInterface {
 	/**
 	 * Append a failed-row outcome.
 	 *
-	 * `$index` is the row's position in the submitted batch. A create that
-	 * fails has no UUID yet, so without the position the caller cannot tell
-	 * which of its rows was refused (issue #2778) — it is optional only so
-	 * callers that genuinely have no position keep working.
-	 *
-	 * @param string|null $uuid UUID of the input row, or null when not yet assigned.
-	 * @param string $message Human-readable failure message.
-	 * @param string $exceptionClass Fully-qualified class name of the exception.
-	 * @param int|null $index Position of the row in the submitted batch, when known.
+	 * @param RowFailure $failure The row that failed, its position and why.
 	 *
 	 * @return void
 	 *
 	 * @spec exclude Boilerplate value-object outcome recorder; the batch outcome aggregator is anchored
 	 *              to reference-existence-validation at class level.
 	 */
-	public function recordFailed(?string $uuid, string $message, string $exceptionClass, ?int $index = null): void {
+	public function recordFailed(RowFailure $failure): void {
 		$this->failed[] = [
-			'uuid' => $uuid,
-			'message' => $message,
-			'exceptionClass' => $exceptionClass,
-			'index' => $index,
+			'uuid' => $failure->uuid,
+			'message' => $failure->message,
+			'exceptionClass' => $failure->exceptionClass,
+			'index' => $failure->index,
 		];
 	}//end recordFailed()
 

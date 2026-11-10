@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowExpression;
 use OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -196,9 +197,7 @@ class RouterNode extends LogicNodeBase implements IFlowNode, RouterNodeInterface
 
 			$out[] = FlowItems::item(
 				json: (array)($item[FlowItems::JSON] ?? []),
-				binary: (array)($item[FlowItems::BINARY] ?? []),
-				fromItemIndex: $index,
-				output: $outputs[$index]
+				options: new FlowItemOptions(binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index, output: $outputs[$index])
 			);
 		}
 

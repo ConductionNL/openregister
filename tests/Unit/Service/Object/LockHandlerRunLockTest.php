@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\Object\LockAuthorization;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\LockStores;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -198,12 +199,12 @@ final class LockHandlerRunLockTest extends TestCase {
 		$this->magic->method('unlockObjectEntity')->willReturn(new ObjectEntity());
 
 		$recorded = [];
-		$this->audit->method('createAuditTrailEntry')->willReturnCallback(
+		$this->audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context) use (&$recorded) {
 				$recorded = ['action' => $action, 'context' => $context];
 				return $this->createMock(\OCA\OpenRegister\Db\AuditTrail::class);
 			}
-		);
+		));
 
 		$this->assertTrue($this->handler()->breakLock(identifier: self::OBJ));
 		$this->assertSame('lock.broken', $recorded['action']);

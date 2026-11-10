@@ -35,6 +35,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 class ExportServiceCoverageTest extends TestCase {
 	private ExportService $service;
@@ -340,6 +341,6 @@ class ExportServiceCoverageTest extends TestCase {
 		$register = new \OCA\OpenRegister\Db\Register();
 
 		$this->expectException(\InvalidArgumentException::class);
-		$this->service->exportToCsv($register, null);
+		$this->service->exportToCsv(request: new ObjectExportRequest(register: $register));
 	}
 }
