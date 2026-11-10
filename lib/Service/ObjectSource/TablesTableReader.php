@@ -100,19 +100,39 @@ class TablesTableReader implements TablesCatalogueInterface {
 	private const PERMISSIONS_SERVICE = 'OCA\\Tables\\Service\\PermissionsService';
 
 	/**
+	 * App availability checks.
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
+	 * Server container (lazy app-service lookup).
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * Logger for read failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IAppManager $appManager App availability checks.
-	 * @param ContainerInterface $container Server container (lazy Tables-service lookup).
-	 * @param LoggerInterface $logger Logger for read failures.
+	 * @param OptionalAppBridge $app Whether the app is installed, its services, and the log of failed reads.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly IAppManager $appManager,
-		private readonly ContainerInterface $container,
-		private readonly LoggerInterface $logger,
+		OptionalAppBridge $app,
 	) {
+		$this->appManager = $app->appManager;
+		$this->container = $app->container;
+		$this->logger = $app->logger;
 	}//end __construct()
 
 	/**
