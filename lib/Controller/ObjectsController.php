@@ -33,6 +33,7 @@ use OCA\OpenRegister\Controller\Support\ConflictTrail;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\EmptyValueStripper;
 use OCA\OpenRegister\Controller\Support\ObjectExport;
+use OCA\OpenRegister\Controller\Support\ObjectCountScope;
 use OCA\OpenRegister\Controller\Support\ObjectGovernanceServices;
 use OCA\OpenRegister\Controller\Support\ObjectCreate;
 use OCA\OpenRegister\Controller\Support\ObjectCreateControls;
@@ -1964,8 +1965,8 @@ class ObjectsController extends Controller {
 		$params = $this->request->getParams();
 		$entries = ($params['counts'] ?? null);
 
-		// Missing counts key → empty success (spec: empty or missing → { results: [] }).
-		if ($entries === null) {
+		// Missing counts key or empty array → empty success (spec: empty or missing → { results: [] }).
+		if ($entries === null || $entries === []) {
 			return new JSONResponse(data: ['results' => []]);
 		}
 
@@ -1977,58 +1978,83 @@ class ObjectsController extends Controller {
 			);
 		}
 
-		// Empty array → empty success.
-		if ($entries === []) {
-			return new JSONResponse(data: ['results' => []]);
+		// Validate every entry up-front so a malformed batch is rejected
+		// wholesale rather than silently skipping entries.
+		$malformed = self::malformedCountEntry(entries: $entries);
+		if ($malformed !== null) {
+			return new JSONResponse(
+				data: [
+					'error' => 'Malformed counts entry at index ' . $malformed
+						. ': register and schema are required scalars and filter must be an object',
+				],
+				statusCode: 400
+			);
 		}
 
 		// Derive the RBAC + multitenancy posture from the caller's admin
 		// status — identical to the collection read (index() lines 1160-1162).
 		// Never honour request-supplied rbac/multi flags on a data endpoint.
-		$isAdmin = $this->isCurrentUserAdmin();
-		$rbac = ($isAdmin === false);
-		$multi = ($isAdmin === false);
+		$scoped = ($this->isCurrentUserAdmin() === false);
+		$scope = new ObjectCountScope(rbac: $scoped, multi: $scoped, objectService: $objectService);
 
-		// Validate every entry up-front so a malformed batch is rejected
-		// wholesale rather than silently skipping entries.
+		return new JSONResponse(data: ['results' => $this->countResults(entries: $entries, scope: $scope)]);
+	}//end counts()
+
+	/**
+	 * The index of the first malformed counts entry.
+	 *
+	 * @param array $entries The counts entries.
+	 *
+	 * @return int|string|null The index, or null when every entry is well formed.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private static function malformedCountEntry(array $entries): int|string|null {
 		foreach ($entries as $index => $entry) {
-			if (is_array($entry) === false
-				|| isset($entry['register']) === false
-				|| isset($entry['schema']) === false
-				|| is_scalar($entry['register']) === false
-				|| is_scalar($entry['schema']) === false
-				|| (isset($entry['filter']) === true && is_array($entry['filter']) === false)
-			) {
-				return new JSONResponse(
-					data: [
-						'error' => 'Malformed counts entry at index ' . $index
-							. ': register and schema are required scalars and filter must be an object',
-					],
-					statusCode: 400
-				);
+			if (self::isCountEntry(entry: $entry) === false) {
+				return $index;
 			}
 		}
 
-		// Dedupe identical (register, schema, filter) triples: run one
-		// aggregate per distinct triple, but return one result per input
-		// entry in request order (duplicates share the deduped count).
+		return null;
+	}//end malformedCountEntry()
+
+	/**
+	 * Whether a counts entry names a scalar register and schema, and an object as its filter.
+	 *
+	 * @param mixed $entry The counts entry.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private static function isCountEntry(mixed $entry): bool {
+		return is_array($entry) === true
+			&& is_scalar($entry['register'] ?? null) === true
+			&& is_scalar($entry['schema'] ?? null) === true
+			&& is_array($entry['filter'] ?? []) === true;
+	}//end isCountEntry()
+
+	/**
+	 * The count of every entry in request order.
+	 *
+	 * Runs one aggregate per distinct (register, schema, filter) triple;
+	 * duplicates share the deduped count.
+	 *
+	 * @param array            $entries The counts entries.
+	 * @param ObjectCountScope $scope   The scoping of the counts.
+	 *
+	 * @return array The results.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function countResults(array $entries, ObjectCountScope $scope): array {
 		$cache = [];
 		$results = [];
 		foreach ($entries as $entry) {
-			$register = (string)$entry['register'];
-			$schema = (string)$entry['schema'];
-			$filter = ($entry['filter'] ?? []);
-
-			$cacheKey = $register . '|' . $schema . '|' . json_encode($filter);
+			$cacheKey = $entry['register'] . '|' . $entry['schema'] . '|' . json_encode($entry['filter'] ?? []);
 			if (array_key_exists($cacheKey, $cache) === false) {
-				$cache[$cacheKey] = $this->countPairScoped(
-					register: $register,
-					schema: $schema,
-					filter: $filter,
-					rbac: $rbac,
-					multi: $multi,
-					objectService: $objectService
-				);
+				$cache[$cacheKey] = $this->countPairScoped(entry: $entry, scope: $scope);
 			}
 
 			$results[] = [
@@ -2036,10 +2062,10 @@ class ObjectsController extends Controller {
 				'schema' => $entry['schema'],
 				'count' => $cache[$cacheKey],
 			];
-		}//end foreach
+		}
 
-		return new JSONResponse(data: ['results' => $results]);
-	}//end counts()
+		return $results;
+	}//end countResults()
 
 	/**
 	 * Produce a single (register, schema, filter) object count with the exact
@@ -2059,84 +2085,119 @@ class ObjectsController extends Controller {
 	 * Returns null when the pair cannot be resolved, so a restricted or
 	 * unknown pair is withheld without disclosing which.
 	 *
-	 * @param string $register Register id or slug.
-	 * @param string $schema Schema id or slug.
-	 * @param array $filter Object-property filters for this entry.
-	 * @param bool $rbac Whether to apply RBAC (parity with the list read).
-	 * @param bool $multi Whether to apply multitenancy (parity with the list read).
-	 * @param ObjectOperationsInterface $objectService The object service (DI).
+	 * @param array            $entry The counts entry: register, schema and filter.
+	 * @param ObjectCountScope $scope The scoping of the count.
 	 *
 	 * @return int|null The scoped count, or null when the pair is withheld.
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function countPairScoped(
-		string $register,
-		string $schema,
-		array $filter,
-		bool $rbac,
-		bool $multi,
-		ObjectOperationsInterface $objectService,
-	): ?int {
+	private function countPairScoped(array $entry, ObjectCountScope $scope): ?int {
 		try {
 			// Resolve slugs/ids to numeric ids + entities (same as index()).
 			$resolved = $this->resolveRegisterSchemaIds(
-				register: $register,
-				schema: $schema,
-				objectService: $objectService
+				register: (string)$entry['register'],
+				schema: (string)$entry['schema'],
+				objectService: $scope->objectService
 			);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			// Withhold: never disclose whether the pair is missing or restricted.
 			return null;
 		}
 
-		$registerEntity = ($resolved['registerEntity'] ?? null);
-		$schemaEntity = ($resolved['schemaEntity'] ?? null);
-
 		// Build the search query from the per-entry filter using the same
 		// builder index() uses, scoped to the resolved numeric ids.
-		$query = $objectService->buildSearchQuery(
-			requestParams: $filter,
+		$query = $scope->objectService->buildSearchQuery(
+			requestParams: ($entry['filter'] ?? []),
 			register: $resolved['register'],
 			schema: $resolved['schema']
 		);
 
-		// Magic-mapped parity: count via the magic table with RBAC /
-		// multitenancy threaded into the query (index() lines 1194-1198, 1279-1283).
-		if ($registerEntity !== null && $schemaEntity !== null) {
-			$isMagicMapped = $registerEntity->isMagicMappingEnabledForSchema(
-				schemaId: $schemaEntity->getId(),
-				schemaSlug: $schemaEntity->getSlug()
-			);
+		if ($this->countsInMagicTable(resolved: $resolved) === true) {
+			return $this->magicTableCount(query: self::scopedCountQuery(query: $query, scope: $scope), resolved: $resolved);
+		}
 
-			if ($isMagicMapped === true && $schemaEntity->getObjectSource() === null) {
-				$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapperInterface::class);
+		return self::paginatedCount(query: $query, scope: $scope);
+	}//end countPairScoped()
 
-				$countQuery = $query;
-				unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page']);
-				$countQuery['_rbac'] = $rbac;
-				$countQuery['_multitenancy'] = $multi;
-				$countQuery['_multitenancy_explicit'] = false;
+	/**
+	 * Whether a resolved pair is counted through its magic table.
+	 *
+	 * @param array $resolved The resolved register and schema.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function countsInMagicTable(array $resolved): bool {
+		$register = ($resolved['registerEntity'] ?? null);
+		$schema = ($resolved['schemaEntity'] ?? null);
+		if ($register === null || $schema === null) {
+			return false;
+		}
 
-				return (int)$magicMapper->countObjectsInRegisterSchemaTable(
-					query: $countQuery,
-					register: $registerEntity,
-					schema: $schemaEntity
-				);
-			}
-		}//end if
+		return $register->isMagicMappingEnabledForSchema(schemaId: $schema->getId(), schemaSlug: $schema->getSlug()) === true
+			&& $schema->getObjectSource() === null;
+	}//end countsInMagicTable()
 
-		// Database-backed parity: read the paginated total at _limit=1, which
-		// is produced by the same RBAC/multitenancy-scoped query the
-		// collection read runs (index() lines 1443-1448).
+	/**
+	 * A count query with RBAC and multitenancy threaded in, without paging (index() lines 1194-1198, 1279-1283).
+	 *
+	 * @param array            $query The search query.
+	 * @param ObjectCountScope $scope The scoping of the count.
+	 *
+	 * @return array The count query.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private static function scopedCountQuery(array $query, ObjectCountScope $scope): array {
+		unset($query['_limit'], $query['_offset'], $query['_page']);
+		$query['_rbac'] = $scope->rbac;
+		$query['_multitenancy'] = $scope->multi;
+		$query['_multitenancy_explicit'] = false;
+
+		return $query;
+	}//end scopedCountQuery()
+
+	/**
+	 * Count a pair through its magic table.
+	 *
+	 * @param array $query    The scoped count query.
+	 * @param array $resolved The resolved register and schema.
+	 *
+	 * @return int The count.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function magicTableCount(array $query, array $resolved): int {
+		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapperInterface::class);
+
+		return (int)$magicMapper->countObjectsInRegisterSchemaTable(
+			query: $query,
+			register: $resolved['registerEntity'],
+			schema: $resolved['schemaEntity']
+		);
+	}//end magicTableCount()
+
+	/**
+	 * The paginated total at _limit=1, produced by the same scoped query the collection read runs.
+	 *
+	 * @param array            $query The search query.
+	 * @param ObjectCountScope $scope The scoping of the count.
+	 *
+	 * @return int|null The total, or null when it is withheld.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private static function paginatedCount(array $query, ObjectCountScope $scope): ?int {
 		$query['_limit'] = 1;
 		unset($query['_offset'], $query['_page']);
 
 		try {
-			$result = $objectService->searchObjectsPaginated(
+			$result = $scope->objectService->searchObjectsPaginated(
 				query: $query,
-				_rbac: $rbac,
-				_multitenancy: $multi,
+				_rbac: $scope->rbac,
+				_multitenancy: $scope->multi,
 				deleted: false
 			);
 		} catch (NotAuthorizedException $exception) {
@@ -2145,13 +2206,12 @@ class ObjectsController extends Controller {
 			return null;
 		}
 
-		$total = ($result['total'] ?? null);
-		if ($total === null) {
+		if (($result['total'] ?? null) === null) {
 			return null;
 		}
 
-		return (int)$total;
-	}//end countPairScoped()
+		return (int)$result['total'];
+	}//end paginatedCount()
 
 	/**
 	 * Geo-search endpoint — POST /api/objects/{register}/{schema}/geo-search.
@@ -4610,9 +4670,6 @@ class ObjectsController extends Controller {
 	 *     message?: 'Object does not belong to specified register/schema'|'Object not found'},
 	 *     array<never, never>>
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Audit log retrieval with pagination + access checks requires branching
-	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	public function logs(string $id, string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
@@ -4628,73 +4685,68 @@ class ObjectsController extends Controller {
 		$objectService->setRegister(register: $register);
 		$objectService->setSchema(schema: $schema);
 
-		// Try to fetch the object by ID/UUID only (no register/schema filter yet).
+		// Fetch the object by ID/UUID only (no register/schema filter yet).
+		$object = $this->historyObject(id: $id, objectService: $objectService);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
+
+		if (self::livesAt(object: $object, route: [$register, $schema]) === false) {
+			$msg = 'Object does not belong to specified register/schema';
+			return new JSONResponse(data: ['message' => $msg], statusCode: 404);
+		}
+
+		return $this->logsPage(id: $id, objectService: $objectService);
+	}//end logs()
+
+	/**
+	 * The object whose history an administrator asks for.
+	 *
+	 * @param string                    $id            The object ID or UUID.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return ObjectEntity|JSONResponse The object, or the answer when it cannot be read.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function historyObject(string $id, ObjectOperationsInterface $objectService): ObjectEntity|JSONResponse {
 		try {
 			$object = WriteCause::asLookup(fn () => $objectService->find(id: $id));
-			if ($object === null) {
-				return new JSONResponse(data: ['message' => 'Object not found'], statusCode: 404);
-			}
 		} catch (MultipleObjectsReturnedException $e) {
 			return $this->ambiguousIdentifierResponse(id: $id);
 		} catch (\Exception $e) {
 			return $this->historyLookupFailureResponse(failure: $e);
 		}
 
-		// Normalize and compare register.
-		$objectRegister = $object->getRegister();
-		// Could be ID or slug.
-		$objectSchema = $object->getSchema();
-		// Could be ID, schema: slug, _extend: or array/object.
-		// Normalize requested register.
-		$requestedRegister = $register;
-		$requestedSchema = $schema;
+		return ($object ?? new JSONResponse(data: ['message' => 'Object not found'], statusCode: 404));
+	}//end historyObject()
 
-		// If objectSchema is an array/object, files: get slug and id.
-		// Initialize before conditional assignment.
-		$objectSchemaId = '';
-		$objectSchemaSlug = null;
-		if (is_array($objectSchema) === true && (($objectSchema['id'] ?? null) !== null)) {
-			$objectSchemaId = (string)$objectSchema['id'];
-			$objectSchemaSlug = null;
-			if (isset($objectSchema['slug']) === true) {
-				$objectSchemaSlug = strtolower($objectSchema['slug']);
-			}
-		}
+	/**
+	 * Whether an object's stored register and schema are the ones on the route, ignoring case.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param array        $route  The register and schema on the route.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function livesAt(ObjectEntity $object, array $route): bool {
+		return strtolower((string)$object->getRegister()) === strtolower($route[0])
+			&& strtolower((string)$object->getSchema()) === strtolower($route[1]);
+	}//end livesAt()
 
-		if (is_object($objectSchema) === true && (($objectSchema->id ?? null) !== null)) {
-			$objectSchemaId = (string)$objectSchema->id;
-			$objectSchemaSlug = null;
-			if (isset($objectSchema->slug) === true) {
-				$objectSchemaSlug = strtolower($objectSchema->slug);
-			}
-		}
-
-		if (is_array($objectSchema) === false && is_object($objectSchema) === false) {
-			$objectSchemaId = (string)$objectSchema;
-		}
-
-		// Normalize requested schema.
-		$requestedSchemaNorm = strtolower($requestedSchema);
-		$objectSchemaIdNorm = strtolower((string)$objectSchemaId);
-		// $objectSchemaSlug is already lowercase from lines 1154/1157.
-		$objectSchemaSlugNorm = $objectSchemaSlug;
-
-		// Check schema match (by id or slug).
-		$schemaMatch = (
-			$requestedSchemaNorm === $objectSchemaIdNorm
-			|| ($objectSchemaSlugNorm && $requestedSchemaNorm === $objectSchemaSlugNorm)
-		);
-
-		// Register normalization (string compare).
-		$objectRegisterNorm = strtolower((string)$objectRegister);
-		$reqRegisterNorm = strtolower($requestedRegister);
-		$registerMatch = ($objectRegisterNorm === $reqRegisterNorm);
-
-		if ($schemaMatch === false || $registerMatch === false) {
-			$msg = 'Object does not belong to specified register/schema';
-			return new JSONResponse(data: ['message' => $msg], statusCode: 404);
-		}
-
+	/**
+	 * One page of an object's audit log, masked for explicit-reveal values.
+	 *
+	 * @param string                    $id            The object ID or UUID.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return JSONResponse The page.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function logsPage(string $id, ObjectOperationsInterface $objectService): JSONResponse {
 		// Get config and fetch logs.
 		$config = $this->getConfig();
 		$logs = $objectService->getLogs(uuid: $id, filters: $config['filters']);
@@ -4705,17 +4757,14 @@ class ObjectsController extends Controller {
 			$logs = $trailMasker->mask(entries: $logs);
 		}
 
-		// Get total count of logs.
-		$total = count($logs);
-
 		// Return paginated results.
 		return new JSONResponse(
 			data: $this->paginate(
 				results: $logs,
-				window: new ResultWindow(total: $total, limit: $config['limit'], offset: $config['offset'], page: $config['page'])
+				window: new ResultWindow(total: count($logs), limit: $config['limit'], offset: $config['offset'], page: $config['page'])
 			)
 		);
-	}//end logs()
+	}//end logsPage()
 
 	/**
 	 * One object's history for a non-admin, when they may read the object.
