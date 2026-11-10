@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Archival;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\HoldOrder;
 
 /**
  * The legal holds the archival endpoints place, list and release.
@@ -35,16 +37,15 @@ interface LegalHoldServiceInterface {
 	/**
 	 * Schedule a bulk legal hold operation on all objects in a schema.
 	 *
-	 * @param int $schemaId The schema ID to apply holds to.
-	 * @param int $registerId The register ID.
-	 * @param string $reason The reason for the bulk legal hold.
+	 * @param RegisterSchemaRef $table  The register and the schema whose objects get the hold.
+	 * @param string            $reason The reason for the bulk legal hold.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function bulkPlaceHold(int $schemaId, int $registerId, string $reason): void;
+	public function bulkPlaceHold(RegisterSchemaRef $table, string $reason): void;
 
 	/**
 	 * The records that carry an active legal hold, with their active holds.
@@ -63,27 +64,26 @@ interface LegalHoldServiceInterface {
 	 * Place a legal hold on an object.
 	 *
 	 * @param ObjectEntity $object The object to place a hold on.
-	 * @param string $reason The reason for the legal hold (e.g. WOO-verzoek reference).
-	 * @param string|null $ownerKey The matter placing it, e.g. `filinq:legalHoldCase:<uuid>`; null for a manual hold.
+	 * @param HoldOrder    $order  The reason (e.g. WOO-verzoek reference) and the matter placing it,
+	 *                             e.g. `filinq:legalHoldCase:<uuid>`; no matter for a manual hold.
 	 *
 	 * @return ObjectEntity The updated object with legal hold applied.
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function placeHold(ObjectEntity $object, string $reason, ?string $ownerKey = null): ObjectEntity;
+	public function placeHold(ObjectEntity $object, HoldOrder $order): ObjectEntity;
 
 	/**
 	 * Release a legal hold on an object.
 	 *
 	 * @param ObjectEntity $object The object to release the hold from.
-	 * @param string $reason The reason for releasing the hold.
-	 * @param string|null $ownerKey The matter releasing its own hold; null lifts every hold.
+	 * @param HoldOrder    $order  The reason for releasing and the matter releasing its own hold; no matter lifts every hold.
 	 *
 	 * @return ObjectEntity The updated object with legal hold released.
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function releaseHold(ObjectEntity $object, string $reason, ?string $ownerKey = null): ObjectEntity;
+	public function releaseHold(ObjectEntity $object, HoldOrder $order): ObjectEntity;
 }//end interface
