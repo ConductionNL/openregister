@@ -730,6 +730,8 @@ class CacheHandlerTest extends TestCase {
 	 * @return void
 	 */
 	public function testClearSearchCacheWithoutDistributedCache(): void {
+		$this->expectNotToPerformAssertions();
+
 		$handler = new CacheHandler(
 			stores: new CacheHandlerStores(
 				organisationMapper: $this->organisationMapper
@@ -746,7 +748,6 @@ class CacheHandlerTest extends TestCase {
 		// Should not throw.
 		$handler->clearSearchCache();
 		$handler->clearSearchCache('pattern');
-		$this->assertTrue(true);
 	}
 
 	// =========================================================================
@@ -919,6 +920,8 @@ class CacheHandlerTest extends TestCase {
 		// Should not throw, just logs.
 		$stats = $this->handler->getStats();
 		$this->assertIsArray($stats);
+		// The created object's name is cached under its UUID and its id.
+		$this->assertSame(2, $stats['name_cache_size']);
 	}
 
 	/**
@@ -930,10 +933,17 @@ class CacheHandlerTest extends TestCase {
 		$entity = $this->createObjectEntity(1, 'uuid-1');
 		// Don't set register/schema on entity, but pass explicit IDs.
 
-		$this->handler->invalidateForObjectChange($entity, 'update', 7, 14);
+		$facts = [];
+		$this->logger->method('info')->willReturnCallback(
+			function (string $message, array $context = []) use (&$facts): void {
+				if (str_contains($message, 'Schema-wide cache invalidated') === true) {
+					$facts = [$context['operation'], $context['registerId'], $context['schemaId']];
+				}
+			}
+		);
 
-		// Should use provided IDs instead of entity IDs.
-		$this->assertTrue(true);
+		$this->handler->invalidateForObjectChange($entity, 'update', 7, 14);
+		$this->assertSame(['update', 7, 14], $facts);
 	}
 
 	/**
@@ -1488,6 +1498,7 @@ class CacheHandlerTest extends TestCase {
 		// This avoids the null registerMapper issue.
 		$result = $this->handler->getMultipleObjectNames([42]);
 		$this->assertIsArray($result);
+		$this->assertSame([], $result);
 	}
 
 	/**
@@ -1584,6 +1595,7 @@ class CacheHandlerTest extends TestCase {
 
 		$result = $handler->getMultipleObjectNames(['some-uuid-val']);
 		$this->assertIsArray($result);
+		$this->assertSame([], $result);
 	}
 
 	// =========================================================================
@@ -1603,6 +1615,8 @@ class CacheHandlerTest extends TestCase {
 
 		$result = $this->handler->getAllObjectNames();
 		$this->assertIsArray($result);
+		$this->assertSame([], $result);
+		$this->assertSame(1, $this->handler->getStats()['name_warmups']);
 	}
 
 	/**
@@ -1621,6 +1635,8 @@ class CacheHandlerTest extends TestCase {
 
 		$result = $this->handler->getAllObjectNames(true);
 		$this->assertIsArray($result);
+		$this->assertSame(['uuid-1' => 'Name 1'], $result);
+		$this->assertSame(1, $this->handler->getStats()['name_warmups']);
 	}
 
 	/**
@@ -2407,6 +2423,7 @@ class CacheHandlerTest extends TestCase {
 
 		$result = $handler->getMultipleObjectNames(['skip-uuid-val']);
 		$this->assertIsArray($result);
+		$this->assertSame([], $result);
 	}
 
 	/**
@@ -2488,6 +2505,7 @@ class CacheHandlerTest extends TestCase {
 		$result = $handler->getMultipleObjectNames(['fail-uuid-val']);
 		// Should return empty (no match found).
 		$this->assertIsArray($result);
+		$this->assertSame([], $result);
 	}
 
 	/**
@@ -2638,8 +2656,10 @@ class CacheHandlerTest extends TestCase {
 		// Warmup triggers persist.
 		$this->handler->warmupNameCache();
 
-		// Should not throw.
-		$this->assertTrue(true);
+		// The metadata write failed, but the warmup ran and the name stays cached.
+		$this->assertGreaterThan(0, $callCount);
+		$this->assertSame(1, $this->handler->getStats()['name_warmups']);
+		$this->assertSame(1, $this->handler->getStats()['name_cache_size']);
 	}
 
 	// =========================================================================

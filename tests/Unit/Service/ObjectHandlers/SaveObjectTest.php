@@ -940,6 +940,8 @@ class SaveObjectTest extends TestCase {
 
 		// Should still return an ObjectEntity, with the invalid ref stored as-is.
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame(['name' => 'Invalid Child'], $result->getObject()['invalid']);
+		$this->assertSame('Parent Object', $result->getObject()['name']);
 	}
 
 	/**
@@ -1194,6 +1196,8 @@ class SaveObjectTest extends TestCase {
 		);
 
 		$this->assertIsArray($relations, 'scanForRelations should return an array.');
+		// Plain strings that are no references yield no relations.
+		$this->assertSame([], $relations);
 	}
 
 }
