@@ -68,6 +68,17 @@ use Throwable;
 class ApiCapabilitiesService implements ApiCapabilitiesServiceInterface {
 
 	/**
+	 * The bytes a PHP shorthand size suffix stands for (no suffix: bytes).
+	 *
+	 * @var array<string, int>
+	 */
+	private const BYTE_MULTIPLIERS = [
+		'k' => 1024,
+		'm' => (1024 * 1024),
+		'g' => (1024 * 1024 * 1024),
+	];
+
+	/**
 	 * The app the operational switches live under.
 	 *
 	 * @var string
@@ -234,19 +245,7 @@ class ApiCapabilitiesService implements ApiCapabilitiesServiceInterface {
 			return null;
 		}
 
-		$size = (int)$matched[1];
-		$multipliers = [
-			'k' => 1024,
-			'm' => (1024 * 1024),
-			'g' => (1024 * 1024 * 1024),
-		];
-
-		$suffix = strtolower($matched[2]);
-		if ($suffix !== '' && isset($multipliers[$suffix]) === true) {
-			$size = ($size * $multipliers[$suffix]);
-		}
-
-		return $size;
+		return ((int)$matched[1] * (self::BYTE_MULTIPLIERS[strtolower($matched[2])] ?? 1));
 
 	}//end toBytes()
 
