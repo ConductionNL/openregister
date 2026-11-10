@@ -142,7 +142,10 @@ class RegisterI18nPhase2IntegrationTest extends TestCase {
 	public function testLanguageMiddlewareAddsContentLanguageHeader(): void {
 		// Drive the middleware directly via a stub IRequest.
 		$request = $this->createMock(IRequest::class);
-		$request->method('getHeader')->with('Accept-Language')->willReturn('nl-NL, nl;q=0.9, en;q=0.8');
+		// The middleware also reads X-Translation-Target-Language; that one is absent.
+		$request->method('getHeader')->willReturnCallback(
+			static fn (string $name): string => ($name === 'Accept-Language') ? 'nl-NL, nl;q=0.9, en;q=0.8' : ''
+		);
 		// The middleware asks for several query parameters now (_lang before
 		// _translations), so the stub answers "not given" to all of them rather
 		// than pinning one name.

@@ -1137,17 +1137,17 @@ class ObjectServiceIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Test buildObjectSearchQuery produces valid query
+	 * Test buildSearchQuery produces valid query from search parameters
 	 *
 	 * @return void
 	 */
-	public function testBuildObjectSearchQuery(): void {
+	public function testBuildSearchQueryWithSearchTerm(): void {
 		$params = [
 			'_limit' => '5',
 			'_search' => 'test query',
 		];
 
-		$query = $this->service->buildObjectSearchQuery($params);
+		$query = $this->service->buildSearchQuery(requestParams: $params);
 
 		$this->assertIsArray($query);
 	}
