@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Calculation\ReferringObject;
 use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\DependencyCycleFinder;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
@@ -236,7 +237,7 @@ class ReferenceResolversGoldenTest extends TestCase {
 		$this->assertSame(['reg', 'scalar', 'sum', 'h', ['x' => 'self-x', 'y' => 2], null, true], $calls[0]);
 		$this->assertSame(['own', 'grouped', 'count', null, [], ['status'], true], $calls[1]);
 		$this->assertSame(['reg', 'empty', 'count', null, [], null, true], $calls[2]);
-		$this->assertSame(['scalar' => null], $this->aggregates->resolveAll([], ['scalar' => $declarations['scalar']]));
+		$this->assertSame(['scalar' => null], $this->aggregates->resolveAll(new ReferringObject([]), ['scalar' => $declarations['scalar']]));
 
 	}//end testAggregateQueriesAndEnvelopes()
 
