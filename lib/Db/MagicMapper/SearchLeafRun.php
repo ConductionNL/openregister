@@ -26,8 +26,8 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 /**
  * The state the search-leaf helpers of MagicSearchHandler share while they
  * build the SQL of one literal term: the query builder that binds values, the
- * leaf and the bound parameter of its pattern (ADR-011 Rule 3, run object). It
- * never leaves MagicSearchHandler.
+ * leaf, and the parameter of its pattern, bound when the run is built
+ * (ADR-011 Rule 3, run object). It never leaves MagicSearchHandler.
  *
  * @category  Handler
  * @package   OCA\OpenRegister\Db\MagicMapper
@@ -43,16 +43,22 @@ final class SearchLeafRun
 {
 
 	/**
-	 * Constructor.
+	 * The bound parameter of the term's pattern.
 	 *
-	 * @param IQueryBuilder $qb           The query builder that binds values.
-	 * @param SearchLeaf    $leaf         The term, its literal and its scope.
-	 * @param string        $patternParam The bound parameter of the term's pattern.
+	 * @var string
+	 */
+	public readonly string $patternParam;
+
+	/**
+	 * Constructor: binds the term's pattern on the query builder.
+	 *
+	 * @param IQueryBuilder $qb   The query builder that binds values.
+	 * @param SearchLeaf    $leaf The term, its literal and its scope.
 	 */
 	public function __construct(
 		public readonly IQueryBuilder $qb,
 		public readonly SearchLeaf $leaf,
-		public readonly string $patternParam,
 	) {
+		$this->patternParam = (string)$qb->createNamedParameter($leaf->pattern);
 	}//end __construct()
 }//end class

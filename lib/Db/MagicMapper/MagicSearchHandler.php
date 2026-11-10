@@ -3853,7 +3853,7 @@ class MagicSearchHandler {
 		$search = trim($run->query['_search']);
 		$scope  = new SearchLeafScope(schema: $run->schema(), isPostgres: $this->isPostgresPlatform());
 		$scope->fuzzyEnabled = $fuzzyEnabled;
-		$searchRun           = new SearchTermRun(qb: $run->qb, term: $search, scope: $scope);
+		$searchRun           = new SearchTermRun(filter: $run, scope: $scope);
 
 		// A term carrying AND/OR/NOT, brackets, a quoted phrase or a wildcard is
 		// parsed and compiled. Anything else keeps the substring match below,
@@ -3870,18 +3870,18 @@ class MagicSearchHandler {
 	/**
 	 * Narrow the query by a parsed boolean search term
 	 *
-	 * @param SearchTermRun $run The search: query builder, term and leaf scope.
+	 * @param SearchTermRun $run The search: filter pass and leaf scope.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function applyParsedSearch(SearchTermRun $run): void {
-		$qb    = $run->qb;
+		$qb    = $run->qb();
 		$scope = $run->scope;
 		$qb->andWhere(
 			$this->termCompiler->compile(
-				node: $this->termParser->parse(term: $run->term),
+				node: $this->termParser->parse(term: $run->term()),
 				leafBuilder: fn (string $pattern, string $literal): string => $this->buildSearchLeafQbSql(
 					qb: $qb,
 					leaf: $scope->term(pattern: $pattern, literal: $literal)
@@ -3895,19 +3895,19 @@ class MagicSearchHandler {
 	 * match on the text properties and the name, description and summary, plus
 	 * a similarity match on the name when fuzzy matching is asked
 	 *
-	 * @param SearchTermRun $run The search: query builder, term and leaf scope.
+	 * @param SearchTermRun $run The search: filter pass and leaf scope.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function applySubstringSearch(SearchTermRun $run): void {
-		$qb = $run->qb;
+		$qb = $run->qb();
 		$searchConditions = $qb->expr()->orX();
 
 		// Use lowercase search for case-insensitive matching.
-		$searchPattern   = $qb->createNamedParameter('%' . strtolower($run->term) . '%');
-		$searchTermParam = $qb->createNamedParameter($run->term);
+		$searchPattern   = $qb->createNamedParameter('%' . strtolower($run->term()) . '%');
+		$searchTermParam = $qb->createNamedParameter($run->term());
 		$predicates      = array_merge(
 			$this->propertySearchPredicates(run: $run, pattern: $searchPattern),
 			$this->metadataSearchPredicates(qb: $qb, pattern: $searchPattern),
@@ -3923,7 +3923,7 @@ class MagicSearchHandler {
 	/**
 	 * The substring predicates on the schema's text properties
 	 *
-	 * @param SearchTermRun      $run     The search: query builder, term and leaf scope.
+	 * @param SearchTermRun      $run     The search: filter pass and leaf scope.
 	 * @param IParameter|string $pattern The bound `%term%` parameter.
 	 *
 	 * @return list<string|\Stringable> The predicates, in property order
@@ -3931,7 +3931,7 @@ class MagicSearchHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function propertySearchPredicates(SearchTermRun $run, IParameter|string $pattern): array {
-		$qb         = $run->qb;
+		$qb         = $run->qb();
 		$predicates = [];
 		foreach ($run->scope->schema->getProperties() ?? [] as $field => $propertyConfig) {
 			if ($this->isSubstringSearchable(propertyConfig: $propertyConfig) === false) {
@@ -3996,7 +3996,7 @@ class MagicSearchHandler {
 	 *
 	 * This uses pg_trgm similarity() for typo tolerance at ~13% performance cost.
 	 *
-	 * @param SearchTermRun     $run       The search: query builder, term and leaf scope.
+	 * @param SearchTermRun     $run       The search: filter pass and leaf scope.
 	 * @param IParameter|string $termParam The bound term parameter.
 	 *
 	 * @return list<string|\Stringable> The predicate, or none
@@ -4008,7 +4008,7 @@ class MagicSearchHandler {
 			return [];
 		}
 
-		return [$run->qb->createFunction("similarity(t._name::text, {$termParam}) > 0.1")];
+		return [$run->qb()->createFunction("similarity(t._name::text, {$termParam}) > 0.1")];
 	}//end fuzzyNamePredicates()
 
 	/**
@@ -4031,7 +4031,7 @@ class MagicSearchHandler {
 	 *                                      to be the same one or the two paths could disagree.
 	 */
 	private function buildSearchLeafQbSql(IQueryBuilder $qb, SearchLeaf $leaf): string {
-		$run        = new SearchLeafRun(qb: $qb, leaf: $leaf, patternParam: (string)$qb->createNamedParameter($leaf->pattern));
+		$run        = new SearchLeafRun(qb: $qb, leaf: $leaf);
 		$conditions = array_merge(
 			$this->leafPropertyConditionsQbSql(run: $run),
 			$this->leafMetadataConditionsQbSql(run: $run)
