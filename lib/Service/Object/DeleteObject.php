@@ -988,31 +988,65 @@ class DeleteObject {
 			return;
 		}
 
-		// Resolve every level-one cascade target in one batched lookup.
-		$targets = [];
+		$handledIds = $this->softDeleteCascadeTargets(targets: $this->lookupCascadeTargets(cascadeIds: $cascadeIds));
+
+		// Legacy per-id pipeline for ids the batch lookup did not resolve.
+		foreach (self::unhandledIds(ids: $cascadeIds, handledIds: $handledIds) as $cascadeId) {
+			$options = new DeletionOptions(originalObjectId: $originalObjectId);
+			$this->deleteObject(request: new DeletionRequest(register: $register, schema: $schema, uuid: $cascadeId, options: $options));
+		}
+	}//end cascadeDeleteObjects()
+
+	/**
+	 * Resolve every level-one cascade target in one batched lookup.
+	 *
+	 * A failed lookup is logged and resolves nothing, so every id falls back to
+	 * the per-id pipeline.
+	 *
+	 * @param array<int, string> $cascadeIds The referenced ids.
+	 *
+	 * @return ObjectEntity[] The resolved targets.
+	 */
+	private function lookupCascadeTargets(array $cascadeIds): array {
 		try {
-			$targets = $this->objectEntityMapper->findStoredAcrossAllMagicTables(
+			return $this->objectEntityMapper->findStoredAcrossAllMagicTables(
 				uuids: $cascadeIds,
 				includeDeleted: true
 			);
 		} catch (\Throwable $e) {
-			$this->logger->warning(
-				message: '[DeleteObject] Batched cascade lookup failed; falling back to per-id deletes',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->logCascadeLookupFailure(error: $e);
 		}
 
-		// The batched write dispatches update events only, so a guard on the deleting
-		// event answers here: one refused child refuses the whole cascade.
-		foreach ($targets as $target) {
-			if (empty($target->getDeleted()) === true) {
-				$this->objectEntityMapper->assertDeletable(entity: $target);
-			}
-		}
+		return [];
+	}//end lookupCascadeTargets()
+
+	/**
+	 * Log a batched cascade lookup that failed.
+	 *
+	 * @param \Throwable $error Why it failed.
+	 *
+	 * @return void
+	 */
+	private function logCascadeLookupFailure(\Throwable $error): void {
+		$this->logger->warning(
+			message: '[DeleteObject] Batched cascade lookup failed; falling back to per-id deletes',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logCascadeLookupFailure()
+
+	/**
+	 * Guard, then batch-soft-delete the resolved targets that are not deleted yet.
+	 *
+	 * @param ObjectEntity[] $targets The resolved cascade targets.
+	 *
+	 * @return array<string, true> Ids taken care of (batch-deleted or already deleted), keyed by uuid.
+	 */
+	private function softDeleteCascadeTargets(array $targets): array {
+		$this->assertCascadeTargetsDeletable(targets: $targets);
 
 		$alreadyDeleted = array_filter($targets, static fn (ObjectEntity $target): bool => $target->isSoftDeleted());
 		$handledIds = $this->batchCascadeSoftDelete(targets: array_diff_key($targets, $alreadyDeleted));
@@ -1020,16 +1054,45 @@ class DeleteObject {
 			$handledIds[(string)$target->getUuid()] = true;
 		}
 
-		// Legacy per-id pipeline for ids the batch lookup did not resolve.
-		foreach ($cascadeIds as $cascadeId) {
-			if (isset($handledIds[$cascadeId]) === true) {
-				continue;
-			}
+		return $handledIds;
+	}//end softDeleteCascadeTargets()
 
-			$options = new DeletionOptions(originalObjectId: $originalObjectId);
-			$this->deleteObject(request: new DeletionRequest(register: $register, schema: $schema, uuid: $cascadeId, options: $options));
+	/**
+	 * Ask the delete guards about every live cascade target.
+	 *
+	 * The batched write dispatches update events only, so a guard on the deleting
+	 * event answers here: one refused child refuses the whole cascade.
+	 *
+	 * @param ObjectEntity[] $targets The resolved cascade targets.
+	 *
+	 * @return void
+	 */
+	private function assertCascadeTargetsDeletable(array $targets): void {
+		foreach ($targets as $target) {
+			if (empty($target->getDeleted()) === true) {
+				$this->objectEntityMapper->assertDeletable(entity: $target);
+			}
 		}
-	}//end cascadeDeleteObjects()
+	}//end assertCascadeTargetsDeletable()
+
+	/**
+	 * The ids the batch did not take care of, in their original order.
+	 *
+	 * @param array<int, string>  $ids        The referenced ids.
+	 * @param array<string, true> $handledIds The ids taken care of.
+	 *
+	 * @return array<int, string>
+	 */
+	private static function unhandledIds(array $ids, array $handledIds): array {
+		$unhandled = [];
+		foreach ($ids as $id) {
+			if (isset($handledIds[$id]) === false) {
+				$unhandled[] = $id;
+			}
+		}
+
+		return $unhandled;
+	}//end unhandledIds()
 
 	/**
 	 * Collect the referenced ids of all `cascade: true` schema properties.
@@ -1047,31 +1110,67 @@ class DeleteObject {
 		$ids = [];
 		$properties = $schema->getProperties();
 		foreach ($properties ?? [] as $propertyName => $property) {
-			if (isset($property['cascade']) === false || $property['cascade'] !== true) {
+			if (self::isCascadeProperty(property: $property) === false) {
 				continue;
 			}
 
-			$value = $object->getObject()[$propertyName] ?? null;
-			if ($value === null) {
-				continue;
-			}
-
-			$candidates = [$value];
-			if (is_array($value) === true) {
-				$candidates = $value;
-			}
-
-			foreach ($candidates as $candidate) {
-				if (is_scalar($candidate) === false || (string)$candidate === '') {
-					continue;
-				}
-
-				$ids[] = (string)$candidate;
-			}
-		}//end foreach
+			$candidates = self::cascadeCandidatesOf(value: $object->getObject()[$propertyName] ?? null);
+			array_push($ids, ...self::usableCascadeIds(candidates: $candidates));
+		}
 
 		return array_values(array_unique($ids));
 	}//end collectCascadeTargetIds()
+
+	/**
+	 * Whether a schema property declares `cascade: true`.
+	 *
+	 * @param mixed $property The property definition.
+	 *
+	 * @return bool
+	 */
+	private static function isCascadeProperty(mixed $property): bool {
+		return (isset($property['cascade']) === true && $property['cascade'] === true);
+	}//end isCascadeProperty()
+
+	/**
+	 * The candidate references in one cascade property's value: none for null,
+	 * the members of an array, or the single value.
+	 *
+	 * @param mixed $value The property value.
+	 *
+	 * @return array<mixed>
+	 */
+	private static function cascadeCandidatesOf(mixed $value): array {
+		if ($value === null) {
+			return [];
+		}
+
+		if (is_array($value) === true) {
+			return $value;
+		}
+
+		return [$value];
+	}//end cascadeCandidatesOf()
+
+	/**
+	 * The scalar, non-empty candidates as id strings, in order.
+	 *
+	 * @param array<mixed> $candidates The candidate references.
+	 *
+	 * @return array<int, string>
+	 */
+	private static function usableCascadeIds(array $candidates): array {
+		$ids = [];
+		foreach ($candidates as $candidate) {
+			if (is_scalar($candidate) === false || (string)$candidate === '') {
+				continue;
+			}
+
+			$ids[] = (string)$candidate;
+		}
+
+		return $ids;
+	}//end usableCascadeIds()
 
 	/**
 	 * Soft-delete a batch of resolved cascade targets.
@@ -1143,27 +1242,62 @@ class DeleteObject {
 			return;
 		}
 
+		$rows = $this->buildCascadeAuditRows(deleted: $deleted);
+		if (empty($rows) === true) {
+			return;
+		}
+
+		$this->insertCascadeAuditRows(rows: $rows);
+	}//end writeCascadeAuditTrails()
+
+	/**
+	 * Build one audit row per deleted entity; a row that cannot be built is logged and skipped.
+	 *
+	 * @param ObjectEntity[] $deleted The successfully soft-deleted entities.
+	 *
+	 * @return array<int, \OCA\OpenRegister\Db\AuditTrail> The rows, in entity order.
+	 */
+	private function buildCascadeAuditRows(array $deleted): array {
 		$rows = [];
 		foreach ($deleted as $entity) {
 			try {
 				$rows[] = $this->auditTrailMapper->buildEntry(change: new AuditedChange(old: $entity, new: null, action: 'delete'));
 			} catch (\Throwable $e) {
-				$this->logger->warning(
-					message: '[DeleteObject] Could not build cascade audit row',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'uuid' => $entity->getUuid(),
-						'error' => $e->getMessage(),
-					]
-				);
+				$this->logCascadeAuditRowFailure(entity: $entity, error: $e);
 			}
 		}
 
-		if (empty($rows) === true) {
-			return;
-		}
+		return $rows;
+	}//end buildCascadeAuditRows()
 
+	/**
+	 * Log a cascade audit row that could not be built.
+	 *
+	 * @param ObjectEntity $entity The entity the row was for.
+	 * @param \Throwable   $error  Why it could not be built.
+	 *
+	 * @return void
+	 */
+	private function logCascadeAuditRowFailure(ObjectEntity $entity, \Throwable $error): void {
+		$this->logger->warning(
+			message: '[DeleteObject] Could not build cascade audit row',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $entity->getUuid(),
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logCascadeAuditRowFailure()
+
+	/**
+	 * Insert the cascade audit rows in one bulk INSERT; a failure is logged, never thrown.
+	 *
+	 * @param array<int, \OCA\OpenRegister\Db\AuditTrail> $rows The rows.
+	 *
+	 * @return void
+	 */
+	private function insertCascadeAuditRows(array $rows): void {
 		try {
 			$this->auditTrailMapper->insertAuditTrails(entries: $rows);
 		} catch (\Throwable $e) {
@@ -1177,7 +1311,7 @@ class DeleteObject {
 				]
 			);
 		}
-	}//end writeCascadeAuditTrails()
+	}//end insertCascadeAuditRows()
 
 	/**
 	 * Invalidate caches per soft-deleted object (parity with delete()).
