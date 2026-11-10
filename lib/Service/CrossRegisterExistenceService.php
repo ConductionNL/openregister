@@ -161,12 +161,26 @@ class CrossRegisterExistenceService {
 			);
 		}
 
+		return $this->searchedAnswer(target: $target, probe: $probe);
+	}//end one()
+
+	/**
+	 * The answer to a complete probe: what its search found, revealing only the fields the caller may read.
+	 *
+	 * @param array{register:string,schema:string} $target The trimmed register and schema.
+	 * @param array<string,mixed>                  $probe  The probe.
+	 *
+	 * @return array<string,mixed> The answer.
+	 *
+	 * @spec openspec/specs/cross-register-existence-query/spec.md#requirement-a-caller-can-ask-whether-a-row-exists-without-reading-it
+	 */
+	private function searchedAnswer(array $target, array $probe): array {
 		[$allowed, $refusedFields] = $this->narrowReveal(
 			schema: $target['schema'],
 			reveal: $this->wantedFields(probe: $probe)
 		);
 
-		$found = $this->search(target: $target, filters: $filters);
+		$found = $this->search(target: $target, filters: ($probe['filters'] ?? []));
 		if ($found === null) {
 			return $this->answer(
 				target: $target,
@@ -183,7 +197,7 @@ class CrossRegisterExistenceService {
 			target: $target,
 			outcome: $this->matched(rows: $rows, fields: $allowed) + ['refusedFields' => $refusedFields],
 		);
-	}//end one()
+	}//end searchedAnswer()
 
 	/**
 	 * Whether a probe lacks a register, a schema or a filter.
