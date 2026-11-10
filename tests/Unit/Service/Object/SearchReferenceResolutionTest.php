@@ -40,7 +40,6 @@ use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\IAppContainer;
-use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Db\SchemaCatalog;
@@ -223,7 +222,6 @@ class SearchReferenceResolutionTest extends TestCase {
 			$this->schemaMapper(),
 			$this->createMock(SettingsService::class),
 			$this->createMock(LoggerInterface::class),
-			$this->createMock(IRequest::class),
 			$this->createMock(SearchTrailService::class),
 			null,
 			null,
