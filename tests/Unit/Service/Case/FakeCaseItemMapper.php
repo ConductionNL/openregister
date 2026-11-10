@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Case;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\CaseItemMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -221,15 +222,14 @@ class FakeCaseItemMapper extends CaseItemMapper {
 	/**
 	 * By type and state.
 	 *
-	 * @param string|null $type The type.
-	 * @param string|null $state The state.
-	 * @param int $limit Page size.
-	 * @param int $offset Offset.
+	 * @param ListQuery $query The page, and the `type` and `state` filters.
 	 *
 	 * @return array<int, CaseItem> The page.
 	 */
-	public function findByTypeAndState(?string $type, ?string $state, int $limit = 25, int $offset = 0): array {
-		return array_slice($this->matching($type, $state), $offset, $limit);
+	public function findByTypeAndState(ListQuery $query): array {
+		$matching = $this->matching(($query->filters['type'] ?? null), ($query->filters['state'] ?? null));
+
+		return array_slice($matching, (int)$query->offset, $query->limit);
 	}//end findByTypeAndState()
 
 	/**

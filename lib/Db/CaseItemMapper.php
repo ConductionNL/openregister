@@ -246,23 +246,22 @@ class CaseItemMapper extends QBMapper implements CaseItemMapperInterface {
 	 * `(plan_item_type, state)` index. The total is {@see countByTypeAndState()}
 	 * over the same predicate, so page and total cannot disagree.
 	 *
-	 * @param string|null $type Restrict to one plan-item type, or null for all.
-	 * @param string|null $state Restrict to one state, or null for all.
-	 * @param int $limit Page size.
-	 * @param int $offset Page offset.
+	 * @param ListQuery $query The page (limit, offset), and the `type` and `state` filters: each
+	 *                         restricts to one plan-item type or state, or is null for all.
 	 *
 	 * @return array<int, CaseItem> The page, oldest first.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
-	public function findByTypeAndState(?string $type, ?string $state, int $limit = 25, int $offset = 0): array {
+	public function findByTypeAndState(ListQuery $query): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName());
-		$this->applyTypeAndState(qb: $qb, filters: ['plan_item_type' => $type, 'state' => $state]);
+		$filters = ['plan_item_type' => ($query->filters['type'] ?? null), 'state' => ($query->filters['state'] ?? null)];
+		$this->applyTypeAndState(qb: $qb, filters: $filters);
 		$qb->orderBy('id', 'ASC')
-			->setMaxResults(max(1, $limit))
-			->setFirstResult(max(0, $offset));
+			->setMaxResults(max(1, $query->limit))
+			->setFirstResult(max(0, (int)$query->offset));
 
 		return $this->findEntities(query: $qb);
 	}//end findByTypeAndState()

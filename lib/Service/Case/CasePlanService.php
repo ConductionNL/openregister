@@ -462,7 +462,7 @@ class CasePlanService implements CasePlanServiceInterface {
 		$type = ($query->filters['type'] ?? null);
 		$state = ($query->filters['state'] ?? null);
 		$offset = (int)$query->offset;
-		$rows = $this->store->items->findByTypeAndState(type: $type, state: $state, limit: $query->limit, offset: $offset);
+		$rows = $this->store->items->findByTypeAndState(query: $query);
 
 		return [
 			'results' => array_map(static fn (CaseItem $row): array => $row->jsonSerialize(), $rows),
