@@ -151,15 +151,7 @@ class RegisterTool extends AbstractTool {
 		$registers = $this->registerService->findAll(limit: $limit, offset: $offset, filters: $filters);
 
 		$registerList = array_map(
-			function ($register) {
-				return [
-					'id' => $register->getId(),
-					'uuid' => $register->getUuid(),
-					'title' => $register->getTitle(),
-					'description' => $register->getDescription(),
-					'slug' => $register->getSlug(),
-				];
-			},
+			static fn (Register $register): array => self::registerSummary(register: $register),
 			$registers
 		);
 
@@ -183,20 +175,35 @@ class RegisterTool extends AbstractTool {
 		$register = $this->registerService->find(id: $id);
 
 		return $this->formatSuccess(
-			data: [
-				'id' => $register->getId(),
-				'uuid' => $register->getUuid(),
-				'title' => $register->getTitle(),
-				'description' => $register->getDescription(),
-				'slug' => $register->getSlug(),
-				'folder' => $register->getFolder(),
-				'organisation' => $register->getOrganisation(),
-				'created' => $register->getCreated()?->format('Y-m-d H:i:s'),
-				'updated' => $register->getUpdated()?->format('Y-m-d H:i:s'),
-			],
+			data: array_merge(
+				self::registerSummary(register: $register),
+				[
+					'folder' => $register->getFolder(),
+					'organisation' => $register->getOrganisation(),
+					'created' => $register->getCreated()?->format('Y-m-d H:i:s'),
+					'updated' => $register->getUpdated()?->format('Y-m-d H:i:s'),
+				]
+			),
 			message: 'Register retrieved successfully'
 		);
 	}//end getRegister()
+
+	/**
+	 * The fields every register listing and lookup returns.
+	 *
+	 * @param Register $register The register.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function registerSummary(Register $register): array {
+		return [
+			'id' => $register->getId(),
+			'uuid' => $register->getUuid(),
+			'title' => $register->getTitle(),
+			'description' => $register->getDescription(),
+			'slug' => $register->getSlug(),
+		];
+	}//end registerSummary()
 
 	/**
 	 * Create a new register
