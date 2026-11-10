@@ -70,9 +70,7 @@ class AuditTrailNotInFilterTest extends TestCase {
 
 		$this->mapper = new AuditTrailMapper(
 			db: $this->database->idbConnection(),
-			userSession: $this->createMock(originalClassName: IUserSession::class),
-			request: $this->createMock(originalClassName: IRequest::class),
-			services: new AuditTrailMapperServices(container: $this->createMock(originalClassName: ContainerInterface::class), logger: new NullLogger())
+			services: new AuditTrailMapperServices(container: $this->createMock(originalClassName: ContainerInterface::class), logger: new NullLogger(), userSession: $this->createMock(originalClassName: IUserSession::class), request: $this->createMock(originalClassName: IRequest::class))
 		);
 
 		$rows = [

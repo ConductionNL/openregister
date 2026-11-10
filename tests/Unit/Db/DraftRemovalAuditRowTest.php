@@ -70,9 +70,7 @@ class DraftRemovalAuditRowTest extends TestCase {
 		$this->record = new DraftRemovalRecord(
 			auditTrail: new AuditTrailMapper(
 				db: $this->database->idbConnection(),
-				userSession: $session,
-				request: $this->createMock(IRequest::class),
-				services: new AuditTrailMapperServices(container: $this->createMock(ContainerInterface::class), logger: new NullLogger())
+				services: new AuditTrailMapperServices(container: $this->createMock(ContainerInterface::class), logger: new NullLogger(), userSession: $session, request: $this->createMock(IRequest::class))
 			),
 			logger: new NullLogger()
 		);

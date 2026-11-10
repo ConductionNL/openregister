@@ -307,6 +307,6 @@ final class AuditTrailMapperM03EntryGoldenTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willThrowException(new \RuntimeException('not registered'));
 
-		return new AuditTrailMapper($db, $session, $request, new AuditTrailMapperServices($container, new NullLogger()));
+		return new AuditTrailMapper($db, new AuditTrailMapperServices($container, new NullLogger(), $session, $request));
 	}//end mapper()
 }//end class

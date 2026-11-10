@@ -298,11 +298,11 @@ class AuditChainTombstoneTest extends TestCase {
 
 		$mapper = new \OCA\OpenRegister\Db\AuditTrailMapper(
 			$db,
-			$this->createMock(\OCP\IUserSession::class),
-			$this->createMock(\OCP\IRequest::class),
 			new \OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices(
 				$this->createMock(\Psr\Container\ContainerInterface::class),
-				$this->createMock(LoggerInterface::class)
+				$this->createMock(LoggerInterface::class),
+				$this->createMock(\OCP\IUserSession::class),
+				$this->createMock(\OCP\IRequest::class)
 			)
 		);
 
