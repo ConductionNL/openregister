@@ -280,7 +280,6 @@ class ObjectFolderControllerTest extends TestCase {
 		$browser = new ObjectFolderBrowser(fileService: $this->fileService);
 
 		return ObjectFolderControllerFactory::create(
-			'openregister',
 			$this->request,
 			new ObjectFileAccess(
 				objectService: $this->objectService,

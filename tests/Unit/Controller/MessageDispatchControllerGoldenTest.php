@@ -49,7 +49,7 @@ class MessageDispatchControllerGoldenTest extends TestCase {
 		parent::setUp();
 		$this->request = $this->createMock(IRequest::class);
 		$this->provider = $this->createMock(MessageDispatchProvider::class);
-		$this->controller = new MessageDispatchController('openregister', $this->request, $this->provider);
+		$this->controller = new MessageDispatchController($this->request, $this->provider);
 	}
 
 	private function withParams(array $params): void {

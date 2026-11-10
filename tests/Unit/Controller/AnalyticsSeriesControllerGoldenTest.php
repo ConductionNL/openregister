@@ -43,7 +43,7 @@ class AnalyticsSeriesControllerGoldenTest extends TestCase {
 		parent::setUp();
 		$this->request = $this->createMock(IRequest::class);
 		$this->service = $this->createMock(AnalyticsSeriesService::class);
-		$this->controller = new AnalyticsSeriesController('openregister', $this->request, $this->service);
+		$this->controller = new AnalyticsSeriesController($this->request, $this->service);
 	}
 
 	public function testRegisterAppliesDefaultsForAnEmptyBody(): void {

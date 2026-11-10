@@ -39,7 +39,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionStore;
 use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
-use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReaderFilters;
+use OCA\OpenRegister\Service\Sharing\AccessLinkReaderFilters;
 use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReaderSources;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimeline;
 use OCA\OpenRegister\Service\ObjectService;

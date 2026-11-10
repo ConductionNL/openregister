@@ -71,48 +71,6 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 	private const NOT_FOUND = 'No action "%s" runs on this object.';
 
 	/**
-	 * The schema's actions, inherited ones included.
-	 *
-	 * @var ObjectActionDefinitions
-	 */
-	private readonly ObjectActionDefinitions $definitions;
-
-	/**
-	 * The right and the precondition.
-	 *
-	 * @var ObjectActionGate
-	 */
-	private readonly ObjectActionGate $gate;
-
-	/**
-	 * Defaults, validation and digest.
-	 *
-	 * @var ObjectActionInputs
-	 */
-	private readonly ObjectActionInputs $inputs;
-
-	/**
-	 * Runs a transition or a self-assign body.
-	 *
-	 * @var ObjectActionWriters
-	 */
-	private readonly ObjectActionWriters $writers;
-
-	/**
-	 * Writes the `action.run` entry.
-	 *
-	 * @var ObjectActionRunRecorder
-	 */
-	private readonly ObjectActionRunRecorder $recorder;
-
-	/**
-	 * Runs a flow or steps body.
-	 *
-	 * @var ObjectActionFlowRun
-	 */
-	private readonly ObjectActionFlowRun $flowRun;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param ObjectActionRunnerChecks $checks   Definitions, gate and inputs: what is asked before a body runs.
@@ -121,32 +79,24 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 	 * @param ObjectActionFlowRun      $flowRun  Runs a flow or steps body.
 	 */
 	public function __construct(
-		ObjectActionRunnerChecks $checks,
-		ObjectActionWriters $writers,
-		ObjectActionRunRecorder $recorder,
-		ObjectActionFlowRun $flowRun,
+		private readonly ObjectActionRunnerChecks $checks,
+		private readonly ObjectActionWriters $writers,
+		private readonly ObjectActionRunRecorder $recorder,
+		private readonly ObjectActionFlowRun $flowRun,
 	) {
-		$this->definitions = $checks->definitions;
-		$this->gate        = $checks->gate;
-		$this->inputs      = $checks->inputs;
-		$this->writers     = $writers;
-		$this->recorder    = $recorder;
-		$this->flowRun     = $flowRun;
 	}//end __construct()
 
 	/**
 	 * The action a key names on this schema: declared, inherited, or a lifecycle transition.
 	 *
-	 * @param Schema       $schema The schema.
-	 * @param ObjectEntity $object The object, for its register and its available moves.
-	 * @param string       $key    The action key.
+	 * @param ObjectActionCall $call The schema, the object (for its register and its available moves) and the key.
 	 *
 	 * @return ObjectActionDefinition|null The action, or null when nothing answers to the key.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
 	 */
-	public function resolve(Schema $schema, ObjectEntity $object, string $key): ?ObjectActionDefinition {
-		$declared = $this->definitions->find(schema: $schema, key: $key, register: $object->getRegister());
+	public function resolve(ObjectActionCall $call): ?ObjectActionDefinition {
+		$declared = $this->checks->definitions->find(schema: $call->schema, key: $call->key, register: $call->object->getRegister());
 		if ($declared !== null) {
 			if ($declared->isRunnable() === false) {
 				return null;
@@ -155,43 +105,68 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 			return $declared;
 		}
 
-		if ($this->isTransition(schema: $schema, object: $object, key: $key) === false) {
+		if ($this->isTransition(call: $call) === false) {
 			return null;
 		}
 
-		return ObjectActionDefinition::fromDeclaration(key: $key, definition: ['name' => $key, 'transition' => $key]);
+		return ObjectActionDefinition::fromDeclaration(key: $call->key, definition: ['name' => $call->key, 'transition' => $call->key]);
 	}//end resolve()
+
+	/**
+	 * The target of a run: the object, its schema, and the register and schema as the caller named them.
+	 *
+	 * @param ObjectEntity $object    The subject.
+	 * @param Schema       $schema    Its schema.
+	 * @param string       $register  The register as the caller named it.
+	 * @param string       $schemaRef The schema as the caller named it.
+	 *
+	 * @return ObjectActionTarget The target.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
+	 */
+	public function target(ObjectEntity $object, Schema $schema, string $register, string $schemaRef): ObjectActionTarget {
+		return new ObjectActionTarget(object: $object, schema: $schema, register: $register, schemaRef: $schemaRef);
+	}//end target()
 
 	/**
 	 * Run an action on one object.
 	 *
-	 * @param ObjectEntity         $object  The subject.
-	 * @param Schema               $schema  Its schema.
-	 * @param string               $key     The action key.
-	 * @param array<string, mixed> $given   The inputs the caller sent.
-	 * @param array<string, mixed> $subject `{uuid, register, schema}` as the caller named them.
+	 * @param ObjectActionTarget   $target The subject, its schema and its address as the caller named it.
+	 * @param string               $key    The action key.
+	 * @param array<string, mixed> $given  The inputs the caller sent.
 	 *
 	 * @return array{status: int, body: array<string, mixed>} The HTTP status and body.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
 	 */
-	public function run(ObjectEntity $object, Schema $schema, string $key, array $given, array $subject): array {
-		$checked = $this->check(object: $object, schema: $schema, key: $key, given: $given);
+	public function run(ObjectActionTarget $target, string $key, array $given): array {
+		$checked = $this->rehearse(call: new ObjectActionCall(object: $target->object, schema: $target->schema, key: $key), given: $given);
 		if ($checked['refusal'] !== null) {
 			return $checked['refusal'];
 		}
 
-		$definition = $checked['definition'];
-		$inputs     = $checked['inputs'];
-		$execute    = fn (): array => $this->execute(object: $object, schema: $schema, definition: $definition, inputs: $inputs, subject: $subject);
+		return $this->runChecked(target: $target, invocation: new ObjectActionInvocation(definition: $checked['definition'], inputs: $checked['inputs']));
+	}//end run()
+
+	/**
+	 * Step 5 of a run whose checks passed: the body, inside the action's elevation when it declares one.
+	 *
+	 * @param ObjectActionTarget     $target     The subject, its schema and its address as the caller named it.
+	 * @param ObjectActionInvocation $invocation The checked action and its inputs, defaults resolved.
+	 *
+	 * @return array{status: int, body: array<string, mixed>} The HTTP status and body.
+	 */
+	private function runChecked(ObjectActionTarget $target, ObjectActionInvocation $invocation): array {
+		$definition = $invocation->definition;
+		$execute    = fn (): array => $this->execute(target: $target, invocation: $invocation);
 		if ($definition->elevate === []) {
 			return $execute();
 		}
 
 		// Opened only now: the person's right on the subject and `when` have
 		// passed, so the elevation covers the body and nothing before it.
-		return $this->gate->elevated(definition: $definition, operation: $execute);
-	}//end run()
+		return $this->checks->gate->elevated(definition: $definition, operation: $execute);
+	}//end runChecked()
 
 	/**
 	 * Steps 1 to 4 of a run, without running: resolve, right, `when`, inputs.
@@ -210,22 +185,53 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
 	 */
 	public function check(ObjectEntity $object, Schema $schema, string $key, array $given): array {
-		$definition = $this->resolve(schema: $schema, object: $object, key: $key);
-		if ($definition === null) {
-			return $this->refused(answer: $this->answer(status: Http::STATUS_NOT_FOUND, body: ['error' => sprintf(self::NOT_FOUND, $key)]));
-		}
-
-		$refusal = $this->rightRefusal(schema: $schema, object: $object, key: $key, definition: $definition);
-		if ($refusal === null) {
-			$inputs  = $this->inputs->withDefaults(schema: $definition->inputs, given: $given, object: $object, userId: $this->gate->userId());
-			$refusal = $this->inputRefusal(object: $object, key: $key, definition: $definition, inputs: $inputs);
-			if ($refusal === null) {
-				return ['refusal' => null, 'definition' => $definition, 'inputs' => $inputs];
-			}
-		}
-
-		return $this->refused(answer: $refusal);
+		return $this->rehearse(call: new ObjectActionCall(object: $object, schema: $schema, key: $key), given: $given);
 	}//end check()
+
+	/**
+	 * Steps 1 to 4 of a run, without running, for one call: resolve, right, `when`, inputs.
+	 *
+	 * @param ObjectActionCall     $call  The subject, its schema and the action key.
+	 * @param array<string, mixed> $given The inputs the caller sent.
+	 *
+	 * @return array{refusal: array{status: int, body: array<string, mixed>}|null, definition: ObjectActionDefinition|null, inputs: array<string, mixed>}
+	 *         The refusal, or the action and its inputs with defaults resolved.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
+	 */
+	public function rehearse(ObjectActionCall $call, array $given): array {
+		$definition = $this->resolve(call: $call);
+		if ($definition === null) {
+			return $this->refused(answer: $this->answer(status: Http::STATUS_NOT_FOUND, body: ['error' => sprintf(self::NOT_FOUND, $call->key)]));
+		}
+
+		$refusal = $this->rightRefusal(call: $call, definition: $definition);
+		if ($refusal !== null) {
+			return $this->refused(answer: $refusal);
+		}
+
+		$invocation = $this->withDefaults(call: $call, asked: new ObjectActionInvocation(definition: $definition, inputs: $given));
+		$refusal    = $this->inputRefusal(call: $call, invocation: $invocation);
+		if ($refusal !== null) {
+			return $this->refused(answer: $refusal);
+		}
+
+		return ['refusal' => null, 'definition' => $definition, 'inputs' => $invocation->inputs];
+	}//end rehearse()
+
+	/**
+	 * The invocation with every declared default the caller left out filled in.
+	 *
+	 * @param ObjectActionCall       $call  The subject the `@object.*` defaults read.
+	 * @param ObjectActionInvocation $asked The resolved action and the inputs the caller sent.
+	 *
+	 * @return ObjectActionInvocation The action and its inputs, defaults resolved.
+	 */
+	private function withDefaults(ObjectActionCall $call, ObjectActionInvocation $asked): ObjectActionInvocation {
+		$scope = new DefaultScope(object: $call->object, userId: $this->checks->gate->userId());
+
+		return new ObjectActionInvocation(definition: $asked->definition, inputs: $this->checks->inputs->withDefaults(invocation: $asked, scope: $scope));
+	}//end withDefaults()
 
 	/**
 	 * Step 2: the refusal when the caller lacks the right, or a self-assign is already taken.
@@ -233,25 +239,24 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 	 * The right is the action key; a lifecycle transition the schema does not
 	 * declare as an action runs under `update`.
 	 *
-	 * @param Schema                 $schema     The schema.
-	 * @param ObjectEntity           $object     The subject.
-	 * @param string                 $key        The action key.
+	 * @param ObjectActionCall       $call       The schema, the subject and the action key.
 	 * @param ObjectActionDefinition $definition The resolved action.
 	 *
 	 * @return array{status: int, body: array<string, mixed>}|null The refusal, or null when the right holds.
 	 */
-	private function rightRefusal(Schema $schema, ObjectEntity $object, string $key, ObjectActionDefinition $definition): ?array {
-		$right = $key;
-		if ($this->definitions->find(schema: $schema, key: $key, register: $object->getRegister()) === null) {
+	private function rightRefusal(ObjectActionCall $call, ObjectActionDefinition $definition): ?array {
+		$right = $call->key;
+		if ($this->checks->definitions->find(schema: $call->schema, key: $call->key, register: $call->object->getRegister()) === null) {
 			$right = 'update';
 		}
 
-		if ($this->gate->mayRun(schema: $schema, right: $right, definition: $definition, object: $object) === false) {
-			return $this->answer(status: Http::STATUS_FORBIDDEN, body: ['error' => sprintf('You may not perform "%s" on this object.', $key)]);
+		$check = new RightCheck(schema: $call->schema, right: $right, object: $call->object);
+		if ($this->checks->gate->mayRun(check: $check, definition: $definition) === false) {
+			return $this->answer(status: Http::STATUS_FORBIDDEN, body: ['error' => sprintf('You may not perform "%s" on this object.', $call->key)]);
 		}
 
-		if ($this->gate->selfAssignOpen(definition: $definition, object: $object) === false) {
-			return $this->unmet(message: 'This object is already assigned.', key: $key);
+		if ($this->checks->gate->selfAssignOpen(definition: $definition, object: $call->object) === false) {
+			return $this->unmet(message: 'This object is already assigned.', key: $call->key);
 		}
 
 		return null;
@@ -260,23 +265,22 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 	/**
 	 * Steps 3 and 4: the refusal when `when` does not hold, or the inputs do not fit.
 	 *
-	 * @param ObjectEntity           $object     The subject.
-	 * @param string                 $key        The action key.
-	 * @param ObjectActionDefinition $definition The resolved action.
-	 * @param array<string, mixed>   $inputs     The inputs, defaults resolved.
+	 * @param ObjectActionCall       $call       The subject and the action key.
+	 * @param ObjectActionInvocation $invocation The resolved action and its inputs, defaults resolved.
 	 *
 	 * @return array{status: int, body: array<string, mixed>}|null The refusal, or null when both pass.
 	 */
-	private function inputRefusal(ObjectEntity $object, string $key, ObjectActionDefinition $definition, array $inputs): ?array {
-		if ($this->gate->whenHolds(definition: $definition, object: $object, inputs: $inputs) === false) {
-			return $this->unmet(message: $this->gate->reason(definition: $definition), key: $key);
+	private function inputRefusal(ObjectActionCall $call, ObjectActionInvocation $invocation): ?array {
+		$definition = $invocation->definition;
+		if ($this->checks->gate->whenHolds(invocation: $invocation, object: $call->object) === false) {
+			return $this->unmet(message: $this->checks->gate->reason(definition: $definition), key: $call->key);
 		}
 
-		$errors = $this->inputErrors(definition: $definition, inputs: $inputs);
+		$errors = $this->inputErrors(definition: $definition, inputs: $invocation->inputs);
 		if ($errors !== []) {
 			return $this->answer(
 				status: Http::STATUS_UNPROCESSABLE_ENTITY,
-				body: ['error' => 'invalid-inputs', 'message' => 'The inputs do not fit this action.', 'errors' => $errors, 'action' => $key]
+				body: ['error' => 'invalid-inputs', 'message' => 'The inputs do not fit this action.', 'errors' => $errors, 'action' => $call->key]
 			);
 		}
 
@@ -310,42 +314,41 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 			return [];
 		}
 
-		return $this->inputs->errors(schema: $definition->inputs, inputs: $inputs);
+		return $this->checks->inputs->errors(schema: $definition->inputs, inputs: $inputs);
 	}//end inputErrors()
 
 	/**
 	 * Step 5: execute the body its kind names.
 	 *
-	 * @param ObjectEntity           $object     The subject.
-	 * @param Schema                 $schema     Its schema.
-	 * @param ObjectActionDefinition $definition The checked action.
-	 * @param array<string, mixed>   $inputs     The inputs, defaults resolved.
-	 * @param array<string, mixed>   $subject    `{uuid, register, schema}`.
+	 * @param ObjectActionTarget     $target     The subject, its schema and its address.
+	 * @param ObjectActionInvocation $invocation The checked action and its inputs, defaults resolved.
 	 *
 	 * @return array{status: int, body: array<string, mixed>} The answer.
 	 */
-	private function execute(ObjectEntity $object, Schema $schema, ObjectActionDefinition $definition, array $inputs, array $subject): array {
+	private function execute(ObjectActionTarget $target, ObjectActionInvocation $invocation): array {
+		$definition = $invocation->definition;
 		if ($definition->kind === ObjectActionDefinition::KIND_TRANSITION) {
-			return $this->runTransition(object: $object, definition: $definition, inputs: $inputs);
+			return $this->runTransition(object: $target->object, invocation: $invocation);
 		}
 
 		if ($definition->kind === ObjectActionDefinition::KIND_SELF_ASSIGN) {
-			return $this->runSelfAssign(object: $object, definition: $definition);
+			return $this->runSelfAssign(object: $target->object, definition: $definition);
 		}
 
-		return $this->flowRun->run(object: $object, schema: $schema, definition: $definition, inputs: $inputs, subject: $subject);
+		return $this->flowRun->run(target: $target, invocation: $invocation);
 	}//end execute()
 
 	/**
 	 * Run a transition body: one write, always sync.
 	 *
 	 * @param ObjectEntity           $object     The subject.
-	 * @param ObjectActionDefinition $definition The action.
-	 * @param array<string, mixed>   $inputs     The inputs, passed as the transition's data.
+	 * @param ObjectActionInvocation $invocation The action and its inputs, passed as the transition's data.
 	 *
 	 * @return array{status: int, body: array<string, mixed>} The answer.
 	 */
-	private function runTransition(ObjectEntity $object, ObjectActionDefinition $definition, array $inputs): array {
+	private function runTransition(ObjectEntity $object, ObjectActionInvocation $invocation): array {
+		$definition = $invocation->definition;
+		$inputs     = $invocation->inputs;
 		try {
 			$saved = $this->writers->transitions->transition(objectId: (string)$object->getUuid(), action: (string)$definition->body, data: $inputs);
 		} catch (NotAuthorizedException $e) {
@@ -411,20 +414,18 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 	/**
 	 * Whether a key names a lifecycle transition of this schema.
 	 *
-	 * @param Schema       $schema The schema.
-	 * @param ObjectEntity $object The object, for provider and graph modes.
-	 * @param string       $key    The key.
+	 * @param ObjectActionCall $call The schema, the object (for provider and graph modes) and the key.
 	 *
 	 * @return bool True when it does.
 	 */
-	private function isTransition(Schema $schema, ObjectEntity $object, string $key): bool {
-		if ($this->writers->transitions->declaredInputs(schema: $schema, action: $key) !== null) {
+	private function isTransition(ObjectActionCall $call): bool {
+		if ($this->writers->transitions->declaredInputs(schema: $call->schema, action: $call->key) !== null) {
 			return true;
 		}
 
 		try {
-			foreach ($this->writers->transitions->availableActions((string)$object->getUuid()) as $move) {
-				if ((string)($move['action'] ?? '') === $key) {
+			foreach ($this->writers->transitions->availableActions((string)$call->object->getUuid()) as $move) {
+				if ((string)($move['action'] ?? '') === $call->key) {
 					return true;
 				}
 			}

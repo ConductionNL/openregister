@@ -38,6 +38,12 @@ final class FlowBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		\OCA\OpenRegister\Service\Flow\FlowRunSignalInterface::class => \OCA\OpenRegister\Service\Flow\FlowRunSignalService::class,
 		\OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode::class,
+		\OCA\OpenRegister\Service\Flow\Principal\PrincipalKindsInterface::class => \OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds::class,
+		\OCA\OpenRegister\Service\Flow\Timer\CalendarRecomputeInterface::class => \OCA\OpenRegister\Service\Flow\Timer\CalendarRecompute::class,
+		\OCA\OpenRegister\Service\Flow\Timer\TermDiagnosticInterface::class => \OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic::class,
+		\OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinitionsInterface::class => \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars::class,
+		\OCA\OpenRegister\Service\Task\TaskCalendarDocumentInterface::class => \OCA\OpenRegister\Service\Task\TaskCalendarDocument::class,
 	];
 }//end class

@@ -30,7 +30,6 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -40,41 +39,17 @@ use OCP\AppFramework\Db\DoesNotExistException;
  */
 class FlowDryRunService implements FlowDryRunServiceInterface {
 	/**
-	 * Finds the flow within the caller's organisation.
-	 *
-	 * @var FlowService
-	 */
-	private readonly FlowService $flows;
-
-	/**
-	 * Builds the flow document the engine walks.
-	 *
-	 * @var FlowLocator
-	 */
-	private readonly FlowLocator $locator;
-
-	/**
-	 * Reads the object with the caller's access.
-	 *
-	 * @var ObjectOperationsInterface
-	 */
-	private readonly ObjectOperationsInterface $objects;
-
-	/**
 	 * Constructor.
 	 *
-	 * @param FlowDryRunLookups $lookups Finds the flow, builds its document and reads the object.
-	 * @param FlowEngine       $engine   The engine runs walk.
+	 * @param FlowDryRunLookups         $lookups  Finds the flow, builds its document and reads the object.
+	 * @param FlowEngine                $engine   The engine runs walk.
 	 * @param FlowNodeRegistryInterface $registry Resolves each step's node.
 	 */
 	public function __construct(
-		FlowDryRunLookups $lookups,
+		private readonly FlowDryRunLookups $lookups,
 		private readonly FlowEngine $engine,
 		private readonly FlowNodeRegistryInterface $registry,
 	) {
-		$this->flows   = $lookups->flows;
-		$this->locator = $lookups->locator;
-		$this->objects = $lookups->objects;
 	}//end __construct()
 
 	/**
@@ -96,7 +71,7 @@ class FlowDryRunService implements FlowDryRunServiceInterface {
 
 		// A lookup, not a person opening the object: no audit-trail row, so the
 		// object does not land in anyone's recent list.
-		$object = $this->objects->find(
+		$object = $this->lookups->objects->find(
 			id: $objectId,
 			_extend: [],
 			files: false,
@@ -150,9 +125,9 @@ class FlowDryRunService implements FlowDryRunServiceInterface {
 	 */
 	private function flowDocument(string $flowId): array {
 		// Throws for a flow outside the caller's organisation.
-		$this->flows->find(uuid: $flowId);
+		$this->lookups->flows->find(uuid: $flowId);
 
-		$document = $this->locator->resolveFlow(flowId: $flowId);
+		$document = $this->lookups->locator->resolveFlow(flowId: $flowId);
 		if ($document === null) {
 			throw new DoesNotExistException('No such flow');
 		}

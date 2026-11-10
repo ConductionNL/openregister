@@ -41,8 +41,7 @@ on:
     # none of which run on a pull_request event.
     branches:
       - main
-      - beta
-      - development
+      - 'stable*'
   pull_request:
     # `synchronize` — a push to an open PR — is what was missing. Without it the
     # quality suite runs ONCE, when the PR is opened, and every commit after
@@ -64,7 +63,7 @@ on:
     # hermiq's copy of this workflow omits `types:` entirely, which defaults to
     # [opened, synchronize, reopened]. This repo is the outlier.
     types: [opened, reopened, synchronize]
-    branches: [main, beta, development]
+    branches: [main, 'stable*']
   workflow_dispatch:
 
 # Deduplicating a `push` run against the `pull_request` run for the SAME head
@@ -172,31 +171,8 @@ permissions:
 
 jobs:
   quality:
-    # SECOND CLAUSE: skip the run a STANDING release PR triggers.
-    #
-    # `Release: merge development into beta` is permanently open with
-    # `head_ref: development`, so every push to development fires this
-    # workflow TWICE on the SAME sha — once for `push`, once for that PR's
-    # `pull_request` event. The concurrency block above deliberately gives
-    # them separate lanes so the push run is not cancelled, which is right,
-    # and the consequence is that both run to completion.
-    #
-    # The PR run is the redundant one, not the push run: its head sha IS
-    # development's, which the push run already decided, and the push run
-    # carries jobs the PR run does not (Coverage Baseline Check, SBOM,
-    # Features Extract). Measured 2026-09-03: runs 33747123932 (push) and
-    # 33747129312 (pull_request), same sha b8eb72e2, four seconds apart.
-    #
-    # 20 of the fleet's 21 apps carry `beta` in `pull_request.branches` and
-    # so pay this on every development push. Removing `beta` from that list
-    # would also work and is worse: the `release/v*` and `sync/main-to-beta`
-    # PRs genuinely need their run, and they target `beta` too.
-    #
-    # A `development -> main` promotion PR is skipped by the same clause, for
-    # the same reason and just as correctly.
     if: >-
-      (github.event_name != 'push' || github.event.created != true)
-      && (github.event_name != 'pull_request' || github.head_ref != 'development')
+      github.event_name != 'push' || github.event.created != true
     uses: ConductionNL/.github/.github/workflows/quality.yml@main
     with:
       app-name: openregister
@@ -473,7 +449,7 @@ jobs:
       #
       # There is no .js/.json parity leg: l10n/*.js is the browser catalogue and
       # l10n/*.json the PHP one, separate sets with separate consumers.
-      frontend-checks: '["check:specs", "test:l10n", "test:l10n:parity", "format", "check:schema-l10n", "test:coverage-ratchet"]'
+      frontend-checks: '["check:specs", "test:l10n", "test:l10n:parity", "format", "check:schema-l10n", "test:coverage-ratchet", "test:newman-route-ratchet"]'
       # ── Cost controls (see ConductionNL/.github#596, #599) ───────────────
       #
       # The fleet's CI was not slow, it was QUEUED. A Code Quality run does

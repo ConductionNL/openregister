@@ -119,15 +119,10 @@ class ImportServiceRegisterAutoCreateTest extends TestCase {
 		$translationCsvCodec->method('unflattenFromCsv')->willReturnCallback(static fn (array $row) => $row);
 
 		$this->service = new ImportService(
-			$this->schemaMapper,
-			$this->objectService,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IGroupManager::class),
-			$translationCsvCodec,
-			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class),
-			new MappingEngine($this->passThroughL10n()),
-			$this->createMock(ValidateObject::class),
-			$container
+			new \OCA\OpenRegister\Service\Import\ImportServiceStores($this->schemaMapper, $this->objectService, $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class), $this->createMock(ValidateObject::class)),
+			new \OCA\OpenRegister\Service\Import\ImportServiceCodecs($translationCsvCodec, new MappingEngine($this->passThroughL10n())),
+			new \OCA\OpenRegister\Service\Import\ImportServiceRuntime($container, new \OCA\OpenRegister\Listener\NotifyPushBatch(), $this->createMock(LoggerInterface::class)),
+			$this->createMock(IGroupManager::class)
 		);
 	}//end setUp()
 

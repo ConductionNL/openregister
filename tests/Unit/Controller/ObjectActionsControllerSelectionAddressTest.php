@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectActionsControllerFactory;
 use OCP\AppFramework\Http;
@@ -98,9 +99,11 @@ class ObjectActionsControllerSelectionAddressTest extends TestCase {
 		$this->macros = $this->createMock(MacroActionResolver::class);
 		$this->definitions = $this->createMock(ObjectActionDefinitions::class);
 		$this->runner = $this->createMock(ObjectActionRunner::class);
+		$this->runner->method('target')->willReturnCallback(
+			static fn (ObjectEntity $object, Schema $schema, string $register, string $schemaRef): ObjectActionTarget => new ObjectActionTarget($object, $schema, $register, $schemaRef)
+		);
 
 		return ObjectActionsControllerFactory::create(
-			'openregister',
 			$request,
 			$objects,
 			$this->macros,
@@ -166,7 +169,8 @@ class ObjectActionsControllerSelectionAddressTest extends TestCase {
 			->willReturn($this->definition(bulk: true));
 		$subjects = [];
 		$this->runner->expects($this->exactly(2))->method('run')->willReturnCallback(
-			static function (ObjectEntity $object, Schema $schema, string $key, array $given, array $subject) use (&$subjects): array {
+			static function (ObjectActionTarget $target, string $key, array $given) use (&$subjects): array {
+				$subject    = $target->subject();
 				$subjects[] = [$key, $given, $subject];
 
 				return ['status' => Http::STATUS_OK, 'body' => ['run' => 'run-'.$subject['uuid'], 'outcome' => 'completed']];
@@ -231,7 +235,7 @@ class ObjectActionsControllerSelectionAddressTest extends TestCase {
 		$controller = $this->controller(params: ['inputs' => ['y' => 2]]);
 		$this->macros->method('loadSchema')->willReturn(new Schema());
 		$this->runner->expects($this->once())->method('run')
-			->with($this->anything(), $this->anything(), 'close', ['y' => 2], ['uuid' => 'uuid-7', 'register' => 'reg', 'schema' => 'sch'])
+			->with($this->callback(static fn (ObjectActionTarget $target): bool => $target->subject() === ['uuid' => 'uuid-7', 'register' => 'reg', 'schema' => 'sch']), 'close', ['y' => 2])
 			->willReturn(['status' => Http::STATUS_FORBIDDEN, 'body' => ['error' => 'refused']]);
 
 		$response = $controller->invoke('reg', 'sch', '7', 'close');

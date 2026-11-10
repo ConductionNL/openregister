@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
 use OCA\OpenRegister\Files\Db\DetectionMethod;
+use OCA\OpenRegister\Files\Db\EntityMention;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\GdprEntity;
@@ -260,8 +261,7 @@ class ManualEntityService {
 			);
 
 			[$insertedRelations, $matchesSkipped] = $this->createRelationsForMatches(
-				fileId: $request->fileId,
-				entity: $entity,
+				placement: new EntityPlacement(fileId: $request->fileId, entity: $entity),
 				matches: $matches
 			);
 
@@ -455,35 +455,29 @@ class ManualEntityService {
 	 * For each match position, insert a new relation row unless one
 	 * already exists at exactly that position.
 	 *
-	 * @param int $fileId Target file id.
-	 * @param GdprEntity $entity Catalogue entry the relations point to.
+	 * @param EntityPlacement $placement Target file and the catalogue entry the relations point to.
 	 * @param array<int, array{chunkId: int, positionStart: int, positionEnd: int, context: string}> $matches Output of `ChunkTextMatcher::match`.
 	 *
 	 * @return array{0: EntityRelation[], 1: int} Tuple of (insertedRelations, matchesSkipped).
 	 */
-	private function createRelationsForMatches(int $fileId, GdprEntity $entity, array $matches): array {
+	private function createRelationsForMatches(EntityPlacement $placement, array $matches): array {
+		$fileId = $placement->fileId;
 		$rowsToInsert = [];
 		$matchesSkipped = 0;
 
 		foreach ($matches as $match) {
-			$existsAlready = $this->entityRelationMapper->existsForFileAtPosition(
-				fileId: $fileId,
-				entityId: (int)$entity->getId(),
-				chunkId: $match['chunkId'],
-				positionStart: $match['positionStart'],
-				positionEnd: $match['positionEnd']
-			);
-			if ($existsAlready === true) {
+			$mention = EntityMention::atMatch(entityId: $placement->entityId(), match: $match);
+			if ($this->entityRelationMapper->existsForFileAtPosition(fileId: $fileId, mention: $mention) === true) {
 				$matchesSkipped++;
 				continue;
 			}
 
 			$rowsToInsert[] = [
-				'entityId' => (int)$entity->getId(),
+				'entityId' => $mention->entityId,
 				'fileId' => $fileId,
-				'chunkId' => $match['chunkId'],
-				'positionStart' => $match['positionStart'],
-				'positionEnd' => $match['positionEnd'],
+				'chunkId' => $mention->chunkId,
+				'positionStart' => $mention->positionStart,
+				'positionEnd' => $mention->positionEnd,
 				'context' => $match['context'],
 				'detectionMethod' => DetectionMethod::MANUAL,
 				'role' => 'anonymisable',

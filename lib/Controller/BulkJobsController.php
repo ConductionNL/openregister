@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\BulkJobsControllerServices;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapperInterface;
@@ -120,18 +121,16 @@ class BulkJobsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
 	 * @param BulkJobsControllerServices $services The bulk jobs controller services.
 	 *
 	 * Each is a collaborator this REST surface genuinely uses.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		BulkJobsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->service = $services->domain->service;
 		$this->reversal = $services->domain->reversal;
 		$this->jobMapper = $services->domain->jobMapper;
@@ -254,13 +253,10 @@ class BulkJobsController extends Controller {
 
 		try {
 			$job = $this->service->create(
-				actionId: $action,
-				parameters: $parameters,
-				selection: $selection,
-				justification: $justification,
+				call: $this->service->actionCall(actionId: $action, parameters: $parameters),
+				selection: $this->service->selection(criteria: $selection, registerId: $register, schemaId: $schema),
 				actorUid: $uid,
-				registerId: $register,
-				schemaId: $schema
+				justification: $justification
 			);
 		} catch (BulkJobRefusedException $exception) {
 			return $this->refusal(exception: $exception);

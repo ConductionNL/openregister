@@ -63,32 +63,30 @@ class AnonymisationService {
 	/**
 	 * Apply a profile to a payload.
 	 *
-	 * @param array<string, mixed>                $payload The record's properties.
-	 * @param array<string, array<string, mixed>> $profile Property name to its rule.
-	 * @param string                              $salt    Instance salt for the pseudonym.
+	 * @param array<string, mixed> $payload The record's properties.
+	 * @param SaltedProfile        $profile The rules, property name to its rule, and the salt for the pseudonym.
 	 *
 	 * @return array<string, mixed> The anonymised payload.
 	 *
 	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
-	public function apply(array $payload, array $profile, string $salt): array {
-		$result = $payload;
+	public function apply(array $payload, SaltedProfile $profile): array {
+		$pass = new AnonymisationPass(profile: $profile, payload: $payload);
 
-		foreach ($profile as $property => $rule) {
-			if (array_key_exists($property, $result) === false) {
+		foreach ($profile->rules as $property => $rule) {
+			if (array_key_exists($property, $pass->payload) === false) {
 				continue;
 			}
 
-			$treatment = ($rule['treatment'] ?? null);
-			if ($treatment === AnonymisationProfile::REMOVE) {
-				unset($result[$property]);
+			if (($rule['treatment'] ?? null) === AnonymisationProfile::REMOVE) {
+				unset($pass->payload[$property]);
 				continue;
 			}
 
-			$result[$property] = $this->treat(treatment: (string)$treatment, value: $result[$property], rule: $rule, salt: $salt);
+			$pass->payload[$property] = $this->treat(pass: $pass, property: (string)$property);
 		}
 
-		return $result;
+		return $pass->payload;
 	}//end apply()
 
 	/**
@@ -99,16 +97,15 @@ class AnonymisationService {
 	 * re-identification comes from: a date of birth, a postcode and a case
 	 * number identify most people without a name anywhere in sight.
 	 *
-	 * @param array<string, mixed> $before  The payload as it was.
-	 * @param array<string, mixed> $after   The payload as it is now.
-	 * @param string               $profileName What the profile was called.
+	 * @param PayloadChange $change      The payload as it was and as it is now.
+	 * @param string        $profileName What the profile was called.
 	 *
 	 * @return array<string, mixed> The report.
 	 *
 	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
-	public function report(array $before, array $after, string $profileName = ''): array {
-		$split = $this->split(before: $before, after: $after);
+	public function report(PayloadChange $change, string $profileName = ''): array {
+		$split = $this->split(change: $change);
 		$changed = $split['changed'];
 		$kept = $split['kept'];
 		ksort($changed);
@@ -126,16 +123,15 @@ class AnonymisationService {
 	/**
 	 * Split the properties a payload had into those that changed and those that were kept.
 	 *
-	 * @param array<string, mixed> $before The payload as it was.
-	 * @param array<string, mixed> $after  The payload as it is now.
+	 * @param PayloadChange $change The payload as it was and as it is now.
 	 *
 	 * @return array{changed: array<string, mixed>, kept: string[]} Both, unsorted.
 	 */
-	private function split(array $before, array $after): array {
+	private function split(PayloadChange $change): array {
 		$split = ['changed' => [], 'kept' => []];
-		foreach ($before as $property => $value) {
+		foreach (array_keys($change->before) as $property) {
 			$name = (string)$property;
-			$outcome = $this->outcomeOf(after: $after, name: $name, value: $value);
+			$outcome = $this->outcomeOf(change: $change, property: $property);
 			if ($outcome['changed'] === true) {
 				$split['changed'][$name] = $outcome['value'];
 				continue;
@@ -150,18 +146,18 @@ class AnonymisationService {
 	/**
 	 * Whether one property changed, and what the report says it became.
 	 *
-	 * @param array<string, mixed> $after The payload as it is now.
-	 * @param string               $name  The property.
-	 * @param mixed                $value Its value before.
+	 * @param PayloadChange $change   The payload as it was and as it is now.
+	 * @param int|string    $property The property, as a key of the payload before.
 	 *
 	 * @return array{changed: bool, value: mixed} The outcome; a removed property reads as REMOVED.
 	 */
-	private function outcomeOf(array $after, string $name, mixed $value): array {
-		if (array_key_exists($name, $after) === false) {
+	private function outcomeOf(PayloadChange $change, int|string $property): array {
+		$name = (string)$property;
+		if (array_key_exists($name, $change->after) === false) {
 			return ['changed' => true, 'value' => self::REMOVED];
 		}
 
-		return ['changed' => ($after[$name] !== $value), 'value' => $after[$name]];
+		return ['changed' => ($change->after[$name] !== $change->before[$property]), 'value' => $change->after[$name]];
 	}//end outcomeOf()
 
 	/**
@@ -189,20 +185,21 @@ class AnonymisationService {
 	/**
 	 * One treatment on one value.
 	 *
-	 * @param string               $treatment The treatment name.
-	 * @param mixed                $value     The current value.
-	 * @param array<string, mixed> $rule      The declared rule.
-	 * @param string               $salt      The instance salt.
+	 * @param AnonymisationPass $pass     The pass: its rules, salt and the payload so far.
+	 * @param string            $property The property to treat, present in the payload.
 	 *
 	 * @return mixed The treated value.
 	 */
-	private function treat(string $treatment, mixed $value, array $rule, string $salt): mixed {
+	private function treat(AnonymisationPass $pass, string $property): mixed {
+		$rule = $pass->profile->rules[$property];
+		$treatment = (string)($rule['treatment'] ?? null);
+		$value = $pass->payload[$property];
 		if ($treatment === AnonymisationProfile::FIXED) {
 			return ($rule['value'] ?? null);
 		}
 
 		if ($treatment === AnonymisationProfile::PSEUDONYM) {
-			return $this->pseudonymFor(value: $this->scalarText(value: $value), salt: $salt);
+			return $this->pseudonymFor(value: $this->scalarText(value: $value), salt: $pass->profile->salt);
 		}
 
 		if ($treatment === AnonymisationProfile::GENERALISE) {

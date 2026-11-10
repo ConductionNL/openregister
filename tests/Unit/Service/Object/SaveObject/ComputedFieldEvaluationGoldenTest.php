@@ -22,9 +22,11 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Twig\MappingExtension;
 use OCA\OpenRegister\Twig\MappingRuntimeLoader;
+use OCA\OpenRegister\Twig\MappingTwigInstallerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use Twig\Environment;
 
 /**
  * Pins rendered and cast values, evaluation-mode selection and the sandbox.
@@ -61,8 +63,7 @@ class ComputedFieldEvaluationGoldenTest extends TestCase {
 	private function handler(?LoggerInterface $logger = null): ComputedFieldHandler {
 		return new ComputedFieldHandler(
 			objectMapper: $this->createMock(MagicMapperInterface::class),
-			mappingExtension: new MappingExtension(),
-			mappingRuntimeLoader: $this->createMock(MappingRuntimeLoader::class),
+			mappingTwig: $this->mappingTwig(),
 			logger: $logger ?? $this->createMock(LoggerInterface::class)
 		);
 	}//end handler()
@@ -157,4 +158,22 @@ class ComputedFieldEvaluationGoldenTest extends TestCase {
 		$this->assertSame(['a' => 1], $handler->evaluateComputedFields(['a' => 1], $schema));
 		$this->assertFalse($handler->hasComputedProperties(new Schema()));
 	}//end testWithoutComputedProperties()
+
+	/**
+	 * The mapping extension and a stand-in runtime loader, installed as before.
+	 *
+	 * @return MappingTwigInstallerInterface The installer.
+	 */
+	private function mappingTwig(): MappingTwigInstallerInterface {
+		$installer = $this->createMock(MappingTwigInstallerInterface::class);
+		$loader    = $this->createMock(MappingRuntimeLoader::class);
+		$installer->method('installOn')->willReturnCallback(
+			static function (Environment $twig) use ($loader): void {
+				$twig->addExtension(new MappingExtension());
+				$twig->addRuntimeLoader($loader);
+			}
+		);
+
+		return $installer;
+	}//end mappingTwig()
 }//end class

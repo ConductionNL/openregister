@@ -47,6 +47,7 @@ use OCA\OpenRegister\Service\Object\BulkSaveSession;
 use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IUserSession;
@@ -421,7 +422,7 @@ class SaveObjectsBulkSideEffectsTest extends TestCase {
 			$this->handler,
 			[
 				['created' => $created, 'updated' => []],
-				false,
+				self::bulkRun(events: false, audit: true),
 			]
 		);
 
@@ -461,4 +462,20 @@ class SaveObjectsBulkSideEffectsTest extends TestCase {
 		$this->assertArrayNotHasKey('_pre_update_row', $result['updated'][0]);
 		$this->assertArrayNotHasKey('object_status', $result['updated'][0]);
 	}//end testPreUpdateRowDoesNotLeakIntoResponse()
+
+	/**
+	 * A bulk save run carrying the events and audit flags the side effects read.
+	 *
+	 * @param bool $events Whether lifecycle events are dispatched.
+	 * @param bool $audit  Whether audit trail rows are written.
+	 *
+	 * @return BulkSaveRun
+	 */
+	private static function bulkRun(bool $events, bool $audit): BulkSaveRun {
+		$run         = new BulkSaveRun();
+		$run->events = $events;
+		$run->audit  = $audit;
+
+		return $run;
+	}//end bulkRun()
 }//end class

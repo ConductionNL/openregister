@@ -25,13 +25,16 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\Object\BulkRowChecks;
 use OCA\OpenRegister\Service\Object\BulkSaveReporting;
 use OCA\OpenRegister\Service\Object\BulkSaveSession;
 use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\SafeguardBatchRun;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -155,7 +158,7 @@ class SaveObjectsOrganisationBoundaryTest extends TestCase {
 			$groupManager,
 			$this->createMock(SchemaMapper::class),
 			$this->createMock(MagicMapper::class),
-			new ConditionMatcher($userSession, $container, new OperatorEvaluator($logger), $logger),
+			new ConditionMatcher(new ConditionUserResolvers($userSession), $container, new OperatorEvaluator($logger), $logger),
 			$appConfig,
 			$logger,
 			$container
@@ -263,7 +266,9 @@ class SaveObjectsOrganisationBoundaryTest extends TestCase {
 		$result = ['invalid' => [], 'statistics' => ['invalid' => 0, 'errors' => 0]];
 		$method = new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards');
 		$method->setAccessible(true);
-		$passed = $method->invokeArgs($this->handler(), [[$row], $this->register(), $this->schema(), $flags, &$result]);
+		$batch  = new SafeguardBatchRun(objects: [$row], defaults: new BulkBatchDefaults($this->register(), $this->schema()), flags: $flags, result: $result);
+		$passed = $method->invokeArgs($this->handler(), [$batch]);
+		$result = $batch->result;
 
 		return ['passed' => $passed, 'invalid' => $result['invalid']];
 	}//end safeguard()
@@ -447,7 +452,9 @@ class SaveObjectsOrganisationBoundaryTest extends TestCase {
 		$method = new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards');
 		$method->setAccessible(true);
 		$row = ['@self' => ['uuid' => self::FOREIGN], 'title' => 'overwritten'];
-		$method->invokeArgs($this->handler(), [[$row], $this->register(), $schema, ['rbac' => true, 'validation' => false], &$result]);
+		$batch = new SafeguardBatchRun(objects: [$row], defaults: new BulkBatchDefaults($this->register(), $schema), flags: ['rbac' => true, 'validation' => false], result: $result);
+		$method->invokeArgs($this->handler(), [$batch]);
+		$result = $batch->result;
 
 		$this->assertSame(['Permission denied for action create on schema planned'], self::reasons($result['invalid']));
 	}

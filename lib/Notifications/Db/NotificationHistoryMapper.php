@@ -103,61 +103,34 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 	/**
 	 * Record a notification dispatch.
 	 *
-	 * Convenience wrapper around `insert()` that takes plain scalars
-	 * instead of an entity. Used by `AnnotationNotificationDispatcher`
-	 * which already has the values laid out as named arguments.
+	 * Convenience wrapper around `insert()` that takes one HistoryEntry
+	 * instead of an entity. Used by `AnnotationNotificationDispatcher`.
 	 *
-	 * @param string $ruleId The annotation key.
-	 * @param string $channel The channel that fired.
-	 * @param string $recipient Recipient identifier (uid or `__webhook__`/`__talk__`).
-	 * @param string $status `dispatched` | `rate-limited` | `failed`.
-	 * @param string|null $schemaId Schema id.
-	 * @param string|null $registerId Register id.
-	 * @param string|null $objectUuid Object uuid.
-	 * @param string|null $subject Interpolated subject.
-	 * @param string|null $errorMessage Error message when status is `failed`.
-	 * @param string|null $locale Recipient locale (null for broadcast).
-	 * @param string|null $subjectType What the notice is about, as a list axis.
-	 * @param string|null $subjectId The subject's own id, defaulting to the object uuid.
-	 * @param string|null $eventId The firing this row belongs to, shared by every transport of one dispatch.
+	 * @param HistoryEntry $entry The delivery, the object and firing it belongs to, the notice and its subject axis.
 	 *
 	 * @return NotificationHistory The persisted row.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList)
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	public function record(
-		string $ruleId,
-		string $channel,
-		string $recipient,
-		string $status,
-		?string $schemaId = null,
-		?string $registerId = null,
-		?string $objectUuid = null,
-		?string $subject = null,
-		?string $errorMessage = null,
-		?string $locale = null,
-		?string $subjectType = null,
-		?string $subjectId = null,
-		?string $eventId = null,
-	): NotificationHistory {
+	public function record(HistoryEntry $entry): NotificationHistory {
 		$entity = new NotificationHistory();
-		$entity->setRuleId($ruleId);
-		$entity->setChannel($channel);
-		$entity->setRecipient($recipient);
-		$entity->setStatus($status);
-		$entity->setSchemaId($schemaId);
-		$entity->setRegisterId($registerId);
-		$entity->setObjectUuid($objectUuid);
-		$entity->setSubject($subject);
-		$entity->setErrorMessage($errorMessage);
-		$entity->setLocale($locale);
-		$entity->setSubjectType($subjectType);
-		$entity->setEventId($eventId);
+		$entity->setRuleId($entry->delivery->ruleId);
+		$entity->setChannel($entry->delivery->channel);
+		$entity->setRecipient($entry->delivery->recipient);
+		$entity->setStatus($entry->delivery->status);
+		$entity->setSchemaId($entry->target->schemaId);
+		$entity->setRegisterId($entry->target->registerId);
+		$entity->setObjectUuid($entry->target->objectUuid);
+		$entity->setSubject($entry->notice->subject);
+		$entity->setErrorMessage($entry->notice->errorMessage);
+		$entity->setLocale($entry->notice->locale);
+		$entity->setSubjectType($entry->about?->type);
+		$entity->setEventId($entry->target->eventId);
 		// A notice with no explicit subject is about the object it fired on, so
 		// opening that object still clears it. Defaulting here rather than at
 		// each call site is what keeps "the work clears the bell" true for
 		// every rule that was written before the axis existed.
-		$entity->setSubjectId(($subjectId ?? $objectUuid));
+		$entity->setSubjectId(($entry->about?->id ?? $entry->target->objectUuid));
 		$entity->setDispatchedAt(new DateTime());
 
 		return $this->insert(entity: $entity);
@@ -182,7 +155,7 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 		$qb->select('*')
 			->from($this->getTableName());
 
-		$this->applyFilters(qb: $qb, filters: $filters, asOf: $asOf);
+		$this->applyFilters(qb: $qb, filter: new HistoryListFilter(filters: $filters, asOf: ($asOf ?? new DateTime())));
 		$qb->orderBy('dispatched_at', 'DESC');
 		$this->page(qb: $qb, limit: $limit, offset: $offset);
 
@@ -237,7 +210,7 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 		$qb->select($qb->createFunction('COUNT(*)'))
 			->from($this->getTableName());
 
-		$this->applyFilters(qb: $qb, filters: $filters, asOf: $asOf);
+		$this->applyFilters(qb: $qb, filter: new HistoryListFilter(filters: $filters, asOf: ($asOf ?? new DateTime())));
 
 		$result = $qb->executeQuery();
 		$count = (int)$result->fetchOne();
@@ -265,25 +238,24 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 	 * which states the same three rules in PHP and is where they are unit-tested
 	 * against a clock. Same rules, same order; change one and change the other.
 	 *
-	 * @param IQueryBuilder $qb The query being built.
-	 * @param array<string, mixed> $filters The filter map.
-	 * @param DateTime $asOf The moment to judge a snooze against.
+	 * @param IQueryBuilder     $qb     The query being built.
+	 * @param HistoryListFilter $filter The filter map and the moment to judge a snooze against.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
 	 */
-	private function applyListStateFilters(IQueryBuilder $qb, array $filters, DateTime $asOf): void {
-		if ($this->flag(filters: $filters, key: 'unreadOnly') === true) {
+	private function applyListStateFilters(IQueryBuilder $qb, HistoryListFilter $filter): void {
+		if ($this->flag(filters: $filter->filters, key: 'unreadOnly') === true) {
 			$qb->andWhere($qb->expr()->isNull('read_at'));
 		}
 
-		if ($this->flag(filters: $filters, key: 'includeArchived') === false) {
+		if ($this->flag(filters: $filter->filters, key: 'includeArchived') === false) {
 			$qb->andWhere($qb->expr()->isNull('archived_at'));
 		}
 
-		if ($this->flag(filters: $filters, key: 'includeSnoozed') === false) {
-			$this->whereNotSnoozed(qb: $qb, asOf: $asOf);
+		if ($this->flag(filters: $filter->filters, key: 'includeSnoozed') === false) {
+			$this->whereNotSnoozed(qb: $qb, asOf: $filter->asOf);
 		}
 	}//end applyListStateFilters()
 
@@ -293,15 +265,14 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 	 *
 	 * A filter that is absent, null or empty narrows nothing.
 	 *
-	 * @param IQueryBuilder        $qb      The query.
-	 * @param array<string, mixed> $filters The filters, keyed as COLUMN_MAP plus the state flags.
-	 * @param DateTime|null        $asOf    The moment snoozes are judged against; null is now.
+	 * @param IQueryBuilder     $qb     The query.
+	 * @param HistoryListFilter $filter The filters, keyed as COLUMN_MAP plus the state flags, and the moment snoozes are judged against.
 	 *
 	 * @return void
 	 */
-	private function applyFilters(IQueryBuilder $qb, array $filters, ?DateTime $asOf): void {
-		$this->whereMappedColumns(qb: $qb, filters: $filters);
-		$this->applyListStateFilters(qb: $qb, filters: $filters, asOf: ($asOf ?? new DateTime()));
+	private function applyFilters(IQueryBuilder $qb, HistoryListFilter $filter): void {
+		$this->whereMappedColumns(qb: $qb, filters: $filter->filters);
+		$this->applyListStateFilters(qb: $qb, filter: $filter);
 
 	}//end applyFilters()
 

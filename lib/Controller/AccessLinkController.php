@@ -50,6 +50,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AccessLinkControllerServices;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\StoredEntity;
@@ -141,16 +142,14 @@ class AccessLinkController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name (injected by Nextcloud).
 	 * @param IRequest $request Current request.
 	 * @param AccessLinkControllerServices $services The access link controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		AccessLinkControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->links = $services->domain->links;
 		$this->reader = $services->domain->reader;
 		$this->mintGuard = $services->domain->mintGuard;
@@ -379,10 +378,12 @@ class AccessLinkController extends Controller {
 				userId: $user->getUID(),
 				subjectType: $subjectType,
 				subjectId: $subjectId,
-				capabilities: $this->capabilitiesParam(),
-				expiresAt: $this->stringParam(name: 'expiresAt'),
-				password: $this->stringParam(name: 'password'),
-				label: $this->stringParam(name: 'label')
+				terms: $this->links->terms(
+					capabilities: $this->capabilitiesParam(),
+					expiresAt: $this->stringParam(name: 'expiresAt'),
+					password: $this->stringParam(name: 'password'),
+					label: $this->stringParam(name: 'label')
+				)
 			);
 		} catch (InvalidArgumentException $refused) {
 			return new JSONResponse(['message' => $refused->getMessage()], Http::STATUS_BAD_REQUEST);

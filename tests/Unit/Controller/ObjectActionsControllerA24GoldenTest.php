@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectActionsControllerFactory;
 use OCP\AppFramework\Http\JSONResponse;
@@ -110,11 +111,13 @@ class ObjectActionsControllerA24GoldenTest extends TestCase {
 		$this->macros = $this->createMock(MacroActionResolver::class);
 		$this->list = $this->createMock(ObjectActionList::class);
 		$this->runner = $this->createMock(ObjectActionRunner::class);
+		$this->runner->method('target')->willReturnCallback(
+			static fn (ObjectEntity $object, Schema $schema, string $register, string $schemaRef): ObjectActionTarget => new ObjectActionTarget($object, $schema, $register, $schemaRef)
+		);
 		$this->history = $this->createMock(ObjectActionHistory::class);
 		$this->bulk = $this->createMock(ObjectActionBulk::class);
 
 		return ObjectActionsControllerFactory::create(
-			'openregister',
 			$request,
 			$this->objects,
 			$this->macros,
@@ -239,11 +242,9 @@ class ObjectActionsControllerA24GoldenTest extends TestCase {
 		$this->macros->method('loadSchema')->willReturn($this->schema());
 		$this->runner->expects($this->once())->method('run')
 			->with(
-				$this->isInstanceOf(ObjectEntity::class),
-				$this->isInstanceOf(Schema::class),
+				$this->callback(static fn (ObjectActionTarget $target): bool => $target->subject() === ['uuid' => 'uuid-a', 'register' => 'r', 'schema' => 's']),
 				'assign',
-				['x' => 1],
-				['uuid' => 'uuid-a', 'register' => 'r', 'schema' => 's']
+				['x' => 1]
 			)
 			->willReturn(['status' => 403, 'body' => ['error' => 'refused']]);
 

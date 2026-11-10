@@ -84,41 +84,32 @@ class IcalendarWriter {
 	/**
 	 * Assemble a VCALENDAR from component lines.
 	 *
-	 * @param string $calendarName The display name the client shows.
-	 * @param DateTimeZone|null $timeZone The tenant time zone, when the body holds timed events.
-	 * @param array<int, string> $componentLines The unfolded lines of every component.
-	 * @param int $fromYear First year the VTIMEZONE must cover.
-	 * @param int $toYear Last year the VTIMEZONE must cover.
+	 * @param CalendarContents $contents The name, zone, component lines and years.
 	 *
 	 * @return string The complete, folded, CRLF-terminated calendar.
 	 *
 	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
-	public function calendar(
-		string $calendarName,
-		?DateTimeZone $timeZone,
-		array $componentLines,
-		int $fromYear,
-		int $toYear,
-	): string {
+	public function calendar(CalendarContents $contents): string {
+		$timeZone = $contents->timeZone;
 		$lines = [
 			'BEGIN:VCALENDAR',
 			'VERSION:2.0',
 			'PRODID:' . self::PRODID,
 			'CALSCALE:GREGORIAN',
 			'METHOD:PUBLISH',
-			'X-WR-CALNAME:' . $this->escapeText(value: $calendarName),
+			'X-WR-CALNAME:' . $this->escapeText(value: $contents->calendarName),
 		];
 
 		if ($timeZone !== null) {
 			$lines[] = 'X-WR-TIMEZONE:' . $timeZone->getName();
 			$lines = array_merge(
 				$lines,
-				$this->timeZoneComponent(timeZone: $timeZone, fromYear: $fromYear, toYear: $toYear)
+				$this->timeZoneComponent(timeZone: $timeZone, years: $contents->years)
 			);
 		}
 
-		$lines = array_merge($lines, $componentLines);
+		$lines = array_merge($lines, $contents->componentLines);
 		$lines[] = 'END:VCALENDAR';
 
 		$folded = array_map([$this, 'fold'], $lines);
@@ -136,16 +127,15 @@ class IcalendarWriter {
 	 * what UTC needs.
 	 *
 	 * @param DateTimeZone $timeZone The zone.
-	 * @param int $fromYear First year to cover.
-	 * @param int $toYear Last year to cover.
+	 * @param CalendarYearSpan $years The years to cover.
 	 *
 	 * @return array<int, string> The unfolded lines of the component.
 	 *
 	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
-	public function timeZoneComponent(DateTimeZone $timeZone, int $fromYear, int $toYear): array {
-		$start = (new DateTimeImmutable(sprintf('%04d-01-01T00:00:00+00:00', ($fromYear - 1))))->getTimestamp();
-		$end = (new DateTimeImmutable(sprintf('%04d-12-31T23:59:59+00:00', ($toYear + 1))))->getTimestamp();
+	public function timeZoneComponent(DateTimeZone $timeZone, CalendarYearSpan $years): array {
+		$start = (new DateTimeImmutable(sprintf('%04d-01-01T00:00:00+00:00', ($years->fromYear - 1))))->getTimestamp();
+		$end = (new DateTimeImmutable(sprintf('%04d-12-31T23:59:59+00:00', ($years->toYear + 1))))->getTimestamp();
 
 		$transitions = $timeZone->getTransitions($start, $end);
 		if ($transitions === false) {

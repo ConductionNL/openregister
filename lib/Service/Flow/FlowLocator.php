@@ -34,11 +34,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
-use OCA\OpenRegister\Db\FlowTriggerMapperInterface;
-use OCA\OpenRegister\Db\FlowVersionMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -64,18 +63,14 @@ class FlowLocator implements FlowLocatorInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowMapper $mapper Reads flow definitions.
-	 * @param FlowTriggerMapperInterface $triggerMapper The node-derived trigger index.
+	 * @param FlowLocatorStores         $stores        The flow, trigger index and version mappers.
 	 * @param ObjectOperationsInterface $objectService Loads the object a run is about.
-	 * @param LoggerInterface $logger Records refusals and failures.
-	 * @param FlowVersionMapperInterface $versions Answers whether a fallback-matched flow has a published version.
+	 * @param LoggerInterface           $logger        Records refusals and failures.
 	 */
 	public function __construct(
-		private readonly FlowMapper $mapper,
-		private readonly FlowTriggerMapperInterface $triggerMapper,
+		private readonly FlowLocatorStores $stores,
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
-		private readonly FlowVersionMapperInterface $versions,
 	) {
 
 	}//end __construct()
@@ -97,7 +92,7 @@ class FlowLocator implements FlowLocatorInterface {
 		$this->flowMemo[$flowId] = null;
 
 		try {
-			$flow = $this->mapper->findByUuid($flowId);
+			$flow = $this->stores->mapper->findByUuid($flowId);
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -140,19 +135,35 @@ class FlowLocator implements FlowLocatorInterface {
 	 * @return object|null The subject, or null when it cannot be found.
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	public function resolveSubject(string $uuid, string $register, string $schema): ?object {
+		return $this->resolveObject(ref: new ObjectRef(register: $register, schema: $schema, id: $uuid));
+	}//end resolveSubject()
+
+	/**
+	 * Load the object a run walks against, by reference.
+	 *
+	 * The same load, with the same RBAC and multitenancy OFF and the same
+	 * background-only boundary, as {@see self::resolveSubject()}.
+	 *
+	 * @param ObjectRef $ref The subject's register, schema and uuid.
+	 *
+	 * @return object|null The subject, or null when it cannot be found.
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
-	public function resolveSubject(string $uuid, string $register, string $schema): ?object {
-		if ($uuid === '' || $register === '' || $schema === '') {
+	public function resolveObject(ObjectRef $ref): ?object {
+		if ($ref->id === '' || $ref->register === '' || $ref->schema === '') {
 			return null;
 		}
 
 		try {
 			$object = WriteCause::asLookup(fn () => $this->objectService->find(
-				id: $uuid,
-				register: $register,
-				schema: $schema,
+				id: $ref->id,
+				register: $ref->register,
+				schema: $ref->schema,
 				_rbac: false,
 				_multitenancy: false
 			));
@@ -165,7 +176,7 @@ class FlowLocator implements FlowLocatorInterface {
 		}
 
 		return null;
-	}//end resolveSubject()
+	}//end resolveObject()
 
 	/**
 	 * The ids of the flows a fired event should start.
@@ -186,75 +197,131 @@ class FlowLocator implements FlowLocatorInterface {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	public function flowsForTrigger(string $event, string $register, string $schema): array {
-		// NODES FIRST. A flow that has any row in the derived index has been
-		// converted, and its NODES decide entirely — including deciding that it
-		// does not want this event. Falling back for such a flow would let a
-		// deleted trigger node keep firing through the column it no longer
-		// reflects, which is the opposite of what removing the node meant.
+		return $this->flowsForEvent(event: $event, table: new RegisterSchemaRef(register: $register, schema: $schema));
+	}//end flowsForTrigger()
+
+	/**
+	 * The ids of the flows an event fired on one register and schema should start.
+	 *
+	 * NODES FIRST. A flow that has any row in the derived index has been
+	 * converted, and its NODES decide entirely — including deciding that it
+	 * does not want this event. The column match is kept ONLY for unconverted
+	 * flows, and among those only for flows a published version can back — see
+	 * {@see self::columnFallbackMatches()} for both halves of that rule.
+	 *
+	 * @param string            $event The event id.
+	 * @param RegisterSchemaRef $table The register and schema the event fired on.
+	 *
+	 * @return array<int, string> The ids of the flows to run.
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	public function flowsForEvent(string $event, RegisterSchemaRef $table): array {
+		$index = $this->triggerIndex(event: $event, table: $table);
+		$candidates = $this->columnCandidates(event: $event, table: $table);
+		if ($candidates === null) {
+			return [];
+		}
+
+		$matched = $this->withPublishedVersion(
+			matched: $this->columnFallbackMatches(candidates: $candidates, converted: $index['converted']),
+			event: $event
+		);
+
+		return $this->dispatchableUuids(matched: $this->withIndexed(matched: $matched, indexed: $index['indexed']), event: $event);
+	}//end flowsForEvent()
+
+	/**
+	 * The derived trigger index: the flows whose nodes want this event, and
+	 * every flow the index represents at all.
+	 *
+	 * An unreadable index — during the upgrade that creates it, or if it is
+	 * dropped — leaves every flow on its columns, which is exactly the
+	 * pre-cutover behaviour. Degrading to "no flow was interested" here would
+	 * silently stop the whole engine.
+	 *
+	 * @param string            $event The event id.
+	 * @param RegisterSchemaRef $table The register and schema the event fired on.
+	 *
+	 * @return array{indexed: array<int, string>, converted: array<string, int>}
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	private function triggerIndex(string $event, RegisterSchemaRef $table): array {
 		$indexed = [];
-		$converted = [];
 		try {
-			$indexed = $this->triggerMapper->flowUuidsFor(
-				event: $event,
-				register: $register,
-				schema: $schema
-			);
-			$converted = array_flip($this->triggerMapper->representedFlowUuids());
+			$indexed = $this->stores->triggerMapper->flowUuidsFor(event: $event, register: (string)$table->register, schema: (string)$table->schema);
+			$converted = array_flip($this->stores->triggerMapper->representedFlowUuids());
 		} catch (Throwable $e) {
-			// The index is unreadable — during the upgrade that creates it, or
-			// if it is dropped. Every flow then falls back to its columns,
-			// which is exactly the pre-cutover behaviour. Degrading to "no
-			// flow was interested" here would silently stop the whole engine.
 			$this->logger->warning(
 				message: '[FlowLocator] Trigger index unreadable for "' . $event . '": ' . $e->getMessage()
 					. '. Falling back to the flow trigger columns for every flow.',
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
-			$converted = [];
+			// Whatever the index already answered is kept; only the
+			// conversion picture is lost, so every flow keeps its columns.
+			return ['indexed' => $indexed, 'converted' => []];
 		}
 
+		return ['indexed' => $indexed, 'converted' => $converted];
+	}//end triggerIndex()
+
+	/**
+	 * The flows whose trigger columns match the event, or null when they cannot be listed.
+	 *
+	 * @param string            $event The event id.
+	 * @param RegisterSchemaRef $table The register and schema the event fired on.
+	 *
+	 * @return array<int, Flow>|null
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	private function columnCandidates(string $event, RegisterSchemaRef $table): ?array {
 		try {
-			$candidates = $this->mapper->findByTrigger(
-				trigger: $event,
-				register: $register,
-				schema: $schema
-			);
+			return $this->stores->mapper->findByTrigger(trigger: $event, register: (string)$table->register, schema: (string)$table->schema);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[FlowLocator] Could not list flows for trigger "' . $event . '": ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
-			return [];
+			return null;
 		}
+	}//end columnCandidates()
 
-		// The column match is kept ONLY for unconverted flows, and among those
-		// only for flows a published version can back — see the docblock of
-		// {@see self::columnFallbackMatches()} for both halves of that rule.
-		$matched = $this->columnFallbackMatches(candidates: $candidates, converted: $converted, event: $event);
-
-		// The index answers in UUIDs; the dispatch check needs the row. These
-		// are the flows whose NODES want this event.
+	/**
+	 * Add the flows whose NODES want this event to the column matches.
+	 *
+	 * The index answers in UUIDs; the dispatch check needs the row. An index
+	 * row for a flow that no longer exists is reported rather than skipped
+	 * silently: it means a delete did not reach the index, and the row will
+	 * keep being read on every event.
+	 *
+	 * @param array<string, Flow> $matched The column matches, by uuid.
+	 * @param array<int, string>  $indexed The uuids the index names.
+	 *
+	 * @return array<string, Flow>
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	private function withIndexed(array $matched, array $indexed): array {
 		foreach ($indexed as $uuid) {
 			if (isset($matched[$uuid]) === true) {
 				continue;
 			}
 
 			try {
-				$matched[$uuid] = $this->mapper->findByUuid(uuid: $uuid);
+				$matched[$uuid] = $this->stores->mapper->findByUuid(uuid: $uuid);
 			} catch (Throwable $e) {
-				// An index row for a flow that no longer exists. Report it
-				// rather than skip silently: it means a delete did not reach
-				// the index, and the row will keep being read on every event.
 				$this->logger->warning(
 					message: '[FlowLocator] Trigger index names flow "' . $uuid . '" which could not be loaded: '
 						. $e->getMessage() . '. Its index rows are stale.',
 					context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $uuid]
 				);
 			}
-		}//end foreach
+		}
 
-		return $this->dispatchableUuids(matched: $matched, event: $event);
-	}//end flowsForTrigger()
+		return $matched;
+	}//end withIndexed()
 
 	/**
 	 * The column-fallback matches: unconverted flows a published version can back.
@@ -275,37 +342,55 @@ class FlowLocator implements FlowLocatorInterface {
 	 *   here instead. Legacy flows all hold a backfilled published version 1,
 	 *   so the only thing filtered is a flow that could never have run.
 	 *
+	 * The second rule is {@see self::withPublishedVersion()}, applied to what
+	 * this returns.
+	 *
 	 * @param array<int, Flow> $candidates The flows whose columns match the event.
 	 * @param array<string, int> $converted Uuids the index represents, flipped for lookup.
+	 *
+	 * @return array<string, Flow> The unconverted candidates, by uuid.
+	 *
+	 * @spec openspec/specs/flow-definition-versioning/spec.md#requirement-trigger-matching-answers-which-flow-the-queue-path-answers-which-version
+	 */
+	private function columnFallbackMatches(array $candidates, array $converted): array {
+		$matched = [];
+		foreach ($candidates as $flow) {
+			$uuid = (string)$flow->getUuid();
+			if (isset($converted[$uuid]) === false) {
+				$matched[$uuid] = $flow;
+			}
+		}
+
+		return $matched;
+	}//end columnFallbackMatches()
+
+	/**
+	 * The column-fallback matches a published version can back; the rest refused out loud.
+	 *
+	 * @param array<string, Flow> $matched The unconverted column matches, by uuid.
 	 * @param string $event The trigger being resolved, for the log line.
 	 *
 	 * @return array<string, Flow> The matches, by uuid.
 	 *
 	 * @spec openspec/specs/flow-definition-versioning/spec.md#requirement-trigger-matching-answers-which-flow-the-queue-path-answers-which-version
 	 */
-	private function columnFallbackMatches(array $candidates, array $converted, string $event): array {
-		$matched = [];
-		foreach ($candidates as $flow) {
-			$uuid = (string)$flow->getUuid();
-			if (isset($converted[$uuid]) === true) {
+	private function withPublishedVersion(array $matched, string $event): array {
+		foreach (array_keys($matched) as $uuid) {
+			if ($this->hasPublishedVersion(uuid: (string)$uuid) === true) {
 				continue;
 			}
 
-			if ($this->hasPublishedVersion(uuid: $uuid) === false) {
-				$this->logger->warning(
-					message: '[FlowLocator] Flow "' . $uuid . '" matched trigger "' . $event
-						. '" through its columns but has no published version, so it cannot back a run.'
-						. ' Publish a version to make it fire.',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $uuid]
-				);
-				continue;
-			}
-
-			$matched[$uuid] = $flow;
-		}//end foreach
+			$this->logger->warning(
+				message: '[FlowLocator] Flow "' . $uuid . '" matched trigger "' . $event
+					. '" through its columns but has no published version, so it cannot back a run.'
+					. ' Publish a version to make it fire.',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $uuid]
+			);
+			unset($matched[$uuid]);
+		}
 
 		return $matched;
-	}//end columnFallbackMatches()
+	}//end withPublishedVersion()
 
 	/**
 	 * Whether a flow has a published version to back a run.
@@ -323,7 +408,7 @@ class FlowLocator implements FlowLocatorInterface {
 	 */
 	private function hasPublishedVersion(string $uuid): bool {
 		try {
-			return $this->versions->findPublished(flowUuid: $uuid) !== null;
+			return $this->stores->versions->findPublished(flowUuid: $uuid) !== null;
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[FlowLocator] Could not read the published version of flow "' . $uuid . '": '
@@ -382,7 +467,7 @@ class FlowLocator implements FlowLocatorInterface {
 	 */
 	public function scheduledFlows(): array {
 		try {
-			$flows = $this->mapper->findScheduled();
+			$flows = $this->stores->mapper->findScheduled();
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[FlowLocator] Could not list scheduled flows: ' . $e->getMessage(),

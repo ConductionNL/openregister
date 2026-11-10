@@ -26,8 +26,10 @@ use OCA\OpenRegister\Service\Object\BulkSaveReporting;
 use OCA\OpenRegister\Service\Object\BulkSaveSession;
 use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\SafeguardBatchRun;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IGroupManager;
@@ -123,10 +125,16 @@ class Wave12BulkSafeguardsTest extends TestCase {
 	): array {
 		$reflection = new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards');
 		$reflection->setAccessible(true);
-		return $reflection->invokeArgs(
-			$this->handler,
-			[$objects, $register, $schema, ['rbac' => $_rbac, 'validation' => $_validation], &$result]
+		$batch  = new SafeguardBatchRun(
+			objects: $objects,
+			defaults: new BulkBatchDefaults($register, $schema),
+			flags: ['rbac' => $_rbac, 'validation' => $_validation],
+			result: $result
 		);
+		$passed = $reflection->invokeArgs($this->handler, [$batch]);
+		$result = $batch->result;
+
+		return $passed;
 	}//end callApplyBulkSafeguards()
 
 	private function initResult(int $totalObjects): array {

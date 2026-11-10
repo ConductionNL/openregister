@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\MappingService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Sync\HarvestImportServices;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
+use OCA\OpenRegister\Service\Sync\HarvestRun;
 use OCA\OpenRegister\Service\Sync\SourceFetcherInterface;
 use OCA\OpenRegister\Service\Sync\SyncConflictResolver;
 use OCA\OpenRegister\Service\Sync\SyncRecordStatus;
@@ -153,7 +154,7 @@ class HarvestPipelineServiceTest extends TestCase {
 		$source = $this->makeSource();
 		$fetcher = $this->fakeFetcher(['a', 'b', 'c'], []);
 
-		$records = $this->pipeline->gather($source, $fetcher, 'exec-1');
+		$records = $this->pipeline->gather(new HarvestRun($source, $fetcher, 'exec-1'));
 
 		$this->assertCount(3, $records);
 		$this->assertSame('a', $records[0]->getExternalId());
@@ -164,8 +165,8 @@ class HarvestPipelineServiceTest extends TestCase {
 		$source = $this->makeSource();
 		$fetcher = $this->fakeFetcher(['a', 'b'], ['a' => ['x' => 1], 'b' => ['x' => 2]], failOn: ['b']);
 
-		$records = $this->pipeline->gather($source, $fetcher, 'exec-1');
-		$fetched = $this->pipeline->fetchAll($source, $fetcher, $records);
+		$records = $this->pipeline->gather(new HarvestRun($source, $fetcher, 'exec-1'));
+		$fetched = $this->pipeline->fetchAll(new HarvestRun($source, $fetcher, 'exec-1'), $records);
 
 		// Only 'a' fetched; 'b' failed but did not abort.
 		$this->assertCount(1, $fetched);

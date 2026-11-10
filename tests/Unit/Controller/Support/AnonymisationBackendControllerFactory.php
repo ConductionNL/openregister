@@ -18,7 +18,6 @@ final class AnonymisationBackendControllerFactory {
 	/**
 	 * The constructor arguments of AnonymisationBackendController.
 	 *
-	 * @param mixed $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param IUserSession $userSession Constructor argument.
 	 * @param IGroupManager $groupManager Constructor argument.
@@ -27,18 +26,15 @@ final class AnonymisationBackendControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		mixed $appName,
 		\OCP\IRequest $request,
 		\OCP\IUserSession $userSession,
 		\OCP\IGroupManager $groupManager,
 		\OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService $service,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\AnonymisationBackendControllerServices(
-				userSession: $userSession,
-				groupManager: $groupManager,
+				principal: new \OCA\OpenRegister\Controller\Support\SessionPrincipal(userSession: $userSession, groupManager: $groupManager),
 				service: $service,
 			),
 		];

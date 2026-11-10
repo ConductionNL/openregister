@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -52,7 +53,7 @@ class ConditionMatcherRecordMetadataTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->matcher = new ConditionMatcher(
-			$this->createMock(IUserSession::class),
+			new ConditionUserResolvers($this->createMock(IUserSession::class)),
 			$this->createMock(ContainerInterface::class),
 			new OperatorEvaluator($this->createMock(LoggerInterface::class)),
 			$this->createMock(LoggerInterface::class)

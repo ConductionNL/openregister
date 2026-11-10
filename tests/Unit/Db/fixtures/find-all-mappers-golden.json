@@ -823,9 +823,6 @@
             "#1 from(openregister_consumers, NULL)",
             "#1 setMaxResults(NULL)",
             "#1 setFirstResult(NULL)",
-            "#1 andWhere((title LIKE :t OR description LIKE :t))",
-            "#1 setParameter(t, %x%, NULL)",
-            "#1 setParameter(n, 3, NULL)",
             "#1 executeQuery()"
         ]
     },
@@ -996,16 +993,12 @@
         "queries": []
     },
     "consumer: search with null params": {
-        "warnings": [
-            "foreach() argument must be of type array|object, null given"
-        ],
         "rows": 0,
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_consumers, NULL)",
             "#1 setMaxResults(NULL)",
             "#1 setFirstResult(NULL)",
-            "#1 andWhere((title LIKE :t))",
             "#1 executeQuery()"
         ]
     },
@@ -1319,8 +1312,6 @@
             "#1 param :p1 = abc, 2",
             "#1 expr.eq(slug, :p1, NULL)",
             "#1 andWhere(eq(slug, :p1, NULL))",
-            "#1 andWhere((a = :a))",
-            "#1 setParameter(a, 1, NULL)",
             "#1 executeQuery()"
         ]
     },

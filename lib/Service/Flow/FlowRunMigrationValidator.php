@@ -80,26 +80,43 @@ class FlowRunMigrationValidator {
 	 */
 	public function validate(FlowRun $run, int $targetVersion, array $mapping = []): array {
 		if (in_array((string)$run->getStatus(), self::MIGRATABLE_STATUSES, true) === false) {
-			return $this->refusal(
-				reason: 'This run is ' . (string)$run->getStatus()
-					. ', so there is nothing left to move. Migrating a finished run would rewrite what already happened.'
-			);
+			return $this->statusRefusal(run: $run);
 		}
 
 		$nodes = $this->nodesOf(flowId: (string)$run->getFlowId(), version: $targetVersion);
 		if ($nodes === null) {
-			return $this->refusal(
-				reason: 'Version ' . $targetVersion . ' of this flow could not be read, so nothing was migrated.'
-			);
+			return $this->refusal(reason: 'Version ' . $targetVersion . ' of this flow could not be read, so nothing was migrated.');
 		}
 
 		$sourceNodes = $this->nodesOf(flowId: (string)$run->getFlowId(), version: (int)$run->getFlowVersion());
+		$remap = new FlowRunMarkingRemap(nodes: $nodes, sourceNodes: $sourceNodes, mapping: $mapping);
 
-		$remapped = $this->remapMarking(
-			run: $run,
-			remap: new FlowRunMarkingRemap(nodes: $nodes, sourceNodes: $sourceNodes, mapping: $mapping)
+		return $this->outcome(targetVersion: $targetVersion, remapped: $this->remapMarking(run: $run, remap: $remap));
+	}//end validate()
+
+	/**
+	 * The refusal for a run whose status leaves nothing to move.
+	 *
+	 * @param FlowRun $run The run.
+	 *
+	 * @return array{ok: bool, marking: array<string, int>, unmapped: array<int, string>, reason: string} The refusal.
+	 */
+	private function statusRefusal(FlowRun $run): array {
+		return $this->refusal(
+			reason: 'This run is ' . (string)$run->getStatus()
+				. ', so there is nothing left to move. Migrating a finished run would rewrite what already happened.'
 		);
+	}//end statusRefusal()
 
+	/**
+	 * The verdict on a remapped marking: refused while any place is unmapped, the new marking otherwise.
+	 *
+	 * @param integer                                                      $targetVersion The version being migrated to.
+	 * @param array{marking: array<string, int>, unmapped: array<int, string>} $remapped      The remapped marking.
+	 *
+	 * @return array{ok: bool, marking: array<string, int>, unmapped: array<int, string>, reason: string} The verdict.
+	 */
+	private function outcome(int $targetVersion, array $remapped): array {
 		if ($remapped['unmapped'] !== []) {
 			return $this->refusal(
 				reason: $this->unmappedReason(targetVersion: $targetVersion, unmapped: $remapped['unmapped']),
@@ -108,7 +125,7 @@ class FlowRunMigrationValidator {
 		}
 
 		return ['ok' => true, 'marking' => $remapped['marking'], 'unmapped' => [], 'reason' => ''];
-	}//end validate()
+	}//end outcome()
 
 	/**
 	 * A refused verdict.

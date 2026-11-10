@@ -149,7 +149,7 @@ final class SaveObjectsLogTest extends TestCase {
 	 * @return void
 	 */
 	public function testAReconstructionFailureNamesKeysOnly(): void {
-		$this->call('reconstructSavedObjects', [[['name' => self::NAME]], [], [], []]);
+		$this->call('reconstructSavedObjects', [[['name' => self::NAME]], []]);
 
 		$this->assertLoggedWithoutValues();
 		self::assertSame('error', $this->records[0][0]);

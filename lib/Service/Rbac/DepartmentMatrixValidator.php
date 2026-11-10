@@ -86,20 +86,19 @@ class DepartmentMatrixValidator {
 	 *
 	 * Used for rows an app adds at check time, which never pass a schema save.
 	 *
-	 * @param mixed                $row        The row.
-	 * @param array<string, mixed> $properties The schema's properties.
-	 * @param string               $field      The matrix field.
+	 * @param mixed       $row   The row.
+	 * @param MatrixShape $shape The schema's properties and the matrix field.
 	 *
 	 * @return array<int, array{code: string, message: string}> The findings; empty when the row reads.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function findingsForRow(mixed $row, array $properties, string $field): array {
+	public function findingsForRow(mixed $row, MatrixShape $shape): array {
 		$findings = $this->rowFindings(row: $row, index: 0);
 		if (is_array($row) === true) {
 			$findings = array_merge(
 				$findings,
-				$this->whereFindings(row: $row, index: 0, properties: $properties, field: $field)
+				$this->whereFindings(row: $row, run: new MatrixRowRun(name: 'Row 0', shape: $shape))
 			);
 		}
 
@@ -133,7 +132,7 @@ class DepartmentMatrixValidator {
 
 		return array_merge(
 			$findings,
-			$this->rowsFindings(matrix: $matrix, properties: $properties, field: $field)
+			$this->rowsFindings(matrix: $matrix, shape: new MatrixShape(properties: $properties, field: $field))
 		);
 	}//end validate()
 
@@ -172,13 +171,12 @@ class DepartmentMatrixValidator {
 	 * A matrix that names a provider may declare no rows of its own: its rows
 	 * arrive at check time.
 	 *
-	 * @param array<string, mixed> $matrix     The matrix.
-	 * @param array<string, mixed> $properties The schema's properties.
-	 * @param string               $field      The matrix field.
+	 * @param array<string, mixed> $matrix The matrix.
+	 * @param MatrixShape          $shape  The schema's properties and the matrix field.
 	 *
 	 * @return array<int, array{code: string, message: string}> The findings.
 	 */
-	private function rowsFindings(array $matrix, array $properties, string $field): array {
+	private function rowsFindings(array $matrix, MatrixShape $shape): array {
 		$rowsFrom = ($matrix[self::ROWS_FROM_KEY] ?? null);
 		$findings = array_merge($this->rowsFromFindings(rowsFrom: $rowsFrom), $this->fileVerbsFindings(matrix: $matrix));
 
@@ -189,7 +187,7 @@ class DepartmentMatrixValidator {
 
 		return array_merge(
 			$findings,
-			$this->validateRows(rows: $rows, properties: $properties, field: $field)
+			$this->validateRows(rows: $rows, shape: $shape)
 		);
 	}//end rowsFindings()
 
@@ -293,13 +291,12 @@ class DepartmentMatrixValidator {
 	/**
 	 * Findings for the rows.
 	 *
-	 * @param mixed                $rows       The declared rows.
-	 * @param array<string, mixed> $properties The schema's properties, which a `where` key must name.
-	 * @param string               $field      The matrix field, which a `where` may not repeat.
+	 * @param mixed       $rows  The declared rows.
+	 * @param MatrixShape $shape The schema's properties, which a `where` key must name, and the matrix field, which a `where` may not repeat.
 	 *
 	 * @return array<int, array{code: string, message: string}> The findings.
 	 */
-	private function validateRows(mixed $rows, array $properties, string $field): array {
+	private function validateRows(mixed $rows, MatrixShape $shape): array {
 		if (is_array($rows) === false || count($rows) === 0) {
 			return [['code' => 'matrix.no-rows', 'message' => 'A matrix must declare at least one row.']];
 		}
@@ -310,7 +307,7 @@ class DepartmentMatrixValidator {
 			if (is_array($row) === true) {
 				$findings = array_merge(
 					$findings,
-					$this->whereFindings(row: $row, index: $index, properties: $properties, field: $field)
+					$this->whereFindings(row: $row, run: new MatrixRowRun(name: 'Row ' . (string)$index, shape: $shape))
 				);
 			}
 		}//end foreach
@@ -391,17 +388,15 @@ class DepartmentMatrixValidator {
 	 * The compiler drops a row it cannot read; refusing it here is what tells
 	 * the administrator, before a row they wrote quietly grants nothing.
 	 *
-	 * @param array<string, mixed> $row        The row.
-	 * @param string|integer       $index      Which row it is.
-	 * @param array<string, mixed> $properties The schema's properties.
-	 * @param string               $field      The matrix field.
+	 * @param array<string, mixed> $row The row.
+	 * @param MatrixRowRun         $run The row's name in messages, the schema's properties and the matrix field.
 	 *
 	 * @return array<int, array{code: string, message: string}> The findings.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function whereFindings(array $row, string|int $index, array $properties, string $field): array {
-		$name = 'Row ' . (string)$index;
+	private function whereFindings(array $row, MatrixRowRun $run): array {
+		$name = $run->name;
 		$findings = $this->untilFindings(row: $row, name: $name);
 
 		$where = ($row['where'] ?? []);
@@ -412,7 +407,7 @@ class DepartmentMatrixValidator {
 
 		$findings = array_merge(
 			$findings,
-			$this->whereEntryFindings(where: $where, name: $name, properties: $properties, field: $field)
+			$this->whereEntryFindings(where: $where, run: $run)
 		);
 
 		return array_merge($findings, (new MatrixRowWhere())->crossingFindings(row: $row, name: $name));
@@ -449,19 +444,17 @@ class DepartmentMatrixValidator {
 	/**
 	 * One finding per `where` entry whose key or value is refused (key first).
 	 *
-	 * @param array  $where      The conditions.
-	 * @param string $name       The row's name in messages.
-	 * @param array  $properties The schema's properties.
-	 * @param string $field      The matrix field.
+	 * @param array        $where The conditions.
+	 * @param MatrixRowRun $run   The row's name in messages, the schema's properties and the matrix field.
 	 *
 	 * @return array<int, array{code: string, message: string}> The findings.
 	 */
-	private function whereEntryFindings(array $where, string $name, array $properties, string $field): array {
+	private function whereEntryFindings(array $where, MatrixRowRun $run): array {
 		$findings = [];
 		foreach ($where as $key => $value) {
 			$finding = (
-				$this->whereKeyNameFinding(name: $name, key: (string)$key, properties: $properties, field: $field)
-				?? $this->whereValueFinding(name: $name, key: (string)$key, value: $value)
+				$this->whereKeyNameFinding(key: (string)$key, run: $run)
+				?? $this->whereValueFinding(condition: $run->name . ': the condition on "' . (string)$key . '"', value: $value)
 			);
 			if ($finding !== null) {
 				$findings[] = $finding;
@@ -474,22 +467,21 @@ class DepartmentMatrixValidator {
 	/**
 	 * The finding for the field one `where` condition names, or null when it reads.
 	 *
-	 * @param string               $name       The row, as messages name it.
-	 * @param string               $key        The property the condition is on.
-	 * @param array<string, mixed> $properties The schema's properties.
-	 * @param string               $field      The matrix field.
+	 * @param string       $key The property the condition is on.
+	 * @param MatrixRowRun $run The row's name in messages, the schema's properties and the matrix field.
 	 *
 	 * @return array{code: string, message: string}|null The finding.
 	 */
-	private function whereKeyNameFinding(string $name, string $key, array $properties, string $field): ?array {
-		if ($key === $field) {
+	private function whereKeyNameFinding(string $key, MatrixRowRun $run): ?array {
+		$name = $run->name;
+		if ($key === $run->shape->field) {
 			return [
 				'code' => 'matrix.where-repeats-field',
 				'message' => $name . ': where repeats the matrix field "' . $key . '".',
 			];
 		}
 
-		if (array_key_exists($key, $properties) === false && in_array($key, self::WHERE_METADATA_FIELDS, true) === false) {
+		if (array_key_exists($key, $run->shape->properties) === false && in_array($key, self::WHERE_METADATA_FIELDS, true) === false) {
 			return [
 				'code' => 'matrix.where-unknown-field',
 				'message' => $name . ': where names "' . $key . '", which is neither a property of this schema nor '
@@ -503,18 +495,16 @@ class DepartmentMatrixValidator {
 	/**
 	 * The finding for the value of one `where` condition, or null when it reads.
 	 *
-	 * @param string $name  The row, as messages name it.
-	 * @param string $key   The property the condition is on.
-	 * @param mixed  $value The condition.
+	 * @param string $condition The condition as messages name it: the row and the property it is on.
+	 * @param mixed  $value     The condition.
 	 *
 	 * @return array{code: string, message: string}|null The finding.
 	 */
-	private function whereValueFinding(string $name, string $key, mixed $value): ?array {
+	private function whereValueFinding(string $condition, mixed $value): ?array {
 		if ((new MatrixRowWhere())->condition(value: $value) === null) {
 			return [
 				'code' => 'matrix.bad-where-value',
-				'message' => $name . ': the condition on "' . $key
-					. '" must be a value, a non-empty list of values or {$in: [...]}.',
+				'message' => $condition . ' must be a value, a non-empty list of values or {$in: [...]}.',
 			];
 		}
 

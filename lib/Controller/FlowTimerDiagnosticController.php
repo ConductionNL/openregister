@@ -36,11 +36,13 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTimeImmutable;
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\FlowTimerDiagnosticControllerServices;
+use OCA\OpenRegister\Controller\Support\TermExplanationRequest;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
-use OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic;
+use OCA\OpenRegister\Service\Flow\Timer\TermDiagnosticInterface;
 use OCA\OpenRegister\Service\Flow\Timer\TermQuery;
-use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinitionsInterface;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -73,26 +75,32 @@ class FlowTimerDiagnosticController extends Controller {
 	/**
 	 * The engine, narrating.
 	 *
-	 * @var TermDiagnostic
+	 * @var TermDiagnosticInterface
 	 */
-	private readonly TermDiagnostic $diagnostic;
+	private readonly TermDiagnosticInterface $diagnostic;
+
+	/**
+	 * Builds and validates the calendar definition.
+	 *
+	 * @var WorkingCalendarDefinitionsInterface
+	 */
+	private readonly WorkingCalendarDefinitionsInterface $calendars;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
 	 * @param FlowTimerDiagnosticControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		FlowTimerDiagnosticControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->userSession = $services->userSession;
 		$this->groupManager = $services->groupManager;
 		$this->diagnostic = $services->diagnostic;
+		$this->calendars = $services->calendars;
 	}//end __construct()
 
 	/**
@@ -115,29 +123,53 @@ class FlowTimerDiagnosticController extends Controller {
 	 */
 	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
 	public function explain(array $calendar = [], string $anchorAt = '', array $sla = [], array $ladder = []): JSONResponse {
+		return $this->explainAsAdmin(term: new TermExplanationRequest(calendar: $calendar, anchorAt: $anchorAt, sla: $sla, ladder: $ladder));
+	}//end explain()
+
+	/**
+	 * Explain a term for an administrator; anyone else is refused before anything is read.
+	 *
+	 * @param TermExplanationRequest $term The calendar, anchor, SLA and ladder as sent.
+	 *
+	 * @return JSONResponse The walk, or a refusal.
+	 *
+	 * @spec openspec/changes/term-engine-diagnostic/specs/flow-business-timers/spec.md
+	 */
+	private function explainAsAdmin(TermExplanationRequest $term): JSONResponse {
 		$refusal = $this->requireAdmin();
 		if ($refusal !== null) {
 			return $refusal;
 		}
 
 		try {
-			$anchor = $this->readAnchor(anchorAt: $anchorAt);
-
-			return new JSONResponse(
-				data: $this->diagnostic->explain(
-					query: new TermQuery(
-						calendar: WorkingCalendars::fromDefinition(definition: $calendar),
-						anchor: $anchor,
-						sla: $sla,
-						ladder: $ladder
-					)
-				)
-			);
+			return new JSONResponse(data: $this->diagnostic->explain(query: $this->termQuery(term: $term)));
 		} catch (FlowTimerValidationException $refused) {
 			// A calendar that cannot be saved is not explainable, for the save path's own reason.
 			return $this->refused(message: $refused->getMessage());
 		}
-	}//end explain()
+	}//end explainAsAdmin()
+
+	/**
+	 * Parse a request into the query the diagnostic walks; the anchor is read first.
+	 *
+	 * @param TermExplanationRequest $term The calendar, anchor, SLA and ladder as sent.
+	 *
+	 * @return TermQuery The parsed query.
+	 *
+	 * @throws FlowTimerValidationException When the anchor or the calendar cannot be read.
+	 *
+	 * @spec openspec/changes/term-engine-diagnostic/specs/flow-business-timers/spec.md
+	 */
+	private function termQuery(TermExplanationRequest $term): TermQuery {
+		$anchor = $this->readAnchor(anchorAt: $term->anchorAt);
+
+		return new TermQuery(
+			calendar: $this->calendars->parse(definition: $term->calendar),
+			anchor: $anchor,
+			sla: $term->sla,
+			ladder: $term->ladder
+		);
+	}//end termQuery()
 
 	/**
 	 * Read the anchor instant the term is explained from.

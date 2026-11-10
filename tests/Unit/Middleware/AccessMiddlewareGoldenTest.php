@@ -29,8 +29,10 @@ use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Middleware\ApiCallerMiddleware;
 use OCA\OpenRegister\Middleware\AuthRateLimitExceededException;
 use OCA\OpenRegister\Middleware\Exception\CallerRefusedException;
+use OCA\OpenRegister\Middleware\InboundCall;
 use OCA\OpenRegister\Middleware\PublicApiCorsMiddleware;
 use OCA\OpenRegister\Middleware\RateLimitMiddleware;
+use OCA\OpenRegister\Middleware\Support\ApiCallerServices;
 use OCA\OpenRegister\Middleware\TenantQuotaExceededException;
 use OCA\OpenRegister\Middleware\TenantQuotaMiddleware;
 use OCA\OpenRegister\Middleware\TenantStatusException;
@@ -56,8 +58,6 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
-use OCA\OpenRegister\Middleware\Support\ApiCallerServices;
-use OCA\OpenRegister\Middleware\Support\RateLimitPlatform;
 
 /**
  * Allowed and refused outcomes of the access middlewares.
@@ -82,7 +82,7 @@ final class AccessMiddlewareGoldenTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('isAdmin')->willReturn($admin);
 
-		return new TenantQuotaMiddleware($orgs, $session, $groups, $logger ?? $this->createMock(LoggerInterface::class));
+		return new TenantQuotaMiddleware($orgs, $this->inboundCall($this->createMock(IRequest::class), $session, $logger), $groups);
 	}
 
 	/**
@@ -172,8 +172,16 @@ final class AccessMiddlewareGoldenTest extends TestCase {
 			$user = $this->user();
 		}
 
-		$this->tenant($user, $org, $admin)->beforeController('C', 'm');
-		$this->addToAssertionCount(1);
+		$refusedStatus = null;
+		try {
+			$this->tenant($user, $org, $admin)->beforeController('C', 'm');
+		} catch (TenantStatusException $e) {
+			$refusedStatus = $e->getStatus();
+		}
+
+		// The pair is testTenantRefusesTheseStatuses: the same middleware, the
+		// deciding status (or the admin flag for provisioning) flipped.
+		$this->assertNull($refusedStatus, 'The tenant middleware refused a request it must let through.');
 	}
 
 	public function testTenantLetsARequestThroughWhenTheOrganisationCannotLoad(): void {
@@ -183,7 +191,7 @@ final class AccessMiddlewareGoldenTest extends TestCase {
 		$session->method('getUser')->willReturn($this->user());
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->exactly(2))->method('warning')->with($this->stringStartsWith('[TenantQuotaMiddleware] Could not load organisation'));
-		$mw = new TenantQuotaMiddleware($orgs, $session, $this->createMock(IGroupManager::class), $logger);
+		$mw = new TenantQuotaMiddleware($orgs, $this->inboundCall($this->createMock(IRequest::class), $session, $logger), $this->createMock(IGroupManager::class));
 
 		$mw->beforeController('C', 'm');
 		$response = new JSONResponse(['a' => 1]);
@@ -240,8 +248,21 @@ final class AccessMiddlewareGoldenTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 		$security->method('getTrustedClientIpAddress')->willReturn('10.0.0.1');
 
-		return new RateLimitMiddleware($request, new RateLimitPlatform($session, $this->reflector($public), $logger ?? $this->createMock(LoggerInterface::class)), $security);
+		return new RateLimitMiddleware(new InboundCall($request, $session, $this->reflector($public), $logger ?? $this->createMock(LoggerInterface::class)), $security);
 	}
+
+	/**
+	 * The inbound call the screening middlewares read.
+	 */
+	private function inboundCall(IRequest $request, IUserSession $session, ?LoggerInterface $logger=null, ?IControllerMethodReflector $reflector=null): InboundCall {
+		return new InboundCall(
+			$request,
+			$session,
+			$reflector ?? $this->createMock(IControllerMethodReflector::class),
+			$logger ?? $this->createMock(LoggerInterface::class)
+		);
+	}
+
 
 	/**
 	 * A reflector that, like the container's, can reflect a method.
@@ -353,7 +374,7 @@ final class AccessMiddlewareGoldenTest extends TestCase {
 		$security = $this->createMock(SecurityService::class);
 		$security->method('getTrustedClientIpAddress')->willReturn('10.0.0.1');
 		$security->expects($this->once())->method('checkAuthRateLimit')->willReturn(['allowed' => true]);
-		$mw = new RateLimitMiddleware($this->createMock(IRequest::class), new RateLimitPlatform($this->createMock(IUserSession::class), $this->reflector(true, true), $this->createMock(LoggerInterface::class)), $security);
+		$mw = new RateLimitMiddleware(new InboundCall($this->createMock(IRequest::class), $this->createMock(IUserSession::class), $this->reflector(true, true), $this->createMock(LoggerInterface::class)), $security);
 		$mw->beforeController($this->controller(), 'm');
 	}
 
@@ -586,7 +607,7 @@ final class AccessMiddlewareGoldenTest extends TestCase {
 		$request->method('getHeader')->willReturnMap([['Origin', $origin]]);
 		$policy = $this->createMock(HardeningPolicy::class);
 		$policy->method('allowedOrigins')->willReturn($allowlist);
-		return new PublicApiCorsMiddleware($request, $reflector, $policy);
+		return new PublicApiCorsMiddleware($this->inboundCall($request, $this->createMock(IUserSession::class), null, $reflector), $policy);
 	}
 
 	/**

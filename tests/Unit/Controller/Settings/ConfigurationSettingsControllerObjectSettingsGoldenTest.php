@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\ConfigurationSettingsControllerServices;
 use OCA\OpenRegister\Controller\Settings\ConfigurationSettingsController;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\IRequest;
@@ -96,7 +97,7 @@ class ConfigurationSettingsControllerObjectSettingsGoldenTest extends TestCase {
 			return ['saved' => $data];
 		});
 
-		$controller = new ConfigurationSettingsController('openregister', $request, $settings, $this->createMock(LoggerInterface::class));
+		$controller = new ConfigurationSettingsController($request, new ConfigurationSettingsControllerServices($settings, $this->createMock(LoggerInterface::class)));
 		$response = $controller->$action();
 		$this->compare($this->dataName(), ['calls' => $this->calls, 'status' => $response->getStatus(), 'data' => $response->getData()]);
 	}

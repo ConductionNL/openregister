@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppInfo;
 
+use OCA\OpenRegister\Mcp\McpDiscoveryRun;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\AnnotationFixtureService;
 use OCP\IL10N;
@@ -170,7 +171,10 @@ class AttributeMcpDiscoveryTest extends TestCase {
 
 		$method = new ReflectionMethod(McpProviderDiscovery::class, 'collectAttributeMcpProviders');
 		$method->setAccessible(true);
-		$method->invokeArgs($app, [$sharedContainer, $logger, &$providers]);
+		$run = new McpDiscoveryRun($sharedContainer, $logger);
+		$run->addAll($providers);
+		$method->invokeArgs($app, [$run]);
+		$providers = $run->providers();
 
 		return $app;
 	}//end invokeCollect()

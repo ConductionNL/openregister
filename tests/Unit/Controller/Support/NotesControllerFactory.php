@@ -18,7 +18,6 @@ final class NotesControllerFactory {
 	/**
 	 * The constructor arguments of NotesController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param NoteService $noteService Constructor argument.
 	 * @param ObjectService $objectService Constructor argument.
@@ -28,7 +27,6 @@ final class NotesControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Files\Service\NoteService $noteService,
 		\OCA\OpenRegister\Service\ObjectService $objectService,
@@ -36,7 +34,6 @@ final class NotesControllerFactory {
 		\OCA\OpenRegister\Notifications\Service\Timeline\TimelineWriteService $timeline,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Notifications\Controller\Support\NotesControllerServices(
 				noteService: $noteService,

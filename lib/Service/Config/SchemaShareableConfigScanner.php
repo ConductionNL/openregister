@@ -29,9 +29,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Config;
 
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\Config\Types\GenericObjectShareableConfigType;
+use OCA\OpenRegister\Service\Config\Types\ShareableTypeIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -43,14 +43,12 @@ class SchemaShareableConfigScanner implements SchemaShareableConfigScannerInterf
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Enumerates schemas and their markers.
-	 * @param RegisterMapperInterface $registerMapper Finds the registers a schema belongs to.
+	 * @param SchemaCatalogInterface $catalog Enumerates schemas and their markers, and the registers a schema belongs to.
 	 * @param ObjectOperationsInterface $objectService Handed to each generated type.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
@@ -66,8 +64,8 @@ class SchemaShareableConfigScanner implements SchemaShareableConfigScannerInterf
 	 */
 	public function scan(): array {
 		try {
-			$schemas = $this->schemaMapper->findAll();
-			$registers = $this->registerMapper->findAll();
+			$schemas = $this->catalog->schemas()->findAll();
+			$registers = $this->catalog->registers()->findAll();
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[SchemaShareableConfigScanner] Could not scan for shareable schemas: ' . $e->getMessage(),
@@ -102,9 +100,7 @@ class SchemaShareableConfigScanner implements SchemaShareableConfigScannerInterf
 
 				$types[] = new GenericObjectShareableConfigType(
 					objectService: $this->objectService,
-					id: $id,
-					name: $name,
-					topic: $topic,
+					identity: new ShareableTypeIdentity(id: $id, name: $name, topic: $topic),
 					register: $registerSlug,
 					schema: $schemaSlug
 				);

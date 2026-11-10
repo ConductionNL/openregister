@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Service\Lifecycle\StateFieldLists;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRules;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
@@ -199,7 +200,7 @@ final class PropertyRbacHandlerFilterGoldenTest extends TestCase {
 		$states->method('resolve')->willReturnCallback(
 			fn (Schema $schema, array $data): StateFieldRules => new StateFieldRules(
 				state: ($data['status'] ?? null),
-				hidden: (($data['status'] ?? null) === 'closed') ? ['hiddenByState'] : []
+				fields: new StateFieldLists(hidden: (($data['status'] ?? null) === 'closed') ? ['hiddenByState'] : [])
 			)
 		);
 
@@ -211,14 +212,7 @@ final class PropertyRbacHandlerFilterGoldenTest extends TestCase {
 			}
 		);
 
-		return new PropertyRbacHandler(
-			userSession: $session,
-			groupManager: $groups,
-			conditionMatcher: $matcher,
-			logger: $logger,
-			stateFieldRules: $states,
-			reveals: $reveals
-		);
+		return new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($session, $groups), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($matcher, $states), logger: $logger, reveals: $reveals);
 	}
 
 	/**
