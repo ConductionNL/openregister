@@ -1,2 +1,3 @@
 dossiq	5497	e3f7be943b561e64b118b798981769f462a0297f	CONFLICT	FV02:2	merge conflict with the verify tree (earlier PRs in tree 2)
 dossiq	5434	fca6c3bc9a73dca007a7892d23d4bde2b5236900	RED	FV01:1	vitest hiddenStatusList.spec.js 'the dashboard open-work counts carry the condition' (source-text check on KpiAggregationService.php)
+dossiq	5446	a4629ad44fbe4df82028a7eb510cd804cb318ceb	RED	FV01:1	vitest schemasWithASurface.spec.js 'is a collection on the supplier contribution, scoped by supplierRef' (source-text check on PortalContributionProvider.php)
