@@ -225,18 +225,29 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 			&& $configuration['client_assertion_type'] === 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
 		) {
 			$callConfig['form_params']['client_assertion_type'] = $configuration['client_assertion_type'];
-			$callConfig['form_params']['client_assertion'] = $this->fetchJWTToken(
-				configuration: [
-					'algorithm' => 'PS256',
-					'secret' => $configuration['private_key'],
-					'x5t' => $configuration['x5t'],
-					'payload' => $configuration['payload'],
-				]
-			);
+			$callConfig['form_params']['client_assertion'] = $this->clientAssertionJwt(configuration: $configuration);
 		}
 
 		return $callConfig;
 	}//end withClientAssertion()
+
+	/**
+	 * The signed JWT a client presents as its assertion (PS256 over the configured private key).
+	 *
+	 * @param array $configuration The authentication configuration.
+	 *
+	 * @return string
+	 */
+	private function clientAssertionJwt(array $configuration): string {
+		return $this->fetchJWTToken(
+			configuration: [
+				'algorithm' => 'PS256',
+				'secret' => $configuration['private_key'],
+				'x5t' => $configuration['x5t'],
+				'payload' => $configuration['payload'],
+			]
+		);
+	}//end clientAssertionJwt()
 
 	/**
 	 * Create call options for OAuth with Password Credentials.
