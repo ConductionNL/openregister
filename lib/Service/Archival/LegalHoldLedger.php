@@ -56,22 +56,6 @@ class LegalHoldLedger {
 	public const LEGACY_OWNER = 'openregister:manual';
 
 	/**
-	 * Add the hold with this owner key, or update it when the owner already holds the object
-	 *
-	 * @param array       $retention The object's retention array.
-	 * @param string      $reason    Why the object is held.
-	 * @param string|null $ownerKey  The matter placing the hold; null for a manual hold.
-	 * @param HoldStamp   $stamp     Who places it, and the moment (ISO 8601).
-	 *
-	 * @return array The retention array with the hold in place.
-	 *
-	 * @spec openspec/specs/archival-destruction-workflow/spec.md
-	 */
-	public function place(array $retention, string $reason, ?string $ownerKey, HoldStamp $stamp): array {
-		return $this->placeAction(retention: $retention, action: new HoldAction(ownerKey: $ownerKey, reason: $reason, stamp: $stamp));
-	}//end place()
-
-	/**
 	 * The retention array with one matter's hold added, or restated.
 	 *
 	 * @param array      $retention The object's retention array.
@@ -99,22 +83,6 @@ class LegalHoldLedger {
 
 		return $this->write(retention: $retention, holds: $holds);
 	}//end placeAction()
-
-	/**
-	 * Lift the hold of one owner, or every hold when no owner is named
-	 *
-	 * @param array       $retention     The object's retention array.
-	 * @param string|null $ownerKey      The matter releasing its hold; null lifts every hold.
-	 * @param string      $releaseReason Why it is released.
-	 * @param HoldStamp   $stamp         Who releases it, and the moment (ISO 8601).
-	 *
-	 * @return array The retention array, the released holds moved to history.
-	 *
-	 * @spec openspec/specs/archival-destruction-workflow/spec.md
-	 */
-	public function release(array $retention, ?string $ownerKey, string $releaseReason, HoldStamp $stamp): array {
-		return $this->releaseAction(retention: $retention, action: new HoldAction(ownerKey: $ownerKey, reason: $releaseReason, stamp: $stamp));
-	}//end release()
 
 	/**
 	 * The retention array with one matter's hold, or every hold, moved to history.

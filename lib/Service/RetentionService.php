@@ -54,6 +54,7 @@ use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Archival\HoldAction;
 
 /**
  * Service for managing retention lifecycle of register objects.
@@ -584,11 +585,9 @@ class RetentionService implements RetentionServiceInterface {
 	public function placeHold(ObjectEntity $object, HoldOrder $order): ObjectEntity {
 		// One hold per matter, the same ledger LegalHoldService writes (#4172).
 		$object->setRetention(
-			(new LegalHoldLedger())->place(
+			(new LegalHoldLedger())->placeAction(
 				retention: ($object->getRetention() ?? []),
-				reason: $order->reason,
-				ownerKey: $order->ownerKey,
-				stamp: $this->holdStamp()
+				action: new HoldAction(ownerKey: $order->ownerKey, reason: $order->reason, stamp: $this->holdStamp())
 			)
 		);
 
@@ -628,11 +627,9 @@ class RetentionService implements RetentionServiceInterface {
 		}
 
 		$object->setRetention(
-			$ledger->release(
+			$ledger->releaseAction(
 				retention: $retention,
-				ownerKey: $order->ownerKey,
-				releaseReason: $order->reason,
-				stamp: $this->holdStamp()
+				action: new HoldAction(ownerKey: $order->ownerKey, reason: $order->reason, stamp: $this->holdStamp())
 			)
 		);
 
