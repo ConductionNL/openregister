@@ -15,6 +15,7 @@ namespace OCA\OpenRegister\Tests\Db;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
 use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -394,7 +395,7 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 	// =========================================================================
 
 	public function testGetDetailedStatisticsReturnsExpectedKeys(): void {
-		$stats = $this->mapper->getDetailedStatistics();
+		$stats = $this->mapper->detailedStatistics(new AuditStatisticsScope());
 		$this->assertIsArray($stats);
 		$this->assertArrayHasKey('total', $stats);
 		$this->assertArrayHasKey('creates', $stats);
@@ -408,7 +409,7 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$this->createTestAuditTrail(null, null, 'create', $register->getId(), $schema->getId());
 
-		$stats = $this->mapper->getDetailedStatistics($register->getId(), $schema->getId(), 24);
+		$stats = $this->mapper->detailedStatistics(new AuditStatisticsScope($register->getId(), $schema->getId()));
 		$this->assertIsArray($stats);
 		$this->assertArrayHasKey('total', $stats);
 	}
@@ -420,7 +421,9 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 	public function testGetActionDistributionReturnsExpectedStructure(): void {
 		$this->createTestAuditTrail(null, null, 'create');
 
-		$result = $this->mapper->getActionDistribution(null, null, 9999);
+		$scope = new AuditStatisticsScope(null, null);
+		$scope->hours = 9999;
+		$result = $this->mapper->actionDistribution($scope);
 		$this->assertIsArray($result);
 		$this->assertArrayHasKey('actions', $result);
 		$this->assertIsArray($result['actions']);
@@ -431,7 +434,9 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$this->createTestAuditTrail(null, null, 'update', $register->getId(), $schema->getId());
 
-		$result = $this->mapper->getActionDistribution($register->getId(), $schema->getId(), 9999);
+		$scope = new AuditStatisticsScope($register->getId(), $schema->getId());
+		$scope->hours = 9999;
+		$result = $this->mapper->actionDistribution($scope);
 		$this->assertIsArray($result);
 		$this->assertArrayHasKey('actions', $result);
 	}
@@ -478,7 +483,10 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$this->createTestAuditTrail(42);
 		$this->createTestAuditTrail(43);
 
-		$result = $this->mapper->getMostActiveObjects(null, null, 5, 9999);
+		$scope = new AuditStatisticsScope(null, null);
+		$scope->limit = 5;
+		$scope->hours = 9999;
+		$result = $this->mapper->mostActiveObjects($scope);
 		$this->assertIsArray($result);
 		$this->assertArrayHasKey('objects', $result);
 		$this->assertIsArray($result['objects']);
@@ -489,7 +497,10 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$this->createTestAuditTrail(44, null, 'update', $register->getId(), $schema->getId());
 
-		$result = $this->mapper->getMostActiveObjects($register->getId(), $schema->getId(), 3, 9999);
+		$scope = new AuditStatisticsScope($register->getId(), $schema->getId());
+		$scope->limit = 3;
+		$scope->hours = 9999;
+		$result = $this->mapper->mostActiveObjects($scope);
 		$this->assertIsArray($result);
 		$this->assertArrayHasKey('objects', $result);
 	}

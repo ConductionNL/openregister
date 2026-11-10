@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCP\IUser;
@@ -60,7 +61,9 @@ class UnownedWriteTest extends TestCase {
 	private function attribute(SaveObject $handler, ObjectEntity $entity, bool $unowned): void {
 		$method = new ReflectionMethod(SaveObject::class, 'applyOwnerAttribution');
 		$method->setAccessible(true);
-		$method->invoke($handler, $entity, $unowned);
+		$flags          = new ObjectSaveFlags();
+		$flags->unowned = $unowned;
+		$method->invoke($handler, $entity, $flags);
 	}
 
 

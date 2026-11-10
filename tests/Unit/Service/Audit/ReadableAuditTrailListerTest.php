@@ -1086,7 +1086,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 		$readable[self::READABLE] = true;
 
 		$trail = $this->createMock(AuditTrailMapper::class);
-		$trail->expects($this->once())->method('createPurposeRefusalEntry');
+		$trail->expects($this->once())->method('recordPurposeRefusal');
 
 		$history = $this->historyWithRealGuard(located: $located, trail: $trail);
 		$auditMapper = $this->createMock(AuditTrailMapper::class);

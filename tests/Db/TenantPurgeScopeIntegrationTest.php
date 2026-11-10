@@ -14,6 +14,8 @@ use OCA\OpenRegister\BackgroundJob\TenantPurgeJob;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\TenantUsageMapper;
+use OCA\OpenRegister\Db\TenantUsage\UsageBucket;
+use OCA\OpenRegister\Db\TenantUsage\UsageRange;
 use OCA\OpenRegister\Db\UsageMeasurement;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
@@ -125,13 +127,11 @@ class TenantPurgeScopeIntegrationTest extends TestCase {
 		$this->created[] = $uuid;
 
 		$this->usage->upsertUsage(
-			organisationUuid: $uuid,
-			period: new DateTime('2026-01-01 10:00:00'),
+			bucket: new UsageBucket(organisationUuid: $uuid, period: new DateTime('2026-01-01 10:00:00')),
 			measurement: new UsageMeasurement(requestCount: 1, bandwidthBytes: 1, storageBytes: 1)
 		);
 		$this->usage->upsertUsage(
-			organisationUuid: $uuid,
-			period: new DateTime('2026-06-01 10:00:00'),
+			bucket: new UsageBucket(organisationUuid: $uuid, period: new DateTime('2026-06-01 10:00:00')),
 			measurement: new UsageMeasurement(requestCount: 1, bandwidthBytes: 1, storageBytes: 1)
 		);
 
@@ -148,8 +148,7 @@ class TenantPurgeScopeIntegrationTest extends TestCase {
 	private function usageOf(string $uuid): array {
 		return $this->usage->findByOrgAndDateRange(
 			organisationUuid: $uuid,
-			from: new DateTime('2000-01-01 00:00:00'),
-			to: new DateTime('2098-12-31 23:59:59')
+			range: new UsageRange(from: new DateTime('2000-01-01 00:00:00'), to: new DateTime('2098-12-31 23:59:59'))
 		);
 
 	}//end usageOf()

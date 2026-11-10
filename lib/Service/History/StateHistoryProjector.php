@@ -37,6 +37,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\History;
 
 use DateTime;
+use OCA\OpenRegister\Db\StateHistory\TrackedProperty;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -86,7 +87,7 @@ class StateHistoryProjector implements StateHistoryProjectorInterface, StateHist
 		}
 
 		$objectUuid = (string)$move->getObject()->getUuid();
-		$this->mapper->closeOpenInterval(objectUuid: $objectUuid, property: $property, leftAt: $stampedAt);
+		$this->mapper->closeOpenInterval(tracked: new TrackedProperty(objectUuid: $objectUuid, property: $property), leftAt: $stampedAt);
 
 		$interval = new StateHistory();
 		$interval->setObjectUuid($objectUuid);

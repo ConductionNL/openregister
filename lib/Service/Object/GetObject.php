@@ -32,9 +32,11 @@ namespace OCA\OpenRegister\Service\Object;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -395,10 +397,20 @@ class GetObject
         // handler honours them. These are read from the query array downstream;
         // passing them only as method arguments left them silently dropped, so
         // a caller's `_rbac:false` (e.g. installer/system context) had no effect.
-        $objects = $this->objectMapper->findAll(
-            limit: $limit, offset: $offset, filters: array_merge($filters, ['_rbac' => $_rbac, '_multitenancy' => $_multitenancy]),
-            sort: $sort, search: $search, ids: $ids, uses: $uses, register: $register, schema: $schema
+        $listing = new ListQuery(
+            limit: ($limit ?? ListQuery::UNBOUNDED),
+            offset: $offset,
+            filters: array_merge($filters, ['_rbac' => $_rbac, '_multitenancy' => $_multitenancy]),
+            sort: $sort,
+            search: $search
         );
+        $table   = null;
+        if ($register !== null && $schema !== null) {
+            $table = new RegisterSchema(register: $register, schema: $schema);
+        }
+
+        $request = new MagicListRequest(table: $table, query: $listing, ids: $ids, uses: $uses);
+        $objects = $this->objectMapper->findAllListed(request: $request);
         return $this->withFilesHydrated(objects: $objects, files: $files);
     }//end findAll()
 

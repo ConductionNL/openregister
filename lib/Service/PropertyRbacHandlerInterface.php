@@ -61,17 +61,15 @@ interface PropertyRbacHandlerInterface {
 	/**
 	 * Whether the current user can update a property of this object.
 	 *
-	 * @param Schema $schema   Schema containing property definition
-	 * @param string $property Property name to check
-	 * @param array  $object   Object data (for conditional matching)
-	 * @param bool   $isCreate Whether this is a create operation
+	 * @param SchemaProperty        $property The schema and the property name to check
+	 * @param PropertyAccessRequest $request  The object data (for conditional matching) and whether this is a create
 	 *
 	 * @return bool True if user can update the property
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#field-level-security (property-level update authorization,
 	 *       with create-mode organisation-match skipping per the FLS-on-create requirement)
 	 */
-	public function canUpdateProperty(Schema $schema, string $property, array $object, bool $isCreate = false): bool;
+	public function canUpdateProperty(SchemaProperty $property, PropertyAccessRequest $request): bool;
 
 	/**
 	 * The object with only the properties the current user may read.
@@ -116,15 +114,14 @@ interface PropertyRbacHandlerInterface {
 	/**
 	 * Properties a raw update payload omits that the writer may not read or update.
 	 *
-	 * @param Schema $schema   Schema whose property authorization applies.
-	 * @param array  $incoming The raw incoming update payload.
-	 * @param array  $stored   The stored record's match envelope.
+	 * @param ProtectedCarryForward $update The schema whose property authorization applies, the raw incoming update
+	 *                                      payload and the stored record's match envelope.
 	 *
 	 * @return array<int, string> Top-level property names to carry forward
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-an-update-that-omits-a-property-the-caller-may-not-update-keeps-it
 	 */
-	public function collectOmittedProtectedProperties(Schema $schema, array $incoming, array $stored): array;
+	public function collectOmittedProtectedProperties(ProtectedCarryForward $update): array;
 
 	/**
 	 * Carry stored write-only values forward onto a payload that omitted them.
@@ -142,17 +139,15 @@ interface PropertyRbacHandlerInterface {
 	/**
 	 * The submitted properties the current user is not allowed to write.
 	 *
-	 * @param Schema $schema       Schema containing property definitions
-	 * @param array  $object       Existing object data (empty array for creates)
-	 * @param array  $incomingData Incoming data from client
-	 * @param bool   $isCreate     Whether this is a create operation
+	 * @param PropertyWriteCheck $write The schema with its property definitions, the existing object data (empty for
+	 *                                  creates) with the create flag, and the incoming data from the client.
 	 *
 	 * @return array Property names the user cannot update
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#field-level-security (validates incoming writes against
 	 *       property update rules; skips unchanged values so PATCH may resubmit protected fields)
 	 */
-	public function getUnauthorizedProperties(Schema $schema, array $object, array $incomingData, bool $isCreate = false): array;
+	public function getUnauthorizedProperties(PropertyWriteCheck $write): array;
 
 	/**
 	 * The lifecycle state's field rules for one object.
