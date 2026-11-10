@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\ProtectedCarryForward;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -313,11 +314,11 @@ class SaveObjectUnwritablePreserveTest extends TestCase {
 
 		$this->assertSame(
 			['restricted'],
-			$this->rbac->collectOmittedProtectedProperties(schema: $schema, incoming: ['title' => 'x'], stored: ['title' => 'x', 'restricted' => true])
+			$this->rbac->collectOmittedProtectedProperties(update: new ProtectedCarryForward(schema: $schema, incoming: ['title' => 'x'], stored: ['title' => 'x', 'restricted' => true]))
 		);
 		$this->assertSame(
 			[],
-			$this->rbac->collectOmittedProtectedProperties(schema: $schema, incoming: ['title' => 'x', 'restricted' => true], stored: ['restricted' => true])
+			$this->rbac->collectOmittedProtectedProperties(update: new ProtectedCarryForward(schema: $schema, incoming: ['title' => 'x', 'restricted' => true], stored: ['restricted' => true]))
 		);
 	}//end testTheHandlerNamesOnlyStoredPropertiesTheCallerMayNotUpdate()
 }//end class

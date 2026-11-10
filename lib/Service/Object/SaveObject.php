@@ -35,6 +35,9 @@ use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
 use Adbar\Dot;
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Service\ProtectedCarryForward;
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\PropertyWriteCheck;
 use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrail\NamedActor;
 use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusal;
@@ -2022,10 +2025,7 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		$unauthorizedProps = $this->propertyRbacHandler->getUnauthorizedProperties(
-			schema: $call->schema,
-			object: $existingObjectData,
-			incomingData: $call->data,
-			isCreate: $isCreate
+			write: new PropertyWriteCheck(schema: $call->schema, request: new PropertyAccessRequest(object: $existingObjectData, isCreate: $isCreate), incoming: $call->data)
 		);
 
 		if (empty($unauthorizedProps) === false) {
@@ -3249,11 +3249,7 @@ class SaveObject implements SaveObjectInterface {
 			array_unique(
 				array_merge(
 					$omittedWriteOnly,
-					$this->propertyRbacHandler->collectOmittedProtectedProperties(
-						schema: $schema,
-						incoming: $data,
-						stored: $storedRecord
-					)
+					$this->propertyRbacHandler->collectOmittedProtectedProperties(update: new ProtectedCarryForward(schema: $schema, incoming: $data, stored: $storedRecord))
 				)
 			)
 		);
