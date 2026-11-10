@@ -377,10 +377,9 @@ class ExampleSetChangesGoldenTest extends TestCase {
 						'objects' => ['app/k' => ['refs' => ['a' => 1, 'b' => 2]]],
 						'changes' => ['app/k#references' => ['set' => [['path' => 'b', 'new' => 3], ['path' => 'c', 'new' => 4]]]],
 					],
-					'app/k#references',
 					'app/k'
 				),
-				$this->changes->writtenReferences([], 'x', 'y'),
+				$this->changes->writtenReferences([], 'y'),
 			],
 			'as sent'            => fn () => $this->changes->asSent(['a' => ['b' => 1], 'c' => 'd', 'e' => ['f']], ['a', 'c', 'zz']),
 		];

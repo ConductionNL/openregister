@@ -670,7 +670,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			object: $object,
 			row: $held->row,
 			values: array_intersect_key($resolved['data'], array_flip($this->referenceFields(object: $object))),
-			written: $this->writers->changes->writtenReferences(record: $run->record, name: $key.'#references', key: $key)
+			written: $this->writers->changes->writtenReferences(record: $run->record, key: $key)
 		);
 		foreach ($made['left'] as $field) {
 			$run->report['left'][] = $run->fragment['file'].': object "'.$object['key'].'": field "'.$field
@@ -1145,7 +1145,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$refusals = [];
 		foreach (($fragment['appConfig'] ?? []) as $entry) {
 			$where   = $fragment['file'].': app config "'.$entry['key'].'"';
-			$refusal = $this->setup->appConfig->refusal(app: $fragment['app'], key: $entry['key'], generate: $entry['generate']);
+			$refusal = $this->setup->appConfig->refusal(at: new ExampleSetConfigKey(app: $fragment['app'], key: $entry['key']), generate: $entry['generate']);
 			if ($refusal !== '') {
 				$refusals[] = $where.': '.$refusal;
 				continue;
