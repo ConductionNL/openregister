@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
+use OCA\OpenRegister\Service\DeclaredRow;
 use OCA\OpenRegister\Service\DeclaredPair;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCP\DB\IResult;
@@ -161,7 +162,7 @@ class SharedMasterDataResolutionGoldenTest extends TestCase {
 	public function testWriteRefusals(): void {
 		$service = $this->service($this->rows(), 'Gemeente A');
 		foreach ([[7, ['A']], [7, ['X']], [7, []], [null, ['B']], [99, ['B']], [11, ['A']], [9, ['B']], [7, ['B', 'A']]] as [$id, $orgs]) {
-			$service->assertWritable(SharedMasterDataService::REGISTERS, $id, $orgs);
+			$service->assertWritable(new DeclaredRow(SharedMasterDataService::REGISTERS, $id), $orgs);
 		}
 
 		$cases = [
@@ -172,7 +173,7 @@ class SharedMasterDataResolutionGoldenTest extends TestCase {
 		];
 		foreach ($cases as [$table, $id, $orgs, $holder, $name, $type, $message]) {
 			try {
-				$service->assertWritable($table, $id, $orgs);
+				$service->assertWritable(new DeclaredRow($table, $id), $orgs);
 				$this->assertNull($holder, 'expected a refusal for '.$table.' '.$id);
 			} catch (SharedMasterDataWriteException $e) {
 				$this->assertSame(
@@ -191,7 +192,7 @@ class SharedMasterDataResolutionGoldenTest extends TestCase {
 	public function testRefusalFallsBackToTheHolderUuid(): void {
 		foreach ([null, false, ''] as $name) {
 			try {
-				$this->service($this->rows(), $name)->assertWritable(SharedMasterDataService::SCHEMAS, 7, ['B']);
+				$this->service($this->rows(), $name)->assertWritable(new DeclaredRow(SharedMasterDataService::SCHEMAS, 7), ['B']);
 				$this->fail('expected a refusal');
 			} catch (SharedMasterDataWriteException $e) {
 				$this->assertSame([null, 'schema'], [$e->getHolderName(), $e->getResourceType()]);

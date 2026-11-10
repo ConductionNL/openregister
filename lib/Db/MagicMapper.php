@@ -39,7 +39,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
+use OCA\OpenRegister\Db\MagicMapper\TableSearch;
+use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
 use OCA\OpenRegister\Db\MagicMapper\PurposeBoundTables;
 use DateTime;
@@ -1322,13 +1325,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		try {
 			// Use MagicSearchHandler for search with RBAC and multi-tenancy support.
-			$result = $this->searchHandler->searchObjects(
-				query: $query,
-				register: $register,
-				schema: $schema,
-				tableName: $tableName,
-				dateTimeColumns: $this->getDateTimeColumns(tableName: $tableName)
-			);
+			$search = new TableSearch(table: $table, tableName: $tableName, dateTimeColumns: $this->getDateTimeColumns(tableName: $tableName));
+			$result = $this->searchHandler->searchTable(query: $query, tableSearch: $search);
 
 			// If result is an integer (count), return empty array.
 			if (is_int($result) === true) {
@@ -1534,12 +1532,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$countQuery = $query;
 		$countQuery['_count'] = true;
 
-		return $this->searchHandler->searchObjects(
-			query: $countQuery,
-			register: $target->register,
-			schema: $target->schema,
-			tableName: $target->tableName
-		);
+		$table = new RegisterSchema(register: $target->register, schema: $target->schema);
+		return $this->searchHandler->searchTable(query: $countQuery, tableSearch: new TableSearch(table: $table, tableName: $target->tableName));
 	}//end runCountQuery()
 
 	/**
@@ -2485,13 +2479,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			$armQuery['@self']['schema'] = $arm->schema->getId();
 		}
 
-		return $this->searchHandler->buildWhereConditionsSql(
-			query: $armQuery,
-			schema: $arm->schema,
-			existingColumns: $arm->existingColumns,
-			registerId: $arm->register->getId(),
-			tableName: $arm->tableName
-		);
+		$table   = new MagicReadTable(schema: $arm->schema, registerId: $arm->register->getId(), tableName: $arm->tableName);
+		$request = new WhereClauseRequest(query: $armQuery, table: $table, existingColumns: $arm->existingColumns);
+		return $this->searchHandler->buildWhereClause(request: $request);
 	}//end unionArmWhereClauses()
 
 	/**

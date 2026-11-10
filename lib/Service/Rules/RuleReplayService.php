@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Service\Rules;
 
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\BulkJob\BulkJobRequest;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use Throwable;
 
@@ -213,11 +214,13 @@ final class RuleReplayService implements RuleReplayServiceInterface {
 	 * @return BulkJob The job.
 	 */
 	private function createJob(RuleReplayRun $run): BulkJob {
-		return $this->jobs->create(
-			call: $run->actionCall(),
-			selection: $run->selection->forBulkJob(),
-			actorUid: $run->actorUid,
-			justification: $run->justification
+		return $this->jobs->createFromRequest(
+			request: new BulkJobRequest(
+				call: $run->actionCall(),
+				selection: $run->selection->forBulkJob(),
+				actorUid: $run->actorUid,
+				justification: $run->justification
+			)
 		);
 	}//end createJob()
 

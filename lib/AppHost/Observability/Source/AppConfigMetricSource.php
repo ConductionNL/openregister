@@ -74,11 +74,11 @@ class AppConfigMetricSource implements MetricSourceInterface {
 		$value = $this->appConfig->getValueInt($appId, $key, 0);
 
 		return [
-			MetricSample::single(
+			new MetricSample(
 				name: $descriptor->name,
 				type: $descriptor->type,
 				help: $help,
-				value: $value
+				samples: [['labels' => [], 'value' => $value]]
 			),
 		];
 	}//end collect()

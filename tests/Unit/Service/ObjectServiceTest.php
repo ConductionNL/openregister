@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -43,12 +44,17 @@ use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\LockHandler;
+use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Service\Object\LockRunStep;
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
+use OCA\OpenRegister\Service\Object\ObjectSelection;
+use OCA\OpenRegister\Service\Object\SearchOptions;
 use OCA\OpenRegister\Service\Object\RelationHandler;
 use OCA\OpenRegister\Service\Object\RelationLookup;
 use OCA\OpenRegister\Service\Object\RenderObject;
@@ -1035,9 +1041,8 @@ class ObjectServiceTest extends TestCase {
 			->expects($this->once())
 			->method('lock')
 			->with(
-				identifier: 'obj-uuid',
-				process: 'import',
-				duration: 3600
+				new LockRequest(identifier: 'obj-uuid', process: 'import', duration: 3600, runStep: new LockRunStep(runUuid: null, nodeId: null)),
+				advisory: false
 			)
 			->willReturn($lockInfo);
 
@@ -1057,7 +1062,7 @@ class ObjectServiceTest extends TestCase {
 		$this->lockHandler
 			->expects($this->once())
 			->method('unlock')
-			->with(identifier: 'obj-uuid')
+			->with(new UnlockRequest(identifier: 'obj-uuid', advisory: false, runUuid: null, break: false))
 			->willReturn(true);
 
 		$result = $this->service->unlockObject(identifier: 'obj-uuid');
@@ -1359,14 +1364,7 @@ class ObjectServiceTest extends TestCase {
 		$this->queryHandler
 			->expects($this->once())
 			->method('searchObjects')
-			->with(
-				query: $query,
-				_rbac: true,
-				_multitenancy: true,
-				ids: null,
-				uses: null,
-				views: null
-			)
+			->with($query, true, true, $this->equalTo(new SearchOptions()))
 			->willReturn([]);
 
 		$result = $this->service->searchObjects(query: $query);
@@ -1442,7 +1440,7 @@ class ObjectServiceTest extends TestCase {
 		$this->objectEntityMapper->expects($this->never())->method('countSearchObjects');
 		$this->queryHandler->expects($this->once())
 			->method('countSearchObjects')
-			->with(['@self' => ['schema' => 'a-slug']], false, false, ['a'], 'u-1')
+			->with(['@self' => ['schema' => 'a-slug']], false, false, $this->equalTo(new ObjectSelection(ids: ['a'], uses: 'u-1')))
 			->willReturn(15);
 
 		$result = $this->service->countSearchObjects(
@@ -1527,13 +1525,7 @@ class ObjectServiceTest extends TestCase {
 		$this->permissionHandler
 			->expects($this->once())
 			->method('checkPermission')
-			->with(
-				schema: $this->schema,
-				action: 'create',
-				userId: null,
-				objectOwner: null,
-				rbac: true
-			);
+			->with($this->schema, 'create');
 
 		$this->invokePrivate('checkSavePermissions', [null, true]);
 	}
@@ -1555,14 +1547,7 @@ class ObjectServiceTest extends TestCase {
 		$this->permissionHandler
 			->expects($this->once())
 			->method('checkPermission')
-			->with(
-				schema: $this->schema,
-				action: 'update',
-				userId: null,
-				objectOwner: 'user1',
-				rbac: true,
-				object: $entity
-			);
+			->with($this->schema, 'update', new PermissionCheckOptions(objectOwner: 'user1', object: $entity), true);
 
 		$this->invokePrivate('checkSavePermissions', ['existing-uuid', true]);
 	}
@@ -1580,13 +1565,7 @@ class ObjectServiceTest extends TestCase {
 		$this->permissionHandler
 			->expects($this->once())
 			->method('checkPermission')
-			->with(
-				schema: $this->schema,
-				action: 'create',
-				userId: null,
-				objectOwner: null,
-				rbac: true
-			);
+			->with($this->schema, 'create');
 
 		$this->invokePrivate('checkSavePermissions', ['new-uuid', true]);
 	}
@@ -2676,15 +2655,15 @@ class ObjectServiceTest extends TestCase {
 	}
 
 	/**
-	 * Test ensureObjectFolder returns null on general exception.
+	 * Test ensureObjectFolder refuses the save when the lookup fails.
 	 */
-	public function testEnsureObjectFolderReturnsNullOnGeneralException(): void {
+	public function testEnsureObjectFolderRefusesOnGeneralException(): void {
 		$this->objectEntityMapper->method('find')
 			->willThrowException(new Exception('Database error'));
 
-		$result = $this->invokePrivate('ensureObjectFolder', ['some-uuid']);
+		$this->expectException(\OCA\OpenRegister\Exception\FolderAccessDeniedException::class);
 
-		$this->assertNull($result);
+		$this->invokePrivate('ensureObjectFolder', ['some-uuid']);
 	}
 
 	/**

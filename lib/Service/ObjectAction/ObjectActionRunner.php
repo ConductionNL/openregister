@@ -113,34 +113,18 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 	}//end resolve()
 
 	/**
-	 * The target of a run: the object, its schema, and the register and schema as the caller named them.
-	 *
-	 * @param ObjectEntity $object    The subject.
-	 * @param Schema       $schema    Its schema.
-	 * @param string       $register  The register as the caller named it.
-	 * @param string       $schemaRef The schema as the caller named it.
-	 *
-	 * @return ObjectActionTarget The target.
-	 *
-	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
-	 */
-	public function target(ObjectEntity $object, Schema $schema, string $register, string $schemaRef): ObjectActionTarget {
-		return new ObjectActionTarget(object: $object, schema: $schema, register: $register, schemaRef: $schemaRef);
-	}//end target()
-
-	/**
 	 * Run an action on one object.
 	 *
-	 * @param ObjectActionTarget   $target The subject, its schema and its address as the caller named it.
-	 * @param string               $key    The action key.
-	 * @param array<string, mixed> $given  The inputs the caller sent.
+	 * @param ObjectActionTarget  $target  The subject, its schema and its address as the caller named it.
+	 * @param ObjectActionRequest $request The action key and the inputs the caller sent.
 	 *
 	 * @return array{status: int, body: array<string, mixed>} The HTTP status and body.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
 	 */
-	public function run(ObjectActionTarget $target, string $key, array $given): array {
-		$checked = $this->rehearse(call: new ObjectActionCall(object: $target->object, schema: $target->schema, key: $key), given: $given);
+	public function run(ObjectActionTarget $target, ObjectActionRequest $request): array {
+		$call    = new ObjectActionCall(object: $target->object, schema: $target->schema, key: $request->key);
+		$checked = $this->rehearse(call: $call, given: $request->given);
 		if ($checked['refusal'] !== null) {
 			return $checked['refusal'];
 		}
@@ -169,27 +153,10 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 	}//end runChecked()
 
 	/**
-	 * Steps 1 to 4 of a run, without running: resolve, right, `when`, inputs.
+	 * Steps 1 to 4 of a run, without running, for one call: resolve, right, `when`, inputs.
 	 *
 	 * The run itself and a bulk job's preview ask exactly this, so a
 	 * rehearsal never promises what the run would refuse.
-	 *
-	 * @param ObjectEntity         $object The subject.
-	 * @param Schema               $schema Its schema.
-	 * @param string               $key    The action key.
-	 * @param array<string, mixed> $given  The inputs the caller sent.
-	 *
-	 * @return array{refusal: array{status: int, body: array<string, mixed>}|null, definition: ObjectActionDefinition|null, inputs: array<string, mixed>}
-	 *         The refusal, or the action and its inputs with defaults resolved.
-	 *
-	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
-	 */
-	public function check(ObjectEntity $object, Schema $schema, string $key, array $given): array {
-		return $this->rehearse(call: new ObjectActionCall(object: $object, schema: $schema, key: $key), given: $given);
-	}//end check()
-
-	/**
-	 * Steps 1 to 4 of a run, without running, for one call: resolve, right, `when`, inputs.
 	 *
 	 * @param ObjectActionCall     $call  The subject, its schema and the action key.
 	 * @param array<string, mixed> $given The inputs the caller sent.

@@ -41,6 +41,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks;
@@ -954,12 +956,9 @@ class MagicFacetHandler {
 	 * @return string|null The conditions, or null when the filters rule the table out.
 	 */
 	private function tableWhereSql(array $baseQuery, array $tableConfig): ?string {
-		$whereConditions = $this->searchHandler->buildWhereConditionsSql(
-			query: $baseQuery,
-			schema: $tableConfig['schema'],
-			registerId: ($tableConfig['register'] ?? null)?->getId(),
-			tableName: $tableConfig['tableName']
-		);
+		$registerId      = ($tableConfig['register'] ?? null)?->getId();
+		$table           = new MagicReadTable(schema: $tableConfig['schema'], registerId: $registerId, tableName: $tableConfig['tableName']);
+		$whereConditions = $this->searchHandler->buildWhereClause(request: new WhereClauseRequest(query: $baseQuery, table: $table));
 
 		return $this->conditionsSql(whereConditions: $whereConditions);
 	}//end tableWhereSql()
@@ -1697,7 +1696,7 @@ class MagicFacetHandler {
 			// whether it is readable on some particular row. A conditional rule
 			// that depends on a record therefore does not admit the facet, which
 			// is the safe direction.
-			return $rbac->canReadProperty(schema: $schema, property: $property, object: []);
+			return $rbac->canReadProperty(property: new SchemaProperty(schema: $schema, name: $property), request: new PropertyAccessRequest(object: []));
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[MagicFacetHandler] Could not check the property read rule; omitting the facet',
@@ -1801,7 +1800,7 @@ class MagicFacetHandler {
 	 * @throws \OCP\DB\Exception If a database error occurs.
 	 */
 	private function getTermsFacet(TableTermsFacet $facet): array {
-		$cacheKey = md5(json_encode(value: [$facet->tableName, $facet->field, $facet->baseQuery, $facet->isMetadata]));
+		$cacheKey = hash(algo: 'xxh128', data: json_encode(value: [$facet->tableName, $facet->field, $facet->baseQuery, $facet->isMetadata]));
 		if (isset($this->facetCache[$cacheKey]) === false) {
 			$this->facetCache[$cacheKey] = $this->computeTermsFacet(facet: $facet);
 		}
@@ -1912,9 +1911,7 @@ class MagicFacetHandler {
 		// answers to a different question.
 		$queryBuilder = $this->searchHandler->buildFilteredQuery(
 			query: $facet->baseQuery,
-			schema: $facet->schema,
-			tableName: $facet->tableName,
-			registerId: $facet->register->getId()
+			table: new MagicReadTable(schema: $facet->schema, registerId: $facet->register->getId(), tableName: $facet->tableName)
 		);
 		$columnRef = "t.{$facet->field}";
 		$queryBuilder->selectAlias($columnRef, 'facet_value')
@@ -2206,9 +2203,7 @@ class MagicFacetHandler {
 		// draws a shape of the unfiltered set beside a filtered list.
 		$queryBuilder = $this->searchHandler->buildFilteredQuery(
 			query: $facet->baseQuery,
-			schema: $facet->schema,
-			tableName: $facet->tableName,
-			registerId: $facet->register->getId()
+			table: new MagicReadTable(schema: $facet->schema, registerId: $facet->register->getId(), tableName: $facet->tableName)
 		);
 
 		// The date-key SQL expression is platform-specific; buildFilteredQuery aliases the table as 't'.
