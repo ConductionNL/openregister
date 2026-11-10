@@ -401,12 +401,12 @@ class QueryHandler implements QueryHandlerInterface {
 		$expansion        = $this->expandSearchTerm(query: $query);
 		$queries          = self::withExpandedTerm(queries: $paging->queries(query: $query, window: $window), expansion: $expansion);
 
-		$run->scope      = ['rbac' => $_rbac, 'multitenancy' => $_multitenancy, 'ids' => $ids, 'uses' => $uses];
+		$run->scope      = ['rbac' => $_rbac, 'multitenancy' => $_multitenancy, 'ids' => $ids, 'uses' => $uses] + $window;
 		$run->countQuery = $queries['count'];
 		$this->narrowByHistory(run: $run, predicate: $historyPredicate);
 
 		$searchResult = $this->searchDatabase(run: $run, searchQuery: $queries['search']);
-		$searchResult = $this->widenWithContentMatches(query: $query, searchResult: $searchResult, scope: $run->scope + $window, metrics: $run->metrics);
+		$searchResult = $this->widenWithContentMatches(run: $run, searchResult: $searchResult);
 		$results      = $this->renderListRows(run: $run, searchResult: $searchResult);
 
 		$paginatedResults = $paging->response(results: $results, searchResult: $searchResult, window: $window);
@@ -536,16 +536,16 @@ class QueryHandler implements QueryHandlerInterface {
 	 * It runs before rendering so appended rows get the same `_extend`/`_fields`
 	 * treatment (ZKN-CONTENT-003).
 	 *
-	 * @param array        $query        The search query
-	 * @param array        $searchResult The mapper's search result
-	 * @param array        $scope        The search scope plus the pagination window
-	 * @param ArrayObject $metrics      Collects timings
+	 * @param SearchPageRun $run          The search: its query, its scope with the pagination window, and its metrics
+	 * @param array         $searchResult The mapper's search result
 	 *
 	 * @return array The search result with `results` and `total` widened
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
 	 */
-	private function widenWithContentMatches(array $query, array $searchResult, array $scope, ArrayObject $metrics): array {
+	private function widenWithContentMatches(SearchPageRun $run, array $searchResult): array {
+		$query = $run->query;
+		$scope = $run->scope;
 		if (filter_var($query['_content_search'] ?? false, FILTER_VALIDATE_BOOLEAN) === false) {
 			return $searchResult;
 		}
@@ -564,7 +564,7 @@ class QueryHandler implements QueryHandlerInterface {
 		);
 		$searchResult['results']   = $augmented['results'];
 		$searchResult['total']     = $augmented['total'];
-		$metrics['content_search'] = round((microtime(true) - $contentSearchStart) * 1000, 2);
+		$run->metrics['content_search'] = round((microtime(true) - $contentSearchStart) * 1000, 2);
 
 		return $searchResult;
 	}//end widenWithContentMatches()
