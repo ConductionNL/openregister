@@ -168,8 +168,8 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\TalkProvider' => [
 			'OCP\App\IAppManager',
-			'OCP\IUserSession',
 			'OCP\IL10N',
+			'OCP\IUserSession',
 			'OCA\OpenRegister\Db\TalkLinkMapperInterface',
 		],
 		'OCA\OpenRegister\Service\TalkLinkService' => [
