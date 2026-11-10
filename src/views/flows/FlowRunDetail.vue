@@ -693,38 +693,70 @@ export default {
 			this.loading = true
 			this.actionError = ''
 			this.activeTab = 'steps'
+			if (!(await this.readRun())) {
+				return
+			}
+			this.showRunPanels(await this.fetchRunPanels(this.run?.flowId))
+			this.loading = false
+		},
+
+		/**
+		 * Read the run itself; a run that cannot be read leaves none and ends
+		 * the loading.
+		 *
+		 * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
+		 * @return {Promise<boolean>} Whether the run answered
+		 */
+		async readRun() {
 			try {
 				const response = await axios.get(
 					generateUrl(`/apps/openregister/api/flow-runs/${this.uuid}`),
 				)
 				this.run = response?.data || null
+				return true
 			} catch {
 				// 404 for a run that is gone, 401 without a session; both mean
 				// the same thing to the person holding the link.
 				this.run = null
 				this.loading = false
-				return
+				return false
 			}
+		},
 
-			const flowId = this.run?.flowId
-			const [flow, versions, catalog, objects, tasks] = await Promise.all([
+		/**
+		 * Ask for the run's panels at once: its flow and versions (only with a
+		 * flow), the node catalog, the objects it changed and its tasks.
+		 *
+		 * @param {string|undefined} flowId The run's flow, if any
+		 * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
+		 * @return {Promise<Array>} flow, versions, catalog, objects and tasks; null where unreadable
+		 */
+		fetchRunPanels(flowId) {
+			return Promise.all([
 				flowId
 					? this.quietGet(`/apps/openregister/api/flows/${flowId}`)
 					: null,
 				flowId
-					? this.quietGet(
-							`/apps/openregister/api/flows/${flowId}/versions`,
-						)
+					? this.quietGet(`/apps/openregister/api/flows/${flowId}/versions`)
 					: null,
 				this.quietGet('/apps/openregister/api/flow/node-catalog'),
-				this.quietGet(
-					`/apps/openregister/api/flow-runs/${this.uuid}/objects`,
-				),
+				this.quietGet(`/apps/openregister/api/flow-runs/${this.uuid}/objects`),
 				this.quietGet('/apps/openregister/api/flow-tasks', {
 					runUuid: this.uuid,
 					scope: 'all',
 				}),
 			])
+		},
+
+		/**
+		 * Fill the panels from what the run's requests answered; the task list
+		 * keeps only this run's tasks.
+		 *
+		 * @param {Array} panels flow, versions, catalog, objects and tasks
+		 * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
+		 * @return {void}
+		 */
+		showRunPanels([flow, versions, catalog, objects, tasks]) {
 			this.flow = flow
 			this.versions = versions?.results || []
 			this.names = catalogNames(catalog?.results)
@@ -732,7 +764,6 @@ export default {
 			this.tasks = (tasks?.results || []).filter(
 				(task) => String(task?.runUuid || '') === String(this.uuid),
 			)
-			this.loading = false
 		},
 
 		/**
