@@ -45,6 +45,7 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewRow;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
@@ -733,7 +734,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 
 		foreach ($this->store->rowMapper->findByPreview(
 			previewId: (int)$preview->getId(),
-			decision: ImportPreviewRow::DECISION_REFUSE
+			query: ListQuery::unbounded(filters: ['decision' => ImportPreviewRow::DECISION_REFUSE])
 		) as $row) {
 			$refusals[] = [
 				'row' => $row->getSourceRow(),

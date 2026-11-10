@@ -29,6 +29,7 @@ namespace Unit\Service\Import;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Import\ImportCommit;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\ImportPreview;
@@ -189,7 +190,8 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 			}
 		);
 		$rowMapper->method('findByPreview')->willReturnCallback(
-			function (int $previewId, ?string $decision = null): array {
+			function (int $previewId, ListQuery $query): array {
+				$decision = ($query->filters['decision'] ?? null);
 				return array_values(
 					array_filter(
 						$this->rows,
