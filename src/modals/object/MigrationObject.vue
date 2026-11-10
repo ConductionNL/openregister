@@ -544,9 +544,7 @@ export default {
 				)
 
 				// Load target schema properties
-				const targetSchemaData = await fetchSchema(this.targetSchema.id)
-				this.targetProperties =
-					this.extractSchemaProperties(targetSchemaData)
+				await this.loadTargetProperties()
 
 				// Initialize property mappings
 				this.initializePropertyMappings()
@@ -556,6 +554,16 @@ export default {
 			} catch (error) {
 				console.error('Error loading schema properties:', error)
 			}
+		},
+
+		/**
+		 * Load the properties of the target schema.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async loadTargetProperties() {
+			const targetSchemaData = await fetchSchema(this.targetSchema.id)
+			this.targetProperties = this.extractSchemaProperties(targetSchemaData)
 		},
 
 		/**
