@@ -76,6 +76,8 @@ use OCA\OpenRegister\Service\Object\ObjectFindRequest;
 use OCA\OpenRegister\Service\Object\ObjectFindScope;
 use OCA\OpenRegister\Service\Object\ObjectSaveRun;
 use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
+use OCA\OpenRegister\Service\Object\BulkSaveOptions;
 use OCA\OpenRegister\Service\Object\ObjectPatch;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
@@ -5971,17 +5973,17 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     {
         $this->openBulkSave(register: $options['register'], schema: $options['schema']);
 
-        $bulkResult = $this->saveObjectsHandler->saveObjects(
+        $bulkOptions = new BulkSaveOptions(
+            defaults: new BulkBatchDefaults(register: $this->currentRegister, schema: $this->currentSchema),
+            validation: $options['_validation'],
+            events: $options['_events'],
+            audit: $options['_audit']
+        );
+        $bulkResult  = $this->saveObjectsHandler->saveObjects(
             objects: $objects,
-            register: $this->currentRegister,
-            schema: $this->currentSchema,
+            options: $bulkOptions,
             _rbac: $options['_rbac'],
-            _multitenancy: $options['_multitenancy'],
-            _validation: $options['_validation'],
-            _events: $options['_events'],
-            deduplicateIds: $options['deduplicateIds'],
-            enrich: $options['enrich'],
-            _audit: $options['_audit']
+            _multitenancy: $options['_multitenancy']
         );
 
         $this->invalidateAfterBulkSave(bulkResult: $bulkResult);
