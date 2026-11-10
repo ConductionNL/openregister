@@ -354,7 +354,7 @@ class MergeService implements ObjectMergerInterface {
 		$isReverseFk = $this->sourceRecordResolver->isReverseFk(config: $survivorshipConfig);
 		$relinkedCount = 0;
 		if ($isReverseFk === true) {
-			$reverseFkMoves = $this->relinkReverseFk(pair: $pair);
+			$reverseFkMoves = $this->relinkReverseFk(pair: $pair, fromUuid: $from, intoUuid: $into);
 			$snapshot['reverseFkMoves'] = $reverseFkMoves;
 			$relinkedCount = count($reverseFkMoves);
 		}
@@ -731,13 +731,15 @@ class MergeService implements ObjectMergerInterface {
 	 * pair's schema's; the losing master's register is the source register
 	 * when the annotation omits one (the magic-table query needs it).
 	 *
-	 * @param MergePair $pair The losing and surviving master, and their schema.
+	 * @param MergePair $pair     The losing and surviving master, and their schema.
+	 * @param string    $fromUuid Losing master reference as the caller gave it.
+	 * @param string    $intoUuid Surviving master reference as the caller gave it.
 	 *
 	 * @return array<int, array{sourceUuid: string, referenceField: string, prior: string}>
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#3.2
 	 */
-	private function relinkReverseFk(MergePair $pair): array {
+	private function relinkReverseFk(MergePair $pair, string $fromUuid, string $intoUuid): array {
 		$descriptor = $this->sourceRecordResolver->reverseFkDescriptor(
 			config: $this->getSurvivorshipConfig(schema: $pair->schema)
 		);
@@ -745,8 +747,6 @@ class MergeService implements ObjectMergerInterface {
 			return [];
 		}
 
-		$fromUuid       = (string)$pair->fromObject->getUuid();
-		$intoUuid       = (string)$pair->intoObject->getUuid();
 		$referenceField = $descriptor['referenceField'];
 		$sourceRegister = $descriptor['sourceRegister'];
 		if ($sourceRegister === '') {
