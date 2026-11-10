@@ -6,6 +6,8 @@ namespace Unit\Service\Notification;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceWrite;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
 use OCP\IConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -159,7 +161,7 @@ class NotificationPreferenceServiceTest extends TestCase {
 			->with('jan', 'openregister', 'notification_pref/meldingen/object_created');
 		$this->config->expects($this->never())->method('setUserValue');
 
-		$this->service->setOverride('jan', 'meldingen', 'object_created', null);
+		$this->service->storeOverride(write: new PreferenceWrite(party: 'jan', address: new PreferenceAddress(schemaSlug: 'meldingen', notificationKey: 'object_created'), value: null));
 	}
 
 	public function testSetOverrideWritesJson(): void {
@@ -175,7 +177,7 @@ class NotificationPreferenceServiceTest extends TestCase {
 				})
 			);
 
-		$this->service->setOverride('jan', 'meldingen', 'object_created', ['enabled' => false]);
+		$this->service->storeOverride(write: new PreferenceWrite(party: 'jan', address: new PreferenceAddress(schemaSlug: 'meldingen', notificationKey: 'object_created'), value: ['enabled' => false]));
 	}
 
 	public function testGetEffectiveForUserMergesDeclaredNotifications(): void {

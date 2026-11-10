@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service;
 
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -225,12 +226,23 @@ class TimelineVisibilityService implements TimelineVisibilityServiceInterface {
 			return self::PUBLIC_ENTRY;
 		}
 
+		return $this->requestedFilter(requested: $requested);
+	}//end effectiveFilter()
+
+	/**
+	 * The filter a caller with `update` asked for, or null when it asked for none it could mean.
+	 *
+	 * @param string|null $requested The `visibility` query parameter, when given.
+	 *
+	 * @return string|null `public`, `internal`, or null for the unfiltered view.
+	 */
+	private function requestedFilter(?string $requested): ?string {
 		if ($this->isKnownValue(value: $requested) === false) {
 			return null;
 		}
 
 		return $this->normalise(value: $requested);
-	}//end effectiveFilter()
+	}//end requestedFilter()
 
 	/**
 	 * Keep only the rows a filter admits.
@@ -255,19 +267,27 @@ class TimelineVisibilityService implements TimelineVisibilityServiceInterface {
 		return array_values(
 			array_filter(
 				$rows,
-				function (mixed $row) use ($wanted): bool {
-					$value = null;
-					if (is_array($row) === true && isset($row['visibility']) === true
-						&& is_string($row['visibility']) === true
-					) {
-						$value = $row['visibility'];
-					}
-
-					return $this->normalise(value: $value) === $wanted;
-				}
+				fn (mixed $row): bool => $this->normalise(value: $this->declaredVisibility(row: $row)) === $wanted
 			)
 		);
 	}//end filterRows()
+
+	/**
+	 * The visibility a timeline row declares, when it declares one as a string.
+	 *
+	 * @param mixed $row A timeline row.
+	 *
+	 * @return string|null The declared value, or null.
+	 */
+	private function declaredVisibility(mixed $row): ?string {
+		if (is_array($row) === true && isset($row['visibility']) === true
+			&& is_string($row['visibility']) === true
+		) {
+			return $row['visibility'];
+		}
+
+		return null;
+	}//end declaredVisibility()
 
 	/**
 	 * Whether a leaf renders timeline entries and is therefore filtered.
@@ -308,7 +328,7 @@ class TimelineVisibilityService implements TimelineVisibilityServiceInterface {
 		}
 
 		try {
-			$this->auditTrailMapper->createAuditTrailEntry(object: $object, action: self::AUDIT_ACTION, context: $context);
+			$this->auditTrailMapper->recordObjectEvent(event: new ObjectAuditEvent(object: $object, action: self::AUDIT_ACTION, context: $context));
 		} catch (Throwable $e) {
 			$this->platform->logger->error(
 				'[TimelineVisibilityService] Visibility of note ' . $move->noteId . ' moved from ' . $context['from']

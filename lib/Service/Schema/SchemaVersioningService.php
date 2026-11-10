@@ -82,21 +82,20 @@ class SchemaVersioningService {
 	/**
 	 * Diff the incoming definition against the stored schema.
 	 *
-	 * @param Schema $existing The stored schema.
-	 * @param array<string, mixed> $newDefinition The incoming definition (properties/required).
-	 * @param array<string, string> $renames Optional declared renames.
+	 * @param Schema             $existing The stored schema.
+	 * @param IncomingDefinition $incoming The incoming definition (properties/required) and its declared renames.
 	 *
 	 * @return SchemaChangeSet The classified change set.
 	 *
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
-	public function classify(Schema $existing, array $newDefinition, array $renames = []): SchemaChangeSet {
+	public function classify(Schema $existing, IncomingDefinition $incoming): SchemaChangeSet {
 		$old = [
 			'properties' => ($existing->getProperties() ?? []),
 			'required' => ($existing->getRequired() ?? []),
 		];
 
-		return $this->diffService->diff($old, $newDefinition, $renames);
+		return $this->diffService->diff($old, $incoming->definition, $incoming->renames);
 	}//end classify()
 
 	/**

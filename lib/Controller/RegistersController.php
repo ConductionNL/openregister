@@ -32,6 +32,7 @@ use OCA\OpenRegister\Controller\Support\RegisterGitHubPublisher;
 use OCA\OpenRegister\Controller\Support\RegistersControllerServices;
 use OCA\OpenRegister\Controller\Support\RegisterStatistics;
 use OCA\OpenRegister\Controller\Support\RegisterUpdate;
+use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
@@ -67,6 +68,10 @@ use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportScope;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportMapping;
 
 /**
  * RegistersController handles REST API endpoints for register management
@@ -1453,31 +1458,43 @@ class RegistersController extends Controller {
 	}//end runImporter()
 
 	/**
-	 * The arguments every row importer (excel, csv, json) receives.
+	 * The request every row importer (excel, csv, json) receives.
+	 *
+	 * @param array       $options The import options
+	 * @param ImportScope $scope   The register and schema to import into, and the importing user
+	 *
+	 * @return ImportRequest The file, scope, save options and mapping of the import
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function rowImportRequest(array $options, ImportScope $scope): ImportRequest {
+		return new ImportRequest(
+			filePath: $options['file']['tmp_name'],
+			scope: $scope,
+			options: new ImportOptions(
+				validation: $options['validation'],
+				events: $options['events'],
+				enrich: $options['enrich'],
+				publish: $options['publish'],
+			),
+			mapping: new ImportMapping(pack: $options['pack'], dryRun: $options['dryRun']),
+		);
+	}//end rowImportRequest()
+
+	/**
+	 * Whether a row import enforces RBAC.
 	 *
 	 * SEC-CTRL-6: RBAC is derived from admin status, never from the request, and
 	 * imports always stay tenant-scoped, so a manager cannot pass ?multi=false to
 	 * write objects across organisation boundaries.
 	 *
-	 * @param array $options The import options
-	 *
-	 * @return array Named arguments for ImportService
+	 * @return bool True unless the current user is an admin
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function rowImportArguments(array $options): array {
-		return [
-			'filePath' => $options['file']['tmp_name'],
-			'register' => $options['register'],
-			'validation' => $options['validation'],
-			'events' => $options['events'],
-			'_rbac' => ($this->isCurrentUserAdmin() === false),
-			'_multitenancy' => true,
-			'publish' => $options['publish'],
-			'currentUser' => $this->userSession->getUser(),
-			'enrich' => $options['enrich'],
-		];
-	}//end rowImportArguments()
+	private function rowImportRbac(): bool {
+		return $this->isCurrentUserAdmin() === false;
+	}//end rowImportRbac()
 
 	/**
 	 * Import an Excel workbook; migration packs are not supported here.
@@ -1496,7 +1513,14 @@ class RegistersController extends Controller {
 			);
 		}
 
-		return $this->importService->importFromExcel(...$this->rowImportArguments(options: $options), schema: null);
+		$scope = new ImportScope(register: $options['register'], currentUser: $this->userSession->getUser());
+
+		return $this->importService->importFromExcel(
+			// Excel imports have no dry run.
+			request: $this->rowImportRequest(options: ['dryRun' => false] + $options, scope: $scope),
+			_rbac: $this->rowImportRbac(),
+			_multitenancy: true
+		);
 	}//end importExcel()
 
 	/**
@@ -1519,11 +1543,12 @@ class RegistersController extends Controller {
 
 		$schema = $this->schemaMapper->find($schemaId);
 
+		$scope = new ImportScope(register: $options['register'], schema: $schema, currentUser: $this->userSession->getUser());
+
 		return $this->importService->importFromCsv(
-			...$this->rowImportArguments(options: $options),
-			schema: $schema,
-			pack: $options['pack'],
-			dryRun: $options['dryRun']
+			request: $this->rowImportRequest(options: $options, scope: $scope),
+			_rbac: $this->rowImportRbac(),
+			_multitenancy: true
 		);
 	}//end importCsv()
 
@@ -1552,12 +1577,17 @@ class RegistersController extends Controller {
 
 		$schema = $this->jsonImportSchema(schemaId: $schemaId);
 
-		return $this->importService->importFromJson(
-			...$this->rowImportArguments(options: $options),
+		$scope = new ImportScope(
+			register: $options['register'],
 			schema: $schema,
-			pack: $options['pack'],
-			dryRun: $options['dryRun'],
+			currentUser: $this->userSession->getUser(),
 			registerSlug: (string)$options['id']
+		);
+
+		return $this->importService->importFromJson(
+			request: $this->rowImportRequest(options: $options, scope: $scope),
+			_rbac: $this->rowImportRbac(),
+			_multitenancy: true
 		);
 	}//end importJsonObjects()
 
@@ -2070,7 +2100,7 @@ class RegistersController extends Controller {
 			return ['total' => 0, 'size' => 0];
 		}
 
-		return $this->auditTrailMapper->getStatistics(registerId: $registerId, schemaId: null);
+		return $this->auditTrailMapper->statisticsTotals(scope: new AuditStatisticsScope(registerId: $registerId));
 	}//end auditLogStats()
 
 	/**

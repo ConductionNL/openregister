@@ -112,17 +112,7 @@ class ReconcileDeclaredBackgroundJobs implements IRepairStep {
 				return 'present';
 			}
 
-			// Resolve through the container so a job with unbuildable
-			// dependencies fails here, named, rather than at cron time.
-			$job = $this->container->get($class);
-			if (($job instanceof IJob) === false) {
-				$output->warning('[OpenRegister] ' . $class . ' is declared as a job but is not an IJob — skipped.');
-				return 'skipped';
-			}
-
-			$this->jobList->add($class);
-			$output->info('[OpenRegister] Registered missing background job: ' . $class);
-			return 'added';
+			return $this->register(class: $class, output: $output);
 		} catch (Throwable $e) {
 			// One unresolvable job must not abort the repair run: the
 			// whole point of this step is to recover an instance.
@@ -134,6 +124,29 @@ class ReconcileDeclaredBackgroundJobs implements IRepairStep {
 			return 'skipped';
 		}//end try
 	}//end reconcileOne()
+
+	/**
+	 * Register a declared job that is missing from the job list, when it resolves to an IJob.
+	 *
+	 * Resolves through the container so a job with unbuildable dependencies
+	 * fails here, named, rather than at cron time.
+	 *
+	 * @param string  $class  The declared job class.
+	 * @param IOutput $output Migration output handle.
+	 *
+	 * @return string `added`, or `skipped` when the class is not an IJob.
+	 */
+	private function register(string $class, IOutput $output): string {
+		$job = $this->container->get($class);
+		if (($job instanceof IJob) === false) {
+			$output->warning('[OpenRegister] ' . $class . ' is declared as a job but is not an IJob — skipped.');
+			return 'skipped';
+		}
+
+		$this->jobList->add($class);
+		$output->info('[OpenRegister] Registered missing background job: ' . $class);
+		return 'added';
+	}//end register()
 
 	/**
 	 * The closing line of the reconciliation.
@@ -168,20 +181,7 @@ class ReconcileDeclaredBackgroundJobs implements IRepairStep {
 			return [];
 		}
 
-		// Read the file ourselves and parse a STRING. simplexml_load_file()
-		// routes file access through libxml's external-entity loader, and
-		// Nextcloud installs a restrictive loader at boot — so loading by path
-		// silently returns false inside the NC runtime while working perfectly
-		// in a bare PHP process. That mismatch made this step report
-		// "no <job> declarations found" against an info.xml holding 31 of them.
-		$contents = file_get_contents($path);
-		if ($contents === false) {
-			return [];
-		}
-
-		$previous = libxml_use_internal_errors(true);
-		$xml = simplexml_load_string($contents);
-		libxml_use_internal_errors($previous);
+		$xml = self::parsedInfoXml(path: $path);
 
 		// NOTE: the element is `background-jobs` with a HYPHEN, so it cannot be
 		// reached as `$xml->background_jobs` — SimpleXML would silently return
@@ -193,6 +193,33 @@ class ReconcileDeclaredBackgroundJobs implements IRepairStep {
 
 		return self::jobClassesOf(backgroundJobs: $xml->{'background-jobs'});
 	}//end declaredJobs()
+
+	/**
+	 * Read info.xml and parse it as a string, with libxml errors kept internal.
+	 *
+	 * Read the file ourselves and parse a STRING. simplexml_load_file()
+	 * routes file access through libxml's external-entity loader, and
+	 * Nextcloud installs a restrictive loader at boot — so loading by path
+	 * silently returns false inside the NC runtime while working perfectly
+	 * in a bare PHP process. That mismatch made this step report
+	 * "no <job> declarations found" against an info.xml holding 31 of them.
+	 *
+	 * @param string $path The info.xml path.
+	 *
+	 * @return \SimpleXMLElement|false The document, or false when it cannot be read or parsed.
+	 */
+	private static function parsedInfoXml(string $path): \SimpleXMLElement|false {
+		$contents = file_get_contents($path);
+		if ($contents === false) {
+			return false;
+		}
+
+		$previous = libxml_use_internal_errors(true);
+		$xml = simplexml_load_string($contents);
+		libxml_use_internal_errors($previous);
+
+		return $xml;
+	}//end parsedInfoXml()
 
 	/**
 	 * The non-empty `<job>` class names under `<background-jobs>`.

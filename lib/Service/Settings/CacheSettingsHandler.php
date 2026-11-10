@@ -535,77 +535,69 @@ class CacheSettingsHandler {
 	 *     name_hits: int|mixed, name_misses: int|mixed},
 	 *     after?: array{name_cache_size: int|mixed, name_hits: int|mixed,
 	 *     name_misses: int|mixed}}
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Cache clearing with fallback logic requires multiple branches
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional branches for cache service resolution
 	 */
 	private function clearNamesCache(): array {
 		try {
 			$objectCacheService = $this->objectCacheHandler();
 
 			$beforeStats = $objectCacheService->getStats();
-			$beforeNameCacheSize = $beforeStats['name_cache_size'] ?? 0;
 
 			$objectCacheService->clearNameCache();
 
-			$afterStats = $objectCacheService->getStats();
-			$afterNameCacheSize = $afterStats['name_cache_size'] ?? 0;
-
-			return [
-				'service' => 'names',
-				'cleared' => $beforeNameCacheSize - $afterNameCacheSize,
-				'before' => [
-					'name_cache_size' => $beforeNameCacheSize,
-					'name_hits' => $beforeStats['name_hits'] ?? 0,
-					'name_misses' => $beforeStats['name_misses'] ?? 0,
-				],
-				'after' => [
-					'name_cache_size' => $afterNameCacheSize,
-					'name_hits' => $afterStats['name_hits'] ?? 0,
-					'name_misses' => $afterStats['name_misses'] ?? 0,
-				],
-				'success' => true,
-			];
+			return self::namesCleared(before: $beforeStats, after: $objectCacheService->getStats());
 		} catch (Exception $e) {
 			return $this->clearFailed(service: 'names', error: $e);
 		}//end try
 	}//end clearNamesCache()
 
 	/**
+	 * The result of a names-cache clear: how many names went, and the statistics either side.
+	 *
+	 * @param array<string, mixed> $before The statistics before the clear.
+	 * @param array<string, mixed> $after  The statistics after the clear.
+	 *
+	 * @return array<string, mixed> The result.
+	 */
+	private static function namesCleared(array $before, array $after): array {
+		$beforeNames = self::nameHitStats(stats: $before);
+		$afterNames = self::nameHitStats(stats: $after);
+
+		return [
+			'service' => 'names',
+			'cleared' => $beforeNames['name_cache_size'] - $afterNames['name_cache_size'],
+			'before' => $beforeNames,
+			'after' => $afterNames,
+			'success' => true,
+		];
+	}//end namesCleared()
+
+	/**
+	 * The names-cache size, hits and misses out of the object cache statistics.
+	 *
+	 * @param array<string, mixed> $stats The object cache statistics.
+	 *
+	 * @return array{name_cache_size: mixed, name_hits: mixed, name_misses: mixed}
+	 */
+	private static function nameHitStats(array $stats): array {
+		return [
+			'name_cache_size' => $stats['name_cache_size'] ?? 0,
+			'name_hits' => $stats['name_hits'] ?? 0,
+			'name_misses' => $stats['name_misses'] ?? 0,
+		];
+	}//end nameHitStats()
+
+	/**
 	 * Warmup object names cache manually
 	 *
 	 * @return array Result with success, loaded_names, execution_time, and before/after stats.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Cache warmup with fallback logic requires multiple branches
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional branches for cache service resolution
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-3
 	 */
 	public function warmupNamesCache(): array {
 		try {
 			$startTime = microtime(true);
-			$objectCacheService = $this->objectCacheHandler();
 
-			$beforeStats = $objectCacheService->getStats();
-
-			$loadedCount = $objectCacheService->warmupNameCache();
-
-			$executionTime = round((microtime(true) - $startTime) * 1000, 2);
-			$afterStats = $objectCacheService->getStats();
-
-			return [
-				'success' => true,
-				'loaded_names' => $loadedCount,
-				'execution_time' => $executionTime . 'ms',
-				'before' => [
-					'name_cache_size' => $beforeStats['name_cache_size'] ?? 0,
-					'name_warmups' => $beforeStats['name_warmups'] ?? 0,
-				],
-				'after' => [
-					'name_cache_size' => $afterStats['name_cache_size'] ?? 0,
-					'name_warmups' => $afterStats['name_warmups'] ?? 0,
-				],
-			];
+			return self::warmedUp(cache: $this->objectCacheHandler(), startTime: $startTime);
 		} catch (Exception $e) {
 			return [
 				'success' => false,
@@ -614,6 +606,44 @@ class CacheSettingsHandler {
 			];
 		}//end try
 	}//end warmupNamesCache()
+
+	/**
+	 * Warm the names cache and report how many names it loaded, how long it took, and the statistics either side.
+	 *
+	 * @param ObjectCacheMaintenanceInterface $cache     The object cache.
+	 * @param float                           $startTime When the warm-up was asked for.
+	 *
+	 * @return array<string, mixed> The result.
+	 */
+	private static function warmedUp(ObjectCacheMaintenanceInterface $cache, float $startTime): array {
+		$beforeStats = $cache->getStats();
+
+		$loadedCount = $cache->warmupNameCache();
+
+		$executionTime = round((microtime(true) - $startTime) * 1000, 2);
+
+		return [
+			'success' => true,
+			'loaded_names' => $loadedCount,
+			'execution_time' => $executionTime . 'ms',
+			'before' => self::nameWarmupStats(stats: $beforeStats),
+			'after' => self::nameWarmupStats(stats: $cache->getStats()),
+		];
+	}//end warmedUp()
+
+	/**
+	 * The names-cache size and warm-up count out of the object cache statistics.
+	 *
+	 * @param array<string, mixed> $stats The object cache statistics.
+	 *
+	 * @return array{name_cache_size: mixed, name_warmups: mixed}
+	 */
+	private static function nameWarmupStats(array $stats): array {
+		return [
+			'name_cache_size' => $stats['name_cache_size'] ?? 0,
+			'name_warmups' => $stats['name_warmups'] ?? 0,
+		];
+	}//end nameWarmupStats()
 
 	/**
 	 * Clear schema cache service

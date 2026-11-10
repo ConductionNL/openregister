@@ -52,11 +52,10 @@ interface PermissionExplanationInterface {
 	 * in the resolution itself, because they are properties of the deny and not
 	 * of the rollout.
 	 *
-	 * @param array|null           $authorization The already-cascaded authorization block.
-	 * @param string               $action        The verb being decided.
-	 * @param string|null          $userId        The caller, or null to resolve from the session.
-	 * @param ObjectEntity|null    $object        The row under evaluation, when there is one.
-	 * @param array<string, mixed> $context       Where this happened, for the staging record.
+	 * @param DenialQuestion       $question The already-cascaded authorization block, the verb being decided
+	 *                                       and the row under evaluation, when there is one.
+	 * @param string|null          $userId   The caller, or null to resolve from the session.
+	 * @param array<string, mixed> $context  Where this happened, for the staging record.
 	 *
 	 * @return array{rule: mixed, principal: string, action: string, conditional: bool}|null
 	 *         The denial that decides it, or null when none reaches this caller
@@ -64,13 +63,7 @@ interface PermissionExplanationInterface {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function enforcedDenialFor(
-		?array $authorization,
-		string $action,
-		?string $userId = null,
-		?ObjectEntity $object = null,
-		array $context = [],
-	): ?array;
+	public function enforcedDenialFor(DenialQuestion $question, ?string $userId = null, array $context = []): ?array;
 
 	/**
 	 * The verbs this caller may exercise on one row.
@@ -161,15 +154,14 @@ interface PermissionExplanationInterface {
 	 * hand it denies nothing: the caller is asking about the schema, not about a
 	 * row, and refusing there would turn a row-scoped rule into a blanket one.
 	 *
-	 * @param array|null        $authorization The already-cascaded authorization block.
-	 * @param string            $action        The verb being decided.
-	 * @param string|null       $userId        The caller, or null to resolve from the session.
-	 * @param ObjectEntity|null $object        The row under evaluation, when there is one.
+	 * @param DenialQuestion $question The already-cascaded authorization block, the verb being decided and
+	 *                                 the row under evaluation, when there is one; its principals are filled in here.
+	 * @param string|null    $userId   The caller, or null to resolve from the session.
 	 *
 	 * @return array{rule: mixed, principal: string, action: string, conditional: bool}|null
 	 *         The denial that decided it, or null when no deny reaches this caller.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function denialFor(?array $authorization, string $action, ?string $userId = null, ?ObjectEntity $object = null): ?array;
+	public function denialFor(DenialQuestion $question, ?string $userId = null): ?array;
 }//end interface

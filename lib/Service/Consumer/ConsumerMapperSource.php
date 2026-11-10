@@ -84,18 +84,30 @@ class ConsumerMapperSource implements ConsumerSource {
 		}
 
 		foreach ($this->consumers->findAll() as $consumer) {
-			if (strtolower((string)$consumer->getAuthorizationType()) !== 'apikey') {
-				continue;
-			}
-
-			$stored = ($consumer->getAuthorizationConfiguration()['apiKey'] ?? '');
-			if (is_string($stored) === true && $stored !== '' && hash_equals($stored, $apiKey) === true) {
+			if (self::holdsApiKey(consumer: $consumer, apiKey: $apiKey) === true) {
 				return self::resolve(consumer: $consumer);
 			}
 		}
 
 		return null;
 	}//end findByApiKey()
+
+	/**
+	 * Whether an apiKey-type consumer stores exactly this key (compared in constant time).
+	 *
+	 * @param Consumer $consumer The consumer.
+	 * @param string   $apiKey   The presented, non-empty key.
+	 *
+	 * @return bool True when the consumer holds the key.
+	 */
+	private static function holdsApiKey(Consumer $consumer, string $apiKey): bool {
+		if (strtolower((string)$consumer->getAuthorizationType()) !== 'apikey') {
+			return false;
+		}
+
+		$stored = ($consumer->getAuthorizationConfiguration()['apiKey'] ?? '');
+		return (is_string($stored) === true && $stored !== '' && hash_equals($stored, $apiKey) === true);
+	}//end holdsApiKey()
 
 	/**
 	 * A Consumer entity as a ResolvedConsumer.

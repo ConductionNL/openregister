@@ -284,31 +284,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 					</div>
 				</div>
 
-				<!-- Warnings -->
-				<div v-if="migrationResult.warnings?.length" class="report-section">
-					<h4>Warnings</h4>
-					<ul>
-						<li
-							v-for="warning in migrationResult.warnings"
-							:key="warning"
-							class="warning-text">
-							{{ warning }}
-						</li>
-					</ul>
-				</div>
-
-				<!-- Errors -->
-				<div v-if="migrationResult.errors?.length" class="report-section">
-					<h4>Errors</h4>
-					<ul>
-						<li
-							v-for="error in migrationResult.errors"
-							:key="error"
-							class="error-text">
-							{{ error }}
-						</li>
-					</ul>
-				</div>
+				<TransferMessages :result="migrationResult" />
 			</div>
 		</div>
 
@@ -387,9 +363,34 @@ import DatabaseExport from 'vue-material-design-icons/DatabaseExport.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import SelectedObjectsList from '../../components/shared/SelectedObjectsList.vue'
+import TransferMessages from './TransferMessages.vue'
 import selectedObjectsDialog, {
 	refreshObjectLists,
 } from './selectedObjectsDialog.js'
+import { failedTransfer } from './transferResult.js'
+
+/**
+ * Post a migration and read its result.
+ *
+ * @param {object} request The migration request body
+ * @return {Promise<object>} The migration result
+ * @throws {Error} With the server's error when the migration is refused
+ */
+async function postMigration(request) {
+	const response = await fetch('/index.php/apps/openregister/api/migrate', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify(request),
+	})
+
+	const result = await response.json().catch(() => ({}))
+	if (!response.ok) {
+		throw new Error(result.error)
+	}
+	return result
+}
 
 export default {
 	name: 'MigrationObject',
@@ -406,6 +407,7 @@ export default {
 		DatabaseExport,
 		DatabaseOutline,
 		FileTreeOutline,
+		TransferMessages,
 	},
 
 	mixins: [selectedObjectsDialog],
@@ -620,41 +622,45 @@ export default {
 
 			this.loading = true
 			try {
-				const response = await fetch(
-					'/index.php/apps/openregister/api/migrate',
-					{
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify({
-							sourceRegister: registerStore.registerItem.id,
-							sourceSchema: schemaStore.schemaItem.id,
-							targetRegister: this.targetRegister.id,
-							targetSchema: this.targetSchema.id,
-							objects: this.selectedObjects.map((obj) => obj.id),
-							mapping: this.mapping,
-						}),
-					},
-				)
-
-				const result = await response.json().catch(() => ({}))
-				if (!response.ok) {
-					throw new Error(result.error)
-				}
-
-				this.migrationResult = result
+				this.migrationResult = await postMigration(this.migrationRequest())
 				this.step = 4
 				refreshObjectLists()
 			} catch (error) {
-				console.error('Error performing migration:', error)
-				this.migrationResult = {
-					success: false,
-					errors: [error.message || 'An error occurred during migration'],
-				}
-				this.step = 4
+				this.showMigrationFailure(error)
 			} finally {
 				this.loading = false
+			}
+		},
+
+		/**
+		 * Log a failed migration and show it on the report step.
+		 *
+		 * @param {Error} error What went wrong
+		 * @return {void}
+		 */
+		showMigrationFailure(error) {
+			console.error('Error performing migration:', error)
+			this.migrationResult = failedTransfer(
+				error,
+				'An error occurred during migration',
+			)
+			this.step = 4
+		},
+
+		/**
+		 * The migration to ask for: from the current register and schema to
+		 * the chosen ones, for the selected objects, with the property mapping.
+		 *
+		 * @return {object} The migration request body
+		 */
+		migrationRequest() {
+			return {
+				sourceRegister: registerStore.registerItem.id,
+				sourceSchema: schemaStore.schemaItem.id,
+				targetRegister: this.targetRegister.id,
+				targetSchema: this.targetSchema.id,
+				objects: this.selectedObjects.map((obj) => obj.id),
+				mapping: this.mapping,
 			}
 		},
 

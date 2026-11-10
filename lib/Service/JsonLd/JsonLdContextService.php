@@ -87,8 +87,8 @@ class JsonLdContextService implements JsonLdContextServiceInterface {
 		return $this->urlGenerator->linkToRouteAbsolute(
 			'openregister.contexts.schema',
 			[
-				'register' => $this->slugOf(entity: $register),
-				'schema' => $this->slugOf(entity: $schema),
+				'register' => JsonLdRouteSlug::of(entity: $register),
+				'schema' => JsonLdRouteSlug::of(entity: $schema),
 			]
 		);
 	}//end getSchemaContextUrl()
@@ -111,7 +111,7 @@ class JsonLdContextService implements JsonLdContextServiceInterface {
 			return $jsonld['type'];
 		}
 
-		return $this->slugOf(entity: $schema);
+		return JsonLdRouteSlug::of(entity: $schema);
 	}//end getTypeForSchema()
 
 	/**
@@ -399,7 +399,7 @@ class JsonLdContextService implements JsonLdContextServiceInterface {
 		}
 
 		// The schema class term itself (used as @type when no jsonld.type IRI).
-		$slug           = $this->slugOf(entity: $source->schema);
+		$slug           = JsonLdRouteSlug::of(entity: $source->schema);
 		$context[$slug] = $this->classTerm(jsonld: $jsonld, fallback: $source->contextUrl . '#' . $slug);
 
 		return $context;
@@ -711,28 +711,6 @@ class JsonLdContextService implements JsonLdContextServiceInterface {
 
 		return ((string)$schema->getId()) . ':' . $stamp;
 	}//end cacheKey()
-
-	/**
-	 * Resolve the slug for an entity, falling back to its UUID then id so a
-	 * route parameter is always available.
-	 *
-	 * @param Register|Schema $entity The entity.
-	 *
-	 * @return string The slug-like identifier.
-	 */
-	private function slugOf(Register|Schema $entity): string {
-		$slug = $entity->getSlug();
-		if (is_string($slug) === true && $slug !== '') {
-			return $slug;
-		}
-
-		$uuid = $entity->getUuid();
-		if (is_string($uuid) === true && $uuid !== '') {
-			return $uuid;
-		}
-
-		return (string)$entity->getId();
-	}//end slugOf()
 
 	/**
 	 * Whether a value is an absolute IRI (has a scheme, e.g. `https:`).

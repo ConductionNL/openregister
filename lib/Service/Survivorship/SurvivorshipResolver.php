@@ -411,7 +411,7 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 			$anchorValue = ($record[$anchorField] ?? null);
 		}
 
-		return $this->parseDate(value: $anchorValue);
+		return SurvivorshipDate::parse(value: $anchorValue);
 	}//end recordAnchor()
 
 	/**
@@ -482,7 +482,7 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 				continue;
 			}
 
-			$candidate = new CandidateStanding(rank: $rank, date: $this->parseDate(value: ($option['lastUpdated'] ?? null)));
+			$candidate = new CandidateStanding(rank: $rank, date: SurvivorshipDate::parse(value: ($option['lastUpdated'] ?? null)));
 			if ($this->displaces(candidate: $candidate, winner: $standing) === true) {
 				$winner   = $option;
 				$standing = $candidate;
@@ -638,24 +638,4 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 
 		return true;
 	}//end isPresent()
-
-	/**
-	 * Parse a date-ish value into a DateTimeImmutable, never throwing.
-	 * Unparseable/absent values return null (sorted as oldest by callers).
-	 *
-	 * @param mixed $value Candidate date value.
-	 *
-	 * @return DateTimeImmutable|null Parsed date, or null when absent/unparseable.
-	 */
-	private function parseDate(mixed $value): ?DateTimeImmutable {
-		if (is_string($value) === false || $value === '') {
-			return null;
-		}
-
-		try {
-			return new DateTimeImmutable($value);
-		} catch (Throwable) {
-			return null;
-		}
-	}//end parseDate()
 }//end class

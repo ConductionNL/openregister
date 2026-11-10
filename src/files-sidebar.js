@@ -34,6 +34,102 @@ const textBoxSearchOutlineIcon =
 	'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15.5 12C18 12 20 14 20 16.5C20 17.38 19.75 18.21 19.31 18.9L22.39 22L21 23.39L17.88 20.32C17.19 20.75 16.37 21 15.5 21C13 21 11 19 11 16.5C11 14 13 12 15.5 12M15.5 14C14.12 14 13 15.12 13 16.5C13 17.88 14.12 19 15.5 19C16.88 19 18 17.88 18 16.5C18 15.12 16.88 14 15.5 14M5 3H19C20.11 3 21 3.89 21 5V13.03C20.5 12.23 19.81 11.54 19 11V5H5V19H9.5C9.81 19.75 10.26 20.42 10.81 21H5C3.89 21 3 20.11 3 19V5C3 3.89 3.89 3 5 3M7 7H17V9H7V7M7 11H12.03C11.23 11.5 10.54 12.19 10 13H7V11M7 15H9.17C9.06 15.5 9 16 9 16.5V17H7V15Z" /></svg>'
 
 /**
+ * A Files sidebar tab that renders a Vue component for the file shown.
+ *
+ * The app and its props are kept on the sidebar's element, under
+ * `_<slot>App` and `_<slot>Props`.
+ *
+ * @param {{id: string, name: string, icon: string, component: object, slot: string}} tab The tab
+ * @return {object} The Files sidebar tab
+ */
+function vueTab(tab) {
+	const appKey = `_${tab.slot}App`
+	const propsKey = `_${tab.slot}Props`
+	return new OCA.Files.Sidebar.Tab({
+		id: tab.id,
+		name: tab.name,
+		icon: tab.icon,
+
+		// Vue 3: `createApp(Component, rootProps).mount(el)` replaces
+		// `Vue.extend()` + `new View({ propsData }).$mount(el)`.
+		//
+		// The root props object is kept `reactive` and stashed on the element so
+		// `update()` can still push a new fileId into the live instance. Vue 2
+		// allowed `vm.fileId = …` directly on the instance; Vue 3 root props are
+		// read-only on the component, so the mutation has to happen on the
+		// reactive object the app was created with.
+		//
+		// ⚠️ `$mount(el)` REPLACED `el`; Vue 3's `mount(el)` renders INSIDE it.
+		// That is the correct behaviour here — the Files sidebar owns `el`.
+		mount(el, fileInfo) {
+			if (el[appKey]) {
+				el[appKey].unmount()
+			}
+
+			el[propsKey] = reactive({ fileId: fileInfo.id })
+			// Rendered through a root render function: `createApp(Comp, props)`
+			// copies a reactive props object, so `update()` would never reach it.
+			el[appKey] = createApp({
+				render: () => h(tab.component, el[propsKey]),
+			})
+			// ⚠️ Vue 2's `Vue.mixin()` was GLOBAL, so main.js's single call
+			// reached every instance on the page. Vue 3's `app.mixin()` is
+			// per-app — each entry bundle must install `t`/`n` itself.
+			el[appKey].mixin({ methods: { t, n } })
+			el[appKey].mount(el)
+		},
+
+		async update(el, fileInfo) {
+			if (el[propsKey]) {
+				el[propsKey].fileId = fileInfo.id
+			}
+		},
+
+		destroy(el) {
+			if (el[appKey]) {
+				el[appKey].unmount()
+				el[appKey] = null
+				el[propsKey] = null
+			}
+		},
+
+		enabled(fileInfo) {
+			return !!fileInfo
+		},
+	})
+}
+
+/**
+ * The tab listing the register objects a file belongs to.
+ *
+ * @return {object} The Files sidebar tab
+ */
+function objectsTab() {
+	return vueTab({
+		id: 'openregister-objects',
+		name: t('openregister', 'Register objects'),
+		icon: databaseOutlineIcon,
+		component: RegisterObjectsTab,
+		slot: 'registerObjects',
+	})
+}
+
+/**
+ * The tab showing a file's extraction and metadata.
+ *
+ * @return {object} The Files sidebar tab
+ */
+function extractionTab() {
+	return vueTab({
+		id: 'openregister-extraction',
+		name: t('openregister', 'Extraction'),
+		icon: textBoxSearchOutlineIcon,
+		component: ExtractionTab,
+		slot: 'extraction',
+	})
+}
+
+/**
  * Register the OpenRegister sidebar tabs in the Files app.
  *
  * Uses the OCA.Files.Sidebar.registerTab() API following the mount/update/destroy
@@ -47,98 +143,8 @@ document.addEventListener('DOMContentLoaded', () => {
 	}
 
 	// Register Objects Tab
-	OCA.Files.Sidebar.registerTab(
-		new OCA.Files.Sidebar.Tab({
-			id: 'openregister-objects',
-			name: t('openregister', 'Register objects'),
-			icon: databaseOutlineIcon,
-
-			// Vue 3: `createApp(Component, rootProps).mount(el)` replaces
-			// `Vue.extend()` + `new View({ propsData }).$mount(el)`.
-			//
-			// The root props object is kept `reactive` and stashed on the element so
-			// `update()` can still push a new fileId into the live instance. Vue 2
-			// allowed `vm.fileId = …` directly on the instance; Vue 3 root props are
-			// read-only on the component, so the mutation has to happen on the
-			// reactive object the app was created with.
-			//
-			// ⚠️ `$mount(el)` REPLACED `el`; Vue 3's `mount(el)` renders INSIDE it.
-			// That is the correct behaviour here — the Files sidebar owns `el`.
-			mount(el, fileInfo) {
-				if (el._registerObjectsApp) {
-					el._registerObjectsApp.unmount()
-				}
-
-				el._registerObjectsProps = reactive({ fileId: fileInfo.id })
-				// Rendered through a root render function: `createApp(Comp, props)`
-				// copies a reactive props object, so `update()` would never reach it.
-				el._registerObjectsApp = createApp({
-					render: () => h(RegisterObjectsTab, el._registerObjectsProps),
-				})
-				// ⚠️ Vue 2's `Vue.mixin()` was GLOBAL, so main.js's single call
-				// reached every instance on the page. Vue 3's `app.mixin()` is
-				// per-app — each entry bundle must install `t`/`n` itself.
-				el._registerObjectsApp.mixin({ methods: { t, n } })
-				el._registerObjectsApp.mount(el)
-			},
-
-			async update(el, fileInfo) {
-				if (el._registerObjectsProps) {
-					el._registerObjectsProps.fileId = fileInfo.id
-				}
-			},
-
-			destroy(el) {
-				if (el._registerObjectsApp) {
-					el._registerObjectsApp.unmount()
-					el._registerObjectsApp = null
-					el._registerObjectsProps = null
-				}
-			},
-
-			enabled(fileInfo) {
-				return !!fileInfo
-			},
-		}),
-	)
+	OCA.Files.Sidebar.registerTab(objectsTab())
 
 	// Extraction & Metadata Tab
-	OCA.Files.Sidebar.registerTab(
-		new OCA.Files.Sidebar.Tab({
-			id: 'openregister-extraction',
-			name: t('openregister', 'Extraction'),
-			icon: textBoxSearchOutlineIcon,
-
-			mount(el, fileInfo) {
-				if (el._extractionApp) {
-					el._extractionApp.unmount()
-				}
-
-				el._extractionProps = reactive({ fileId: fileInfo.id })
-				el._extractionApp = createApp({
-					render: () => h(ExtractionTab, el._extractionProps),
-				})
-				el._extractionApp.mixin({ methods: { t, n } })
-				el._extractionApp.mount(el)
-			},
-
-			async update(el, fileInfo) {
-				if (el._extractionProps) {
-					el._extractionProps.fileId = fileInfo.id
-				}
-			},
-
-			destroy(el) {
-				if (el._extractionApp) {
-					el._extractionApp.unmount()
-					el._extractionApp = null
-					el._extractionProps = null
-				}
-			},
-
-			enabled(fileInfo) {
-				return !!fileInfo
-			},
-		}),
-	)
+	OCA.Files.Sidebar.registerTab(extractionTab())
 })

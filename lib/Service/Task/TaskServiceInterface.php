@@ -22,13 +22,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Task;
 
-use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskAudit;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskSubjectNotFoundException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ChecklistTick;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskAuditEntry;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskDelegation;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskResolution;
 
 /**
  * Every public method of TaskService. Callers depend on this interface, not on the class.
@@ -76,12 +80,24 @@ interface TaskServiceInterface {
 	 * that is already closed (a completed approval carried over from a
 	 * legacy shape). Not reachable over HTTP; the controller calls create().
 	 *
-	 * @param array<string, mixed> $data The task fields, canonical or legacy.
-	 * @param string|null $actor The creating identity.
-	 * @param callable|null $mayReadBlocker Answers whether the creating caller may read a blocker; create() passes
-	 *                                      the caller's own rule for an ordinary user, a trusted caller passes none.
-	 * @param DateTime|null $createdAt The moment the task was created, for a task carried over from elsewhere; it stamps
-	 *                                 the task and its create audit entry. Null stamps both with now.
+	 * @param array<string, mixed> $data  The task fields, canonical or legacy.
+	 * @param string|null          $actor The creating identity.
+	 *
+	 * @return Task The created task, with candidates indexed and creation audited.
+	 *
+	 * @throws TaskValidationException On any refused value.
+	 * @throws TaskAccessDeniedException Without an acting identity.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
+	 */
+	public function import(array $data, ?string $actor): Task;
+
+	/**
+	 * Create a task on the trusted path (see import()), with the blocker rule
+	 * create() passes for an ordinary user and the creation moment of a task
+	 * carried over from elsewhere, which stamps the task and its create audit entry.
+	 *
+	 * @param TaskImport $import The task fields, the creating identity, the blocker rule and the creation moment.
 	 *
 	 * @return Task The created task, with candidates indexed and creation audited.
 	 *
@@ -91,7 +107,7 @@ interface TaskServiceInterface {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
-	public function import(array $data, ?string $actor, ?callable $mayReadBlocker = null, ?DateTime $createdAt = null): Task;
+	public function importTask(TaskImport $import): Task;
 
 	/**
 	 * Offer a task to a candidate pool, optionally routing it.
@@ -101,17 +117,14 @@ interface TaskServiceInterface {
 	 * implicitly assigned. A strategy that finds nobody, with no fallback,
 	 * is a pooled task, full stop.
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param array<string, mixed> $pool candidateUsers / candidateGroups /
-	 *                                   candidateRole / routingStrategy /
-	 *                                   routingFallback, each optional.
-	 * @param string|null $actor The offering identity.
+	 * @param TaskActorRef         $ref  The task and the offering identity.
+	 * @param array<string, mixed> $pool candidateUsers / candidateGroups / candidateRole / routingStrategy / routingFallback, each optional.
 	 *
 	 * @return Task The offered task.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
-	public function offer(string $uuid, array $pool, ?string $actor): Task;
+	public function offer(TaskActorRef $ref, array $pool): Task;
 
 	/**
 	 * Edit a task's own fields: title, description, due date, priority.
@@ -121,9 +134,8 @@ interface TaskServiceInterface {
 	 * values are validated, then the change and its audit entry are written
 	 * in one transaction. An edit that changes nothing writes nothing.
 	 *
-	 * @param string $uuid The task uuid.
+	 * @param TaskActorRef         $ref     The task and the editing identity.
 	 * @param array<string, mixed> $changes The new values by field.
-	 * @param string|null $actor The editing identity.
 	 *
 	 * @return Task The task as it now stands.
 	 *
@@ -131,7 +143,7 @@ interface TaskServiceInterface {
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
 	 */
-	public function edit(string $uuid, array $changes, ?string $actor): Task;
+	public function edit(TaskActorRef $ref, array $changes): Task;
 
 	/**
 	 * Claim: assign IF still unassigned — the database decides the race.
@@ -166,28 +178,26 @@ interface TaskServiceInterface {
 	/**
 	 * Assign a task to a performer directly.
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string $assignee The performer reference.
-	 * @param string|null $actor The assigning identity — requester or admin.
+	 * @param TaskActorRef $ref      The task and the assigning identity (requester or admin).
+	 * @param string       $assignee The new assignee.
 	 *
 	 * @return Task The assigned task.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
-	public function assign(string $uuid, string $assignee, ?string $actor): Task;
+	public function assign(TaskActorRef $ref, string $assignee): Task;
 
 	/**
 	 * Reassign a task to a different performer.
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string $assignee The new performer reference.
-	 * @param string|null $actor The reassigning identity — requester or admin.
+	 * @param TaskActorRef $ref      The task and the reassigning identity (requester or admin).
+	 * @param string       $assignee The new assignee.
 	 *
 	 * @return Task The reassigned task.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
-	public function reassign(string $uuid, string $assignee, ?string $actor): Task;
+	public function reassign(TaskActorRef $ref, string $assignee): Task;
 
 	/**
 	 * Delegate: the assignee hands the task to a delegate, with a mandate.
@@ -197,50 +207,26 @@ interface TaskServiceInterface {
 	 * the delegate carries both identities into the audit — a delegated
 	 * completion is NEVER recorded as the original performer acting.
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string $delegate The acting identity taking over.
-	 * @param string $mandate The authority relied on.
-	 * @param string|null $actor The delegating identity — must be the assignee.
+	 * @param TaskActorRef   $ref        The task and the delegating identity, which must be the assignee.
+	 * @param TaskDelegation $delegation The identity taking over and the mandate (the authority relied on).
 	 *
 	 * @return Task The delegated task.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
-	public function delegate(string $uuid, string $delegate, string $mandate, ?string $actor): Task;
+	public function delegate(TaskActorRef $ref, TaskDelegation $delegation): Task;
 
 	/**
 	 * Resolve: the assignee finishes the work with a `resolved` outcome.
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string|null $resultText Free-text result.
-	 * @param string|null $comment Completion comment.
-	 * @param string|null $actor The resolving identity — must be the assignee.
+	 * @param TaskActorRef   $ref        The task and the resolving identity, which must be the assignee.
+	 * @param TaskResolution $resolution The result text and comment.
 	 *
 	 * @return Task The resolved task.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
-	public function resolve(string $uuid, ?string $resultText, ?string $comment, ?string $actor): Task;
-
-	/**
-	 * Complete, with the answer as separate values; builds the answer and delegates to completeWithAnswer().
-	 *
-	 * @param string                                $uuid       The task uuid.
-	 * @param string                                $outcome    The outcome (`approved`, `done`, `rejected`, ...).
-	 * @param string|null                           $resultText Free-text result.
-	 * @param string|null                           $comment    Completion comment.
-	 * @param string|null                           $actor      The completing identity — must be the assignee.
-	 * @param array<string, mixed>|null             $responses  The submitted answer fields, if any.
-	 * @param array<int, array<string, mixed>>|null $evidence   References to the files ALREADY stored; never bytes.
-	 *
-	 * @return Task The completed task.
-	 *
-	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
-	 */
-	public function complete(
-		string $uuid, string $outcome, ?string $resultText, ?string $comment, ?string $actor, ?array $responses = null,
-		?array $evidence = null
-	): Task;
+	public function resolve(TaskActorRef $ref, TaskResolution $resolution): Task;
 
 	/**
 	 * Complete: the assignee finishes the work with an explicit outcome.
@@ -263,23 +249,20 @@ interface TaskServiceInterface {
 	/**
 	 * Cancel: the requester (or an administrator) terminates the task.
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string|null $reason Why, recorded on task and audit.
-	 * @param string|null $actor The cancelling identity.
+	 * @param TaskActorRef $ref    The task and the cancelling identity.
+	 * @param string|null  $reason Why the task is cancelled.
 	 *
 	 * @return Task The terminated task.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
-	public function cancel(string $uuid, ?string $reason, ?string $actor): Task;
+	public function cancel(TaskActorRef $ref, ?string $reason): Task;
 
 	/**
 	 * Check or uncheck ONE checklist item, addressed by its id.
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string $itemId The checklist item id.
-	 * @param bool $checked The new checked value.
-	 * @param string|null $actor The acting identity — must be the assignee.
+	 * @param TaskActorRef  $ref  The task and the acting identity, which must be the assignee.
+	 * @param ChecklistTick $tick The checklist item id and the flag it is set to.
 	 *
 	 * @return Task The task with the one item changed.
 	 *
@@ -287,7 +270,7 @@ interface TaskServiceInterface {
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-templated-task-freezes-its-template-at-creation
 	 */
-	public function checkChecklistItem(string $uuid, string $itemId, bool $checked, ?string $actor): Task;
+	public function checkChecklistItem(TaskActorRef $ref, ChecklistTick $tick): Task;
 
 	/**
 	 * Cancellation propagation: a run reached a terminal status.
@@ -457,10 +440,7 @@ interface TaskServiceInterface {
 	 * moving it: the party a portal task was matched to, and the role it was
 	 * matched from. The state is unchanged; only the trail grows.
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string $action The audited action name.
-	 * @param string|null $actor The acting identity.
-	 * @param string $reason What is being recorded.
+	 * @param TaskAuditEntry $entry The task uuid, the audit action, the identity recorded as acting and the reason.
 	 *
 	 * @return Task The task, unchanged.
 	 *
@@ -468,7 +448,7 @@ interface TaskServiceInterface {
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-matched-party-comes-from-the-case-and-is-frozen-at-creation
 	 */
-	public function record(string $uuid, string $action, ?string $actor, string $reason): Task;
+	public function record(TaskAuditEntry $entry): Task;
 
 	/**
 	 * The audit trail of a task, oldest first.
