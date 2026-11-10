@@ -1175,8 +1175,7 @@ class SaveObjects {
 		$draftKept = (new DraftCallerRule())->keptFromCaller(
 			object: $run->rowExisting,
 			schema: $run->rowSchema,
-			userId: $run->userId(),
-			isAdmin: $run->isAdmin
+			caller: new DraftCaller(userId: $run->userId(), isAdmin: $run->isAdmin)
 		);
 		if ($draftKept === false) {
 			return null;

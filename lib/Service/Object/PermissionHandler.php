@@ -618,9 +618,11 @@ class PermissionHandler implements PermissionHandlerInterface {
 		return (new DraftCallerRule())->keptFromCaller(
 			object: $ask->object,
 			schema: $ask->schema,
-			userId: $subject,
-			isAdmin: in_array('admin', $this->groupsOf(userId: $subject), true),
-			commandLine: $this->isCommandLine()
+			caller: new DraftCaller(
+				userId: $subject,
+				isAdmin: in_array('admin', $this->groupsOf(userId: $subject), true),
+				commandLine: $this->isCommandLine()
+			)
 		);
 	}//end draftIsKeptFromCaller()
 
