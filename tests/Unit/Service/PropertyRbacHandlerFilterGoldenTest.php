@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldLists;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRules;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Rbac\PropertyReveal;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -206,9 +207,9 @@ final class PropertyRbacHandlerFilterGoldenTest extends TestCase {
 
 		$reveals = $this->createMock(RevealCollector::class);
 		$reveals->method('isAudited')->willReturnCallback(fn (?array $rules): bool => ($rules['audit'] ?? false) === true);
-		$reveals->method('record')->willReturnCallback(
-			function (string $userId, string $objectUuid, string $property, $schemaId) use (&$log): void {
-				$log[] = ['reveal', $userId, $objectUuid, $property, $schemaId];
+		$reveals->method('recordReveal')->willReturnCallback(
+			function (PropertyReveal $reveal) use (&$log): void {
+				$log[] = ['reveal', $reveal->userId, $reveal->objectUuid, $reveal->property, $reveal->schemaId];
 			}
 		);
 

@@ -47,6 +47,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Service\Rbac\PropertyReveal;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
 use OCA\OpenRegister\Service\Rbac\WriteOnlyPathWalker;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
@@ -287,7 +288,9 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 		try {
 			$userId = (string)$this->caller->userSession->getUser()?->getUID();
 			$objectUuid = $this->objectUuid(object: $read->object);
-			$this->reveals?->record(userId: $userId, objectUuid: $objectUuid, property: $read->property, schemaId: $read->schema->getId());
+			$this->reveals?->recordReveal(
+				reveal: new PropertyReveal(userId: $userId, objectUuid: $objectUuid, property: $read->property, schemaId: $read->schema->getId())
+			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[PropertyRbacHandler] Could not record a reveal; the read is unaffected',

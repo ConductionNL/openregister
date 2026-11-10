@@ -92,7 +92,7 @@ class RevealCollectorTest extends TestCase {
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
 	public function testOneLookIsOneEntry(): void {
-		$this->collector->record('alice', 'object-1', 'bsn', 24);
+		$this->collector->recordReveal(new PropertyReveal('alice', 'object-1', 'bsn', 24));
 
 		$entries = $this->collector->take();
 
@@ -147,7 +147,7 @@ class RevealCollectorTest extends TestCase {
 	 */
 	public function testAListOfFortyRevealsFortyTimes(): void {
 		for ($i = 0; $i < 40; $i++) {
-			$this->collector->record('alice', 'object-' . $i, 'bsn');
+			$this->collector->recordReveal(new PropertyReveal('alice', 'object-' . $i, 'bsn'));
 		}
 
 		$this->assertSame(40, $this->collector->count());
@@ -165,9 +165,9 @@ class RevealCollectorTest extends TestCase {
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
 	public function testTheSameFieldOfTheSameObjectIsOneLook(): void {
-		$this->collector->record('alice', 'object-1', 'bsn');
-		$this->collector->record('alice', 'object-1', 'bsn');
-		$this->collector->record('alice', 'object-1', 'bsn');
+		$this->collector->recordReveal(new PropertyReveal('alice', 'object-1', 'bsn'));
+		$this->collector->recordReveal(new PropertyReveal('alice', 'object-1', 'bsn'));
+		$this->collector->recordReveal(new PropertyReveal('alice', 'object-1', 'bsn'));
 
 		$this->assertSame(1, $this->collector->count());
 	}//end testTheSameFieldOfTheSameObjectIsOneLook()
@@ -183,10 +183,10 @@ class RevealCollectorTest extends TestCase {
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
 	public function testEachAxisOfTheIdentityCounts(): void {
-		$this->collector->record('alice', 'object-1', 'bsn');
-		$this->collector->record('bob', 'object-1', 'bsn');
-		$this->collector->record('alice', 'object-2', 'bsn');
-		$this->collector->record('alice', 'object-1', 'gdprClassification');
+		$this->collector->recordReveal(new PropertyReveal('alice', 'object-1', 'bsn'));
+		$this->collector->recordReveal(new PropertyReveal('bob', 'object-1', 'bsn'));
+		$this->collector->recordReveal(new PropertyReveal('alice', 'object-2', 'bsn'));
+		$this->collector->recordReveal(new PropertyReveal('alice', 'object-1', 'gdprClassification'));
 
 		$this->assertSame(4, $this->collector->count());
 	}//end testEachAxisOfTheIdentityCounts()
@@ -202,9 +202,9 @@ class RevealCollectorTest extends TestCase {
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
 	public function testAnUnnamedRevealRecordsNothing(): void {
-		$this->collector->record('', 'object-1', 'bsn');
-		$this->collector->record('alice', '', 'bsn');
-		$this->collector->record('alice', 'object-1', '');
+		$this->collector->recordReveal(new PropertyReveal('', 'object-1', 'bsn'));
+		$this->collector->recordReveal(new PropertyReveal('alice', '', 'bsn'));
+		$this->collector->recordReveal(new PropertyReveal('alice', 'object-1', ''));
 
 		$this->assertSame(0, $this->collector->count());
 		$this->assertSame([], $this->collector->take());
@@ -221,7 +221,7 @@ class RevealCollectorTest extends TestCase {
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
 	public function testTakingEmptiesTheCollector(): void {
-		$this->collector->record('alice', 'object-1', 'bsn');
+		$this->collector->recordReveal(new PropertyReveal('alice', 'object-1', 'bsn'));
 
 		$this->assertCount(1, $this->collector->take());
 		$this->assertSame(0, $this->collector->count());
@@ -239,7 +239,7 @@ class RevealCollectorTest extends TestCase {
 		$this->assertFalse($this->collector->overflowed());
 
 		for ($i = 0; $i <= RevealCollector::MAX_PER_REQUEST; $i++) {
-			$this->collector->record('alice', 'object-' . $i, 'bsn');
+			$this->collector->recordReveal(new PropertyReveal('alice', 'object-' . $i, 'bsn'));
 		}
 
 		$this->assertSame(RevealCollector::MAX_PER_REQUEST, $this->collector->count());
