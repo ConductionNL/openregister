@@ -149,7 +149,7 @@ final class SlaCalculator implements SlaCalculatorInterface {
 	 * @spec openspec/changes/end-date-roll-on-the-calendar/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
 	 */
 	public function roll(DateTimeInterface $moment, RollRule $rule): array {
-		return $this->workingDayRoll->apply(moment: $moment, roll: $rule->roll, calendar: $rule->calendar);
+		return $this->workingDayRoll->apply(moment: $moment, rule: $rule);
 	}//end roll()
 
 	/**

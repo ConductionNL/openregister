@@ -63,6 +63,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
@@ -566,7 +567,7 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 		$timerConfig = $binding + ['title' => $this->timerTitle(config: $config), 'sla' => $config['sla']]
 			+ $this->optionalTimerKeys(config: $config);
 
-		$this->timers->arm(config: $timerConfig, actor: $this->actingIdentity(context: $step->context));
+		$this->timers->arm(config: $timerConfig, act: FlowTimerAct::of(actor: $this->actingIdentity(context: $step->context)));
 
 	}//end armDeadline()
 

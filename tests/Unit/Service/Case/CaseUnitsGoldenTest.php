@@ -593,8 +593,8 @@ class CaseUnitsGoldenTest extends TestCase {
 		$armed = [];
 		$core = $this->createMock(FlowTimerService::class);
 		$core->method('arm')->willReturnCallback(
-			static function (array $config, ?string $actor) use (&$armed): FlowTimer {
-				$armed[] = [$config['subjectUuid'], $config['purpose'], $config['legalEffect'], $actor];
+			static function (array $config, FlowTimerAct $act) use (&$armed): FlowTimer {
+				$armed[] = [$config['subjectUuid'], $config['purpose'], $config['legalEffect'], $act->actor];
 
 				return new FlowTimer();
 			}
@@ -980,8 +980,8 @@ class CaseUnitsGoldenTest extends TestCase {
 		$refuse = false;
 		$core = $this->createMock(FlowTimerService::class);
 		$core->method('arm')->willReturnCallback(
-			static function (array $config, ?string $actor) use (&$armed, &$refuse): FlowTimer {
-				$armed[] = [$config, $actor];
+			static function (array $config, FlowTimerAct $act) use (&$armed, &$refuse): FlowTimer {
+				$armed[] = [$config, $act->actor];
 				if ($refuse === true) {
 					throw new RuntimeException('clock refused');
 				}
