@@ -48,12 +48,8 @@ class CodedPropertyDeclarationFactory {
 	 */
 	public function fromProperty(mixed $property): ?CodedPropertyDeclaration {
 		$raw = $this->rawAnnotation(property: $property);
-		if ($raw === null) {
-			return null;
-		}
-
-		$scheme = trim((string)($raw['scheme'] ?? ''));
-		if ($scheme === '') {
+		$scheme = self::schemeOf(raw: $raw);
+		if ($raw === null || $scheme === '') {
 			return null;
 		}
 
@@ -64,6 +60,17 @@ class CodedPropertyDeclarationFactory {
 			scoreProperty: $this->parseScoreProperty(raw: $raw)
 		);
 	}//end fromProperty()
+
+	/**
+	 * The annotation's scheme, trimmed; '' when there is no annotation or it names none.
+	 *
+	 * @param array<string,mixed>|null $raw The annotation.
+	 *
+	 * @return string The scheme.
+	 */
+	private static function schemeOf(?array $raw): string {
+		return trim((string)($raw['scheme'] ?? ''));
+	}//end schemeOf()
 
 	/**
 	 * How a coded value is stored and which concepts it may hold.
