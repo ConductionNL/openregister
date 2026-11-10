@@ -256,8 +256,8 @@ class ObjectServiceDeleteHonoursScopeFlagsTest extends TestCase {
 			->willReturnCallback(
 				function (mixed ...$args): bool {
 					// The handler still gets the caller's flags, as it always did.
-					$this->assertFalse($args[4] ?? true);
-					$this->assertFalse($args[5] ?? true);
+					$this->assertFalse($args[1] ?? true);
+					$this->assertFalse($args[2] ?? true);
 					return true;
 				}
 			);

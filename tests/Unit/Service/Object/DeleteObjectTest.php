@@ -31,6 +31,10 @@ use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionRequest;
+use OCA\OpenRegister\Service\Object\DeletionOptions;
+use OCA\OpenRegister\Service\Object\RemovalOptions;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\IUser;
@@ -385,7 +389,7 @@ class DeleteObjectTest extends TestCase {
 		$this->withNoUser();
 		$this->withAuditTrailsEnabled(false);
 
-		$this->assertTrue($this->handler->delete($object, null, false, $this->createRegister(2), $this->createSchema(5)));
+		$this->assertTrue($this->handler->delete($object, new RemovalOptions(table: new RegisterSchema(register: $this->createRegister(2), schema: $this->createSchema(5)))));
 		$this->assertSame(['guard', 'write'], $order);
 	}
 
@@ -402,7 +406,7 @@ class DeleteObjectTest extends TestCase {
 		$this->withAuditTrailsEnabled(true);
 
 		try {
-			$this->handler->delete($object, null, false, $this->createRegister(2), $this->createSchema(5));
+			$this->handler->delete($object, new RemovalOptions(table: new RegisterSchema(register: $this->createRegister(2), schema: $this->createSchema(5))));
 			$this->fail('a refused soft delete must throw');
 		} catch (HookStoppedException $exception) {
 			$this->assertSame($refusal, $exception);
@@ -423,7 +427,7 @@ class DeleteObjectTest extends TestCase {
 			->willReturn($object);
 		$this->withAuditTrailsEnabled(false);
 
-		$this->assertTrue($this->handler->delete($object, null, true, $this->createRegister(2), $this->createSchema(5)));
+		$this->assertTrue($this->handler->delete($object, new RemovalOptions(permanent: true, table: new RegisterSchema(register: $this->createRegister(2), schema: $this->createSchema(5)))));
 	}
 
 	/**
@@ -440,7 +444,7 @@ class DeleteObjectTest extends TestCase {
 		$this->objectMapper->expects($this->never())->method('deleteObjectEntity');
 
 		$this->expectException(HookStoppedException::class);
-		$handler->delete($object, null, true, $this->createRegister(2), $this->createSchema(5));
+		$handler->delete($object, new RemovalOptions(permanent: true, table: new RegisterSchema(register: $this->createRegister(2), schema: $this->createSchema(5))));
 	}
 
 	/**
@@ -468,7 +472,7 @@ class DeleteObjectTest extends TestCase {
 		$this->objectMapper->expects($this->never())->method('update');
 
 		$this->expectException(HookStoppedException::class);
-		$this->handler->deleteObject(register: 1, schema: 10, uuid: 'parent-locked');
+		$this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'parent-locked'));
 	}
 
 	/**
@@ -483,7 +487,7 @@ class DeleteObjectTest extends TestCase {
 		$this->withAuditTrailsEnabled(false);
 		$this->objectMapper->expects($this->once())->method('assertDeletable');
 
-		$this->assertTrue($this->handler->deleteObject(register: 1, schema: 10, uuid: 'uuid-root'));
+		$this->assertTrue($this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'uuid-root')));
 	}
 
 	/**
@@ -739,7 +743,7 @@ class DeleteObjectTest extends TestCase {
 		$this->withNoUser();
 		$this->withAuditTrailsEnabled(false);
 
-		$result = $this->handler->deleteObject(register: 1, schema: 10, uuid: 'uuid-do-1');
+		$result = $this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'uuid-do-1'));
 
 		$this->assertTrue($result);
 	}
@@ -773,7 +777,7 @@ class DeleteObjectTest extends TestCase {
 		$this->expectException(ReferentialIntegrityException::class);
 		$this->expectExceptionMessage('Cannot delete object: 1 dependent object(s) block deletion');
 
-		$this->handler->deleteObject(register: 1, schema: 10, uuid: 'uuid-do-2');
+		$this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'uuid-do-2'));
 	}
 
 	/**
@@ -811,7 +815,7 @@ class DeleteObjectTest extends TestCase {
 		$this->withNoUser();
 		$this->withAuditTrailsEnabled(false);
 
-		$result = $this->handler->deleteObject(register: 1, schema: 10, uuid: 'uuid-do-3');
+		$result = $this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'uuid-do-3'));
 
 		$this->assertTrue($result);
 	}
@@ -841,10 +845,7 @@ class DeleteObjectTest extends TestCase {
 		$this->withAuditTrailsEnabled(false);
 
 		$result = $this->handler->deleteObject(
-			register: 1,
-			schema: 10,
-			uuid: 'uuid-do-child',
-			originalObjectId: 'uuid-do-parent'
+			new DeletionRequest(register: 1, schema: 10, uuid: 'uuid-do-child', options: new DeletionOptions(originalObjectId: 'uuid-do-parent'))
 		);
 
 		$this->assertTrue($result);
@@ -904,7 +905,7 @@ class DeleteObjectTest extends TestCase {
 			->expects($this->atLeast(2))
 			->method('update');
 
-		$this->handler->deleteObject(register: 1, schema: 10, uuid: $parentUuid);
+		$this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: $parentUuid));
 	}
 
 	/**
@@ -951,7 +952,7 @@ class DeleteObjectTest extends TestCase {
 			->expects($this->atLeast(3))
 			->method('update');
 
-		$this->handler->deleteObject(register: 1, schema: 10, uuid: $parentUuid);
+		$this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: $parentUuid));
 	}
 
 	/**
@@ -983,7 +984,7 @@ class DeleteObjectTest extends TestCase {
 			->expects($this->once())
 			->method('update');
 
-		$this->handler->deleteObject(register: 1, schema: 10, uuid: $parentUuid);
+		$this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: $parentUuid));
 	}
 
 	/**
@@ -1014,7 +1015,7 @@ class DeleteObjectTest extends TestCase {
 			->expects($this->once())
 			->method('update');
 
-		$this->handler->deleteObject(register: 1, schema: 10, uuid: $parentUuid);
+		$this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: $parentUuid));
 	}
 
 	// =========================================================================
@@ -1043,7 +1044,7 @@ class DeleteObjectTest extends TestCase {
 
 		$this->logger->expects($this->once())->method('warning');
 
-		$result = $this->handler->deleteObject(register: 1, schema: 10, uuid: 'uuid-err-1');
+		$result = $this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'uuid-err-1'));
 
 		$this->assertFalse($result);
 	}
@@ -1063,7 +1064,7 @@ class DeleteObjectTest extends TestCase {
 
 		$this->expectExceptionObject($refusal);
 
-		$this->handler->deleteObject(register: 1, schema: 10, uuid: 'uuid-locked');
+		$this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'uuid-locked'));
 	}
 
 	// =========================================================================
@@ -1098,11 +1099,7 @@ class DeleteObjectTest extends TestCase {
 		$this->withAuditTrailsEnabled(false);
 
 		$this->handler->deleteObject(
-			register: 1,
-			schema: 10,
-			uuid: 'uuid-rbac-1',
-			_rbac: false,
-			_multitenancy: true
+			new DeletionRequest(register: 1, schema: 10, uuid: 'uuid-rbac-1'), _rbac: false, _multitenancy: true
 		);
 	}
 
@@ -1133,11 +1130,7 @@ class DeleteObjectTest extends TestCase {
 		$this->withAuditTrailsEnabled(false);
 
 		$this->handler->deleteObject(
-			register: 1,
-			schema: 10,
-			uuid: 'uuid-mt-1',
-			_rbac: true,
-			_multitenancy: false
+			new DeletionRequest(register: 1, schema: 10, uuid: 'uuid-mt-1'), _rbac: true, _multitenancy: false
 		);
 	}
 
@@ -1167,7 +1160,7 @@ class DeleteObjectTest extends TestCase {
 		$this->withNoUser();
 		$this->withAuditTrailsEnabled(false);
 
-		$result = $this->handler->deleteObject(register: 1, schema: 10, uuid: 'uuid-noschema');
+		$result = $this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'uuid-noschema'));
 
 		$this->assertTrue($result);
 	}

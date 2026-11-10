@@ -22,6 +22,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\RemovalOptions;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Object\DraftRemovalRecord;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCA\OpenRegister\Service\SettingsService;
@@ -182,7 +184,7 @@ class DraftRemovalRecordTest extends TestCase {
 		[$register, $schema] = $this->scope();
 		$draft = $this->stored(status: 'draft');
 
-		$this->assertTrue($this->handler(auditTrail: $this->auditTrail())->delete(object: $draft, permanent: true, register: $register, schema: $schema));
+		$this->assertTrue($this->handler(auditTrail: $this->auditTrail())->delete($draft, new RemovalOptions(permanent: true, table: new RegisterSchema(register: $register, schema: $schema))));
 
 		$this->assertCount(1, $this->entries);
 		$entry = $this->entries[0];
@@ -206,7 +208,7 @@ class DraftRemovalRecordTest extends TestCase {
 	public function testAPermanentDeleteOfARecordWritesNoDraftEntry(): void {
 		[$register, $schema] = $this->scope();
 
-		$this->assertTrue($this->handler(auditTrail: $this->auditTrail())->delete(object: $this->stored(status: 'active'), permanent: true, register: $register, schema: $schema));
+		$this->assertTrue($this->handler(auditTrail: $this->auditTrail())->delete($this->stored(status: 'active'), new RemovalOptions(permanent: true, table: new RegisterSchema(register: $register, schema: $schema))));
 
 		$this->assertSame([], $this->entries);
 	}//end testAPermanentDeleteOfARecordWritesNoDraftEntry()

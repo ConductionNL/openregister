@@ -47,6 +47,7 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\LockHandler;
@@ -255,9 +256,8 @@ class ObjectServiceDraftDeleteTest extends TestCase {
 	 */
 	private function recordHandler(array &$asked): void {
 		$this->deleteHandler->method('deleteObject')->willReturnCallback(
-			static function (mixed ...$args) use (&$asked): bool {
-				// Position 8 is `permanent` in DeleteObject::deleteObject().
-				$asked[] = ($args[8] ?? false);
+			static function (DeletionRequest $request) use (&$asked): bool {
+				$asked[] = $request->options->permanent;
 
 				return true;
 			}
