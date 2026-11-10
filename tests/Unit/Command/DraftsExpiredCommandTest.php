@@ -21,6 +21,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\DraftExpiry;
+use OCA\OpenRegister\Service\Object\DraftExpiryInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -75,7 +76,7 @@ class DraftsExpiredCommandTest extends TestCase {
 		);
 
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->with(DraftExpiry::class)->willReturn(
+		$container->method('get')->with(DraftExpiryInterface::class)->willReturn(
 			new DraftExpiry(objects: $objects, registers: $registers, schemas: $schemas, logger: $this->createMock(LoggerInterface::class))
 		);
 

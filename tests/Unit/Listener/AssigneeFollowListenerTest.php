@@ -33,6 +33,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Listener\Support\AssigneeFollowServices;
 
 /**
  * Who follows on assignment, and who does not.
@@ -107,10 +108,8 @@ class AssigneeFollowListenerTest extends TestCase {
 
 		return new AssigneeFollowListener(
 			$schemaMapper,
-			new SemanticRoleHandler(),
+			new AssigneeFollowServices(new SemanticRoleHandler(), $users, $this->watchers),
 			$permissions,
-			$users,
-			$this->watchers,
 			$this->createMock(originalClassName: LoggerInterface::class)
 		);
 

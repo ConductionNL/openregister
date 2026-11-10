@@ -96,7 +96,7 @@ use Throwable;
  * here with its sign reversed: it used to be the longest an audit row could
  * live, and is now the shortest.
  */
-class AuditRetentionResolver {
+class AuditRetentionResolver implements AuditRetentionResolverInterface {
 
 	/**
 	 * Shortest lifetime any audit row may be given.
@@ -157,9 +157,6 @@ class AuditRetentionResolver {
 	 * @return array{expires: \DateTimeImmutable|null, source: string} The
 	 *                                                                 resolved expiry (null meaning "retain indefinitely") and the
 	 *                                                                 machine-readable token explaining which branch produced it.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	public function resolve(ObjectEntity $object, DateTimeInterface $createdAt): array {
 		// Defensive: the column is JSON, so a malformed row can yield a
@@ -170,49 +167,25 @@ class AuditRetentionResolver {
 			$retention = [];
 		}
 
-		// 1. Legal hold beats every other consideration.
-		$legalHold = ($retention['legalHold'] ?? null);
-		if (is_array($legalHold) === true && ($legalHold['active'] ?? false) === true) {
+		// 1, 2 + 3. A legal hold, or a nomination that forbids destruction.
+		$indefinite = $this->indefiniteSource(retention: $retention);
+		if ($indefinite !== null) {
 			return [
 				'expires' => null,
-				'source' => 'legal-hold:indefinite',
-			];
-		}
-
-		// 2 + 3. Archival nomination that forbids destruction.
-		$nominatie = ($retention['archiefnominatie'] ?? null);
-		if ($nominatie === 'bewaren') {
-			return [
-				'expires' => null,
-				'source' => 'archiefnominatie=bewaren:indefinite',
-			];
-		}
-
-		if ($nominatie === 'nog_niet_bepaald') {
-			return [
-				'expires' => null,
-				'source' => 'archiefnominatie=nog_niet_bepaald:indefinite',
+				'source' => $indefinite,
 			];
 		}
 
 		// 4. The object's own destruction date.
-		$actiedatum = ($retention['archiefactiedatum'] ?? null);
-		if (is_string($actiedatum) === true && $actiedatum !== '') {
-			$parsed = $this->parseDate(value: $actiedatum);
-			if ($parsed !== null) {
-				return $this->withFloor(
-					expires: $parsed,
-					createdAt: $createdAt,
-					source: 'object.archiefactiedatum'
-				);
-			}
+		$resolved = $this->fromActiedatum(actiedatum: ($retention['archiefactiedatum'] ?? null), createdAt: $createdAt);
+		if ($resolved !== null) {
+			return $resolved;
 		}
 
 		// 5. An ISO-8601 duration on the object.
 		$resolved = $this->fromDuration(
-			duration: ($retention['bewaartermijn'] ?? null),
-			createdAt: $createdAt,
-			source: 'object.bewaartermijn'
+			candidate: ['duration' => ($retention['bewaartermijn'] ?? null), 'source' => 'object.bewaartermijn'],
+			createdAt: $createdAt
 		);
 		if ($resolved !== null) {
 			return $resolved;
@@ -221,6 +194,53 @@ class AuditRetentionResolver {
 		// 6 + 7. Schema-level configuration.
 		return $this->fromSchema(object: $object, createdAt: $createdAt);
 	}//end resolve()
+
+	/**
+	 * The source token of a retention that keeps the row indefinitely, or null.
+	 *
+	 * A legal hold beats every other consideration; `bewaren` and
+	 * `nog_niet_bepaald` both forbid destruction.
+	 *
+	 * @param array<string, mixed> $retention The object's retention metadata.
+	 *
+	 * @return string|null The source token, or null when the retention may end.
+	 */
+	private function indefiniteSource(array $retention): ?string {
+		$legalHold = ($retention['legalHold'] ?? null);
+		if (is_array($legalHold) === true && ($legalHold['active'] ?? false) === true) {
+			return 'legal-hold:indefinite';
+		}
+
+		return match ($retention['archiefnominatie'] ?? null) {
+			'bewaren' => 'archiefnominatie=bewaren:indefinite',
+			'nog_niet_bepaald' => 'archiefnominatie=nog_niet_bepaald:indefinite',
+			default => null,
+		};
+	}//end indefiniteSource()
+
+	/**
+	 * A floored expiry from the object's own destruction date, or null when absent or unparseable.
+	 *
+	 * @param mixed             $actiedatum The candidate `archiefactiedatum`.
+	 * @param DateTimeInterface $createdAt  The audit row's creation instant.
+	 *
+	 * @return array{expires: \DateTimeImmutable, source: string}|null
+	 */
+	private function fromActiedatum(mixed $actiedatum, DateTimeInterface $createdAt): ?array {
+		if (is_string($actiedatum) === false || $actiedatum === '') {
+			return null;
+		}
+
+		$parsed = $this->parseDate(value: $actiedatum);
+		if ($parsed === null) {
+			return null;
+		}
+
+		return $this->withFloor(
+			resolved: ['expires' => $parsed, 'source' => 'object.archiefactiedatum'],
+			createdAt: $createdAt
+		);
+	}//end fromActiedatum()
 
 	/**
 	 * Resolve the expiry from the schema's archive block or archival annotation.
@@ -239,37 +259,9 @@ class AuditRetentionResolver {
 			];
 		}
 
-		// 6. The `archive` block written by RetentionService::applyArchivalMetadata().
-		$archive = $schema->getArchive();
-		if (is_array($archive) === true) {
-			$resolved = $this->fromDuration(
-				duration: ($archive['bewaartermijnOverride'] ?? null),
-				createdAt: $createdAt,
-				source: 'schema.archive.bewaartermijnOverride'
-			);
-			if ($resolved !== null) {
-				return $resolved;
-			}
-
-			$resolved = $this->fromDuration(
-				duration: ($archive['defaultBewaartermijn'] ?? null),
-				createdAt: $createdAt,
-				source: 'schema.archive.defaultBewaartermijn'
-			);
-			if ($resolved !== null) {
-				return $resolved;
-			}
-		}
-
-		// 7. The `x-openregister-archival` annotation used by RetentionEvaluator.
-		$configuration = $schema->getConfiguration();
-		if (is_array($configuration) === true) {
-			$default = ($configuration['x-openregister-archival']['retention']['default'] ?? null);
-			$resolved = $this->fromDuration(
-				duration: $default,
-				createdAt: $createdAt,
-				source: 'schema.x-openregister-archival.retention.default'
-			);
+		// 6 + 7, in order: the first parseable duration wins.
+		foreach ($this->schemaCandidates(schema: $schema) as $candidate) {
+			$resolved = $this->fromDuration(candidate: $candidate, createdAt: $createdAt);
 			if ($resolved !== null) {
 				return $resolved;
 			}
@@ -284,16 +276,46 @@ class AuditRetentionResolver {
 	}//end fromSchema()
 
 	/**
+	 * The schema's retention durations, most specific first, each with its source token.
+	 *
+	 * 6. The `archive` block written by RetentionService::applyArchivalMetadata()
+	 * (`bewaartermijnOverride`, then `defaultBewaartermijn`); 7. the
+	 * `x-openregister-archival` annotation used by RetentionEvaluator.
+	 *
+	 * @param \OCA\OpenRegister\Db\Schema $schema The object's schema.
+	 *
+	 * @return array<int, array{duration: mixed, source: string}>
+	 */
+	private function schemaCandidates($schema): array {
+		$candidates = [];
+		$archive = $schema->getArchive();
+		if (is_array($archive) === true) {
+			$candidates[] = ['duration' => ($archive['bewaartermijnOverride'] ?? null), 'source' => 'schema.archive.bewaartermijnOverride'];
+			$candidates[] = ['duration' => ($archive['defaultBewaartermijn'] ?? null), 'source' => 'schema.archive.defaultBewaartermijn'];
+		}
+
+		$configuration = $schema->getConfiguration();
+		if (is_array($configuration) === true) {
+			$candidates[] = [
+				'duration' => ($configuration['x-openregister-archival']['retention']['default'] ?? null),
+				'source' => 'schema.x-openregister-archival.retention.default',
+			];
+		}
+
+		return $candidates;
+	}//end schemaCandidates()
+
+	/**
 	 * Build a floored expiry from an ISO-8601 duration, or null when the value
 	 * is absent or unparseable.
 	 *
-	 * @param mixed $duration Candidate ISO-8601 duration.
-	 * @param DateTimeInterface $createdAt The audit row's creation instant.
-	 * @param string $source Token identifying where the duration came from.
+	 * @param array{duration: mixed, source: string} $candidate The candidate duration and the token naming where it came from.
+	 * @param DateTimeInterface                      $createdAt The audit row's creation instant.
 	 *
 	 * @return array{expires: \DateTimeImmutable|null, source: string}|null
 	 */
-	private function fromDuration($duration, DateTimeInterface $createdAt, string $source): ?array {
+	private function fromDuration(array $candidate, DateTimeInterface $createdAt): ?array {
+		$duration = $candidate['duration'];
 		if (is_string($duration) === false || $duration === '') {
 			return null;
 		}
@@ -302,7 +324,7 @@ class AuditRetentionResolver {
 			$interval = new DateInterval($duration);
 		} catch (Throwable $error) {
 			$this->logger->warning(
-				'[AuditRetentionResolver] Unparseable retention duration "' . $duration . '" from ' . $source
+				'[AuditRetentionResolver] Unparseable retention duration "' . $duration . '" from ' . $candidate['source']
 				. '; falling through to the next source.',
 				['exception' => $error]
 			);
@@ -311,35 +333,32 @@ class AuditRetentionResolver {
 
 		$expires = DateTimeImmutable::createFromInterface($createdAt)->add($interval);
 
-		return $this->withFloor(expires: $expires, createdAt: $createdAt, source: $source);
+		return $this->withFloor(resolved: ['expires' => $expires, 'source' => $candidate['source']], createdAt: $createdAt);
 	}//end fromDuration()
 
 	/**
 	 * Apply {@see self::MINIMUM_LIFETIME} as a floor to a resolved expiry.
 	 *
-	 * @param DateTimeImmutable $expires The candidate expiry.
-	 * @param DateTimeInterface $createdAt The audit row's creation instant.
-	 * @param string $source Token identifying the source branch.
+	 * @param array{expires: DateTimeImmutable, source: string} $resolved  The candidate expiry and its source token.
+	 * @param DateTimeInterface                                 $createdAt The audit row's creation instant.
 	 *
-	 * @return array{expires: \DateTimeImmutable, source: string} The floored
-	 *                                                            expiry; the source token gains a `+floor` suffix when the floor
+	 * @return array{expires: \DateTimeImmutable, source: string} The
+	 *                                                            floored expiry; the source token gains a `+floor` suffix when the floor
 	 *                                                            actually bound, so the row records that it outlived its object.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 */
-	private function withFloor(DateTimeImmutable $expires, DateTimeInterface $createdAt, string $source): array {
+	private function withFloor(array $resolved, DateTimeInterface $createdAt): array {
 		$floor = DateTimeImmutable::createFromInterface($createdAt)->add(new DateInterval(self::MINIMUM_LIFETIME));
 
-		if ($expires < $floor) {
+		if ($resolved['expires'] < $floor) {
 			return [
 				'expires' => $floor,
-				'source' => $source . '+floor',
+				'source' => $resolved['source'] . '+floor',
 			];
 		}
 
 		return [
-			'expires' => $expires,
-			'source' => $source,
+			'expires' => $resolved['expires'],
+			'source' => $resolved['source'],
 		];
 
 	}//end withFloor()

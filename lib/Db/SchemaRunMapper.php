@@ -34,7 +34,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<SchemaRun>
  */
-class SchemaRunMapper extends QBMapper {
+class SchemaRunMapper extends QBMapper implements SchemaRunMapperInterface {
 	/**
 	 * Constructor.
 	 *

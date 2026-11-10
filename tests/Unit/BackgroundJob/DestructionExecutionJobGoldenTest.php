@@ -14,8 +14,11 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\RetentionDestruction;
+use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
+use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -131,11 +134,12 @@ class DestructionExecutionJobGoldenTest extends TestCase
         $services = [
             LoggerInterface::class           => $this->logger(),
             RetentionServiceInterface::class => $this->retention(),
-            ObjectRetentionHandler::class    => $this->settings($case),
+            ArchivalSettingsReaderInterface::class => $this->settings($case),
             MagicMapperInterface::class      => $this->mapper($case),
             AuditTrailMapperInterface::class => $this->audit(),
             DeleteObject::class              => $this->deleter(),
-            SaveObject::class                => $this->saver($case),
+            RetentionDestructionInterface::class => new RetentionDestruction(),
+            SaveObjectWriterInterface::class => $this->saver($case),
             INotificationManager::class      => $this->notifications(),
             IGroupManager::class             => $this->groupManager($case),
         ];
@@ -291,7 +295,7 @@ class DestructionExecutionJobGoldenTest extends TestCase
         $saver = $this->createMock(SaveObject::class);
         $saver->method('saveObject')->willReturnCallback(
             function (...$args) use ($case): ObjectEntity {
-                $this->record('saveObject', array_slice($args, 0, 9));
+                $this->record('saveObject', array_slice($args, 0, 8));
                 if (($case['cert'] ?? null) === 'throw') {
                     throw new RuntimeException('cert refused');
                 }

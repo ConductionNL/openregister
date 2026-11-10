@@ -1,64 +1,42 @@
 <template>
-	<NcDialog
+	<ConfirmDialogFrame
 		v-if="show"
 		name="Remove User"
-		:noClose="removing"
+		size="small"
+		:closable="!removing"
 		class="remove-user-dialog"
-		@closing="$emit('cancel')">
+		:loading="removing"
+		:cancelDisabled="removing"
+		closeLabel="Cancel"
+		confirmLabel="Remove User"
+		showConfirm
+		@cancel="$emit('cancel')"
+		@confirm="$emit('confirm')">
 		<p>
 			Are you sure you want to remove user <strong>{{ userId }}</strong> from
 			this organisation?
 		</p>
-
-		<template #actions>
-			<NcButton :disabled="removing" @click="$emit('cancel')">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				Cancel
-			</NcButton>
-			<NcButton :disabled="removing" variant="error" @click="$emit('confirm')">
-				<template #icon>
-					<NcLoadingIcon v-if="removing" :size="20" />
-					<AccountMinus v-else :size="20" />
-				</template>
-				Remove User
-			</NcButton>
+		<template #confirmIcon>
+			<AccountMinus :size="20" />
 		</template>
-	</NcDialog>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
-import { NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
 import AccountMinus from 'vue-material-design-icons/AccountMinus.vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
 
 export default {
 	name: 'RemoveUserDialog',
-	components: {
-		NcDialog,
-		NcButton,
-		NcLoadingIcon,
-		Cancel,
-		AccountMinus,
-	},
+	components: { ConfirmDialogFrame, AccountMinus },
 
 	props: {
-		show: {
-			type: Boolean,
-			required: true,
-		},
-
-		userId: {
-			type: String,
-			default: '',
-		},
-
-		removing: {
-			type: Boolean,
-			default: false,
-		},
+		show: { type: Boolean, required: true },
+		userId: { type: String, default: '' },
+		removing: { type: Boolean, default: false },
 	},
+
+	emits: ['cancel', 'confirm'],
 }
 </script>
 

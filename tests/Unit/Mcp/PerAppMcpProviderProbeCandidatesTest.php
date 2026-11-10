@@ -11,6 +11,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Mcp;
 
+use OCA\OpenRegister\Mcp\McpDiscoveryCacheEntry;
+use OCA\OpenRegister\Mcp\McpDiscoveryRun;
+use OCA\OpenRegister\Mcp\McpProviderCandidate;
 use OCA\OpenRegister\Mcp\PerAppMcpProviderProbe;
 use OCA\OpenRegister\Mcp\RegisterMcpToolProvidersEvent;
 use OCP\App\IAppManager;
@@ -128,7 +131,7 @@ class PerAppMcpProviderProbeCandidatesTest extends TestCase {
 			->method('warning')
 			->with($this->stringContains('Resolved but not IMcpToolProvider'));
 
-		$this->assertNull($this->invoke('tryResolveMcpProviderCandidate', [$container, $logger, 'pipelinq', $key]));
+		$this->assertNull($this->invoke('tryResolveMcpProviderCandidate', [new McpDiscoveryRun($container, $logger), new McpProviderCandidate('pipelinq', $key)]));
 	}//end testACandidateThatIsNotAProviderIsIgnored()
 
 	/**
@@ -143,7 +146,7 @@ class PerAppMcpProviderProbeCandidatesTest extends TestCase {
 		$this->assertNull(
 			$this->invoke(
 				'tryResolveMcpProviderCandidate',
-				[$container, $this->createMock(LoggerInterface::class), 'pipelinq', 'OCA\\Pipelinq\\Mcp\\PipelinqToolProvider']
+				[new McpDiscoveryRun($container, $this->createMock(LoggerInterface::class)), new McpProviderCandidate('pipelinq', 'OCA\\Pipelinq\\Mcp\\PipelinqToolProvider')]
 			)
 		);
 	}//end testAMissingCandidateClassIsSkippedSilently()
@@ -163,7 +166,7 @@ class PerAppMcpProviderProbeCandidatesTest extends TestCase {
 		$this->assertNull(
 			$this->invoke(
 				'tryResolveMcpProviderCandidate',
-				[$container, $logger, 'pipelinq', 'OCA\\OpenRegister\\Mcp\\IMcpToolProvider::pipelinq']
+				[new McpDiscoveryRun($container, $logger), new McpProviderCandidate('pipelinq', 'OCA\\OpenRegister\\Mcp\\IMcpToolProvider::pipelinq')]
 			)
 		);
 	}//end testAFailingCandidateFactoryIsLogged()
@@ -192,6 +195,9 @@ class PerAppMcpProviderProbeCandidatesTest extends TestCase {
 		$cache = $this->createMock(ICache::class);
 		$cache->expects($this->once())->method('set')->with('key', '{"pipelinq":null}', 60);
 
-		$this->invoke('writeMcpDiscoveryMap', [$container, $cache, 'key', ['pipelinq' => null]]);
+		$this->invoke(
+			'writeMcpDiscoveryMap',
+			[new McpDiscoveryRun($container, $this->createMock(LoggerInterface::class)), new McpDiscoveryCacheEntry($cache, 'key', ['pipelinq' => null])]
+		);
 	}//end testTheDefaultTtlIsUsedWhenTheSettingCannotBeRead()
 }//end class

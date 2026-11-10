@@ -25,10 +25,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Mcp\Service\Mcp;
 
-use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -49,14 +49,12 @@ class McpResourcesService {
 	/**
 	 * McpResourcesService constructor
 	 *
-	 * @param RegisterMapperInterface $registerMapper Register database mapper
-	 * @param SchemaMapperInterface $schemaMapper Schema database mapper
+	 * @param SchemaCatalogInterface $catalog The register and schema mappers
 	 * @param ObjectOperationsInterface $objectService Object service facade
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
@@ -90,12 +88,12 @@ class McpResourcesService {
 
 		// Add one resource per register+schema combination for browsing objects.
 		try {
-			$registers = $this->registerMapper->findAll();
+			$registers = $this->catalog->registers()->findAll();
 			foreach ($registers as $register) {
 				$schemaIds = $register->getSchemas() ?? [];
 				foreach ($schemaIds as $schemaId) {
 					try {
-						$schema = $this->schemaMapper->find($schemaId);
+						$schema = $this->catalog->schemas()->find($schemaId);
 						$regTitle = $register->getTitle();
 						$schTitle = $schema->getTitle();
 						$resources[] = [
@@ -176,8 +174,7 @@ class McpResourcesService {
 			'registers' => $this->readRegisters(id: $parsed['id'] ?? null),
 			'schemas' => $this->readSchemas(id: $parsed['id'] ?? null),
 			'objects' => $this->readObjects(
-				registerId: $parsed['registerId'],
-				schemaId: $parsed['schemaId'],
+				table: new RegisterSchemaRef(register: $parsed['registerId'], schema: $parsed['schemaId']),
 				objectId: $parsed['objectId'] ?? null
 			),
 			default => throw new InvalidArgumentException(
@@ -266,11 +263,11 @@ class McpResourcesService {
 	 */
 	private function readRegisters(?int $id = null): array {
 		if ($id !== null) {
-			$register = $this->registerMapper->find($id);
+			$register = $this->catalog->registers()->find($id);
 			return $register->jsonSerialize();
 		}
 
-		$registers = $this->registerMapper->findAll();
+		$registers = $this->catalog->registers()->findAll();
 		return array_map(
 			callback: static fn ($r) => $r->jsonSerialize(),
 			array: $registers
@@ -286,11 +283,11 @@ class McpResourcesService {
 	 */
 	private function readSchemas(?int $id = null): array {
 		if ($id !== null) {
-			$schema = $this->schemaMapper->find($id);
+			$schema = $this->catalog->schemas()->find($id);
 			return $schema->jsonSerialize();
 		}
 
-		$schemas = $this->schemaMapper->findAll();
+		$schemas = $this->catalog->schemas()->findAll();
 		return array_map(
 			callback: static fn ($schema) => $schema->jsonSerialize(),
 			array: $schemas
@@ -300,31 +297,30 @@ class McpResourcesService {
 	/**
 	 * Read object data
 	 *
-	 * @param int $registerId Register ID
-	 * @param int $schemaId Schema ID
-	 * @param string|null $objectId Optional object UUID for single fetch
+	 * @param RegisterSchemaRef $table    The register and schema IDs the URI names.
+	 * @param string|null       $objectId Optional object UUID for single fetch
 	 *
 	 * @return array Object data (single or list)
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject;
-	 * ExplicitReveal::maskAll() is a pure function.
+	 * ExplicitRevealMasks::maskAll() is a pure function.
 	 */
-	private function readObjects(int $registerId, int $schemaId, ?string $objectId = null): array {
-		$this->objectService->setRegister($registerId);
-		$this->objectService->setSchema($schemaId);
+	private function readObjects(RegisterSchemaRef $table, ?string $objectId = null): array {
+		$this->objectService->setRegister($table->register);
+		$this->objectService->setSchema($table->schema);
 
 		// An MCP resource never reveals an explicit-reveal value: it reads masked.
-		$schema = $this->schemaMapper->find($schemaId);
+		$schema = $this->catalog->schemas()->find($table->schema);
 
 		if ($objectId !== null) {
 			$object = WriteCause::asLookup(fn () => $this->objectService->find($objectId));
-			return ExplicitReveal::maskAll(schema: $schema, object: $object->jsonSerialize());
+			return ExplicitRevealMasks::maskAll(schema: $schema, object: $object->jsonSerialize());
 		}
 
 		$result = $this->objectService->findAll();
 		return array_map(
-			callback: static fn ($obj) => ExplicitReveal::maskAll(schema: $schema, object: $obj->jsonSerialize()),
+			callback: static fn ($obj) => ExplicitRevealMasks::maskAll(schema: $schema, object: $obj->jsonSerialize()),
 			array: $result
 		);
 	}//end readObjects()

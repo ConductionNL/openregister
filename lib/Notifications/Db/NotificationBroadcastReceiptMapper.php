@@ -25,7 +25,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Db;
 
 use DateTime;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\IDBConnection;
@@ -42,6 +41,8 @@ use OCP\IDBConnection;
  * @psalm-suppress PossiblyUnusedMethod
  */
 class NotificationBroadcastReceiptMapper extends QBMapper {
+	use NotificationQueryTrait;
+
 	/**
 	 * Constructor.
 	 *
@@ -64,34 +65,56 @@ class NotificationBroadcastReceiptMapper extends QBMapper {
 	 * into an error the user sees or a second row claiming two sightings.
 	 *
 	 * @param string $broadcastUuid The broadcast.
-	 * @param string $userId The reader.
-	 * @param DateTime|null $seenAt The moment, defaulting to now.
+	 * @param string $userId        The reader.
 	 *
 	 * @return NotificationBroadcastReceipt The row, existing or new.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
 	 */
-	public function acknowledge(
-		string $broadcastUuid,
-		string $userId,
-		?DateTime $seenAt = null,
-	): NotificationBroadcastReceipt {
-		$existing = $this->find(broadcastUuid: $broadcastUuid, userId: $userId);
+	public function acknowledge(string $broadcastUuid, string $userId): NotificationBroadcastReceipt {
+		$receipt = new NotificationBroadcastReceipt();
+		$receipt->setBroadcastUuid($broadcastUuid);
+		$receipt->setUserId($userId);
+		$receipt->setSeenAt(new DateTime());
+
+		return $this->acknowledgeReceipt(receipt: $receipt);
+	}//end acknowledge()
+
+	/**
+	 * Record a sighting as the receipt describes it, unless the reader already has one. Idempotent.
+	 *
+	 * @param NotificationBroadcastReceipt $receipt The broadcast, the reader and the moment.
+	 *
+	 * @return NotificationBroadcastReceipt The row, existing or new.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
+	 */
+	public function acknowledgeReceipt(NotificationBroadcastReceipt $receipt): NotificationBroadcastReceipt {
+		$existing = $this->find(broadcastUuid: (string)$receipt->getBroadcastUuid(), userId: (string)$receipt->getUserId());
 		if ($existing !== null) {
 			return $existing;
 		}
 
-		$entity = new NotificationBroadcastReceipt();
-		$entity->setBroadcastUuid($broadcastUuid);
-		$entity->setUserId($userId);
-		$entity->setSeenAt(($seenAt ?? new DateTime()));
+		return $this->insertOrReadWinner(entity: $receipt);
+	}//end acknowledgeReceipt()
 
+
+	/**
+	 * Insert the receipt, or answer with the row a concurrent acknowledge wrote.
+	 *
+	 * @param NotificationBroadcastReceipt $entity The receipt to insert.
+	 *
+	 * @return NotificationBroadcastReceipt The stored receipt.
+	 *
+	 * @throws \Throwable When the insert fails and no winning row exists.
+	 */
+	private function insertOrReadWinner(NotificationBroadcastReceipt $entity): NotificationBroadcastReceipt {
 		try {
 			return $this->insert(entity: $entity);
 		} catch (\Throwable $e) {
 			// Lost the race against a concurrent acknowledge; the winner's row
 			// is the answer, and it says exactly what this one would have.
-			$existing = $this->find(broadcastUuid: $broadcastUuid, userId: $userId);
+			$existing = $this->find(broadcastUuid: (string)$entity->getBroadcastUuid(), userId: (string)$entity->getUserId());
 			if ($existing !== null) {
 				return $existing;
 			}
@@ -99,7 +122,7 @@ class NotificationBroadcastReceiptMapper extends QBMapper {
 			throw $e;
 		}
 
-	}//end acknowledge()
+	}//end insertOrReadWinner()
 
 	/**
 	 * Find one receipt.
@@ -110,19 +133,12 @@ class NotificationBroadcastReceiptMapper extends QBMapper {
 	 * @return NotificationBroadcastReceipt|null The row, or null when there is none.
 	 */
 	public function find(string $broadcastUuid, string $userId): ?NotificationBroadcastReceipt {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('broadcast_uuid', $qb->createNamedParameter($broadcastUuid)))
-			->andWhere($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)))
-			->setMaxResults(1);
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$found = $this->findFirstOrNull(qb: $this->selectWhereEquals(columns: ['broadcast_uuid' => $broadcastUuid, 'user_id' => $userId]));
+		if ($found instanceof NotificationBroadcastReceipt) {
+			return $found;
 		}
 
+		return null;
 	}//end find()
 
 	/**

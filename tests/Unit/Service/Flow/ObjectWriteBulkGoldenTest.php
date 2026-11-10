@@ -36,7 +36,10 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowStepReport;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePlatform;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteStores;
 use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -260,7 +263,7 @@ final class ObjectWriteBulkGoldenTest extends TestCase {
 		$config = $this->createMock(IAppConfig::class);
 		$config->method('getValueInt')->willReturnArgument(2);
 
-		return new ObjectWriteNode($this->store(), $registers, $schemas, $users, $config, $l10n, $this->createMock(IURLGenerator::class));
+		return new ObjectWriteNode(new ObjectWriteStores($this->store(), $registers, $schemas), new ObjectWritePlatform($users, $config), new FlowNodePresentation($l10n, $this->createMock(IURLGenerator::class)));
 
 	}//end node()
 

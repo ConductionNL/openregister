@@ -25,7 +25,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
+use OCA\OpenRegister\Service\RetentionRules;
 use OCA\OpenRegister\Service\RetentionService;
+use OCA\OpenRegister\Service\RetentionStores;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\IAppConfig;
 use OCP\IUser;
@@ -33,6 +35,9 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Archival\SelectielijstStorage;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 
 /**
  * Test class for RetentionService
@@ -64,30 +69,26 @@ class RetentionServiceTest extends TestCase {
 		$this->rowScanner = $this->createMock(RetentionRowScanner::class);
 
 		$this->service = new RetentionService(
-			$this->objectMapper,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->auditMapper,
-			$this->settingsHandler,
+			new RetentionStores(
+				new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper),
+				$this->auditMapper
+			),
+			new RetentionRules(
+				$this->settingsHandler,
+				$this->rowScanner,
+				// The REAL resolver over the SAME mapper mock the tests program, not
+				// a mock of its own: the derivation tests below assert what the
+				// resolver actually does with a relation, and a mocked resolver
+				// would assert only that this class called it.
+				new ArchiveActionDateCalculator($this->objectMapper, $this->logger),
+				// Likewise real, over the same mapper and settings mocks: the
+				// selectielijst derivation tests below assert which ROW was
+				// applied, and a mocked resolver would assert only that this class
+				// asked something.
+				new SelectielijstResolver(new SelectielijstStorage(settings: $this->settingsHandler, catalog: new SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper), writer: $this->createMock(SaveObjectWriterInterface::class)), $this->logger)
+			),
 			$this->userSession,
 			$this->logger,
-			$this->rowScanner,
-			// The REAL resolver over the SAME mapper mock the tests program, not
-			// a mock of its own: the derivation tests below assert what the
-			// resolver actually does with a relation, and a mocked resolver
-			// would assert only that this class called it.
-			new ArchiveActionDateCalculator($this->objectMapper, $this->logger),
-			// Likewise real, over the same mapper and settings mocks: the
-			// selectielijst derivation tests below assert which ROW was
-			// applied, and a mocked resolver would assert only that this class
-			// asked something.
-			new SelectielijstResolver(
-				$this->objectMapper,
-				$this->schemaMapper,
-				$this->registerMapper,
-				$this->settingsHandler,
-				$this->logger
-			),
 		);
 	}//end setUp()
 

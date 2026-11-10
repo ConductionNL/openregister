@@ -47,7 +47,7 @@ use Exception;
  *
  * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-2
  */
-final class ArchivalAnnotationValidator {
+final class ArchivalAnnotationValidator implements ArchivalAnnotationValidatorInterface {
 
 	/**
 	 * Allowed keys directly under `x-openregister-archival`.

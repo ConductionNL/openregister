@@ -146,10 +146,8 @@ class SchemaTableMigrator {
 	 * character is passed in rather than detected here so the statement builder
 	 * stays pure and testable.
 	 *
-	 * @param string   $sourceTable The fully qualified source table.
-	 * @param string   $targetTable The fully qualified target table.
-	 * @param string[] $columns     The columns to copy, in order.
-	 * @param string   $quote       The identifier quote character.
+	 * @param TableCopy $copy  The source table, the target table and the columns to copy.
+	 * @param string    $quote The identifier quote character.
 	 *
 	 * @return string The statement.
 	 *
@@ -157,18 +155,13 @@ class SchemaTableMigrator {
 	 *
 	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
-	public static function buildCopySql(
-		string $sourceTable,
-		string $targetTable,
-		array $columns,
-		string $quote='"'
-	): string {
-		if ($columns === []) {
+	public static function buildCopySql(TableCopy $copy, string $quote='"'): string {
+		if ($copy->columns === []) {
 			throw new RuntimeException('Refusing to build a copy statement with no columns.');
 		}
 
 		$quoted = [];
-		foreach ($columns as $column) {
+		foreach ($copy->columns as $column) {
 			$quoted[] = self::quoteIdentifier(name: (string)$column, quote: $quote);
 		}
 
@@ -176,10 +169,10 @@ class SchemaTableMigrator {
 
 		return sprintf(
 			'INSERT INTO %s (%s) SELECT %s FROM %s',
-			self::quoteIdentifier(name: $targetTable, quote: $quote),
+			self::quoteIdentifier(name: $copy->targetTable, quote: $quote),
 			$list,
 			$list,
-			self::quoteIdentifier(name: $sourceTable, quote: $quote)
+			self::quoteIdentifier(name: $copy->sourceTable, quote: $quote)
 		);
 	}//end buildCopySql()
 
@@ -333,19 +326,14 @@ class SchemaTableMigrator {
 		$quote = $this->quoteChar();
 		$this->db->executeStatement(
 			self::buildCopySql(
-				sourceTable: $source,
-				targetTable: ($this->prefix() . $targetBare),
-				columns: $mapping['mapped'],
+				copy: new TableCopy(sourceTable: $source, targetTable: ($this->prefix() . $targetBare), columns: $mapping['mapped']),
 				quote: $quote
 			)
 		);
 
 		$rows = $this->restamp(
 			table: ($this->prefix() . $targetBare),
-			registerId: $registerId,
-			oldId: $oldId,
-			newId: (int)$schema->getId(),
-			quote: $quote
+			restamp: new RowRestamp(registerId: $registerId, oldId: $oldId, newId: (int)$schema->getId())
 		);
 
 		$backup = ($source . self::BACKUP_SUFFIX);
@@ -383,16 +371,16 @@ class SchemaTableMigrator {
 	 * this repair exists to end. Verified as a real failure mode on the larpingapp
 	 * split, where 139 rows sat at the old `_schema` inside the renamed table.
 	 *
-	 * @param string $table      The fully qualified target table.
-	 * @param int    $registerId The owning register id, which bounds the uri rewrite.
-	 * @param int    $oldId      The shared schema id.
-	 * @param int    $newId      The register's new schema id.
-	 * @param string $quote      The identifier quote character.
+	 * @param string     $table   The fully qualified target table.
+	 * @param RowRestamp $restamp The owning register id (which bounds the uri rewrite), the shared
+	 *                            schema id and the register's new schema id.
 	 *
 	 * @return int The number of rows restamped.
 	 */
-	private function restamp(string $table, int $registerId, int $oldId, int $newId, string $quote): int {
-		$quoted = self::quoteIdentifier(name: $table, quote: $quote);
+	private function restamp(string $table, RowRestamp $restamp): int {
+		$quoted = self::quoteIdentifier(name: $table, quote: $this->quoteChar());
+		$oldId  = $restamp->oldId;
+		$newId  = $restamp->newId;
 
 		$rows = $this->db->executeStatement(
 			sprintf('UPDATE %s SET _schema = :new WHERE _schema = :old', $quoted),
@@ -403,9 +391,9 @@ class SchemaTableMigrator {
 			$this->db->executeStatement(
 				sprintf('UPDATE %s SET _uri = REPLACE(_uri, :old, :new) WHERE _uri LIKE :match', $quoted),
 				[
-					'old'   => sprintf('/%d/%d/', $registerId, $oldId),
-					'new'   => sprintf('/%d/%d/', $registerId, $newId),
-					'match' => sprintf('%%/%d/%d/%%', $registerId, $oldId),
+					'old'   => sprintf('/%d/%d/', $restamp->registerId, $oldId),
+					'new'   => sprintf('/%d/%d/', $restamp->registerId, $newId),
+					'match' => sprintf('%%/%d/%d/%%', $restamp->registerId, $oldId),
 				]
 			);
 		} catch (Throwable $e) {

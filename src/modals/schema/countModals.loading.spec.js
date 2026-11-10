@@ -41,6 +41,10 @@ jest.mock('vue-material-design-icons/Eye.vue', () => ({
 	__esModule: true,
 	default: {},
 }))
+jest.mock('vue-material-design-icons/TrashCanOutline.vue', () => ({
+	__esModule: true,
+	default: {},
+}))
 jest.mock('../../store/store.js', () => ({
 	navigationStore: { dialog: null, setDialog: () => {} },
 	registerStore: {},

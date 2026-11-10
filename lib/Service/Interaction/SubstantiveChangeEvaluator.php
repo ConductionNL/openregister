@@ -47,7 +47,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Reads `x-openregister-read-state` and answers one question about one write.
  */
-class SubstantiveChangeEvaluator {
+class SubstantiveChangeEvaluator implements SubstantiveChangeEvaluatorInterface {
 
 	/**
 	 * The schema annotation this evaluator reads.

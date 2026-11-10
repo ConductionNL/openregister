@@ -18,7 +18,7 @@ final class BulkControllerFactory {
 	/**
 	 * The constructor arguments of BulkController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Unused; kept so existing calls still fit.
 	 * @param IRequest $request Constructor argument.
 	 * @param ObjectService $objectService Constructor argument.
 	 * @param RegisterMapper $registerMapper Constructor argument.
@@ -42,7 +42,6 @@ final class BulkControllerFactory {
 		?\OCA\OpenRegister\Service\Rbac\SchemaManageGate $schemaManageGate = null,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\BulkControllerServices(
 				store: new \OCA\OpenRegister\Controller\Support\BulkStore(
@@ -52,8 +51,7 @@ final class BulkControllerFactory {
 					schemaManageGate: $schemaManageGate,
 				),
 				platform: new \OCA\OpenRegister\Controller\Support\BulkPlatform(
-					userSession: $userSession,
-					groupManager: $groupManager,
+					principal: new \OCA\OpenRegister\Controller\Support\SessionPrincipal(userSession: $userSession, groupManager: $groupManager),
 					db: $db,
 				),
 			),

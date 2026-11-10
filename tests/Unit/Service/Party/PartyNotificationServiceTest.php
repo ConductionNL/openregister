@@ -18,6 +18,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
+use OCA\OpenRegister\Notifications\Service\Party\PartyReachGates;
 use OCA\OpenRegister\Service\Party\PartyService;
 use PHPUnit\Framework\MockObject\MockObject;
 use OCP\EventDispatcher\Event;
@@ -132,9 +133,11 @@ class PartyNotificationServiceTest extends TestCase {
 		$this->service = new PartyNotificationService(
 			$this->links,
 			$this->parties,
-			$this->indicators,
 			$this->email,
-			new OptOutAuthority(eventDispatcher: $dispatcher, appConfig: $appConfig, logger: $this->createMock(LoggerInterface::class))
+			new PartyReachGates(
+				indicators: $this->indicators,
+				optOut: new OptOutAuthority(eventDispatcher: $dispatcher, appConfig: $appConfig, logger: $this->createMock(LoggerInterface::class))
+			)
 		);
 	}//end setUp()
 

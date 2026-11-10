@@ -63,6 +63,7 @@ use OCP\AppFramework\Db\Entity;
 class SyncRecord extends Entity implements JsonSerializable {
 	use JsonFieldsTrait;
 	use HydrateEmptyJsonAsNullTrait;
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * Unique identifier for the sync record.
@@ -174,37 +175,4 @@ class SyncRecord extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'created', type: 'datetime');
 	}//end __construct()
 
-	/**
-	 * Serialize to a JSON-friendly array.
-	 *
-	 * @return array<string, mixed>
-	 */
-	public function jsonSerialize(): array {
-		$updated = null;
-		if ($this->updated !== null) {
-			$updated = $this->updated->format('c');
-		}
-
-		$created = null;
-		if ($this->created !== null) {
-			$created = $this->created->format('c');
-		}
-
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'sourceId' => $this->sourceId,
-			'executionId' => $this->executionId,
-			'externalId' => $this->externalId,
-			'status' => $this->status,
-			'objectUuid' => $this->objectUuid,
-			'contentHash' => $this->contentHash,
-			'rawData' => $this->rawData,
-			'errorMessage' => $this->errorMessage,
-			'attempts' => $this->attempts,
-			'organisation' => $this->organisation,
-			'updated' => $updated,
-			'created' => $created,
-		];
-	}//end jsonSerialize()
 }//end class

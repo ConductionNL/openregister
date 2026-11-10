@@ -35,17 +35,14 @@ namespace OCA\OpenRegister\Service\Flow\Timer;
 
 use DateTimeInterface;
 use OCA\OpenRegister\Db\FlowTimer;
-use OCA\OpenRegister\Db\FlowTimerMapper;
 use OCA\OpenRegister\Db\Task;
-use OCA\OpenRegister\Db\TaskMapper;
-use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
  * The bounded, re-entrant sweep.
  */
-class FlowTimerSweep {
+class FlowTimerSweep implements FlowTimerSweepInterface {
 
 	/**
 	 * The actor a swept task timeout records itself as.
@@ -54,28 +51,25 @@ class FlowTimerSweep {
 	 */
 	public const TIMEOUT_SOURCE = 'task-expiry-sweep';
 
+
+
+
+
+
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowTimerMapper $timers The two timer range scans.
-	 * @param FlowTimerService $service Fires expiries and rungs.
-	 * @param WorkingCalendarService $calendars Reset once per pass so memoisation is per pass.
-	 * @param LoggerInterface $logger Per-timer failure reporting.
-	 * @param TaskMapper|null $tasks The task-timeout range scan
-	 *                               (task-expiry-and-outcomes D-3). Nullable so
-	 *                               pre-existing positional instantiations keep
-	 *                               working; the container wires both.
-	 * @param TaskServiceInterface|null $taskService Applies a due task's declared behaviour.
+	 * @param FlowTimerSweepTimers     $timers The timer range scans, the timer service and the calendars.
+	 * @param LoggerInterface          $logger Per-timer failure reporting.
+	 * @param FlowTimerSweepTasks|null $tasks  The task-timeout scan and task service. Nullable so
+	 *                                         a sweep without them skips the task pass; the
+	 *                                         container wires both.
 	 */
 	public function __construct(
-		private readonly FlowTimerMapper $timers,
-		private readonly FlowTimerService $service,
-		private readonly WorkingCalendarService $calendars,
+		private readonly FlowTimerSweepTimers $timers,
 		private readonly LoggerInterface $logger,
-		private readonly ?TaskMapper $tasks = null,
-		private readonly ?TaskServiceInterface $taskService = null,
+		private readonly ?FlowTimerSweepTasks $tasks = null,
 	) {
-
 	}//end __construct()
 
 	/**
@@ -90,7 +84,7 @@ class FlowTimerSweep {
 	 */
 	public function run(DateTimeInterface $now, int $batch): array {
 		$tally = new FlowTimerSweepTally(now: $now, batch: max(1, $batch));
-		$this->calendars->reset();
+		$this->timers->calendars->reset();
 
 		$this->fireExpiries(tally: $tally);
 		$this->fireRungs(tally: $tally);
@@ -109,7 +103,7 @@ class FlowTimerSweep {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
 	 */
 	private function fireExpiries(FlowTimerSweepTally $tally): void {
-		$expiries = $this->timers->findDueExpiries(now: $tally->now, limit: $tally->batch);
+		$expiries = $this->timers->timers->findDueExpiries(now: $tally->now, limit: $tally->batch);
 		$tally->scanned(found: count($expiries));
 		foreach ($expiries as $timer) {
 			$this->fireExpiry(timer: $timer, tally: $tally);
@@ -129,7 +123,7 @@ class FlowTimerSweep {
 	 */
 	private function fireExpiry(FlowTimer $timer, FlowTimerSweepTally $tally): void {
 		try {
-			if ($this->service->fireExpiry(timer: $timer, now: $tally->now) === true) {
+			if ($this->timers->service->fireExpiry(timer: $timer, now: $tally->now) === true) {
 				$tally->add(counter: 'expiriesFired', amount: 1);
 			}
 		} catch (Throwable $failure) {
@@ -152,7 +146,7 @@ class FlowTimerSweep {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
 	 */
 	private function fireRungs(FlowTimerSweepTally $tally): void {
-		$rungs = $this->timers->findDueRungs(now: $tally->now, limit: $tally->batch);
+		$rungs = $this->timers->timers->findDueRungs(now: $tally->now, limit: $tally->batch);
 		$tally->scanned(found: count($rungs));
 		foreach ($rungs as $timer) {
 			$this->fireRungsOf(timer: $timer, tally: $tally);
@@ -172,7 +166,7 @@ class FlowTimerSweep {
 	 */
 	private function fireRungsOf(FlowTimer $timer, FlowTimerSweepTally $tally): void {
 		try {
-			$tally->add(counter: 'rungsFired', amount: $this->service->fireRungs(timer: $timer, now: $tally->now));
+			$tally->add(counter: 'rungsFired', amount: $this->timers->service->fireRungs(timer: $timer, now: $tally->now));
 		} catch (Throwable $failure) {
 			$tally->add(counter: 'errors', amount: 1);
 			$this->logger->error(
@@ -196,11 +190,12 @@ class FlowTimerSweep {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
 	 */
 	private function sweepTaskTimeouts(FlowTimerSweepTally $tally): void {
-		if ($this->tasks === null || $this->taskService === null) {
+		$tasks = $this->tasks?->tasks;
+		if ($tasks === null || $this->tasks?->taskService === null) {
 			return;
 		}
 
-		$due = $this->tasks->findDueTimeouts(now: $tally->now, limit: $tally->batch);
+		$due = $tasks->findDueTimeouts(now: $tally->now, limit: $tally->batch);
 		$tally->scanned(found: count($due));
 		foreach ($due as $task) {
 			$this->applyTimeout(task: $task, tally: $tally);
@@ -220,7 +215,7 @@ class FlowTimerSweep {
 	 */
 	private function applyTimeout(Task $task, FlowTimerSweepTally $tally): void {
 		try {
-			$this->taskService?->applyTimerOutcome(
+			$this->tasks?->taskService?->applyTimerOutcome(
 				uuid: (string)$task->getUuid(),
 				outcome: (string)$task->getOnTimeout(),
 				source: self::TIMEOUT_SOURCE,

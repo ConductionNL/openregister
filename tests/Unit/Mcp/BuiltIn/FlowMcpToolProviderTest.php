@@ -19,6 +19,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use UnexpectedValueException;
+use OCA\OpenRegister\Mcp\BuiltIn\FlowToolServices;
 
 class FlowMcpToolProviderTest extends TestCase {
 	private FlowRunService $runner;
@@ -47,11 +48,13 @@ class FlowMcpToolProviderTest extends TestCase {
 		$this->preflight->method('inspect')->willReturn(['blocking' => [], 'warnings' => []]);
 
 		$this->provider = new FlowMcpToolProvider(
-			$this->runner,
-			$this->mapper,
-			$this->flows,
-			$this->preflight,
-			$this->userSession
+			new FlowToolServices(
+				$this->runner,
+				$this->mapper,
+				$this->flows,
+				$this->preflight,
+			),
+			$this->userSession,
 		);
 	}
 
@@ -304,7 +307,7 @@ class FlowMcpToolProviderTest extends TestCase {
 			->method('inspect')
 			->with(['nodes' => [['id' => 'a']], 'edges' => []])
 			->willReturn(['blocking' => ['dead end at a'], 'warnings' => ['no trigger']]);
-		$provider = new FlowMcpToolProvider($this->runner, $this->mapper, $this->flows, $preflight, $this->userSession);
+		$provider = new FlowMcpToolProvider(new FlowToolServices($this->runner, $this->mapper, $this->flows, $preflight), $this->userSession);
 
 		$flow = new \OCA\OpenRegister\Db\Flow();
 		$flow->setUuid('flow-7');

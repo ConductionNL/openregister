@@ -41,7 +41,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\AdvisoryLockStore;
+use OCA\OpenRegister\Service\Object\LockAuthorization;
 use OCA\OpenRegister\Service\Object\LockHandler;
+use OCA\OpenRegister\Service\Object\LockStores;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -88,14 +90,14 @@ final class LockHandlerReleaseReportTest extends TestCase {
 	 */
 	private function handler(): LockHandler {
 		return new LockHandler(
-			$this->magic,
-			$this->createMock(AuditTrailMapper::class),
+			new LockStores(
+				magicMapper: $this->magic,
+				auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+				advisory: $this->createMock(AdvisoryLockStore::class),
+				runLocks: $this->createMock(RunLockRegistry::class)
+			),
 			$this->createMock(LoggerInterface::class),
-			$this->session,
-			$this->createMock(IGroupManager::class),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(AdvisoryLockStore::class),
-			$this->createMock(RunLockRegistry::class)
+			new LockAuthorization($this->session, $this->createMock(IGroupManager::class), $this->createMock(SchemaMapper::class))
 		);
 	}
 

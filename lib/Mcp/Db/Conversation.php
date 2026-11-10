@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Mcp\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Kernel\Contracts\ConversationInterface;
 use OCP\AppFramework\Db\Entity;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Db\Organisation;
@@ -68,7 +69,7 @@ use OCA\OpenRegister\Db\Organisation;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class Conversation extends Entity implements JsonSerializable {
+class Conversation extends Entity implements JsonSerializable, ConversationInterface {
 
 	/**
 	 * Unique identifier for the conversation
@@ -152,15 +153,9 @@ class Conversation extends Entity implements JsonSerializable {
 	 * Sets up the entity type mappings for proper database handling.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'title', type: 'string');
-		$this->addType(fieldName: 'userId', type: 'string');
-		$this->addType(fieldName: 'organisation', type: 'string');
-		$this->addType(fieldName: 'agentId', type: 'integer');
-		$this->addType(fieldName: 'metadata', type: 'json');
-		$this->addType(fieldName: 'deletedAt', type: 'datetime');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
+		foreach (ConversationColumns::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**

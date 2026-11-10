@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Notifications\Service\Notification;
 
 use Closure;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\DeepLinkRegistryService;
+use OCA\OpenRegister\Service\DeepLinkResolverInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -37,7 +37,7 @@ final class ObjectDetailLinks {
 	 * @param LoggerInterface              $logger           Logs a relation that cannot be read.
 	 * @param AppRouteBase                 $routes           The base of the fallback link.
 	 * @param Closure|null                 $readObject       Reads an object with RBAC on: fn (string): ?ObjectEntity.
-	 * @param DeepLinkRegistryService|null $deepLinkRegistry Canonical per-app deeplink resolver.
+	 * @param DeepLinkResolverInterface|null $deepLinkRegistry Canonical per-app deeplink resolver.
 	 *
 	 * @return void
 	 */
@@ -45,7 +45,7 @@ final class ObjectDetailLinks {
 		private readonly LoggerInterface $logger,
 		private readonly AppRouteBase $routes,
 		private readonly ?Closure $readObject = null,
-		private readonly ?DeepLinkRegistryService $deepLinkRegistry = null,
+		private readonly ?DeepLinkResolverInterface $deepLinkRegistry = null,
 	) {
 	}//end __construct()
 

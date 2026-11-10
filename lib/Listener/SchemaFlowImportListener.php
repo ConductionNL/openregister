@@ -42,11 +42,13 @@ namespace OCA\OpenRegister\Listener;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
+use OCA\OpenRegister\Db\FlowVersion;
 use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
+use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -59,7 +61,7 @@ use Throwable;
  *
  * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
  */
-class SchemaFlowImportListener implements IEventListener {
+class SchemaFlowImportListener implements IEventListener, SchemaFlowImportListenerInterface {
 	/**
 	 * The configuration key carrying declared flows.
 	 *
@@ -68,9 +70,34 @@ class SchemaFlowImportListener implements IEventListener {
 	public const ANNOTATION_KEY = 'x-openregister-flows';
 
 	/**
+	 * What a flow that could not be published is said to leave in place, by publish kind:
+	 * the message up to the flow uuid, and the sentence after the error.
+	 *
+	 * @var array<string, array{0: string, 1: string}>
+	 */
+	private const UNPUBLISHED = [
+		'versionOne' => [
+			'[SchemaFlowImport] Imported flow "',
+			'. It exists as a draft and will not back a run until it is published.',
+		],
+		'shippedUpdate' => [
+			'[SchemaFlowImport] The updated declaration of flow "',
+			'. The previous version keeps serving.',
+		],
+	];
+
+	/**
+	 * The warning logged when no organisation can be resolved for a declared flow, before the error.
+	 *
+	 * @var string
+	 */
+	private const NO_ORGANISATION = '[SchemaFlowImport] Could not resolve an organisation for a declared flow; '
+		. 'it will import but stay unlisted: ';
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowMapper $flows The flow store.
+	 * @param FlowMapperInterface $flows The flow store.
 	 * @param LoggerInterface $logger Records what was imported, and what could not be.
 	 * @param ContainerInterface|null $container Resolves the organisation a declared flow
 	 *                                           belongs to. Nullable and LAST so adding it
@@ -79,7 +106,7 @@ class SchemaFlowImportListener implements IEventListener {
 	 *                                           which is logged rather than silent.
 	 */
 	public function __construct(
-		private readonly FlowMapper $flows,
+		private readonly FlowMapperInterface $flows,
 		private readonly LoggerInterface $logger,
 		private readonly ?ContainerInterface $container = null,
 	) {
@@ -139,24 +166,33 @@ class SchemaFlowImportListener implements IEventListener {
 		}
 
 		$schemaSlug = (string)$schema->getSlug();
-
-		foreach ($declared as $declaration) {
-			if (is_array($declaration) === false) {
-				continue;
-			}
-
-			try {
-				$this->upsert(declaration: $declaration, schemaSlug: $schemaSlug);
-			} catch (Throwable $e) {
-				$this->logger->warning(
-					message: '[SchemaFlowImport] Could not import a declared flow on schema "'
-						. $schemaSlug . '": ' . $e->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}
+		foreach (array_filter($declared, 'is_array') as $declaration) {
+			$this->importOne(declaration: $declaration, schemaSlug: $schemaSlug);
 		}
 
 	}//end importFor()
+
+	/**
+	 * Import one declaration; a failure is logged and the declaration skipped.
+	 *
+	 * @param array<string, mixed> $declaration The declared flow.
+	 * @param string $schemaSlug The declaring schema's slug.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	private function importOne(array $declaration, string $schemaSlug): void {
+		try {
+			$this->upsert(declaration: $declaration, schemaSlug: $schemaSlug);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[SchemaFlowImport] Could not import a declared flow on schema "'
+					. $schemaSlug . '": ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+	}//end importOne()
 
 	/**
 	 * Create or update the stored flow for one declaration.
@@ -178,63 +214,16 @@ class SchemaFlowImportListener implements IEventListener {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	private function upsert(array $declaration, string $schemaSlug): void {
-		$name = trim((string)($declaration['name'] ?? ''));
-		if ($name === '') {
-			throw new InvalidArgumentException('a declared flow needs a name');
-		}
-
-		$app = (string)($declaration['app'] ?? 'openregister');
-
-		$existing = null;
-		foreach ($this->flows->findAllFlows(app: $app, limit: 500) as $candidate) {
-			if ($candidate->getName() === $name && (string)$candidate->getTriggerSchema() === $schemaSlug) {
-				$existing = $candidate;
-				break;
-			}
-		}
-
-		$flow = ($existing ?? new Flow());
+		$run = new DeclaredFlowRun();
+		$run->name = self::declaredName(declaration: $declaration);
+		$run->app = (string)($declaration['app'] ?? 'openregister');
+		$run->schemaSlug = $schemaSlug;
+		$existing = $this->findDeclared(run: $run);
+		$flow = ($existing ?? $this->newFlow(run: $run));
+		self::applyDeclaration(flow: $flow, declaration: $declaration);
 
 		if ($existing === null) {
-			$flow->setUuid($this->newUuid());
-			$flow->setApp($app);
-			$flow->setName($name);
-			$flow->setTriggerSchema($schemaSlug);
-			$flow->setCreated(new DateTime());
-
-			// Inert until adopted. See the class docblock.
-			$flow->setEnabled(false);
-			$flow->setOwner(null);
-
-			// 🔴 AND IT MUST BELONG TO A TENANT, or it is imported into
-			// invisibility. Every flow READ is organisation-scoped
-			// (`FlowService::findAll()`), so a flow stored with no organisation
-			// is returned by nothing: it does not appear in the flows list, so
-			// it cannot be opened, so it can never be adopted — while sitting
-			// perfectly intact in the table. Measured 2026-08-28: the first
-			// shipped `x-openregister-flows` declaration imported with
-			// organisation NULL and was invisible to the API that lists it,
-			// next to two seeded flows that carried one and showed up fine.
-			$flow->setOrganisation($this->activeOrganisation());
-		}
-
-		$flow->setDescription(($declaration['description'] ?? null));
-		$flow->setTrigger(($declaration['trigger'] ?? null));
-		$flow->setTriggerRegister(($declaration['triggerRegister'] ?? null));
-		$flow->setCron(($declaration['cron'] ?? null));
-		$flow->setExecutionMode((string)($declaration['executionMode'] ?? Flow::MODE_ASYNC));
-		$flow->setNodes((array)($declaration['nodes'] ?? []));
-		$flow->setEdges((array)($declaration['edges'] ?? []));
-		$flow->setLimits((array)($declaration['limits'] ?? []));
-		$flow->setUpdated(new DateTime());
-
-		if ($existing === null) {
-			$stored = $this->flows->insert($flow);
-			$this->publishVersionOne(flow: $stored);
-			$this->logger->info(
-				message: '[SchemaFlowImport] Imported declared flow "' . $name . '" for schema "' . $schemaSlug
-					. '" (disabled until adopted).'
-			);
+			$this->insertDeclared(flow: $flow, run: $run);
 			return;
 		}
 
@@ -244,12 +233,127 @@ class SchemaFlowImportListener implements IEventListener {
 	}//end upsert()
 
 	/**
+	 * The trimmed name of a declared flow.
+	 *
+	 * @param array<string, mixed> $declaration The declared flow.
+	 *
+	 * @return string The name.
+	 *
+	 * @throws InvalidArgumentException When the declaration has no name.
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	private static function declaredName(array $declaration): string {
+		$name = trim((string)($declaration['name'] ?? ''));
+		if ($name === '') {
+			throw new InvalidArgumentException('a declared flow needs a name');
+		}
+
+		return $name;
+	}//end declaredName()
+
+	/**
+	 * The stored flow this declaration shipped last time: same app, name and trigger schema.
+	 *
+	 * @param DeclaredFlowRun $run The declaring app, flow name and declaring schema's slug.
+	 *
+	 * @return Flow|null The flow, or null on a first import.
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	private function findDeclared(DeclaredFlowRun $run): ?Flow {
+		foreach ($this->flows->findAllFlows(app: $run->app, limit: 500) as $candidate) {
+			if ($candidate->getName() === $run->name && (string)$candidate->getTriggerSchema() === $run->schemaSlug) {
+				return $candidate;
+			}
+		}
+
+		return null;
+	}//end findDeclared()
+
+	/**
+	 * A new flow for a first import: inert until adopted, and owned by a tenant.
+	 *
+	 * @param DeclaredFlowRun $run The declaring app, flow name and declaring schema's slug.
+	 *
+	 * @return Flow The new, not yet stored flow.
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	private function newFlow(DeclaredFlowRun $run): Flow {
+		$flow = new Flow();
+		$flow->setUuid($this->newUuid());
+		$flow->setApp($run->app);
+		$flow->setName($run->name);
+		$flow->setTriggerSchema($run->schemaSlug);
+		$flow->setCreated(new DateTime());
+
+		// Inert until adopted. See the class docblock.
+		$flow->setEnabled(false);
+		$flow->setOwner(null);
+
+		// 🔴 AND IT MUST BELONG TO A TENANT, or it is imported into
+		// invisibility. Every flow READ is organisation-scoped
+		// (`FlowService::findAll()`), so a flow stored with no organisation
+		// is returned by nothing: it does not appear in the flows list, so
+		// it cannot be opened, so it can never be adopted — while sitting
+		// perfectly intact in the table. Measured 2026-08-28: the first
+		// shipped `x-openregister-flows` declaration imported with
+		// organisation NULL and was invisible to the API that lists it,
+		// next to two seeded flows that carried one and showed up fine.
+		$flow->setOrganisation($this->activeOrganisation());
+
+		return $flow;
+	}//end newFlow()
+
+	/**
+	 * Copy the declared graph and settings onto the flow (never enabled, owner or organisation).
+	 *
+	 * @param Flow $flow The flow being imported.
+	 * @param array<string, mixed> $declaration The declared flow.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	private static function applyDeclaration(Flow $flow, array $declaration): void {
+		$flow->setDescription(($declaration['description'] ?? null));
+		$flow->setTrigger(($declaration['trigger'] ?? null));
+		$flow->setTriggerRegister(($declaration['triggerRegister'] ?? null));
+		$flow->setCron(($declaration['cron'] ?? null));
+		$flow->setExecutionMode((string)($declaration['executionMode'] ?? Flow::MODE_ASYNC));
+		$flow->setNodes((array)($declaration['nodes'] ?? []));
+		$flow->setEdges((array)($declaration['edges'] ?? []));
+		$flow->setLimits((array)($declaration['limits'] ?? []));
+		$flow->setUpdated(new DateTime());
+	}//end applyDeclaration()
+
+	/**
+	 * Store a first-imported flow, publish its version 1 and say so.
+	 *
+	 * @param Flow            $flow The new flow.
+	 * @param DeclaredFlowRun $run  The flow name and declaring schema's slug.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	private function insertDeclared(Flow $flow, DeclaredFlowRun $run): void {
+		$stored = $this->flows->insert($flow);
+		$this->publishVersionOne(flow: $stored);
+		$this->logger->info(
+			message: '[SchemaFlowImport] Imported declared flow "' . $run->name . '" for schema "' . $run->schemaSlug
+				. '" (disabled until adopted).'
+		);
+	}//end insertDeclared()
+
+	/**
 	 * Publish a changed declaration as the flow's next version.
 	 *
 	 * Runs walk the PUBLISHED version, so an app upgrade that fixed a shipped
 	 * flow but only rewrote its head changed nothing that ran. The rules for
 	 * when an upgrade may publish live in
-	 * {@see \OCA\OpenRegister\Service\Flow\FlowVersionService::publishShippedUpdate()}.
+	 * {@see FlowVersionServiceInterface::publishShippedUpdate()}.
 	 *
 	 * Never raises, for the same reason as {@see self::publishVersionOne()}:
 	 * a flow must not abort a schema import. A refusal leaves the published
@@ -267,24 +371,66 @@ class SchemaFlowImportListener implements IEventListener {
 		}
 
 		try {
-			$version = $this->container->get('OCA\OpenRegister\Service\Flow\FlowVersionService')
-				->publishShippedUpdate(flow: $flow);
-			if ($version !== null) {
-				$this->logger->info(
-					message: '[SchemaFlowImport] Published the updated declaration of flow "' . $flow->getUuid()
-						. '" as version ' . $version->getVersion() . '.'
-				);
-			}
+			$version = $this->container->get(FlowVersionServiceInterface::class)->publishShippedUpdate(flow: $flow);
+			$this->logPublishedUpdate(flow: $flow, version: $version);
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[SchemaFlowImport] The updated declaration of flow "' . $flow->getUuid()
-					. '" could not be published: ' . $e->getMessage()
-					. '. The previous version keeps serving.',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flow->getUuid()]
-			);
+			$this->warnUnpublished(flow: $flow, wording: self::unpublishedWording(kind: 'shippedUpdate', error: $e));
 		}
 
 	}//end publishShippedUpdate()
+
+	/**
+	 * Say which version a shipped update was published as; nothing when it was not published.
+	 *
+	 * @param Flow $flow The updated flow.
+	 * @param FlowVersion|null $version The published version, or null.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/shipped-flow-update-is-published/specs/flow-definition-versioning/spec.md#requirement-a-changed-shipped-flow-is-published-as-the-next-version
+	 */
+	private function logPublishedUpdate(Flow $flow, ?FlowVersion $version): void {
+		if ($version !== null) {
+			$this->logger->info(
+				message: '[SchemaFlowImport] Published the updated declaration of flow "' . $flow->getUuid()
+					. '" as version ' . $version->getVersion() . '.'
+			);
+		}
+	}//end logPublishedUpdate()
+
+	/**
+	 * Warn that a flow could not be published, and what that leaves in place.
+	 *
+	 * @param Flow                       $flow    The flow.
+	 * @param array{0: string, 1: string} $wording The message up to the flow uuid, and after it,
+	 *                                            from {@see self::unpublishedWording()}.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
+	 */
+	private function warnUnpublished(Flow $flow, array $wording): void {
+		$this->logger->warning(
+			message: $wording[0] . $flow->getUuid() . $wording[1],
+			context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flow->getUuid()]
+		);
+	}//end warnUnpublished()
+
+	/**
+	 * The unpublished warning around the flow uuid: what precedes it, and the
+	 * error plus what the failure leaves in place after it.
+	 *
+	 * @param string    $kind  A key of UNPUBLISHED.
+	 * @param Throwable $error What went wrong.
+	 *
+	 * @return array{0: string, 1: string} The message up to the flow uuid, and after it.
+	 *
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
+	 */
+	private static function unpublishedWording(string $kind, Throwable $error): array {
+		[$prefix, $consequence] = self::UNPUBLISHED[$kind];
+		return [$prefix, '" could not be published: ' . $error->getMessage() . $consequence];
+	}//end unpublishedWording()
 
 	/**
 	 * Publish version 1 of a freshly imported flow.
@@ -316,19 +462,12 @@ class SchemaFlowImportListener implements IEventListener {
 		}
 
 		try {
-			$this->container->get('OCA\OpenRegister\Service\Flow\FlowVersionService')
-				->publish(flow: $flow, publishedBy: null);
+			$this->container->get(FlowVersionServiceInterface::class)->publish(flow: $flow, publishedBy: null);
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[SchemaFlowImport] Imported flow "' . $flow->getUuid()
-					. '" could not be published: ' . $e->getMessage()
-					. '. It exists as a draft and will not back a run until it is published.',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flow->getUuid()]
-			);
+			$this->warnUnpublished(flow: $flow, wording: self::unpublishedWording(kind: 'versionOne', error: $e));
 		}
 
 	}//end publishVersionOne()
-
 
 	/**
 	 * The organisation a newly imported flow belongs to.
@@ -343,6 +482,23 @@ class SchemaFlowImportListener implements IEventListener {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	private function activeOrganisation(): ?string {
+		$uuid = (string)$this->organisationForNewEntity();
+		if ($uuid === '') {
+			return null;
+		}
+
+		return $uuid;
+	}//end activeOrganisation()
+
+	/**
+	 * What the organisation service answers for a new entity; null without a
+	 * container or when the service cannot be reached (logged).
+	 *
+	 * @return mixed The organisation uuid as the service returns it.
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	private function organisationForNewEntity(): mixed {
 		if ($this->container === null) {
 			return null;
 		}
@@ -357,23 +513,14 @@ class SchemaFlowImportListener implements IEventListener {
 			// exactly for callers with no session. Measured 2026-08-28: the fix
 			// that resolved the active organisation passed on a dev stack that
 			// happened to have one, and failed in CI, which does not.
-			$uuid = $this->container
+			return $this->container
 				->get('OCA\OpenRegister\Service\OrganisationServiceInterface')
 				->getOrganisationForNewEntity();
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[SchemaFlowImport] Could not resolve an organisation for a declared flow; '
-					. 'it will import but stay unlisted: ' . $e->getMessage()
-			);
+			$this->logger->warning(message: self::NO_ORGANISATION . $e->getMessage());
 			return null;
 		}
-
-		if ($uuid === null || (string)$uuid === '') {
-			return null;
-		}
-
-		return (string)$uuid;
-	}//end activeOrganisation()
+	}//end organisationForNewEntity()
 
 	/**
 	 * Mint a v4 uuid.
@@ -383,10 +530,10 @@ class SchemaFlowImportListener implements IEventListener {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	private function newUuid(): string {
-		$data = random_bytes(16);
-		$data[6] = chr((ord($data[6]) & 0x0f) | 0x40);
-		$data[8] = chr((ord($data[8]) & 0x3f) | 0x80);
+		$bytes = random_bytes(16);
+		$bytes[6] = chr(0x40 | (ord($bytes[6]) & 0x0f));
+		$bytes[8] = chr(0x80 | (ord($bytes[8]) & 0x3f));
 
-		return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+		return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
 	}//end newUuid()
 }//end class

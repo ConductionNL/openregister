@@ -41,7 +41,7 @@ use Throwable;
  *
  * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-2.1
  */
-class RegisterDocumentLoader {
+class RegisterDocumentLoader implements RegisterDocumentLoaderInterface {
 
 	/**
 	 * Constructor.

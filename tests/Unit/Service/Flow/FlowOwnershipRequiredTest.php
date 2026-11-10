@@ -52,6 +52,10 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Flow\FlowDefinitionStore;
+use OCA\OpenRegister\Service\Flow\FlowDeletionSweep;
+use OCA\OpenRegister\Service\Flow\FlowRunDispatch;
+use OCA\OpenRegister\Service\Flow\FlowServicePlatform;
 
 /**
  * Ownership is a precondition of creating a flow, not a field on it.
@@ -158,16 +162,24 @@ final class FlowOwnershipRequiredTest extends TestCase {
 		);
 
 		return new FlowService(
-			$mapper,
-			$this->createMock(FlowTriggerIndex::class),
-			$this->createMock(FlowRunService::class),
-			$this->createMock(FlowRunAdvancer::class),
-			$this->createMock(FlowRunMapper::class),
-			$this->createMock(FlowRunStepMapper::class),
-			$this->createMock(FlowStateMapper::class),
-			$this->session($uid),
-			$this->createMock(LoggerInterface::class),
-			$this->container($organisation)
+			new FlowDefinitionStore(
+				$mapper,
+				$this->createMock(FlowTriggerIndex::class)
+			),
+			new FlowRunDispatch(
+				$this->createMock(FlowRunService::class),
+				$this->createMock(FlowRunAdvancer::class)
+			),
+			new FlowDeletionSweep(
+				$this->createMock(FlowRunMapper::class),
+				$this->createMock(FlowRunStepMapper::class),
+				$this->createMock(FlowStateMapper::class)
+			),
+			new FlowServicePlatform(
+				$this->session($uid),
+				$this->createMock(LoggerInterface::class),
+				$this->container($organisation)
+			)
 		);
 	}//end service()
 

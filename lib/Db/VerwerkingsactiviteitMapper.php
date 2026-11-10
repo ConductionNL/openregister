@@ -47,7 +47,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<Verwerkingsactiviteit>
  */
-class VerwerkingsactiviteitMapper extends QBMapper {
+class VerwerkingsactiviteitMapper extends QBMapper implements VerwerkingsactiviteitMapperInterface {
 	/**
 	 * Constructor.
 	 *

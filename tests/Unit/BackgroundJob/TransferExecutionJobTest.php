@@ -27,6 +27,9 @@ declare(strict_types=1);
 
 namespace Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\Support\TransferExecutionPlatform;
+use OCA\OpenRegister\BackgroundJob\Support\TransferExecutionRecords;
+use OCA\OpenRegister\BackgroundJob\Support\TransferExecutionTransports;
 use OCA\OpenRegister\BackgroundJob\TransferExecutionJob;
 use OCA\OpenRegister\Service\Edepot\EdepotTransferService;
 use OCA\OpenRegister\Service\Edepot\TransferListService;
@@ -77,15 +80,21 @@ class TransferExecutionJobTest extends TestCase {
 
 		$this->job = new TransferExecutionJob(
 			time: $time,
-			transferService: $this->transferService,
-			transferRecordService: $this->recordService,
-			transferListService: $this->listService,
-			sftpTransport: $this->createMock(SftpTransport::class),
-			restTransport: $this->createMock(RestApiTransport::class),
-			ocTransport: $this->createMock(OpenConnectorTransport::class),
-			jobList: $this->jobList,
-			appConfig: $this->appConfig,
-			logger: $this->createMock(LoggerInterface::class),
+			records: new TransferExecutionRecords(
+				transferService: $this->transferService,
+				recordService: $this->recordService,
+				listService: $this->listService
+			),
+			transports: new TransferExecutionTransports(
+				sftpTransport: $this->createMock(SftpTransport::class),
+				restTransport: $this->createMock(RestApiTransport::class),
+				ocTransport: $this->createMock(OpenConnectorTransport::class)
+			),
+			platform: new TransferExecutionPlatform(
+				jobList: $this->jobList,
+				appConfig: $this->appConfig,
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 
 	}//end setUp()
@@ -182,15 +191,21 @@ class TransferExecutionJobTest extends TestCase {
 
 		$job = new TransferExecutionJob(
 			time: $time,
-			transferService: $this->transferService,
-			transferRecordService: $this->recordService,
-			transferListService: $this->listService,
-			sftpTransport: $this->createMock(SftpTransport::class),
-			restTransport: $this->createMock(RestApiTransport::class),
-			ocTransport: $this->createMock(OpenConnectorTransport::class),
-			jobList: $this->jobList,
-			appConfig: $appConfig,
-			logger: $this->createMock(LoggerInterface::class),
+			records: new TransferExecutionRecords(
+				transferService: $this->transferService,
+				recordService: $this->recordService,
+				listService: $this->listService
+			),
+			transports: new TransferExecutionTransports(
+				sftpTransport: $this->createMock(SftpTransport::class),
+				restTransport: $this->createMock(RestApiTransport::class),
+				ocTransport: $this->createMock(OpenConnectorTransport::class)
+			),
+			platform: new TransferExecutionPlatform(
+				jobList: $this->jobList,
+				appConfig: $appConfig,
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 
 		$this->recordService->method('loadTransferList')->willReturn(

@@ -46,8 +46,9 @@ class ExampleSetFragmentShape {
 
 	/**
 	 * The lists of `{key, data}` rows a fragment may declare, in plan order, with the noun their messages use.
+	 * The engine kinds write them in this order too.
 	 */
-	private const KEYED_ROWS = [
+	public const KEYED_ROWS = [
 		'tasks'             => 'task',
 		'views'             => 'view',
 		'watchers'          => 'watcher',

@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\Sync\SyncRecordStatus;
+use OCA\OpenRegister\Service\Sync\SyncRecordStatusInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -46,7 +46,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/specs/data-sync-harvesting/spec.md
  */
-class SyncRecordMapper extends QBMapper {
+class SyncRecordMapper extends QBMapper implements SyncRecordMapperInterface {
 	/**
 	 * Constructor.
 	 *
@@ -72,7 +72,7 @@ class SyncRecordMapper extends QBMapper {
 		$record->setSourceId((int)$execution->source->getId());
 		$record->setExecutionId($execution->executionId);
 		$record->setExternalId($externalId);
-		$record->setStatus(SyncRecordStatus::PENDING);
+		$record->setStatus(SyncRecordStatusInterface::PENDING);
 		$record->setAttempts(0);
 		$record->setOrganisation($execution->source->getOrganisation());
 		$record->setCreated(new DateTime());
@@ -130,7 +130,8 @@ class SyncRecordMapper extends QBMapper {
 	 */
 	private function moveTo(SyncRecord $record, string $status): void {
 		$current = (string)$record->getStatus();
-		if (SyncRecordStatus::canTransition(from: $current, to: $status) === false) {
+		$allowed = (SyncRecordStatusInterface::TRANSITIONS[$current] ?? []);
+		if (in_array($status, $allowed, true) === false) {
 			throw new InvalidArgumentException(
 				sprintf('Illegal sync-record transition from "%s" to "%s".', $current, $status)
 			);
@@ -170,7 +171,7 @@ class SyncRecordMapper extends QBMapper {
 			->from($this->getTableName())
 			->where($qb->expr()->eq('source_id', $qb->createNamedParameter($sourceId, IQueryBuilder::PARAM_INT)))
 			->andWhere($qb->expr()->eq('execution_id', $qb->createNamedParameter($executionId)))
-			->andWhere($qb->expr()->eq('status', $qb->createNamedParameter(SyncRecordStatus::PENDING)));
+			->andWhere($qb->expr()->eq('status', $qb->createNamedParameter(SyncRecordStatusInterface::PENDING)));
 
 		return $this->findEntities(query: $qb);
 	}//end findPending()

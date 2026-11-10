@@ -22,10 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
-use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier;
-use OCA\OpenRegister\Search\Service\Geo\GeoFilterParser;
-use OCA\OpenRegister\Service\Geo\PdokGeocoder;
+use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilderInterface;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplierInterface;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilterParserInterface;
+use OCA\OpenRegister\Service\Geo\PdokGeocoderInterface;
 
 /**
  * Geo filter parsing and applying, GeoJSON feature building and geocoding; each is null when absent.
@@ -36,18 +36,18 @@ final class GeoServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ?GeoFilterParser             $geoFilterParser   The geo filter parser.
-	 * @param ?GeoFilterApplier            $geoFilterApplier  The geo post-filter.
-	 * @param ?GeoFeatureCollectionBuilder $geoFeatureBuilder The GeoJSON feature builder.
-	 * @param ?PdokGeocoder                $pdokGeocoder      The geocoder.
+	 * @param ?GeoFilterParserInterface             $geoFilterParser   The geo filter parser.
+	 * @param ?GeoFilterApplierInterface            $geoFilterApplier  The geo post-filter.
+	 * @param ?GeoFeatureCollectionBuilderInterface $geoFeatureBuilder The GeoJSON feature builder.
+	 * @param ?PdokGeocoderInterface                         $pdokGeocoder      The geocoder.
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md
 	 */
 	public function __construct(
-		public readonly ?GeoFilterParser $geoFilterParser = null,
-		public readonly ?GeoFilterApplier $geoFilterApplier = null,
-		public readonly ?GeoFeatureCollectionBuilder $geoFeatureBuilder = null,
-		public readonly ?PdokGeocoder $pdokGeocoder = null,
+		public readonly ?GeoFilterParserInterface $geoFilterParser = null,
+		public readonly ?GeoFilterApplierInterface $geoFilterApplier = null,
+		public readonly ?GeoFeatureCollectionBuilderInterface $geoFeatureBuilder = null,
+		public readonly ?PdokGeocoderInterface $pdokGeocoder = null,
 	) {
 	}//end __construct()
 }//end class

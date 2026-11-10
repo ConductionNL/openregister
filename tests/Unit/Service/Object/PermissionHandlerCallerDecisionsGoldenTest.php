@@ -134,7 +134,7 @@ class PermissionHandlerCallerDecisionsGoldenTest extends TestCase {
 			);
 		}
 
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			userSession: $session,
 			userManager: $manager,
 			groupManager: $groups,

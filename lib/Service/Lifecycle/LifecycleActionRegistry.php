@@ -32,11 +32,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Lifecycle;
 
-use OCA\OpenRegister\Lifecycle\Action\SetFieldsAction;
+use OCA\OpenRegister\Lifecycle\BuiltinLifecycleActionsInterface;
 use OCA\OpenRegister\Lifecycle\LifecycleActionInterface;
-use OCP\IServerContainer;
-use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
@@ -54,6 +51,7 @@ use RuntimeException;
  * @spec openspec/specs/object-lifecycle/spec.md
  */
 class LifecycleActionRegistry {
+	use ResolvesThroughContainers;
 
 	/**
 	 * Built-in action-name → handler-FQCN map.
@@ -66,10 +64,7 @@ class LifecycleActionRegistry {
 	 *
 	 * @var array<string, class-string<LifecycleActionInterface>>
 	 */
-	private const BUILTINS = [
-		'set-fields' => SetFieldsAction::class,
-		'set-field' => SetFieldsAction::class,
-	];
+	private const BUILTINS = BuiltinLifecycleActionsInterface::BUILTINS;
 
 	/**
 	 * Per-request cache.
@@ -77,22 +72,6 @@ class LifecycleActionRegistry {
 	 * @var array<string, LifecycleActionInterface>
 	 */
 	private array $cache = [];
-
-	/**
-	 * Constructor.
-	 *
-	 * @param ContainerInterface $container OR app container, used for built-ins + OR-internal handlers.
-	 * @param IServerContainer $serverContainer NC server container, used as fallback for FQCN-tagged handlers in other apps.
-	 * @param LoggerInterface $logger Logger for resolution diagnostics.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function __construct(
-		private readonly ContainerInterface $container,
-		private readonly IServerContainer $serverContainer,
-		private readonly LoggerInterface $logger,
-	) {
-	}//end __construct()
 
 	/**
 	 * Resolve a declared action name to its handler.
@@ -106,59 +85,59 @@ class LifecycleActionRegistry {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function resolve(string $actionName): LifecycleActionInterface {
-		if (isset($this->cache[$actionName]) === true) {
-			return $this->cache[$actionName];
+		if (isset($this->cache[$actionName]) === false) {
+			$this->cache[$actionName] = $this->load(actionName: $actionName);
 		}
 
-		// Built-in handlers resolve by their FQCN through the OR container so
-		// their constructor dependencies are autowired.
-		$lookup = ($actionName);
-		if (isset(self::BUILTINS[$actionName]) === true) {
-			$lookup = self::BUILTINS[$actionName];
-		}
+		return $this->cache[$actionName];
+	}//end resolve()
 
-		$instance = null;
-		$errors = [];
-		// Try OR's app container first (covers built-ins + OR-internal
-		// handlers) and fall back to the injected server container (covers
-		// FQCN-based references to handlers in other apps that Nextcloud can
-		// autowire). The server container is injected via IServerContainer
-		// rather than the static \OC::$server accessor, which lib/ bans.
-		foreach ([$this->container, $this->serverContainer] as $candidate) {
-			try {
-				$instance = $candidate->get($lookup);
-				break;
-			} catch (\Throwable $e) {
-				$errors[] = $e->getMessage();
-			}
-		}
-
+	/**
+	 * Resolve an action name through the containers, refusing a miss or a wrong type.
+	 *
+	 * Built-in handlers resolve by their FQCN through the OR container so their
+	 * constructor dependencies are autowired.
+	 *
+	 * @param string $actionName The declared `action` value.
+	 *
+	 * @return LifecycleActionInterface
+	 *
+	 * @throws RuntimeException When no handler is registered or it has the wrong type.
+	 */
+	private function load(string $actionName): LifecycleActionInterface {
+		$instance = $this->lookUp(
+			id: self::BUILTINS[$actionName] ?? $actionName,
+			logPrefix: sprintf('Lifecycle action "%s" could not be resolved: ', $actionName)
+		);
 		if ($instance === null) {
-			$this->logger->error(
-				sprintf('Lifecycle action "%s" could not be resolved: %s', $actionName, implode(' | ', $errors))
-			);
-			throw new RuntimeException(
-				message: sprintf(
-					'Lifecycle action "%s" is declared but no handler is registered. '
-					. 'Register a service implementing %s under the id "%s", or remove the action from the schema.',
-					$actionName,
-					LifecycleActionInterface::class,
-					$actionName
-				)
-			);
+			throw $this->notRegistered(actionName: $actionName);
 		}
 
 		if (($instance instanceof LifecycleActionInterface) === false) {
 			throw new RuntimeException(
-				sprintf(
-					'Service resolved for lifecycle action "%s" does not implement %s.',
-					$actionName,
-					LifecycleActionInterface::class
-				)
+				sprintf('Service resolved for lifecycle action "%s" does not implement %s.', $actionName, LifecycleActionInterface::class)
 			);
 		}
 
-		$this->cache[$actionName] = $instance;
 		return $instance;
-	}//end resolve()
+	}//end load()
+
+	/**
+	 * The refusal for a declared action with no registered handler.
+	 *
+	 * @param string $actionName The declared `action` value.
+	 *
+	 * @return RuntimeException
+	 */
+	private function notRegistered(string $actionName): RuntimeException {
+		return new RuntimeException(
+			message: sprintf(
+				'Lifecycle action "%s" is declared but no handler is registered. '
+				. 'Register a service implementing %s under the id "%s", or remove the action from the schema.',
+				$actionName,
+				LifecycleActionInterface::class,
+				$actionName
+			)
+		);
+	}//end notRegistered()
 }//end class

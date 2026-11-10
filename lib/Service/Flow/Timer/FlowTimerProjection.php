@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Service\Flow\Timer;
 use DateTime;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\FlowTimer;
-use OCA\OpenRegister\Db\FlowTimerMapper;
+use OCA\OpenRegister\Db\FlowTimerMapperInterface;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -46,12 +46,12 @@ final class FlowTimerProjection {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowTimerMapper $timers The timer table.
+	 * @param FlowTimerMapperInterface $timers The timer table.
 	 * @param TaskMapper      $tasks  The task table.
 	 * @param LoggerInterface $logger Diagnostics.
 	 */
 	public function __construct(
-		private readonly FlowTimerMapper $timers,
+		private readonly FlowTimerMapperInterface $timers,
 		private readonly TaskMapper $tasks,
 		private readonly LoggerInterface $logger,
 	) {

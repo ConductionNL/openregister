@@ -34,7 +34,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<ImportPreviewRow>
  */
-class ImportPreviewRowMapper extends QBMapper {
+class ImportPreviewRowMapper extends QBMapper implements ImportPreviewRowMapperInterface {
 	/**
 	 * Constructor.
 	 *

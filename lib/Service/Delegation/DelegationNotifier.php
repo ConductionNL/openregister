@@ -57,7 +57,7 @@ use Throwable;
  *
  * @spec openspec/specs/delegation-grants/spec.md
  */
-class DelegationNotifier {
+class DelegationNotifier implements DelegationNotifierInterface {
 
 	/**
 	 * The app the notifications belong to.

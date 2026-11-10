@@ -15,6 +15,7 @@ use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Files\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteAccounts;
 use OCA\OpenRegister\Files\Service\NoteVersionService;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
@@ -89,8 +90,10 @@ class StoredEntityObjectTest extends TestCase
     {
         return new NoteService(
             commentsManager: $this->createMock(ICommentsManager::class),
-            userSession: $this->createMock(IUserSession::class),
-            userManager: $this->createMock(IUserManager::class),
+            accounts: new NoteAccounts(
+                userSession: $this->createMock(IUserSession::class),
+                userManager: $this->createMock(IUserManager::class)
+            ),
             visibility: $this->createMock(TimelineVisibilityServiceInterface::class),
             versions: $versions
         );

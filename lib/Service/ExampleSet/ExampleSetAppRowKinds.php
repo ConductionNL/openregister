@@ -1,0 +1,68 @@
+<?php
+
+/**
+ * OpenRegister Example Set App Row Kinds
+ *
+ * The writers of the rows an example set puts in other Nextcloud apps: Deck cards, appointments, Collectives pages and Talk conversations.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\ExampleSet
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Service\ExampleSet;
+
+/**
+ * The writers of the rows in other Nextcloud apps, bundled for the engine kinds.
+ *
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+ */
+final readonly class ExampleSetAppRowKinds {
+	/**
+	 * Bundle the writers; a writer left out refuses its rows.
+	 *
+	 * @param ExampleSetDeckCards|null         $deckCards         Writes the Deck cards a fragment puts on its objects; null refuses them.
+	 * @param ExampleSetAppointments|null      $appointments      Writes the appointments a fragment puts on its objects; null refuses them.
+	 * @param ExampleSetCollectivesPages|null  $collectivesPages  Writes the Collectives pages a fragment ships; null refuses them.
+	 * @param ExampleSetTalkConversations|null $talkConversations Writes the Talk conversations a fragment puts on its objects; null refuses them.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+	 */
+	public function __construct(
+		public ?ExampleSetDeckCards $deckCards=null,
+		public ?ExampleSetAppointments $appointments=null,
+		public ?ExampleSetCollectivesPages $collectivesPages=null,
+		public ?ExampleSetTalkConversations $talkConversations=null,
+	) {
+	}//end __construct()
+
+	/**
+	 * The writers by fragment part; null where this OpenRegister has none.
+	 *
+	 * @return array<string, ExampleSetEngineRows|null>
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+	 */
+	public function writers(): array {
+		return [
+			'deckCards'         => $this->deckCards,
+			'appointments'      => $this->appointments,
+			'collectivesPages'  => $this->collectivesPages,
+			'talkConversations' => $this->talkConversations,
+		];
+	}//end writers()
+}//end class

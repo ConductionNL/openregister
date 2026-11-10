@@ -46,9 +46,8 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Exception\CodedValueException;
-use OCA\OpenRegister\Service\Vocabulary\CodedValueGuard;
-use OCA\OpenRegister\Service\Vocabulary\ConceptShapeGuard;
-use OCP\EventDispatcher\Event;
+use OCA\OpenRegister\Service\Vocabulary\CodedValueGuardInterface;
+use OCA\OpenRegister\Service\Vocabulary\ConceptShapeGuardInterface;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -56,9 +55,12 @@ use Throwable;
 /**
  * Validates an object's coded values before it is persisted.
  *
+ * @spec openspec/specs/skos-concept-registers/spec.md
+ *
  * @template-implements IEventListener<ObjectCreatingEvent|ObjectUpdatingEvent>
  */
 class CodedValueValidationListener implements IEventListener {
+	use ValidatesPreWriteObject;
 
 	/**
 	 * The error code a refused coded value carries, so a client can branch on it.
@@ -77,14 +79,14 @@ class CodedValueValidationListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param CodedValueGuard $guard Answers which coded values are refused.
-	 * @param ConceptShapeGuard $shapeGuard Validates a concept against its scheme's shape.
+	 * @param CodedValueGuardInterface $guard Answers which coded values are refused.
+	 * @param ConceptShapeGuardInterface $shapeGuard Validates a concept against its scheme's shape.
 	 * @param SchemaMapperInterface $schemas Resolves the schema an object belongs to.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
-		private readonly CodedValueGuard $guard,
-		private readonly ConceptShapeGuard $shapeGuard,
+		private readonly CodedValueGuardInterface $guard,
+		private readonly ConceptShapeGuardInterface $shapeGuard,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly LoggerInterface $logger,
 	) {
@@ -92,31 +94,12 @@ class CodedValueValidationListener implements IEventListener {
 	}//end __construct()
 
 	/**
-	 * Refuse a write the vocabulary does not accept.
-	 *
-	 * @param Event $event The inbound event.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/skos-concept-registers/spec.md
-	 */
-	public function handle(Event $event): void {
-		if ($event instanceof ObjectCreatingEvent) {
-			$this->validate(event: $event, object: $event->getObject());
-			return;
-		}
-
-		if ($event instanceof ObjectUpdatingEvent) {
-			$this->validate(event: $event, object: $event->getNewObject());
-		}
-
-	}//end handle()
-
-	/**
 	 * Validate one write, and refuse it when the guard says so.
 	 *
-	 * The event type is a union rather than Event, because setErrors() is
-	 * declared on each write event separately instead of on a shared parent.
+	 * The guard is a guard, not a gate on unrelated saves. When it fails for a
+	 * reason of its own the save proceeds and the failure is named in the log:
+	 * a vocabulary that cannot be read must not become the reason nothing can
+	 * be written.
 	 *
 	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write event.
 	 * @param ObjectEntity $object The object the write carries.
@@ -125,34 +108,12 @@ class CodedValueValidationListener implements IEventListener {
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	private function validate(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $object): void {
+	protected function validate(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $object): void {
 		try {
-			$reference = $object->getSchema();
-			if ($reference === null || $reference === '') {
-				return;
-			}
-
-			$schema = $this->schemas->find(id: $reference, _rbac: false, _multitenancy: false);
-
-			$data = $object->getObject();
-			if (is_array($data) === false) {
-				$data = [];
-			}
-
-			$shapeErrors = $this->shapeGuard->violations(object: $data, schema: $schema);
-			if ($shapeErrors !== []) {
-				$this->refuse(event: $event, code: self::ERROR_CODE_SHAPE, errors: $shapeErrors);
-				return;
-			}
-
-			$this->guard->enforce(object: $data, schema: $schema);
+			$this->check(event: $event, object: $object);
 		} catch (CodedValueException $refused) {
 			$this->refuse(event: $event, code: self::ERROR_CODE, errors: $refused->getErrors());
 		} catch (Throwable $failure) {
-			// The guard is a guard, not a gate on unrelated saves. When it
-			// fails for a reason of its own the save proceeds and the failure
-			// is named in the log: a vocabulary that cannot be read must not
-			// become the reason nothing can be written.
 			$this->logger->warning(
 				message: '[CodedValueValidationListener] The guard itself failed, allowing the save: ' . $failure->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => get_class($failure)]
@@ -160,6 +121,35 @@ class CodedValueValidationListener implements IEventListener {
 		}//end try
 
 	}//end validate()
+
+	/**
+	 * Refuse a concept failing its scheme's shape, then let the guard enforce the coded values.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write event.
+	 * @param ObjectEntity $object The object the write carries.
+	 *
+	 * @return void
+	 *
+	 * @throws CodedValueException When a coded value is refused.
+	 *
+	 * @spec openspec/specs/skos-concept-registers/spec.md
+	 */
+	private function check(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $object): void {
+		$reference = $object->getSchema();
+		if ((string)$reference === '') {
+			return;
+		}
+
+		$schema = $this->schemas->find(id: $reference, _rbac: false, _multitenancy: false);
+		$data = $this->writtenData(object: $object);
+		$shapeErrors = $this->shapeGuard->violations(object: $data, schema: $schema);
+		if ($shapeErrors !== []) {
+			$this->refuse(event: $event, code: self::ERROR_CODE_SHAPE, errors: $shapeErrors);
+			return;
+		}
+
+		$this->guard->enforce(object: $data, schema: $schema);
+	}//end check()
 
 	/**
 	 * Stop the write, carrying the refusals.

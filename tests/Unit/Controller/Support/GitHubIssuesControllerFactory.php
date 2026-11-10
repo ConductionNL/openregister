@@ -42,7 +42,6 @@ final class GitHubIssuesControllerFactory {
 		\Psr\Log\LoggerInterface $logger,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\GitHubIssuesControllerServices(
 				domain: new \OCA\OpenRegister\Controller\Support\GitHubIssuesDomain(
@@ -54,9 +53,9 @@ final class GitHubIssuesControllerFactory {
 				platform: new \OCA\OpenRegister\Controller\Support\GitHubIssuesPlatform(
 					userSession: $userSession,
 					logger: $logger,
+					cacheFactory: $cacheFactory,
 				),
 			),
-			$cacheFactory,
 		];
 	}
 

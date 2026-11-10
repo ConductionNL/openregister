@@ -14,12 +14,7 @@ import { translate as t } from '@nextcloud/l10n'
 		:loading="loading"
 		:loadingMessage="t('openregister', 'Loading multitenancy settings...')">
 		<template #actions>
-			<SectionSaveActions
-				:loading="loading"
-				:saving="saving"
-				:rebasing="rebasing"
-				@rebase="showRebaseDialog"
-				@save="saveSettings" />
+			<SectionSaveActions v-bind="saveActions" />
 		</template>
 
 		<!-- Section Description -->

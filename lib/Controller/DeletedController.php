@@ -34,12 +34,10 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer;
 use OCA\OpenRegister\Service\Deletion\DeletionServiceBundle;
-use OCA\OpenRegister\Service\Deletion\DeletionWindow;
+use OCA\OpenRegister\Service\Deletion\DeletionWindowInterface;
 use OCA\OpenRegister\Service\Deletion\DestructionRefusedException;
-use OCA\OpenRegister\Service\Deletion\DestructionScope;
-use OCA\OpenRegister\Service\Object\RenderObject;
+use OCA\OpenRegister\Service\Deletion\DestructionActionInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -375,8 +373,6 @@ class DeletedController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with restore result
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
@@ -391,53 +387,7 @@ class DeletedController extends Controller {
 		}
 
 		try {
-			$object = $this->services->store->objectEntityMapper->find($id, null, null, true);
-
-			if ($object->isSoftDeleted() === false) {
-				return new JSONResponse(
-					data: [
-						'error' => 'Object is not deleted',
-					],
-					statusCode: 400
-				);
-			}
-
-			// Restoring is a write. `restoreMultiple()` has gated on `update`
-			// since the wave-3 C4 finding; the single-object endpoint beside it
-			// never did, so the bulk door was locked and the single door was
-			// open.
-			if ($this->services->access->authorizer->userMayActOnDeletedObject(object: $object, action: 'update') === false) {
-				return new JSONResponse(
-					data: ['error' => 'User does not have permission to restore this object'],
-					statusCode: 403
-				);
-			}
-
-			$window = $this->services->store->deletion->window->windowFor(
-				object: $object,
-				schema: $this->services->access->authorizer->resolveSchema(object: $object)
-			);
-
-			// Restore via MagicMapper: objects live in per-register/schema magic
-			// tables, NOT the legacy generic `openregister_objects` table. The
-			// old direct `UPDATE openregister_objects` matched zero rows, so the
-			// call reported success but never un-deleted the object.
-			$this->services->store->objectEntityMapper->restoreObject(uuid: $id);
-
-			// A restore is one act, and it is recorded with its actor. Without
-			// this the trail shows an object deleted and then, without
-			// explanation, present again.
-			$this->recordRestore(object: $object, window: $window);
-
-			$data = [
-				'success' => true,
-				'message' => 'Object restored successfully',
-			];
-			if ($window !== null) {
-				$data['restoredWithin'] = $window->toArray();
-			}
-
-			return new JSONResponse(data: $data);
+			return $this->restoreFound(object: $this->services->store->objectEntityMapper->find($id, null, null, true));
 		} catch (\Exception $e) {
 			return new JSONResponse(
 				data: [
@@ -449,6 +399,57 @@ class DeletedController extends Controller {
 	}//end restore()
 
 	/**
+	 * Restore one soft-deleted object, the caller's update right in front, and record it.
+	 *
+	 * @param ObjectEntity $object The full stored row.
+	 *
+	 * @return JSONResponse The outcome: 200, or 400 when not deleted, 403 without the right.
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 */
+	private function restoreFound(ObjectEntity $object): JSONResponse {
+		if ($object->isSoftDeleted() === false) {
+			return new JSONResponse(
+				data: [
+					'error' => 'Object is not deleted',
+				],
+				statusCode: 400
+			);
+		}
+
+		// Restoring is a write.
+		if ($this->services->access->authorizer->userMayActOnDeletedObject(object: $object, action: 'update') === false) {
+			return new JSONResponse(
+				data: ['error' => 'User does not have permission to restore this object'],
+				statusCode: 403
+			);
+		}
+
+		$window = $this->services->store->deletion->window->windowFor(
+			object: $object,
+			schema: $this->services->access->authorizer->resolveSchema(object: $object)
+		);
+
+		// Objects live in per-register/schema magic tables, so the restore goes through MagicMapper.
+		$this->services->store->objectEntityMapper->restoreObject(uuid: (string)$object->getUuid());
+
+		// A restore is one act, and it is recorded with its actor. Without
+		// this the trail shows an object deleted and then, without
+		// explanation, present again.
+		$this->recordRestore(object: $object, window: $window);
+
+		$data = [
+			'success' => true,
+			'message' => 'Object restored successfully',
+		];
+		if ($window !== null) {
+			$data['restoredWithin'] = $window->toArray();
+		}
+
+		return new JSONResponse(data: $data);
+	}//end restoreFound()
+
+	/**
 	 * Record a restore with the actor who made it.
 	 *
 	 * Failure is logged into the response path rather than thrown: a restore
@@ -458,7 +459,7 @@ class DeletedController extends Controller {
 	 * reversible and a destruction is not.
 	 *
 	 * @param ObjectEntity $object The object restored.
-	 * @param \OCA\OpenRegister\Service\Deletion\DeletionWindow|null $window The window it was restored inside.
+	 * @param DeletionWindowInterface|null $window The window it was restored inside.
 	 *
 	 * @return void
 	 *
@@ -498,7 +499,7 @@ class DeletedController extends Controller {
 	/**
 	 * Restore multiple deleted objects
 	 *
-	 * Each soft-deleted object is gated through PermissionHandler with the
+	 * Each soft-deleted object is gated through PermissionHandlerInterface with the
 	 * `update` action against the object's resolved schema. Admins bypass.
 	 * Objects whose schema cannot be resolved or for which the caller lacks
 	 * `update` permission are skipped (counted as `failed`) so a partial
@@ -506,8 +507,6 @@ class DeletedController extends Controller {
 	 * wave-3 C4 finding (no RBAC on `restoreMultiple`).
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with multiple restore result
 	 *
@@ -551,26 +550,14 @@ class DeletedController extends Controller {
 			foreach ($objects as $object) {
 				$foundIds[] = $object->getUuid();
 
+				// The lookup's rows are slim: each is read in full and restored as the single route does.
 				try {
-					if ($object->isSoftDeleted() === false) {
-						// Object exists but is not deleted.
-						$failed++;
+					if ($this->restoreFound(object: $this->fullDeletedRow(uuid: (string)$object->getUuid()))->getStatus() === 200) {
+						$restored++;
 						continue;
 					}
 
-					// Per-object RBAC gate: caller must have `update`
-					// permission on the resolved schema (admins bypass).
-					// Cross-tenant restores are silently dropped (counted
-					// as failed) rather than aborting the whole batch.
-					if ($this->services->access->authorizer->userMayActOnDeletedObject(object: $object, action: 'update') === false) {
-						$failed++;
-						continue;
-					}
-
-					// Restore via the magic-table-aware path (writes _deleted=NULL
-					// on the correct per-register/schema table).
-					$this->services->store->objectEntityMapper->restoreObject(uuid: (string)$object->getUuid());
-					$restored++;
+					$failed++;
 				} catch (\Exception $e) {
 					$failed++;
 				}//end try
@@ -602,7 +589,7 @@ class DeletedController extends Controller {
 	/**
 	 * Permanently delete an object
 	 *
-	 * Gated through PermissionHandler with the `delete` action against the
+	 * Gated through PermissionHandlerInterface with the `delete` action against the
 	 * resolved schema (admins bypass). When register/schema context cannot
 	 * be derived the call is refused fail-closed. This closes the wave-3 C4
 	 * finding (no RBAC on `destroy`).
@@ -610,8 +597,6 @@ class DeletedController extends Controller {
 	 * @param string $id The ID or UUID of the object to permanently delete
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with deletion result
 	 *
@@ -626,29 +611,7 @@ class DeletedController extends Controller {
 		}
 
 		try {
-			$object = $this->services->store->objectEntityMapper->find(identifier: $id, register: null, schema: null, includeDeleted: true);
-
-			// An archival record is refused BEFORE the trash check, so a caller
-			// holding a live archival record is told the record is immutable
-			// rather than "not deleted yet". Then a purge only empties the
-			// trash, never a live object.
-			$refusal = $this->refuseUndestroyable(object: $object);
-			if ($refusal !== null) {
-				return $refusal;
-			}
-
-			$schema = $this->services->access->authorizer->resolveSchema(object: $object);
-			$window = $this->services->store->deletion->window->windowFor(object: $object, schema: $schema);
-			$force = filter_var($this->request->getParam('force', false), FILTER_VALIDATE_BOOLEAN);
-
-			// The right, both retention clocks and the open recovery window each
-			// refuse in turn, naming the rule that refused.
-			$refusal = $this->refuseDestruction(object: $object, schema: $schema, window: $window, force: $force);
-			if ($refusal !== null) {
-				return $refusal;
-			}
-
-			return $this->performDestruction(object: $object, schema: $schema, window: $window, force: $force);
+			return $this->destroyFound(object: $this->fullDeletedRow(uuid: $id));
 		} catch (\Exception $e) {
 			return new JSONResponse(
 				data: [
@@ -658,6 +621,52 @@ class DeletedController extends Controller {
 			);
 		}//end try
 	}//end destroy()
+
+	/**
+	 * Destroy one soft-deleted object, every refusal in front, and record it; `force` waives the open window.
+	 *
+	 * @param ObjectEntity $object The full stored row.
+	 *
+	 * @return JSONResponse The destruction record, or the refusal naming its rule.
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 */
+	private function destroyFound(ObjectEntity $object): JSONResponse {
+		// An archival record is refused BEFORE the trash check, so a caller
+		// holding a live archival record is told the record is immutable
+		// rather than "not deleted yet". Then a purge only empties the
+		// trash, never a live object.
+		$refusal = $this->refuseUndestroyable(object: $object);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$schema = $this->services->access->authorizer->resolveSchema(object: $object);
+		$window = $this->services->store->deletion->window->windowFor(object: $object, schema: $schema);
+		$force = filter_var($this->request->getParam('force', false), FILTER_VALIDATE_BOOLEAN);
+
+		// The right, both retention clocks and the open recovery window each
+		// refuse in turn, naming the rule that refused.
+		$refusal = $this->refuseDestruction(object: $object, schema: $schema, window: $window, force: $force);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return $this->performDestruction(object: $object, schema: $schema, window: $window, force: $force);
+	}//end destroyFound()
+
+	/**
+	 * The stored row of an object, deleted or not, with every column.
+	 *
+	 * @param string $uuid The id or uuid.
+	 *
+	 * @return ObjectEntity
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 */
+	private function fullDeletedRow(string $uuid): ObjectEntity {
+		return $this->services->store->objectEntityMapper->find(identifier: $uuid, register: null, schema: null, includeDeleted: true);
+	}//end fullDeletedRow()
 
 	/**
 	 * Refuse a purge of an object that is not a destroyable trash row.
@@ -707,14 +716,14 @@ class DeletedController extends Controller {
 	 *
 	 * @param ObjectEntity $object The object being purged.
 	 * @param Schema|null $schema The object's resolved schema.
-	 * @param DeletionWindow|null $window The published recovery window.
+	 * @param DeletionWindowInterface|null $window The published recovery window.
 	 * @param bool $force Whether the caller explicitly waived the window.
 	 *
 	 * @return JSONResponse|null The refusal, or null when the destruction may proceed.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	private function refuseDestruction(ObjectEntity $object, ?Schema $schema, ?DeletionWindow $window, bool $force): ?JSONResponse {
+	private function refuseDestruction(ObjectEntity $object, ?Schema $schema, ?DeletionWindowInterface $window, bool $force): ?JSONResponse {
 		$refusal = $this->services->store->deletion->destroyRight->refusalFor(object: $object, schema: $schema);
 		if ($refusal !== null) {
 			return new JSONResponse(
@@ -757,17 +766,17 @@ class DeletedController extends Controller {
 	 *
 	 * @param ObjectEntity $object The object being purged.
 	 * @param Schema|null $schema The object's resolved schema.
-	 * @param DeletionWindow|null $window The published recovery window.
+	 * @param DeletionWindowInterface|null $window The published recovery window.
 	 * @param bool $force Whether the caller explicitly waived the window.
 	 *
 	 * @return JSONResponse The destruction record, or the scope refusal.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	private function performDestruction(ObjectEntity $object, ?Schema $schema, ?DeletionWindow $window, bool $force): JSONResponse {
+	private function performDestruction(ObjectEntity $object, ?Schema $schema, ?DeletionWindowInterface $window, bool $force): JSONResponse {
 		try {
-			$scopeReport = $this->services->store->deletion->scope->destroy(object: $object, schema: $schema);
-			$record = $this->services->store->deletion->recorder->record(
+			$scopeReport = $this->services->store->deletion->destruction->scope->destroy(object: $object, schema: $schema);
+			$record = $this->services->store->deletion->destruction->recorder->record(
 				object: $object,
 				scope: $scopeReport,
 				rule: 'destroy-right-granted',
@@ -840,7 +849,7 @@ class DeletedController extends Controller {
 			return new JSONResponse(
 				data: [
 					'objectUuid' => (string)$object->getUuid(),
-					'preview' => $this->services->store->deletion->scope->preview(object: $object, schema: $schema),
+					'preview' => $this->services->store->deletion->destruction->scope->preview(object: $object, schema: $schema),
 					'deletionWindow' => $window?->toArray(),
 					'clocks' => $this->services->store->deletion->clock->clocksFor(object: $object),
 				]
@@ -887,7 +896,7 @@ class DeletedController extends Controller {
 			$records = $this->services->access->authorizer->readableDestructionRecords(
 				records: $this->services->store->auditTrailMapper->findForObjectByAction(
 					objectUuid: $id,
-					actions: [DestructionScope::DESTRUCTION_ACTION]
+					actions: [DestructionActionInterface::DESTRUCTION_ACTION]
 				)
 			);
 
@@ -912,7 +921,7 @@ class DeletedController extends Controller {
 	/**
 	 * Permanently delete multiple objects
 	 *
-	 * Each soft-deleted object is gated through PermissionHandler with the
+	 * Each soft-deleted object is gated through PermissionHandlerInterface with the
 	 * `delete` action against the object's resolved schema. Admins bypass.
 	 * Objects whose schema cannot be resolved or for which the caller lacks
 	 * `delete` permission are skipped (counted as `failed`) so a partial
@@ -920,8 +929,6 @@ class DeletedController extends Controller {
 	 * wave-3 C4 finding (no RBAC on `destroyMultiple`).
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with multiple deletion result
 	 *
@@ -964,30 +971,17 @@ class DeletedController extends Controller {
 			foreach ($objects as $object) {
 				$foundIds[] = $object->getUuid();
 
+				// The lookup's rows are slim: each is read in full, then the delete right and every refusal of the single route.
 				try {
-					// An archival record is never purged, in bulk or singly.
-					// Counted as failed rather than aborting the batch, so one
-					// retained row does not strand the rest of the cleanup.
-					if ($this->services->access->authorizer->archivalRefusal(object: $object) !== null) {
-						$failed++;
+					$full = $this->fullDeletedRow(uuid: (string)$object->getUuid());
+					if ($this->services->access->authorizer->userMayActOnDeletedObject(object: $full, action: 'delete') === true
+						&& $this->destroyFound(object: $full)->getStatus() === 200
+					) {
+						$deleted++;
 						continue;
 					}
 
-					if ($object->isSoftDeleted() === false) {
-						// Object exists but is not deleted.
-						$failed++;
-						continue;
-					}
-
-					// Per-object RBAC gate: caller must have `delete`
-					// permission on the resolved schema (admins bypass).
-					if ($this->services->access->authorizer->userMayActOnDeletedObject(object: $object, action: 'delete') === false) {
-						$failed++;
-						continue;
-					}
-
-					$this->services->store->objectEntityMapper->delete($object);
-					$deleted++;
+					$failed++;
 				} catch (\Exception $e) {
 					$failed++;
 				}

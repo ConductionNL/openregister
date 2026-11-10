@@ -42,7 +42,7 @@ use OCP\IConfig;
  *
  * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
  */
-class JobScheduleService {
+class JobScheduleService implements JobScheduleServiceInterface {
 
 	/**
 	 * The app the administered schedules belong to.
@@ -107,23 +107,19 @@ class JobScheduleService {
 	/**
 	 * Administer one job's schedule.
 	 *
-	 * @param string    $jobClass        The job class.
-	 * @param bool|null $enabled         Whether it may run at all.
-	 * @param int|null  $intervalSeconds How often it is due.
-	 * @param int|null  $windowStartHour The first hour it may run in, 0-23.
-	 * @param int|null  $windowEndHour   The last hour it may run in, 0-23.
+	 * @param string            $jobClass The job class.
+	 * @param JobScheduleChange $change   What to change; a null part is left as it is.
 	 *
 	 * @return array<string, mixed> The schedule now in force.
 	 *
 	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
-	public function administer(
-		string $jobClass,
-		?bool $enabled = null,
-		?int $intervalSeconds = null,
-		?int $windowStartHour = null,
-		?int $windowEndHour = null,
-	): array {
+	public function administer(string $jobClass, JobScheduleChange $change): array {
+		$enabled         = $change->enabled;
+		$intervalSeconds = $change->intervalSeconds;
+		$windowStartHour = $change->windowStartHour;
+		$windowEndHour   = $change->windowEndHour;
+
 		$schedule = $this->read(jobClass: $jobClass);
 
 		if ($enabled !== null) {

@@ -29,12 +29,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Db\BulkJob;
-use OCA\OpenRegister\Db\BulkJobMapper;
-use OCA\OpenRegister\Service\BulkJob\BulkJobService;
+use OCA\OpenRegister\Db\BulkJobMapperInterface;
+use OCA\OpenRegister\Service\BulkJob\BulkJobServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJobList;
 use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\BackgroundJob\Support\BulkJobServices;
 
 /**
  * Background executor for bulk action jobs.
@@ -43,21 +44,35 @@ use Psr\Log\LoggerInterface;
  */
 class BulkJobRunner extends QueuedJob {
 	/**
+	 * Job persistence.
+	 *
+	 * @var BulkJobMapperInterface
+	 */
+	private readonly BulkJobMapperInterface $jobMapper;
+
+	/**
+	 * The lifecycle service.
+	 *
+	 * @var BulkJobServiceInterface
+	 */
+	private readonly BulkJobServiceInterface $bulkJobService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Time factory.
-	 * @param BulkJobMapper $jobMapper Job persistence.
-	 * @param BulkJobService $bulkJobService The lifecycle service.
-	 * @param IJobList $jobList Job list for re-enqueue.
-	 * @param LoggerInterface $logger Logger.
+	 * @param ITimeFactory            $time           Time factory.
+	 * @param BulkJobServices $services Bulk job store and slice runner.
+	 * @param IJobList                $jobList        Job list for re-enqueue.
+	 * @param LoggerInterface         $logger         Logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly BulkJobMapper $jobMapper,
-		private readonly BulkJobService $bulkJobService,
+		BulkJobServices $services,
 		private readonly IJobList $jobList,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->jobMapper = $services->jobMapper;
+		$this->bulkJobService = $services->bulkJobService;
 		parent::__construct(time: $time);
 
 	}//end __construct()

@@ -23,6 +23,8 @@ use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidationErrorMessages;
+use OCA\OpenRegister\Service\Object\ValidationLookups;
+use OCA\OpenRegister\Service\Object\ValidationSchemaSource;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
@@ -84,12 +86,9 @@ class ValidateObjectCoverageTest extends TestCase {
 			->willReturn('http://localhost:8080');
 
 		$this->handler = new ValidateObject(
-			$this->config,
-			$this->objectMapper,
-			$this->schemaMapper,
-			$this->urlGenerator,
-			$this->logger,
-			$this->createMock(\OCP\IUserManager::class)
+			schemas: new ValidationSchemaSource(config: $this->config, schemaMapper: $this->schemaMapper, urlGenerator: $this->urlGenerator),
+			lookups: new ValidationLookups(objectMapper: $this->objectMapper, userManager: $this->createMock(\OCP\IUserManager::class)),
+			logger: $this->logger
 		);
 	}
 

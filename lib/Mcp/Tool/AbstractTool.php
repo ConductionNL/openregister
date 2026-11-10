@@ -30,6 +30,7 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
+use ReflectionNamedType;
 
 /**
  * Abstract Tool Base Class
@@ -69,15 +70,11 @@ abstract class AbstractTool implements ToolInterface {
 	/**
 	 * Constructor
 	 *
-	 * @param IUserSession $userSession User session service
-	 * @param LoggerInterface $logger Logger service
+	 * @param ToolCallTrail $trail The session that names the caller and the log of each call.
 	 */
-	public function __construct(
-		IUserSession $userSession,
-		LoggerInterface $logger,
-	) {
-		$this->userSession = $userSession;
-		$this->logger = $logger;
+	public function __construct(ToolCallTrail $trail) {
+		$this->userSession = $trail->userSession;
+		$this->logger = $trail->logger;
 	}//end __construct()
 
 	/**
@@ -95,6 +92,138 @@ abstract class AbstractTool implements ToolInterface {
 	public function setAgent(?Agent $agent): void {
 		$this->agent = $agent;
 	}//end setAgent()
+
+	/**
+	 * The function rows of the tool; a subclass redeclares it.
+	 *
+	 * @var array<int, array<int, mixed>>
+	 */
+	protected const FUNCTIONS = [];
+
+	/**
+	 * Get function definitions for LLphant, expanded from the FUNCTIONS rows.
+	 *
+	 * @return array<int, array<string, mixed>> Array of function definitions
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getFunctions(): array {
+		return ToolFunctionTable::expand(rows: static::FUNCTIONS);
+	}//end getFunctions()
+
+	/**
+	 * Run a function for a tool that refuses a call without a user context.
+	 *
+	 * The user context is checked before the function runs; a failure of the
+	 * function is logged and returned as an error result.
+	 *
+	 * @param ToolCall    $call   The function and the parameters the model sent
+	 * @param string|null $userId Explicit user id, if any
+	 *
+	 * @return array The function result, or an error result
+	 */
+	protected function executeWithUser(ToolCall $call, ?string $userId): array {
+		$this->log(call: $call);
+
+		if ($this->hasUserContext(explicitUserId: $userId) === false) {
+			return $this->formatError(message: 'No user context available. Tool cannot execute without user session.');
+		}
+
+		try {
+			return $this->invokeFunction(functionName: $call->functionName, parameters: $call->parameters);
+		} catch (\Exception $e) {
+			$this->log(call: $call, options: new ToolLogOptions(level: 'error', message: $e->getMessage()));
+			return $this->formatError(message: $e->getMessage());
+		}
+	}//end executeWithUser()
+
+	/**
+	 * Call the function's camelCase method with the parameters by position
+	 * (LLPhant-compatible).
+	 *
+	 * @param string       $functionName The snake_case function name
+	 * @param array<mixed> $parameters   The parameters the model sent
+	 *
+	 * @return array The method's result
+	 */
+	protected function invokeFunction(string $functionName, array $parameters): array {
+		$methodName = $this->functionMethod(functionName: $functionName);
+
+		return $this->callMethod(methodName: $methodName, arguments: array_values($parameters));
+	}//end invokeFunction()
+
+	/**
+	 * The signature the model's arguments bind to: the method's own
+	 * parameters, or the constructor of the operation object it takes.
+	 *
+	 * @param string $methodName The camelCase method name
+	 *
+	 * @return ReflectionMethod The binding signature
+	 */
+	protected function bindingTarget(string $methodName): ReflectionMethod {
+		$method    = new ReflectionMethod($this, $methodName);
+		$operation = $this->operationClass(method: $method);
+		if ($operation === null) {
+			return $method;
+		}
+
+		return new ReflectionMethod($operation, '__construct');
+	}//end bindingTarget()
+
+	/**
+	 * Call a tool method with bound arguments, built into its operation
+	 * object first when the method takes one.
+	 *
+	 * @param string       $methodName The camelCase method name
+	 * @param array<mixed> $arguments  The arguments, bound to {@see bindingTarget()}
+	 *
+	 * @return mixed The method's result
+	 */
+	protected function callMethod(string $methodName, array $arguments): mixed {
+		if (method_exists($this, $methodName) === false) {
+			// Reaches __call(), which refuses an unknown function.
+			return $this->$methodName(...$arguments);
+		}
+
+		$operation = $this->operationClass(method: new ReflectionMethod($this, $methodName));
+		if ($operation === null) {
+			return $this->$methodName(...$arguments);
+		}
+
+		return $this->$methodName(new $operation(...$arguments));
+	}//end callMethod()
+
+	/**
+	 * The operation class a tool method takes as its one parameter, if any.
+	 *
+	 * @param ReflectionMethod $method The tool method
+	 *
+	 * @return class-string<ToolOperation>|null The operation class, or null when the method takes its arguments one by one
+	 */
+	private function operationClass(ReflectionMethod $method): ?string {
+		$parameters = $method->getParameters();
+		$type       = null;
+		if (count($parameters) === 1) {
+			$type = $parameters[0]->getType();
+		}
+
+		if ($type instanceof ReflectionNamedType === false || is_subclass_of($type->getName(), ToolOperation::class) === false) {
+			return null;
+		}
+
+		return $type->getName();
+	}//end operationClass()
+
+	/**
+	 * The camelCase method of a snake_case function name, for PSR compliance.
+	 *
+	 * @param string $functionName The snake_case function name
+	 *
+	 * @return string The method name
+	 */
+	protected function functionMethod(string $functionName): string {
+		return lcfirst(str_replace('_', '', ucwords($functionName, '_')));
+	}//end functionMethod()
 
 	/**
 	 * Get the current user ID
@@ -224,10 +353,8 @@ abstract class AbstractTool implements ToolInterface {
 	 * function name, parameters, agent ID, and user ID. Supports different log levels
 	 * for error tracking and debugging.
 	 *
-	 * @param string $functionName Function being executed
-	 * @param array $parameters Function parameters (will be logged in context)
-	 * @param string $level Log level: 'info', 'warning', or 'error' (default: 'info')
-	 * @param string $message Custom log message (default: 'Executing function')
+	 * @param ToolCall            $call    Function being executed and its parameters (logged in context)
+	 * @param ToolLogOptions|null $options The level and custom message; null logs 'Executing function' at info
 	 *
 	 * @return void
 	 *
@@ -235,23 +362,37 @@ abstract class AbstractTool implements ToolInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	protected function log(string $functionName, array $parameters, string $level = 'info', string $message = ''): void {
+	protected function log(ToolCall $call, ?ToolLogOptions $options = null): void {
+		$this->writeLog(call: $call, entry: ($options ?? new ToolLogOptions()));
+	}//end log()
+
+	/**
+	 * Write the log entry of a tool function call.
+	 *
+	 * @param ToolCall       $call  The function and its parameters.
+	 * @param ToolLogOptions $entry The log level and custom message (empty for the default).
+	 *
+	 * @return void
+	 *
+	 * @psalm-suppress PossiblyNullArgument
+	 */
+	private function writeLog(ToolCall $call, ToolLogOptions $entry): void {
 		// Build context array with tool execution metadata.
 		// Includes tool name, function name, parameters, agent ID, and user ID.
 		$context = [
 			'file' => __FILE__,
 			'line' => __LINE__,
 			'tool' => $this->getName(),
-			'function' => $functionName,
-			'parameters' => $parameters,
+			'function' => $call->functionName,
+			'parameters' => $call->parameters,
 			'agent' => $this->agent?->getId(),
 			'user' => $this->getUserId(),
 		];
 
 		// Use custom message if provided, otherwise use default message.
 		$messageText = 'Executing function';
-		if ($message !== '') {
-			$messageText = $message;
+		if ($entry->message !== '') {
+			$messageText = $entry->message;
 		}
 
 		// Format log message with class name, tool name, function name, and message text.
@@ -261,7 +402,7 @@ abstract class AbstractTool implements ToolInterface {
 			'[%s] %s: %s: %s',
 			$className,
 			$toolName,
-			$functionName,
+			$call->functionName,
 			$messageText
 		);
 
@@ -269,7 +410,7 @@ abstract class AbstractTool implements ToolInterface {
 		// Different log levels help filter and prioritize log entries.
 		// Add file and line to context for all log calls.
 		$contextWithLocation = array_merge(['file' => __FILE__, 'line' => __LINE__], $context);
-		switch ($level) {
+		switch ($entry->level) {
 			case 'error':
 				// Log errors for critical issues that need attention.
 				$this->logger->error(message: $logMessage, context: $contextWithLocation);
@@ -283,7 +424,7 @@ abstract class AbstractTool implements ToolInterface {
 				$this->logger->info(message: $logMessage, context: $contextWithLocation);
 				break;
 		}
-	}//end log()
+	}//end writeLog()
 
 	/**
 	 * Validate required parameters
@@ -336,10 +477,6 @@ abstract class AbstractTool implements ToolInterface {
 	 * @psalm-suppress MixedArgument
 	 * @psalm-suppress MixedMethodCall
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex type coercion for LLM compatibility
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple type conversion paths
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive type handling
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __call(string $name, array $arguments) {
@@ -351,87 +488,30 @@ abstract class AbstractTool implements ToolInterface {
 		$camelCaseMethod = lcfirst(str_replace('_', '', ucwords($name, '_')));
 
 		// Step 2: Check if camelCase method exists.
-		if (method_exists($this, $camelCaseMethod) === true) {
-			// Step 3: Use reflection to get method parameter information.
-			// This allows us to understand expected types and default values.
-			$reflection = new ReflectionMethod($this, $camelCaseMethod);
-			$parameters = $reflection->getParameters();
+		if (method_exists($this, $camelCaseMethod) === false) {
+			// Method doesn't exist in either snake_case or camelCase format.
+			throw new BadMethodCallException("Method {$name} (or {$camelCaseMethod}) does not exist");
+		}
 
-			// Step 4: Determine if arguments are associative (named) or positional.
-			// Associative arrays have non-sequential keys (e.g., ['param1' => 'value']).
-			// Positional arrays have sequential numeric keys (e.g., [0 => 'value', 1 => 'value']).
-			$isAssociative = array_keys($arguments) !== range(0, count($arguments) - 1);
+		// Steps 3-5: Match the arguments to the method's parameters, or to the
+		// constructor of the operation object it takes (named or positional),
+		// apply defaults for (string) null and type-cast the rest.
+		$coercer = new ToolArgumentCoercer();
+		$typedArguments = $coercer->argumentsFor(
+			method: $this->bindingTarget(methodName: $camelCaseMethod),
+			arguments: $arguments
+		);
 
-			// Step 5: Process each parameter and type-cast arguments.
-			$typedArguments = [];
-			foreach ($parameters as $index => $param) {
-				$paramName = $param->getName();
+		// Step 6: Call the camelCase method with type-cast arguments.
+		$result = $this->callMethod(methodName: $camelCaseMethod, arguments: $typedArguments);
 
-				// Step 5a: Extract argument value.
-				// Priority: named argument > positional argument > null.
-				// Use positional argument as default.
-				$value = $arguments[$index] ?? null;
-				if ($isAssociative === true && (($arguments[$paramName] ?? null) !== null)) {
-					// Use named argument if available (associative array).
-					$value = $arguments[$paramName];
-				}
+		// Step 7: Convert array results to JSON for LLPhant compatibility.
+		// LLPhant expects tool results to be JSON strings, not PHP arrays.
+		if (is_array($result) === true) {
+			return json_encode($result);
+		}
 
-				// Step 5b: Handle null values and string 'null' from LLM.
-				// LLMs sometimes return string 'null' instead of actual null value.
-				if ($value === 'null' || $value === null) {
-					// Use default value if parameter has one, otherwise null.
-					$value = null;
-					if ($param->isDefaultValueAvailable() === true) {
-						$value = $param->getDefaultValue();
-					}
-				} elseif ($param->hasType() === true) {
-					// Step 5c: Type-cast argument to match method signature.
-					// This ensures type safety when LLM provides loosely-typed values.
-					$type = $param->getType();
-					if ($type instanceof \ReflectionNamedType) {
-						$typeName = $type->getName();
-
-						if ($typeName === 'int') {
-							// Cast to integer type.
-							$value = (int)$value;
-						} elseif ($typeName === 'float') {
-							// Cast to float type.
-							$value = (float)$value;
-						} elseif ($typeName === 'bool') {
-							// Cast to boolean type using filter_var for proper conversion.
-							// Handles 'true', 'false', '1', '0', etc.
-							$value = filter_var($value, FILTER_VALIDATE_BOOLEAN);
-						} elseif ($typeName === 'string') {
-							// Cast to string type.
-							$value = (string)$value;
-						} elseif ($typeName === 'array') {
-							// Cast to array type.
-							// If already array, keep it; otherwise convert to empty array.
-							if (is_array($value) !== true) {
-								$value = [];
-							}
-						}//end if
-					}//end if
-				}//end if
-
-				// Add processed argument to typed arguments array.
-				$typedArguments[] = $value;
-			}//end foreach
-
-			// Step 6: Call the camelCase method with type-cast arguments.
-			$result = $this->$camelCaseMethod(...$typedArguments);
-
-			// Step 7: Convert array results to JSON for LLPhant compatibility.
-			// LLPhant expects tool results to be JSON strings, not PHP arrays.
-			if (is_array($result) === true) {
-				return json_encode($result);
-			}
-
-			// Return non-array results as-is.
-			return $result;
-		}//end if
-
-		// Method doesn't exist in either snake_case or camelCase format.
-		throw new BadMethodCallException("Method {$name} (or {$camelCaseMethod}) does not exist");
+		// Return non-array results as-is.
+		return $result;
 	}//end __call()
 }//end class

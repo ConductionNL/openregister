@@ -63,19 +63,41 @@ final class LifecycleTransitionsValidator {
 	 */
 	public function validate(array $states, ?string $initial, array $transitions, ?array $knownGuards=null): array {
 		$check = new LifecycleGraphCheck(states: $states, knownGuards: $knownGuards);
+		$this->checkStates(initial: $initial, check: $check);
+		$this->checkTransitions(transitions: $transitions, check: $check);
+		$this->checkUnreachable(initial: $initial, check: $check);
+		return $check->errors();
+	}//end validate()
+
+	/**
+	 * Refuse an empty state list, then check the initial state against it.
+	 *
+	 * @param string|null         $initial The initial state.
+	 * @param LifecycleGraphCheck $check   The graph and the errors found so far.
+	 *
+	 * @return void
+	 */
+	private function checkStates(?string $initial, LifecycleGraphCheck $check): void {
 		if ($check->stateNames === []) {
 			$check->addError(code: 'lifecycle-states-empty', message: 'A lifecycle must declare at least one named state.');
 		}
 
 		$this->checkInitial(initial: $initial, check: $check);
+	}//end checkStates()
+
+	/**
+	 * Check every declared transition, in declaration order.
+	 *
+	 * @param array<int|string, mixed> $transitions A list, or a map keyed by action, of `{from, to, guards?}`.
+	 * @param LifecycleGraphCheck      $check       The graph and the errors found so far.
+	 *
+	 * @return void
+	 */
+	private function checkTransitions(array $transitions, LifecycleGraphCheck $check): void {
 		foreach ($transitions as $action => $spec) {
 			$this->checkTransition(transition: ['label' => $this->label(action: $action), 'spec' => $spec], check: $check);
 		}
-
-		$this->checkUnreachable(initial: $initial, check: $check);
-
-		return $check->errors();
-	}//end validate()
+	}//end checkTransitions()
 
 	/**
 	 * Check the initial state.
@@ -86,7 +108,7 @@ final class LifecycleTransitionsValidator {
 	 * @return void
 	 */
 	private function checkInitial(?string $initial, LifecycleGraphCheck $check): void {
-		if ($initial === null || $initial === '') {
+		if (in_array($initial, [null, ''], true) === true) {
 			$check->addError(code: 'lifecycle-initial-missing', message: 'A lifecycle must declare its initial state.');
 			return;
 		}
@@ -200,12 +222,25 @@ final class LifecycleTransitionsValidator {
 			$list = [$from];
 		}
 
-		if (is_array($list) === false || $list === [] || self::allNonEmptyStrings(values: $list) === false) {
+		if (self::isStateList(list: $list) === false) {
 			return null;
 		}
 
 		return array_values($list);
 	}//end fromStates()
+
+	/**
+	 * Whether a value is a non-empty list of non-empty state names.
+	 *
+	 * @param mixed $list The value.
+	 *
+	 * @return bool True when it is.
+	 *
+	 * @phpstan-assert-if-true array<mixed> $list
+	 */
+	private static function isStateList(mixed $list): bool {
+		return is_array($list) === true && $list !== [] && self::allNonEmptyStrings(values: $list) === true;
+	}//end isStateList()
 
 	/**
 	 * Whether every value is a non-empty string.

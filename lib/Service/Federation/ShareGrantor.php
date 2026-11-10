@@ -39,7 +39,7 @@ use OCP\IUserSession;
  *
  * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
  */
-class ShareGrantor {
+class ShareGrantor implements ShareGrantorInterface {
 
 	/**
 	 * Constructor.

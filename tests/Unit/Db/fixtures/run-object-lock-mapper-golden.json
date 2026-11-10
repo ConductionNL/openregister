@@ -1,0 +1,213 @@
+{
+    "record, new": {
+        "result": null,
+        "queries": [
+            "#1 insert(openregister_run_object_locks)",
+            "#1 param :p1 = run-1, 2",
+            "#1 setValue(run_uuid, :p1)",
+            "#1 param :p2 = obj-1, 2",
+            "#1 setValue(object_uuid, :p2)",
+            "#1 param :p3 = 7, 2",
+            "#1 setValue(register_id, :p3)",
+            "#1 param :p4 = 8, 2",
+            "#1 setValue(schema_id, :p4)",
+            "#1 param :p5 = node-a, 2",
+            "#1 setValue(node_id, :p5)",
+            "#1 param :p6 = DateTime(2026-03-04 05:00:00 UTC), datetime",
+            "#1 setValue(locked_at, :p6)",
+            "#1 param :p7 = DateTime(2026-03-04 06:00:00 UTC), datetime",
+            "#1 setValue(expires_at, :p7)",
+            "#1 executeStatement()"
+        ]
+    },
+    "record, duplicate": {
+        "result": null,
+        "queries": [
+            "#1 update(openregister_run_object_locks, NULL)",
+            "#1 param :p1 = DateTime(2026-03-04 06:00:00 UTC), datetime",
+            "#1 set(expires_at, :p1)",
+            "#1 param :p2 = node-a, 2",
+            "#1 set(node_id, :p2)",
+            "#1 param :p3 = run-1, 2",
+            "#1 expr.eq(run_uuid, :p3, NULL)",
+            "#1 where(eq(run_uuid, :p3, NULL))",
+            "#1 param :p4 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p4, NULL)",
+            "#1 andWhere(eq(object_uuid, :p4, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "record, other failure": {
+        "thrown": "DbException reason 7",
+        "queries": []
+    },
+    "findByRun": {
+        "result": [
+            [
+                1,
+                "r1"
+            ],
+            [
+                2,
+                "r2"
+            ]
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_run_object_locks, NULL)",
+            "#1 param :p1 = run-1, 2",
+            "#1 expr.eq(run_uuid, :p1, NULL)",
+            "#1 where(eq(run_uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findByRun, none": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_run_object_locks, NULL)",
+            "#1 param :p1 = run-1, 2",
+            "#1 expr.eq(run_uuid, :p1, NULL)",
+            "#1 where(eq(run_uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "forgetRun": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_run_object_locks, NULL)",
+            "#1 param :p1 = run-1, 2",
+            "#1 expr.eq(run_uuid, :p1, NULL)",
+            "#1 where(eq(run_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "forget": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_run_object_locks, NULL)",
+            "#1 param :p1 = run-1, 2",
+            "#1 expr.eq(run_uuid, :p1, NULL)",
+            "#1 where(eq(run_uuid, :p1, NULL))",
+            "#1 param :p2 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p2, NULL)",
+            "#1 andWhere(eq(object_uuid, :p2, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "findOrphaned, default limit": {
+        "result": [
+            [
+                1,
+                "r1"
+            ],
+            [
+                2,
+                "r2"
+            ],
+            [
+                3,
+                "r3"
+            ]
+        ],
+        "queries": [
+            "#2 select(uuid)",
+            "#2 from(openregister_flow_runs, NULL)",
+            "#1 param :p1 = [\"queued\",\"running\",\"suspended\",\"awaiting_consent\"], 102",
+            "#2 expr.in(status, :p1, NULL)",
+            "#2 where(in(status, :p1, NULL))",
+            "#1 select(*)",
+            "#1 from(openregister_run_object_locks, NULL)",
+            "#1 where(run_uuid NOT IN ((subquery #2)))",
+            "#1 setMaxResults(100)",
+            "#1 executeQuery()",
+            "#3 select(*)",
+            "#3 from(openregister_run_object_locks, NULL)",
+            "#3 param :p2 = DateTime(2026-03-04 05:06:07 UTC), datetime",
+            "#3 expr.lt(expires_at, :p2, NULL)",
+            "#3 where(lt(expires_at, :p2, NULL))",
+            "#3 setMaxResults(100)",
+            "#3 executeQuery()"
+        ]
+    },
+    "findOrphaned, limit cuts merged": {
+        "result": [
+            [
+                5,
+                "r5"
+            ],
+            [
+                1,
+                "r1"
+            ]
+        ],
+        "queries": [
+            "#2 select(uuid)",
+            "#2 from(openregister_flow_runs, NULL)",
+            "#1 param :p1 = [\"queued\",\"running\",\"suspended\",\"awaiting_consent\"], 102",
+            "#2 expr.in(status, :p1, NULL)",
+            "#2 where(in(status, :p1, NULL))",
+            "#1 select(*)",
+            "#1 from(openregister_run_object_locks, NULL)",
+            "#1 where(run_uuid NOT IN ((subquery #2)))",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()",
+            "#3 select(*)",
+            "#3 from(openregister_run_object_locks, NULL)",
+            "#3 param :p2 = DateTime(2026-03-04 05:06:07 UTC), datetime",
+            "#3 expr.lt(expires_at, :p2, NULL)",
+            "#3 where(lt(expires_at, :p2, NULL))",
+            "#3 setMaxResults(2)",
+            "#3 executeQuery()"
+        ]
+    },
+    "findOrphaned, nothing": {
+        "result": [],
+        "queries": [
+            "#2 select(uuid)",
+            "#2 from(openregister_flow_runs, NULL)",
+            "#1 param :p1 = [\"queued\",\"running\",\"suspended\",\"awaiting_consent\"], 102",
+            "#2 expr.in(status, :p1, NULL)",
+            "#2 where(in(status, :p1, NULL))",
+            "#1 select(*)",
+            "#1 from(openregister_run_object_locks, NULL)",
+            "#1 where(run_uuid NOT IN ((subquery #2)))",
+            "#1 setMaxResults(7)",
+            "#1 executeQuery()",
+            "#3 select(*)",
+            "#3 from(openregister_run_object_locks, NULL)",
+            "#3 param :p2 = DateTime(2026-03-04 05:06:07 UTC), datetime",
+            "#3 expr.lt(expires_at, :p2, NULL)",
+            "#3 where(lt(expires_at, :p2, NULL))",
+            "#3 setMaxResults(7)",
+            "#3 executeQuery()"
+        ]
+    },
+    "findOrphaned, only expired": {
+        "result": [
+            [
+                9,
+                "r9"
+            ]
+        ],
+        "queries": [
+            "#2 select(uuid)",
+            "#2 from(openregister_flow_runs, NULL)",
+            "#1 param :p1 = [\"queued\",\"running\",\"suspended\",\"awaiting_consent\"], 102",
+            "#2 expr.in(status, :p1, NULL)",
+            "#2 where(in(status, :p1, NULL))",
+            "#1 select(*)",
+            "#1 from(openregister_run_object_locks, NULL)",
+            "#1 where(run_uuid NOT IN ((subquery #2)))",
+            "#1 setMaxResults(3)",
+            "#1 executeQuery()",
+            "#3 select(*)",
+            "#3 from(openregister_run_object_locks, NULL)",
+            "#3 param :p2 = DateTime(2026-03-04 05:06:07 UTC), datetime",
+            "#3 expr.lt(expires_at, :p2, NULL)",
+            "#3 where(lt(expires_at, :p2, NULL))",
+            "#3 setMaxResults(3)",
+            "#3 executeQuery()"
+        ]
+    }
+}

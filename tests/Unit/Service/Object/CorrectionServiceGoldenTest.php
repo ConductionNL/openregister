@@ -157,9 +157,9 @@ class CorrectionServiceGoldenTest extends TestCase {
 			}
 		};
 
-		$service = new CorrectionService(objectService: $objects, auditTrailMapper: $audit, actionAuth: $auth, userSession: $session, logger: $logger);
+		$service = new CorrectionService(objectService: $objects, actionAuth: $auth, userSession: $session, auditing: new \OCA\OpenRegister\Service\Object\CorrectionAuditing(auditTrailMapper: $audit, logger: $logger));
 		try {
-			$result = $service->correct('reg', 'sch', 'id-1', $o['values'] ?? ['name' => 'new', '@self' => 1, '_x' => 1, 'id' => 1, 'uuid' => 1, 'register' => 1, 'schema' => 1, 0 => 'zero'], (array_key_exists('reason', $o) === true ? $o['reason'] : '  typo '));
+			$result = $service->correct(new \OCA\OpenRegister\Service\Object\CorrectionTarget('reg', 'sch', 'id-1'), $o['values'] ?? ['name' => 'new', '@self' => 1, '_x' => 1, 'id' => 1, 'uuid' => 1, 'register' => 1, 'schema' => 1, 0 => 'zero'], (array_key_exists('reason', $o) === true ? $o['reason'] : '  typo '));
 			$outcome = ['object' => $result['object']->getObject(), 'audit' => $result['audit']?->getAction(), 'changed' => $result['audit']?->getChanged()];
 		} catch (\Throwable $e) {
 			$outcome = ['threw' => get_class($e), 'message' => $e->getMessage(), 'code' => $e->getCode(), 'previous' => $e->getPrevious()?->getMessage()];

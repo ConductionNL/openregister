@@ -301,6 +301,17 @@ class ImportPreview extends Entity implements JsonSerializable {
 	 * Constructor — registers field types for hydration.
 	 */
 	public function __construct() {
+		$this->addSourceTypes();
+		$this->addProgressTypes();
+
+	}//end __construct()
+
+	/**
+	 * Register the types of the columns that describe what is imported, how.
+	 *
+	 * @return void
+	 */
+	private function addSourceTypes(): void {
 		$this->addType(fieldName: 'uuid', type: 'string');
 		$this->addType(fieldName: 'registerId', type: 'integer');
 		$this->addType(fieldName: 'schemaId', type: 'integer');
@@ -312,6 +323,15 @@ class ImportPreview extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'sourceHash', type: 'string');
 		$this->addType(fieldName: 'sourcePath', type: 'string');
 		$this->addType(fieldName: 'state', type: 'string');
+
+	}//end addSourceTypes()
+
+	/**
+	 * Register the types of the counters, report and bookkeeping columns.
+	 *
+	 * @return void
+	 */
+	private function addProgressTypes(): void {
 		$this->addType(fieldName: 'total', type: 'integer');
 		$this->addType(fieldName: 'processed', type: 'integer');
 		$this->addType(fieldName: 'toCreate', type: 'integer');
@@ -325,7 +345,7 @@ class ImportPreview extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'created', type: 'datetime');
 		$this->addType(fieldName: 'updated', type: 'datetime');
 
-	}//end __construct()
+	}//end addProgressTypes()
 
 	/**
 	 * Whether the decisions may still be committed.
@@ -342,6 +362,15 @@ class ImportPreview extends Entity implements JsonSerializable {
 	 * @return array<string, mixed> The serialised preview.
 	 */
 	public function jsonSerialize(): array {
+		return array_merge($this->sourceJson(), $this->progressJson());
+	}//end jsonSerialize()
+
+	/**
+	 * What is imported, into where, and how.
+	 *
+	 * @return array<string, mixed> The source half of the serialisation.
+	 */
+	private function sourceJson(): array {
 		return [
 			'id' => $this->id,
 			'uuid' => $this->uuid,
@@ -353,15 +382,20 @@ class ImportPreview extends Entity implements JsonSerializable {
 			'sourceName' => $this->sourceName,
 			'sourceFormat' => $this->sourceFormat,
 			'sourceHash' => $this->sourceHash,
+		];
+	}//end sourceJson()
+
+	/**
+	 * Where the preview stands: state, counters, report and bookkeeping.
+	 *
+	 * @return array<string, mixed> The progress half of the serialisation.
+	 */
+	private function progressJson(): array {
+		return [
 			'state' => $this->state,
 			'total' => $this->total,
 			'processed' => $this->processed,
-			'counts' => [
-				'created' => $this->toCreate,
-				'updated' => $this->toUpdate,
-				'skipped' => $this->toSkip,
-				'refused' => $this->toRefuse,
-			],
+			'counts' => $this->countsJson(),
 			'applied' => $this->applied,
 			'failed' => $this->failed,
 			'report' => ($this->report ?? []),
@@ -369,5 +403,19 @@ class ImportPreview extends Entity implements JsonSerializable {
 			'created' => $this->created?->format('c'),
 			'updated' => $this->updated?->format('c'),
 		];
-	}//end jsonSerialize()
+	}//end progressJson()
+
+	/**
+	 * The per-decision row counts.
+	 *
+	 * @return array<string, int|null> The counts.
+	 */
+	private function countsJson(): array {
+		return [
+			'created' => $this->toCreate,
+			'updated' => $this->toUpdate,
+			'skipped' => $this->toSkip,
+			'refused' => $this->toRefuse,
+		];
+	}//end countsJson()
 }//end class

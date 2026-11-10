@@ -22,11 +22,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
-use OCA\OpenRegister\Service\Flow\FlowItems;
-use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
-use OCA\OpenRegister\Service\Flow\FlowLocator;
-use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\FlowTestRunControllerServices;
+use OCA\OpenRegister\Service\Flow\FlowDeadEndInterface;
+use OCA\OpenRegister\Service\Flow\FlowLifecycleRefusedInterface;
+use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
+use OCA\OpenRegister\Service\Flow\FlowRunnableGuardInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -49,24 +50,48 @@ use stdClass;
 class FlowTestRunController extends Controller {
 
 	/**
+	 * Queues and executes a run.
+	 *
+	 * @var FlowRunServiceInterface
+	 */
+	private readonly FlowRunServiceInterface $runner;
+
+	/**
+	 * Resolves the flow being tested.
+	 *
+	 * @var FlowLocatorInterface
+	 */
+	private readonly FlowLocatorInterface $resolvers;
+
+	/**
+	 * Who is asking, for attribution.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Whether the caller may run and edit this flow.
+	 *
+	 * @var FlowRunnableGuardInterface
+	 */
+	private readonly FlowRunnableGuardInterface $guard;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string            $appName     The app id.
 	 * @param IRequest          $request     The request.
-	 * @param FlowRunServiceInterface    $runner      Queues and executes a run.
-	 * @param FlowLocator       $resolvers   Resolves the flow being tested.
-	 * @param IUserSession      $userSession Who is asking, for attribution.
-	 * @param FlowRunnableGuard $guard       Whether the caller may run and edit this flow.
+	 * @param FlowTestRunControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly FlowRunServiceInterface $runner,
-		private readonly FlowLocator $resolvers,
-		private readonly IUserSession $userSession,
-		private readonly FlowRunnableGuard $guard,
+		FlowTestRunControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->runner = $services->runner;
+		$this->resolvers = $services->resolvers;
+		$this->userSession = $services->userSession;
+		$this->guard = $services->guard;
 	}//end __construct()
 
 	/**
@@ -112,10 +137,6 @@ class FlowTestRunController extends Controller {
 	 * @NoAdminRequired
 	 *
 	 * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) FlowItems::normalise is a pure
-	 * value-normaliser with no state to inject; wrapping it in a collaborator
-	 * would add a constructor dependency to say the same thing.
 	 */
 	#[NoAdminRequired]
 	public function test(): JSONResponse {
@@ -139,18 +160,21 @@ class FlowTestRunController extends Controller {
 			return new JSONResponse(['error' => 'No such flow: ' . $flowId], Http::STATUS_NOT_FOUND);
 		}
 
-		$startAt = trim((string)$this->request->getParam('startAt', ''));
-		if ($startAt === '') {
-			$startAt = null;
-		}
+		return $this->runTest(flowId: $flowId, flow: $flow);
+	}//end test()
 
+	/**
+	 * Queue and execute the test run of a resolved flow.
+	 *
+	 * @param string $flowId The flow id.
+	 * @param array  $flow   The resolved flow definition.
+	 *
+	 * @return JSONResponse The run, or 409 when the engine declines to run it.
+	 */
+	private function runTest(string $flowId, array $flow): JSONResponse {
+		$startAt = $this->startAtParam();
 		$pins = (array)$this->request->getParam('pins', []);
-
-		$seed = null;
-		$seedParam = $this->request->getParam('seedItems');
-		if ($seedParam !== null) {
-			$seed = FlowItems::normalise(value: $seedParam);
-		}
+		$seed = $this->seedItemsParam();
 
 		// Attribute the test run to the caller. Without this the run is
 		// ownerless, so `context['triggeredBy']` is null and every
@@ -180,7 +204,7 @@ class FlowTestRunController extends Controller {
 				seedItems: $seed,
 				startAt: $startAt
 			);
-		} catch (FlowLifecycleRefused $e) {
+		} catch (FlowLifecycleRefusedInterface $e) {
 			return new JSONResponse(
 				[
 					'error' => $e->getMessage(),
@@ -190,7 +214,7 @@ class FlowTestRunController extends Controller {
 				],
 				Http::STATUS_CONFLICT
 			);
-		} catch (FlowDeadEnd $e) {
+		} catch (FlowDeadEndInterface $e) {
 			return new JSONResponse(
 				['error' => $e->getMessage(), 'reason' => 'dead-end', 'flowId' => $flowId],
 				Http::STATUS_CONFLICT
@@ -198,5 +222,33 @@ class FlowTestRunController extends Controller {
 		}//end try
 
 		return new JSONResponse($run->jsonSerialize());
-	}//end test()
+	}//end runTest()
+
+	/**
+	 * The node a test run starts at, or null to start at the trigger.
+	 *
+	 * @return string|null
+	 */
+	private function startAtParam(): string|null {
+		$startAt = trim((string)$this->request->getParam('startAt', ''));
+		if ($startAt === '') {
+			return null;
+		}
+
+		return $startAt;
+	}//end startAtParam()
+
+	/**
+	 * The items a test run is seeded with, normalised, or null when none are sent.
+	 *
+	 * @return array|null
+	 */
+	private function seedItemsParam(): array|null {
+		$seedParam = $this->request->getParam('seedItems');
+		if ($seedParam === null) {
+			return null;
+		}
+
+		return $this->runner->seedItemsFrom(value: $seedParam);
+	}//end seedItemsParam()
 }//end class

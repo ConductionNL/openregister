@@ -49,7 +49,7 @@ final class FormsControllerFactory {
 			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\FormsControllerServices(
-				mappers: new \OCA\OpenRegister\Controller\Support\FormsMappers(
+				mappers: new \OCA\OpenRegister\Controller\Support\FlowNodeRunMappers(
 					schemas: $schemas,
 				),
 				domain: new \OCA\OpenRegister\Controller\Support\FormsDomain(

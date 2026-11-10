@@ -20,6 +20,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoader;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -30,6 +33,7 @@ use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\RegisterDescriptorService;
 use OCA\OpenRegister\Service\Configuration\DescriptorConfigIds;
 use OCA\OpenRegister\Service\CountedRegisterImport;
+use OCA\OpenRegister\Service\RegisterImporters;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use Psr\Container\ContainerInterface;
 use OCP\App\IAppManager;
@@ -81,18 +85,20 @@ class RegisterDescriptorServiceTest extends TestCase {
 		$this->service = new RegisterDescriptorService(
 			$this->appManager,
 			$this->registerMapper,
-			$this->configurationService,
-			$this->createMock(LoggerInterface::class),
-			new CountedRegisterImport(
-				registerMapper: $this->registerMapper,
-				schemaMapper: $this->schemaMapper,
+			new RegisterImporters(
+				$this->configurationService,
+				new CountedRegisterImport(
+				catalog: new SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(MagicMapperInterface::class)),
 				decision: $this->decision
 			),
-			new AppRegisterImportRunner(
+				new AppRegisterImportRunner(
 				appManager: $this->appManager,
 				containers: $this->containers,
-				configurationService: $this->configurationService
+				configurationService: $this->configurationService,
+				documents: new RegisterDocumentLoader(appManager: $this->appManager)
 			)
+			),
+			$this->createMock(LoggerInterface::class)
 		);
 	}
 

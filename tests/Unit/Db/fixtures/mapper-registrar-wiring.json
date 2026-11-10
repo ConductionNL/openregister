@@ -2,7 +2,7 @@
     "OCA\\OpenRegister\\Db\\SchemaMapper": [
         "OCP\\IDBConnection",
         "OCP\\EventDispatcher\\IEventDispatcher",
-        "OCA\\OpenRegister\\Service\\Schemas\\PropertyValidatorHandler",
+        "OCA\\OpenRegister\\Service\\Schemas\\PropertyValidatorHandlerInterface",
         "OCA\\OpenRegister\\Db\\OrganisationMapperInterface",
         "OCP\\IUserSession",
         "OCP\\IGroupManager",
@@ -30,29 +30,28 @@
         "OCP\\IDBConnection",
         "OCA\\OpenRegister\\Db\\SchemaMapperInterface",
         "OCA\\OpenRegister\\Db\\RegisterMapperInterface",
-        "OCP\\IConfig",
-        "OCP\\EventDispatcher\\IEventDispatcher",
         "OCP\\IUserSession",
         "OCP\\IGroupManager",
         "OCP\\IUserManager",
+        "OCP\\IConfig",
         "OCP\\IAppConfig",
+        "OCP\\EventDispatcher\\IEventDispatcher",
         "Psr\\Log\\LoggerInterface",
-        "OCA\\OpenRegister\\Kernel\\Contracts\\AppSettingsInterface",
         "OCP\\ICacheFactory",
         "OCA\\OpenRegister\\Service\\ConditionMatcher",
-        "OCA\\OpenRegister\\Service\\Object\\SchemaTypeConverter",
-        "OCA\\OpenRegister\\Service\\DateTimeNormalizer",
-        "OCA\\OpenRegister\\Service\\LanguageService",
-        "OCA\\OpenRegister\\Service\\Rbac\\ExplicitReveal",
-        "OCA\\OpenRegister\\Service\\DateTimeNormalizer",
-        "OCA\\OpenRegister\\Service\\DateTimeNormalizer",
-        "OCA\\OpenRegister\\Service\\Object\\SchemaTypeConverter"
+        "OCA\\OpenRegister\\Service\\Object\\SchemaTypeConverterInterface",
+        "OCA\\OpenRegister\\Service\\DateTimeNormalizerInterface",
+        "OCA\\OpenRegister\\Service\\LanguageServiceInterface",
+        "OCA\\OpenRegister\\Service\\Rbac\\ExplicitRevealInterface",
+        "OCA\\OpenRegister\\Service\\DateTimeNormalizerInterface",
+        "OCA\\OpenRegister\\Service\\DateTimeNormalizerInterface",
+        "OCA\\OpenRegister\\Service\\Object\\SchemaTypeConverterInterface"
     ],
     "OCA\\OpenRegister\\Db\\EntityRelationMapper": [
         "OCP\\IDBConnection",
         "OCA\\OpenRegister\\Db\\AuditTrailMapperInterface",
         "OCP\\IUserSession",
-        "OCP\\EventDispatcher\\IEventDispatcher",
+        "OCA\\OpenRegister\\Kernel\\Contracts\\EntityEventsInterface",
         "Psr\\Log\\LoggerInterface"
     ]
 }

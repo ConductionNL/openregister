@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarDependency;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarRecompute;
+use OCA\OpenRegister\Service\Flow\Timer\CalendarRecomputeSources;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarService;
@@ -153,9 +154,11 @@ class CalendarRecomputeTest extends TestCase {
 		$calendars = $this->calendars(calendar: $calendar, throws: $throws);
 
 		return new CalendarRecompute(
-			dependency: new CalendarDependency(calendars: $calendars),
-			calendars: $calendars,
-			calculator: new SlaCalculator(),
+			sources: new CalendarRecomputeSources(
+				dependency: new CalendarDependency(calendars: $calendars),
+				calendars: $calendars,
+				calculator: new SlaCalculator()
+			),
 			appConfig: $this->appConfig(),
 			logger: $this->createMock(LoggerInterface::class)
 		);

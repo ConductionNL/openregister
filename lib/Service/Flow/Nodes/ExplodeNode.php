@@ -44,9 +44,6 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
-use OCP\IL10N;
-use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use UnexpectedValueException;
 
 /**
@@ -54,19 +51,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
  */
-class ExplodeNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
-	/**
-	 * Constructor.
-	 *
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
-	 */
-	public function __construct(
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
-	) {
-	}//end __construct()
-
+class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
 	/**
 	 * The step type.
 	 *
@@ -110,19 +95,6 @@ class ExplodeNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, 
 	public function getIcon(): string {
 		return $this->urls->imagePath('openregister', 'app-dark.svg');
 	}//end getIcon()
-
-	/**
-	 * Available in both scopes.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * The config vocabulary of an explode step.
@@ -177,9 +149,6 @@ class ExplodeNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, 
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) `$context` is part of the
 	 *   IFlowNode contract; this node needs no run metadata to fan out a list.
-	 * @SuppressWarnings(PHPMD.StaticAccess)          `FlowItems::item()` is the item
-	 *   constructor every node uses; injecting a factory for it would add a
-	 *   dependency to describe a shape.
 	 *
 	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
 	 */
@@ -190,39 +159,91 @@ class ExplodeNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, 
 		// exactly like a list of one.
 		$this->validateConfig(config: $config);
 
-		$path = trim((string)$config['path']);
-		$under = (string)($config['as'] ?? 'item');
-		$keep = (($config['keepRecord'] ?? true) !== false);
+		return $this->explode(items: $items, config: $config);
+	}//end execute()
 
+	/**
+	 * One item per element of the named list, across all input items.
+	 *
+	 * @param array $items  The input items.
+	 * @param array $config The validated step configuration.
+	 *
+	 * @return array The exploded items.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) `FlowItems::item()` is the item
+	 *   constructor every node uses; injecting a factory for it would add a
+	 *   dependency to describe a shape.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function explode(array $items, array $config): array {
 		$out = [];
 		foreach ($items as $index => $item) {
 			$json = (array)($item[FlowItems::JSON] ?? []);
-			$list = $this->valueAt(json: $json, path: $path);
-
-			if ($list === null) {
-				continue;
-			}
-
-			if (is_array($list) === false) {
-				throw new UnexpectedValueException(
-					$this->l10n->t('The explode path "%s" is not a list.', [$path])
-				);
-			}
-
-			foreach ($list as $entry) {
-				$record = [];
-				if ($keep === true) {
-					$record = $json;
-				}
-
-				$record[$under] = $entry;
-
+			foreach ($this->recordsFrom(json: $json, config: $config) as $record) {
 				$out[] = FlowItems::item(json: $record, fromItemIndex: $index);
 			}
-		}//end foreach
+		}
 
 		return $out;
-	}//end execute()
+	}//end explode()
+
+	/**
+	 * The records one item explodes into: a copy of it (or nothing) with the element under `as`.
+	 *
+	 * @param array $json   The item's record.
+	 * @param array $config The validated step configuration.
+	 *
+	 * @return array<int, array> One record per list element, possibly none.
+	 *
+	 * @throws UnexpectedValueException When the path holds a scalar.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function recordsFrom(array $json, array $config): array {
+		$under = (string)($config['as'] ?? 'item');
+		$base = [];
+		if (($config['keepRecord'] ?? true) !== false) {
+			$base = $json;
+		}
+
+		$records = [];
+		foreach ($this->listAt(json: $json, path: trim((string)$config['path'])) as $entry) {
+			$record = $base;
+			$record[$under] = $entry;
+			$records[] = $record;
+		}
+
+		return $records;
+	}//end recordsFrom()
+
+	/**
+	 * The list at the path: empty when the path is absent, refused when it is not a list.
+	 *
+	 * @param array  $json The item's record.
+	 * @param string $path The dotted path.
+	 *
+	 * @return array The entries to explode into, possibly none.
+	 *
+	 * @throws UnexpectedValueException When the path holds something other than a list.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function listAt(array $json, string $path): array {
+		$list = $this->valueAt(json: $json, path: $path);
+
+		if ($list === null) {
+			return [];
+		}
+
+		if (is_array($list) === false) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('The explode path "%s" is not a list.', [$path])
+			);
+		}
+
+		return $list;
+	}//end listAt()
 
 	/**
 	 * The value at a dotted path, or null when absent.
@@ -258,16 +279,4 @@ class ExplodeNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, 
 		return IFlowNodeTaxonomy::KIND_SCRIPT_TASK;
 
 	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_LOGIC;
-
-	}//end getCategory()
 }//end class

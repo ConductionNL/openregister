@@ -24,9 +24,8 @@
 namespace OCA\OpenRegister\Mcp\Tool;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\RegisterService;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Service\RegisterServiceInterface;
 
 /**
  * Register Tool
@@ -47,26 +46,16 @@ use Psr\Log\LoggerInterface;
 class RegisterTool extends AbstractTool {
 
 	/**
-	 * Register service
-	 *
-	 * @var RegisterService
-	 */
-	private RegisterService $registerService;
-
-	/**
 	 * Constructor
 	 *
-	 * @param IUserSession $userSession User session service
-	 * @param LoggerInterface $logger Logger service
-	 * @param RegisterService $registerService Register service
+	 * @param ToolCallTrail $trail The session that names the caller and the log of each call.
+	 * @param RegisterServiceInterface $registerService Register service
 	 */
 	public function __construct(
-		IUserSession $userSession,
-		LoggerInterface $logger,
-		RegisterService $registerService,
+		ToolCallTrail $trail,
+		private readonly RegisterServiceInterface $registerService,
 	) {
-		parent::__construct(userSession: $userSession, logger: $logger);
-		$this->registerService = $registerService;
+		parent::__construct(trail: $trail);
 	}//end __construct()
 
 	/**
@@ -94,156 +83,34 @@ class RegisterTool extends AbstractTool {
 	}//end getDescription()
 
 	/**
-	 * Get function definitions for LLphant
+	 * The function definitions, one row each: [name, subject, action,
+	 * description, [parameter => [type, description]], required], expanded
+	 * by {@see ToolFunctionTable::expand()}.
 	 *
-	 * @return array<int, array<string, mixed>> Array of function definitions
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @var array<int, array<int, mixed>>
 	 */
-	public function getFunctions(): array {
-		return array_merge(self::readFunctions(), self::writeFunctions());
-
-	}//end getFunctions()
-
-	/**
-	 * The function definitions that change nothing.
-	 *
-	 * @var array<int, array<string, mixed>>
-	 */
-	private const READ_FUNCTIONS = [
-		[
-			'name' => 'list_registers',
-			'subject' => 'register',
-			'action' => 'list',
-			'description' => 'Get a list of all accessible registers',
-			'parameters' => [
-				'type' => 'object',
-				'properties' => [
-					'limit' => [
-						'type' => 'integer',
-						'description' => 'Maximum number of registers to return (default: 100)',
-					],
-					'offset' => [
-						'type' => 'integer',
-						'description' => 'Number of registers to skip for pagination (default: 0)',
-					],
-				],
-				'required' => [],
-			],
-		],
-		[
-			'name' => 'get_register',
-			'subject' => 'register',
-			'action' => 'get',
-			'description' => 'Get details about a specific register by ID or slug',
-			'parameters' => [
-				'type' => 'object',
-				'properties' => [
-					'id' => [
-						'type' => 'string',
-						'description' => 'The register ID or slug to retrieve',
-					],
-				],
-				'required' => ['id'],
-			],
-		],
+	protected const FUNCTIONS = [
+		['list_registers', 'register', 'list', 'Get a list of all accessible registers', [
+			'limit' => ['integer', 'Maximum number of registers to return (default: 100)'],
+			'offset' => ['integer', 'Number of registers to skip for pagination (default: 0)'],
+		], []],
+		['get_register', 'register', 'get', 'Get details about a specific register by ID or slug', [
+			'id' => ['string', 'The register ID or slug to retrieve'],
+		], ['id']],
+		['create_register', 'register', 'create', 'Create a new register', [
+			'title' => ['string', 'The title of the register'],
+			'description' => ['string', 'A description of what this register is for'],
+			'slug' => ['string', 'URL-friendly identifier (optional, generated from title if not provided)'],
+		], ['title']],
+		['update_register', 'register', 'update', 'Update an existing register', [
+			'id' => ['string', 'The register ID to update'],
+			'title' => ['string', 'New title for the register'],
+			'description' => ['string', 'New description for the register'],
+		], ['id']],
+		['delete_register', 'register', 'delete', 'Delete a register (only if it has no objects)', [
+			'id' => ['string', 'The register ID to delete'],
+		], ['id']],
 	];
-
-	/**
-	 * The register descriptors that change nothing.
-	 *
-	 * @return array<int, array<string, mixed>> The read descriptors.
-	 */
-	private static function readFunctions(): array {
-		return self::READ_FUNCTIONS;
-	}//end readFunctions()
-
-	/**
-	 * The function definitions that change data.
-	 *
-	 * @var array<int, array<string, mixed>>
-	 */
-	private const WRITE_FUNCTIONS = [
-		[
-			'name' => 'create_register',
-			'subject' => 'register',
-			'action' => 'create',
-			'description' => 'Create a new register',
-			'parameters' => [
-				'type' => 'object',
-				'properties' => [
-					'title' => [
-						'type' => 'string',
-						'description' => 'The title of the register',
-					],
-					'description' => [
-						'type' => 'string',
-						'description' => 'A description of what this register is for',
-					],
-					'slug' => [
-						'type' => 'string',
-						'description' => 'URL-friendly identifier (optional, generated from title if not provided)',
-					],
-				],
-				'required' => ['title'],
-			],
-		],
-		[
-			'name' => 'update_register',
-			'subject' => 'register',
-			'action' => 'update',
-			'description' => 'Update an existing register',
-			'parameters' => [
-				'type' => 'object',
-				'properties' => [
-					'id' => [
-						'type' => 'string',
-						'description' => 'The register ID to update',
-					],
-					'title' => [
-						'type' => 'string',
-						'description' => 'New title for the register',
-					],
-					'description' => [
-						'type' => 'string',
-						'description' => 'New description for the register',
-					],
-				],
-				'required' => ['id'],
-			],
-		],
-		[
-			'name' => 'delete_register',
-			'subject' => 'register',
-			'action' => 'delete',
-			'description' => 'Delete a register (only if it has no objects)',
-			'parameters' => [
-				'type' => 'object',
-				'properties' => [
-					'id' => [
-						'type' => 'string',
-						'description' => 'The register ID to delete',
-					],
-				],
-				'required' => ['id'],
-			],
-		],
-	];
-
-	/**
-	 * The register descriptors that change state.
-	 *
-	 * Split from the reading half only to keep each method inside the
-	 * ExcessiveMethodLength budget — declaring `subject`/`action` on every
-	 * descriptor pushed the single combined table past it. The read/write line
-	 * is the honest place to cut, since it is the same boundary the grant
-	 * matrix groups on.
-	 *
-	 * @return array<int, array<string, mixed>> The write descriptors.
-	 */
-	private static function writeFunctions(): array {
-		return self::WRITE_FUNCTIONS;
-	}//end writeFunctions()
 
 	/**
 	 * Execute a function
@@ -259,22 +126,7 @@ class RegisterTool extends AbstractTool {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array {
-		$this->log(functionName: $functionName, parameters: $parameters);
-
-		if ($this->hasUserContext(explicitUserId: $userId) === false) {
-			return $this->formatError(message: 'No user context available. Tool cannot execute without user session.');
-		}
-
-		try {
-			// Convert snake_case to camelCase for PSR compliance.
-			$methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
-
-			// Call the method directly (LLPhant-compatible).
-			return $this->$methodName(...array_values($parameters));
-		} catch (\Exception $e) {
-			$this->log(functionName: $functionName, parameters: $parameters, level: 'error', message: $e->getMessage());
-			return $this->formatError(message: $e->getMessage());
-		}
+		return $this->executeWithUser(call: new ToolCall(functionName: $functionName, parameters: $parameters), userId: $userId);
 	}//end executeFunction()
 
 	/**
@@ -349,9 +201,7 @@ class RegisterTool extends AbstractTool {
 	/**
 	 * Create a new register
 	 *
-	 * @param string $title Register title
-	 * @param string $description Register description
-	 * @param string|null $slug Register slug
+	 * @param CreateRegisterCommand $command The register's title, optional description and slug
 	 *
 	 * @return (mixed|string|true)[] Result with created register
 	 *
@@ -361,36 +211,52 @@ class RegisterTool extends AbstractTool {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function createRegister(string $title, string $description = '', ?string $slug = null): array {
-		$data = [
-			'title' => $title,
-			'description' => $description,
-		];
+	public function createRegister(CreateRegisterCommand $command): array {
+		return $this->createFrom(data: ['title' => $command->title, 'description' => $command->description], slug: $command->slug);
+	}//end createRegister()
 
+	/**
+	 * Create a register from its title and description, with the slug only when one is given.
+	 *
+	 * @param array<string, string> $data The title and description.
+	 * @param string|null           $slug Register slug
+	 *
+	 * @return (mixed|string|true)[] Result with created register
+	 *
+	 * @psalm-return array{success: true, message: string, data: mixed}
+	 */
+	private function createFrom(array $data, ?string $slug): array {
 		if ($slug !== null) {
 			$data['slug'] = $slug;
 		}
 
 		$register = $this->registerService->createFromArray(data: $data);
 
-		return $this->formatSuccess(
-			data: [
-				'id' => $register->getId(),
-				'uuid' => $register->getUuid(),
-				'title' => $register->getTitle(),
-				'description' => $register->getDescription(),
-				'slug' => $register->getSlug(),
-			],
-			message: 'Register created successfully'
-		);
-	}//end createRegister()
+		return $this->formatSuccess(data: $this->summary(register: $register), message: 'Register created successfully');
+	}//end createFrom()
+
+	/**
+	 * The id, uuid, title, description and slug of a written register.
+	 *
+	 * @param Register $register The register.
+	 *
+	 * @return array<string, mixed> The summary.
+	 */
+	private function summary(Register $register): array {
+		return [
+			'id' => $register->getId(),
+			'uuid' => $register->getUuid(),
+			'title' => $register->getTitle(),
+			'description' => $register->getDescription(),
+			'slug' => $register->getSlug(),
+		];
+	}//end summary()
+
 
 	/**
 	 * Update an existing register
 	 *
-	 * @param string $id Register ID
-	 * @param string|null $title Register title
-	 * @param string|null $description Register description
+	 * @param UpdateRegisterCommand $command The register's id and the fields to change; null keeps one
 	 *
 	 * @return (mixed|string|true)[] Result with updated register
 	 *
@@ -400,33 +266,38 @@ class RegisterTool extends AbstractTool {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function updateRegister(string $id, ?string $title = null, ?string $description = null): array {
-		$data = [];
-		if ($title !== null) {
-			$data['title'] = $title;
-		}
+	public function updateRegister(UpdateRegisterCommand $command): array {
+		$data = array_filter(
+			['title' => $command->title, 'description' => $command->description],
+			static function ($value): bool {
+				return $value !== null;
+			}
+		);
 
-		if ($description !== null) {
-			$data['description'] = $description;
-		}
+		return $this->updateFrom(id: $command->id, data: $data);
+	}//end updateRegister()
 
+	/**
+	 * Update a register with the given fields, refusing an update that changes nothing.
+	 *
+	 * @param string               $id   Register ID
+	 * @param array<string, string> $data The fields to change.
+	 *
+	 * @return (mixed|string|true)[] Result with updated register
+	 *
+	 * @throws InvalidArgumentException If there is nothing to change
+	 *
+	 * @psalm-return array{success: true, message: string, data: mixed}
+	 */
+	private function updateFrom(string $id, array $data): array {
 		if ($data === []) {
 			throw new InvalidArgumentException('No update data provided');
 		}
 
 		$register = $this->registerService->updateFromArray(id: (int)$id, data: $data);
 
-		return $this->formatSuccess(
-			data: [
-				'id' => $register->getId(),
-				'uuid' => $register->getUuid(),
-				'title' => $register->getTitle(),
-				'description' => $register->getDescription(),
-				'slug' => $register->getSlug(),
-			],
-			message: 'Register updated successfully'
-		);
-	}//end updateRegister()
+		return $this->formatSuccess(data: $this->summary(register: $register), message: 'Register updated successfully');
+	}//end updateFrom()
 
 	/**
 	 * Delete a register

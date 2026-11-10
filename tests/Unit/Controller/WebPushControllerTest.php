@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Notifications\Controller\WebPushController;
+use OCA\OpenRegister\Notifications\Controller\Support\WebPushControllerServices;
 use OCA\OpenRegister\Notifications\Db\PushSubscription;
 use OCA\OpenRegister\Notifications\Db\PushSubscriptionMapper;
 use OCA\OpenRegister\Notifications\Service\WebPush\HexIconService;
@@ -104,12 +105,13 @@ class WebPushControllerTest extends TestCase {
 		$this->request->method('getHeader')->willReturn('Mozilla/5.0 (Test)');
 
 		$this->controller = new WebPushController(
-			'openregister',
 			$this->request,
-			$this->webPushService,
-			$this->subscriptionMapper,
-			$this->hexIconService,
-			$this->userSession
+			new WebPushControllerServices(
+				webPushService: $this->webPushService,
+				subscriptionMapper: $this->subscriptionMapper,
+				hexIconService: $this->hexIconService,
+				userSession: $this->userSession
+			)
 		);
 	}
 
@@ -207,7 +209,15 @@ class WebPushControllerTest extends TestCase {
 		$this->subscriptionMapper
 			->expects($this->once())
 			->method('store')
-			->with('alice', 'https://push.example/endpoint', 'p256dh-key', 'auth-secret', 'Mozilla/5.0 (Test)')
+			->with(
+				$this->callback(
+					fn (PushSubscription $candidate): bool => $candidate->getUserId() === 'alice'
+						&& $candidate->getEndpoint() === 'https://push.example/endpoint'
+						&& $candidate->getP256dh() === 'p256dh-key'
+						&& $candidate->getAuth() === 'auth-secret'
+						&& $candidate->getUserAgent() === 'Mozilla/5.0 (Test)'
+				)
+			)
 			->willReturn($stored);
 
 		$result = $this->controller->subscribe(

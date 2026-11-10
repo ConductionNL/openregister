@@ -41,7 +41,7 @@ namespace OCA\OpenRegister\Service\Quality;
  *
  * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
  */
-class UniqueHintWarnings {
+class UniqueHintWarnings implements UniqueHintWarningsInterface {
 
 	/**
 	 * Warnings collected since the last drain.

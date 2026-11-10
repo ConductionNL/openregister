@@ -50,12 +50,9 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use OCA\OpenRegister\Db\MapLink;
-use OCA\OpenRegister\Db\MapLinkMapper;
-use OCP\App\IAppManager;
+use OCA\OpenRegister\Db\MapLinkMapperInterface;
 use OCP\IURLGenerator;
-use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -69,8 +66,10 @@ use Throwable;
  *     manager + url generator + container + logger. Each dependency is
  *     required for one of the Tier-2 flows (link, create, unlink, list,
  *     picker, graceful degradation).
+ *
+ * @spec openspec/specs/integration-maps/spec.md
  */
-class MapLinkService {
+class MapLinkService implements MapLinkServiceInterface {
 	private const REQUIRED_APP = 'maps';
 
 	private const FAVORITES_SERVICE = 'OCA\\Maps\\Service\\FavoritesService';
@@ -78,20 +77,16 @@ class MapLinkService {
 	/**
 	 * Constructor.
 	 *
-	 * @param MapLinkMapper $mapLinkMapper Persistence for link rows.
+	 * @param MapLinkMapperInterface $mapLinkMapper Persistence for link rows.
 	 * @param ContainerInterface $container Container for late-bound Maps classes.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IUserSession $userSession Active session.
 	 * @param IURLGenerator $urlGenerator URL generator for deep links.
-	 * @param LoggerInterface $logger Logger.
+	 * @param LinkServiceRuntime $runtime Whether the app is enabled, the current user, and the logger.
 	 */
 	public function __construct(
-		private readonly MapLinkMapper $mapLinkMapper,
+		private readonly MapLinkMapperInterface $mapLinkMapper,
 		private readonly ContainerInterface $container,
-		private readonly IAppManager $appManager,
-		private readonly IUserSession $userSession,
 		private readonly IURLGenerator $urlGenerator,
-		private readonly LoggerInterface $logger,
+		private readonly LinkServiceRuntime $runtime,
 	) {
 	}//end __construct()
 
@@ -99,9 +94,11 @@ class MapLinkService {
 	 * Whether NC Maps is installed + enabled for the current user.
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/specs/integration-maps/spec.md
 	 */
 	public function isMapsAvailable(): bool {
-		return $this->appManager->isEnabledForUser(self::REQUIRED_APP);
+		return $this->runtime->appManager()->isEnabledForUser(self::REQUIRED_APP);
 	}//end isMapsAvailable()
 
 	/**
@@ -124,7 +121,7 @@ class MapLinkService {
 		try {
 			return $this->container->get(self::FAVORITES_SERVICE);
 		} catch (Throwable $e) {
-			$this->logger->debug('MapLinkService: FavoritesService unavailable: ' . $e->getMessage());
+			$this->runtime->logger()->debug('MapLinkService: FavoritesService unavailable: ' . $e->getMessage());
 			return null;
 		}
 	}//end getFavoritesService()
@@ -137,7 +134,7 @@ class MapLinkService {
 	 * @throws Exception When there is no active user.
 	 */
 	private function requireUid(): string {
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession()->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in', 401);
 		}
@@ -163,13 +160,11 @@ class MapLinkService {
 	 */
 	public function linkPoi(LinkTarget $target, int $favoriteId): MapLink {
 		$uid = $this->requireUid();
-
 		if ($this->isMapsAvailable() === false) {
 			throw new Exception('NC Maps is not available', 503);
 		}
 
-		$existing = $this->mapLinkMapper->findByObjectAndFavorite($target->objectUuid, $favoriteId);
-		if ($existing !== null) {
+		if ($this->mapLinkMapper->findByObjectAndFavorite($target->objectUuid, $favoriteId) !== null) {
 			throw new Exception('POI already linked to this object', 409);
 		}
 
@@ -178,17 +173,29 @@ class MapLinkService {
 			throw new Exception('Maps POI not found', 404);
 		}
 
+		return $this->insertLink(target: $target, favorite: $info + ['favoriteId' => $favoriteId, 'linkedBy' => $uid]);
+	}//end linkPoi()
+
+	/**
+	 * Persist a link row for a favorite, caching its metadata.
+	 *
+	 * @param LinkTarget $target   The object to link to.
+	 * @param array      $favorite The POI metadata (name, category, lat, lng, comment), its favoriteId and the linkedBy user.
+	 *
+	 * @return MapLink The persisted link row.
+	 */
+	private function insertLink(LinkTarget $target, array $favorite): MapLink {
 		$link = new MapLink();
-		$link->setFavoriteId($favoriteId);
-		$link->setName($info['name']);
-		$link->setCategory($info['category']);
-		$link->setLat($info['lat']);
-		$link->setLng($info['lng']);
-		$link->setComment($info['comment']);
-		$target->stamp(link: $link, linkedBy: $uid);
+		$link->setFavoriteId($favorite['favoriteId']);
+		$link->setName($favorite['name']);
+		$link->setCategory($favorite['category']);
+		$link->setLat($favorite['lat']);
+		$link->setLng($favorite['lng']);
+		$link->setComment($favorite['comment']);
+		$target->stamp(link: $link, linkedBy: $favorite['linkedBy']);
 
 		return $this->mapLinkMapper->insert($link);
-	}//end linkPoi()
+	}//end insertLink()
 
 	/**
 	 * Create a new NC Maps favorite (POI) and link it to an OR object.
@@ -211,15 +218,28 @@ class MapLinkService {
 			throw new Exception('POI name is required', 400);
 		}
 
-		$service = $this->getFavoritesService();
-		if ($service === null) {
-			throw new Exception('NC Maps is not available', 503);
-		}
+		$favoriteId = $this->addFavorite(uid: $uid, poi: $poi);
+		$info = ['name' => $name, 'category' => $poi->category(), 'lat' => $poi->lat(), 'lng' => $poi->lng(), 'comment' => $poi->comment()];
 
+		return $this->insertLink(target: $target, favorite: $info + ['favoriteId' => $favoriteId, 'linkedBy' => $uid]);
+	}//end createAndLinkPoi()
+
+	/**
+	 * Create the favorite in NC Maps.
+	 *
+	 * @param string   $uid The owning user id.
+	 * @param PoiDraft $poi Name (trimmed here), position and optional category and comment.
+	 *
+	 * @return int The new favorite id.
+	 *
+	 * @throws Exception On Maps unavailable (503) or create failure (500).
+	 */
+	private function addFavorite(string $uid, PoiDraft $poi): int {
+		$service = $this->requireFavoritesService();
 		try {
-			$favoriteId = (int)$service->addFavoriteToDB($uid, $name, $poi->lat(), $poi->lng(), $poi->category(), $poi->comment(), null);
+			$favoriteId = (int)$service->addFavoriteToDB($uid, trim($poi->name), $poi->lat(), $poi->lng(), $poi->category(), $poi->comment(), null);
 		} catch (Throwable $e) {
-			$this->logger->warning('MapLinkService::createAndLinkPoi failed: ' . $e->getMessage());
+			$this->runtime->logger()->warning('MapLinkService::createAndLinkPoi failed: ' . $e->getMessage());
 			throw new Exception('Failed to create Maps POI', 500);
 		}
 
@@ -227,17 +247,24 @@ class MapLinkService {
 			throw new Exception('Failed to create Maps POI', 500);
 		}
 
-		$link = new MapLink();
-		$link->setFavoriteId($favoriteId);
-		$link->setName($name);
-		$link->setCategory($poi->category());
-		$link->setLat($poi->lat());
-		$link->setLng($poi->lng());
-		$link->setComment($poi->comment());
-		$target->stamp(link: $link, linkedBy: $uid);
+		return $favoriteId;
+	}//end addFavorite()
 
-		return $this->mapLinkMapper->insert($link);
-	}//end createAndLinkPoi()
+	/**
+	 * NC Maps' FavoritesService, or a 503 when Maps is unavailable.
+	 *
+	 * @return object The service.
+	 *
+	 * @throws Exception When Maps is unavailable (503).
+	 */
+	private function requireFavoritesService(): object {
+		$service = $this->getFavoritesService();
+		if ($service === null) {
+			throw new Exception('NC Maps is not available', 503);
+		}
+
+		return $service;
+	}//end requireFavoritesService()
 
 	/**
 	 * Unlink a POI from an object.
@@ -302,27 +329,9 @@ class MapLinkService {
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the picker-source contract is owned by the integration-maps capability.
 	 */
 	public function getAvailablePois(?string $search = null): array {
-		$service = $this->getFavoritesService();
-		$uid = $this->userSession->getUser()?->getUID();
-		if ($service === null || $uid === null) {
-			return [];
-		}
-
-		try {
-			$favorites = $service->getFavoritesFromDB($uid);
-		} catch (Throwable $e) {
-			$this->logger->warning('MapLinkService::getAvailablePois failed: ' . $e->getMessage());
-			return [];
-		}
-
-		$needle = null;
-		if ($search !== null && $search !== '') {
-			$needle = mb_strtolower($search);
-		}
-
 		$out = [];
-		foreach ($favorites as $favorite) {
-			$row = $this->pickerRowFromFavorite(favorite: $favorite, needle: $needle);
+		foreach ($this->currentUserFavorites() as $favorite) {
+			$row = $this->pickerRowFromFavorite(favorite: $favorite, search: $search);
 			if ($row !== null) {
 				$out[] = $row;
 			}
@@ -332,41 +341,104 @@ class MapLinkService {
 	}//end getAvailablePois()
 
 	/**
+	 * The session user's NC Maps favorites; none when Maps or the user is missing, or the read fails.
+	 *
+	 * @return mixed The favorite rows.
+	 */
+	private function currentUserFavorites(): mixed {
+		$service = $this->getFavoritesService();
+		$uid = $this->runtime->userSession()->getUser()?->getUID();
+		if ($service === null || $uid === null) {
+			return [];
+		}
+
+		try {
+			return $service->getFavoritesFromDB($uid);
+		} catch (Throwable $e) {
+			$this->runtime->logger()->warning('MapLinkService::getAvailablePois failed: ' . $e->getMessage());
+			return [];
+		}
+	}//end currentUserFavorites()
+
+	/**
 	 * Map a single NC Maps favorite into a picker row, applying the
 	 * optional name filter.
 	 *
 	 * @param array<string,mixed> $favorite An NC Maps favorite row.
-	 * @param string|null $needle Lower-cased name-substring filter, or null.
+	 * @param string|null         $search   Name-substring filter; null or empty matches all.
 	 *
 	 * @return array<string,mixed>|null The picker row, or null when the
 	 *                                  favorite is filtered out.
 	 */
-	private function pickerRowFromFavorite(array $favorite, ?string $needle): ?array {
+	private function pickerRowFromFavorite(array $favorite, ?string $search): ?array {
 		$favoriteId = (int)($favorite['id'] ?? 0);
 		$name = (string)($favorite['name'] ?? '');
-
-		if ($favoriteId <= 0) {
+		if ($favoriteId <= 0 || $this->nameMatches(name: $name, search: $search) === false) {
 			return null;
 		}
 
-		if ($needle !== null && str_contains(mb_strtolower($name), $needle) === false) {
-			return null;
-		}
-
-		$category = $favorite['category'] ?? null;
-		if ($category !== null) {
-			$category = (string)$category;
-		}
-
-		return [
+		$row = [
 			'id' => $favoriteId,
 			'name' => $name,
-			'category' => $category,
-			'lat' => (float)($favorite['lat'] ?? 0),
-			'lng' => (float)($favorite['lng'] ?? 0),
-			'url' => $this->poiDeepLink(lat: (float)($favorite['lat'] ?? 0), lng: (float)($favorite['lng'] ?? 0)),
+			'category' => $this->nullableField(row: $favorite, key: 'category'),
 		];
+
+		return $row + $this->position(favorite: $favorite);
 	}//end pickerRowFromFavorite()
+
+	/**
+	 * Whether a favorite name passes the picker search, case-insensitively.
+	 *
+	 * @param string      $name   The favorite name.
+	 * @param string|null $search Name-substring filter; null or empty matches all.
+	 *
+	 * @return bool
+	 */
+	private function nameMatches(string $name, ?string $search): bool {
+		return in_array($search, [null, ''], true) === true || str_contains(mb_strtolower($name), mb_strtolower($search)) === true;
+	}//end nameMatches()
+
+	/**
+	 * The coordinates of a favorite and its NC Maps deep link.
+	 *
+	 * @param array<string,mixed> $favorite An NC Maps favorite row.
+	 *
+	 * @return array{lat: float, lng: float, url: string}
+	 */
+	private function position(array $favorite): array {
+		$lat = $this->coordinate(favorite: $favorite, key: 'lat');
+		$lng = $this->coordinate(favorite: $favorite, key: 'lng');
+
+		return ['lat' => $lat, 'lng' => $lng, 'url' => $this->poiDeepLink(lat: $lat, lng: $lng)];
+	}//end position()
+
+	/**
+	 * A coordinate of a favorite row, 0 when absent.
+	 *
+	 * @param array<string,mixed> $favorite An NC Maps favorite row.
+	 * @param string              $key      lat or lng.
+	 *
+	 * @return float
+	 */
+	private function coordinate(array $favorite, string $key): float {
+		return (float)($favorite[$key] ?? 0);
+	}//end coordinate()
+
+	/**
+	 * A field of a favorite row as a string, null when absent or null.
+	 *
+	 * @param array<string,mixed> $row An NC Maps favorite row.
+	 * @param string              $key The field.
+	 *
+	 * @return string|null
+	 */
+	private function nullableField(array $row, string $key): ?string {
+		if (isset($row[$key]) === false) {
+			return null;
+		}
+
+		return (string)$row[$key];
+	}//end nullableField()
 
 	/**
 	 * Fetch normalised favorite metadata from NC Maps.
@@ -377,6 +449,29 @@ class MapLinkService {
 	 * @return array{name:string,category:?string,lat:float,lng:float,comment:?string}|null
 	 */
 	private function fetchFavoriteInfo(int $favoriteId, string $uid): ?array {
+		$favorite = $this->favoriteRow(favoriteId: $favoriteId, uid: $uid);
+		if ($favorite === null) {
+			return null;
+		}
+
+		return [
+			'name' => (string)($favorite['name'] ?? ''),
+			'category' => $this->nullableField(row: $favorite, key: 'category'),
+			'lat' => $this->coordinate(favorite: $favorite, key: 'lat'),
+			'lng' => $this->coordinate(favorite: $favorite, key: 'lng'),
+			'comment' => $this->nullableField(row: $favorite, key: 'comment'),
+		];
+	}//end fetchFavoriteInfo()
+
+	/**
+	 * The raw favorite row from NC Maps, or null when Maps is missing, the read fails or it is not a row.
+	 *
+	 * @param int    $favoriteId The favorite id.
+	 * @param string $uid        The owning user id.
+	 *
+	 * @return array<string,mixed>|null
+	 */
+	private function favoriteRow(int $favoriteId, string $uid): ?array {
 		$service = $this->getFavoritesService();
 		if ($service === null) {
 			return null;
@@ -385,32 +480,27 @@ class MapLinkService {
 		try {
 			$favorite = $service->getFavoriteFromDB($favoriteId, $uid);
 		} catch (Throwable $e) {
-			$this->logger->debug('MapLinkService::fetchFavoriteInfo failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('MapLinkService::fetchFavoriteInfo failed: ' . $e->getMessage());
 			return null;
 		}
 
-		if (is_array($favorite) === false) {
+		return $this->arrayOrNull(value: $favorite);
+	}//end favoriteRow()
+
+	/**
+	 * The value when it is an array, else null.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return array|null
+	 */
+	private function arrayOrNull(mixed $value): ?array {
+		if (is_array($value) === false) {
 			return null;
 		}
 
-		$category = $favorite['category'] ?? null;
-		if ($category !== null) {
-			$category = (string)$category;
-		}
-
-		$comment = $favorite['comment'] ?? null;
-		if ($comment !== null) {
-			$comment = (string)$comment;
-		}
-
-		return [
-			'name' => (string)($favorite['name'] ?? ''),
-			'category' => $category,
-			'lat' => (float)($favorite['lat'] ?? 0),
-			'lng' => (float)($favorite['lng'] ?? 0),
-			'comment' => $comment,
-		];
-	}//end fetchFavoriteInfo()
+		return $value;
+	}//end arrayOrNull()
 
 	/**
 	 * Build the NC Maps deep link for a favorite.

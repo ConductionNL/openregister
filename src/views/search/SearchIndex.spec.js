@@ -10,6 +10,7 @@
 // Mock the store singletons the component imports so we can assert dispatches.
 import SearchIndex from './SearchIndex.vue'
 import {
+	navigationStore as mockNavigationStore,
 	objectStore as mockObjectStore,
 	viewsStore as mockViewsStore,
 } from '../../store/store.js'
@@ -56,6 +57,22 @@ jest.mock(
 )
 jest.mock(
 	'vue-material-design-icons/TrashCanOutline.vue',
+	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
+	{ virtual: true },
+)
+
+jest.mock(
+	'vue-material-design-icons/CheckCircle.vue',
+	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
+	{ virtual: true },
+)
+jest.mock(
+	'vue-material-design-icons/DatabaseExport.vue',
+	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
+	{ virtual: true },
+)
+jest.mock(
+	'vue-material-design-icons/Merge.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
 	{ virtual: true },
 )
@@ -501,5 +518,49 @@ describe('SearchIndex — presentation dispatch (REQ-VIEW-PRES-05)', () => {
 			expect(result.failedIds).toEqual(['a'])
 			expect(result.error).toBe('Some objects could not be copied.')
 		})
+	})
+})
+
+describe('SearchIndex: bulk and merge entry points', () => {
+	const ctx = {
+		normalizedObjects: [
+			{ '@self': { id: 'a' }, id: 'a' },
+			{ '@self': { id: 'b' }, id: 'b' },
+		],
+		stageSelection: SearchIndex.methods.stageSelection,
+	}
+
+	beforeEach(() => {
+		jest.clearAllMocks()
+		Object.assign(mockObjectStore, {
+			setSelectedObjects: jest.fn(),
+			setObjectItem: jest.fn(),
+		})
+	})
+
+	it('opens the merge dialog with the row as the source', () => {
+		const row = ctx.normalizedObjects[0]
+		methodCall('handleMergeRow', ctx, row)
+		expect(mockObjectStore.setObjectItem).toHaveBeenCalledWith(row)
+		expect(mockNavigationStore.setModal).toHaveBeenCalledWith('mergeObject')
+	})
+
+	it('stages the ids and opens the validate dialog', () => {
+		methodCall('handleMassValidate', ctx, ['b'])
+		expect(mockObjectStore.setSelectedObjects).toHaveBeenCalledWith(['b'])
+		expect(mockNavigationStore.setDialog).toHaveBeenCalledWith(
+			'massValidateObjects',
+		)
+	})
+
+	it('stages the ids and opens the migration dialog', () => {
+		methodCall('handleMassMigrate', ctx, ['a', 'b'])
+		expect(mockObjectStore.setSelectedObjects).toHaveBeenCalledWith(['a', 'b'])
+		expect(mockNavigationStore.setModal).toHaveBeenCalledWith('migrationObject')
+	})
+
+	it('leaves out ids that are not in the list', () => {
+		methodCall('stageSelection', ctx, ['a', 'gone'])
+		expect(mockObjectStore.setSelectedObjects).toHaveBeenCalledWith(['a'])
 	})
 })

@@ -48,25 +48,25 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RunObjectLock;
-use OCA\OpenRegister\Db\RunObjectLockMapper;
+use OCA\OpenRegister\Db\RunObjectLockMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
  * Records and releases the object locks a flow run holds.
  */
-class RunLockRegistry {
+class RunLockRegistry implements RunLockReleaseInterface {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param RunObjectLockMapper $registry The run-lock rows.
+	 * @param RunObjectLockMapperInterface $registry The run-lock rows.
 	 * @param MagicMapperInterface $magicMapper Resolves and mutates the objects themselves.
 	 * @param AuditTrailMapperInterface $auditTrailMapper Records the releases.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
-		private readonly RunObjectLockMapper $registry,
+		private readonly RunObjectLockMapperInterface $registry,
 		private readonly MagicMapperInterface $magicMapper,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
@@ -83,42 +83,56 @@ class RunLockRegistry {
 	 * all. The TTL still bounds a lock whose row is missing.
 	 *
 	 * @param ObjectEntity $object The locked object.
-	 * @param string|null $runUuid The holding run, or null for a user lock.
-	 * @param string|null $nodeId The flow node that took it.
+	 * @param LockRunStep  $step   The holding run (null for a user lock) and the flow node that took it.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-every-lock-a-run-holds-is-released-when-the-run-ends
 	 */
-	public function record(ObjectEntity $object, ?string $runUuid, ?string $nodeId): void {
-		if ($runUuid === null || trim($runUuid) === '') {
+	public function record(ObjectEntity $object, LockRunStep $step): void {
+		$runUuid = trim((string)$step->runUuid);
+		if ($runUuid === '') {
 			return;
 		}
 
 		try {
-			$payload = ($object->getLocked() ?? []);
-			$expires = null;
-			if (isset($payload['expiration']) === true) {
-				$expires = new DateTime((string)$payload['expiration']);
-			}
-
-			$row = new RunObjectLock();
-			$row->setRunUuid(trim($runUuid));
-			$row->setObjectUuid((string)$object->getUuid());
-			$row->setRegisterId((string)$object->getRegister());
-			$row->setSchemaId((string)$object->getSchema());
-			$row->setNodeId($nodeId);
-			$row->setLockedAt(new DateTime());
-			$row->setExpiresAt($expires);
-
-			$this->registry->record(lock: $row);
+			$this->registry->record(lock: $this->lockRowFor(object: $object, step: new LockRunStep($runUuid, $step->nodeId)));
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[RunLockRegistry] Could not record a run lock; the lock itself stands',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'runUuid' => $runUuid, 'error' => $e->getMessage()]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'runUuid' => $step->runUuid, 'error' => $e->getMessage()]
 			);
 		}//end try
 	}//end record()
+
+	/**
+	 * The registry row of a run's lock on an object, expiring with the lock.
+	 *
+	 * @param ObjectEntity $object The locked object.
+	 * @param LockRunStep  $step   The run, trimmed, and the flow node.
+	 *
+	 * @return RunObjectLock The row
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-every-lock-a-run-holds-is-released-when-the-run-ends
+	 */
+	private function lockRowFor(ObjectEntity $object, LockRunStep $step): RunObjectLock {
+		$payload = ($object->getLocked() ?? []);
+		$expires = null;
+		if (isset($payload['expiration']) === true) {
+			$expires = new DateTime((string)$payload['expiration']);
+		}
+
+		$row = new RunObjectLock();
+		$row->setRunUuid((string)$step->runUuid);
+		$row->setObjectUuid((string)$object->getUuid());
+		$row->setRegisterId((string)$object->getRegister());
+		$row->setSchemaId((string)$object->getSchema());
+		$row->setNodeId($step->nodeId);
+		$row->setLockedAt(new DateTime());
+		$row->setExpiresAt($expires);
+
+		return $row;
+	}//end lockRowFor()
 
 	/**
 	 * Forget one run's row for one object, after the lock has been released.

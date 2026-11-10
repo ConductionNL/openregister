@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
-use OCA\OpenRegister\Service\TenantKeyService;
+use OCA\OpenRegister\Service\TenantKeyRotationInterface;
 use RuntimeException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -59,10 +59,10 @@ class RotateTenantKeyCommand extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param TenantKeyService $tenantKeys The tenant key store.
+	 * @param TenantKeyRotationInterface $tenantKeys The tenant key store.
 	 */
 	public function __construct(
-		private readonly TenantKeyService $tenantKeys,
+		private readonly TenantKeyRotationInterface $tenantKeys,
 	) {
 		parent::__construct();
 	}//end __construct()

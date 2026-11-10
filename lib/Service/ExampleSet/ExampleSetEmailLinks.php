@@ -33,7 +33,8 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 
 use DateTime;
 use OCA\OpenRegister\Db\EmailLink;
-use OCA\OpenRegister\Db\EmailLinkMapper;
+use OCA\OpenRegister\Db\EmailLinkMapperInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Container\ContainerInterface;
@@ -59,6 +60,15 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 		'mailDate',
 		'linkedBy',
 		...EmailLink::DETAIL_KEYS,
+	];
+
+	/**
+	 * The details a link may set to one of a few words, with those words and the refusal for any other, in the order
+	 * they are checked.
+	 */
+	private const DETAIL_CHOICES = [
+		'direction' => [['inbound', 'outbound'], 'direction is inbound or outbound'],
+		'linkedVia' => [['manual', 'mailbox', 'file'], 'linkedVia is manual, mailbox or file'],
 	];
 
 	/**
@@ -106,11 +116,25 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-link-mail-to-its-objects
 	 */
 	public function refusal(array $data, array $users): string {
-		$unknown = array_diff(array_keys($data), self::FIELDS);
-		if ($unknown !== []) {
-			return 'field "'.implode('", "', $unknown).'" is not an email link field a set may write';
-		}
+		$rules = new ExampleSetFieldRules();
+		return $rules->firstRefusal(
+			checks: [
+				fn (): string => $rules->unknownRefusal(data: $data, fields: self::FIELDS, row: 'an email link'),
+				fn (): string => $this->neededRefusal(data: $data),
+				fn (): string => $this->mailRefusal(data: $data, users: $users),
+				fn (): string => $this->detailRefusal(data: $data),
+			]
+		);
+	}//end refusal()
 
+	/**
+	 * Why a link lacks the object it is on or a subject, or ''.
+	 *
+	 * @param array<string, mixed> $data The filled link fields.
+	 *
+	 * @return string
+	 */
+	private function neededRefusal(array $data): string {
 		if ($this->filled(value: ($data['object'] ?? null)) === false) {
 			return 'an email link needs the object it is on (object)';
 		}
@@ -119,13 +143,8 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 			return 'an email link needs a subject';
 		}
 
-		$mail = $this->mailRefusal(data: $data, users: $users);
-		if ($mail !== '') {
-			return $mail;
-		}
-
-		return $this->detailRefusal(data: $data);
-	}//end refusal()
+		return '';
+	}//end neededRefusal()
 
 	/**
 	 * Why the link's details cannot be written, or ''.
@@ -137,20 +156,29 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 	 * @spec openspec/specs/email-link-sender-name-and-details/spec.md#requirement-an-email-link-carries-the-details-the-row-shows
 	 */
 	private function detailRefusal(array $data): string {
-		if (isset($data['direction']) === true && in_array($data['direction'], ['inbound', 'outbound'], true) === false) {
-			return 'direction is inbound or outbound';
+		foreach (self::DETAIL_CHOICES as $field => [$choices, $refusal]) {
+			if (isset($data[$field]) === true && in_array($data[$field], $choices, true) === false) {
+				return $refusal;
+			}
 		}
 
-		if (isset($data['linkedVia']) === true && in_array($data['linkedVia'], ['manual', 'mailbox', 'file'], true) === false) {
-			return 'linkedVia is manual, mailbox or file';
-		}
+		return $this->attachmentCountRefusal(data: $data);
+	}//end detailRefusal()
 
+	/**
+	 * Why a link's attachment count is not a whole number of 0 or more, or ''; a link without one is fine.
+	 *
+	 * @param array<string, mixed> $data The filled link fields.
+	 *
+	 * @return string
+	 */
+	private function attachmentCountRefusal(array $data): string {
 		if (isset($data['attachmentCount']) === true && (is_int($data['attachmentCount']) === false || $data['attachmentCount'] < 0)) {
 			return 'attachmentCount is a whole number of 0 or more';
 		}
 
 		return '';
-	}//end detailRefusal()
+	}//end attachmentCountRefusal()
 
 	/**
 	 * Why the mail, its date or its linker cannot be written, or ''.
@@ -169,54 +197,43 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 			return 'linkedBy "'.(string) $data['linkedBy'].'" is not an account the set creates or adopts';
 		}
 
+		return $this->mailDateRefusal(data: $data);
+	}//end mailRefusal()
+
+	/**
+	 * Why a link's mail date is not a date and time, or ''; a link without one is fine.
+	 *
+	 * @param array<string, mixed> $data The filled link fields.
+	 *
+	 * @return string
+	 */
+	private function mailDateRefusal(array $data): string {
 		if (isset($data['mailDate']) === true && $this->moment(value: $data['mailDate']) === null) {
 			return 'mailDate is a date and time';
 		}
 
 		return '';
-	}//end mailRefusal()
+	}//end mailDateRefusal()
 
 	/**
 	 * Link the mail to the object, on the object's register and schema.
 	 *
-	 * @param string               $app  The app that ships the fragment, the linker when the row names none.
-	 * @param string               $key  The link's key in the fragment, kept as its source.
-	 * @param array<string, mixed> $data The filled fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{id: string}|null} The record entry, or why the write failed.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-link-mail-to-its-objects
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$app = $row->app;
+		$key = $row->key;
+		$data = $row->data;
 		$object = $this->container->get(PartyService::class)->findUnscoped(uuid: (string) $data['object']);
 		if ($object === null) {
 			return ['error' => 'no object "'.(string) $data['object'].'" to link the mail to', 'entry' => null];
 		}
 
-		$ids = ($this->mailIds(data: $data) ?? [0, 0]);
-
-		$link = new EmailLink();
-		$link->setObjectUuid((string) $data['object']);
-		$link->setRegisterId((int) $object->getRegister());
-		$link->setSchemaId((int) $object->getSchema());
-		$link->setMailAccountId($ids[0]);
-		$link->setMailMessageId($ids[1]);
-		$link->setMailMessageUid($this->stringOrNull(value: ($data['messageId'] ?? null)));
-		$link->setSubject((string) $data['subject']);
-		$link->setSender($this->stringOrNull(value: ($data['sender'] ?? null)));
-		$link->setSenderName($this->stringOrNull(value: ($data['senderName'] ?? null)));
-		$link->setMailDate($this->moment(value: ($data['mailDate'] ?? null)));
-		$metadata = ['source' => 'example-set:'.$app.'/'.$key];
-		foreach (EmailLink::DETAIL_KEYS as $detail) {
-			if (isset($data[$detail]) === true) {
-				$metadata[$detail] = $data[$detail];
-			}
-		}
-
-		$link->setMetadata((string) json_encode($metadata));
-		$link->setLinkedBy((string) ($data['linkedBy'] ?? $app));
-		$link->setLinkedAt(new DateTime());
-
+		$link = $this->newLink(app: $app, key: $key, object: $object, data: $data);
 		try {
 			$saved = $this->mapper()->insert($link);
 		} catch (Throwable $e) {
@@ -225,6 +242,67 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 
 		return ['error' => '', 'entry' => ['id' => (string) $saved->getId()]];
 	}//end write()
+
+	/**
+	 * The link of the mail to the object, as the set writes it.
+	 *
+	 * @param string               $app    The app that ships the fragment, the linker unless linkedBy names one.
+	 * @param string               $key    The link's key in the fragment.
+	 * @param ObjectEntity         $object The object.
+	 * @param array<string, mixed> $data   The filled link fields.
+	 *
+	 * @return EmailLink
+	 */
+	private function newLink(string $app, string $key, ObjectEntity $object, array $data): EmailLink {
+		$link = new EmailLink();
+		$link->setObjectUuid((string) $data['object']);
+		$link->setRegisterId((int) $object->getRegister());
+		$link->setSchemaId((int) $object->getSchema());
+		$this->setMail(link: $link, data: $data);
+		$link->setMetadata((string) json_encode($this->metadata(source: 'example-set:'.$app.'/'.$key, data: $data)));
+		$link->setLinkedBy((string) ($data['linkedBy'] ?? $app));
+		$link->setLinkedAt(new DateTime());
+
+		return $link;
+	}//end newLink()
+
+	/**
+	 * Put the mail the link names on it: its ids, subject, sender and date.
+	 *
+	 * @param EmailLink            $link The link.
+	 * @param array<string, mixed> $data The filled link fields.
+	 *
+	 * @return void
+	 */
+	private function setMail(EmailLink $link, array $data): void {
+		$ids = ($this->mailIds(data: $data) ?? [0, 0]);
+		$link->setMailAccountId($ids[0]);
+		$link->setMailMessageId($ids[1]);
+		$link->setMailMessageUid($this->stringOrNull(value: ($data['messageId'] ?? null)));
+		$link->setSubject((string) $data['subject']);
+		$link->setSender($this->stringOrNull(value: ($data['sender'] ?? null)));
+		$link->setSenderName($this->stringOrNull(value: ($data['senderName'] ?? null)));
+		$link->setMailDate($this->moment(value: ($data['mailDate'] ?? null)));
+	}//end setMail()
+
+	/**
+	 * The link's metadata: where it came from, and the details the row sets.
+	 *
+	 * @param string               $source The fragment row the link came from.
+	 * @param array<string, mixed> $data   The filled link fields.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function metadata(string $source, array $data): array {
+		$metadata = ['source' => $source];
+		foreach (EmailLink::DETAIL_KEYS as $detail) {
+			if (isset($data[$detail]) === true) {
+				$metadata[$detail] = $data[$detail];
+			}
+		}
+
+		return $metadata;
+	}//end metadata()
 
 	/**
 	 * Whether a written link is no longer there.
@@ -332,9 +410,9 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 	/**
 	 * The email link mapper.
 	 *
-	 * @return EmailLinkMapper
+	 * @return EmailLinkMapperInterface
 	 */
-	private function mapper(): EmailLinkMapper {
-		return $this->container->get(EmailLinkMapper::class);
+	private function mapper(): EmailLinkMapperInterface {
+		return $this->container->get(EmailLinkMapperInterface::class);
 	}//end mapper()
 }//end class

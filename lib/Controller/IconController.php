@@ -25,7 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\MdiIconRenderer;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Service\MdiIconSvgInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -36,19 +37,23 @@ use OCP\IRequest;
 
 /**
  * Renders curated MDI glyphs as SVG images.
+ *
+ * @spec openspec/specs/unified-search-provider/spec.md
  */
 class IconController extends Controller {
 	/**
 	 * Constructor for the IconController.
 	 *
-	 * @param string $appName The name of the app
 	 * @param IRequest $request The HTTP request object
+	 * @param MdiIconSvgInterface $iconSvg Renders a curated MDI glyph to SVG
 	 *
 	 * @return void
 	 */
-	public function __construct(string $appName, IRequest $request) {
-		parent::__construct(appName: $appName, request: $request);
-
+	public function __construct(
+		IRequest $request,
+		private readonly MdiIconSvgInterface $iconSvg,
+	) {
+		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -71,19 +76,12 @@ class IconController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 240, period: 60)]
 	public function mdi(string $name): DataDisplayResponse {
-		$svg = MdiIconRenderer::svg(icon: $name);
+		$svg = $this->iconSvg->svg(icon: $name);
 		if ($svg === null) {
-			return new DataDisplayResponse(
-				data: '',
-				statusCode: Http::STATUS_NOT_FOUND
-			);
+			return new DataDisplayResponse(data: '', statusCode: Http::STATUS_NOT_FOUND);
 		}
 
-		$response = new DataDisplayResponse(
-			data: $svg,
-			statusCode: Http::STATUS_OK,
-			headers: ['Content-Type' => 'image/svg+xml']
-		);
+		$response = new DataDisplayResponse(data: $svg, statusCode: Http::STATUS_OK, headers: ['Content-Type' => 'image/svg+xml']);
 		// Glyph geometry is immutable for a given name — cache hard.
 		$response->cacheFor(86400, false, true);
 

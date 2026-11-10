@@ -50,12 +50,12 @@ final class FlowTimerFactory {
 	 * Constructor.
 	 *
 	 * @param WorkingCalendarService  $calendars  Calendar resolution.
-	 * @param SlaCalculator           $calculator Business-time arithmetic.
+	 * @param SlaCalculatorInterface           $calculator Business-time arithmetic.
 	 * @param EscalationLadderService $ladder     Normalises the escalation rules.
 	 */
 	public function __construct(
 		private readonly WorkingCalendarService $calendars,
-		private readonly SlaCalculator $calculator,
+		private readonly SlaCalculatorInterface $calculator,
 		private readonly EscalationLadderService $ladder,
 	) {
 		$this->values = new FlowTimerValues();
@@ -251,7 +251,7 @@ final class FlowTimerFactory {
 	private function applyBudget(FlowTimer $timer, array $sla): void {
 		$timer->setBudgetValue((float)$sla['value']);
 		$timer->setBudgetUnit($sla['unit']);
-		$timer->setRollToWorkingDay(($sla['rollToWorkingDay'] ?? SlaCalculator::ROLL_NONE));
+		$timer->setRollToWorkingDay(($sla['rollToWorkingDay'] ?? SlaCalculatorInterface::ROLL_NONE));
 		$timer->setConsumedValue(0.0);
 	}//end applyBudget()
 
@@ -315,7 +315,7 @@ final class FlowTimerFactory {
 			throw new FlowTimerValidationException(message: sprintf("anchorOffset '%s' must be an integer.", var_export($offset, true)));
 		}
 
-		$timer->setAnchorOffsetUnit($this->calculator->validateUnit(unit: ($config['anchorOffsetUnit'] ?? SlaCalculator::UNIT_CALENDAR_DAYS)));
+		$timer->setAnchorOffsetUnit($this->calculator->validateUnit(unit: ($config['anchorOffsetUnit'] ?? SlaCalculatorInterface::UNIT_CALENDAR_DAYS)));
 		$this->shiftAnchor(timer: $timer);
 	}//end applyAnchor()
 

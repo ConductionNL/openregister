@@ -38,7 +38,11 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
+use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
+use OCA\OpenRegister\Service\Object\IntegrityStorage;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -46,6 +50,8 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * The cascade refuses an archival child, names it, and still deletes the parent.
@@ -119,14 +125,10 @@ class ReferentialIntegrityArchivalCascadeTest extends TestCase {
 		);
 
 		$this->service = new ReferentialIntegrityService(
-			$schemaMapper,
-			$this->createMock(RegisterMapper::class),
-			$this->objectMapper,
-			$this->auditTrailMapper,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IDBConnection::class),
-			$this->nullCacheFactory(),
-			new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class))
+			index: new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $this->nullCacheFactory()),
+			storage: new IntegrityStorage(objectEntityMapper: $this->objectMapper, db: $this->createMock(IDBConnection::class)),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $this->auditTrailMapper, archivalGuard: new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class))),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 
 		$this->auditTrailMapper->method('buildAuditTrail')->willReturnCallback(
@@ -229,10 +231,12 @@ class ReferentialIntegrityArchivalCascadeTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			cascadeTargets: [
-				$this->target('child-ordinary', self::SCHEMA_ORDINARY),
-				$this->target('child-retained', self::SCHEMA_ARCHIVAL),
-			]
+			effects: new DeletionEffects(
+				cascadeTargets: [
+					$this->target('child-ordinary', self::SCHEMA_ORDINARY),
+					$this->target('child-retained', self::SCHEMA_ARCHIVAL),
+				]
+			)
 		);
 
 		$result = $this->service->applyDeletionActions($analysis, 'admin', 'parent-uuid', 'org-1', 'parent-slug');
@@ -272,10 +276,12 @@ class ReferentialIntegrityArchivalCascadeTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			cascadeTargets: [
-				$this->target('retained-a', self::SCHEMA_ARCHIVAL),
-				$this->target('retained-b', self::SCHEMA_ARCHIVAL),
-			]
+			effects: new DeletionEffects(
+				cascadeTargets: [
+					$this->target('retained-a', self::SCHEMA_ARCHIVAL),
+					$this->target('retained-b', self::SCHEMA_ARCHIVAL),
+				]
+			)
 		);
 
 		$result = $this->service->applyDeletionActions($analysis, 'admin', 'parent-uuid');
@@ -302,10 +308,12 @@ class ReferentialIntegrityArchivalCascadeTest extends TestCase {
 	public function testARetainedChildReachedTwiceIsReportedOnce(): void {
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			cascadeTargets: [
-				$this->target('retained-a', self::SCHEMA_ARCHIVAL, 'refA'),
-				$this->target('retained-a', self::SCHEMA_ARCHIVAL, 'refB'),
-			]
+			effects: new DeletionEffects(
+				cascadeTargets: [
+					$this->target('retained-a', self::SCHEMA_ARCHIVAL, 'refA'),
+					$this->target('retained-a', self::SCHEMA_ARCHIVAL, 'refB'),
+				]
+			)
 		);
 
 		$result = $this->service->applyDeletionActions($analysis, 'admin', 'parent-uuid');
@@ -331,7 +339,7 @@ class ReferentialIntegrityArchivalCascadeTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			cascadeTargets: [$this->target('child-ordinary', self::SCHEMA_ORDINARY)]
+			effects: new DeletionEffects(cascadeTargets: [$this->target('child-ordinary', self::SCHEMA_ORDINARY)])
 		);
 
 		$result = $this->service->applyDeletionActions($analysis, 'admin', 'parent-uuid');

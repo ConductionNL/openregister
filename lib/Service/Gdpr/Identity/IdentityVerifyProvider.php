@@ -39,6 +39,15 @@ namespace OCA\OpenRegister\Service\Gdpr\Identity;
  * A registerable identity-verification provider for a DSAR case.
  */
 interface IdentityVerifyProvider {
+
+	/**
+	 * The stable id of the fail-closed default provider, which the default policy pack binds.
+	 *
+	 * Callers outside lib/Service compare a registry's ids against it without naming that provider class.
+	 *
+	 * @var string
+	 */
+	public const NULL_PROVIDER_ID = 'or.default.identity-verify.null';
 	/**
 	 * Stable provider id addressed by a `dsarPolicyPack.identityVerifyProvider`
 	 * selector. MUST be unique across the registry; collisions are rejected

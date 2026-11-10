@@ -14,6 +14,7 @@ use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use OCA\OpenRegister\Search\Service\ViewPresentationService;
+use OCA\OpenRegister\Search\Service\ViewDefinition;
 use OCA\OpenRegister\Search\Service\ViewService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
@@ -107,12 +108,13 @@ class ViewsControllerWriteGoldenTest extends TestCase {
 		});
 
 		$controller = new ViewsController(
-			'openregister',
 			$request,
-			$this->viewService($case),
-			$this->createMock(ViewPresentationService::class),
-			$logger,
-			$this->resolver($case)
+			new \OCA\OpenRegister\Search\Controller\Support\ViewsControllerServices(
+				$this->viewService($case),
+				$this->createMock(ViewPresentationService::class),
+				$logger,
+				$this->resolver($case)
+			)
 		);
 
 		$response = match ($case['action']) {
@@ -187,7 +189,8 @@ class ViewsControllerWriteGoldenTest extends TestCase {
 				}
 
 				$view = new View();
-				$view->setName($args['name'] ?? $args[0] ?? 'saved');
+				$first = $args['name'] ?? $args[0] ?? 'saved';
+				$view->setName($first instanceof ViewDefinition ? $first->name : $first);
 				$view->setOwner('saved-owner');
 				return $view;
 			});

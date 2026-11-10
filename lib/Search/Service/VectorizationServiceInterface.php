@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service;
 
-use OCA\OpenRegister\Search\Service\Vectorization\Strategies\VectorizationStrategyInterface;
+use OCA\OpenRegister\Service\Vectorization\Strategies\VectorizationStrategyInterface;
 
 /**
  * Every public method of VectorizationService. Callers depend on this interface, not on the class.
@@ -79,7 +79,6 @@ interface VectorizationServiceInterface {
 	 * @param array $keywordResults Pre-fetched keyword search results to fuse
 	 * @param int $limit Maximum results
 	 * @param array $weights Weights for each search type ['keyword' => 0.5, 'vector' => 0.5]
-	 * @param string|null $provider Embedding provider
 	 *
 	 * @return array Hybrid search results with combined scores and source breakdown.
 	 *
@@ -88,8 +87,7 @@ interface VectorizationServiceInterface {
 	 * @spec exclude One-line facade delegation to VectorEmbeddings::hybridSearch; no logic of its own.
 	 */
 	public function hybridSearch(
-		string $query, array $keywordResults = [], int $limit = 20, array $weights = ['keyword' => 0.5, 'vector' => 0.5],
-		?string $provider = null
+		string $query, array $keywordResults = [], int $limit = 20, array $weights = ['keyword' => 0.5, 'vector' => 0.5]
 	): array;
 
 	/**

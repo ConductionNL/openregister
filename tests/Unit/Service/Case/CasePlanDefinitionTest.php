@@ -22,7 +22,11 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Case;
 use DateTime;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Exception\CaseValidationException;
+use OCA\OpenRegister\Service\Case\CaseAnchor;
 use OCA\OpenRegister\Service\Case\CasePlanDefinition;
+use OCA\OpenRegister\Service\Case\CasePlanInsertion;
+use OCA\OpenRegister\Service\Case\CasePlanPlacement;
+use OCA\OpenRegister\Service\Case\CasePlanProvenance;
 use OCA\OpenRegister\Service\Case\CaseSentryEvaluator;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use PHPUnit\Framework\TestCase;
@@ -154,7 +158,7 @@ class CasePlanDefinitionTest extends TestCase {
 			'doorlooptijd' => 'P8W',
 			'servicenorm' => 'P6W',
 		];
-		$row = $definitions->rowFrom(node: $node, objectUuid: 'obj', registerId: 1, schemaId: 2, parentId: 9, position: 3, settings: ['a' => 1], origin: CaseItem::ORIGIN_DISCRETIONARY, actor: 'alice', flowUuid: 'f', flowVersion: 4);
+		$row = $definitions->rowFrom(placed: new CasePlanPlacement(node: $node, parentId: 9, position: 3), insertion: new CasePlanInsertion(anchor: new CaseAnchor(objectUuid: 'obj', registerId: 1, schemaId: 2), settings: ['a' => 1], actor: 'alice', provenance: new CasePlanProvenance(flowUuid: 'f', flowVersion: 4, origin: CaseItem::ORIGIN_DISCRETIONARY)));
 
 		$this->assertSame('check', $row->getItemKey());
 		$this->assertSame('check', $row->getDefinitionItemKey());
@@ -178,13 +182,13 @@ class CasePlanDefinitionTest extends TestCase {
 		$this->assertSame(4, $row->getFlowVersion());
 		$this->assertSame(1, $row->getRealisationCount());
 
-		$adhoc = $definitions->rowFrom(node: ['key' => 'x', 'type' => 'milestone'], objectUuid: 'obj', registerId: null, schemaId: null, parentId: null, position: 0, settings: [], origin: CaseItem::ORIGIN_ADHOC, actor: null);
+		$adhoc = $definitions->rowFrom(placed: new CasePlanPlacement(node: ['key' => 'x', 'type' => 'milestone'], parentId: null, position: 0), insertion: new CasePlanInsertion(anchor: new CaseAnchor(objectUuid: 'obj', registerId: null, schemaId: null), settings: [], actor: null, provenance: new CasePlanProvenance(flowUuid: null, flowVersion: null, origin: CaseItem::ORIGIN_ADHOC)));
 		$this->assertNull($adhoc->getDefinitionItemKey(), 'An ad-hoc item is in no definition.');
 		$this->assertTrue($adhoc->getRequired(), 'Required defaults to true.');
 		$this->assertNull($adhoc->getEntryCriteria());
 
 		$this->expectException(CaseValidationException::class);
-		$definitions->rowFrom(node: ['key' => 'x', 'type' => 'milestone', 'dueAt' => 'not a date'], objectUuid: 'obj', registerId: null, schemaId: null, parentId: null, position: 0, settings: [], origin: CaseItem::ORIGIN_DEFINED, actor: null);
+		$definitions->rowFrom(placed: new CasePlanPlacement(node: ['key' => 'x', 'type' => 'milestone', 'dueAt' => 'not a date'], parentId: null, position: 0), insertion: new CasePlanInsertion(anchor: new CaseAnchor(objectUuid: 'obj', registerId: null, schemaId: null), settings: [], actor: null, provenance: new CasePlanProvenance(flowUuid: null, flowVersion: null, origin: CaseItem::ORIGIN_DEFINED)));
 	}//end testRowFromCompilesEveryField()
 
 	/**

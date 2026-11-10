@@ -45,7 +45,7 @@ use OCP\Security\ISecureRandom;
 /**
  * Signs, stores and redeems the state of an in-flight OAuth2 connect.
  */
-class OAuth2StateService {
+class OAuth2StateService implements OAuth2StateServiceInterface {
 	/**
 	 * Vault key prefix for a pending connect flow.
 	 *
@@ -77,16 +77,6 @@ class OAuth2StateService {
 	 * @var string
 	 */
 	private const SYSTEM_IDENTITY = '';
-
-	/**
-	 * How long a start stays redeemable, in seconds.
-	 *
-	 * Ten minutes: long enough for a person to read a provider's consent screen and
-	 * log in first, short enough that an abandoned flow is not a standing invitation.
-	 *
-	 * @var integer
-	 */
-	public const STATE_TTL_SECONDS = 600;
 
 	/**
 	 * Constructor.

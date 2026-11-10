@@ -37,7 +37,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
  */
-class ScheduleRefusals {
+class ScheduleRefusals implements ScheduleRefusalReportInterface {
 	/**
 	 * This request's refusals.
 	 *

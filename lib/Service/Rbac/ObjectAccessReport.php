@@ -28,19 +28,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
  * Assembles an object's access set and its history.
  *
  * @spec openspec/specs/rbac-scopes/spec.md
  */
-class ObjectAccessReport {
+class ObjectAccessReport implements ObjectAccessReportInterface {
 
 	/**
 	 * How many trail entries the history reads at most.
@@ -57,17 +54,13 @@ class ObjectAccessReport {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapperInterface            $registerMapper   Register lookup.
-	 * @param SchemaMapperInterface              $schemaMapper     Schema lookup.
-	 * @param AuditTrailMapperInterface          $auditTrailMapper The trail the history is read from.
-	 * @param ObjectPermissionsResolver $holders          Reads the access set out of the rules.
-	 * @param ObjectAccessHistory       $history          Reconstructs the set at a past moment.
-	 * @param DenyEnforcementMode       $enforcement      The staging switch.
+	 * @param ObjectAccessReportSources $sources     The register, schema and trail lookups the report reads.
+	 * @param ObjectPermissionsResolver $holders     Reads the access set out of the rules.
+	 * @param ObjectAccessHistory       $history     Reconstructs the set at a past moment.
+	 * @param DenyEnforcementMode       $enforcement The staging switch.
 	 */
 	public function __construct(
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
+		private readonly ObjectAccessReportSources $sources,
 		private readonly ObjectPermissionsResolver $holders,
 		private readonly ObjectAccessHistory $history,
 		private readonly DenyEnforcementMode $enforcement,
@@ -86,28 +79,40 @@ class ObjectAccessReport {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function setFor(ObjectEntity $object, mixed $registerRef, mixed $schemaRef): array {
-		$register = $this->register(reference: $registerRef);
-		$schema = $this->schema(reference: $schemaRef);
+		return $this->setIn(
+			object: $object,
+			place: new ReportedPlace(register: $this->register(reference: $registerRef), schema: $this->schema(reference: $schemaRef))
+		);
+	}//end setFor()
 
+	/**
+	 * Who holds which right on one object in its resolved register and schema.
+	 *
+	 * @param ObjectEntity  $object The object.
+	 * @param ReportedPlace $place  Its register and schema, either possibly unresolved.
+	 *
+	 * @return array<string, mixed> The access set.
+	 */
+	private function setIn(ObjectEntity $object, ReportedPlace $place): array {
 		$set = $this->holders->holders(
 			blocks: [
 				'object' => $object->getAuthorization(),
-				'schema' => $schema?->getAuthorization(),
-				'register' => $register?->getAuthorization(),
+				'schema' => $place->schema?->getAuthorization(),
+				'register' => $place->register?->getAuthorization(),
 			],
-			roleDefinitions: $this->roleDefinitionsOf(register: $register)
+			roleDefinitions: $this->roleDefinitionsOf(register: $place->register)
 		);
 
 		return [
 			'object' => $object->getUuid(),
-			'register' => $register?->getSlug(),
-			'schema' => $schema?->getSlug(),
+			'register' => $place->register?->getSlug(),
+			'schema' => $place->schema?->getSlug(),
 			'owner' => $object->getOwner(),
 			'holders' => $set['holders'],
 			'denied' => $set['denied'],
 			'denyEnforcement' => $this->enforcement->current(),
 		];
-	}//end setFor()
+	}//end setIn()
 
 	/**
 	 * How that set changed, and what it was at a named moment.
@@ -122,7 +127,7 @@ class ObjectAccessReport {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function historyFor(ObjectEntity $object, ?string $moment): array {
-		$entries = $this->auditTrailMapper->findForObjectByAction(
+		$entries = $this->sources->auditTrailMapper->findForObjectByAction(
 			objectUuid: (string)$object->getUuid(),
 			actions: [],
 			limit: self::HISTORY_LIMIT
@@ -151,7 +156,7 @@ class ObjectAccessReport {
 	 */
 	public function schema(mixed $reference): ?Schema {
 		try {
-			return $this->schemaMapper->find($reference);
+			return $this->sources->catalog->schemas()->find($reference);
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -166,7 +171,7 @@ class ObjectAccessReport {
 	 */
 	private function register(mixed $reference): ?Register {
 		try {
-			return $this->registerMapper->find($reference);
+			return $this->sources->catalog->registers()->find($reference);
 		} catch (\Throwable $e) {
 			return null;
 		}

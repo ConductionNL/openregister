@@ -199,6 +199,20 @@ class SchemaMapperUpdateEventTest extends TestCase {
 	}//end reimported()
 
 	/**
+	 * A save states its own modification time, whatever the client sent.
+	 *
+	 * @return void
+	 */
+	public function testASaveMovesTheUpdatedStamp(): void {
+		$schema = $this->reimported();
+		$schema->setUpdated(new \DateTime('2001-02-03 04:05:06'));
+
+		$saved = $this->mapper()->update($schema);
+
+		$this->assertGreaterThan(new \DateTime('2001-02-04'), $saved->getUpdated());
+	}//end testASaveMovesTheUpdatedStamp()
+
+	/**
 	 * An identical re-import dispatches nothing and counts nothing.
 	 *
 	 * @return void

@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationHistoryControllerServices;
 use OCA\OpenRegister\Notifications\Controller\NotificationHistoryController;
 use OCA\OpenRegister\Notifications\Db\NotificationHistory;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
@@ -88,12 +89,8 @@ class NotificationHistoryBellTest extends TestCase {
 		$groups->method('isAdmin')->willReturn(false);
 
 		return new NotificationHistoryController(
-			'openregister',
 			$this->request,
-			$this->mapper,
-			$session,
-			$groups,
-			$this->clearing
+			new NotificationHistoryControllerServices(mapper: $this->mapper, userSession: $session, groupManager: $groups, clearing: $this->clearing)
 		);
 
 	}//end controller()

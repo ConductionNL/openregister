@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\OasService;
+use OCA\OpenRegister\Service\OasSources;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
@@ -77,10 +78,12 @@ class SchemaShapeExposureTest extends TestCase {
 		}
 
 		return new OasService(
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(IURLGenerator::class),
-			null,
+			new OasSources(
+				$this->createMock(RegisterMapper::class),
+				$this->createMock(SchemaMapper::class),
+				$this->createMock(IURLGenerator::class),
+				null
+			),
 			null,
 			$rbac
 		);

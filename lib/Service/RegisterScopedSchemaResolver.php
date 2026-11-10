@@ -78,7 +78,7 @@ use Throwable;
  *
  * @spec openspec/specs/register-scoped-slug-resolution/spec.md
  */
-class RegisterScopedSchemaResolver {
+class RegisterScopedSchemaResolver implements RegisterScopedSchemaResolverInterface {
 
 	/**
 	 * Constructor.

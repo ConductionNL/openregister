@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker;
+use OCA\OpenRegister\Service\Rbac\RevealRecording;
 use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -187,10 +188,10 @@ class ExplicitRevealRoutesTest extends TestCase {
 	public function testAListRowIsMaskedWithItsNameCopy(): void {
 		$rbac = $this->createMock(PropertyRbacHandler::class);
 		$rbac->method('canReadProperty')->willReturn(true);
-		$masker = new ExplicitRevealMasker(new ExplicitReveal(), $rbac, $this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class));
+		$masker = new ExplicitRevealMasker(new ExplicitReveal(), $rbac, $this->createMock(IUserSession::class), new RevealRecording($this->createMock(LoggerInterface::class)));
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturn($masker);
-		$render = $this->bare(RenderObject::class, ['container' => $container]);
+		$render = $this->bare(RenderObject::class, ['runtime' => new \OCA\OpenRegister\Service\Object\RenderRuntime(logger: $this->createMock(\Psr\Log\LoggerInterface::class), extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(), container: $container)]);
 
 		$row = $this->call($render, 'maskRowReveals', [
 			'row' => ['id' => '11111111-1111-4111-8111-111111111111', 'citizenServiceNumber' => self::BSN, '@self' => ['name' => self::BSN]],
@@ -236,10 +237,9 @@ class ExplicitRevealRoutesTest extends TestCase {
 		$encryption->method('decryptProperties')->willReturnCallback(
 			static fn (array $data): array => (['citizenServiceNumber' => self::BSN] + $data)
 		);
-		$render = $this->masking();
+		$render = $this->bare(RenderObject::class, ['runtime' => $this->maskingRuntime($encryption)]);
 		$reflection = new ReflectionClass($render);
 		$reflection->getProperty('propertyRbacHandler')->setValue($render, $rbac);
-		$reflection->getProperty('fieldEncryptionHandler')->setValue($render, $encryption);
 		$reflection->getProperty('schemasCache')->setValue($render, [7 => $schema]);
 
 		$row = $this->call($render, 'redactArrayRow', [
@@ -256,12 +256,23 @@ class ExplicitRevealRoutesTest extends TestCase {
 	 * @return RenderObject The render.
 	 */
 	private function masking(): RenderObject {
+		return $this->bare(RenderObject::class, ['runtime' => $this->maskingRuntime(null)]);
+	}//end masking()
+
+	/**
+	 * The runtime of a render that can mask explicit-reveal values.
+	 *
+	 * @param FieldEncryptionHandler|null $encryption The field encryption handler, if any.
+	 *
+	 * @return \OCA\OpenRegister\Service\Object\RenderRuntime The runtime.
+	 */
+	private function maskingRuntime(?FieldEncryptionHandler $encryption): \OCA\OpenRegister\Service\Object\RenderRuntime {
 		$rbac = $this->createMock(PropertyRbacHandler::class);
 		$rbac->method('canReadProperty')->willReturn(true);
-		$masker = new ExplicitRevealMasker(new ExplicitReveal(), $rbac, $this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class));
+		$masker = new ExplicitRevealMasker(new ExplicitReveal(), $rbac, $this->createMock(IUserSession::class), new RevealRecording($this->createMock(LoggerInterface::class)));
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturn($masker);
 
-		return $this->bare(RenderObject::class, ['container' => $container]);
-	}//end masking()
+		return new \OCA\OpenRegister\Service\Object\RenderRuntime(logger: $this->createMock(\Psr\Log\LoggerInterface::class), extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(fieldEncryptionHandler: $encryption), container: $container);
+	}//end maskingRuntime()
 }//end class

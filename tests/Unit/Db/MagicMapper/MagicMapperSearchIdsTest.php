@@ -18,6 +18,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -25,7 +28,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -36,6 +41,9 @@ use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Audit\PurposeGuard;
+use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
+use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -75,6 +83,27 @@ class MagicMapperSearchIdsTest extends TestCase {
 	private ?array $tableRows = null;
 
 	/**
+	 * The doelbinding guard the mapper is given, a permissive mock when null.
+	 *
+	 * @var PurposeGuard|null
+	 */
+	private ?PurposeGuard $purposeGuard = null;
+
+	/**
+	 * What the table count answers.
+	 *
+	 * @var int
+	 */
+	private int $tableCount = 1;
+
+	/**
+	 * How many table searches ran.
+	 *
+	 * @var int
+	 */
+	private int $searches = 0;
+
+	/**
 	 * A mapper whose table search and count record their query.
 	 *
 	 * @return MagicMapper The mapper.
@@ -82,9 +111,10 @@ class MagicMapperSearchIdsTest extends TestCase {
 	private function mapper(): MagicMapper {
 		$container = $this->createMock(ContainerInterface::class);
 		$services = [
-			DateTimeNormalizer::class => $this->createMock(DateTimeNormalizer::class),
+			DateTimeNormalizerInterface::class => $this->createMock(DateTimeNormalizer::class),
 			ConditionMatcher::class => $this->createMock(ConditionMatcher::class),
-			SchemaTypeConverter::class => $this->createMock(SchemaTypeConverter::class),
+			SchemaTypeConverterInterface::class => $this->createMock(SchemaTypeConverter::class),
+			PurposeGuardInterface::class => ($this->purposeGuard ?? $this->permissiveGuard()),
 		];
 		$container->method('get')->willReturnCallback(static fn (string $id) => ($services[$id] ?? null));
 
@@ -109,17 +139,22 @@ class MagicMapperSearchIdsTest extends TestCase {
 			->setConstructorArgs(
 				[
 					$this->createMock(IDBConnection::class),
-					$schemas,
-					$registers,
-					$this->createMock(IConfig::class),
-					$this->createMock(IEventDispatcher::class),
-					$this->createMock(IUserSession::class),
-					$this->createMock(IGroupManager::class),
-					$this->createMock(IUserManager::class),
-					$this->createMock(IAppConfig::class),
-					$this->createMock(LoggerInterface::class),
-					$this->createMock(SettingsService::class),
-					$container,
+					new MagicMapperLookups(
+						$schemas,
+						$registers,
+						$container
+					),
+					new MagicMapperIdentity(
+						$this->createMock(IUserSession::class),
+						$this->createMock(IGroupManager::class),
+						$this->createMock(IUserManager::class)
+					),
+					new MagicMapperRuntime(
+						$this->createMock(IConfig::class),
+						$this->createMock(IAppConfig::class),
+						$this->createMock(IEventDispatcher::class),
+						$this->createMock(LoggerInterface::class)
+					),
 				]
 			)
 			->onlyMethods(['searchObjectsInRegisterSchemaTable', 'countObjectsInRegisterSchemaTable', 'findMultipleAcrossAllMagicTables', 'findByRelationAcrossAllMagicTables'])
@@ -128,18 +163,46 @@ class MagicMapperSearchIdsTest extends TestCase {
 		$mapper->method('searchObjectsInRegisterSchemaTable')->willReturnCallback(
 			function (array $query): array {
 				$this->tableQueries[] = $query;
+				$this->searches++;
 				return ($this->tableRows ?? [new ObjectEntity()]);
 			}
 		);
 		$mapper->method('countObjectsInRegisterSchemaTable')->willReturnCallback(
 			function (array $query): int {
 				$this->tableQueries[] = $query;
-				return 1;
+				return $this->tableCount;
 			}
 		);
 
 		return $mapper;
 	}//end mapper()
+
+	/**
+	 * A guard that lets every table be read.
+	 *
+	 * @return PurposeGuard The guard.
+	 */
+	private function permissiveGuard(): PurposeGuard {
+		$guard = $this->createMock(PurposeGuard::class);
+		$guard->method('allows')->willReturn(true);
+
+		return $guard;
+	}//end permissiveGuard()
+
+	/**
+	 * A guard whose every table asks for a purpose the request does not carry.
+	 *
+	 * @return PurposeGuard The guard.
+	 */
+	private function refusingGuard(): PurposeGuard {
+		$guard = $this->createMock(PurposeGuard::class);
+		$guard->method('allows')->willReturn(false);
+		$guard->method('enforce')->willThrowException(
+			new PurposeRefusedException(rule: PurposeRefusedException::RULE_MISSING, reason: 'no purpose', purpose: null)
+		);
+
+		return $guard;
+	}//end refusingGuard()
 
 	/**
 	 * The `_ids` every table query carried.
@@ -393,6 +456,66 @@ class MagicMapperSearchIdsTest extends TestCase {
 	 *
 	 * @return void
 	 */
+	public function testQueryIdsOnATableThatNeedsAPurposeAreRefused(): void {
+		$this->purposeGuard = $this->createMock(PurposeGuard::class);
+		$this->purposeGuard->method('allows')->willReturn(false);
+		$this->purposeGuard->expects($this->once())->method('enforce')
+			->with($this->callback(static fn ($register): bool => $register->getId() === 7), $this->callback(static fn ($schema): bool => $schema->getId() === 9))
+			->willThrowException(new PurposeRefusedException(rule: PurposeRefusedException::RULE_MISSING, reason: 'no purpose', purpose: null));
+		$mapper = $this->mapper();
+		$mapper->method('findMultipleAcrossAllMagicTables')->willReturn([$this->locatedRow()]);
+
+		try {
+			$query = ['_ids' => ['located']];
+			$mapper->searchObjectsPaginated(searchQuery: $query, countQuery: $query);
+			$this->fail('The search ran.');
+		} catch (PurposeRefusedException $refusal) {
+			$this->assertSame(0, $this->searches);
+		}
+	}//end testQueryIdsOnATableThatNeedsAPurposeAreRefused()
+
+	/**
+	 * Ids of a row the caller may not read, in a table that asks for a purpose, answer as a missing row.
+	 *
+	 * @return void
+	 */
+	public function testQueryIdsOfARowTheCallerMayNotReadAnswerAsAMissingRow(): void {
+		$this->purposeGuard = $this->refusingGuard();
+		$this->tableCount   = 0;
+		$query = ['_ids' => ['located']];
+
+		$missing = $this->mapper();
+		$missing->method('findMultipleAcrossAllMagicTables')->willReturn([]);
+		$unreadable = $this->mapper();
+		$unreadable->method('findMultipleAcrossAllMagicTables')->willReturn([$this->locatedRow()]);
+
+		$answer = $unreadable->searchObjectsPaginated(searchQuery: $query, countQuery: $query);
+
+		$this->assertSame(['results' => [], 'total' => 0, 'registers' => [], 'schemas' => []], $answer);
+		$this->assertSame($missing->searchObjectsPaginated(searchQuery: $query, countQuery: $query), $answer);
+		$this->assertSame(0, $this->searches);
+	}//end testQueryIdsOfARowTheCallerMayNotReadAnswerAsAMissingRow()
+
+	/**
+	 * The count that decides the refusal reads with the request's read rules.
+	 *
+	 * @return void
+	 */
+	public function testTheRefusalCountKeepsTheReadRules(): void {
+		$this->purposeGuard = $this->refusingGuard();
+		$mapper = $this->mapper();
+		$mapper->method('findMultipleAcrossAllMagicTables')->willReturn([$this->locatedRow()]);
+
+		try {
+			$query = ['_ids' => ['located']];
+			$mapper->searchObjectsPaginated(searchQuery: $query, countQuery: $query);
+			$this->fail('The search ran.');
+		} catch (PurposeRefusedException $refusal) {
+			$this->assertSame([[true, true]], $this->tableFlags());
+			$this->assertSame([['located']], $this->tableIds());
+		}
+	}//end testTheRefusalCountKeepsTheReadRules()
+
 	public function testARelationSearchWithoutATableIsAnsweredByTheTable(): void {
 		$located = $this->locatedRow();
 		$mapper  = $this->mapper();
@@ -405,6 +528,24 @@ class MagicMapperSearchIdsTest extends TestCase {
 		$this->assertSame(1, $result['total']);
 		$this->assertSame([[true, true], [true, true]], $this->tableFlags());
 	}//end testARelationSearchWithoutATableIsAnsweredByTheTable()
+
+	/**
+	 * A relation search without a table leaves out a table that asks for a purpose the request does not carry.
+	 *
+	 * @return void
+	 */
+	public function testARelationSearchWithoutATableLeavesOutATableThatNeedsAPurpose(): void {
+		$this->purposeGuard = $this->refusingGuard();
+		$this->purposeGuard->expects($this->never())->method('enforce');
+		$mapper = $this->mapper();
+		$mapper->method('findByRelationAcrossAllMagicTables')->willReturn([$this->locatedRow()]);
+
+		$query  = ['_relations_contains' => 'target'];
+		$result = $mapper->searchObjectsPaginated(searchQuery: $query, countQuery: $query);
+
+		$this->assertSame(['results' => [], 'total' => 0, 'registers' => [], 'schemas' => []], $result);
+		$this->assertSame(0, $this->searches);
+	}//end testARelationSearchWithoutATableLeavesOutATableThatNeedsAPurpose()
 
 	/**
 	 * The flags of the call decide, whatever the query carries.

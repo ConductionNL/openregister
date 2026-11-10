@@ -52,12 +52,9 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\PhotoLink;
-use OCA\OpenRegister\Db\PhotoLinkMapper;
-use OCP\App\IAppManager;
+use OCA\OpenRegister\Db\PhotoLinkMapperInterface;
 use OCP\IURLGenerator;
-use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -72,7 +69,7 @@ use Throwable;
  *     for one of the Tier-2 flows (link, create, unlink, list, picker,
  *     cache refresh, graceful degradation).
  */
-class PhotoLinkService {
+class PhotoLinkService implements PhotoLinkServiceInterface {
 	private const REQUIRED_APP = 'photos';
 
 	private const ALBUM_MAPPER = 'OCA\\Photos\\Album\\AlbumMapper';
@@ -83,20 +80,16 @@ class PhotoLinkService {
 	/**
 	 * Constructor.
 	 *
-	 * @param PhotoLinkMapper $photoLinkMapper Persistence for link rows.
+	 * @param PhotoLinkMapperInterface $photoLinkMapper Persistence for link rows.
 	 * @param ContainerInterface $container Container for late-bound Photos classes.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IUserSession $userSession Active session.
 	 * @param IURLGenerator $urlGenerator URL generator for deep links / thumbnails.
-	 * @param LoggerInterface $logger Logger.
+	 * @param LinkServiceRuntime $runtime Whether the app is enabled, the current user, and the logger.
 	 */
 	public function __construct(
-		private readonly PhotoLinkMapper $photoLinkMapper,
+		private readonly PhotoLinkMapperInterface $photoLinkMapper,
 		private readonly ContainerInterface $container,
-		private readonly IAppManager $appManager,
-		private readonly IUserSession $userSession,
 		private readonly IURLGenerator $urlGenerator,
-		private readonly LoggerInterface $logger,
+		private readonly LinkServiceRuntime $runtime,
 	) {
 	}//end __construct()
 
@@ -106,7 +99,7 @@ class PhotoLinkService {
 	 * @return bool
 	 */
 	public function isPhotosAvailable(): bool {
-		return $this->appManager->isEnabledForUser(self::REQUIRED_APP);
+		return $this->runtime->appManager()->isEnabledForUser(self::REQUIRED_APP);
 	}//end isPhotosAvailable()
 
 	/**
@@ -125,7 +118,7 @@ class PhotoLinkService {
 		try {
 			return $this->container->get(self::ALBUM_MAPPER);
 		} catch (Throwable $e) {
-			$this->logger->debug('PhotoLinkService: AlbumMapper unavailable: ' . $e->getMessage());
+			$this->runtime->logger()->debug('PhotoLinkService: AlbumMapper unavailable: ' . $e->getMessage());
 			return null;
 		}
 	}//end getAlbumMapper()
@@ -138,12 +131,7 @@ class PhotoLinkService {
 	 * @throws Exception When there is no active user.
 	 */
 	private function requireUid(): string {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			throw new Exception('No user logged in', 401);
-		}
-
-		return $user->getUID();
+		return $this->runtime->userSession()->getUser()?->getUID() ?? throw new Exception('No user logged in', 401);
 	}//end requireUid()
 
 	/**
@@ -174,21 +162,43 @@ class PhotoLinkService {
 			throw new Exception('Album already linked to this object', 409);
 		}
 
-		$info = $this->fetchAlbumInfo(albumId: $albumId, uid: $uid);
-		if ($info === null) {
-			throw new Exception('Photos album not found', 404);
-		}
+		$run       = new AlbumLinkRun(uid: $uid, albumId: $albumId);
+		$run->info = $this->fetchAlbumInfo(run: $run) ?? throw new Exception('Photos album not found', 404);
 
+		return $this->persistLink(target: $target, run: $run);
+	}//end linkAlbum()
+
+	/**
+	 * Build, stamp and insert the link row for an album.
+	 *
+	 * @param LinkTarget   $target The object to link to.
+	 * @param AlbumLinkRun $run    The linking user, the album id and its fetched info.
+	 *
+	 * @return PhotoLink The persisted link row.
+	 */
+	private function persistLink(LinkTarget $target, AlbumLinkRun $run): PhotoLink {
 		$link = new PhotoLink();
-		$link->setAlbumId($albumId);
+		$link->setAlbumId($run->albumId);
+		$this->applyAlbumInfo(link: $link, info: $run->info);
+		$target->stamp(link: $link, linkedBy: $run->uid);
+
+		return $this->photoLinkMapper->insert($link);
+	}//end persistLink()
+
+	/**
+	 * Copy album info onto a link row.
+	 *
+	 * @param PhotoLink           $link The link row.
+	 * @param array<string,mixed> $info Album info `{ name, coverPhotoUrl, photoCount, lastEdited }`.
+	 *
+	 * @return void
+	 */
+	private function applyAlbumInfo(PhotoLink $link, array $info): void {
 		$link->setAlbumName($info['name']);
 		$link->setCoverPhotoUrl($info['coverPhotoUrl']);
 		$link->setPhotoCount($info['photoCount']);
 		$link->setLastEdited($info['lastEdited']);
-		$target->stamp(link: $link, linkedBy: $uid);
-
-		return $this->photoLinkMapper->insert($link);
-	}//end linkAlbum()
+	}//end applyAlbumInfo()
 
 	/**
 	 * Create a new NC Photos album and link it to an OR object.
@@ -211,29 +221,31 @@ class PhotoLinkService {
 			throw new Exception('Album name is required', 400);
 		}
 
-		$mapper = $this->getAlbumMapper();
-		if ($mapper === null) {
-			throw new Exception('NC Photos is not available', 503);
-		}
+		$run       = new AlbumLinkRun(uid: $uid, albumId: $this->createAlbum(uid: $uid, name: $name));
+		$run->info = ['name' => $name, 'coverPhotoUrl' => null, 'photoCount' => 0, 'lastEdited' => new DateTime()];
 
+		return $this->persistLink(target: $target, run: $run);
+	}//end createAndLinkAlbum()
+
+	/**
+	 * Create an album in NC Photos and return its id.
+	 *
+	 * @param string $uid  The owning user.
+	 * @param string $name The album name (trimmed, non-empty).
+	 *
+	 * @return int The new album id.
+	 *
+	 * @throws Exception When Photos is unavailable (503) or the create fails (500).
+	 */
+	private function createAlbum(string $uid, string $name): int {
+		$mapper = $this->getAlbumMapper() ?? throw new Exception('NC Photos is not available', 503);
 		try {
-			$albumInfo = $mapper->create($uid, $name);
-			$albumId = (int)$albumInfo->getId();
+			return (int)$mapper->create($uid, $name)->getId();
 		} catch (Throwable $e) {
-			$this->logger->warning('PhotoLinkService::createAndLinkAlbum failed: ' . $e->getMessage());
+			$this->runtime->logger()->warning('PhotoLinkService::createAndLinkAlbum failed: ' . $e->getMessage());
 			throw new Exception('Failed to create Photos album', 500);
 		}
-
-		$link = new PhotoLink();
-		$link->setAlbumId($albumId);
-		$link->setAlbumName($name);
-		$link->setCoverPhotoUrl(null);
-		$link->setPhotoCount(0);
-		$link->setLastEdited(new DateTime());
-		$target->stamp(link: $link, linkedBy: $uid);
-
-		return $this->photoLinkMapper->insert($link);
-	}//end createAndLinkAlbum()
+	}//end createAlbum()
 
 	/**
 	 * Unlink an album from an object.
@@ -271,22 +283,48 @@ class PhotoLinkService {
 	 */
 	public function getLinkedAlbums(string $objectUuid): array {
 		$links = $this->photoLinkMapper->findByObjectUuid($objectUuid);
-		$available = $this->isPhotosAvailable();
-		$uid = $this->userSession->getUser()?->getUID();
+		$refreshAs = null;
+		if ($this->isPhotosAvailable() === true) {
+			$refreshAs = $this->runtime->userSession()->getUser()?->getUID();
+		}
 
 		$results = [];
 		foreach ($links as $link) {
-			if ($available === true && $uid !== null && $this->isStale(link: $link) === true) {
-				$link = $this->refreshLink(link: $link, uid: $uid);
-			}
-
-			$row = $link->jsonSerialize();
-			$row['url'] = $this->albumDeepLink(albumName: (string)($row['albumName'] ?? ''));
-			$results[] = $row;
+			$results[] = $this->linkedRow(link: $this->currentLink(link: $link, refreshAs: $refreshAs));
 		}
 
 		return $results;
 	}//end getLinkedAlbums()
+
+	/**
+	 * The link, refreshed from NC Photos first when Photos and a user are there and its cache is stale.
+	 *
+	 * @param PhotoLink   $link      The link row.
+	 * @param string|null $refreshAs The current user when NC Photos is available, else null.
+	 *
+	 * @return PhotoLink
+	 */
+	private function currentLink(PhotoLink $link, ?string $refreshAs): PhotoLink {
+		if ($refreshAs !== null && $this->isStale(link: $link) === true) {
+			return $this->refreshLink(link: $link, uid: $refreshAs);
+		}
+
+		return $link;
+	}//end currentLink()
+
+	/**
+	 * Serialise a link row with its Photos deep link.
+	 *
+	 * @param PhotoLink $link The link row.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function linkedRow(PhotoLink $link): array {
+		$row        = $link->jsonSerialize();
+		$row['url'] = $this->albumDeepLink(albumName: (string)($row['albumName'] ?? ''));
+
+		return $row;
+	}//end linkedRow()
 
 	/**
 	 * Return the current user's NC Photos albums (picker source).
@@ -302,23 +340,40 @@ class PhotoLinkService {
 	 */
 	public function getAvailableAlbums(?string $search = null): array {
 		$mapper = $this->getAlbumMapper();
-		$uid = $this->userSession->getUser()?->getUID();
+		$uid = $this->runtime->userSession()->getUser()?->getUID();
 		if ($mapper === null || $uid === null) {
 			return [];
 		}
 
-		try {
-			$albums = $mapper->getForUser($uid);
-		} catch (Throwable $e) {
-			$this->logger->warning('PhotoLinkService::getAvailableAlbums failed: ' . $e->getMessage());
-			return [];
+		$albums = $this->albumsForUser(mapper: $mapper, uid: $uid);
+
+		return $this->pickerRows(albums: $albums, needle: $this->searchNeedle(search: $search));
+	}//end getAvailableAlbums()
+
+	/**
+	 * The lower-cased search filter, or null for no filter.
+	 *
+	 * @param string|null $search Optional name-substring filter.
+	 *
+	 * @return string|null
+	 */
+	private function searchNeedle(?string $search): ?string {
+		if ($search === null || $search === '') {
+			return null;
 		}
 
-		$needle = null;
-		if ($search !== null && $search !== '') {
-			$needle = mb_strtolower($search);
-		}
+		return mb_strtolower($search);
+	}//end searchNeedle()
 
+	/**
+	 * Picker rows for the readable albums that pass the filter.
+	 *
+	 * @param iterable<object> $albums NC Photos albums.
+	 * @param string|null      $needle Lower-cased name filter, or null.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function pickerRows(iterable $albums, ?string $needle): array {
 		$out = [];
 		foreach ($albums as $album) {
 			$row = $this->pickerRowFromAlbum(album: $album, needle: $needle);
@@ -328,7 +383,24 @@ class PhotoLinkService {
 		}
 
 		return $out;
-	}//end getAvailableAlbums()
+	}//end pickerRows()
+
+	/**
+	 * The user's albums, or none when Photos fails to list them.
+	 *
+	 * @param object $mapper NC Photos AlbumMapper.
+	 * @param string $uid    The user id.
+	 *
+	 * @return iterable<object>
+	 */
+	private function albumsForUser(object $mapper, string $uid): iterable {
+		try {
+			return $mapper->getForUser($uid);
+		} catch (Throwable $e) {
+			$this->runtime->logger()->warning('PhotoLinkService::getAvailableAlbums failed: ' . $e->getMessage());
+			return [];
+		}
+	}//end albumsForUser()
 
 	/**
 	 * Map a single NC Photos album into a picker row, applying the
@@ -341,25 +413,46 @@ class PhotoLinkService {
 	 *                                  album is unreadable or filtered out.
 	 */
 	private function pickerRowFromAlbum(object $album, ?string $needle): ?array {
-		try {
-			$name = (string)$album->getTitle();
-			$albumId = (int)$album->getId();
-		} catch (Throwable $e) {
-			return null;
-		}
-
-		if ($needle !== null && str_contains(mb_strtolower($name), $needle) === false) {
+		$identity = $this->albumIdentity(album: $album);
+		if ($identity === null || $this->matchesNeedle(name: $identity['name'], needle: $needle) === false) {
 			return null;
 		}
 
 		return [
-			'id' => $albumId,
-			'name' => $name,
-			'coverPhotoUrl' => $this->albumDeepLink(albumName: $name),
+			'id' => $identity['id'],
+			'name' => $identity['name'],
+			'coverPhotoUrl' => $this->albumDeepLink(albumName: $identity['name']),
 			'photoCount' => null,
-			'url' => $this->albumDeepLink(albumName: $name),
+			'url' => $this->albumDeepLink(albumName: $identity['name']),
 		];
 	}//end pickerRowFromAlbum()
+
+	/**
+	 * Read an album's name and id, or null when the album is unreadable.
+	 *
+	 * @param object $album An NC Photos `AlbumInfo` instance.
+	 *
+	 * @return array{name:string,id:int}|null
+	 */
+	private function albumIdentity(object $album): ?array {
+		try {
+			return ['name' => (string)$album->getTitle(), 'id' => (int)$album->getId()];
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end albumIdentity()
+
+	/**
+	 * Whether an album name passes the lower-cased substring filter (always, without one).
+	 *
+	 * @param string      $name   Album name.
+	 * @param string|null $needle Lower-cased filter, or null.
+	 *
+	 * @return bool
+	 */
+	private function matchesNeedle(string $name, ?string $needle): bool {
+		return $needle === null || str_contains(mb_strtolower($name), $needle) === true;
+	}//end matchesNeedle()
 
 	/**
 	 * Whether a link row's cache is older than the stale window.
@@ -370,11 +463,8 @@ class PhotoLinkService {
 	 */
 	private function isStale(PhotoLink $link): bool {
 		$linkedAt = $link->getLinkedAt();
-		if ($linkedAt === null) {
-			return true;
-		}
 
-		return (time() - $linkedAt->getTimestamp()) > self::STALE_AFTER;
+		return $linkedAt === null || (time() - $linkedAt->getTimestamp()) > self::STALE_AFTER;
 	}//end isStale()
 
 	/**
@@ -389,21 +479,18 @@ class PhotoLinkService {
 	 * @return PhotoLink The (possibly updated) link row.
 	 */
 	private function refreshLink(PhotoLink $link, string $uid): PhotoLink {
-		$info = $this->fetchAlbumInfo(albumId: (int)$link->getAlbumId(), uid: $uid);
+		$info = $this->fetchAlbumInfo(run: new AlbumLinkRun(uid: $uid, albumId: (int)$link->getAlbumId()));
 		if ($info === null) {
 			return $link;
 		}
 
-		$link->setAlbumName($info['name']);
-		$link->setCoverPhotoUrl($info['coverPhotoUrl']);
-		$link->setPhotoCount($info['photoCount']);
-		$link->setLastEdited($info['lastEdited']);
+		$this->applyAlbumInfo(link: $link, info: $info);
 		$link->setLinkedAt(new DateTime());
 
 		try {
 			return $this->photoLinkMapper->update($link);
 		} catch (Throwable $e) {
-			$this->logger->debug('PhotoLinkService::refreshLink update failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('PhotoLinkService::refreshLink update failed: ' . $e->getMessage());
 			return $link;
 		}
 	}//end refreshLink()
@@ -411,39 +498,19 @@ class PhotoLinkService {
 	/**
 	 * Fetch normalised album metadata from NC Photos.
 	 *
-	 * @param int $albumId The album id.
-	 * @param string $uid The owning user id.
+	 * @param AlbumLinkRun $run The owning user and the album id.
 	 *
 	 * @return array{name:string,coverPhotoUrl:?string,photoCount:?int,lastEdited:?DateTime}|null
 	 */
-	private function fetchAlbumInfo(int $albumId, string $uid): ?array {
+	private function fetchAlbumInfo(AlbumLinkRun $run): ?array {
 		$mapper = $this->getAlbumMapper();
-		if ($mapper === null) {
-			return null;
-		}
-
-		try {
-			$album = $mapper->get($albumId);
-		} catch (Throwable $e) {
-			$this->logger->debug('PhotoLinkService::fetchAlbumInfo get failed: ' . $e->getMessage());
-			return null;
-		}
-
+		$album  = $this->findAlbum(mapper: $mapper, albumId: $run->albumId);
 		if ($album === null) {
 			return null;
 		}
 
-		$lastEdited = null;
-		try {
-			$lastAdded = (int)$album->getLastAddedPhoto();
-			if ($lastAdded > 0) {
-				$lastEdited = (new DateTime())->setTimestamp($lastAdded);
-			}
-		} catch (Throwable $e) {
-			$lastEdited = null;
-		}
-
-		$photoCount = $this->countPhotos(mapper: $mapper, albumId: $albumId, uid: $uid);
+		$lastEdited = $this->lastEdited(album: $album);
+		$photoCount = $this->countPhotos(mapper: $mapper, run: $run);
 
 		return [
 			'name' => (string)$album->getTitle(),
@@ -454,20 +521,60 @@ class PhotoLinkService {
 	}//end fetchAlbumInfo()
 
 	/**
+	 * Look an album up in NC Photos, or null when it is missing or the lookup fails.
+	 *
+	 * @param object|null $mapper  NC Photos AlbumMapper, null when Photos is unavailable.
+	 * @param int         $albumId The album id.
+	 *
+	 * @return object|null
+	 */
+	private function findAlbum(?object $mapper, int $albumId): ?object {
+		if ($mapper === null) {
+			return null;
+		}
+
+		try {
+			return $mapper->get($albumId);
+		} catch (Throwable $e) {
+			$this->runtime->logger()->debug('PhotoLinkService::fetchAlbumInfo get failed: ' . $e->getMessage());
+			return null;
+		}
+	}//end findAlbum()
+
+	/**
+	 * When a photo was last added to the album, or null when unknown.
+	 *
+	 * @param object $album An NC Photos `AlbumInfo` instance.
+	 *
+	 * @return DateTime|null
+	 */
+	private function lastEdited(object $album): ?DateTime {
+		try {
+			$lastAdded = (int)$album->getLastAddedPhoto();
+			if ($lastAdded > 0) {
+				return (new DateTime())->setTimestamp($lastAdded);
+			}
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		return null;
+	}//end lastEdited()
+
+	/**
 	 * Best-effort photo count for an album.
 	 *
-	 * @param object $mapper The AlbumMapper instance.
-	 * @param int $albumId The album id.
-	 * @param string $uid The owning user id.
+	 * @param object       $mapper The AlbumMapper instance.
+	 * @param AlbumLinkRun $run    The owning user and the album id.
 	 *
 	 * @return int|null The count, or null when it can't be resolved.
 	 */
-	private function countPhotos(object $mapper, int $albumId, string $uid): ?int {
+	private function countPhotos(object $mapper, AlbumLinkRun $run): ?int {
 		try {
-			$withFiles = $mapper->getForAlbumIdAndUserWithFiles($albumId, $uid, []);
+			$withFiles = $mapper->getForAlbumIdAndUserWithFiles($run->albumId, $run->uid, []);
 			return count($withFiles);
 		} catch (Throwable $e) {
-			$this->logger->debug('PhotoLinkService::countPhotos failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('PhotoLinkService::countPhotos failed: ' . $e->getMessage());
 			return null;
 		}
 	}//end countPhotos()

@@ -24,10 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\ConfigurationServiceInterface;
-use OCP\App\IAppManager;
 use OCP\Migration\IRepairStep;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -76,15 +73,12 @@ abstract class AbstractRegisterImportStep implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConfigurationServiceInterface $configurationService The OR configuration importer.
-	 * @param IAppManager $appManager Resolves the openregister app path on disk.
-	 * @param LoggerInterface $logger Logger for import diagnostics.
+	 * @param RegisterDescriptorImport $import The importer, the app path on disk and the log.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ConfigurationServiceInterface $configurationService,
-		private readonly IAppManager $appManager, private readonly LoggerInterface $logger,
+		private readonly RegisterDescriptorImport $import,
 	) {
 	}//end __construct()
 
@@ -99,12 +93,12 @@ abstract class AbstractRegisterImportStep implements IRepairStep {
 		try {
 			$data = $this->readDescriptor(output: $output);
 			if ($data !== null) {
-				$this->configurationService->importFromApp(appId: static::CONFIG_APP_ID, data: $data, version: static::REGISTER_VERSION, force: false);
+				$this->import->configurationService->importFromApp(appId: static::CONFIG_APP_ID, data: $data, version: static::REGISTER_VERSION, force: false);
 				$output->info(static::IMPORTED);
 			}
 		} catch (Throwable $e) {
 			$step = substr((string)strrchr(static::class, '\\'), 1);
-			$this->logger->warning('[' . $step . '] import failed: ' . $e->getMessage());
+			$this->import->logger->warning('[' . $step . '] import failed: ' . $e->getMessage());
 			$output->warning(static::LABEL . ' register import skipped: ' . $e->getMessage());
 		}//end try
 	}//end run()
@@ -117,7 +111,7 @@ abstract class AbstractRegisterImportStep implements IRepairStep {
 	 * @return array<mixed>|null
 	 */
 	private function readDescriptor(\OCP\Migration\IOutput $output): ?array {
-		$path = $this->appManager->getAppPath('openregister') . static::REGISTER_PATH;
+		$path = $this->import->appManager->getAppPath('openregister') . static::REGISTER_PATH;
 		if (is_file($path) === false) {
 			$output->warning(static::LABEL . ' register descriptor not found: ' . $path);
 			return null;

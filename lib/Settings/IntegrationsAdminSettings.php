@@ -38,12 +38,10 @@ namespace OCA\OpenRegister\Settings;
 
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
-use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface;
 use OCA\OpenRegister\Support\FleetAppId;
-use OCP\App\IAppManager;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IL10N;
-use OCP\IURLGenerator;
 use OCP\Settings\ISettings;
 
 /**
@@ -53,19 +51,17 @@ class IntegrationsAdminSettings implements ISettings {
 	/**
 	 * Constructor.
 	 *
-	 * @param IntegrationRegistry $registry Integration registry.
+	 * @param IntegrationCatalogueInterface $registry Integration registry.
 	 * @param ExternalIntegrationRouterInterface $router External router (for probe()).
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IURLGenerator $urlGenerator URL generator (Configure deep-link).
+	 * @param IntegrationLinks $links NC app manager and URL generator (Configure deep-link).
 	 * @param IL10N $l10n Localisation.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private IntegrationRegistry $registry,
+		private IntegrationCatalogueInterface $registry,
 		private ExternalIntegrationRouterInterface $router,
-		private IAppManager $appManager,
-		private IURLGenerator $urlGenerator,
+		private IntegrationLinks $links,
 		private IL10N $l10n,
 	) {
 	}//end __construct()
@@ -148,7 +144,7 @@ class IntegrationsAdminSettings implements ISettings {
 
 		$testConnectionUrl = null;
 		if ($isExternal === true) {
-			$testConnectionUrl = $this->urlGenerator->linkToOCSRouteAbsolute(
+			$testConnectionUrl = $this->links->urlGenerator->linkToOCSRouteAbsolute(
 				'openregister.integrations.show',
 				['id' => $provider->getId()]
 			);
@@ -160,7 +156,7 @@ class IntegrationsAdminSettings implements ISettings {
 			'group' => $provider->getGroup() ?? '',
 			'storage' => $provider->getStorageStrategy(),
 			'requiredApp' => $requiredApp,
-			'requiredAppOk' => ($requiredApp === null || $this->appManager->isInstalled($requiredApp)),
+			'requiredAppOk' => ($requiredApp === null || $this->links->appManager->isInstalled($requiredApp)),
 			'enabled' => $provider->isEnabled(),
 			'isExternal' => $isExternal,
 			'openConnectorSource' => $openConnSource,
@@ -218,20 +214,20 @@ class IntegrationsAdminSettings implements ISettings {
 		// beta/main. Every one of the three references below is keyed on the
 		// registered app id — the install check, the route name, and the path —
 		// so all three resolve from the same id rather than a hardcoded name.
-		$appId = FleetAppId::resolve($this->appManager, 'integriq');
+		$appId = FleetAppId::resolve($this->links->appManager, 'integriq');
 		if ($appId === null) {
-			return $this->urlGenerator->getAbsoluteURL('/index.php/settings/apps/integration/openconnector');
+			return $this->links->urlGenerator->getAbsoluteURL('/index.php/settings/apps/integration/openconnector');
 		}
 
 		try {
-			return $this->urlGenerator->linkToRouteAbsolute(
+			return $this->links->urlGenerator->linkToRouteAbsolute(
 				$appId.'.sources.show',
 				['id' => $sourceId]
 			);
 		} catch (\Throwable $e) {
 			// OpenConnector's route names have varied across versions —
 			// fall back to the source-edit URL by convention.
-			return $this->urlGenerator->getAbsoluteURL(
+			return $this->links->urlGenerator->getAbsoluteURL(
 				sprintf('/index.php/apps/%s/sources/%s', $appId, rawurlencode($sourceId))
 			);
 		}

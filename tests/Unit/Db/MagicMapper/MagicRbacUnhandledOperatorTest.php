@@ -21,6 +21,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacMatchSql;
+use OCA\OpenRegister\Db\MagicMapper\RbacQueryMatch;
+use OCA\OpenRegister\Db\MagicMapper\RbacSqlDialect;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -39,7 +42,6 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
-use ReflectionMethod;
 
 /**
  * The list predicate and the single-object verdict agree on a malformed `match`.
@@ -86,6 +88,20 @@ class MagicRbacUnhandledOperatorTest extends TestCase {
 			)
 		);
 	}//end handler()
+
+	/**
+	 * The QueryBuilder `match` compiler the list query uses; dynamic tokens resolve to themselves.
+	 *
+	 * @param IQueryBuilder $qb The query.
+	 *
+	 * @return RbacQueryMatch
+	 */
+	private function queryMatch(IQueryBuilder $qb): RbacQueryMatch {
+		$conditionMatcher = $this->createMock(ConditionMatcher::class);
+		$conditionMatcher->method('resolveDynamicValue')->willReturnArgument(0);
+
+		return new RbacQueryMatch($qb, new RbacMatchSql($conditionMatcher, new RbacSqlDialect($this->createMock(ContainerInterface::class), new NullLogger())));
+	}//end queryMatch()
 
 	/**
 	 * The list predicate for a read rule with this match.
@@ -200,17 +216,15 @@ class MagicRbacUnhandledOperatorTest extends TestCase {
 			}
 		);
 
-		$method = new ReflectionMethod(MagicRbacHandler::class, 'buildOperatorCondition');
-		$method->setAccessible(true);
-		$handler = $this->handler();
+		$match = $this->queryMatch($qb);
 
-		$this->assertSame($composite, $method->invoke($handler, $qb, 'age', ['$gte' => 18, '$lt' => 65]));
+		$this->assertSame($composite, $match->operatorConditions('age', ['$gte' => 18, '$lt' => 65]));
 		$this->assertSame('AND(gte(t.age,:18) ; lt(t.age,:65))', end($calls));
 
-		$this->assertSame($composite, $method->invoke($handler, $qb, 'status', ['$eq' => 'open', '$lookup' => ['from' => 'project']]));
+		$this->assertSame($composite, $match->operatorConditions('status', ['$eq' => 'open', '$lookup' => ['from' => 'project']]));
 		$this->assertSame('AND(eq(t.status,:"open") ; eq(:1,:0))', end($calls));
 
-		$this->assertSame('eq(:1,:0)', $method->invoke($handler, $qb, 'project', ['$in' => ['from' => 'project']]));
-		$this->assertSame('isNotNull(t.phase)', $method->invoke($handler, $qb, 'phase', ['$nin' => []]));
+		$this->assertSame('eq(:1,:0)', $match->operatorConditions('project', ['$in' => ['from' => 'project']]));
+		$this->assertSame('isNotNull(t.phase)', $match->operatorConditions('phase', ['$nin' => []]));
 	}//end testTheQueryBuilderPathAppliesEveryOperatorAndDeniesAnUnknownOne()
 }//end class

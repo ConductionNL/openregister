@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -41,7 +42,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<FederatedShare>
  */
-class FederatedShareMapper extends QBMapper {
+class FederatedShareMapper extends QBMapper implements FederatedShareMapperInterface {
 	use MultiTenancyTrait;
 
 	/**
@@ -76,22 +77,18 @@ class FederatedShareMapper extends QBMapper {
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db Database connection.
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper.
-	 * @param IUserSession $userSession User session.
-	 * @param IGroupManager $groupManager Group manager.
+	 * @param TenancyServices $tenancy Organisation mapper, user session and group manager (MultiTenancyTrait).
 	 * @param IAppConfig $appConfig App configuration.
 	 */
 	public function __construct(
 		IDBConnection $db,
-		OrganisationMapperInterface $organisationMapper,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
+		TenancyServices $tenancy,
 		IAppConfig $appConfig,
 	) {
 		parent::__construct(db: $db, tableName: 'openregister_federated_shares', entityClass: FederatedShare::class);
-		$this->organisationMapper = $organisationMapper;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
+		$this->organisationMapper = $tenancy->organisationMapper;
+		$this->userSession = $tenancy->userSession;
+		$this->groupManager = $tenancy->groupManager;
 		$this->appConfig = $appConfig;
 	}//end __construct()
 

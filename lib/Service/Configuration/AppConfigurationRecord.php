@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Configuration;
 
 use OCA\OpenRegister\Db\Configuration;
-use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -40,11 +40,11 @@ final class AppConfigurationRecord
 	/**
 	 * Build the record keeper.
 	 *
-	 * @param ConfigurationMapper $configurationMapper The configuration mapper.
+	 * @param ConfigurationMapperInterface $configurationMapper The configuration mapper.
 	 * @param LoggerInterface     $logger              The logger.
 	 */
 	public function __construct(
-		private readonly ConfigurationMapper $configurationMapper,
+		private readonly ConfigurationMapperInterface $configurationMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -69,7 +69,7 @@ final class AppConfigurationRecord
 		$configuration = $this->configurationMapper->insert($configuration);
 
 		$this->logger->debug(
-			message: "[ImportHandler] Created new configuration for app {$import->appId}",
+			message: ImportLogTag::PREFIX."Created new configuration for app {$import->appId}",
 			context: ['file' => __FILE__, 'line' => __LINE__, 'configurationId' => $configuration->getId(), 'version' => $import->version]
 		);
 
@@ -110,7 +110,7 @@ final class AppConfigurationRecord
 	private function logTracked(AppImport $import, Configuration $configuration): void
 	{
 		$this->logger->debug(
-			message: "[ImportHandler] Updated configuration entity for app {$import->appId}",
+			message: ImportLogTag::PREFIX."Updated configuration entity for app {$import->appId}",
 			context: [
 				'file'            => __FILE__,
 				'line'            => __LINE__,

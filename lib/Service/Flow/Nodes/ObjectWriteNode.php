@@ -129,6 +129,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
+use OCA\OpenRegister\Service\Flow\FlowSubjectCandidates;
 use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
@@ -142,7 +143,6 @@ use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
-use OCP\WorkflowEngine\IManager;
 use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
@@ -155,7 +155,9 @@ use UnexpectedValueException;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One branch per named configuration key and one per operation; collapsing it hides the guards.
  * @SuppressWarnings(PHPMD.TooManyMethods)           One small, named method per guard and per operation; merging them would bury the delete guards.
  */
-class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy, IFlowNodePreview {
+class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNodeInterface,
+	IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy, IFlowNodePreview
+{
 
 	/**
 	 * Insert a new object; never look for an existing one.
@@ -239,27 +241,77 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	private const MAX_WRITES_KEY = 'flowObjectWriteMaxWrites';
 
 	/**
+	 * Performs every write, with all its ordinary semantics.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objects;
+
+	/**
+	 * Resolves the configured register (id, uuid or slug).
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registers;
+
+	/**
+	 * Resolves the configured schema (id, uuid or slug).
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemas;
+
+	/**
+	 * Resolves the run owner to an account.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * Holds the instance-wide write-cap default.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Translations.
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
+
+	/**
+	 * Resolves the palette icon.
+	 *
+	 * @var IURLGenerator
+	 */
+	private readonly IURLGenerator $urls;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectOperationsInterface $objects Performs every write, with all its ordinary semantics.
-	 * @param RegisterMapperInterface $registers Resolves the configured register (id, uuid or slug).
-	 * @param SchemaMapperInterface $schemas Resolves the configured schema (id, uuid or slug).
-	 * @param IUserManager $userManager Resolves the run owner to an account.
-	 * @param IAppConfig $appConfig Holds the instance-wide write-cap default.
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
+	 * @param ObjectWriteStores    $stores       Performs every write, and resolves the configured
+	 *                                          register and schema (id, uuid or slug).
+	 * @param ObjectWritePlatform  $platform     Resolves the run owner to an account, and holds
+	 *                                          the instance-wide write-cap default.
+	 * @param FlowNodePresentation $presentation Translations and the palette icon.
 	 * @param FlowRunSubjectRecorder|null $subjects Records a written object under the declared role.
 	 */
 	public function __construct(
-		private readonly ObjectOperationsInterface $objects,
-		private readonly RegisterMapperInterface $registers,
-		private readonly SchemaMapperInterface $schemas,
-		private readonly IUserManager $userManager,
-		private readonly IAppConfig $appConfig,
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
+		ObjectWriteStores $stores,
+		ObjectWritePlatform $platform,
+		FlowNodePresentation $presentation,
 		private readonly ?FlowRunSubjectRecorder $subjects = null,
 	) {
+		$this->objects     = $stores->objects;
+		$this->registers   = $stores->registers;
+		$this->schemas     = $stores->schemas;
+		$this->userManager = $platform->userManager;
+		$this->appConfig   = $platform->appConfig;
+		$this->l10n        = $presentation->l10n;
+		$this->urls        = $presentation->urls;
 
 	}//end __construct()
 
@@ -311,23 +363,6 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	}//end getIcon()
 
 	/**
-	 * Offered in both scopes.
-	 *
-	 * The node grants no privilege of its own — every write it performs is
-	 * bounded by the run owner's own permissions — so restricting it by scope
-	 * would restrict AUTHORING, not access.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 *
-	 * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
-
-	/**
 	 * What this write would do, without writing (flow dry-run).
 	 *
 	 * The operation, where it would write, and the fields it would set as the
@@ -342,6 +377,17 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
 	 */
 	public function preview(array $items, array $config, array $context): array {
+		return $this->previewOf(config: $config);
+	}//end preview()
+
+	/**
+	 * The preview of a write: one summary sentence and the configured field changes.
+	 *
+	 * @param array $config The step configuration.
+	 *
+	 * @return array{summary: string, changes: array<int, array{field: string, value: mixed}>} The preview.
+	 */
+	private function previewOf(array $config): array {
 		$operation = trim((string)($config['operation'] ?? 'create'));
 		$where = trim((string)($config['register'] ?? '') . ' / ' . (string)($config['schema'] ?? ''), ' /');
 
@@ -354,7 +400,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			'summary' => sprintf('%s an object in %s', $operation, $where),
 			'changes' => $changes,
 		];
-	}//end preview()
+	}//end previewOf()
 
 	/**
 	 * The config vocabulary of an object-write step, across all four operations.
@@ -432,13 +478,23 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			return [];
 		}
 
-		$plan = $this->writePlan(config: $config, context: $context);
+		return $this->writeAs(items: $items, plan: $this->writePlan(config: $config, context: $context));
+	}//end execute()
+
+	/**
+	 * Write every item as the plan's owner, then record what was written as the run's subject.
+	 *
+	 * @param array          $items The input items, at least one.
+	 * @param ObjectWritePlan $plan  The resolved write plan.
+	 *
+	 * @return array The written items.
+	 */
+	private function writeAs(array $items, ObjectWritePlan $plan): array {
 		$written = $this->objects->runAs($plan->owner, fn (): array => $this->writeAll(items: $items, plan: $plan));
 		$this->recordSubject(written: $written, plan: $plan);
 
 		return $written;
-
-	}//end execute()
+	}//end writeAs()
 
 	/**
 	 * Write the items down the path the step configures.
@@ -521,10 +577,12 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 
 		$this->subjects?->recordOne(
 			context: $plan->context,
-			role: $role,
-			uuids: $this->writtenUuids(written: $written, config: $plan->config),
-			register: (string)$plan->register->getId(),
-			schema: (string)$plan->schema->getId()
+			candidates: new FlowSubjectCandidates(
+				role: $role,
+				uuids: $this->writtenUuids(written: $written, config: $plan->config),
+				register: (string)$plan->register->getId(),
+				schema: (string)$plan->schema->getId()
+			)
 		);
 
 	}//end recordSubject()
@@ -1202,28 +1260,4 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	private function validator(): ObjectWriteConfigValidator {
 		return new ObjectWriteConfigValidator(l10n: $this->l10n);
 	}//end validator()
-
-	/**
-	 * What kind of step this is. Calls the register to write.
-	 *
-	 * @return string The BPMN kind.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-semantic-kind-drawn-from-bpmn
-	 */
-	public function getKind(): string {
-		return IFlowNodeTaxonomy::KIND_SERVICE_TASK;
-
-	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_OBJECTS;
-
-	}//end getCategory()
 }//end class

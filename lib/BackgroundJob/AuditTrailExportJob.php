@@ -26,13 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrailPageQuery;
-use OCA\OpenRegister\Service\LogService;
-use OCA\OpenRegister\Service\Operations\JobRunRecorder;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Files\Folder;
-use OCP\Files\IRootFolder;
-use OCP\Notification\IManager as INotificationManager;
 use RuntimeException;
 
 /**
@@ -74,22 +68,16 @@ class AuditTrailExportJob extends RecordedQueuedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory         $time          The clock.
-	 * @param JobRunRecorder       $recorder      Records the run.
-	 * @param AuditTrailPageQuery  $pageQuery     Selects the rows.
-	 * @param LogService           $logService    Renders them.
-	 * @param IRootFolder          $rootFolder    The requester's Files.
-	 * @param INotificationManager $notifications Tells the requester.
+	 * @param RecordedJobRuntime $runtime The scheduler clock and the recorder that writes the run row.
+	 * @param AuditExportSource    $source        Selects the rows and renders them.
+	 * @param AuditExportDelivery  $delivery      The requester's Files, and who tells the requester.
 	 */
 	public function __construct(
-		ITimeFactory $time,
-		JobRunRecorder $recorder,
-		private readonly AuditTrailPageQuery $pageQuery,
-		private readonly LogService $logService,
-		private readonly IRootFolder $rootFolder,
-		private readonly INotificationManager $notifications,
+		RecordedJobRuntime $runtime,
+		private readonly AuditExportSource $source,
+		private readonly AuditExportDelivery $delivery,
 	) {
-		parent::__construct(time: $time, recorder: $recorder);
+		parent::__construct(time: $runtime->time, recorder: $runtime->recorder);
 	}//end __construct()
 
 	/**
@@ -125,13 +113,13 @@ class AuditTrailExportJob extends RecordedQueuedJob {
 			throw new RuntimeException('An audit export job carries no requester.');
 		}
 
-		$collected = $this->pageQuery->collect(
+		$collected = $this->source->pageQuery->collect(
 			filters: (array)($argument['filters'] ?? []),
 			search: ($argument['search'] ?? null),
 			ceiling: self::JOB_LIMIT
 		);
 
-		$file = $this->logService->exportRows(
+		$file = $this->source->logService->exportRows(
 			format: $format,
 			logs: $collected['results'],
 			config: ['includeChanges' => (bool)($argument['includeChanges'] ?? true)]
@@ -142,7 +130,7 @@ class AuditTrailExportJob extends RecordedQueuedJob {
 			$filename = preg_replace('/(\.[a-z]+)$/', '_first-' . self::JOB_LIMIT . '$1', $filename);
 		}
 
-		$userFolder = $this->rootFolder->getUserFolder($actor);
+		$userFolder = $this->delivery->rootFolder->getUserFolder($actor);
 		if ($userFolder->nodeExists(self::FOLDER) === false) {
 			$userFolder->newFolder(self::FOLDER);
 		}
@@ -154,7 +142,7 @@ class AuditTrailExportJob extends RecordedQueuedJob {
 
 		$folder->newFile($filename, $file['content']);
 
-		$notification = $this->notifications->createNotification();
+		$notification = $this->delivery->notifications->createNotification();
 		$notification->setApp('openregister')
 			->setUser($actor)
 			->setDateTime(new DateTime())
@@ -168,7 +156,7 @@ class AuditTrailExportJob extends RecordedQueuedJob {
 					'truncated' => $collected['truncated'],
 				]
 			);
-		$this->notifications->notify($notification);
+		$this->delivery->notifications->notify($notification);
 
 		return self::FOLDER . '/' . $filename;
 	}//end deliver()

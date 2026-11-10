@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Tests\Unit\Settings;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Settings\IntegrationLinks;
 use OCA\OpenRegister\Settings\IntegrationsAdminSettings;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -159,8 +160,7 @@ class IntegrationsAdminSettingsTest extends TestCase {
 		return new IntegrationsAdminSettings(
 			registry: $registry,
 			router: $router,
-			appManager: $appManager,
-			urlGenerator: $url,
+			links: new IntegrationLinks(appManager: $appManager, urlGenerator: $url),
 			l10n: $l10n,
 		);
 	}//end buildSettings()

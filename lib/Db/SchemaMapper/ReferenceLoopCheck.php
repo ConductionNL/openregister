@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDeclarations;
 
 /**
  * Refuses a schema whose properties or action inputs hold a reference loop.
@@ -48,7 +48,7 @@ final class ReferenceLoopCheck {
 	 */
 	public function check(Schema $schema): void {
 		$refusals = $this->refusals(label: 'Schema', document: ['properties' => $schema->getProperties()]);
-		$declarations = ObjectActionDefinition::declarations(configuration: ($schema->getConfiguration() ?? []));
+		$declarations = ObjectActionDeclarations::declarations(configuration: ($schema->getConfiguration() ?? []));
 		foreach ($declarations as $key => $definition) {
 			$inputs = (array)($definition['inputs'] ?? []);
 			$refusals = array_merge($refusals, $this->refusals(label: sprintf('Action "%s" inputs', $key), document: $inputs));

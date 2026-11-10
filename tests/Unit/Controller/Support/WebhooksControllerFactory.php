@@ -49,7 +49,7 @@ final class WebhooksControllerFactory {
 					webhookService: $webhookService,
 					logger: $logger,
 				),
-				platform: new \OCA\OpenRegister\Controller\Support\WebhooksPlatform(
+				platform: new \OCA\OpenRegister\Controller\Support\TasksPlatform(
 					userSession: $userSession,
 					groupManager: $groupManager,
 				),

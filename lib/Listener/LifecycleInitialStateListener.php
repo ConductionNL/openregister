@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
-use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
+use OCA\OpenRegister\Service\Calculation\ReferenceResolverInterface;
 use OCA\OpenRegister\Service\Lifecycle\KeepLifecycleStatesScope;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\EventDispatcher\Event;
@@ -64,15 +64,15 @@ class LifecycleInitialStateListener implements IEventListener {
 	/**
 	 * Wire collaborators used to look up schema lifecycle metadata.
 	 *
-	 * @param LifecycleEditReader $edits Reads the object's lifecycle declaration.
-	 * @param ReferenceResolver $references Cross-object reference resolver (dynamic initial).
-	 * @param LoggerInterface $logger PSR logger for warnings.
+	 * @param LifecycleEditReader        $edits      Reads the object's lifecycle declaration.
+	 * @param ReferenceResolverInterface $references Cross-object reference resolver (dynamic initial).
+	 * @param LoggerInterface            $logger     PSR logger for warnings.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly LifecycleEditReader $edits,
-		private readonly ReferenceResolver $references,
+		private readonly ReferenceResolverInterface $references,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

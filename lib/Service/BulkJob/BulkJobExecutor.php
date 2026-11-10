@@ -30,19 +30,19 @@ namespace OCA\OpenRegister\Service\BulkJob;
 
 use DateTime;
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
-use OCA\OpenRegister\BulkAction\BulkActionResult;
+use OCA\OpenRegister\BulkAction\BulkActionOutcomeInterface;
 use OCA\OpenRegister\BulkAction\ReversibleBulkActionInterface;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\BulkJob;
-use OCA\OpenRegister\Db\BulkJobMapper;
+use OCA\OpenRegister\Db\BulkJobMapperInterface;
 use OCA\OpenRegister\Db\BulkJobMember;
-use OCA\OpenRegister\Db\BulkJobMemberMapper;
+use OCA\OpenRegister\Db\BulkJobMemberMapperInterface;
 use OCA\OpenRegister\Db\IdCursor;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistry;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCP\IUser;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
@@ -52,10 +52,6 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The executor is the seam
  * where the selection, the action, access control and the audit trail meet.
- * @SuppressWarnings(PHPMD.StaticAccess) BulkActionResult's named
- * constructors are its only constructor: the class is immutable and its
- * private __construct exists so an outcome cannot be built without saying
- * which of the four it is.
  */
 class BulkJobExecutor {
 
@@ -69,25 +65,13 @@ class BulkJobExecutor {
 	/**
 	 * Constructor.
 	 *
-	 * @param BulkJobMapper $jobMapper Job persistence.
-	 * @param BulkJobMemberMapper $memberMapper Member persistence.
-	 * @param BulkSelectionResolver $resolver Selection resolution.
-	 * @param BulkActionRegistry $registry The catalogue of registered actions.
-	 * @param PermissionHandler $permissionHandler Per-object access checks.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup for the access check.
-	 * @param AuditTrailMapperInterface $auditTrailMapper Audit entries per member.
-	 * @param IUserManager $userManager Actor lookup.
-	 * @param LoggerInterface $logger Logger.
+	 * @param BulkJobExecutorStores   $stores   The persistence collaborators of the bulk job executor.
+	 * @param BulkJobExecutorServices $services The selection, action, access and actor collaborators of the bulk job executor.
+	 * @param LoggerInterface         $logger   Logger.
 	 */
 	public function __construct(
-		private readonly BulkJobMapper $jobMapper,
-		private readonly BulkJobMemberMapper $memberMapper,
-		private readonly BulkSelectionResolver $resolver,
-		private readonly BulkActionRegistry $registry,
-		private readonly PermissionHandler $permissionHandler,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly IUserManager $userManager,
+		private readonly BulkJobExecutorStores $stores,
+		private readonly BulkJobExecutorServices $services,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -136,53 +120,70 @@ class BulkJobExecutor {
 	/**
 	 * Write the member rows of a preview, and the counts they add up to.
 	 *
-	 * @param BulkJob $job The job being created.
+	 * @param BulkJobPass        $pass  The job being created, the action to rehearse, its actor and the hydrated selection.
 	 * @param array<int, string> $uuids The selected uuids, in order.
-	 * @param array<string, ObjectEntity> $objects The hydrated selection.
-	 * @param BulkActionInterface $action The action to rehearse.
-	 * @param IUser|null $actor The user the job runs as.
-	 * @param bool $addedAtCommit True when these members appeared at commit.
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag marks the member
-	 * rows a grown query selection added, which the report has to name.
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
+	 */
+	public function writePreviewMembers(BulkJobPass $pass, array $uuids): void {
+		foreach ($uuids as $uuid) {
+			$this->stores->memberMapper->createFromArray($this->previewRow(pass: $pass, uuid: $uuid));
+		}
+	}//end writePreviewMembers()
+
+	/**
+	 * Write the member rows a grown query selection added at commit.
+	 *
+	 * The rows are rehearsed exactly as a preview's, and marked as added at
+	 * commit, which the report has to name.
+	 *
+	 * @param BulkJobPass        $pass  The committing job, its action, its actor and the hydrated additions.
+	 * @param array<int, string> $uuids The added uuids, in order.
+	 *
+	 * @return void
 	 *
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
-	public function writePreviewMembers(
-		BulkJob $job,
-		array $uuids,
-		array $objects,
-		BulkActionInterface $action,
-		?IUser $actor,
-		bool $addedAtCommit = false
-	): void {
+	public function writeAddedMembers(BulkJobPass $pass, array $uuids): void {
 		foreach ($uuids as $uuid) {
-			$object = ($objects[$uuid] ?? null);
-			$result = $this->rehearse(object: $object, action: $action, job: $job, actor: $actor);
-
-			$version = null;
-			if ($object !== null) {
-				$version = $this->schemaVersionOf(object: $object);
-			}
-
-			$plan = $this->reversalPlanOf(action: $action, object: $object, job: $job);
-
-			$this->memberMapper->createFromArray(
-				[
-					'jobId' => $job->getId(),
-					'objectUuid' => $uuid,
-					'outcome' => $result->getOutcome(),
-					'reason' => $result->getReason(),
-					'schemaVersion' => $version,
-					'addedAtCommit' => $addedAtCommit,
-					'priorValues' => ($plan[ReversibleBulkActionInterface::PLAN_PRIOR] ?? null),
-					'appliedValues' => ($plan[ReversibleBulkActionInterface::PLAN_APPLIED] ?? null),
-				]
-			);
+			$row = $this->previewRow(pass: $pass, uuid: $uuid);
+			$row['addedAtCommit'] = true;
+			$this->stores->memberMapper->createFromArray($row);
 		}
-	}//end writePreviewMembers()
+	}//end writeAddedMembers()
+
+	/**
+	 * Rehearse one selected uuid and build its member row.
+	 *
+	 * @param BulkJobPass $pass The preview pass.
+	 * @param string      $uuid The selected uuid.
+	 *
+	 * @return array<string, mixed> The member row; `addedAtCommit` is false until the caller sets it.
+	 */
+	private function previewRow(BulkJobPass $pass, string $uuid): array {
+		$object = $pass->object(uuid: $uuid);
+		$result = $this->rehearse(pass: $pass, object: $object);
+
+		$version = null;
+		if ($object !== null) {
+			$version = $this->schemaVersionOf(object: $object);
+		}
+
+		$plan = $this->reversalPlanOf(pass: $pass, object: $object);
+
+		return [
+			'jobId' => $pass->job->getId(),
+			'objectUuid' => $uuid,
+			'outcome' => $result->getOutcome(),
+			'reason' => $result->getReason(),
+			'schemaVersion' => $version,
+			'addedAtCommit' => false,
+			'priorValues' => ($plan[ReversibleBulkActionInterface::PLAN_PRIOR] ?? null),
+			'appliedValues' => ($plan[ReversibleBulkActionInterface::PLAN_APPLIED] ?? null),
+		];
+	}//end previewRow()
 
 	/**
 	 * Walk one batch of a committed job.
@@ -195,8 +196,8 @@ class BulkJobExecutor {
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function processBatch(BulkJob $job, int $batchSize): bool {
-		$action = null;
-		$members = $this->memberMapper->findPendingBatch(
+		$pass = null;
+		$members = $this->stores->memberMapper->findPendingBatch(
 			jobId: (int)$job->getId(),
 			cursor: new IdCursor(afterId: $job->getCursor(), limit: $batchSize)
 		);
@@ -205,32 +206,31 @@ class BulkJobExecutor {
 			$this->refreshCounts(job: $job);
 			$job->setState(BulkJob::STATE_COMPLETED);
 			$this->stampReversalDeadline(job: $job);
-			$this->jobMapper->save($job);
+			$this->stores->jobMapper->save($job);
 
 			return false;
 		}
 
 		$actor = $this->actorOf(job: $job);
-		$objects = $this->resolver->hydrate(
+		$objects = $this->services->resolver->hydrate(
 			uuids: array_map(static fn (BulkJobMember $member): string => (string)$member->getObjectUuid(), $members),
-			registerId: $job->getRegisterId(),
-			schemaId: $job->getSchemaId()
+			scope: new BulkJobSelection(criteria: ($job->getSelection() ?? []), registerId: $job->getRegisterId(), schemaId: $job->getSchemaId())
 		);
 
 		foreach ($members as $member) {
-			if ($this->jobMapper->readState((int)$job->getId()) === BulkJob::STATE_CANCELLING) {
+			if ($this->stores->jobMapper->readState((int)$job->getId()) === BulkJob::STATE_CANCELLING) {
 				$this->stopAtBoundary(job: $job, member: $member);
 
 				return false;
 			}
 
-			$action ??= $this->actionOf(job: $job);
-			$this->commitMember(job: $job, member: $member, objects: $objects, action: $action, actor: $actor);
+			$pass ??= new BulkJobPass(job: $job, action: $this->actionOf(job: $job), actor: $actor, objects: $objects);
+			$this->commitMember(pass: $pass, member: $member);
 			$job->setCursor((int)$member->getId());
 		}//end foreach
 
 		$this->refreshCounts(job: $job);
-		$this->jobMapper->save($job);
+		$this->stores->jobMapper->save($job);
 
 		return true;
 	}//end processBatch()
@@ -245,7 +245,7 @@ class BulkJobExecutor {
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function refreshCounts(BulkJob $job): void {
-		$counts = $this->memberMapper->countByOutcome(jobId: (int)$job->getId());
+		$counts = $this->stores->memberMapper->countByOutcome(jobId: (int)$job->getId());
 
 		$job->setApplied((int)($counts[BulkJobMember::OUTCOME_APPLIED] ?? 0));
 		$job->setSkipped((int)($counts[BulkJobMember::OUTCOME_SKIPPED] ?? 0));
@@ -253,7 +253,7 @@ class BulkJobExecutor {
 		$job->setFailed((int)($counts[BulkJobMember::OUTCOME_FAILED] ?? 0));
 
 		$job->setProcessed(
-			$this->memberMapper->countWalked(jobId: (int)$job->getId(), cursor: $job->getCursor())
+			$this->stores->memberMapper->countWalked(jobId: (int)$job->getId(), cursor: $job->getCursor())
 		);
 	}//end refreshCounts()
 
@@ -265,59 +265,49 @@ class BulkJobExecutor {
 	 * @return BulkActionInterface The action.
 	 */
 	private function actionOf(BulkJob $job): BulkActionInterface {
-		return $this->registry->get(id: (string)$job->getAction());
+		return $this->services->registry->get(id: (string)$job->getAction());
 	}//end actionOf()
 
 	/**
 	 * Rehearse the action against one object.
 	 *
+	 * @param BulkJobPass $pass The preview pass (job, action, actor).
 	 * @param ObjectEntity|null $object The object, or null when unreadable.
-	 * @param BulkActionInterface $action The action.
-	 * @param BulkJob $job The job.
-	 * @param IUser|null $actor The user the job runs as.
 	 *
-	 * @return BulkActionResult What would happen.
+	 * @return BulkActionOutcomeInterface What would happen.
 	 */
-	private function rehearse(?ObjectEntity $object, BulkActionInterface $action, BulkJob $job, ?IUser $actor): BulkActionResult {
+	private function rehearse(BulkJobPass $pass, ?ObjectEntity $object): BulkActionOutcomeInterface {
 		if ($object === null) {
-			return BulkActionResult::refused(rule: self::RULE_NOT_VISIBLE);
+			return new BulkJobRefusal(rule: self::RULE_NOT_VISIBLE);
 		}
 
-		$refusal = $this->refusalFor(object: $object, actorUid: (string)$job->getStartedBy());
+		$refusal = $this->refusalFor(object: $object, actorUid: (string)$pass->job->getStartedBy());
 		if ($refusal !== null) {
 			return $refusal;
 		}
 
-		return $action->apply(
+		return $pass->action->apply(
 			object: $object,
-			parameters: ($job->getParameters() ?? []),
+			parameters: ($pass->job->getParameters() ?? []),
 			commit: false,
-			actor: $actor
+			actor: $pass->actor
 		);
 	}//end rehearse()
 
 	/**
 	 * Apply the action to one member and record what happened.
 	 *
-	 * @param BulkJob $job The job.
+	 * @param BulkJobPass $pass The batch pass (job, action, actor, hydrated batch).
 	 * @param BulkJobMember $member The member.
-	 * @param array<string, ObjectEntity> $objects The hydrated batch.
-	 * @param BulkActionInterface $action The action.
-	 * @param IUser|null $actor The user the job runs as.
 	 *
 	 * @return void
 	 */
-	private function commitMember(
-		BulkJob $job,
-		BulkJobMember $member,
-		array $objects,
-		BulkActionInterface $action,
-		?IUser $actor
-	): void {
-		$object = ($objects[(string)$member->getObjectUuid()] ?? null);
+	private function commitMember(BulkJobPass $pass, BulkJobMember $member): void {
+		$job = $pass->job;
+		$object = $pass->object(uuid: (string)$member->getObjectUuid());
 
 		if ($object === null) {
-			$this->recordOutcome(member: $member, result: BulkActionResult::refused(rule: self::RULE_NOT_VISIBLE));
+			$this->recordOutcome(member: $member, result: new BulkJobRefusal(rule: self::RULE_NOT_VISIBLE));
 
 			return;
 		}
@@ -333,13 +323,13 @@ class BulkJobExecutor {
 		// copy. Minutes or hours may have passed since the rehearsal, and a
 		// prior value captured then would restore the object to a state it
 		// left before this job ever wrote (D-2).
-		$plan = $this->reversalPlanOf(action: $action, object: $object, job: $job);
+		$plan = $this->reversalPlanOf(pass: $pass, object: $object);
 
-		$result = $action->apply(
+		$result = $pass->action->apply(
 			object: $object,
 			parameters: ($job->getParameters() ?? []),
 			commit: true,
-			actor: $actor
+			actor: $pass->actor
 		);
 
 		if ($result->isApplied() === true) {
@@ -351,7 +341,7 @@ class BulkJobExecutor {
 			}
 		}
 
-		$this->recordOutcome(member: $member, result: $result, written: $result->isApplied());
+		$this->recordCommitted(member: $member, result: $result);
 	}//end commitMember()
 
 	/**
@@ -363,16 +353,16 @@ class BulkJobExecutor {
 	 * @param ObjectEntity $object The object.
 	 * @param string $actorUid The actor's uid.
 	 *
-	 * @return BulkActionResult|null The refusal, or null when the write is allowed.
+	 * @return BulkActionOutcomeInterface|null The refusal, or null when the write is allowed.
 	 */
-	private function refusalFor(ObjectEntity $object, string $actorUid): ?BulkActionResult {
+	private function refusalFor(ObjectEntity $object, string $actorUid): ?BulkActionOutcomeInterface {
 		try {
-			$schema = $this->schemaMapper->find($object->getSchema());
+			$schema = $this->stores->schemaMapper->find($object->getSchema());
 		} catch (\Throwable $exception) {
-			return BulkActionResult::refused(rule: 'the schema of this object could not be resolved, so no write rule could be read');
+			return new BulkJobRefusal(rule: 'the schema of this object could not be resolved, so no write rule could be read');
 		}
 
-		$allowed = $this->permissionHandler->hasPermission(
+		$allowed = $this->services->permissionHandler->hasPermission(
 			schema: $schema,
 			action: 'update',
 			userId: $actorUid,
@@ -384,7 +374,7 @@ class BulkJobExecutor {
 			return null;
 		}
 
-		return BulkActionResult::refused(
+		return new BulkJobRefusal(
 			rule: "the update rule on schema '".$schema->getTitle()."' does not include ".$actorUid
 		);
 	}//end refusalFor()
@@ -396,20 +386,20 @@ class BulkJobExecutor {
 	 * whole of the "irreversible is declared" rule at the member level: no
 	 * prior value is stored, so no reversal can pretend to have one (D-4).
 	 *
-	 * @param BulkActionInterface $action The action.
-	 * @param ObjectEntity|null   $object The object, or null when unreadable.
-	 * @param BulkJob             $job    The job, for its parameters.
+	 * @param BulkJobPass       $pass   The pass (its action, and its job for the parameters).
+	 * @param ObjectEntity|null $object The object, or null when unreadable.
 	 *
 	 * @return array{prior: array<string, mixed>, applied: array<string, mixed>}|null The plan.
 	 *
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
-	private function reversalPlanOf(BulkActionInterface $action, ?ObjectEntity $object, BulkJob $job): ?array {
+	private function reversalPlanOf(BulkJobPass $pass, ?ObjectEntity $object): ?array {
+		$action = $pass->action;
 		if ($object === null || ($action instanceof ReversibleBulkActionInterface) === false) {
 			return null;
 		}
 
-		$plan = $action->reversalPlanFor(object: $object, parameters: ($job->getParameters() ?? []));
+		$plan = $action->reversalPlanFor(object: $object, parameters: ($pass->job->getParameters() ?? []));
 
 		if (isset($plan[ReversibleBulkActionInterface::PLAN_PRIOR]) === false) {
 			return null;
@@ -419,28 +409,39 @@ class BulkJobExecutor {
 	}//end reversalPlanOf()
 
 	/**
-	 * Persist one member's outcome.
+	 * Persist one member's outcome without a write stamp.
 	 *
-	 * @param BulkJobMember $member The member.
-	 * @param BulkActionResult $result The outcome.
-	 * @param bool $written True when a real write landed on this member.
+	 * @param BulkJobMember              $member The member.
+	 * @param BulkActionOutcomeInterface $result The outcome.
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The write stamp is the
-	 * idempotence key and cannot be read off the outcome, which a preview
-	 * also sets.
 	 */
-	private function recordOutcome(BulkJobMember $member, BulkActionResult $result, bool $written = false): void {
+	private function recordOutcome(BulkJobMember $member, BulkActionOutcomeInterface $result): void {
 		$member->setOutcome($result->getOutcome());
 		$member->setReason($result->getReason());
 
-		if ($written === true) {
+		$this->stores->memberMapper->save($member);
+	}//end recordOutcome()
+
+	/**
+	 * Persist a committed member's outcome, stamping it when a real write landed.
+	 *
+	 * The write stamp is the idempotence key. It is read off the commit's own
+	 * outcome only: a preview records its outcome through recordOutcome() and
+	 * never stamps.
+	 *
+	 * @param BulkJobMember              $member The member.
+	 * @param BulkActionOutcomeInterface $result The commit outcome.
+	 *
+	 * @return void
+	 */
+	private function recordCommitted(BulkJobMember $member, BulkActionOutcomeInterface $result): void {
+		if ($result->isApplied() === true) {
 			$member->setAppliedAt(new DateTime());
 		}
 
-		$this->memberMapper->save($member);
-	}//end recordOutcome()
+		$this->recordOutcome(member: $member, result: $result);
+	}//end recordCommitted()
 
 	/**
 	 * Write the member's own audit entry, referencing the job.
@@ -456,7 +457,7 @@ class BulkJobExecutor {
 	 */
 	private function recordAudit(BulkJob $job, ObjectEntity $object): void {
 		try {
-			$this->auditTrailMapper->createAuditTrailEntry(
+			$this->stores->auditTrailMapper->createAuditTrailEntry(
 				object: $object,
 				action: 'bulk.applied',
 				context: [
@@ -506,7 +507,7 @@ class BulkJobExecutor {
 		$job->setReport($report);
 		$job->setState(BulkJob::STATE_CANCELLED);
 		$this->stampReversalDeadline(job: $job);
-		$this->jobMapper->save($job);
+		$this->stores->jobMapper->save($job);
 	}//end stopAtBoundary()
 
 	/**
@@ -544,7 +545,7 @@ class BulkJobExecutor {
 			return null;
 		}
 
-		return $this->userManager->get($uid);
+		return $this->services->userManager->get($uid);
 	}//end actorOf()
 
 	/**

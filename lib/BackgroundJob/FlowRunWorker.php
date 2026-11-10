@@ -34,15 +34,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
-use OCA\OpenRegister\Db\FlowClaimMapper;
+use OCA\OpenRegister\Db\FlowClaimMapperInterface;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
-use OCA\OpenRegister\Db\FlowStreamMapper;
-use OCA\OpenRegister\Service\Delegation\DelegationService;
-use OCA\OpenRegister\Service\Flow\FlowConsentParking;
-use OCA\OpenRegister\Service\Flow\FlowLocator;
-use OCA\OpenRegister\Service\Object\RunLockRegistry;
-use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
+use OCA\OpenRegister\Db\FlowRunQueueExpiry;
+use OCA\OpenRegister\Db\FlowStreamMapperInterface;
+use OCA\OpenRegister\Service\Flow\FlowConsentSweepInterface;
+use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
+use OCA\OpenRegister\Service\Object\RunLockReleaseInterface;
+use OCA\OpenRegister\Service\Flow\FlowRunAdvancerInterface;
 use OCA\OpenRegister\Service\Flow\FlowTokenRouter;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -154,50 +154,87 @@ class FlowRunWorker extends TimedJob {
 	private const EXPIRE_BATCH = 500;
 
 	/**
+	 * Run persistence.
+	 *
+	 * @var FlowRunMapperInterface
+	 */
+	private readonly FlowRunMapperInterface $mapper;
+
+	/**
+	 * Advances one run (shared with sync runs).
+	 *
+	 * @var FlowRunAdvancerInterface
+	 */
+	private readonly FlowRunAdvancerInterface $advancer;
+
+	/**
+	 * Reads the pass tuning settings.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * The logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Place claims, for the abandoned-claim reaper.
+	 *
+	 * @var FlowClaimMapperInterface|null
+	 */
+	private readonly ?FlowClaimMapperInterface $claims;
+
+	/**
+	 * Run streams, for failing an abandoned branch.
+	 *
+	 * @var FlowStreamMapperInterface|null
+	 */
+	private readonly ?FlowStreamMapperInterface $streams;
+
+	/**
+	 * Resolves the run's flow, for the abandoned step's `onError` policy.
+	 *
+	 * @var FlowLocatorInterface|null
+	 */
+	private readonly ?FlowLocatorInterface $flows;
+
+	/**
+	 * Run-held object locks, for the orphaned-lock sweep.
+	 *
+	 * @var RunLockReleaseInterface|null
+	 */
+	private readonly ?RunLockReleaseInterface $locks;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Job scheduling clock.
-	 * @param FlowRunMapperInterface $mapper Reads and prunes runs.
-	 * @param FlowRunAdvancer $advancer Advances one run (shared with sync runs).
-	 * @param IAppConfig $appConfig Reads the retention setting.
-	 * @param LoggerInterface $logger The logger.
-	 * @param DelegationService|null $delegation Re-resolves the grant a parked
-	 *                                           run waits on. Nullable so the two
-	 *                                           unit suites that build this
-	 *                                           worker positionally keep working
-	 *                                           — adding a required parameter
-	 *                                           would shift every later slot for
-	 *                                           them. Its absence is REPORTED
-	 *                                           rather than assumed harmless: see
-	 *                                           settleConsent(), which warns when
-	 *                                           runs are actually parked, because
-	 *                                           a sweep that skips looks exactly
-	 *                                           like one that found nothing.
-	 * @param FlowClaimMapper|null $claims Place claims, for the abandoned-claim reaper.
-	 * @param FlowStreamMapper|null $streams Run streams, for failing an abandoned branch.
-	 * @param FlowLocator|null $flows Resolves the run's flow, for the abandoned step's `onError` policy.
-	 * @param RunLockRegistry|null $locks Run-held object locks, for the orphaned-lock sweep.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) This worker is the one
-	 * cron entry point for run lifecycle work, and each pass it makes needs a
-	 * different collaborator: reaping, claim release, stream failure, consent,
-	 * and now the orphaned-lock sweep. Every one after the fifth is nullable
-	 * with a default so an older DI graph still constructs it. Splitting the
-	 * worker to satisfy the count would buy a second cron job and a second
-	 * ordering to reason about, which is the more expensive of the two.
+	 * @param ITimeFactory                    $time     Job scheduling clock.
+	 * @param FlowRunWorkerServices           $services The runs, their advancer, the config and the logger.
+	 * @param FlowRunRecoveryServices         $recovery Claims, streams, flows and locks for recovering a dead pass.
+	 * @param FlowConsentSweepInterface|null  $consent  Settles runs parked awaiting consent. Its absence is
+	 *                                                  REPORTED rather than assumed harmless: see
+	 *                                                  settleConsent(), which warns when runs are actually
+	 *                                                  parked, because a sweep that skips looks exactly like
+	 *                                                  one that found nothing.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly FlowRunMapperInterface $mapper,
-		private readonly FlowRunAdvancer $advancer,
-		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
-		private readonly ?DelegationService $delegation = null,
-		private readonly ?FlowClaimMapper $claims = null,
-		private readonly ?FlowStreamMapper $streams = null,
-		private readonly ?FlowLocator $flows = null,
-		private readonly ?RunLockRegistry $locks = null,
+		FlowRunWorkerServices $services,
+		FlowRunRecoveryServices $recovery,
+		private readonly ?FlowConsentSweepInterface $consent = null,
 	) {
+		$this->mapper = $services->mapper;
+		$this->advancer = $services->advancer;
+		$this->appConfig = $services->appConfig;
+		$this->logger = $services->logger;
+		$this->claims = $recovery->claims;
+		$this->streams = $recovery->streams;
+		$this->flows = $recovery->flows;
+		$this->locks = $recovery->locks;
 		parent::__construct(time: $time);
 		// A FLOOR, not a schedule. `setInterval` says "not more often than
 		// this"; how often the job actually runs is how often Nextcloud's cron
@@ -301,7 +338,7 @@ class FlowRunWorker extends TimedJob {
 
 		$cutoff = (clone $now)->modify('-' . $minutes . ' minutes');
 
-		$this->reapAbandonedClaims(cutoff: $cutoff, now: $now, minutes: $minutes);
+		$this->reapAbandonedClaims(now: $now, minutes: $minutes);
 
 		foreach ($this->mapper->findStale(before: $cutoff, limit: self::BATCH) as $run) {
 			$run->setStatus(FlowRun::STATUS_FAILED);
@@ -340,18 +377,19 @@ class FlowRunWorker extends TimedJob {
 	 * decides the siblings' fate: `continue` keeps them (the run is re-armed
 	 * as queued), anything else stops the run.
 	 *
-	 * @param DateTime $cutoff Claims taken before this moment are abandoned.
 	 * @param DateTime $now Now.
-	 * @param int $minutes The cutoff in minutes, for the message.
+	 * @param int $minutes Claims taken more than this many minutes before now are abandoned.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-branch-abandoned-by-a-crashed-worker-must-be-recovered-and-must-not-be-silently-re-run
 	 */
-	private function reapAbandonedClaims(DateTime $cutoff, DateTime $now, int $minutes): void {
+	private function reapAbandonedClaims(DateTime $now, int $minutes): void {
 		if ($this->claims === null || $this->streams === null) {
 			return;
 		}
+
+		$cutoff = (clone $now)->modify('-' . $minutes . ' minutes');
 
 		foreach ($this->claims->findOlderThan(before: $cutoff, limit: self::BATCH) as $claim) {
 			$runUuid = (string)$claim->getRunUuid();
@@ -532,7 +570,7 @@ class FlowRunWorker extends TimedJob {
 	 * pass rather than waiting another cron period for no reason.
 	 *
 	 * 🔴 A MISSING COLLABORATOR IS REPORTED, NOT SKIPPED SILENTLY. If the
-	 * delegation service is absent, parked runs simply never move — and a sweep
+	 * consent sweep is absent, parked runs simply never move — and a sweep
 	 * that skipped produces exactly the same output as one that found nothing to
 	 * do. So the absence is only mentioned when runs are ACTUALLY parked, which
 	 * is the only time it is a fault rather than noise.
@@ -544,7 +582,7 @@ class FlowRunWorker extends TimedJob {
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
 	private function settleConsent(DateTime $now): void {
-		if ($this->delegation === null) {
+		if ($this->consent === null) {
 			$parked = $this->mapper->findAwaitingConsent(limit: 1);
 			if ($parked !== []) {
 				$this->logger->error(
@@ -560,16 +598,15 @@ class FlowRunWorker extends TimedJob {
 		$hours = (int)$this->appConfig->getValueString(
 			'openregister',
 			'flow_consent_wait_hours',
-			(string)FlowConsentParking::DEFAULT_WAIT_HOURS
+			(string)FlowConsentSweepInterface::DEFAULT_WAIT_HOURS
 		);
 
 		if ($hours <= 0) {
-			$hours = FlowConsentParking::DEFAULT_WAIT_HOURS;
+			$hours = FlowConsentSweepInterface::DEFAULT_WAIT_HOURS;
 		}
 
 		try {
-			$outcome = (new FlowConsentParking(runs: $this->mapper, delegation: $this->delegation, logger: $this->logger))
-				->sweep(now: $now, waitHours: $hours, limit: self::BATCH);
+			$outcome = $this->consent->sweep(now: $now, waitHours: $hours);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: '[FlowRunWorker] The consent sweep failed: ' . $e->getMessage(),
@@ -639,9 +676,7 @@ class FlowRunWorker extends TimedJob {
 		try {
 			$cutoff = (clone $now)->modify('-' . $hours . ' hours');
 			$expired = $this->mapper->expireQueuedBefore(
-				before: $cutoff,
-				reason: $reason,
-				limit: self::EXPIRE_BATCH
+				expiry: new FlowRunQueueExpiry(before: $cutoff, reason: $reason, limit: self::EXPIRE_BATCH)
 			);
 
 			if ($expired !== []) {
@@ -669,7 +704,7 @@ class FlowRunWorker extends TimedJob {
 	/**
 	 * Advance one run, never letting its failure stop the batch.
 	 *
-	 * The body lives in {@see FlowRunAdvancer} so a synchronous run executes
+	 * The body lives in {@see FlowRunAdvancerInterface} so a synchronous run executes
 	 * through exactly this path rather than a parallel implementation that
 	 * could drift from it.
 	 *

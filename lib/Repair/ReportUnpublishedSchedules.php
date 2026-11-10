@@ -27,9 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifest;
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoader;
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoaderInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;
@@ -43,13 +42,13 @@ class ReportUnpublishedSchedules implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param ScheduleManifestLoader $manifests The on-disk manifests.
-	 * @param ScheduleFlowStore $flows The compiled flows.
+	 * @param ScheduleManifestLoaderInterface $manifests The on-disk manifests.
+	 * @param ScheduleFlowStoreInterface $flows The compiled flows.
 	 * @param LoggerInterface $logger Refusals.
 	 */
 	public function __construct(
-		private readonly ScheduleManifestLoader $manifests,
-		private readonly ScheduleFlowStore $flows,
+		private readonly ScheduleManifestLoaderInterface $manifests,
+		private readonly ScheduleFlowStoreInterface $flows,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -77,7 +76,7 @@ class ReportUnpublishedSchedules implements IRepairStep {
 	public function run(IOutput $output): void {
 		foreach ($this->manifests->loadAllOnDisk() as $manifest) {
 			if ($this->flows->hasFlowsNamedFor(slug: $manifest->applicationId) === false) {
-				$this->refuse(manifest: $manifest, output: $output);
+				$this->refuse(applicationId: $manifest->applicationId, schedules: $manifest->schedules, output: $output);
 			}
 		}
 	}//end run()
@@ -85,17 +84,20 @@ class ReportUnpublishedSchedules implements IRepairStep {
 	/**
 	 * Log one app's schedules as refused.
 	 *
-	 * @param ScheduleManifest $manifest The app's schedules.
-	 * @param IOutput $output The repair output.
+	 * @param string  $applicationId The app whose schedules nobody published.
+	 * @param array   $schedules     Its schedules, each a \OCA\OpenRegister\AppHost\Scheduling\ScheduleDescriptor.
+	 * @param IOutput $output        The repair output.
 	 *
 	 * @return void
+	 *
+	 * @psalm-param list<\OCA\OpenRegister\AppHost\Scheduling\ScheduleDescriptor> $schedules
 	 */
-	private function refuse(ScheduleManifest $manifest, IOutput $output): void {
-		foreach ($manifest->schedules as $schedule) {
+	private function refuse(string $applicationId, array $schedules, IOutput $output): void {
+		foreach ($schedules as $schedule) {
 			$message = sprintf(
 				'Schedule "%s" of app "%s" refused: nobody published it, so it has no identity to run as.',
 				$schedule->id,
-				$manifest->applicationId
+				$applicationId
 			);
 			$this->logger->warning(message: '[AppHost\\Scheduling] ' . $message);
 			$output->warning($message);

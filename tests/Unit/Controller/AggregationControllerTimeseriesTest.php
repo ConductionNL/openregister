@@ -65,10 +65,8 @@ class AggregationControllerTimeseriesTest extends TestCase {
 		$this->runner = $this->createMock(AggregationRunner::class);
 		$this->validator = $this->createMock(TimeseriesRequestValidator::class);
 		$this->controller = new AggregationController(
-			'openregister',
 			$this->request,
-			$this->runner,
-			$this->validator
+			new \OCA\OpenRegister\Search\Controller\Support\AggregationControllerServices($this->runner, $this->validator)
 		);
 	}//end setUp()
 

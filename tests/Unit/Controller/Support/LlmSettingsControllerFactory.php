@@ -18,7 +18,7 @@ final class LlmSettingsControllerFactory {
 	/**
 	 * The constructor arguments of LlmSettingsController.
 	 *
-	 * @param mixed $appName Constructor argument.
+	 * @param mixed $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param IDBConnection $db Constructor argument.
 	 * @param ContainerInterface $container Constructor argument.
@@ -40,18 +40,15 @@ final class LlmSettingsControllerFactory {
 		\OCA\OpenRegister\Service\Connection\ConnectionReporter $connectionReporter,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\LlmSettingsControllerServices(
 				domain: new \OCA\OpenRegister\Controller\Support\LlmSettingsDomain(
 					settingsService: $settingsService,
 					vectorizationService: $vectorizationService,
 					connectionReporter: $connectionReporter,
-					db: $db,
 				),
 				platform: new \OCA\OpenRegister\Controller\Support\LlmSettingsPlatform(
 					container: $container,
-					logger: $logger,
 				),
 			),
 		];

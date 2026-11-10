@@ -50,33 +50,91 @@ use JsonSerializable;
  */
 final class SanitizationReport implements JsonSerializable {
 	/**
+	 * Distinct comments/annotations removed.
+	 *
+	 * @var int
+	 */
+	public readonly int $commentsRemoved;
+
+	/**
+	 * Insert ranges accepted (unwrapped).
+	 *
+	 * @var int
+	 */
+	public readonly int $trackedChangesAccepted;
+
+	/**
+	 * Delete ranges dropped.
+	 *
+	 * @var int
+	 */
+	public readonly int $trackedChangesDropped;
+
+	/**
+	 * Revision (rsid) attributes removed.
+	 *
+	 * @var int
+	 */
+	public readonly int $revisionAttributesStripped;
+
+	/**
+	 * Hyperlinks flattened to plain text.
+	 *
+	 * @var int
+	 */
+	public readonly int $hyperlinksFlattened;
+
+	/**
+	 * Metadata fields replaced with sentinel.
+	 *
+	 * @var int
+	 */
+	public readonly int $metadataFieldsScrubbed;
+
+	/**
+	 * Custom XML parts removed.
+	 *
+	 * @var int
+	 */
+	public readonly int $customXmlPartsDropped;
+
+	/**
+	 * Person-identity field codes removed.
+	 *
+	 * @var int
+	 */
+	public readonly int $fieldCodesStripped;
+
+	/**
+	 * The sentinel string used for scrubbing.
+	 *
+	 * @var string
+	 */
+	public readonly string $sentinelApplied;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param int $commentsRemoved Distinct comments/annotations removed.
-	 * @param int $trackedChangesAccepted Insert ranges accepted (unwrapped).
-	 * @param int $trackedChangesDropped Delete ranges dropped.
-	 * @param int $revisionAttributesStripped Revision (rsid) attributes removed.
-	 * @param int $hyperlinksFlattened Hyperlinks flattened to plain text.
-	 * @param int $metadataFieldsScrubbed Metadata fields replaced with sentinel.
-	 * @param int $customXmlPartsDropped Custom XML parts removed.
-	 * @param int $fieldCodesStripped Person-identity field codes removed.
-	 * @param string $sentinelApplied The sentinel string used for scrubbing.
-	 *
-	 * @SuppressWarnings(PHPMD.LongVariable) Property names are the stable audit-report JSON keys (design D9).
+	 * @param SanitizationRevisionCounts  $revisions       Comment and tracked-change counts.
+	 * @param SanitizationStructureCounts $structure       Hyperlink, metadata, custom XML and field-code counts.
+	 * @param string                      $sentinelApplied The sentinel string used for scrubbing.
 	 *
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
 	public function __construct(
-		public readonly int $commentsRemoved = 0,
-		public readonly int $trackedChangesAccepted = 0,
-		public readonly int $trackedChangesDropped = 0,
-		public readonly int $revisionAttributesStripped = 0,
-		public readonly int $hyperlinksFlattened = 0,
-		public readonly int $metadataFieldsScrubbed = 0,
-		public readonly int $customXmlPartsDropped = 0,
-		public readonly int $fieldCodesStripped = 0,
-		public readonly string $sentinelApplied = '',
+		SanitizationRevisionCounts $revisions = new SanitizationRevisionCounts(),
+		SanitizationStructureCounts $structure = new SanitizationStructureCounts(),
+		string $sentinelApplied = '',
 	) {
+		$this->commentsRemoved = $revisions->commentsRemoved;
+		$this->trackedChangesAccepted = $revisions->trackedChangesAccepted;
+		$this->trackedChangesDropped = $revisions->trackedChangesDropped;
+		$this->revisionAttributesStripped = $revisions->revisionAttributesStripped;
+		$this->hyperlinksFlattened = $structure->hyperlinksFlattened;
+		$this->metadataFieldsScrubbed = $structure->metadataFieldsScrubbed;
+		$this->customXmlPartsDropped = $structure->customXmlPartsDropped;
+		$this->fieldCodesStripped = $structure->fieldCodesStripped;
+		$this->sentinelApplied = $sentinelApplied;
 	}//end __construct()
 
 	/**

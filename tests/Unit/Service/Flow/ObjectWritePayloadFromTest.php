@@ -32,7 +32,10 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePlatform;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteStores;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use OCP\IL10N;
@@ -145,13 +148,9 @@ class ObjectWritePayloadFromTest extends TestCase {
 		);
 
 		$this->node = new ObjectWriteNode(
-			$this->objects,
-			$registers,
-			$schemas,
-			$this->userManager,
-			$this->appConfig,
-			$l10n,
-			$urls
+			new ObjectWriteStores($this->objects, $registers, $schemas),
+			new ObjectWritePlatform($this->userManager, $this->appConfig),
+			new FlowNodePresentation($l10n, $urls)
 		);
 
 		$this->registerContext = ['runAs' => 'admin'];

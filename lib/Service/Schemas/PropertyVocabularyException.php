@@ -62,4 +62,16 @@ class PropertyVocabularyException extends Exception {
 	public function getErrors(): array {
 		return $this->errors;
 	}//end getErrors()
+
+	/**
+	 * The error list of a refusal that is about one value.
+	 *
+	 * @param string                                     $message The sentence naming what was refused.
+	 * @param array{code: string, key: string, path: string} $where   Which refusal, on which key, at which path.
+	 *
+	 * @return array<int, array{code: string, key: string, path: string, message: string}> The one error.
+	 */
+	protected static function oneError(string $message, array $where): array {
+		return [$where + ['message' => $message]];
+	}//end oneError()
 }//end class

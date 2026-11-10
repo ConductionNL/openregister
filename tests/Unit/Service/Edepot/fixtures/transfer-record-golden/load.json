@@ -1,0 +1,60 @@
+[
+    [
+        "find",
+        [
+            "l1",
+            [],
+            false,
+            "edepot-transfers",
+            "edepotTransfer",
+            true,
+            true,
+            true,
+            true
+        ]
+    ],
+    [
+        "result",
+        {
+            "id": "l1",
+            "status": "approved",
+            "uuid": "l1"
+        }
+    ],
+    [
+        "find",
+        [
+            "l2",
+            [],
+            false,
+            "edepot-transfers",
+            "edepotTransfer",
+            true,
+            true,
+            true,
+            true
+        ]
+    ],
+    [
+        "result",
+        null
+    ],
+    [
+        "find",
+        [
+            "l3",
+            [],
+            false,
+            "edepot-transfers",
+            "edepotTransfer",
+            true,
+            true,
+            true,
+            true
+        ]
+    ],
+    [
+        "result",
+        null
+    ]
+]

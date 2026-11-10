@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Service\Support\TextExtractionServiceFactory;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Files\Db\FileMapper;
@@ -91,7 +92,7 @@ class ExtractFileEntityTypesTest extends TestCase {
 		);
 
 		$logger  = $this->createMock(LoggerInterface::class);
-		$service = new TextExtractionService(
+		$service = TextExtractionServiceFactory::create(
 			$fileMapper,
 			$this->createMock(ChunkMapper::class),
 			$rootFolder,

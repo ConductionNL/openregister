@@ -34,17 +34,13 @@ namespace OCA\OpenRegister\Service\Object;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectSearchInterface;
 use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Formats\BsnFormat;
-use OCA\OpenRegister\Formats\Iso8601DateTimeFormat;
-use OCA\OpenRegister\Formats\CronFormat;
-use OCA\OpenRegister\Formats\SemVerFormat;
-use OCA\OpenRegister\Formats\UserFormat;
+use OCA\OpenRegister\Formats\FormatFactory;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
@@ -304,28 +300,17 @@ class ValidateObject implements ValidateObjectInterface {
 	/**
 	 * Constructor for ValidateObject
 	 *
-	 * @param IAppConfig $config Configuration service.
-	 * @param MagicMapperInterface $objectMapper Object mapper.
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper.
-	 * @param IURLGenerator $urlGenerator URL generator.
-	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param IUserManager $userManager Backend consulted by the `user` string format.
+	 * @param ValidationSchemaSource  $schemas            Loads the schemas and resolves their references.
+	 * @param ValidationLookups       $lookups            Looks existing objects and users up.
+	 * @param LoggerInterface         $logger             Logger for logging operations.
 	 * @param NotSuppliedHandler|null $notSuppliedHandler Reads and applies the recorded-incompleteness record.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function __construct(
-		private IAppConfig $config,
-		private MagicMapperInterface $objectMapper,
-		private SchemaMapperInterface $schemaMapper,
-		private IURLGenerator $urlGenerator,
-		private LoggerInterface $logger,
-		private IUserManager $userManager,
-		// Nullable with a null default so the unit tests that build this class
-		// positionally keep working. The handler has no dependencies of its
-		// own, so the fallback below constructs the real thing rather than
-		// degrading to a no-op: there is no configuration that can make
-		// recorded incompleteness silently stop being enforced.
+		private readonly ValidationSchemaSource $schemas,
+		private readonly ValidationLookups $lookups,
+		private readonly LoggerInterface $logger,
 		private ?NotSuppliedHandler $notSuppliedHandler = null,
 	) {
 	}//end __construct()
@@ -838,7 +823,7 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function extractHandlingFromOneOfItems($oneOf): ?string {
-		if (is_array($oneOf) === false && is_object($oneOf) === false) {
+		if (self::isArrayOrObject(value: $oneOf) === false) {
 			return null;
 		}
 
@@ -851,6 +836,19 @@ class ValidateObject implements ValidateObjectInterface {
 
 		return null;
 	}//end extractHandlingFromOneOfItems()
+
+	/**
+	 * Whether a value is an array or an object.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool True for an array or an object
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function isArrayOrObject(mixed $value): bool {
+		return is_array($value) === true || is_object($value) === true;
+	}//end isArrayOrObject()
 
 	/**
 	 * Gets a value from either an array or object by key.
@@ -1075,22 +1073,47 @@ class ValidateObject implements ValidateObjectInterface {
 			return $propertySchema;
 		}
 
+		self::moveEnumIntoItems(propertySchema: $propertySchema);
+		self::moveOneOfIntoItems(propertySchema: $propertySchema);
+
+		return $propertySchema;
+	}//end fixMisplacedArrayConstraints()
+
+	/**
+	 * Move a non-empty enum written on an array onto its items (items default to strings).
+	 *
+	 * @param object $propertySchema The array property schema (changed in place).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function moveEnumIntoItems(object $propertySchema): void {
 		$enum = ($propertySchema->enum ?? null);
 		if (is_array($enum) === true && empty($enum) === false) {
 			$propertySchema->items ??= (object) ['type' => 'string'];
 			$propertySchema->items->enum ??= $enum;
 			unset($propertySchema->enum);
 		}
+	}//end moveEnumIntoItems()
 
+	/**
+	 * Move a non-empty oneOf written on an array onto its items.
+	 *
+	 * @param object $propertySchema The array property schema (changed in place).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function moveOneOfIntoItems(object $propertySchema): void {
 		$oneOf = ($propertySchema->oneOf ?? null);
-		if ((is_array($oneOf) === true || is_object($oneOf) === true) && empty((array) $oneOf) === false) {
+		if (self::isArrayOrObject(value: $oneOf) === true && empty((array) $oneOf) === false) {
 			$propertySchema->items ??= new stdClass();
 			$propertySchema->items->oneOf ??= $oneOf;
 			unset($propertySchema->oneOf);
 		}
-
-		return $propertySchema;
-	}//end fixMisplacedArrayConstraints()
+	}//end moveOneOfIntoItems()
 
 	/**
 	 * Transforms custom OpenRegister types to valid JSON Schema types.
@@ -1144,23 +1167,55 @@ class ValidateObject implements ValidateObjectInterface {
 		// they must be left untouched - replacing their properties with a bare {id} stub while
 		// an authored `additionalProperties: false` survives the clean would reject every one
 		// of the schema's own sub-properties. See or#290.
-		if ($handling === null && $hasRef === false && isset($itemsSchema->properties) === true) {
+		if (self::isInlineValueObject(itemsSchema: $itemsSchema) === true) {
 			return $itemsSchema;
 		}
 
-		// UUID strings: related-object handling, $ref references, or unknown handling types.
-		// Simple object: nested-object handling or no configuration and no $ref.
-		$useUuidStrings = $hasRef;
-		if ($handling !== null) {
-			$useUuidStrings = ($handling !== 'nested-object');
-		}
-
-		if ($useUuidStrings === true) {
+		if (self::usesUuidStrings(handling: $handling, hasRef: $hasRef) === true) {
 			return self::asRelationReferenceItems(itemsSchema: $itemsSchema);
 		}
 
 		return self::asNestedObjectItems(itemsSchema: $itemsSchema);
 	}//end transformArrayItemsForValidation()
+
+	/**
+	 * Whether object items validate as UUID references rather than as simple objects.
+	 *
+	 * UUID strings: related-object handling, $ref references, or unknown handling types.
+	 * Simple object: nested-object handling, or no configuration and no $ref.
+	 *
+	 * @param mixed $handling The objectConfiguration handling, or null.
+	 * @param bool  $hasRef   Whether the items carry a $ref.
+	 *
+	 * @return bool True for UUID references
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function usesUuidStrings(mixed $handling, bool $hasRef): bool {
+		if ($handling !== null) {
+			return $handling !== 'nested-object';
+		}
+
+		return $hasRef;
+	}//end usesUuidStrings()
+
+	/**
+	 * Whether object items are an inline value object: own properties and no relation marker.
+	 *
+	 * The markers are the ones transformArrayItemsForValidation() reads: objectConfiguration
+	 * handling and a $ref.
+	 *
+	 * @param object $itemsSchema The items schema.
+	 *
+	 * @return bool True for an inline value object
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function isInlineValueObject(object $itemsSchema): bool {
+		return self::objectConfigurationHandling(itemsSchema: $itemsSchema) === null
+			&& ($itemsSchema->{'$ref'} ?? null) === null
+			&& isset($itemsSchema->properties) === true;
+	}//end isInlineValueObject()
 
 	/**
 	 * Turn array items into a simple nested object with an `id`, without its `$ref` so it cannot recurse.
@@ -1259,28 +1314,44 @@ class ValidateObject implements ValidateObjectInterface {
 	 */
 	private function isSelfReference(object $propertySchema, string $schemaSlug): bool {
 		// Check for $ref in the property.
-		if (($propertySchema->{'$ref'} ?? null) !== null) {
-			$ref = $propertySchema->{'$ref'};
+		if (($propertySchema->{'$ref'} ?? null) === null) {
+			return false;
+		}
 
-			// Handle both string and object formats for $ref.
-			$refId = $ref;
-			if (is_object($ref) === true && (($ref->id ?? null) !== null)) {
-				$refId = $ref->id;
-			} elseif (is_array($ref) === true && (($ref['id'] ?? null) !== null)) {
-				$refId = $ref['id'];
-			}
+		// Handle both string and object formats for $ref.
+		$refId = self::refIdOf(ref: $propertySchema->{'$ref'});
 
-			// Extract schema slug from reference path.
-			if (is_string($refId) === true && str_contains($refId, '#/components/schemas/') === true) {
-				// Remove query parameters if present.
-				$cleanRefId = $this->removeQueryParameters(reference: $refId);
-				$referencedSlug = substr($cleanRefId, strrpos($cleanRefId, '/') + 1);
-				return $referencedSlug === $schemaSlug;
-			}
+		// Extract schema slug from reference path.
+		if (is_string($refId) === true && str_contains($refId, '#/components/schemas/') === true) {
+			// Remove query parameters if present.
+			$cleanRefId = $this->removeQueryParameters(reference: $refId);
+			$referencedSlug = substr($cleanRefId, strrpos($cleanRefId, '/') + 1);
+			return $referencedSlug === $schemaSlug;
 		}
 
 		return false;
 	}//end isSelfReference()
+
+	/**
+	 * The id of a $ref: its own value, or the `id` of an object or array form.
+	 *
+	 * @param mixed $ref The $ref value.
+	 *
+	 * @return mixed The reference id
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function refIdOf(mixed $ref): mixed {
+		if (is_object($ref) === true && (($ref->id ?? null) !== null)) {
+			return $ref->id;
+		}
+
+		if (is_array($ref) === true && (($ref['id'] ?? null) !== null)) {
+			return $ref['id'];
+		}
+
+		return $ref;
+	}//end refIdOf()
 
 	/**
 	 * Validates an object against a schema, letting a `user` format accept the given account ids.
@@ -1336,6 +1407,21 @@ class ValidateObject implements ValidateObjectInterface {
 		$schema = $this->schemaEntity(schema: $schema);
 		$target = $this->validationTarget(schema: $schema, given: ['schemaObject' => $schemaObject, 'notSupplied' => $notSupplied]);
 
+		return $this->validateAgainst(object: $object, target: (['schema' => $schema] + $target));
+	}//end validateObject()
+
+	/**
+	 * Validate an object against a resolved target: the field rules Opis does not check, then the prepared schema.
+	 *
+	 * @param array                                                                $object The object to validate.
+	 * @param array{schema: Schema|null, schemaObject: object, cacheKey: string|null} $target The schema entity, the schema object and its cache key.
+	 *
+	 * @return ValidationResult The result of the validation.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function validateAgainst(array $object, array $target): ValidationResult {
+		$schema = $target['schema'];
 		$this->checkFieldRules(object: $object, target: ['schema' => $schema, 'schemaObject' => $target['schemaObject']]);
 
 		// The per-schema preparation pipeline (transform, clean, computed strip,
@@ -1345,7 +1431,7 @@ class ValidateObject implements ValidateObjectInterface {
 			object: $object,
 			prepared: $this->preparedSchema(schemaObject: $target['schemaObject'], target: ['schema' => $schema, 'cacheKey' => $target['cacheKey']])
 		);
-	}//end validateObject()
+	}//end validateAgainst()
 
 	/**
 	 * Resolve a schema id to its entity once, so unique-field validation and prepared-schema caching work with the entity.
@@ -1361,7 +1447,7 @@ class ValidateObject implements ValidateObjectInterface {
 			return $schema;
 		}
 
-		return $this->schemaMapper->find($schema);
+		return $this->schemas->schemaMapper->find($schema);
 	}//end schemaEntity()
 
 	/**
@@ -1462,7 +1548,7 @@ class ValidateObject implements ValidateObjectInterface {
 		// Phpcs:ignore Squiz.Operators.ComparisonOperatorUsage.NotAllowed
 		$useDefaultSchema = ($schemaObject == new stdClass());
 		if ($useDefaultSchema === true) {
-			$schemaObject = $schema->getSchemaObject($this->urlGenerator);
+			$schemaObject = $schema->getSchemaObject($this->schemas->urlGenerator);
 		}
 
 		if ($given['notSupplied'] !== []) {
@@ -1983,13 +2069,10 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @return array<string, object> The resolvers by format.
 	 */
 	private function customFormats(): array {
-		return [
-			'bsn'       => new BsnFormat(),
-			'semver'    => new SemVerFormat(),
-			'cron'      => new CronFormat(),
-			'user'      => new UserFormat(userManager: $this->userManager, planned: fn (string $uid): bool => in_array($uid, $this->plannedUsers, true)),
-			'date-time' => new Iso8601DateTimeFormat(),
-		];
+		return FormatFactory::customStringFormats(
+			userManager: $this->lookups->userManager,
+			planned: fn (string $uid): bool => in_array($uid, $this->plannedUsers, true)
+		);
 	}//end customFormats()
 
 	/**
@@ -2008,14 +2091,14 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function resolveSchema(Uri $uri): string {
-		$local = ($this->urlGenerator->getBaseUrl() === $uri->scheme().'://'.$uri->host());
+		$local = ($this->schemas->urlGenerator->getBaseUrl() === $uri->scheme().'://'.$uri->host());
 		$path  = ($uri->path() ?? '');
 
 		if ($local === true && str_contains($path, '/api/schemas') === true) {
 			$exploded = explode('/', $path);
-			$schema   = $this->schemaMapper->find(end($exploded));
+			$schema   = $this->schemas->schemaMapper->find(end($exploded));
 
-			return json_encode($schema->getSchemaObject($this->urlGenerator));
+			return json_encode($schema->getSchemaObject($this->schemas->urlGenerator));
 		}
 
 		if ($local === true && str_contains($path, '/api/files/schema') === true) {
@@ -2050,7 +2133,7 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uri::fromParts is standard GuzzleHttp\Psr7 pattern
 	 */
 	private function externalSchema(Uri $uri): string {
-		if ($this->config->getValueBool('openregister', 'allowExternalSchemas') !== true) {
+		if ($this->schemas->config->getValueBool('openregister', 'allowExternalSchemas') !== true) {
 			return '';
 		}
 
@@ -2170,7 +2253,7 @@ class ValidateObject implements ValidateObjectInterface {
 		}
 
 		$filters = self::uniqueFilters(object: $object, uniqueFields: $uniqueFields);
-		if ($this->objectMapper->countAll(_filters: $filters, schema: $schema) !== 0) {
+		if ($this->lookups->objectMapper->countAll(_filters: $filters, schema: $schema) !== 0) {
 			throw self::notUniqueException(object: $object, uniqueFields: $uniqueFields);
 		}
 	}//end validateUniqueFields()

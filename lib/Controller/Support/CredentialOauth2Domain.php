@@ -22,10 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Credential\OAuth2ConnectService;
-use OCA\OpenRegister\Service\Credential\OAuth2Endpoints;
-use OCA\OpenRegister\Service\Credential\OAuth2RelayGuard;
-use OCA\OpenRegister\Service\Credential\OAuth2StateService;
+use OCA\OpenRegister\Service\Credential\OAuth2ConnectServiceInterface;
+use OCA\OpenRegister\Service\Credential\OAuth2EndpointsInterface;
+use OCA\OpenRegister\Service\Credential\OAuth2RelayGuardInterface;
+use OCA\OpenRegister\Service\Credential\OAuth2StateServiceInterface;
 
 /**
  * The domain services of the credential oauth2 API.
@@ -36,18 +36,18 @@ final class CredentialOauth2Domain {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param OAuth2ConnectService $connect   Builds authorization URLs and redeems codes.
-	 * @param OAuth2StateService   $states    Issues and redeems the signed state.
-	 * @param OAuth2RelayGuard     $relay     Decides where a relay may forward.
-	 * @param OAuth2Endpoints      $endpoints This instance's own callback, metadata and return URLs.
+	 * @param OAuth2ConnectServiceInterface $connect   Builds authorization URLs and redeems codes.
+	 * @param OAuth2StateServiceInterface   $states    Issues and redeems the signed state.
+	 * @param OAuth2RelayGuardInterface     $relay     Decides where a relay may forward.
+	 * @param OAuth2EndpointsInterface      $endpoints This instance's own callback, metadata and return URLs.
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */
 	public function __construct(
-		public readonly OAuth2ConnectService $connect,
-		public readonly OAuth2StateService $states,
-		public readonly OAuth2RelayGuard $relay,
-		public readonly OAuth2Endpoints $endpoints,
+		public readonly OAuth2ConnectServiceInterface $connect,
+		public readonly OAuth2StateServiceInterface $states,
+		public readonly OAuth2RelayGuardInterface $relay,
+		public readonly OAuth2EndpointsInterface $endpoints,
 	) {
 	}//end __construct()
 }//end class

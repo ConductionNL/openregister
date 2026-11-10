@@ -51,7 +51,7 @@ namespace OCA\OpenRegister\Service\Rbac;
  *
  * @spec openspec/specs/rbac-scopes/spec.md
  */
-class HierarchyAnnotationValidator {
+class HierarchyAnnotationValidator implements HierarchyAnnotationValidatorInterface {
 
 	/**
 	 * The keys the block may carry.

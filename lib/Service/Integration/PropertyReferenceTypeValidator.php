@@ -44,16 +44,18 @@ use InvalidArgumentException;
  * Validate the optional `referenceType` marker on schema properties.
  */
 class PropertyReferenceTypeValidator {
+	use PropertyReferenceValidationTrait;
+
 	/**
 	 * Constructor.
 	 *
-	 * @param IntegrationRegistry $registry The integration registry —
+	 * @param IntegrationIdIndexInterface $registry The integration registry —
 	 *                                      used to look up valid ids.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private IntegrationRegistry $registry,
+		private IntegrationIdIndexInterface $registry,
 	) {
 	}//end __construct()
 
@@ -76,89 +78,49 @@ class PropertyReferenceTypeValidator {
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-10
 	 */
 	public function validate(array $property, ?string $propertyName = null): void {
-		if (array_key_exists('referenceType', $property) === false) {
-			return;
-		}
-
-		$value = $property['referenceType'];
+		$value = ($property['referenceType'] ?? null);
 		if ($value === null) {
 			return;
 		}
 
-		if (is_string($value) === false) {
-			throw new InvalidArgumentException(
-				$this->formatError(propertyName: $propertyName, detail: 'must be a string or null')
-			);
-		}
-
-		if ($value === '') {
-			throw new InvalidArgumentException(
-				$this->formatError(propertyName: $propertyName, detail: 'must not be empty')
-			);
-		}
-
-		if ($this->registry->isValidIntegrationId($value) === false) {
-			$validIds = $this->registry->listIds();
-			sort($validIds);
-			$idList = '(none)';
-			if ($validIds !== []) {
-				$idList = implode(', ', $validIds);
-			}
-
-			throw new InvalidArgumentException(
-				$this->formatError(
-					propertyName: $propertyName,
-					detail: sprintf(
-						"refers to unregistered integration '%s'. Registered ids: %s",
-						$value,
-						$idList
-					)
-				)
-			);
-		}
+		$this->refuse(propertyName: $propertyName, problem: $this->problemWith(value: $value));
 	}//end validate()
 
 	/**
-	 * Validate every property in a schema's `properties` map.
+	 * What is wrong with a non-null `referenceType`, if anything.
 	 *
-	 * Convenience wrapper for the per-schema validation path.
+	 * @param mixed $value The declared value.
 	 *
-	 * @param array<string,array<string,mixed>> $properties Property map.
-	 *
-	 * @return void
-	 *
-	 * @throws InvalidArgumentException On the first invalid property.
-	 *
-	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-10
+	 * @return string|null The problem, or null when it names a registered integration.
 	 */
-	public function validateAll(array $properties): void {
-		foreach ($properties as $name => $definition) {
-			if (is_array($definition) === true) {
-				$resolvedName = null;
-				if (is_string($name) === true) {
-					$resolvedName = $name;
-				}
-
-				$this->validate(property: $definition, propertyName: $resolvedName);
-			}
+	private function problemWith(mixed $value): ?string {
+		if (is_string($value) === false) {
+			return 'referenceType must be a string or null';
 		}
-	}//end validateAll()
+
+		if ($value === '') {
+			return 'referenceType must not be empty';
+		}
+
+		if ($this->registry->isValidIntegrationId($value) === false) {
+			return sprintf("referenceType refers to unregistered integration '%s'. Registered ids: %s", $value, $this->registeredIdList());
+		}
+
+		return null;
+	}//end problemWith()
 
 	/**
-	 * Build the standard error-message prefix.
+	 * The registered integration ids, sorted, for an error message.
 	 *
-	 * @param string|null $propertyName Property name (or null for
-	 *                                  schema-level errors).
-	 * @param string $detail Specific failure detail.
-	 *
-	 * @return string
+	 * @return string The comma-separated ids, or `(none)`.
 	 */
-	private function formatError(?string $propertyName, string $detail): string {
-		$prefix = 'referenceType';
-		if ($propertyName !== null) {
-			$prefix = sprintf("Property '%s' referenceType", $propertyName);
+	private function registeredIdList(): string {
+		$validIds = $this->registry->listIds();
+		sort($validIds);
+		if ($validIds === []) {
+			return '(none)';
 		}
 
-		return sprintf('%s %s', $prefix, $detail);
-	}//end formatError()
+		return implode(', ', $validIds);
+	}//end registeredIdList()
 }//end class

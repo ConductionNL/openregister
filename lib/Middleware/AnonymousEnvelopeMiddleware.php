@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Middleware;
 
-use OCA\OpenRegister\Service\Rbac\AnonymousEnvelope;
+use OCA\OpenRegister\Service\Rbac\AnonymousEnvelopeInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -45,13 +45,13 @@ class AnonymousEnvelopeMiddleware extends Middleware {
 	 * Constructor.
 	 *
 	 * @param IUserSession      $userSession The session that says who is asking.
-	 * @param AnonymousEnvelope $envelope    The filter for an anonymous caller's answer.
+	 * @param AnonymousEnvelopeInterface $envelope    The filter for an anonymous caller's answer.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
-		private readonly AnonymousEnvelope $envelope,
+		private readonly AnonymousEnvelopeInterface $envelope,
 	) {
 	}//end __construct()
 

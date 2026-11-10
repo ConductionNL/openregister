@@ -34,9 +34,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Hardening;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCP\IAppConfig;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -45,25 +42,21 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Hardening
  */
-class HardeningSettingsService {
+class HardeningSettingsService implements HardeningSettingsServiceInterface {
 
 	/**
 	 * Constructor.
 	 *
 	 * @param HardeningPolicy $policy Reads what is in force now.
 	 * @param HardeningFloorGuard $guard Refuses a change that would weaken a control.
-	 * @param IAppConfig $appConfig Stores the administered values and the floors.
-	 * @param AuditTrailMapperInterface $auditTrailMapper Records the change, and the refusal.
-	 * @param LoggerInterface $logger Records an audit write that could not be made.
+	 * @param HardeningSettingsStore $store The stored settings, their audit trail and the log.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly HardeningPolicy $policy,
 		private readonly HardeningFloorGuard $guard,
-		private readonly IAppConfig $appConfig,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly LoggerInterface $logger,
+		private readonly HardeningSettingsStore $store,
 	) {
 
 	}//end __construct()
@@ -91,13 +84,13 @@ class HardeningSettingsService {
 		try {
 			$this->guard->assertValue(control: $control, proposed: $value);
 		} catch (HardeningFloorException $refusal) {
-			$this->record(control: $control, before: $before, after: $value, accepted: false, refusal: $refusal->getMessage());
+			$this->record(control: $control, before: $before, after: $value, refusal: $refusal->getMessage());
 			throw $refusal;
 		}
 
 		[$key] = HardeningPolicy::CONTROLS[$control];
-		$this->appConfig->setValueInt(HardeningPolicy::APP_ID, $key, $value);
-		$this->record(control: $control, before: $before, after: $value, accepted: true);
+		$this->store->appConfig->setValueInt(HardeningPolicy::APP_ID, $key, $value);
+		$this->record(control: $control, before: $before, after: $value);
 
 		return $value;
 
@@ -137,14 +130,13 @@ class HardeningSettingsService {
 				control: 'origins.allowlistEntries',
 				before: $before,
 				after: $cleaned,
-				accepted: false,
 				refusal: $refusal->getMessage(),
 			);
 			throw $refusal;
 		}
 
-		$this->appConfig->setValueString(HardeningPolicy::APP_ID, HardeningPolicy::ORIGINS_KEY, implode(',', $cleaned));
-		$this->record(control: 'origins.allowlistEntries', before: $before, after: $cleaned, accepted: true);
+		$this->store->appConfig->setValueString(HardeningPolicy::APP_ID, HardeningPolicy::ORIGINS_KEY, implode(',', $cleaned));
+		$this->record(control: 'origins.allowlistEntries', before: $before, after: $cleaned);
 
 		return $cleaned;
 
@@ -181,7 +173,6 @@ class HardeningSettingsService {
 				control: ($control . '.floor'),
 				before: $before,
 				after: $floor,
-				accepted: false,
 				refusal: $refusal->getMessage(),
 			);
 			throw $refusal;
@@ -189,12 +180,12 @@ class HardeningSettingsService {
 
 		$declared = $this->policy->declaredFloors();
 		$declared[$control] = $floor;
-		$this->appConfig->setValueString(
+		$this->store->appConfig->setValueString(
 			HardeningPolicy::APP_ID,
 			HardeningPolicy::FLOORS_KEY,
 			(string)json_encode($declared)
 		);
-		$this->record(control: ($control . '.floor'), before: $before, after: $floor, accepted: true);
+		$this->record(control: ($control . '.floor'), before: $before, after: $floor);
 
 		return $floor;
 
@@ -254,22 +245,21 @@ class HardeningSettingsService {
 	 * @param string $control The control identifier.
 	 * @param int|string|array $before The value before.
 	 * @param int|string|array $after The value asked for.
-	 * @param bool $accepted Whether the change was made.
-	 * @param string $refusal The refusal, when there was one.
+	 * @param string|null $refusal The refusal, or null when the change was made.
 	 *
 	 * @return void
 	 */
-	private function record(string $control, int|string|array $before, int|string|array $after, bool $accepted, string $refusal = ''): void {
+	private function record(string $control, int|string|array $before, int|string|array $after, ?string $refusal = null): void {
 		try {
-			$this->auditTrailMapper->createHardeningChangeEntry(
+			$this->store->auditTrailMapper->createHardeningChangeEntry(
 				control: $control,
 				before: $before,
 				after: $after,
-				accepted: $accepted,
-				refusal: $refusal,
+				accepted: $refusal === null,
+				refusal: ($refusal ?? ''),
 			);
 		} catch (Throwable $failure) {
-			$this->logger->error(
+			$this->store->logger->error(
 				'HardeningSettingsService: the audit entry for ' . $control . ' could not be written: ' . $failure->getMessage()
 			);
 		}

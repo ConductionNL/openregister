@@ -21,6 +21,7 @@ use OCA\OpenRegister\Exception\OfficeServerRequiredException;
 use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
 use OCA\OpenRegister\Search\Service\Reporting\HtmlReportWriter;
 use OCA\OpenRegister\Search\Service\Reporting\PdfReportWriter;
+use OCA\OpenRegister\Service\Export\Odt\OdtWriter;
 use PHPUnit\Framework\TestCase;
 use ZipArchive;
 
@@ -45,7 +46,7 @@ class PdfReportWriterTest extends TestCase {
 			}
 		);
 
-		$pdf = (new PdfReportWriter(htmlWriter: new HtmlReportWriter(), officeConverter: $converter))->write(
+		$pdf = (new PdfReportWriter(htmlWriter: new HtmlReportWriter(), officeConverter: $converter, odtWriter: new OdtWriter()))->write(
 			dashboard: ['titel' => 'Kwartaal'],
 			resolvedWidgets: [['widget' => ['title' => 'Open zaken'], 'data' => ['value' => 7]]]
 		);
@@ -76,6 +77,7 @@ class PdfReportWriterTest extends TestCase {
 		$converter->expects($this->never())->method('odtToPdf');
 
 		$this->expectException(OfficeServerRequiredException::class);
-		(new PdfReportWriter(htmlWriter: new HtmlReportWriter(), officeConverter: $converter))->write(dashboard: [], resolvedWidgets: []);
+		(new PdfReportWriter(htmlWriter: new HtmlReportWriter(), officeConverter: $converter, odtWriter: new OdtWriter()))
+			->write(dashboard: [], resolvedWidgets: []);
 	}//end testWithoutOfficeServerItRefuses()
 }//end class

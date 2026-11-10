@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Service\Hinge;
  * @category Service
  * @package  OCA\OpenRegister\Service\Hinge
  */
-class HingeAnnotationValidator {
+class HingeAnnotationValidator implements HingeAnnotationValidatorInterface {
 
 	/**
 	 * Validate the lens, list and geographic-inheritance blocks of one schema.
@@ -82,7 +82,7 @@ class HingeAnnotationValidator {
 		foreach ($lenses as $name => $spec) {
 			$errors = array_merge(
 				$errors,
-				$this->validateOneLens(name: (string)$name, spec: $spec, propertyNames: $propertyNames)
+				$this->validateOneLens(lens: new DeclaredLens(name: (string)$name, spec: $spec), propertyNames: $propertyNames)
 			);
 		}
 
@@ -92,54 +92,95 @@ class HingeAnnotationValidator {
 	/**
 	 * Check one lens: its two halves, and that it does not shadow a stored property.
 	 *
-	 * @param string             $name          The property name the lens renders as.
-	 * @param mixed              $spec          The declared lens.
+	 * @param DeclaredLens       $lens          The lens name and its declaration.
 	 * @param array<int, string> $propertyNames The schema's own property names.
 	 *
 	 * @return array<int, array{code: string, message: string}> The findings for this lens.
 	 */
-	private function validateOneLens(string $name, mixed $spec, array $propertyNames): array {
-		if (is_array($spec) === false) {
+	private function validateOneLens(DeclaredLens $lens, array $propertyNames): array {
+		if (is_array($lens->spec) === false) {
 			return [
 				[
 					'code' => 'lens-malformed',
-					'message' => sprintf('Lens "%s" must be an object declaring through and property.', $name),
+					'message' => sprintf('Lens "%s" must be an object declaring through and property.', $lens->name),
 				],
 			];
 		}
 
-		$errors = [];
+		$findings = [
+			$this->lensThroughFinding(lens: $lens, propertyNames: $propertyNames),
+			$this->lensPropertyFinding(name: $lens->name, property: ($lens->spec['property'] ?? null)),
+			$this->lensShadowFinding(name: $lens->name, propertyNames: $propertyNames),
+		];
 
-		$through = ($spec['through'] ?? null);
+		return array_values(array_filter($findings, static fn (?array $finding): bool => $finding !== null));
+	}//end validateOneLens()
+
+	/**
+	 * Check a lens names a reference property the schema declares.
+	 *
+	 * @param DeclaredLens       $lens          The lens name and its declaration (an array here).
+	 * @param array<int, string> $propertyNames The schema's own property names.
+	 *
+	 * @return array{code: string, message: string}|null The finding, or null when well-formed.
+	 */
+	private function lensThroughFinding(DeclaredLens $lens, array $propertyNames): ?array {
+		$name = $lens->name;
+		$through = ($lens->spec['through'] ?? null);
 		if (is_string($through) === false || $through === '') {
-			$errors[] = [
+			return [
 				'code' => 'lens-missing-through',
 				'message' => sprintf('Lens "%s" does not name the reference property to look through.', $name),
 			];
-		} elseif (in_array($through, $propertyNames, true) === false) {
-			$errors[] = [
+		}
+
+		if (in_array($through, $propertyNames, true) === false) {
+			return [
 				'code' => 'lens-unknown-through',
 				'message' => sprintf('Lens "%s" looks through "%s", which this schema does not declare.', $name, $through),
 			];
 		}
 
-		$property = ($spec['property'] ?? null);
+		return null;
+	}//end lensThroughFinding()
+
+	/**
+	 * Check a lens names the property to read on the referenced record.
+	 *
+	 * @param string $name     The property name the lens renders as.
+	 * @param mixed  $property The declared property to read.
+	 *
+	 * @return array{code: string, message: string}|null The finding, or null when named.
+	 */
+	private function lensPropertyFinding(string $name, mixed $property): ?array {
 		if (is_string($property) === false || $property === '') {
-			$errors[] = [
+			return [
 				'code' => 'lens-missing-property',
 				'message' => sprintf('Lens "%s" does not name the property to read.', $name),
 			];
 		}
 
+		return null;
+	}//end lensPropertyFinding()
+
+	/**
+	 * Check a lens does not carry the name of a stored property.
+	 *
+	 * @param string             $name          The property name the lens renders as.
+	 * @param array<int, string> $propertyNames The schema's own property names.
+	 *
+	 * @return array{code: string, message: string}|null The finding, or null when it shadows nothing.
+	 */
+	private function lensShadowFinding(string $name, array $propertyNames): ?array {
 		if (in_array($name, $propertyNames, true) === true) {
-			$errors[] = [
+			return [
 				'code' => 'lens-shadows-property',
 				'message' => sprintf('Lens "%s" has the name of a stored property, which it would overwrite on every read.', $name),
 			];
 		}
 
-		return $errors;
-	}//end validateOneLens()
+		return null;
+	}//end lensShadowFinding()
 
 	/**
 	 * Check the declared columns and search fields name properties that exist.
@@ -175,29 +216,42 @@ class HingeAnnotationValidator {
 
 		$errors = [];
 		foreach ($columns as $column) {
-			$property = $column;
-			if (is_array($column) === true) {
-				$property = ($column['property'] ?? null);
-			}
-
-			if (is_string($property) === false || $property === '') {
-				$errors[] = [
-					'code' => 'list-column-unnamed',
-					'message' => 'A declared list column names no property.',
-				];
-				continue;
-			}
-
-			if ($this->isKnown(name: $property, propertyNames: $propertyNames) === false) {
-				$errors[] = [
-					'code' => 'list-column-unknown',
-					'message' => sprintf('List column "%s" is not a property of this schema.', $property),
-				];
+			$finding = $this->columnFinding(column: $column, propertyNames: $propertyNames);
+			if ($finding !== null) {
+				$errors[] = $finding;
 			}
 		}
 
 		return $errors;
 	}//end validateListColumns()
+
+	/**
+	 * Check one declared column: a bare property name or an object naming one.
+	 *
+	 * @param mixed              $column        The declared column.
+	 * @param array<int, string> $propertyNames The schema's own property names.
+	 *
+	 * @return array{code: string, message: string}|null The finding, or null when the column is known.
+	 */
+	private function columnFinding(mixed $column, array $propertyNames): ?array {
+		$property = $this->declaredName(entry: $column, key: 'property');
+
+		if (is_string($property) === false || $property === '') {
+			return [
+				'code' => 'list-column-unnamed',
+				'message' => 'A declared list column names no property.',
+			];
+		}
+
+		if ($this->isKnown(name: $property, propertyNames: $propertyNames) === false) {
+			return [
+				'code' => 'list-column-unknown',
+				'message' => sprintf('List column "%s" is not a property of this schema.', $property),
+			];
+		}
+
+		return null;
+	}//end columnFinding()
 
 	/**
 	 * Check every declared search field names a property the schema has.
@@ -214,24 +268,40 @@ class HingeAnnotationValidator {
 
 		$errors = [];
 		foreach ($fields as $field) {
-			if (is_string($field) === false || $field === '') {
-				$errors[] = [
-					'code' => 'list-search-field-unnamed',
-					'message' => 'A declared search field names no property.',
-				];
-				continue;
-			}
-
-			if ($this->isKnown(name: $field, propertyNames: $propertyNames) === false) {
-				$errors[] = [
-					'code' => 'list-search-field-unknown',
-					'message' => sprintf('Search field "%s" is not a property of this schema.', $field),
-				];
+			$finding = $this->searchFieldFinding(field: $field, propertyNames: $propertyNames);
+			if ($finding !== null) {
+				$errors[] = $finding;
 			}
 		}
 
 		return $errors;
 	}//end validateSearchFields()
+
+	/**
+	 * Check one declared search field names a property the schema has.
+	 *
+	 * @param mixed              $field         The declared search field.
+	 * @param array<int, string> $propertyNames The schema's own property names.
+	 *
+	 * @return array{code: string, message: string}|null The finding, or null when the field is known.
+	 */
+	private function searchFieldFinding(mixed $field, array $propertyNames): ?array {
+		if (is_string($field) === false || $field === '') {
+			return [
+				'code' => 'list-search-field-unnamed',
+				'message' => 'A declared search field names no property.',
+			];
+		}
+
+		if ($this->isKnown(name: $field, propertyNames: $propertyNames) === false) {
+			return [
+				'code' => 'list-search-field-unknown',
+				'message' => sprintf('Search field "%s" is not a property of this schema.', $field),
+			];
+		}
+
+		return null;
+	}//end searchFieldFinding()
 
 	/**
 	 * Check every inherited-geography source names a reference property.
@@ -258,29 +328,58 @@ class HingeAnnotationValidator {
 
 		$errors = [];
 		foreach ($sources as $source) {
-			$through = $source;
-			if (is_array($source) === true) {
-				$through = ($source['through'] ?? null);
-			}
-
-			if (is_string($through) === false || $through === '') {
-				$errors[] = [
-					'code' => 'geo-inheritance-unnamed',
-					'message' => 'A geographic-inheritance source names no reference property.',
-				];
-				continue;
-			}
-
-			if (in_array($through, $propertyNames, true) === false) {
-				$errors[] = [
-					'code' => 'geo-inheritance-unknown',
-					'message' => sprintf('Geographic inheritance reads through "%s", which this schema does not declare.', $through),
-				];
+			$finding = $this->geoSourceFinding(source: $source, propertyNames: $propertyNames);
+			if ($finding !== null) {
+				$errors[] = $finding;
 			}
 		}
 
 		return $errors;
 	}//end validateGeoInheritance()
+
+	/**
+	 * Check one inherited-geography source: a bare reference property or an object naming one.
+	 *
+	 * @param mixed              $source        The declared source.
+	 * @param array<int, string> $propertyNames The schema's own property names.
+	 *
+	 * @return array{code: string, message: string}|null The finding, or null when the source is declared.
+	 */
+	private function geoSourceFinding(mixed $source, array $propertyNames): ?array {
+		$through = $this->declaredName(entry: $source, key: 'through');
+
+		if (is_string($through) === false || $through === '') {
+			return [
+				'code' => 'geo-inheritance-unnamed',
+				'message' => 'A geographic-inheritance source names no reference property.',
+			];
+		}
+
+		if (in_array($through, $propertyNames, true) === false) {
+			return [
+				'code' => 'geo-inheritance-unknown',
+				'message' => sprintf('Geographic inheritance reads through "%s", which this schema does not declare.', $through),
+			];
+		}
+
+		return null;
+	}//end geoSourceFinding()
+
+	/**
+	 * The name an entry declares: the entry itself, or its `key` when it is an object.
+	 *
+	 * @param mixed  $entry The declared entry.
+	 * @param string $key   The key an object entry names its property under.
+	 *
+	 * @return mixed The declared name, unvalidated.
+	 */
+	private function declaredName(mixed $entry, string $key): mixed {
+		if (is_array($entry) === true) {
+			return ($entry[$key] ?? null);
+		}
+
+		return $entry;
+	}//end declaredName()
 
 	/**
 	 * Whether a name reaches a declared property, allowing a dot path's root.

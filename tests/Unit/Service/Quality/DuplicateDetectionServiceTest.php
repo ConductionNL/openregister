@@ -45,9 +45,7 @@ class DuplicateDetectionServiceTest extends TestCase {
 		$this->dismissals->method('activeFor')->willReturn([]);
 		$this->service = new DuplicateDetectionService(
 			$this->objectService,
-			$this->schemaMapper,
-			$this->registerMapper,
-			new SimilarityCalculator(),
+			new \OCA\OpenRegister\Search\Service\Quality\DedupScoringSources(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)), new SimilarityCalculator()),
 			$this->dismissals,
 			$this->createMock(LoggerInterface::class)
 		);

@@ -45,13 +45,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Middleware;
 
 use Exception;
-use OCA\OpenRegister\Controller\AgentsController;
-use OCA\OpenRegister\Controller\ChatController;
-use OCA\OpenRegister\Controller\ChatHealthController;
 use OCA\OpenRegister\Controller\ChatStreamController;
-use OCA\OpenRegister\Controller\ConversationController;
+use OCA\OpenRegister\Controller\Support\ChatFamilyControllerInterface;
 use OCA\OpenRegister\Middleware\Exception\ChatProxiedResponseException;
-use OCA\OpenRegister\Service\Chat\ChatProxyHandler;
+use OCA\OpenRegister\Service\Chat\ChatProxyHandlerInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Middleware;
@@ -69,16 +66,16 @@ class ChatCompatMiddleware extends Middleware {
 	/**
 	 * Controllers this middleware decorates/may proxy. Membership is checked
 	 * via `instanceof` (not `get_class()`) so PHPUnit mocks — which subclass
-	 * the real controller — match correctly.
+	 * the real controller — match correctly. ChatController,
+	 * ChatHealthController, ConversationController and AgentsController are
+	 * matched through the ChatFamilyControllerInterface marker they implement;
+	 * ChatStreamController is still listed by name.
 	 *
 	 * @var array<int, class-string>
 	 */
 	private const CHAT_FAMILY_CONTROLLERS = [
-		ChatController::class,
+		ChatFamilyControllerInterface::class,
 		ChatStreamController::class,
-		ChatHealthController::class,
-		ConversationController::class,
-		AgentsController::class,
 	];
 
 	/**
@@ -94,7 +91,7 @@ class ChatCompatMiddleware extends Middleware {
 
 	/**
 	 * Controllers proxied via a redirect rather than a body relay — see
-	 * ChatProxyHandler::buildRedirectResponse()'s docblock for why.
+	 * ChatProxyHandlerInterface::buildRedirectResponse()'s docblock for why.
 	 *
 	 * @var array<int, class-string>
 	 */
@@ -131,11 +128,11 @@ class ChatCompatMiddleware extends Middleware {
 	 * Constructor.
 	 *
 	 * @param IRequest $request The incoming request.
-	 * @param ChatProxyHandler $proxyHandler Resolves config, rewrites paths, performs the outbound calls.
+	 * @param ChatProxyHandlerInterface $proxyHandler Resolves config, rewrites paths, performs the outbound calls.
 	 */
 	public function __construct(
 		private readonly IRequest $request,
-		private readonly ChatProxyHandler $proxyHandler,
+		private readonly ChatProxyHandlerInterface $proxyHandler,
 	) {
 	}//end __construct()
 
@@ -184,19 +181,7 @@ class ChatCompatMiddleware extends Middleware {
 	 * @return string|null The rewritten `/apps/hermiq/...` path, or null when any guard fails.
 	 */
 	private function resolveHermiqPath($controller, $methodName): ?string {
-		if ($this->isChatFamilyController(controller: $controller) === false) {
-			return null;
-		}
-
-		if (in_array($methodName, self::PAGE_SHELL_METHODS, true) === true) {
-			return null;
-		}
-
-		if ($this->proxyHandler->isProxyConfigured() === false) {
-			return null;
-		}
-
-		if ($this->proxyHandler->isHermiqInstalled() === false) {
+		if ($this->isProxyEligible(controller: $controller, methodName: $methodName) === false) {
 			return null;
 		}
 
@@ -207,6 +192,22 @@ class ChatCompatMiddleware extends Middleware {
 
 		return $this->proxyHandler->rewritePathForHermiq(orPathInfo: $pathInfo);
 	}//end resolveHermiqPath()
+
+	/**
+	 * Whether a chat-family call that is not a page shell may be proxied:
+	 * the proxy is configured and hermiq is installed.
+	 *
+	 * @param mixed $controller The controller instance.
+	 * @param string $methodName The method name being called.
+	 *
+	 * @return bool True when every guard passes.
+	 */
+	private function isProxyEligible($controller, $methodName): bool {
+		return $this->isChatFamilyController(controller: $controller) === true
+			&& in_array($methodName, self::PAGE_SHELL_METHODS, true) === false
+			&& $this->proxyHandler->isProxyConfigured() === true
+			&& $this->proxyHandler->isHermiqInstalled() === true;
+	}//end isProxyEligible()
 
 	/**
 	 * Perform the actual proxy call — a reachability-gated redirect for the

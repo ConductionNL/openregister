@@ -27,10 +27,10 @@ use DateTime;
 use Exception;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\Configuration;
-use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
-use OCA\OpenRegister\Service\Configuration\GitLabHandler;
-use OCA\OpenRegister\Service\ConfigurationServiceInterface;
+use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
+use OCA\OpenRegister\Service\AppConfigurationImporterInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -56,22 +56,22 @@ class SyncConfigurationsJob extends TimedJob {
 	/**
 	 * Constructor
 	 *
-	 * @param ITimeFactory $time Time factory for job scheduling
-	 * @param ConfigurationMapper $configurationMapper Configuration mapper
-	 * @param ConfigurationServiceInterface $configurationService Configuration service
-	 * @param GitHubClientInterface $githubService GitHub service
-	 * @param GitLabHandler $gitlabService GitLab service
-	 * @param Client $httpClient HTTP client
-	 * @param LoggerInterface $logger Logger
+	 * @param ITimeFactory                  $time                 Time factory for job scheduling
+	 * @param ConfigurationMapperInterface           $configurationMapper  Configuration mapper
+	 * @param AppConfigurationImporterInterface $configurationService Configuration service
+	 * @param GitHubClientInterface         $githubService        GitHub service
+	 * @param GitLabHandlerInterface        $gitlabService        GitLab service
+	 * @param Client                        $httpClient           HTTP client
+	 * @param LoggerInterface               $logger               Logger
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly ConfigurationMapper $configurationMapper,
-		private readonly ConfigurationServiceInterface $configurationService,
+		private readonly ConfigurationMapperInterface $configurationMapper,
+		private readonly AppConfigurationImporterInterface $configurationService,
 		private readonly GitHubClientInterface $githubService,
-		private readonly GitLabHandler $gitlabService,
+		private readonly GitLabHandlerInterface $gitlabService,
 		private readonly Client $httpClient,
 		private readonly LoggerInterface $logger,
 	) {

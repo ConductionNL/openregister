@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
-use OCA\OpenRegister\Search\Service\Vectorization\Handlers\PgVectorPlatform;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSidecarTableInterface;
 use OCP\IDBConnection;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -40,8 +40,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#6.1
  */
-final class HybridSearchDiagnostics
-{
+final class HybridSearchDiagnostics {
 
 	/**
 	 * What is reported when nothing could be read.
@@ -78,9 +77,9 @@ final class HybridSearchDiagnostics
 	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection      $db        The database connection.
+	 * @param IDBConnection $db The database connection.
 	 * @param ContainerInterface $container The container the chunk mapper comes from.
-	 * @param LoggerInterface    $logger    The logger.
+	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
@@ -101,7 +100,7 @@ final class HybridSearchDiagnostics
 	public function report(bool $isPostgres): array {
 		$diagnostics = self::NOTHING_FOUND;
 		if ($isPostgres === true) {
-			$sidecar = PgVectorPlatform::SIDECAR_TABLE;
+			$sidecar = VectorSidecarTableInterface::SIDECAR_TABLE;
 			$diagnostics = array_replace($diagnostics, $this->annSidecar(sidecar: $sidecar), $this->searchIndexes());
 			$diagnostics['vectors'] = $this->vectorCounts(sidecar: $sidecar);
 		}
@@ -160,10 +159,7 @@ final class HybridSearchDiagnostics
 		try {
 			$result = $this->db->executeQuery(self::INDEX_SQL);
 			while (is_array($row = $result->fetch()) === true) {
-				$key = (self::INDEX_KEYS[$row['indexname']] ?? null);
-				if ($key !== null) {
-					$found[$key] = true;
-				}
+				$found = $this->withIndex(found: $found, row: $row);
 			}
 
 			$result->closeCursor();
@@ -173,6 +169,23 @@ final class HybridSearchDiagnostics
 
 		return $found;
 	}//end searchIndexes()
+
+	/**
+	 * Mark the search index a catalogue row names as found, if it is one we look for.
+	 *
+	 * @param array{hnswIndex: bool, textSearchGinIndex: bool} $found The indexes found so far.
+	 * @param array<string, mixed> $row A pg_indexes row.
+	 *
+	 * @return array{hnswIndex: bool, textSearchGinIndex: bool} The indexes found.
+	 */
+	private function withIndex(array $found, array $row): array {
+		$key = (self::INDEX_KEYS[$row['indexname']] ?? null);
+		if ($key !== null) {
+			$found[$key] = true;
+		}
+
+		return $found;
+	}//end withIndex()
 
 	/**
 	 * The vector row count and how many of them have a pgvector sidecar row.

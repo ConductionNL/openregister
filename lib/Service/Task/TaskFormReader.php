@@ -37,10 +37,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Task;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
 use OCA\OpenRegister\Service\Form\FormFieldRules;
-use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCP\App\IAppManager;
 use OCP\IL10N;
 use Throwable;
@@ -91,15 +89,13 @@ class TaskFormReader {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapperInterface $schemas Resolves the subject schema.
-	 * @param TransitionEngine $engine Reads a transition's declared inputs.
+	 * @param TaskFormSources $sources The subject schema and the transition's declared inputs.
 	 * @param IAppManager $apps Answers whether the Forms app is installed.
 	 * @param IL10N $l10n Translations, for refusals an author reads.
 	 * @param FormDestinationValidator|null $validator The field check this reader delegates to; built from $l10n when absent.
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemas,
-		private readonly TransitionEngine $engine,
+		private readonly TaskFormSources $sources,
 		private readonly IAppManager $apps,
 		private readonly IL10N $l10n,
 		?FormDestinationValidator $validator = null,
@@ -202,9 +198,7 @@ class TaskFormReader {
 
 		return new TaskForm(
 			kind: TaskForm::KIND_FIELDS,
-			schema: trim((string)($record['schema'] ?? '')),
-			action: $action,
-			fields: $fields,
+			native: new TaskFormFields(schema: trim((string)($record['schema'] ?? '')), action: $action, fields: $fields),
 			requireChecklist: self::requireChecklistOf(record: $record)
 		);
 	}//end nativeForm()
@@ -220,18 +214,26 @@ class TaskFormReader {
 	 * @throws UnexpectedValueException When it names both or neither.
 	 */
 	private function refuseActionAndFieldsMix(?string $action, array $fields): void {
-		if ($action !== null && $fields !== []) {
-			throw new UnexpectedValueException(
-				$this->l10n->t('Name a lifecycle action or list the fields, not both: the action already declares its fields.')
-			);
-		}
-
-		if ($action === null && $fields === []) {
-			throw new UnexpectedValueException(
-				$this->l10n->t('A field form needs a lifecycle action to inherit its fields from, or a list of fields.')
-			);
+		// Both named, or neither: exactly one of the two must be given.
+		if (($action !== null) === ($fields !== [])) {
+			throw new UnexpectedValueException($this->actionAndFieldsMixMessage(action: $action));
 		}
 	}//end refuseActionAndFieldsMix()
+
+	/**
+	 * The refusal of a field form that names an action and lists fields, or does neither.
+	 *
+	 * @param string|null $action The lifecycle action, or null.
+	 *
+	 * @return string The translated message.
+	 */
+	private function actionAndFieldsMixMessage(?string $action): string {
+		if ($action !== null) {
+			return $this->l10n->t('Name a lifecycle action or list the fields, not both: the action already declares its fields.');
+		}
+
+		return $this->l10n->t('A field form needs a lifecycle action to inherit its fields from, or a list of fields.');
+	}//end actionAndFieldsMixMessage()
 
 	/**
 	 * Refuse a declaration no performer could complete, naming what and why.
@@ -297,7 +299,7 @@ class TaskFormReader {
 			return $form->fields;
 		}
 
-		$declared = $this->engine->declaredInputs(schema: $schema, action: $form->action);
+		$declared = $this->sources->engine->declaredInputs(schema: $schema, action: $form->action);
 		if ($declared === null) {
 			throw new UnexpectedValueException(
 				$this->l10n->t(
@@ -349,7 +351,7 @@ class TaskFormReader {
 			// Multitenancy off: a flow's step is authored against a schema by
 			// reference and the performer may sit in another organisation;
 			// what may be WRITTEN is decided on the save path, not here.
-			return $this->schemas->find($reference, _multitenancy: false);
+			return $this->sources->schemas->find($reference, _multitenancy: false);
 		} catch (Throwable) {
 			throw new UnexpectedValueException(
 				$this->l10n->t('Schema "%1$s" does not exist.', [$reference])
@@ -557,10 +559,10 @@ class TaskFormReader {
 	 * @return string|null The value, or null when empty.
 	 */
 	private function nullIfEmpty(string $value): ?string {
-		if ($value === '') {
-			return null;
+		if ($value !== '') {
+			return $value;
 		}
 
-		return $value;
+		return null;
 	}//end nullIfEmpty()
 }//end class

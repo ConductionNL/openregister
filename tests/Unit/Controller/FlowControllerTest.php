@@ -45,6 +45,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Controller\FlowController
  * @uses \OCA\OpenRegister\Controller\Support\FlowCatalogue
+ * @uses \OCA\OpenRegister\Controller\Support\FlowNodeTypes
  * @uses \OCA\OpenRegister\Controller\Support\FlowDefinitions
  * @uses \OCA\OpenRegister\Controller\Support\FlowControllerServices
  *

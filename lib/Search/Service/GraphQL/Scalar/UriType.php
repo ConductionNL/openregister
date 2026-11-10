@@ -18,20 +18,14 @@
 
 namespace OCA\OpenRegister\Search\Service\GraphQL\Scalar;
 
-use GraphQL\Error\Error;
-use GraphQL\Language\AST\StringValueNode;
-use GraphQL\Type\Definition\ScalarType;
-use GraphQL\Utils\Utils;
-
 /**
  * URI scalar type for valid URI strings.
  *
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.StaticAccess)
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
  */
-class UriType extends ScalarType {
+class UriType extends FormattedStringType {
 
 	/**
 	 * The name of this scalar type.
@@ -48,70 +42,22 @@ class UriType extends ScalarType {
 	public ?string $description = 'A valid URI string (RFC 3986).';
 
 	/**
-	 * Serializes a URI value to string.
+	 * The noun naming a value of this format in the invalid-value message.
 	 *
-	 * @param mixed $value The value to serialize
-	 *
-	 * @return string The URI string
-	 *
-	 * @throws Error If the value is not a string
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
+	 * @return string The noun.
 	 */
-	public function serialize(mixed $value): string {
-		if (is_string($value) === false) {
-			throw new Error(
-				'URI cannot represent non-string value: ' . Utils::printSafe($value)
-			);
-		}
-
-		return $value;
-	}//end serialize()
+	protected function formatNoun(): string {
+		return 'URI';
+	}//end formatNoun()
 
 	/**
-	 * Parses a value from client input.
+	 * Whether a string is in this scalar's format.
 	 *
-	 * @param mixed $value The value to parse
+	 * @param string $value The string.
 	 *
-	 * @return string The validated URI string
-	 *
-	 * @throws Error If the value is not a valid URI
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
+	 * @return bool True when it is.
 	 */
-	public function parseValue(mixed $value): string {
-		if (is_string($value) === false) {
-			throw new Error(
-				'URI cannot represent non-string value: ' . Utils::printSafe($value)
-			);
-		}
-
-		if (filter_var($value, FILTER_VALIDATE_URL) === false) {
-			throw new Error(
-				'URI cannot represent invalid URI value: ' . $value
-			);
-		}
-
-		return $value;
-	}//end parseValue()
-
-	/**
-	 * Parses a literal AST value.
-	 *
-	 * @param \GraphQL\Language\AST\Node $valueNode The AST node
-	 * @param array|null $variables Variables map
-	 *
-	 * @return string The parsed value
-	 *
-	 * @throws Error If the node is not a string
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
-	 */
-	public function parseLiteral(\GraphQL\Language\AST\Node $valueNode, ?array $variables = null): string {
-		if ($valueNode instanceof StringValueNode === false) {
-			throw new Error('URI cannot represent non-string value', $valueNode);
-		}
-
-		return $this->parseValue(value: $valueNode->value);
-	}//end parseLiteral()
+	protected function isWellFormed(string $value): bool {
+		return filter_var($value, FILTER_VALIDATE_URL) !== false;
+	}//end isWellFormed()
 }//end class

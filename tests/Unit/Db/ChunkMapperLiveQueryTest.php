@@ -50,6 +50,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use DateTime;
 use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\KeywordChunkSearch;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -401,9 +402,7 @@ class ChunkMapperLiveQueryTest extends TestCase {
 
 		$results = $method->invoke(
 			$this->mapper,
-			self::PROBE_TERM,
-			25,
-			['source_type' => self::PROBE_SOURCE_TYPE]
+			new KeywordChunkSearch(self::PROBE_TERM, 25, ['source_type' => self::PROBE_SOURCE_TYPE])
 		);
 
 		$this->assertCount(

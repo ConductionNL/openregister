@@ -45,13 +45,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use DateTime;
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\DelegationControllerServices;
 use OCA\OpenRegister\Db\DelegationGrant;
-use OCA\OpenRegister\Db\DelegationGrantMapper;
-use OCA\OpenRegister\Service\Delegation\DelegationConsentService;
-use OCA\OpenRegister\Service\Delegation\DelegationNotifier;
+use OCA\OpenRegister\Db\DelegationGrantMapperInterface;
+use OCA\OpenRegister\Service\Delegation\DelegationConsentServiceInterface;
+use OCA\OpenRegister\Service\Delegation\DelegationNotifierInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -84,23 +84,23 @@ class DelegationController extends Controller {
 	/**
 	 * Reads the grant store.
 	 *
-	 * @var DelegationGrantMapper
+	 * @var DelegationGrantMapperInterface
 	 */
-	private readonly DelegationGrantMapper $grants;
+	private readonly DelegationGrantMapperInterface $grants;
 
 	/**
 	 * Owns the lifecycle and its rules.
 	 *
-	 * @var DelegationConsentService
+	 * @var DelegationConsentServiceInterface
 	 */
-	private readonly DelegationConsentService $consent;
+	private readonly DelegationConsentServiceInterface $consent;
 
 	/**
 	 * Tells a person they were asked.
 	 *
-	 * @var DelegationNotifier
+	 * @var DelegationNotifierInterface
 	 */
-	private readonly DelegationNotifier $notifier;
+	private readonly DelegationNotifierInterface $notifier;
 
 	/**
 	 * Names the caller.
@@ -140,16 +140,14 @@ class DelegationController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                   $appName      The app id.
 	 * @param IRequest                 $request      The request.
 	 * @param DelegationControllerServices $services The delegation controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		DelegationControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->grants = $services->mappers->grants;
 		$this->consent = $services->domain->consent;
 		$this->notifier = $services->domain->notifier;
@@ -229,8 +227,7 @@ class DelegationController extends Controller {
 				principal: $caller,
 				actingAs: $actingAs,
 				scope: (array)($body['scope'] ?? []),
-				reason: (string)($body['reason'] ?? ''),
-				now: new DateTime()
+				reason: (string)($body['reason'] ?? '')
 			);
 		} catch (InvalidArgumentException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
@@ -274,11 +271,9 @@ class DelegationController extends Controller {
 
 		try {
 			$answered = $this->consent->answer(
-				$grant,
-				$caller,
-				((bool)($body['allow'] ?? false)),
-				new DateTime(),
-				isAdmin: $this->isAdmin(uid: $caller)
+				grant: $grant,
+				caller: $this->consent->caller(uid: $caller, isAdmin: $this->isAdmin(uid: $caller)),
+				allow: ((bool)($body['allow'] ?? false))
 			);
 		} catch (InvalidArgumentException $e) {
 			// 403, not 400. Being told "you may not answer this" is an
@@ -317,10 +312,8 @@ class DelegationController extends Controller {
 
 		try {
 			$revoked = $this->consent->revoke(
-				$grant,
-				$caller,
-				new DateTime(),
-				isAdmin: $this->isAdmin(uid: $caller)
+				grant: $grant,
+				caller: $this->consent->caller(uid: $caller, isAdmin: $this->isAdmin(uid: $caller))
 			);
 		} catch (InvalidArgumentException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);

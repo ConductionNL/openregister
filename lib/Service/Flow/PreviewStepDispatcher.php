@@ -45,10 +45,10 @@ class PreviewStepDispatcher implements FlowStepDispatcher {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowNodeRegistry $registry The node registry.
+	 * @param FlowNodeRegistryInterface $registry The node registry.
 	 */
 	public function __construct(
-		private readonly FlowNodeRegistry $registry,
+		private readonly FlowNodeRegistryInterface $registry,
 	) {
 	}//end __construct()
 

@@ -87,22 +87,32 @@ final class LifecycleStateValidator {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function validateStates(array $annotation, array $schema, ?array $enumSet): array {
-		$states      = ($annotation['states'] ?? null);
-		$shapeErrors = self::statesShapeErrors(states: $states);
-		if ($shapeErrors !== null) {
-			return $shapeErrors;
-		}
+		$states = ($annotation['states'] ?? null);
+		return (self::statesShapeErrors(states: $states)
+			?? $this->validateStateMap(
+				states: $states,
+				scope: new StateDeclarationScope(properties: self::declaredProperties(schema: $schema), enumSet: $enumSet)
+			));
+	}//end validateStates()
 
-		$properties = self::declaredProperties(schema: $schema);
-		$errors     = [];
+	/**
+	 * Validate every block of a well-shaped `states` map.
+	 *
+	 * @param array<string, mixed>  $states The declared `states` map.
+	 * @param StateDeclarationScope $scope  The schema's properties and the lifecycle's declared states.
+	 *
+	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
+	 */
+	private function validateStateMap(array $states, StateDeclarationScope $scope): array {
+		$errors = [];
 		foreach ($states as $state => $block) {
-			$site        = new StateConditionSite(state: (string)$state, label: '', properties: $properties);
-			$stateErrors = self::unknownStateErrors(state: $site->state, enumSet: $enumSet);
+			$site        = new StateConditionSite(state: (string)$state, label: '', properties: $scope->properties);
+			$stateErrors = self::unknownStateErrors(state: $site->state, enumSet: $scope->enumSet);
 			$errors      = array_merge($errors, ($stateErrors ?? $this->validateStateBlock(block: $block, site: $site)));
 		}
 
 		return $errors;
-	}//end validateStates()
+	}//end validateStateMap()
 
 	/**
 	 * No errors for an absent `states` block, the refusal for a malformed one, or null for a usable map.
@@ -132,12 +142,11 @@ final class LifecycleStateValidator {
 	 * @return array<string, mixed> The declared properties.
 	 */
 	private static function declaredProperties(array $schema): array {
-		$properties = ($schema['properties'] ?? []);
-		if (is_array($properties) === false) {
-			return [];
+		if (is_array(($schema['properties'] ?? null)) === true) {
+			return $schema['properties'];
 		}
 
-		return $properties;
+		return [];
 	}//end declaredProperties()
 
 	/**
@@ -429,7 +438,8 @@ final class LifecycleStateValidator {
 	 */
 	private function validateFieldRuleGroups(array $entry, StateFieldRuleScope $scope): ?array {
 		$groups = ($entry['groups'] ?? null);
-		if ($groups === null || is_string($groups) === true) {
+		// Absent (read as '') and a single group id are both well-formed.
+		if (is_string(($groups ?? '')) === true) {
 			return null;
 		}
 

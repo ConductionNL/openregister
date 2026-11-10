@@ -49,11 +49,7 @@
 			@close="createdToken = null"
 			@copy="copyToken" />
 
-		<p
-			v-if="message"
-			:class="{ section__error: isError, section__success: !isError }">
-			{{ message }}
-		</p>
+		<SectionStatus :message="message" :isError="isError" />
 	</div>
 </template>
 
@@ -62,12 +58,17 @@ import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton } from '@nextcloud/vue'
+import SectionStatus from '../../../components/shared/SectionStatus.vue'
 import CreatedTokenModal from '../../../modals/account/CreatedTokenModal.vue'
 import CreateTokenModal from '../../../modals/account/CreateTokenModal.vue'
+import { sectionStatus } from '../../../composables/sectionStatus.js'
 
 export default {
 	name: 'TokensSection',
-	components: { NcButton, CreateTokenModal, CreatedTokenModal },
+	components: { NcButton, CreateTokenModal, CreatedTokenModal, SectionStatus },
+
+	mixins: [sectionStatus],
+
 	data() {
 		return {
 			tokens: [],
@@ -76,8 +77,6 @@ export default {
 			newTokenName: '',
 			newTokenExpires: '',
 			createdToken: null,
-			message: '',
-			isError: false,
 		}
 	},
 
@@ -128,10 +127,7 @@ export default {
 				this.newTokenExpires = ''
 				await this.loadTokens()
 			} catch (e) {
-				this.message =
-					e.response?.data?.error
-					|| t('openregister', 'Failed to create token')
-				this.isError = true
+				this.setStatusError(e, t('openregister', 'Failed to create token'))
 			}
 		},
 
@@ -147,14 +143,10 @@ export default {
 				await axios.delete(
 					generateUrl(`/apps/openregister/api/user/me/tokens/${id}`),
 				)
-				this.message = t('openregister', 'Token revoked')
-				this.isError = false
+				this.setStatus(t('openregister', 'Token revoked'))
 				await this.loadTokens()
 			} catch (e) {
-				this.message =
-					e.response?.data?.error
-					|| t('openregister', 'Failed to revoke token')
-				this.isError = true
+				this.setStatusError(e, t('openregister', 'Failed to revoke token'))
 			}
 		},
 
@@ -167,11 +159,9 @@ export default {
 		async copyToken() {
 			try {
 				await navigator.clipboard.writeText(this.createdToken)
-				this.message = t('openregister', 'Token copied to clipboard')
-				this.isError = false
+				this.setStatus(t('openregister', 'Token copied to clipboard'))
 			} catch {
-				this.message = t('openregister', 'Failed to copy token')
-				this.isError = true
+				this.setStatus(t('openregister', 'Failed to copy token'), true)
 			}
 		},
 

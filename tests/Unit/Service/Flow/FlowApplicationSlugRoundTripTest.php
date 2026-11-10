@@ -43,6 +43,10 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Flow\FlowDefinitionStore;
+use OCA\OpenRegister\Service\Flow\FlowDeletionSweep;
+use OCA\OpenRegister\Service\Flow\FlowRunDispatch;
+use OCA\OpenRegister\Service\Flow\FlowServicePlatform;
 
 /**
  * Storage of the `applicationSlug` field on a flow.
@@ -123,16 +127,24 @@ final class FlowApplicationSlugRoundTripTest extends TestCase {
 	 */
 	private function serviceWith(FlowMapper $mapper, ?ContainerInterface $container = null): FlowService {
 		return new FlowService(
-			$mapper,
-			$this->createMock(FlowTriggerIndex::class),
-			$this->createMock(FlowRunService::class),
-			$this->createMock(FlowRunAdvancer::class),
-			$this->createMock(FlowRunMapper::class),
-			$this->createMock(FlowRunStepMapper::class),
-			$this->createMock(FlowStateMapper::class),
-			$this->signedInSession(),
-			$this->createMock(LoggerInterface::class),
-			($container ?? $this->createMock(ContainerInterface::class))
+			new FlowDefinitionStore(
+				$mapper,
+				$this->createMock(FlowTriggerIndex::class)
+			),
+			new FlowRunDispatch(
+				$this->createMock(FlowRunService::class),
+				$this->createMock(FlowRunAdvancer::class)
+			),
+			new FlowDeletionSweep(
+				$this->createMock(FlowRunMapper::class),
+				$this->createMock(FlowRunStepMapper::class),
+				$this->createMock(FlowStateMapper::class)
+			),
+			new FlowServicePlatform(
+				$this->signedInSession(),
+				$this->createMock(LoggerInterface::class),
+				($container ?? $this->createMock(ContainerInterface::class))
+			)
 		);
 
 	}//end serviceWith()

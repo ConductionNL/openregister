@@ -20,6 +20,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\OasValidationException;
 use OCA\OpenRegister\Service\OasService;
+use OCA\OpenRegister\Service\OasSources;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 
@@ -82,7 +83,7 @@ class OasServiceCreateOasGoldenTest extends TestCase {
 		$urlGenerator->method('getAbsoluteURL')->willReturnCallback(fn (string $path) => 'https://nc.example' . $path);
 		$urlGenerator->method('getBaseUrl')->willReturn('https://nc.example');
 
-		return new OasService($registerMapper, $schemaMapper, $urlGenerator);
+		return new OasService(new OasSources($registerMapper, $schemaMapper, $urlGenerator));
 	}//end service()
 
 	public function testCreateOasMatchesGolden(): void {

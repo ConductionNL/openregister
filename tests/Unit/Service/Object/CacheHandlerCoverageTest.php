@@ -22,6 +22,9 @@ use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerRuntime;
+use OCA\OpenRegister\Service\Object\CacheHandlerStores;
+use OCA\OpenRegister\Service\Object\CacheNameScopeSources;
 use OCP\AppFramework\IAppContainer;
 use OCP\IAppConfig;
 use OCP\ICacheFactory;
@@ -158,16 +161,22 @@ class CacheHandlerCoverageTest extends TestCase {
 		}
 
 		return new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			$withDistributedCache ? $this->cacheFactory : null,
-			$this->userSession,
-			$effectiveContainer,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->db,
-			null,
-			$this->appConfig
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper,
+				registerMapper: $this->registerMapper,
+				schemaMapper: $this->schemaMapper,
+				db: $this->db
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: $withDistributedCache ? $this->cacheFactory : null,
+				container: $effectiveContainer
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession,
+				groupManager: null,
+				appConfig: $this->appConfig
+			)
 		);
 	}
 
@@ -242,10 +251,16 @@ class CacheHandlerCoverageTest extends TestCase {
 			->willThrowException(new \Exception('Redis unavailable'));
 
 		$handler = new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			$cacheFactory,
-			$this->userSession
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: $cacheFactory
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession
+			)
 		);
 
 		// Should still construct without error
@@ -524,15 +539,15 @@ class CacheHandlerCoverageTest extends TestCase {
 		$this->assertSame('Test Object', $nameCache['uuid-1']);
 	}
 
-	public function testSetObjectNameEnforcesTtl(): void {
+	public function testSetObjectNameCachesForMaxTtl(): void {
 		$handler = $this->createHandler();
 
-		// Very high TTL should be clamped to MAX_CACHE_TTL (86400)
+		// Names are always cached for MAX_CACHE_TTL (86400)
 		$this->nameDistributedCache->expects($this->once())
 			->method('set')
 			->with('name_uuid-1', ['n' => 'Test', 'o' => null, 's' => null], 86400);
 
-		$handler->setObjectName('uuid-1', 'Test', 999999);
+		$handler->setObjectName('uuid-1', 'Test');
 	}
 
 	// =========================================================================

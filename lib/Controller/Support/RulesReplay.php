@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Rules\RuleReplayService;
+use OCA\OpenRegister\Service\Rules\RuleReplayServiceInterface;
 
 /**
  * The domain services of the rules API.
@@ -33,12 +33,12 @@ final class RulesReplay {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param RuleReplayService $replays Previews a replay over existing objects.
+	 * @param RuleReplayServiceInterface $replays Previews a replay over existing objects.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function __construct(
-		public readonly RuleReplayService $replays,
+		public readonly RuleReplayServiceInterface $replays,
 	) {
 	}//end __construct()
 }//end class

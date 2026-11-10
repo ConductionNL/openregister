@@ -34,7 +34,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<TaskProjectionState>
  */
-class TaskProjectionStateMapper extends QBMapper {
+class TaskProjectionStateMapper extends QBMapper implements TaskProjectionStateMapperInterface {
 
 	use SelectByColumnTrait;
 

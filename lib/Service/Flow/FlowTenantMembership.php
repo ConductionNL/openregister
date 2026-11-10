@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use Throwable;
 
 /**
@@ -36,14 +36,14 @@ use Throwable;
  *
  * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
  */
-class FlowTenantMembership {
+class FlowTenantMembership implements FlowTenantMembershipInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param OrganisationMapper $organisations Reads organisations.
+	 * @param OrganisationMapperInterface $organisations Reads organisations.
 	 */
 	public function __construct(
-		private readonly OrganisationMapper $organisations,
+		private readonly OrganisationMapperInterface $organisations,
 	) {
 	}//end __construct()
 

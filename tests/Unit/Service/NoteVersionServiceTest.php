@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCP\Comments\IComment;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- PHPUnit fixture properties are named by their type.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
@@ -77,7 +78,12 @@ class NoteVersionServiceTest extends TestCase {
 				}
 			);
 
-		$this->service->record(7, 'Applicant called', 'a', 'users', 'b');
+		$previous = $this->createMock(IComment::class);
+		$previous->method('getMessage')->willReturn('Applicant called');
+		$previous->method('getActorId')->willReturn('a');
+		$previous->method('getActorType')->willReturn('users');
+
+		$this->service->record(7, $previous, 'b');
 
 		$this->assertInstanceOf(NoteVersion::class, $stored);
 		$this->assertSame(7, $stored->getCommentId());

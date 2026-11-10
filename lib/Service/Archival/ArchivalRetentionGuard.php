@@ -193,22 +193,17 @@ class ArchivalRetentionGuard {
 		// question first would let every held record on an ordinary schema
 		// through, which is exactly the gap this guard closed for the AVG
 		// pass.
+		$candidate = new DeletionCandidate(
+			uuid: (string)($object->getUuid() ?? ''),
+			schema: $object->getSchema(),
+			register: $object->getRegister(),
+			operation: self::CONTEXT_ERASURE
+		);
 		if ($object->hasActiveLegalHold() === true) {
-			return $this->report(
-				uuid: (string)($object->getUuid() ?? ''),
-				schemaLabel: (string)($object->getSchema() ?? 'unknown'),
-				registerIdentifier: $object->getRegister(),
-				ground: self::GROUND_LEGAL_HOLD,
-				context: self::CONTEXT_ERASURE
-			);
+			return $this->report(candidate: $candidate, schemaLabel: $candidate->schemaAsCarried(), ground: self::GROUND_LEGAL_HOLD);
 		}
 
-		return $this->refusalFor(
-			uuid: (string)($object->getUuid() ?? ''),
-			schemaIdentifier: $object->getSchema(),
-			registerIdentifier: $object->getRegister(),
-			context: self::CONTEXT_ERASURE
-		);
+		return $this->refusalFor(candidate: $candidate);
 	}//end erasureRefusal()
 
 	/**
@@ -227,50 +222,21 @@ class ArchivalRetentionGuard {
 	 */
 	public function cascadeRefusal(string $uuid, string|int|null $schemaIdentifier): ?array {
 		return $this->refusalFor(
-			uuid: $uuid,
-			schemaIdentifier: $schemaIdentifier,
-			registerIdentifier: null,
-			context: self::CONTEXT_CASCADE
+			candidate: new DeletionCandidate(uuid: $uuid, schema: $schemaIdentifier, register: null, operation: self::CONTEXT_CASCADE)
 		);
 	}//end cascadeRefusal()
 
 	/**
 	 * Build the refusal for one record, or null when it may be deleted.
 	 *
-	 * @param string $uuid Record UUID.
-	 * @param string|int|null $schemaIdentifier Schema identifier of the record.
-	 * @param string|int|null $registerIdentifier Register identifier of the record, when known.
-	 * @param string $context One of the CONTEXT_* constants.
+	 * @param DeletionCandidate $candidate The record the delete reached.
 	 *
 	 * @return array<string, mixed>|null
 	 */
-	private function refusalFor(
-		string $uuid,
-		string|int|null $schemaIdentifier,
-		string|int|null $registerIdentifier,
-		string $context,
-	): ?array {
-		$schema = $this->resolveSchema(schemaIdentifier: $schemaIdentifier);
-
+	private function refusalFor(DeletionCandidate $candidate): ?array {
+		$schema = $this->resolveSchema(schemaIdentifier: $candidate->schema);
 		if ($schema === null) {
-			$this->logger->warning(
-				message: '[ArchivalRetentionGuard] Left a record alone because its schema could not be resolved',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'schema' => $schemaIdentifier,
-					'operation' => $context,
-				]
-			);
-
-			return $this->report(
-				uuid: $uuid,
-				schemaLabel: (string)($schemaIdentifier ?? 'unknown'),
-				registerIdentifier: $registerIdentifier,
-				ground: self::GROUND_UNRESOLVED,
-				context: $context
-			);
+			return $this->unresolvedReport(candidate: $candidate);
 		}
 
 		// THE SINGLE DEFINITION OF "IS ARCHIVAL", asked here and nowhere else in
@@ -280,14 +246,32 @@ class ArchivalRetentionGuard {
 			return null;
 		}
 
-		return $this->report(
-			uuid: $uuid,
-			schemaLabel: ($schema->getSlug() ?? (string)$schema->getId()),
-			registerIdentifier: $registerIdentifier,
-			ground: self::GROUND_ARCHIVAL,
-			context: $context
-		);
+		$label = ($schema->getSlug() ?? (string)$schema->getId());
+
+		return $this->report(candidate: $candidate, schemaLabel: $label, ground: self::GROUND_ARCHIVAL);
 	}//end refusalFor()
+
+	/**
+	 * The refusal for a record whose schema could not be resolved: it is left alone.
+	 *
+	 * @param DeletionCandidate $candidate The record the delete reached.
+	 *
+	 * @return array<string, mixed> The report.
+	 */
+	private function unresolvedReport(DeletionCandidate $candidate): array {
+		$this->logger->warning(
+			message: '[ArchivalRetentionGuard] Left a record alone because its schema could not be resolved',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $candidate->uuid,
+				'schema' => $candidate->schema,
+				'operation' => $candidate->operation,
+			]
+		);
+
+		return $this->report(candidate: $candidate, schemaLabel: $candidate->schemaAsCarried(), ground: self::GROUND_UNRESOLVED);
+	}//end unresolvedReport()
 
 	/**
 	 * Resolve a schema identifier to its entity, unscoped and memoised.
@@ -303,35 +287,37 @@ class ArchivalRetentionGuard {
 	 * @return Schema|null The schema, or null when it cannot be resolved.
 	 */
 	private function resolveSchema(string|int|null $schemaIdentifier): ?Schema {
-		if ($schemaIdentifier === null || $schemaIdentifier === '' || $schemaIdentifier === 0) {
+		if (in_array($schemaIdentifier, [null, '', 0], true) === true) {
 			return null;
 		}
 
 		$key = (string)$schemaIdentifier;
-		if (array_key_exists($key, $this->schemaMemo) === true) {
-			$memo = $this->schemaMemo[$key];
-			if ($memo === false) {
-				return null;
-			}
-
-			return $memo;
+		if (array_key_exists($key, $this->schemaMemo) === false) {
+			$this->schemaMemo[$key] = $this->lookUpSchema(schemaIdentifier: $schemaIdentifier);
 		}
 
-		try {
-			$schema = $this->schemaMapper->find(
-				$schemaIdentifier,
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (\Throwable $e) {
-			$this->schemaMemo[$key] = false;
+		$memo = $this->schemaMemo[$key];
+		if ($memo === false) {
 			return null;
 		}
 
-		$this->schemaMemo[$key] = $schema;
-
-		return $schema;
+		return $memo;
 	}//end resolveSchema()
+
+	/**
+	 * Read one schema unscoped, or false when it cannot be read.
+	 *
+	 * @param string|int $schemaIdentifier The raw identifier from the record.
+	 *
+	 * @return Schema|false The schema, or false when it cannot be resolved.
+	 */
+	private function lookUpSchema(string|int $schemaIdentifier): Schema|false {
+		try {
+			return $this->schemaMapper->find($schemaIdentifier, _rbac: false, _multitenancy: false);
+		} catch (\Throwable $e) {
+			return false;
+		}
+	}//end lookUpSchema()
 
 	/**
 	 * Put the refusal into words a handler can pass on to the requester.
@@ -340,35 +326,20 @@ class ArchivalRetentionGuard {
 	 * `action` tells the handler what to do about it, because a refusal nobody
 	 * acts on is the same as a silent skip.
 	 *
-	 * @param string $uuid Record UUID.
-	 * @param string $schemaLabel Schema slug or identifier to name in the report.
-	 * @param string|int|null $registerIdentifier Register identifier, when known.
-	 * @param string $ground One of the GROUND_* constants.
-	 * @param string $context One of the CONTEXT_* constants.
+	 * @param DeletionCandidate $candidate   The record the delete reached.
+	 * @param string            $schemaLabel Schema slug or identifier to name in the report.
+	 * @param string            $ground      One of the GROUND_* constants.
 	 *
 	 * @return array<string, mixed>
 	 */
-	private function report(
-		string $uuid,
-		string $schemaLabel,
-		string|int|null $registerIdentifier,
-		string $ground,
-		string $context,
-	): array {
-		$wording = self::WORDING[$context][$ground];
+	private function report(DeletionCandidate $candidate, string $schemaLabel, string $ground): array {
+		$report = array_merge(
+			['uuid' => $candidate->uuid, 'schema' => $schemaLabel, 'ground' => $ground, 'operation' => $candidate->operation],
+			self::WORDING[$candidate->operation][$ground]
+		);
 
-		$report = [
-			'uuid' => $uuid,
-			'schema' => $schemaLabel,
-			'ground' => $ground,
-			'operation' => $context,
-			'message' => $wording['message'],
-			'basis' => $wording['basis'],
-			'action' => $wording['action'],
-		];
-
-		if ($registerIdentifier !== null && $registerIdentifier !== '') {
-			$report['register'] = (string)$registerIdentifier;
+		if ($candidate->register !== null && $candidate->register !== '') {
+			$report['register'] = (string)$candidate->register;
 		}
 
 		return $report;

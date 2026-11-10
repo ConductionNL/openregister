@@ -48,7 +48,7 @@ use Throwable;
  *
  * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
  */
-class GrantChangeAuditor {
+class GrantChangeAuditor implements GrantChangeAuditorInterface {
 
 	/**
 	 * The typed action a grant on a record writes.

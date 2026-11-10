@@ -99,6 +99,28 @@ class UnknownMetadataConditionSaveRefusalTest extends TestCase {
 	}//end validateAsTheSaveDoes()
 
 	/**
+	 * Run the save-time check and assert the save goes through: the check
+	 * raises no AuthorizationBlockException. Each caller's refusal pair flips
+	 * one input (an added rule, an unknown key) and expects the exception.
+	 *
+	 * @param string                     $mapperClass The mapper.
+	 * @param Schema|Register            $entity      The entity being saved.
+	 * @param array<string, string>|null $row         The stored row, or null for none.
+	 *
+	 * @return void
+	 */
+	private function assertSaveAccepted(string $mapperClass, Schema|Register $entity, ?array $row = null): void {
+		$refusal = null;
+		try {
+			$this->validateAsTheSaveDoes($mapperClass, $entity, $row);
+		} catch (AuthorizationBlockException $exception) {
+			$refusal = $exception;
+		}
+
+		$this->assertNull($refusal, 'save refused: '.($refusal?->getMessage() ?? ''));
+	}//end assertSaveAccepted()
+
+	/**
 	 * A stored rule on unknown metadata does not block a save that keeps it, edits around it or removes it.
 	 *
 	 * @return void
@@ -110,10 +132,8 @@ class UnknownMetadataConditionSaveRefusalTest extends TestCase {
 		foreach ([['read' => [$bad]], ['read' => [$bad, 'editors']], ['read' => ['editors']]] as $authorization) {
 			$schema = $this->schemaWith($authorization);
 			$schema->setId(5);
-			$this->validateAsTheSaveDoes(SchemaMapper::class, $schema, $stored);
+			$this->assertSaveAccepted(SchemaMapper::class, $schema, $stored);
 		}
-
-		$this->addToAssertionCount(3);
 	}//end testASaveOverAStoredRuleIsNotRefused()
 
 	/**
@@ -126,9 +146,7 @@ class UnknownMetadataConditionSaveRefusalTest extends TestCase {
 		$schema = $this->schemaWith([], $properties);
 		$schema->setId(5);
 
-		$this->validateAsTheSaveDoes(SchemaMapper::class, $schema, ['authorization' => '{}', 'properties' => json_encode($properties)]);
-
-		$this->addToAssertionCount(1);
+		$this->assertSaveAccepted(SchemaMapper::class, $schema, ['authorization' => '{}', 'properties' => json_encode($properties)]);
 	}//end testASaveOverAStoredPropertyRuleIsNotRefused()
 
 	/**
@@ -251,15 +269,13 @@ class UnknownMetadataConditionSaveRefusalTest extends TestCase {
 	 */
 	public function testARuleOnRecordMetadataSaves(): void {
 		$own = ['_organisation' => '$organisation', '_owner' => '$userId'];
-		$this->validateAsTheSaveDoes(
+		$this->assertSaveAccepted(
 			mapperClass: SchemaMapper::class,
 			entity: $this->schemaWith(
 				['read' => [['group' => 'public', 'match' => $own]], 'deny' => ['update' => [['group' => 'public', 'match' => $own]]]],
 				['secret' => ['type' => 'string', 'authorization' => ['read' => [['group' => 'g', 'match' => $own]]]]]
 			)
 		);
-
-		$this->addToAssertionCount(1);
 	}//end testARuleOnRecordMetadataSaves()
 
 	/**
@@ -349,8 +365,7 @@ class UnknownMetadataConditionSaveRefusalTest extends TestCase {
 			['firstName' => ['type' => 'string']]
 		);
 
-		$this->validateAsTheSaveDoes(mapperClass: SchemaMapper::class, entity: $schema);
-		$this->addToAssertionCount(1);
+		$this->assertSaveAccepted(mapperClass: SchemaMapper::class, entity: $schema);
 	}//end testARuleOnADeclaredPropertySaves()
 
 	/**
@@ -363,8 +378,7 @@ class UnknownMetadataConditionSaveRefusalTest extends TestCase {
 		$schema = $this->schemaWith(['read' => [$bad]], ['status' => ['type' => 'string']]);
 		$schema->setId(5);
 
-		$this->validateAsTheSaveDoes(SchemaMapper::class, $schema, ['authorization' => json_encode(['read' => [$bad]]), 'properties' => '{}']);
-		$this->addToAssertionCount(1);
+		$this->assertSaveAccepted(SchemaMapper::class, $schema, ['authorization' => json_encode(['read' => [$bad]]), 'properties' => '{}']);
 	}//end testASaveThatKeepsAStoredConditionSaves()
 
 	/**
@@ -377,8 +391,7 @@ class UnknownMetadataConditionSaveRefusalTest extends TestCase {
 		$schema = $this->schemaWith([], $properties);
 		$schema->setId(5);
 
-		$this->validateAsTheSaveDoes(SchemaMapper::class, $schema, ['authorization' => '{}', 'properties' => json_encode($properties)]);
-		$this->addToAssertionCount(1);
+		$this->assertSaveAccepted(SchemaMapper::class, $schema, ['authorization' => '{}', 'properties' => json_encode($properties)]);
 	}//end testASaveThatKeepsAStoredPropertyConditionSaves()
 
 	/**
@@ -391,12 +404,11 @@ class UnknownMetadataConditionSaveRefusalTest extends TestCase {
 		$schema = $this->schemaWith(['read' => [$rule]]);
 		$schema->setId(5);
 
-		$this->validateAsTheSaveDoes(
+		$this->assertSaveAccepted(
 			SchemaMapper::class,
 			$schema,
 			['authorization' => json_encode(['read' => [$rule]]), 'properties' => json_encode(['status' => ['type' => 'string']])]
 		);
-		$this->addToAssertionCount(1);
 	}//end testASaveThatDropsAPropertyARuleNamesSaves()
 
 	/**
@@ -446,7 +458,6 @@ class UnknownMetadataConditionSaveRefusalTest extends TestCase {
 		$register->setSlug('zaken');
 		$register->setAuthorization(['read' => [$rule]]);
 
-		$this->validateAsTheSaveDoes(RegisterMapper::class, $register, ['authorization' => json_encode(['read' => [$rule]])]);
-		$this->addToAssertionCount(1);
+		$this->assertSaveAccepted(RegisterMapper::class, $register, ['authorization' => json_encode(['read' => [$rule]])]);
 	}//end testARegisterSaveKeepsAStoredMalformedKey()
 }//end class
