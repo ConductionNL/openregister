@@ -51,6 +51,16 @@ import { NcButton, NcEmptyContent } from '@nextcloud/vue'
 import Close from 'vue-material-design-icons/Close.vue'
 
 /**
+ * The name or title of an object, when it has one.
+ *
+ * @param {object} obj The object
+ * @return {string|undefined} Its name
+ */
+function objectName(obj) {
+	return obj['@self']?.name || obj.name || obj.title || obj['@self']?.title
+}
+
+/**
  * The objects a bulk dialog acts on, each with a button to take it out.
  *
  * @spec exclude Presentational list shared by the bulk object dialogs.
@@ -74,23 +84,18 @@ export default {
 			type: String,
 			required: true,
 		},
+
+		/** The name to show for an object; undefined when it has none. */
+		titleOf: {
+			type: Function,
+			default: objectName,
+		},
 	},
 
 	emits: ['remove'],
 
 	methods: {
 		t,
-
-		/**
-		 * The name to show for an object.
-		 *
-		 * @spec exclude Client-side display helper.
-		 * @param {object} obj The object
-		 * @return {string|undefined} Its name or title, when it has one
-		 */
-		titleOf(obj) {
-			return obj['@self']?.name || obj.name || obj.title || obj['@self']?.title
-		},
 	},
 }
 </script>

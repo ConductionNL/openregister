@@ -10,49 +10,11 @@
 				{{ note }}
 			</NcNoteCard>
 
-			<div class="selected-objects-container">
-				<h4>
-					{{
-						t('openregister', 'Selected Objects ({count})', {
-							count: objects.length,
-						})
-					}}
-				</h4>
-
-				<div v-if="objects.length" class="selected-objects-list">
-					<div
-						v-for="obj in objects"
-						:key="obj.id"
-						class="selected-object-item">
-						<div class="object-info">
-							<strong>{{ objectTitle(obj) }}</strong>
-							<p class="object-id">
-								{{ t('openregister', 'ID: {id}', { id: obj.id }) }}
-							</p>
-						</div>
-						<NcButton
-							variant="tertiary"
-							:aria-label="
-								t('openregister', 'Remove {title}', {
-									title: objectTitle(obj),
-								})
-							"
-							@click="$emit('remove', obj.id)">
-							<template #icon>
-								<Close :size="20" />
-							</template>
-						</NcButton>
-					</div>
-				</div>
-
-				<NcEmptyContent
-					v-else
-					:name="t('openregister', 'No objects selected')">
-					<template #description>
-						{{ emptyText }}
-					</template>
-				</NcEmptyContent>
-			</div>
+			<SelectedObjectsList
+				:objects="objects"
+				:emptyDescription="emptyText"
+				:titleOf="objectTitle"
+				@remove="$emit('remove', $event)" />
 		</div>
 
 		<NcNoteCard v-if="success" type="success">
@@ -81,15 +43,9 @@
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
-import {
-	NcButton,
-	NcDialog,
-	NcEmptyContent,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
-import Close from 'vue-material-design-icons/Close.vue'
+import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import SelectedObjectsList from '../../components/shared/SelectedObjectsList.vue'
 import { objectTitle } from './bulkSelection.js'
 
 /**
@@ -104,11 +60,10 @@ export default {
 	components: {
 		NcDialog,
 		NcButton,
-		NcEmptyContent,
 		NcLoadingIcon,
 		NcNoteCard,
 		CloseCancelButton,
-		Close,
+		SelectedObjectsList,
 	},
 
 	props: {
@@ -145,16 +100,4 @@ export default {
 }
 
 @include step-title;
-
-.selected-objects-container {
-	margin: 20px 0;
-}
-
-@include selected-objects-list-rules;
-
-.selected-object-item:last-child {
-	border-bottom: none;
-}
-
-@include object-info-strong-rules;
 </style>
