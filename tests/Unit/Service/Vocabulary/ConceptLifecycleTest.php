@@ -131,12 +131,12 @@ class ConceptLifecycleTest extends TestCase {
 
 		$this->assertFalse($this->lifecycle->isOfferable(concept: $deprecated, at: $at));
 		$this->assertTrue(
-			$this->lifecycle->isOfferable(concept: $deprecated, at: $at, allowDeprecated: true)
+			$this->lifecycle->isWithinWindow(concept: $deprecated, at: $at)
 		);
 
 		$retired = ['deprecated' => true, 'validUntil' => '2020-01-01'];
 		$this->assertFalse(
-			$this->lifecycle->isOfferable(concept: $retired, at: $at, allowDeprecated: true),
+			$this->lifecycle->isWithinWindow(concept: $retired, at: $at),
 			'allowDeprecated waives the deprecation flag, never the window.'
 		);
 	}//end testDeprecationAndTheWindowAreSeparateFacts()
