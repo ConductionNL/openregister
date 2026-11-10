@@ -95,8 +95,7 @@ class TextBlockMapper extends QBMapper {
 			->from($this->getTableName())
 			->orderBy('title', 'ASC');
 
-		$this->whereScopedOrUnscoped(qb: $qb, column: 'register', value: $scope->register);
-		$this->whereScopedOrUnscoped(qb: $qb, column: 'schema', value: $scope->schema);
+		$this->whereScopedOrUnscoped(qb: $qb, columns: ['register' => $scope->register, 'schema' => $scope->schema]);
 		$this->whereInGroupScope(qb: $qb, groups: $scope->groups);
 
 		return $this->findEntities(query: $qb);
