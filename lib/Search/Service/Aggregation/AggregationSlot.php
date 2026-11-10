@@ -26,6 +26,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service\Aggregation;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+
 /**
  * Which cached aggregation: the register and schema it counts, its name and its resolved filter.
  *
@@ -54,21 +56,25 @@ final class AggregationSlot {
 	 * The slot of an ad-hoc aggregation: named after a hash of the whole query, so two
 	 * different ad-hoc queries never share a slot and never collide with a named one.
 	 *
-	 * @param string           $registerSlug Register slug.
-	 * @param string           $schemaSlug   Schema slug.
-	 * @param AggregationQuery $query        The ad-hoc query.
+	 * @param RegisterSchemaRef $table The register and schema slugs.
+	 * @param AggregationQuery  $query The ad-hoc query.
 	 *
 	 * @return self
 	 *
 	 * @spec openspec/specs/aggregations-backend-native/spec.md
 	 */
-	public static function fromAdhocQuery(string $registerSlug, string $schemaSlug, AggregationQuery $query): self {
+	public static function fromAdhocQuery(RegisterSchemaRef $table, AggregationQuery $query): self {
 		$encoded = json_encode($query->toArray());
 		$encodedStr = '';
 		if ($encoded !== false) {
 			$encodedStr = $encoded;
 		}
 
-		return new self(registerSlug: $registerSlug, schemaSlug: $schemaSlug, name: 'adhoc:' . sha1($encodedStr), filter: $query->filter);
+		return new self(
+			registerSlug: (string) $table->register,
+			schemaSlug: (string) $table->schema,
+			name: 'adhoc:' . sha1($encodedStr),
+			filter: $query->filter
+		);
 	}//end fromAdhocQuery()
 }//end class
