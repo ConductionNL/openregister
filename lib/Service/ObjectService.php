@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Formats\UuidFormat;
+use OCA\OpenRegister\Service\Rbac\MaskedWrite;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -3234,7 +3235,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             return $object;
         }
 
-        return ExplicitReveal::restoreMasked(schema: $this->currentSchema, incoming: $object, stored: ($existing->getObject() ?? []));
+        return ExplicitReveal::restoreMasked(write: new MaskedWrite(schema: $this->currentSchema, incoming: $object, stored: ($existing->getObject() ?? [])));
     }//end restoreMaskedReveals()
 
     /**
