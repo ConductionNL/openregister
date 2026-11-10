@@ -33,18 +33,20 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable PEAR.Commenting.FunctionComment.MissingReturn -- PHPUnit fixtures and tests; the signature IS the contract.
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
-use OCA\OpenRegister\Tests\Unit\Controller\Support\AccessLinkControllerFactory;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\AccessLinkController;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
 use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
-use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
+use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
+use OCA\OpenRegister\Service\Sharing\LinkFile;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\AccessLinkControllerFactory;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use OCP\IUser;
@@ -78,9 +80,6 @@ class AccessLinkControllerTest extends TestCase {
 
 		$this->request = $this->createMock(IRequest::class);
 		$this->links = $this->createMock(AccessLinkService::class);
-		$this->links->method('terms')->willReturnCallback(
-			static fn (array $capabilities, ?string $expiresAt, ?string $password, ?string $label): AccessLinkTerms => new AccessLinkTerms($capabilities, $expiresAt, $password, $label)
-		);
 		$this->reader = $this->createMock(AccessLinkReader::class);
 		$this->mintGuard = $this->createMock(AccessLinkMintGuard::class);
 		$this->acts = $this->createMock(AccessLinkActs::class);
@@ -248,7 +247,7 @@ class AccessLinkControllerTest extends TestCase {
 		$this->params['message'] = 'Advies: akkoord.';
 		$this->acts->expects($this->once())
 			->method('comment')
-			->with($this->anything(), $this->anything(), 'Advies: akkoord.')
+			->with($this->anything(), 'Advies: akkoord.')
 			->willReturn(['id' => 4, 'message' => 'Advies: akkoord.']);
 		$this->links->expects($this->once())
 			->method('recordUse')
@@ -318,7 +317,7 @@ class AccessLinkControllerTest extends TestCase {
 		$this->params['encoding'] = 'base64';
 		$this->acts->expects($this->once())
 			->method('upload')
-			->with($this->anything(), $this->anything(), 'scan.png', "\x89PNG\r\n")
+			->with($this->anything(), new LinkFile(fileName: 'scan.png', content: "\x89PNG\r\n"))
 			->willReturn(['id' => 1]);
 
 		$this->assertSame(Http::STATUS_CREATED, $this->controller->upload(anchor: 'a')->getStatus());
@@ -344,7 +343,7 @@ class AccessLinkControllerTest extends TestCase {
 		$this->params['content'] = 'akkoord';
 		$this->acts->expects($this->once())
 			->method('upload')
-			->with($this->anything(), $this->anything(), 'advies.txt', 'akkoord')
+			->with($this->anything(), new LinkFile(fileName: 'advies.txt', content: 'akkoord'))
 			->willReturn(['id' => 2]);
 		$this->links->expects($this->once())
 			->method('recordUse')
@@ -391,7 +390,7 @@ class AccessLinkControllerTest extends TestCase {
 		$this->params['expiresAt'] = '2026-12-31T00:00:00+00:00';
 		$this->links->expects($this->once())
 			->method('mint')
-			->with('owner', 'object', 'object-uuid', $this->equalTo(new AccessLinkTerms(['read', 'comment'], '2026-12-31T00:00:00+00:00', null, null)))
+			->with($this->equalTo(new LinkMintRequest('owner', 'object', 'object-uuid', new AccessLinkTerms(['read', 'comment'], '2026-12-31T00:00:00+00:00', null, null))))
 			->willReturn(['anchor' => 'AnchorValueThatIsOpaque', 'url' => 'https://nc.example.org/x']);
 
 		$response = $this->controller->mint();
@@ -406,7 +405,7 @@ class AccessLinkControllerTest extends TestCase {
 		$this->params['expiresAt'] = '2026-12-31T00:00:00+00:00';
 		$this->links->expects($this->once())
 			->method('mint')
-			->with('owner', '', '', $this->equalTo(new AccessLinkTerms(['read', ' upload'], '2026-12-31T00:00:00+00:00', null, null)))
+			->with($this->equalTo(new LinkMintRequest('owner', '', '', new AccessLinkTerms(['read', ' upload'], '2026-12-31T00:00:00+00:00', null, null))))
 			->willReturn([]);
 
 		$this->controller->mint();
@@ -462,7 +461,7 @@ class AccessLinkControllerTest extends TestCase {
 
 	public function testSwitchingOffALinkSomebodyElseMintedAnswers404(): void {
 		$this->signIn(uid: 'somebody-else');
-		$this->links->method('setDisabled')->willReturn(null);
+		$this->links->method('enable')->willReturn(null);
 
 		$this->assertSame(Http::STATUS_NOT_FOUND, $this->controller->update(id: 1)->getStatus());
 	}
@@ -471,8 +470,8 @@ class AccessLinkControllerTest extends TestCase {
 		$this->signIn();
 		$this->params['disabled'] = true;
 		$this->links->expects($this->once())
-			->method('setDisabled')
-			->with(1, 'owner', true)
+			->method('disable')
+			->with(1, 'owner')
 			->willReturn(['id' => 1, 'disabled' => true]);
 
 		$response = $this->controller->update(id: 1);

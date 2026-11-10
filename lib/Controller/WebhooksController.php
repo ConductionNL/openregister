@@ -33,10 +33,13 @@ use DateTime;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Controller\Support\WebhooksControllerServices;
 use OCA\OpenRegister\Controller\Support\WebhookLogQuery;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapperInterface;
 use OCA\OpenRegister\Db\WebhookMapperInterface;
+use OCA\OpenRegister\Service\WebhookEvent;
+use OCA\OpenRegister\Service\WebhookDelivery;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -933,7 +936,7 @@ class WebhooksController extends Controller {
 			]
 		);
 
-		$preview = $this->webhookService->previewPayload(webhook: $webhook, eventName: $eventName, payload: $payload);
+		$preview = $this->webhookService->previewPayload(webhook: $webhook, event: new WebhookEvent(name: $eventName, payload: $payload));
 
 		return new JSONResponse(data: $preview + ['event' => $eventName]);
 	}//end preview()
@@ -991,10 +994,7 @@ class WebhooksController extends Controller {
 			];
 
 			$success = $this->webhookService->deliverWebhook(
-				webhook: $webhook,
-				eventName: 'OCA\OpenRegister\Event\TestEvent',
-				payload: $testPayload,
-				attempt: 1
+				new WebhookDelivery(webhook: $webhook, event: new WebhookEvent(name: 'OCA\OpenRegister\Event\TestEvent', payload: $testPayload), attempt: 1)
 			);
 
 			if ($success === true) {
@@ -1116,7 +1116,7 @@ class WebhooksController extends Controller {
 			$limit = (int)($this->request->getParam('limit') ?? 50);
 			$offset = (int)($this->request->getParam('offset') ?? 0);
 
-			$logs = $this->webhookLogMapper->findByWebhook(webhookId: $id, limit: $limit, offset: $offset);
+			$logs = $this->webhookLogMapper->findByWebhook(webhookId: $id, page: new ListQuery(limit: $limit, offset: $offset));
 
 			return new JSONResponse(
 				data: [
@@ -1281,8 +1281,8 @@ class WebhooksController extends Controller {
 		$logs  = $this->webhookLogMapper->findAll(limit: $query->limit, offset: $query->offset);
 		$total = count($this->webhookLogMapper->findAll(limit: null, offset: null));
 		if ($query->webhookId !== null) {
-			$logs  = $this->webhookLogMapper->findByWebhook(webhookId: $query->webhookId, limit: $query->limit, offset: $query->offset);
-			$total = count($this->webhookLogMapper->findByWebhook(webhookId: $query->webhookId, limit: null, offset: null));
+			$logs  = $this->webhookLogMapper->findByWebhook(webhookId: $query->webhookId, page: new ListQuery(limit: $query->limit, offset: $query->offset));
+			$total = count($this->webhookLogMapper->findByWebhook(webhookId: $query->webhookId, page: ListQuery::unbounded()));
 		}
 
 		if ($query->success !== null) {
@@ -1303,7 +1303,7 @@ class WebhooksController extends Controller {
 	private function outcomeTotal(WebhookLogQuery $query): int {
 		$total = count($this->withOutcome(logs: $this->webhookLogMapper->findAll(limit: null, offset: null), success: $query->success));
 		if ($query->webhookId !== null) {
-			$all   = $this->webhookLogMapper->findByWebhook(webhookId: $query->webhookId, limit: null, offset: null);
+			$all   = $this->webhookLogMapper->findByWebhook(webhookId: $query->webhookId, page: ListQuery::unbounded());
 			$total = count($this->withOutcome(logs: $all, success: $query->success));
 		}
 
@@ -1412,10 +1412,11 @@ class WebhooksController extends Controller {
 		}
 
 		$success = $this->webhookService->deliverWebhook(
-			webhook: $webhook,
-			eventName: $log->getEventClass(),
-			payload: $payload['data'] ?? $payload,
-			attempt: $log->getAttempt() + 1
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: $log->getEventClass(), payload: $payload['data'] ?? $payload),
+				attempt: $log->getAttempt() + 1
+			)
 		);
 		if ($success === true) {
 			return new JSONResponse(data: ['success' => true, 'message' => 'Webhook retry delivered successfully']);
@@ -1457,7 +1458,7 @@ class WebhooksController extends Controller {
 	 * @return JSONResponse The error response.
 	 */
 	private function failedDeliveryResponse(int $webhookId, string $message): JSONResponse {
-		$latestLogs = $this->webhookLogMapper->findByWebhook(webhookId: $webhookId, limit: 1, offset: 0);
+		$latestLogs = $this->webhookLogMapper->findByWebhook(webhookId: $webhookId, page: new ListQuery(limit: 1, offset: 0));
 		$responseData = [
 			'success' => false,
 			'message' => $message,

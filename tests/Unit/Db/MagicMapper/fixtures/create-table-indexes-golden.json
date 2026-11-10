@@ -2247,6 +2247,14 @@
             "sql": "CREATE INDEX openregister_table_1_2_deleted_owner_idx ON oc_openregister_table_1_2 (_deleted, _owner)"
         },
         {
+            "log": "debug",
+            "message": "[MagicMapper] Skipped _deleted/_owner index",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "error": "refused: deleted_owner_idx"
+            }
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (`related_object`)"
         },
         {

@@ -49,6 +49,7 @@ namespace OCA\OpenRegister\Notifications\BackgroundJob;
 use DateTimeImmutable;
 use OCA\OpenRegister\Notifications\Db\QueuedNotification;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\QueueWait;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 
@@ -159,8 +160,7 @@ final class NotificationQueueFlushJob extends TimedJob {
 					$rows,
 					fn (QueuedNotification $row): bool => $this->timing->digestEvaluator->isDue(
 						digest: $digest,
-						enqueuedAt: DateTimeImmutable::createFromInterface($row->getCreatedAt()),
-						now: $now
+						wait: new QueueWait(enqueuedAt: DateTimeImmutable::createFromInterface($row->getCreatedAt()), now: $now)
 					)
 				)
 			);

@@ -302,7 +302,7 @@ class AuthorizationService {
 		// The algorithm comes from the issuer's stored configuration, never
 		// from the token header (algorithm confusion); RS/PS are verified
 		// against the RSA public key and never fall through to HMAC.
-		$validator->verifyPinned(token: $token, header: $header, configuration: $authConf);
+		$validator->verifyPinned(jwt: new Consumer\DecodedJwt(token: $token, header: $header), configuration: $authConf);
 		$validator->validateClaims(payload: $payload);
 
 		// 🔴 THIS LINE IS THE ROW. Making the Consumer act AS its Nextcloud

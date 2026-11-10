@@ -102,4 +102,20 @@ class EffectiveAuthorizationTest extends TestCase {
 
 		$this->assertSame(['read' => ['staff']], $answer);
 	}//end testARolesBlockThatResolvesIsExpanded()
+
+	/**
+	 * A register that cannot be read, even by a TypeError, leaves the schema
+	 * without a fallback block instead of failing the OAS.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableRegisterIsNoFallback(): void {
+		$schema = new Schema();
+		$schema->setId(5);
+
+		$mapper = $this->createMock(RegisterMapper::class);
+		$mapper->method('getFirstRegisterWithSchema')->willThrowException(new \TypeError('register id is not an int'));
+
+		$this->assertNull((new EffectiveAuthorization(registerMapper: $mapper))->forSchema(schema: $schema));
+	}//end testAnUnreadableRegisterIsNoFallback()
 }//end class

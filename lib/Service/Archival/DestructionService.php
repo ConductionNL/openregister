@@ -146,7 +146,7 @@ class DestructionService implements DestructionServiceInterface {
 	 *
 	 * The approval is recorded under the CANONICAL `userId` key: it is the shape
 	 * RetentionController writes, and the shape both readers of the approvals
-	 * list consume — RetentionService::generateDestructionCertificate() and
+	 * list consume — RetentionService::certify() and
 	 * DestructionExecutionJob both do array_column($approvals, 'userId'). This
 	 * method previously wrote `approvedBy`, so the destruction certificate's
 	 * approver list — the legal record of WHO authorised the destruction —

@@ -81,7 +81,7 @@ class PortalTaskServiceBehaviourTest extends TestCase {
 		$this->mapper = $this->createMock(TaskMapper::class);
 		$this->files = $this->createMock(FileWriterInterface::class);
 		$temporal = new TaskTemporalProjection();
-		$inbox = new TaskInboxService(tasks: $this->mapper, temporal: $temporal, logger: new NullLogger());
+		$inbox = new TaskInboxService(tasks: $this->mapper, logger: new NullLogger());
 		$this->service = new PortalTaskService(
 			sources: new PortalTaskSources(tasks: $this->tasks, mapper: $this->mapper, inbox: $inbox, temporal: $temporal),
 			files: $this->files,

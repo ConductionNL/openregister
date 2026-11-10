@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace Unit\Service\Archival;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -55,10 +56,11 @@ class SelectionListSeederTest extends TestCase {
 
 		$objectMapper = $this->getMockBuilder(MagicMapper::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['findAll'])
+			->onlyMethods(['findAllListed'])
 			->getMock();
-		$objectMapper->method('findAll')->willReturnCallback(
-			function (?int $limit = null, ?int $offset = null, ?array $filters = null): array {
+		$objectMapper->method('findAllListed')->willReturnCallback(
+			function (MagicListRequest $request): array {
+				$filters = $request->query->filters;
 				$category = ($filters['object->categorie'] ?? null);
 				return array_values(
 					array_filter(

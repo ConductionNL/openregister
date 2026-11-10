@@ -38,22 +38,6 @@ use Exception;
 final class VeventCodec {
 
 	/**
-	 * The iCalendar text of a new event.
-	 *
-	 * @param string   $uid     The event UID.
-	 * @param DateTime $dtstart The start time.
-	 * @param array    $data    Event data: summary, dtend, location, description, attendees.
-	 * @param array    $link    The linked object: registerId, schemaId, objectUuid, objectTitle.
-	 *
-	 * @return string The CRLF-terminated iCalendar text.
-	 *
-	 * @spec openspec/specs/calendar-integration/spec.md
-	 */
-	public function calendarData(string $uid, DateTime $dtstart, array $data, array $link): string {
-		return $this->calendarDataOf(draft: new VeventDraft(uid: $uid, dtstart: $dtstart, data: $data, link: $link));
-	}//end calendarData()
-
-	/**
 	 * The iCalendar text of a new event, as calendarData() builds it.
 	 *
 	 * @param VeventDraft $draft The UID, start, event data and linked object.
@@ -216,21 +200,6 @@ final class VeventCodec {
 
 		return $text;
 	}//end escapeIcalText()
-	/**
-	 * The event array of a VEVENT.
-	 *
-	 * @param mixed  $vevent     The VEVENT component.
-	 * @param string $calendarId The calendar ID.
-	 * @param string $uri        The calendar object URI.
-	 *
-	 * @return array<string, mixed> The event.
-	 *
-	 * @spec openspec/specs/calendar-integration/spec.md
-	 */
-	public function eventArray(mixed $vevent, string $calendarId, string $uri): array {
-		return $this->eventArrayAt(vevent: $vevent, address: new CalendarObjectAddress(calendarId: $calendarId, uri: $uri));
-	}//end eventArray()
-
 	/**
 	 * The event array of a VEVENT stored at one calendar object address.
 	 *
