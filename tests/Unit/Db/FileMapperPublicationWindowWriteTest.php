@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use DateTime;
 use OCA\OpenRegister\Files\Db\File;
 use OCA\OpenRegister\Files\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\PublicationWindow;
 use OCP\AppFramework\Db\Entity;
 use PHPUnit\Framework\TestCase;
 
@@ -62,7 +63,7 @@ class FileMapperPublicationWindowWriteTest extends TestCase {
 		$from = new DateTime('2026-01-01T00:00:00+00:00');
 		$until = new DateTime('2026-02-01T00:00:00+00:00');
 
-		$result = $this->mapper($row)->setPublicationWindowForFile(42, $from, $until);
+		$result = $this->mapper($row)->setPublicationWindowForFile(42, new PublicationWindow($from, $until));
 
 		$this->assertSame($row, $result);
 		$this->assertSame($row, $this->updated);
@@ -76,7 +77,7 @@ class FileMapperPublicationWindowWriteTest extends TestCase {
 		$row->setPublished(new DateTime('2026-01-01T00:00:00+00:00'));
 		$row->setDepublished(new DateTime('2026-02-01T00:00:00+00:00'));
 
-		$this->mapper($row)->setPublicationWindowForFile(42, null, null);
+		$this->mapper($row)->setPublicationWindowForFile(42, new PublicationWindow(null, null));
 
 		$this->assertNull($row->getPublished());
 		$this->assertNull($row->getDepublished());
