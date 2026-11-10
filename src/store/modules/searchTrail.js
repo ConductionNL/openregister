@@ -8,9 +8,9 @@ import {
 	listPageQuery,
 	listPagination,
 	readOrFallback,
-	statisticsOrEmpty,
 	storeRequest,
 } from '../../services/listPage.js'
+import { statisticsGetter } from './trailStatistics.js'
 
 const apiUrl = '/index.php/apps/openregister/api'
 
@@ -114,6 +114,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 	}),
 
 	actions: {
+		...statisticsGetter(emptyStatistics),
 		/**
 		 * Set search trail list
 		 *
@@ -416,20 +417,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 			return this.fetchSearchTrails({
 				limit: this.searchTrailPagination.limit,
 				page: this.searchTrailPagination.page,
-			})
-		},
-
-		/**
-		 * Get search trail statistics
-		 *
-		 * @return {Promise<object>} The statistics
-		 *
-		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
-		 */
-		async getStatistics() {
-			return statisticsOrEmpty(this, {
-				empty: emptyStatistics,
-				log: (error) => console.error('Error getting statistics:', error),
 			})
 		},
 
