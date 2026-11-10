@@ -307,6 +307,76 @@ import CalendarRowButton from './CalendarRowButton.vue'
  * shape that produced half-written rules in the form this replaces. It is
  * rebuilt on the way out.
  */
+/**
+ * One stored rule as a form row, its nested shift flattened.
+ *
+ * @param {object} rule The stored rule
+ * @return {object} The form row
+ */
+function ruleToForm(rule) {
+	return {
+		kind: rule.kind === 'easter' ? 'easter' : 'fixed',
+		name: rule.name || '',
+		month: String(rule.month ?? ''),
+		day: String(rule.day ?? ''),
+		offset: String(rule.offset ?? ''),
+		shiftWeekday: rule.observedShift?.whenWeekday || '',
+		shiftDays: String(rule.observedShift?.days ?? ''),
+	}
+}
+
+/**
+ * One stored exception as a form row.
+ *
+ * @param {object} entry The stored exception
+ * @return {object} The form row
+ */
+function exceptionToForm(entry) {
+	return {
+		date: entry.date || '',
+		name: entry.name || '',
+	}
+}
+
+/**
+ * The exception rows that have a date, named `exception` when unnamed.
+ *
+ * @param {Array<object>} exceptions The form rows
+ * @return {Array<object>} The exceptions as the engine stores them
+ */
+function datedExceptions(exceptions) {
+	return exceptions
+		.filter((entry) => entry.date)
+		.map((entry) => ({
+			date: entry.date,
+			name: entry.name || 'exception',
+		}))
+}
+
+/**
+ * A fixed-date rule from its form row, with its observed shift when one is set.
+ *
+ * @param {object} rule The form row
+ * @return {object} The rule as the engine stores it
+ */
+function fixedRule(rule) {
+	const fixed = {
+		kind: 'fixed',
+		name: rule.name,
+		month: Number(rule.month),
+		day: Number(rule.day),
+	}
+
+	if (rule.shiftWeekday) {
+		fixed.observedShift = {
+			whenWeekday: rule.shiftWeekday,
+			days: Number(rule.shiftDays),
+		}
+	}
+
+	return fixed
+}
+
 export default {
 	name: 'EditWorkingCalendarModal',
 
@@ -644,20 +714,8 @@ export default {
 
 				hoursPerWorkingDay: String(value.hoursPerWorkingDay ?? '8'),
 				serviceHours: this.serviceHoursToForm(value.serviceHours),
-				rules: (value.rules || []).map((rule) => ({
-					kind: rule.kind === 'easter' ? 'easter' : 'fixed',
-					name: rule.name || '',
-					month: String(rule.month ?? ''),
-					day: String(rule.day ?? ''),
-					offset: String(rule.offset ?? ''),
-					shiftWeekday: rule.observedShift?.whenWeekday || '',
-					shiftDays: String(rule.observedShift?.days ?? ''),
-				})),
-
-				exceptions: (value.exceptions || []).map((entry) => ({
-					date: entry.date || '',
-					name: entry.name || '',
-				})),
+				rules: (value.rules || []).map(ruleToForm),
+				exceptions: (value.exceptions || []).map(exceptionToForm),
 			}
 		},
 
@@ -678,12 +736,7 @@ export default {
 
 				hoursPerWorkingDay: Number(this.form.hoursPerWorkingDay),
 				rules: this.form.rules.map((rule) => this.toRule(rule)),
-				exceptions: this.form.exceptions
-					.filter((entry) => entry.date)
-					.map((entry) => ({
-						date: entry.date,
-						name: entry.name || 'exception',
-					})),
+				exceptions: datedExceptions(this.form.exceptions),
 			}
 
 			if (this.form.organisation.trim()) {
@@ -715,21 +768,7 @@ export default {
 				}
 			}
 
-			const fixed = {
-				kind: 'fixed',
-				name: rule.name,
-				month: Number(rule.month),
-				day: Number(rule.day),
-			}
-
-			if (rule.shiftWeekday) {
-				fixed.observedShift = {
-					whenWeekday: rule.shiftWeekday,
-					days: Number(rule.shiftDays),
-				}
-			}
-
-			return fixed
+			return fixedRule(rule)
 		},
 
 		/**
