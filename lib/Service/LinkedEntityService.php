@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Integration\IntegrationIdIndexInterface;
 use OCA\OpenRegister\Service\Object\PermissionEnforcementInterface;
 use Psr\Log\LoggerInterface;
@@ -168,8 +169,7 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 		$this->permissionHandler->checkPermission(
 			schema: $schema,
 			action: 'update',
-			objectOwner: $object->getOwner(),
-			object: $object
+			options: new PermissionCheckOptions(objectOwner: $object->getOwner(), object: $object)
 		);
 	}//end assertCanWriteObject()
 
