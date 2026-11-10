@@ -41,6 +41,7 @@ use OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
@@ -78,8 +79,7 @@ class DecisionTableNodeTest extends TestCase {
 		$this->node = new DecisionTableNode(
 			engine: new DecisionTableEvaluator(),
 			validator: new DecisionTableValidator(),
-			l10n: $l10n,
-			urls: $urls
+			presentation: new FlowNodePresentation(l10n: $l10n, urls: $urls)
 		);
 
 	}//end setUp()
@@ -620,4 +620,20 @@ class DecisionTableNodeTest extends TestCase {
 		$this->assertSame($this->node->configKeys(), $formKeys);
 
 	}//end testPaletteAndFormCoverTheVocabulary()
+
+	/**
+	 * The stored table is picked from the tables in the decision-tables
+	 * register, not typed as a key (board DqFlow "Beslistabel").
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-stored-decision-table-is-picked-from-the-register
+	 */
+	public function testTheStoredTableIsPickedFromTheRegister(): void {
+		$fields = array_column(array: $this->node->configForm(), column_key: null, index_key: 'key');
+
+		$this->assertSame(expected: 'select', actual: $fields['tableRef']['type']);
+		$this->assertSame(expected: '/apps/openregister/api/objects/decision-tables/decision-table', actual: $fields['tableRef']['optionsFrom']);
+
+	}//end testTheStoredTableIsPickedFromTheRegister()
 }//end class

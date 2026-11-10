@@ -39,10 +39,16 @@ use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCA\OpenRegister\Db\FlowStream;
 use OCA\OpenRegister\Db\FlowStreamMapper;
 use OCA\OpenRegister\Service\Flow\FlowFiring;
+use OCA\OpenRegister\Service\Flow\FlowHopAudit;
 use OCA\OpenRegister\Service\Flow\FlowRunCommit;
+use OCA\OpenRegister\Service\Flow\FlowRunCommitRows;
+use OCA\OpenRegister\Service\Flow\FlowStreamClosure;
+use OCA\OpenRegister\Service\Flow\FlowStreamRef;
+use OCA\OpenRegister\Service\Flow\FlowStreamRelease;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use RuntimeException;
 
 /**
  * The commit path over an in-memory row.
@@ -65,6 +71,13 @@ class FlowRunCommitTest extends TestCase {
 
 	private int $transactions = 0;
 
+	private int $commits = 0;
+
+	private bool $stepInsertFails = false;
+
+	/** @var FlowHopAudit&\PHPUnit\Framework\MockObject\MockObject */
+	private FlowHopAudit $hopAudit;
+
 	private FlowRunCommit $commit;
 
 	protected function setUp(): void {
@@ -76,9 +89,14 @@ class FlowRunCommitTest extends TestCase {
 		$this->row->setMarking(['a' => 1, 'b' => 1]);
 		$this->row->setFirings(0);
 
+		$this->hopAudit = $this->createMock(FlowHopAudit::class);
+
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('beginTransaction')->willReturnCallback(function (): void {
 			$this->transactions++;
+		});
+		$db->method('commit')->willReturnCallback(function (): void {
+			$this->commits++;
 		});
 
 		$runs = $this->createMock(FlowRunMapper::class);
@@ -128,17 +146,19 @@ class FlowRunCommitTest extends TestCase {
 		$steps = $this->createMock(FlowRunStepMapper::class);
 		$steps->method('highestSequence')->willReturn(0);
 		$steps->method('insert')->willReturnCallback(function (FlowRunStep $step): FlowRunStep {
+			if ($this->stepInsertFails === true) {
+				throw new RuntimeException('step row refused');
+			}
+
 			$this->steps[] = $step;
 			return $step;
 		});
 
 		$this->commit = new FlowRunCommit(
 			db: $db,
-			runs: $runs,
-			streams: $streams,
-			claims: $claims,
-			steps: $steps,
-			logger: new NullLogger()
+			rows: new FlowRunCommitRows(runs: $runs, streams: $streams, claims: $claims, steps: $steps),
+			logger: new NullLogger(),
+			hopAudit: $this->hopAudit
 		);
 	}//end setUp()
 
@@ -198,18 +218,43 @@ class FlowRunCommitTest extends TestCase {
 			$items[$to] = [['json' => ['via' => $transition]]];
 		}
 
-		return new FlowFiring(
-			streamId: $stream,
-			transition: $transition,
-			froms: $froms,
-			taken: $taken,
-			itemsByPlace: $items,
-			claimedPlaces: array_merge($froms, $taken),
-			consumedStreamIds: [],
-			logEntry: ['transition' => $transition, 'type' => 'x', 'status' => 'completed', 'itemsIn' => 1, 'itemsOut' => 1],
-			enabledAfter: $enabledAfter
-		);
+		return (new FlowFiring(streamId: $stream, transition: $transition, froms: $froms, taken: $taken))
+			->withPlaceItems(placeItems: $items)
+			->withClaimedPlaces(claimedPlaces: array_merge($froms, $taken))
+			->withLogEntry(logEntry: ['transition' => $transition, 'type' => 'x', 'status' => 'completed', 'itemsIn' => 1, 'itemsOut' => 1], enabledAfter: $enabledAfter);
 	}//end firing()
+
+	/**
+	 * The firing's step row goes to the audit, and only after the transaction
+	 * closed: the critical section holds no I/O.
+	 */
+	public function testACommittedFiringIsAuditedWithItsStepRowAfterTheCommit(): void {
+		$this->stream('sA', '0001.0001', 'a');
+		$this->claim('a', 'A');
+		$this->claim('c', 'A');
+
+		$audited = [];
+		$this->hopAudit->expects($this->once())->method('record')->willReturnCallback(
+			function (FlowRun $run, FlowRunStep $step) use (&$audited): void {
+				$audited = [$run->getUuid(), $step, $this->commits];
+			}
+		);
+
+		$this->commit->commitFiring(run: clone $this->row, firing: $this->firing('sA', 'T1', ['a'], ['c']), owner: 'A');
+
+		$this->assertSame('run-1', $audited[0]);
+		$this->assertSame($this->steps[0], $audited[1]);
+		$this->assertSame(1, $audited[2]);
+	}//end testACommittedFiringIsAuditedWithItsStepRowAfterTheCommit()
+
+	public function testAFiringThatRolledBackIsNotAudited(): void {
+		$this->stream('sA', '0001.0001', 'a');
+		$this->stepInsertFails = true;
+		$this->hopAudit->expects($this->never())->method('record');
+
+		$this->expectException(RuntimeException::class);
+		$this->commit->commitFiring(run: clone $this->row, firing: $this->firing('sA', 'T1', ['a'], ['c']), owner: 'A');
+	}//end testAFiringThatRolledBackIsNotAudited()
 
 	public function testTwoInterleavedCommitsKeepBothEffects(): void {
 		// design.md Decision 3, t=1..24: A and B both read {a:1, b:1} before
@@ -274,17 +319,11 @@ class FlowRunCommitTest extends TestCase {
 		$this->commit->commitFiring(run: $this->row, firing: $this->firing($childY, 'ey', ['y'], ['j#e2'], true), owner: 'W');
 		$this->assertEqualsCanonicalizing(['j#e1' => 1, 'j#e2' => 1], $this->row->getMarking());
 
-		$join = new FlowFiring(
-			streamId: $childX,
-			transition: 'j',
-			froms: ['j#e1', 'j#e2'],
-			taken: ['after'],
-			itemsByPlace: ['after' => []],
-			claimedPlaces: ['j#e1', 'j#e2', 'after'],
-			consumedStreamIds: [$childY],
-			logEntry: ['transition' => 'j', 'status' => 'completed'],
-			enabledAfter: false
-		);
+		$join = (new FlowFiring(streamId: $childX, transition: 'j', froms: ['j#e1', 'j#e2'], taken: ['after']))
+			->withPlaceItems(placeItems: ['after' => []])
+			->withClaimedPlaces(claimedPlaces: ['j#e1', 'j#e2', 'after'])
+			->withConsumedStreamIds(consumedStreamIds: [$childY])
+			->withLogEntry(logEntry: ['transition' => 'j', 'status' => 'completed'], enabledAfter: false);
 		$this->commit->commitFiring(run: $this->row, firing: $join, owner: 'W');
 
 		$this->assertSame(['after' => 1], $this->row->getMarking());
@@ -395,4 +434,97 @@ class FlowRunCommitTest extends TestCase {
 		$this->streams['s2']->setStatus(FlowRun::STATUS_COMPLETED);
 		$this->assertContains($this->commit->finalize(run: $this->row, owner: 'me', enabled: false), $allowed);
 	}//end testAStatusValueOutsideTheSevenIsNeverProduced()
+	/**
+	 * Close one stream through the commit path and read back what it left.
+	 *
+	 * @param bool $parks Park (true) or end as failed (false).
+	 * @param string $streamId The stream; 'new' has no row yet.
+	 *
+	 * @return array<string, mixed> The stream row, the claims, the run and the live list.
+	 */
+	private function closeAndRead(bool $parks, string $streamId): array {
+		$wake = new DateTime('2030-01-01T00:00:00+00:00');
+		$ref = new FlowStreamRef(streamId: $streamId, path: '0001.0009', parent: 'p0', place: 'w');
+		if ($parks === true) {
+			$closure = new FlowStreamClosure(stream: $ref, status: FlowRun::STATUS_SUSPENDED, release: new FlowStreamRelease(claimedPlaces: ['a'], owner: 'me', enabled: false));
+			$live = $this->commit->closeStream(run: $this->row, closure: $closure->wakingAt(resumeAt: $wake)->because(error: 'timer'));
+		} else {
+			$closure = new FlowStreamClosure(stream: $ref, status: FlowRun::STATUS_FAILED, release: new FlowStreamRelease(claimedPlaces: ['a'], owner: 'me', enabled: true));
+			$live = $this->commit->closeStream(run: $this->row, closure: $closure->because(error: 'boom'));
+		}
+
+		$row = $this->streams[$streamId];
+
+		return [
+			'stream' => [$row->getStatus(), $row->getResumeAt(), $row->getError(), $row->getOrdinalPath(), $row->getParentStreamId(), $row->getPlace(), $row->getNextSequence()],
+			'claims' => array_map(static fn (FlowClaim $c): string => $c->getPlace() . '@' . $c->getOwner(), $this->claims),
+			'run' => [$this->row->getStatus(), $this->row->getResumeAt()],
+			'live' => array_map(static fn (FlowStream $s): string => (string)$s->getStreamId(), $live),
+			'transactions' => $this->transactions,
+		];
+	}//end closeAndRead()
+
+	public function testParkingAnExistingStreamSuspendsItReleasesItsClaimsAndRederives(): void {
+		$this->stream('s1', '0001.0001', 'a');
+		$this->stream('s2', '0001.0002', 'b', FlowRun::STATUS_SUSPENDED, null);
+		$this->claim('a', 'me');
+		$this->claim('b', 'other');
+		$wake = new DateTime('2030-01-01T00:00:00+00:00');
+
+		$this->assertEquals(
+			[
+				'stream' => [FlowRun::STATUS_SUSPENDED, $wake, 'timer', '0001.0001', null, 'a', 1],
+				'claims' => ['b@other'],
+				'run' => [FlowRun::STATUS_RUNNING, null],
+				'live' => ['s1', 's2'],
+				'transactions' => 1,
+			],
+			$this->closeAndRead(parks: true, streamId: 's1')
+		);
+	}//end testParkingAnExistingStreamSuspendsItReleasesItsClaimsAndRederives()
+
+	public function testParkingAStreamWithNoRowMintsItFromItsDescriptor(): void {
+		$wake = new DateTime('2030-01-01T00:00:00+00:00');
+
+		$this->assertEquals(
+			[
+				'stream' => [FlowRun::STATUS_SUSPENDED, $wake, 'timer', '0001.0009', 'p0', 'w', 1],
+				'claims' => [],
+				'run' => [FlowRun::STATUS_SUSPENDED, $wake],
+				'live' => ['new'],
+				'transactions' => 1,
+			],
+			$this->closeAndRead(parks: true, streamId: 'new')
+		);
+	}//end testParkingAStreamWithNoRowMintsItFromItsDescriptor()
+
+	public function testEndingAStreamSetsItsStatusAndErrorAndKeepsItsWake(): void {
+		$wake = new DateTime('2029-01-01T00:00:00+00:00');
+		$this->stream('s1', '0001.0001', 'a', FlowRun::STATUS_SUSPENDED, $wake);
+		$this->claim('a', 'me');
+
+		$this->assertEquals(
+			[
+				'stream' => [FlowRun::STATUS_FAILED, $wake, 'boom', '0001.0001', null, 'a', 1],
+				'claims' => [],
+				'run' => [FlowRun::STATUS_QUEUED, null],
+				'live' => ['s1'],
+				'transactions' => 1,
+			],
+			$this->closeAndRead(parks: false, streamId: 's1')
+		);
+	}//end testEndingAStreamSetsItsStatusAndErrorAndKeepsItsWake()
+
+	public function testEndingAStreamWithNoRowMintsItFromItsDescriptor(): void {
+		$this->assertEquals(
+			[
+				'stream' => [FlowRun::STATUS_FAILED, null, 'boom', '0001.0009', 'p0', 'w', 1],
+				'claims' => [],
+				'run' => [FlowRun::STATUS_QUEUED, null],
+				'live' => ['new'],
+				'transactions' => 1,
+			],
+			$this->closeAndRead(parks: false, streamId: 'new')
+		);
+	}//end testEndingAStreamWithNoRowMintsItFromItsDescriptor()
 }//end class

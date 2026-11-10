@@ -40,7 +40,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -52,7 +52,7 @@ use OCA\OpenRegister\Exception\AuthorizationBlockException;
 /**
  * Refuses an authorization block whose deny contradicts its grants.
  */
-class AuthorizationDenyValidator {
+class AuthorizationDenyValidator implements AuthorizationDenyValidatorInterface {
 
 	/**
 	 * The verb that carries administration of a register.
@@ -71,10 +71,10 @@ class AuthorizationDenyValidator {
 	/**
 	 * Constructor.
 	 *
-	 * @param DenyResolver $denyResolver The one reader of the deny grammar.
+	 * @param DenyResolverInterface $denyResolver The one reader of the deny grammar.
 	 */
 	public function __construct(
-		private readonly DenyResolver $denyResolver,
+		private readonly DenyResolverInterface $denyResolver,
 	) {
 	}//end __construct()
 
@@ -90,7 +90,7 @@ class AuthorizationDenyValidator {
 	 *
 	 * @return string[] One sentence per contradiction; empty when the block is storable.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function findings(?array $authorization, string $subject): array {
 		if (is_array($authorization) === false || $authorization === []) {
@@ -117,7 +117,7 @@ class AuthorizationDenyValidator {
 	 *
 	 * @throws AuthorizationBlockException When the block contradicts itself.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function assertStorable(?array $authorization, string $subject): void {
 		$findings = $this->findings(authorization: $authorization, subject: $subject);
@@ -250,30 +250,52 @@ class AuthorizationDenyValidator {
 	 * @return string|null The principal, or null when the entry names none.
 	 */
 	private function principalOf(mixed $entry): ?string {
-		$candidate = null;
-
-		if (is_string($entry) === true) {
-			$candidate = $entry;
-		}
-
-		if (is_array($entry) === true) {
-			$group = ($entry['group'] ?? null);
-			if (is_string($group) === true) {
-				$candidate = $group;
-			}
-
-			$user = ($entry['user'] ?? null);
-			if ($candidate === null && is_string($user) === true && $user !== '') {
-				$candidate = (DenyResolver::USER_PREFIX . $user);
-			}
-		}
-
+		$candidate = $this->candidateOf(entry: $entry);
 		if ($candidate === null || $candidate === '') {
 			return null;
 		}
 
 		return $this->denyResolver->entryNames(entry: $entry, principals: [$candidate]);
 	}//end principalOf()
+
+	/**
+	 * The principal one entry spells: the string itself, its group, else its user.
+	 *
+	 * @param mixed $entry The deny entry as written.
+	 *
+	 * @return string|null The spelled principal, or null when it spells none.
+	 */
+	private function candidateOf(mixed $entry): ?string {
+		if (is_string($entry) === true) {
+			return $entry;
+		}
+
+		if (is_array($entry) === false) {
+			return null;
+		}
+
+		$group = ($entry['group'] ?? null);
+		if (is_string($group) === true) {
+			return $group;
+		}
+
+		return $this->userPrincipal(user: ($entry['user'] ?? null));
+	}//end candidateOf()
+
+	/**
+	 * The `user:` principal of a non-empty user id.
+	 *
+	 * @param mixed $user The entry's `user` value.
+	 *
+	 * @return string|null The prefixed principal, or null when the id is not a non-empty string.
+	 */
+	private function userPrincipal(mixed $user): ?string {
+		if (is_string($user) === false || $user === '') {
+			return null;
+		}
+
+		return (DenyResolverInterface::USER_PREFIX . $user);
+	}//end userPrincipal()
 
 	/**
 	 * Render a list of principals for a message.

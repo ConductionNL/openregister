@@ -4,8 +4,14 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\AuditTrailControllerFactory;
 use OCA\OpenRegister\Controller\AuditTrailController;
+use OCA\OpenRegister\BackgroundJob\AuditTrailExportJob;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailPageQuery;
+use OCP\BackgroundJob\IJobList;
+use OCA\OpenRegister\Service\Audit\AuditTrailQuery;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
 use OCA\OpenRegister\Service\AuditHashService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
@@ -28,6 +34,8 @@ class AuditTrailControllerTest extends TestCase {
 	private AuditHashService&MockObject $auditHashService;
 	private IUserSession&MockObject $userSession;
 	private IGroupManager&MockObject $groupManager;
+	private AuditTrailPageQuery&MockObject $pageQuery;
+	private IJobList&MockObject $jobList;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -38,6 +46,10 @@ class AuditTrailControllerTest extends TestCase {
 		$this->auditHashService = $this->createMock(AuditHashService::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->pageQuery = $this->createMock(AuditTrailPageQuery::class);
+		$this->jobList = $this->createMock(IJobList::class);
+		// The masking of explicit-reveal values has its own test; here it passes the entries through.
+		$this->logService->method('maskExplicitReveal')->willReturnArgument(0);
 
 		// Default: an authenticated admin so the requireAdmin() gate on
 		// export()/clearAll() lets the happy-path assertions through. Tests
@@ -47,7 +59,7 @@ class AuditTrailControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 		$this->groupManager->method('isAdmin')->with('admin')->willReturn(true);
 
-		$this->controller = new AuditTrailController(
+		$this->controller = AuditTrailControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->logService,
@@ -56,7 +68,8 @@ class AuditTrailControllerTest extends TestCase {
 			$this->userSession,
 			$this->groupManager,
 			$this->createMock(ReadableAuditTrailLister::class),
-			$this->createMock(ExportRunRecorder::class)
+			new \OCA\OpenRegister\Service\Audit\AuditTrailPageService($this->pageQuery, $this->logService, $this->jobList),
+			$this->createMock(\OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders::class)
 		);
 	}
 
@@ -125,6 +138,20 @@ class AuditTrailControllerTest extends TestCase {
 		$result = $this->controller->objects('reg1', 'schema1', 'obj1');
 
 		$this->assertEquals(404, $result->getStatus());
+	}
+
+	public function testObjectsReturns409ForAnAmbiguousIdentifier(): void {
+		// #4037: a slug two objects of the register and schema hold answers 409 like the
+		// object routes, and names neither object.
+		$this->request->method('getParams')->willReturn([]);
+		$this->logService->method('getLogs')
+			->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('two objects'));
+
+		$result = $this->controller->objects('28', '68', 'dubbel');
+
+		$this->assertEquals(409, $result->getStatus());
+		$this->assertEquals('ambiguous-identifier', $result->getData()['error']);
+		$this->assertEquals('Identifier "dubbel" matches more than one object in this register and schema', $result->getData()['message']);
 	}
 
 	public function testExportSuccess(): void {
@@ -456,14 +483,6 @@ class AuditTrailControllerTest extends TestCase {
 		$this->assertArrayHasKey('error', $result->getData());
 	}
 
-	public function testDestroyMultipleException(): void {
-		$this->markTestSkipped(
-			'Production destroyMultiple() always returns 405 (audit trails '
-			. 'immutable); no exception path remains. Covered by '
-			. 'testDestroyMultipleAlwaysReturns405Immutable.'
-		);
-	}
-
 	public function testStatisticsSuccess(): void {
 		$counts = [
 			'total' => 7,
@@ -567,7 +586,7 @@ class AuditTrailControllerTest extends TestCase {
 			$groupMgr->method('isAdmin')->with($user->getUID())->willReturn($isAdmin);
 		}
 
-		return new AuditTrailController(
+		return AuditTrailControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->logService,
@@ -576,7 +595,8 @@ class AuditTrailControllerTest extends TestCase {
 			$session,
 			$groupMgr,
 			$this->createMock(ReadableAuditTrailLister::class),
-			$this->createMock(ExportRunRecorder::class)
+			new \OCA\OpenRegister\Service\Audit\AuditTrailPageService($this->pageQuery, $this->logService, $this->jobList),
+			$this->createMock(\OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders::class)
 		);
 	}
 
@@ -658,7 +678,7 @@ class AuditTrailControllerTest extends TestCase {
 		$controller->show(42);
 	}
 
-	// ── IDOR gate: per-object audit trail read (objects) is admin-only ──
+	// ── IDOR gate: a non-admin reads an object's history only when they may read the object ──
 
 	public function testObjectsReturns401WhenAnonymous(): void {
 		$controller = $this->makeControllerWithUser(null, false);
@@ -668,14 +688,16 @@ class AuditTrailControllerTest extends TestCase {
 		$this->assertEquals(401, $result->getStatus());
 	}
 
-	public function testObjectsReturns403WhenNonAdmin(): void {
+	public function testObjectsReturns404WhenNonAdminMayNotReadTheObject(): void {
+		// The reader service is a mock answering null (object not readable),
+		// which the controller must answer with the object GET's 404.
 		$bob = $this->createMock(IUser::class);
 		$bob->method('getUID')->willReturn('bob');
 		$controller = $this->makeControllerWithUser($bob, false);
 
 		$result = $controller->objects('reg', 'schema', 'obj-uuid');
 
-		$this->assertEquals(403, $result->getStatus());
+		$this->assertEquals(404, $result->getStatus());
 	}
 
 	public function testObjectsDoesNotInvokeServiceWhenForbidden(): void {
@@ -718,5 +740,166 @@ class AuditTrailControllerTest extends TestCase {
 		$this->auditHashService->expects($this->never())->method('verifyChain');
 
 		$controller->verify();
+	}
+
+	/**
+	 * With a cursor the list pages by keyset over the six filters and never
+	 * counts: the page query is asked, the legacy count is not.
+	 *
+	 * @return void
+	 */
+	public function testIndexWithACursorPagesByKeysetOverTheFilters(): void {
+		$this->request->method('getParams')->willReturn(
+			['cursor' => '', 'actor' => 'anna', 'from' => '2026-10-07', 'to' => '2026-10-09', 'register' => '1', 'limit' => '2']
+		);
+		$entry = new AuditTrail();
+		$entry->setId(2);
+		$this->pageQuery->expects($this->once())->method('page')
+			->with(
+				['actor' => 'anna', 'from' => '2026-10-07', 'to' => '2026-10-09', 'register' => '1'],
+				null,
+				2,
+				0
+			)
+			->willReturn(['results' => [$entry], 'nextCursor' => 2]);
+		$this->logService->expects($this->never())->method('countAllLogs');
+
+		$response = $this->controller->index();
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame(2, $response->getData()['nextCursor']);
+		$this->assertArrayNotHasKey('total', $response->getData());
+	}
+
+	/**
+	 * A period that is not a date answers 400, not the unfiltered trail.
+	 *
+	 * @return void
+	 */
+	public function testIndexWithABadPeriodAnswers400(): void {
+		$this->request->method('getParams')->willReturn(['cursor' => '', 'from' => 'gisteren']);
+		$this->pageQuery->method('page')->willThrowException(new \InvalidArgumentException('"gisteren" is not a date.'));
+
+		$this->assertSame(400, $this->controller->index()->getStatus());
+	}
+
+	/**
+	 * A filtered export up to the inline limit answers the file in the request
+	 * from exactly the selected rows.
+	 *
+	 * @return void
+	 */
+	public function testAFilteredExportAnswersTheSelectedRows(): void {
+		$this->request->method('getParams')->willReturn(['actor' => 'anna']);
+		$this->request->method('getParam')->willReturnCallback(static fn ($key, $default = null) => ($key === 'format' ? 'csv' : $default));
+		$rows = [new AuditTrail(), new AuditTrail()];
+		$this->pageQuery->method('collect')->willReturn(['results' => $rows, 'truncated' => false]);
+		$this->logService->expects($this->once())->method('exportRows')
+			->with('csv', $rows, ['includeChanges' => true])
+			->willReturn(['content' => "id,hash,previousHash\n", 'filename' => 'audit.csv', 'contentType' => 'text/csv']);
+		$this->jobList->expects($this->never())->method('add');
+
+		$response = $this->controller->export();
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame(2, $response->getData()['data']['rows']);
+	}
+
+	/**
+	 * Past the inline limit the export is queued for the requester (202).
+	 *
+	 * @return void
+	 */
+	public function testALargeExportIsQueuedForTheRequester(): void {
+		$this->request->method('getParams')->willReturn(['actor' => 'anna']);
+		$this->request->method('getParam')->willReturnCallback(static fn ($key, $default = null) => ($key === 'format' ? 'json' : $default));
+		$this->pageQuery->method('collect')->willReturn(['results' => [], 'truncated' => true]);
+		$this->logService->expects($this->never())->method('exportRows');
+		$this->jobList->expects($this->once())->method('add')->with(
+			AuditTrailExportJob::class,
+			$this->callback(static fn (array $arg): bool => $arg['actor'] === 'admin' && $arg['format'] === 'json' && $arg['filters'] === ['actor' => 'anna'])
+		);
+
+		$response = $this->controller->export();
+
+		$this->assertSame(202, $response->getStatus());
+		$this->assertTrue($response->getData()['queued']);
+	}
+
+	/**
+	 * The scoped list's controller for a non-admin, over a lister that records its cursor.
+	 *
+	 * @param array      $params   The request parameters.
+	 * @param array|null $captured Filled with the cursor the lister was handed.
+	 *
+	 * @return AuditTrailController The controller.
+	 */
+	private function readableController(array $params, ?array &$captured): AuditTrailController {
+		$request = $this->createMock(IRequest::class);
+		$request->method('getParams')->willReturn($params);
+		$request->method('getParam')->willReturnCallback(static fn (string $key, $default = null) => ($params[$key] ?? $default));
+
+		$lister = $this->createMock(ReadableAuditTrailLister::class);
+		$lister->method('query')->willReturnCallback(static fn (array $filters = [], ?string $search = null): AuditTrailQuery => new AuditTrailQuery($filters, $search));
+		$lister->method('page')->willReturnCallback(
+			static function (?string $userId, int $limit = 20, int|string|null $cursor = null, ?AuditTrailQuery $query = null) use (&$captured): array {
+				$captured = ['cursor' => $cursor, 'filters' => ($query?->filters ?? [])];
+
+				return ['results' => [], 'limit' => $limit, 'cursor' => $cursor, 'nextCursor' => null];
+			}
+		);
+
+		$bob = $this->createMock(IUser::class);
+		$bob->method('getUID')->willReturn('bob');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($bob);
+
+		return AuditTrailControllerFactory::create(
+			'openregister',
+			$request,
+			$this->logService,
+			$this->auditTrailMapper,
+			$this->auditHashService,
+			$session,
+			$this->createMock(IGroupManager::class),
+			$lister,
+			new \OCA\OpenRegister\Service\Audit\AuditTrailPageService($this->pageQuery, $this->logService, $this->jobList),
+			$this->createMock(\OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders::class)
+		);
+	}
+
+	public function testTheScopedListIsHandedTheSealedCursorAsGiven(): void {
+		$captured = null;
+		$this->readableController(params: ['cursor' => 'sealed-abc'], captured: $captured)->readable();
+
+		$this->assertSame('sealed-abc', $captured['cursor']);
+	}
+
+	public function testTheScopedListTakesNoOffsetAsTheStart(): void {
+		$captured = null;
+		$this->readableController(params: ['offset' => '40'], captured: $captured)->readable();
+
+		$this->assertNull($captured['cursor']);
+	}
+
+	public function testTheScopedListStartsAtTheTopWithoutACursor(): void {
+		$captured = null;
+		$this->readableController(params: [], captured: $captured)->readable();
+
+		$this->assertNull($captured['cursor']);
+	}
+
+	public function testTheCursorIsNotAlsoAFilter(): void {
+		$captured = null;
+		$this->readableController(params: ['cursor' => 'sealed-abc', '_cursor' => 'sealed-abc', 'object_uuid' => 'u1'], captured: $captured)->readable();
+
+		$this->assertSame(['object_uuid' => 'u1'], $captured['filters']);
+	}
+
+	public function testAnObjectFilterReachesTheScopedList(): void {
+		$captured = null;
+		$this->readableController(params: ['object_uuid' => 'u1'], captured: $captured)->readable();
+
+		$this->assertSame(['object_uuid' => 'u1'], $captured['filters']);
 	}
 }

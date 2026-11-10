@@ -1,0 +1,945 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`organisationStore.updateOrganisation (golden) matches the recorded behaviour 1`] = `
+{
+  "bareAnswer": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/organisations/u-1",
+        "PUT",
+        {
+          "Content-Type": "application/json",
+        },
+        {
+          "name": "Edited",
+        },
+      ],
+    ],
+    "item": {
+      "id": 2,
+      "uuid": "u-2",
+    },
+    "list": [
+      {
+        "id": 0,
+        "name": "Other",
+        "uuid": "u-0",
+      },
+      {
+        "active": true,
+        "authorization": {
+          "agent": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+          "agent_use": [],
+          "application": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+          "configuration": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+          "dashboard_view": [],
+          "llm_use": [],
+          "object": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+          "object_publish": [],
+          "register": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+          "schema": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+          "view": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+        },
+        "children": [],
+        "created": "",
+        "description": "",
+        "groups": [],
+        "id": 1,
+        "isDefault": false,
+        "name": "Bare",
+        "owner": "",
+        "parent": null,
+        "quota": {
+          "bandwidth": null,
+          "groups": null,
+          "requests": null,
+          "storage": null,
+          "users": null,
+        },
+        "slug": "saved",
+        "updated": "",
+        "usage": {
+          "bandwidth": 0,
+          "groups": 0,
+          "requests": 0,
+          "storage": 0,
+          "users": 0,
+        },
+        "users": [],
+        "uuid": "u-1",
+      },
+    ],
+    "listTypes": [
+      "Object",
+      "Organisation",
+    ],
+    "refreshed": 1,
+    "result": {
+      "data": {
+        "id": 1,
+        "name": "Bare",
+        "slug": "saved",
+        "uuid": "u-1",
+      },
+      "keys": [
+        "response",
+        "data",
+      ],
+      "status": 200,
+    },
+  },
+  "byIdOnly": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/organisations/1",
+        "PUT",
+        {
+          "Content-Type": "application/json",
+        },
+        {
+          "name": "Edited",
+        },
+      ],
+    ],
+    "item": {
+      "active": true,
+      "authorization": {
+        "agent": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "agent_use": [],
+        "application": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "configuration": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "dashboard_view": [],
+        "llm_use": [],
+        "object": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "object_publish": [],
+        "register": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "schema": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "view": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+      },
+      "children": [],
+      "created": "",
+      "description": "",
+      "groups": [],
+      "id": 1,
+      "isDefault": false,
+      "name": "Saved name",
+      "owner": "",
+      "parent": null,
+      "quota": {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+      "slug": "saved",
+      "updated": "",
+      "usage": {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+      "users": [],
+      "uuid": "u-1",
+    },
+    "list": [
+      {
+        "id": 0,
+        "name": "Other",
+        "uuid": "u-0",
+      },
+      {
+        "active": true,
+        "authorization": {
+          "agent": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+          "agent_use": [],
+          "application": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+          "configuration": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+          "dashboard_view": [],
+          "llm_use": [],
+          "object": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+          "object_publish": [],
+          "register": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+          "schema": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+          "view": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+        },
+        "children": [],
+        "created": "",
+        "description": "",
+        "groups": [],
+        "id": 1,
+        "isDefault": false,
+        "name": "Saved name",
+        "owner": "",
+        "parent": null,
+        "quota": {
+          "bandwidth": null,
+          "groups": null,
+          "requests": null,
+          "storage": null,
+          "users": null,
+        },
+        "slug": "saved",
+        "updated": "",
+        "usage": {
+          "bandwidth": 0,
+          "groups": 0,
+          "requests": 0,
+          "storage": 0,
+          "users": 0,
+        },
+        "users": [],
+        "uuid": "u-1",
+      },
+    ],
+    "listTypes": [
+      "Object",
+      "Organisation",
+    ],
+    "refreshed": 1,
+    "result": {
+      "data": {
+        "id": 1,
+        "name": "Saved name",
+        "slug": "saved",
+        "uuid": "u-1",
+      },
+      "keys": [
+        "response",
+        "data",
+      ],
+      "status": 200,
+    },
+  },
+  "byUuid": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/organisations/u-1",
+        "PUT",
+        {
+          "Content-Type": "application/json",
+        },
+        {
+          "name": "Edited",
+        },
+      ],
+    ],
+    "item": {
+      "active": true,
+      "authorization": {
+        "agent": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "agent_use": [],
+        "application": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "configuration": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "dashboard_view": [],
+        "llm_use": [],
+        "object": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "object_publish": [],
+        "register": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "schema": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "view": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+      },
+      "children": [],
+      "created": "",
+      "description": "",
+      "groups": [],
+      "id": 1,
+      "isDefault": false,
+      "name": "Saved name",
+      "owner": "",
+      "parent": null,
+      "quota": {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+      "slug": "saved",
+      "updated": "",
+      "usage": {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+      "users": [],
+      "uuid": "u-1",
+    },
+    "list": [
+      {
+        "id": 0,
+        "name": "Other",
+        "uuid": "u-0",
+      },
+      {
+        "active": true,
+        "authorization": {
+          "agent": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+          "agent_use": [],
+          "application": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+          "configuration": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+          "dashboard_view": [],
+          "llm_use": [],
+          "object": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+          "object_publish": [],
+          "register": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+          "schema": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+          "view": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+        },
+        "children": [],
+        "created": "",
+        "description": "",
+        "groups": [],
+        "id": 1,
+        "isDefault": false,
+        "name": "Saved name",
+        "owner": "",
+        "parent": null,
+        "quota": {
+          "bandwidth": null,
+          "groups": null,
+          "requests": null,
+          "storage": null,
+          "users": null,
+        },
+        "slug": "saved",
+        "updated": "",
+        "usage": {
+          "bandwidth": 0,
+          "groups": 0,
+          "requests": 0,
+          "storage": 0,
+          "users": 0,
+        },
+        "users": [],
+        "uuid": "u-1",
+      },
+    ],
+    "listTypes": [
+      "Object",
+      "Organisation",
+    ],
+    "refreshed": 1,
+    "result": {
+      "data": {
+        "id": 1,
+        "name": "Saved name",
+        "slug": "saved",
+        "uuid": "u-1",
+      },
+      "keys": [
+        "response",
+        "data",
+      ],
+      "status": 200,
+    },
+  },
+  "firstInList": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/organisations/u-1",
+        "PUT",
+        {
+          "Content-Type": "application/json",
+        },
+        {
+          "name": "Edited",
+        },
+      ],
+    ],
+    "item": null,
+    "list": [
+      {
+        "active": true,
+        "authorization": {
+          "agent": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+          "agent_use": [],
+          "application": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+          "configuration": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+          "dashboard_view": [],
+          "llm_use": [],
+          "object": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+          "object_publish": [],
+          "register": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+          "schema": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+          "view": {
+            "create": [],
+            "delete": [],
+            "read": [],
+            "update": [],
+          },
+        },
+        "children": [],
+        "created": "",
+        "description": "",
+        "groups": [],
+        "id": 1,
+        "isDefault": false,
+        "name": "Saved name",
+        "owner": "",
+        "parent": null,
+        "quota": {
+          "bandwidth": null,
+          "groups": null,
+          "requests": null,
+          "storage": null,
+          "users": null,
+        },
+        "slug": "saved",
+        "updated": "",
+        "usage": {
+          "bandwidth": 0,
+          "groups": 0,
+          "requests": 0,
+          "storage": 0,
+          "users": 0,
+        },
+        "users": [],
+        "uuid": "u-1",
+      },
+      {
+        "id": 0,
+        "name": "Other",
+        "uuid": "u-0",
+      },
+    ],
+    "listTypes": [
+      "Organisation",
+      "Object",
+    ],
+    "refreshed": 1,
+    "result": {
+      "data": {
+        "id": 1,
+        "name": "Saved name",
+        "slug": "saved",
+        "uuid": "u-1",
+      },
+      "keys": [
+        "response",
+        "data",
+      ],
+      "status": 200,
+    },
+  },
+  "itemByUuidOnly": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/organisations/u-1",
+        "PUT",
+        {
+          "Content-Type": "application/json",
+        },
+        {},
+      ],
+    ],
+    "item": {
+      "active": true,
+      "authorization": {
+        "agent": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "agent_use": [],
+        "application": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "configuration": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "dashboard_view": [],
+        "llm_use": [],
+        "object": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "object_publish": [],
+        "register": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "schema": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "view": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+      },
+      "children": [],
+      "created": "",
+      "description": "",
+      "groups": [],
+      "id": 1,
+      "isDefault": false,
+      "name": "Saved name",
+      "owner": "",
+      "parent": null,
+      "quota": {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+      "slug": "saved",
+      "updated": "",
+      "usage": {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+      "users": [],
+      "uuid": "u-1",
+    },
+    "list": [],
+    "listTypes": [],
+    "refreshed": 1,
+    "result": {
+      "data": {
+        "id": 1,
+        "name": "Saved name",
+        "slug": "saved",
+        "uuid": "u-1",
+      },
+      "keys": [
+        "response",
+        "data",
+      ],
+      "status": 200,
+    },
+  },
+  "noKey": {
+    "cause": null,
+    "consoleError": [],
+    "fetch": [],
+    "item": null,
+    "list": [
+      {
+        "id": 0,
+        "name": "Other",
+        "uuid": "u-0",
+      },
+      {
+        "id": 1,
+        "name": "Old name",
+        "uuid": "u-1",
+      },
+    ],
+    "listTypes": [
+      "Object",
+      "Object",
+    ],
+    "refreshed": 0,
+    "thrown": "Organisation UUID is required for updates",
+  },
+  "notInList": {
+    "consoleError": [],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/organisations/u-7",
+        "PUT",
+        {
+          "Content-Type": "application/json",
+        },
+        {
+          "name": "Edited",
+        },
+      ],
+    ],
+    "item": null,
+    "list": [
+      {
+        "id": 0,
+        "name": "Other",
+        "uuid": "u-0",
+      },
+      {
+        "id": 1,
+        "name": "Old name",
+        "uuid": "u-1",
+      },
+    ],
+    "listTypes": [
+      "Object",
+      "Object",
+    ],
+    "refreshed": 1,
+    "result": {
+      "data": {
+        "id": 1,
+        "name": "Saved name",
+        "slug": "saved",
+        "uuid": "u-1",
+      },
+      "keys": [
+        "response",
+        "data",
+      ],
+      "status": 200,
+    },
+  },
+  "offline": {
+    "cause": "offline",
+    "consoleError": [
+      [
+        "Error updating organisation:",
+        "offline",
+      ],
+    ],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/organisations/u-1",
+        "PUT",
+        {
+          "Content-Type": "application/json",
+        },
+        {
+          "name": "Edited",
+        },
+      ],
+    ],
+    "item": {
+      "id": 1,
+      "uuid": "u-1",
+    },
+    "list": [
+      {
+        "id": 0,
+        "name": "Other",
+        "uuid": "u-0",
+      },
+      {
+        "id": 1,
+        "name": "Old name",
+        "uuid": "u-1",
+      },
+    ],
+    "listTypes": [
+      "Object",
+      "Object",
+    ],
+    "refreshed": 0,
+    "thrown": "Failed to update organisation: offline",
+  },
+  "refusedBare": {
+    "cause": "HTTP error! status: 500",
+    "consoleError": [
+      [
+        "Error updating organisation:",
+        "HTTP error! status: 500",
+      ],
+    ],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/organisations/u-1",
+        "PUT",
+        {
+          "Content-Type": "application/json",
+        },
+        {
+          "name": "Edited",
+        },
+      ],
+    ],
+    "item": {
+      "id": 1,
+      "uuid": "u-1",
+    },
+    "list": [
+      {
+        "id": 0,
+        "name": "Other",
+        "uuid": "u-0",
+      },
+      {
+        "id": 1,
+        "name": "Old name",
+        "uuid": "u-1",
+      },
+    ],
+    "listTypes": [
+      "Object",
+      "Object",
+    ],
+    "refreshed": 0,
+    "thrown": "Failed to update organisation: HTTP error! status: 500",
+  },
+  "refusedNamed": {
+    "cause": "Not yours",
+    "consoleError": [
+      [
+        "Error updating organisation:",
+        "Not yours",
+      ],
+    ],
+    "fetch": [
+      [
+        "/index.php/apps/openregister/api/organisations/u-1",
+        "PUT",
+        {
+          "Content-Type": "application/json",
+        },
+        {
+          "name": "Edited",
+        },
+      ],
+    ],
+    "item": {
+      "id": 1,
+      "uuid": "u-1",
+    },
+    "list": [
+      {
+        "id": 0,
+        "name": "Other",
+        "uuid": "u-0",
+      },
+      {
+        "id": 1,
+        "name": "Old name",
+        "uuid": "u-1",
+      },
+    ],
+    "listTypes": [
+      "Object",
+      "Object",
+    ],
+    "refreshed": 0,
+    "thrown": "Failed to update organisation: Not yours",
+  },
+}
+`;

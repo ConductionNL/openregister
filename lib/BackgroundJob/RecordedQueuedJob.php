@@ -17,14 +17,15 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\Operations\JobRunRecorder;
+use OCA\OpenRegister\Service\Operations\JobRunContext;
+use OCA\OpenRegister\Service\Operations\JobRunRecorderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 
@@ -35,7 +36,7 @@ use OCP\BackgroundJob\QueuedJob;
  * a queued job was asked for once, by something that already decided it should
  * happen, so switching it off is the caller's decision, not the console's.
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-actions-run-as-observable-jobs-req-aoc-004
+ * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-actions-run-as-observable-jobs-req-aoc-004
  */
 abstract class RecordedQueuedJob extends QueuedJob implements RecordsItsRuns {
 
@@ -43,11 +44,11 @@ abstract class RecordedQueuedJob extends QueuedJob implements RecordsItsRuns {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory   $time     Time factory for the parent job class.
-	 * @param JobRunRecorder $recorder The wrapper that writes the run row.
+	 * @param JobRunRecorderInterface $recorder The wrapper that writes the run row.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		protected readonly JobRunRecorder $recorder,
+		protected readonly JobRunRecorderInterface $recorder,
 	) {
 		parent::__construct(time: $time);
 
@@ -60,7 +61,7 @@ abstract class RecordedQueuedJob extends QueuedJob implements RecordsItsRuns {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+	 * @spec openspec/specs/operations-console/spec.md
 	 */
 	final protected function run($argument): void {
 		$this->recorder->around(
@@ -68,9 +69,11 @@ abstract class RecordedQueuedJob extends QueuedJob implements RecordsItsRuns {
 			work: function () use ($argument): void {
 				$this->runRecorded(argument: $argument);
 			},
-			cause: $this->causeOf(argument: $argument),
-			actor: $this->actorOf(argument: $argument),
-			argument: $argument
+			context: new JobRunContext(
+				cause: $this->causeOf(argument: $argument),
+				actor: $this->actorOf(argument: $argument),
+				argument: $argument
+			)
 		);
 
 	}//end run()
@@ -119,7 +122,7 @@ abstract class RecordedQueuedJob extends QueuedJob implements RecordsItsRuns {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+	 * @spec openspec/specs/operations-console/spec.md
 	 */
 	abstract protected function runRecorded(mixed $argument): void;
 }//end class

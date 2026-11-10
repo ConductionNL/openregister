@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\Object\RelationLookup;
 
 /**
  * Integration tests for ObjectService handler classes
@@ -275,7 +276,6 @@ class ObjectHandlersIntegrationTest extends TestCase {
 			$useSchema,
 			$data,
 			null,
-			null,
 			$rbac,
 			$multitenancy
 		);
@@ -400,87 +400,6 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	// =========================================================================
 
 	/**
-	 * Test extractAllRelationshipIds with no extend properties.
-	 */
-	public function testExtractAllRelationshipIdsEmpty(): void {
-		$obj = $this->saveTestObject(['title' => 'Relation Test']);
-		// Use returned entity directly (may be stored in magic table, not main objects table).
-
-		$result = $this->relationHandler->extractAllRelationshipIds([$obj], []);
-		$this->assertIsArray($result);
-		$this->assertEmpty($result);
-	}
-
-	/**
-	 * Test extractAllRelationshipIds with single string relation.
-	 */
-	public function testExtractAllRelationshipIdsSingleRelation(): void {
-		$relatedUuid = Uuid::v4()->toRfc4122();
-		$obj = $this->saveTestObject([
-			'title' => 'Has Relation',
-			'relatedItem' => $relatedUuid,
-		]);
-
-		$result = $this->relationHandler->extractAllRelationshipIds([$obj], ['relatedItem']);
-		$this->assertContains($relatedUuid, $result);
-	}
-
-	/**
-	 * Test extractAllRelationshipIds with array relations.
-	 */
-	public function testExtractAllRelationshipIdsArrayRelation(): void {
-		$uuid1 = Uuid::v4()->toRfc4122();
-		$uuid2 = Uuid::v4()->toRfc4122();
-		$obj = $this->saveTestObject([
-			'title' => 'Has Array Relations',
-			'relatedItems' => [$uuid1, $uuid2],
-		]);
-
-		$result = $this->relationHandler->extractAllRelationshipIds([$obj], ['relatedItems']);
-		$this->assertContains($uuid1, $result);
-		$this->assertContains($uuid2, $result);
-	}
-
-	/**
-	 * Test extractAllRelationshipIds deduplicates.
-	 */
-	public function testExtractAllRelationshipIdsDeduplicates(): void {
-		$sharedUuid = Uuid::v4()->toRfc4122();
-		$obj1 = $this->saveTestObject([
-			'title' => 'Dedup Test 1',
-			'relatedItem' => $sharedUuid,
-		]);
-		$obj2 = $this->saveTestObject([
-			'title' => 'Dedup Test 2',
-			'relatedItem' => $sharedUuid,
-		]);
-
-		$result = $this->relationHandler->extractAllRelationshipIds([$obj1, $obj2], ['relatedItem']);
-		// Should have only one copy of the shared UUID.
-		$this->assertEquals(1, count(array_keys($result, $sharedUuid, true)));
-	}
-
-	/**
-	 * Test extractAllRelationshipIds circuit breaker limits.
-	 */
-	public function testExtractAllRelationshipIdsCircuitBreaker(): void {
-		// Create object with many relations (more than the 200 limit).
-		$manyUuids = [];
-		for ($i = 0; $i < 25; $i++) {
-			$manyUuids[] = Uuid::v4()->toRfc4122();
-		}
-		$obj = $this->saveTestObject([
-			'title' => 'Many Relations',
-			'relatedItems' => $manyUuids,
-		]);
-
-		// The method limits to 10 per array plus 200 total.
-		$result = $this->relationHandler->extractAllRelationshipIds([$obj], ['relatedItems']);
-		$this->assertIsArray($result);
-		$this->assertLessThanOrEqual(200, count($result));
-	}
-
-	/**
 	 * Test bulkLoadRelationshipsBatched with empty IDs.
 	 */
 	public function testBulkLoadRelationshipsBatchedEmpty(): void {
@@ -584,14 +503,7 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 */
 	public function testGetUsesNoRelations(): void {
 		$obj = $this->saveTestObject(['title' => 'No Relations']);
-		$result = $this->relationHandler->getUses(
-			$obj->getUuid(),
-			[],
-			false,
-			false,
-			$this->testRegister->getId(),
-			$this->testSchema->getId()
-		);
+		$result = $this->relationHandler->getUses(lookup: (new RelationLookup(objectId: $obj->getUuid(), query: []))->filteredBy(rbac: false, multitenancy: false)->pinnedTo(registerId: $this->testRegister->getId(), schemaId: $this->testSchema->getId()));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertArrayHasKey('total', $result);
@@ -602,7 +514,7 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 * Test getUses for nonexistent object.
 	 */
 	public function testGetUsesNonexistentObject(): void {
-		$result = $this->relationHandler->getUses('nonexistent-uuid-' . uniqid());
+		$result = $this->relationHandler->getUses(lookup: new RelationLookup(objectId: 'nonexistent-uuid-' . uniqid()));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertEquals(0, $result['total']);
@@ -613,14 +525,7 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 */
 	public function testGetUsedByReturnsStructure(): void {
 		$obj = $this->saveTestObject(['title' => 'UsedBy Test']);
-		$result = $this->relationHandler->getUsedBy(
-			$obj->getUuid(),
-			[],
-			false,
-			false,
-			$this->testRegister->getId(),
-			$this->testSchema->getId()
-		);
+		$result = $this->relationHandler->getUsedBy(lookup: (new RelationLookup(objectId: $obj->getUuid(), query: []))->filteredBy(rbac: false, multitenancy: false)->pinnedTo(registerId: $this->testRegister->getId(), schemaId: $this->testSchema->getId()));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertArrayHasKey('total', $result);
@@ -632,18 +537,10 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 * Test getUsedBy for nonexistent object.
 	 */
 	public function testGetUsedByNonexistentObject(): void {
-		$result = $this->relationHandler->getUsedBy('nonexistent-uuid-' . uniqid());
+		$result = $this->relationHandler->getUsedBy(lookup: new RelationLookup(objectId: 'nonexistent-uuid-' . uniqid()));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertEquals(0, $result['total']);
-	}
-
-	/**
-	 * Test extractRelatedData delegation.
-	 */
-	public function testExtractRelatedDataEmpty(): void {
-		$result = $this->relationHandler->extractRelatedData([], false, false);
-		$this->assertIsArray($result);
 	}
 
 	// =========================================================================
@@ -715,44 +612,6 @@ class ObjectHandlersIntegrationTest extends TestCase {
 		$result = $this->facetHandler->getFacetableFields([]);
 		$this->assertIsArray($result);
 		$this->assertArrayHasKey('@self', $result);
-	}
-
-	/**
-	 * Test getMetadataFacetableFields.
-	 */
-	public function testGetMetadataFacetableFields(): void {
-		$result = $this->facetHandler->getMetadataFacetableFields();
-		$this->assertIsArray($result);
-		$this->assertContains('register', $result);
-		$this->assertContains('schema', $result);
-		$this->assertContains('owner', $result);
-		$this->assertContains('organisation', $result);
-		$this->assertContains('created', $result);
-		$this->assertContains('updated', $result);
-	}
-
-	/**
-	 * Test getFacetCount with no facets.
-	 */
-	public function testGetFacetCountNoFacets(): void {
-		$result = $this->facetHandler->getFacetCount(false, []);
-		$this->assertEquals(0, $result);
-	}
-
-	/**
-	 * Test getFacetCount with facets.
-	 */
-	public function testGetFacetCountWithFacets(): void {
-		$result = $this->facetHandler->getFacetCount(true, ['_facets' => ['a', 'b', 'c']]);
-		$this->assertEquals(3, $result);
-	}
-
-	/**
-	 * Test getFacetCount with non-array facets.
-	 */
-	public function testGetFacetCountWithNonArrayFacets(): void {
-		$result = $this->facetHandler->getFacetCount(true, ['_facets' => 'single']);
-		$this->assertEquals(0, $result);
 	}
 
 	/**

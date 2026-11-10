@@ -23,9 +23,11 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\DetectionMethod;
+use OCA\OpenRegister\Files\Db\DetectionMethod;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Files\Db\EntityMention;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\ICompositeExpression;
@@ -162,7 +164,7 @@ class EntityRelationMapperTest extends TestCase {
 			db: $this->db,
 			auditTrailMapper: $this->auditTrailMapper,
 			userSession: $this->userSession,
-			eventDispatcher: $this->eventDispatcher,
+			entityEvents: new EntityEventPublisher(dispatcher: $this->eventDispatcher),
 			logger: $this->logger
 		);
 
@@ -178,7 +180,7 @@ class EntityRelationMapperTest extends TestCase {
 			db: $this->db,
 			auditTrailMapper: $this->auditTrailMapper,
 			userSession: $this->userSession,
-			eventDispatcher: $this->eventDispatcher,
+			entityEvents: new EntityEventPublisher(dispatcher: $this->eventDispatcher),
 			logger: $this->logger
 		);
 
@@ -387,10 +389,7 @@ class EntityRelationMapperTest extends TestCase {
 		$this->assertTrue(
 			condition: $mapper->existsForFileAtPosition(
 				fileId: 42,
-				entityId: 7,
-				chunkId: 100,
-				positionStart: 13,
-				positionEnd: 23
+				mention: new EntityMention(entityId: 7, chunkId: 100, positionStart: 13, positionEnd: 23)
 			)
 		);
 
@@ -409,10 +408,7 @@ class EntityRelationMapperTest extends TestCase {
 		$this->assertFalse(
 			condition: $mapper->existsForFileAtPosition(
 				fileId: 42,
-				entityId: 7,
-				chunkId: 100,
-				positionStart: 13,
-				positionEnd: 23
+				mention: new EntityMention(entityId: 7, chunkId: 100, positionStart: 13, positionEnd: 23)
 			)
 		);
 

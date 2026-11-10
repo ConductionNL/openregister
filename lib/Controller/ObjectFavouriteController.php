@@ -1,7 +1,12 @@
 <?php
 
 /**
- * ObjectFavouriteController: the star's two verbs.
+ * ObjectFavouriteController: the star's two verbs, deprecated.
+ *
+ * Since `merge-follow-and-favourites` a star is a follow with notifications
+ * off. These routes stay for one release so nextcloud-vue and the leaf apps
+ * can move to `.../watch` on their own schedule; every response says so in a
+ * `Deprecation` header and points at the successor in a `Link` header.
  *
  * Starring is per-user state that must not be written through the object
  * itself, which would put "alice likes this" in the object's audit trail and
@@ -23,23 +28,25 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/specs/object-interactions/spec.md
+ * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+ *
+ * @deprecated Use PUT|DELETE .../watch. Removed in the release after merge-follow-and-favourites.
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Interaction\FavouriteService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\ObjectFavouriteControllerServices;
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
+use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use Psr\Log\LoggerInterface;
 
 /**
  * Star an object for the calling user, and unstar it.
@@ -47,23 +54,37 @@ use Psr\Log\LoggerInterface;
 class ObjectFavouriteController extends Controller {
 
 	/**
+	 * Resolves the target object through the RBAC boundary, runs the primitive
+	 * and maps its refusals.
+	 *
+	 * An object the caller cannot READ is refused with 404 rather than 403, so
+	 * these endpoints cannot be used to probe which object ids exist.
+	 *
+	 * @var ObjectSharingEndpoint
+	 */
+	private readonly ObjectSharingEndpoint $endpoint;
+
+	/**
+	 * The controller's collaborators.
+	 *
+	 * @var ObjectFavouriteControllerServices
+	 */
+	private readonly ObjectFavouriteControllerServices $services;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
-	 * @param IRequest $request Request.
-	 * @param ObjectService $objectService Resolves an object through the RBAC boundary.
-	 * @param FavouriteService $favourites The favourite primitive.
-	 * @param LoggerInterface $logger Logger.
+	 * @param IRequest                          $request  Request.
+	 * @param ObjectFavouriteControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objectService,
-		private readonly FavouriteService $favourites,
-		private readonly LoggerInterface $logger,
+		ObjectFavouriteControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
-
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->services = $services;
+		$failure = 'Could not complete the favourite request';
+		$this->endpoint = new ObjectSharingEndpoint(objectService: $services->objectService, logger: $services->logger, file: __FILE__, failure: $failure);
 	}//end __construct()
 
 	/**
@@ -85,28 +106,34 @@ class ObjectFavouriteController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function star(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		return $this->starForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end star()
+
+	/**
+	 * star() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse The stored star.
+	 */
+	private function starForObject(ObjectRef $ref): JSONResponse {
+		$object = $this->endpoint->resolve(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
-		try {
-			$favourite = $this->favourites->star(
-				object: $object,
-				register: $register,
-				schema: $schema
-			);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (\Throwable $e) {
-			return $this->unexpected(exception: $e, context: 'star');
+		$star = fn (): Watcher => $this->services->favourites->star(object: $object, register: (string)$ref->register, schema: (string)$ref->schema);
+		$favourite = $this->endpoint->run(operation: $star, context: 'star');
+		if ($favourite instanceof JSONResponse) {
+			return $favourite;
 		}
 
-		return new JSONResponse(
-			array_merge($favourite->jsonSerialize(), ['favourite' => true])
+		$body = array_merge($favourite->jsonSerialize(), ['favourite' => true, 'watching' => true]);
+		return $this->deprecated(
+			response: new JSONResponse($body),
+			route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id)
 		);
-
-	}//end star()
+	}//end starForObject()
 
 	/**
 	 * Remove the calling user's star from an object.
@@ -127,73 +154,50 @@ class ObjectFavouriteController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function unstar(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		return $this->unstarForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end unstar()
+
+	/**
+	 * unstar() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse The new state.
+	 */
+	private function unstarForObject(ObjectRef $ref): JSONResponse {
+		$object = $this->endpoint->resolve(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
-		try {
-			$removed = $this->favourites->unstar(object: $object);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (\Throwable $e) {
-			return $this->unexpected(exception: $e, context: 'unstar');
+		$removed = $this->endpoint->run(operation: fn (): bool => $this->services->favourites->unstar(object: $object), context: 'unstar');
+		if ($removed instanceof JSONResponse) {
+			return $removed;
 		}
 
-		return new JSONResponse(['favourite' => false, 'removed' => $removed]);
-
-	}//end unstar()
+		$body = ['favourite' => false, 'watching' => false, 'removed' => $removed];
+		return $this->deprecated(
+			response: new JSONResponse($body),
+			route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id)
+		);
+	}//end unstarForObject()
 
 	/**
-	 * Resolve the target object through the RBAC boundary.
+	 * Mark a response as coming from a deprecated route, naming its successor.
 	 *
-	 * An object the caller cannot READ is refused with 404 rather than 403, so
-	 * this endpoint cannot be used to probe which object ids exist, and a user
-	 * without read can never write a favourite row.
+	 * @param JSONResponse    $response The response to mark.
+	 * @param ObjectLinkRoute $route    Register slug or id, schema slug or id, and object uuid.
 	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema Schema slug or id.
-	 * @param string $id Object uuid.
-	 *
-	 * @return ObjectEntity|JSONResponse The object, or the response to return.
+	 * @return JSONResponse The same response, with the two headers.
 	 */
-	private function resolveObject(string $register, string $schema, string $id): ObjectEntity|JSONResponse {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
+	private function deprecated(JSONResponse $response, ObjectLinkRoute $route): JSONResponse {
+		$successor = '/index.php/apps/openregister/api/objects/'.rawurlencode($route->register)
+			.'/'.rawurlencode($route->schema).'/'.rawurlencode($route->id).'/watch';
 
-		try {
-			$object = $this->objectService->getObject();
-		} catch (\Throwable $e) {
-			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
-		}
+		$response->addHeader('Deprecation', 'true');
+		$response->addHeader('Link', '<'.$successor.'>; rel="successor-version"');
 
-		if (($object instanceof ObjectEntity) === false) {
-			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
-		}
+		return $response;
 
-		return $object;
-
-	}//end resolveObject()
-
-	/**
-	 * Log an unexpected failure and return a generic error.
-	 *
-	 * @param \Throwable $exception The failure.
-	 * @param string $context Short label for the log line.
-	 *
-	 * @return JSONResponse A generic 500.
-	 */
-	private function unexpected(\Throwable $exception, string $context): JSONResponse {
-		$this->logger->error(
-			message: '[ObjectFavouriteController] '.$context.': '.$exception->getMessage(),
-			context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $exception]
-		);
-
-		return new JSONResponse(
-			['message' => 'Could not complete the favourite request'],
-			Http::STATUS_INTERNAL_SERVER_ERROR
-		);
-
-	}//end unexpected()
+	}//end deprecated()
 }//end class

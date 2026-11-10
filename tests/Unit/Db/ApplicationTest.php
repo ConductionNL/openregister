@@ -543,19 +543,6 @@ class ApplicationTest extends TestCase {
 		$this->assertNull($json['managedByConfiguration']);
 	}
 
-	public function testJsonSerializeManagedByConfigurationSet(): void {
-		$config = new Configuration();
-		$config->setUuid('config-uuid');
-		$config->setTitle('My Config');
-
-		$this->application->setManagedByConfigurationEntity($config);
-
-		$json = $this->application->jsonSerialize();
-		$this->assertNotNull($json['managedByConfiguration']);
-		$this->assertSame('config-uuid', $json['managedByConfiguration']['uuid']);
-		$this->assertSame('My Config', $json['managedByConfiguration']['title']);
-	}
-
 	// --- __toString ---
 
 	public function testToStringReturnsUuid(): void {
@@ -580,20 +567,6 @@ class ApplicationTest extends TestCase {
 			'/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/',
 			$result
 		);
-	}
-
-	// --- isValidUuid ---
-
-	public function testIsValidUuidWithValidUuid(): void {
-		$this->assertTrue(Application::isValidUuid('550e8400-e29b-41d4-a716-446655440000'));
-	}
-
-	public function testIsValidUuidWithInvalidUuid(): void {
-		$this->assertFalse(Application::isValidUuid('not-a-uuid'));
-	}
-
-	public function testIsValidUuidWithEmptyString(): void {
-		$this->assertFalse(Application::isValidUuid(''));
 	}
 
 	// --- isManagedByConfiguration ---
@@ -661,24 +634,5 @@ class ApplicationTest extends TestCase {
 
 	public function testGetManagedByConfigurationEmptyArray(): void {
 		$this->assertNull($this->application->getManagedByConfiguration([]));
-	}
-
-	// --- ManagedByConfigurationEntity (transient property) ---
-
-	public function testSetAndGetManagedByConfigurationEntity(): void {
-		$config = new Configuration();
-		$this->application->setManagedByConfigurationEntity($config);
-		$this->assertSame($config, $this->application->getManagedByConfigurationEntity());
-	}
-
-	public function testGetManagedByConfigurationEntityDefaultNull(): void {
-		$this->assertNull($this->application->getManagedByConfigurationEntity());
-	}
-
-	public function testSetManagedByConfigurationEntityNull(): void {
-		$config = new Configuration();
-		$this->application->setManagedByConfigurationEntity($config);
-		$this->application->setManagedByConfigurationEntity(null);
-		$this->assertNull($this->application->getManagedByConfigurationEntity());
 	}
 }

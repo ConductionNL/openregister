@@ -1,0 +1,1619 @@
+[
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\ActionInputsNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\ActionInputsNodeInterface"
+        ],
+        "id": "openregister.action-inputs",
+        "name": "Action inputs",
+        "description": "Make the inputs the action was run with readable as {{inputs.name}}.",
+        "icon": "core:actions/rename.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "scriptTask"
+        },
+        "getCategory": {
+            "returned": "logic"
+        },
+        "configKeys": {
+            "returned": []
+        },
+        "validate": {
+            "empty": {
+                "returned": null
+            },
+            "path": {
+                "returned": null
+            },
+            "blank-path": {
+                "returned": null
+            },
+            "condition": {
+                "returned": null
+            },
+            "bad-conditions": {
+                "returned": null
+            },
+            "mode": {
+                "returned": null
+            },
+            "bad-mode": {
+                "returned": null
+            },
+            "routes": {
+                "returned": null
+            },
+            "bad-routes": {
+                "returned": null
+            },
+            "fields": {
+                "returned": null
+            },
+            "bad-fields": {
+                "returned": null
+            },
+            "mapping": {
+                "returned": null
+            },
+            "body": {
+                "returned": null
+            },
+            "state": {
+                "returned": null
+            },
+            "bad-state": {
+                "returned": null
+            },
+            "wait": {
+                "returned": null
+            },
+            "bad-wait": {
+                "returned": null
+            },
+            "flow": {
+                "returned": null
+            },
+            "table": {
+                "returned": null
+            },
+            "end": {
+                "returned": null
+            },
+            "bad-end": {
+                "returned": null
+            }
+        }
+    },
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\DecisionTableNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\DecisionTableNodeInterface"
+        ],
+        "id": "openregister.decision-table",
+        "name": "Evaluate a decision table",
+        "description": "Apply a table of rules to each item and write the outcome onto it.",
+        "icon": "core:actions/checkmark.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "businessRuleTask"
+        },
+        "getCategory": {
+            "returned": "logic"
+        },
+        "configKeys": {
+            "returned": [
+                "table",
+                "tableRef",
+                "inputMapping",
+                "outputMapping",
+                "defaultOutputs",
+                "resultKey"
+            ]
+        },
+        "configForm": {
+            "returned": [
+                {
+                    "key": "table",
+                    "label": "Decision table",
+                    "type": "textarea",
+                    "help": "The table as JSON: hit policy, inputs, outputs and rules. Saving refuses a table the engine cannot run. Leave empty to use a stored table."
+                },
+                {
+                    "key": "tableRef",
+                    "label": "Stored decision table",
+                    "type": "select",
+                    "optionsFrom": "/apps/openregister/api/objects/decision-tables/decision-table",
+                    "help": "A table from the decision-tables register. Use this or an inline table, not both."
+                },
+                {
+                    "key": "inputMapping",
+                    "label": "Input fields",
+                    "type": "textarea",
+                    "help": "Where each table input is read from, as input name to field path. An input without an entry reads the field with its own name."
+                },
+                {
+                    "key": "outputMapping",
+                    "label": "Output fields",
+                    "type": "textarea",
+                    "help": "Where each table output is written, as output name to field path. An output without an entry writes the field with its own name."
+                },
+                {
+                    "key": "defaultOutputs",
+                    "label": "When no rule matches",
+                    "type": "textarea",
+                    "help": "Values to write when no rule matches, one per output. Leave empty to fail the step instead."
+                },
+                {
+                    "key": "resultKey",
+                    "label": "Record the evaluation under",
+                    "type": "text",
+                    "help": "Optional field path for the evaluation record: which rules matched and under which hit policy."
+                }
+            ]
+        },
+        "validate": {
+            "empty": {
+                "threw": "UnexpectedValueException",
+                "message": "A decision-table step needs a table."
+            },
+            "path": {
+                "threw": "UnexpectedValueException",
+                "message": "A decision-table step needs a table."
+            },
+            "blank-path": {
+                "threw": "UnexpectedValueException",
+                "message": "A decision-table step needs a table."
+            },
+            "condition": {
+                "threw": "UnexpectedValueException",
+                "message": "A decision-table step needs a table."
+            },
+            "bad-conditions": {
+                "threw": "UnexpectedValueException",
+                "message": "A decision-table step needs a table."
+            },
+            "mode": {
+                "threw": "UnexpectedValueException",
+                "message": "A decision-table step needs a table."
+            },
+            "bad-mode": {
+                "threw": "UnexpectedValueException",
+                "message": "A decision-table step needs a table."
+            },
+            "routes": {
+                "threw": "UnexpectedValueException",
+                "message": "A decision-table step needs a table."
+            },
+            "bad-routes": {
+                "threw": "UnexpectedValueException",
+                "message": "A decision-table step needs a table."
+            },
+            "fields": {
+                "threw": "UnexpectedValueException",
+                "message": "A decision-table step needs a table."
+            },
+            "bad-fields": {
+                "threw": "UnexpectedValueException",
+                "message": "A decision-table step needs a table."
+            },
+            "mapping": {
+                "threw": "UnexpectedValueException",
+                "message": "A decision-table step needs a table."
+            },
+            "body": {
+                "threw": "UnexpectedValueException",
+                "message": "A decision-table step needs a table."
+            },
+            "state": {
+                "threw": "UnexpectedValueException",
+                "message": "A decision-table step needs a table."
+            },
+            "bad-state": {
+                "threw": "UnexpectedValueException",
+                "message": "A decision-table step needs a table."
+            },
+            "wait": {
+                "threw": "UnexpectedValueException",
+                "message": "A decision-table step needs a table."
+            },
+            "bad-wait": {
+                "threw": "UnexpectedValueException",
+                "message": "A decision-table step needs a table."
+            },
+            "flow": {
+                "threw": "UnexpectedValueException",
+                "message": "A decision-table step needs a table."
+            },
+            "table": {
+                "returned": null
+            },
+            "end": {
+                "threw": "UnexpectedValueException",
+                "message": "A decision-table step needs a table."
+            },
+            "bad-end": {
+                "threw": "UnexpectedValueException",
+                "message": "A decision-table step needs a table."
+            }
+        }
+    },
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\EndNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowEndNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowSideEffectFree",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\EndNodeInterface"
+        ],
+        "id": "openregister.end",
+        "name": "End",
+        "description": "End the flow here, optionally as an error with a message.",
+        "icon": "core:actions/close.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "event"
+        },
+        "getCategory": {
+            "returned": "logic"
+        },
+        "configKeys": {
+            "returned": [
+                "error",
+                "message",
+                "next"
+            ]
+        },
+        "validate": {
+            "empty": {
+                "returned": null
+            },
+            "path": {
+                "returned": null
+            },
+            "blank-path": {
+                "returned": null
+            },
+            "condition": {
+                "returned": null
+            },
+            "bad-conditions": {
+                "returned": null
+            },
+            "mode": {
+                "returned": null
+            },
+            "bad-mode": {
+                "returned": null
+            },
+            "routes": {
+                "returned": null
+            },
+            "bad-routes": {
+                "returned": null
+            },
+            "fields": {
+                "returned": null
+            },
+            "bad-fields": {
+                "returned": null
+            },
+            "mapping": {
+                "returned": null
+            },
+            "body": {
+                "returned": null
+            },
+            "state": {
+                "returned": null
+            },
+            "bad-state": {
+                "returned": null
+            },
+            "wait": {
+                "returned": null
+            },
+            "bad-wait": {
+                "returned": null
+            },
+            "flow": {
+                "returned": null
+            },
+            "table": {
+                "returned": null
+            },
+            "end": {
+                "returned": null
+            },
+            "bad-end": {
+                "returned": null
+            }
+        }
+    },
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\ExplodeNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowSideEffectFree",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\ExplodeNodeInterface"
+        ],
+        "id": "openregister.explode",
+        "name": "Explode",
+        "description": "Turn a list on the item into one item per entry, so later steps act on each.",
+        "icon": "openregister:app-dark.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "scriptTask"
+        },
+        "getCategory": {
+            "returned": "logic"
+        },
+        "configKeys": {
+            "returned": [
+                "path",
+                "as",
+                "keepRecord"
+            ]
+        },
+        "validate": {
+            "empty": {
+                "threw": "UnexpectedValueException",
+                "message": "An explode step needs the path of a list."
+            },
+            "path": {
+                "returned": null
+            },
+            "blank-path": {
+                "threw": "UnexpectedValueException",
+                "message": "An explode step needs the path of a list."
+            },
+            "condition": {
+                "threw": "UnexpectedValueException",
+                "message": "An explode step needs the path of a list."
+            },
+            "bad-conditions": {
+                "threw": "UnexpectedValueException",
+                "message": "An explode step needs the path of a list."
+            },
+            "mode": {
+                "threw": "UnexpectedValueException",
+                "message": "An explode step needs the path of a list."
+            },
+            "bad-mode": {
+                "threw": "UnexpectedValueException",
+                "message": "An explode step needs the path of a list."
+            },
+            "routes": {
+                "threw": "UnexpectedValueException",
+                "message": "An explode step needs the path of a list."
+            },
+            "bad-routes": {
+                "threw": "UnexpectedValueException",
+                "message": "An explode step needs the path of a list."
+            },
+            "fields": {
+                "threw": "UnexpectedValueException",
+                "message": "An explode step needs the path of a list."
+            },
+            "bad-fields": {
+                "threw": "UnexpectedValueException",
+                "message": "An explode step needs the path of a list."
+            },
+            "mapping": {
+                "threw": "UnexpectedValueException",
+                "message": "An explode step needs the path of a list."
+            },
+            "body": {
+                "returned": null
+            },
+            "state": {
+                "threw": "UnexpectedValueException",
+                "message": "An explode step needs the path of a list."
+            },
+            "bad-state": {
+                "threw": "UnexpectedValueException",
+                "message": "An explode step needs the path of a list."
+            },
+            "wait": {
+                "threw": "UnexpectedValueException",
+                "message": "An explode step needs the path of a list."
+            },
+            "bad-wait": {
+                "threw": "UnexpectedValueException",
+                "message": "An explode step needs the path of a list."
+            },
+            "flow": {
+                "threw": "UnexpectedValueException",
+                "message": "An explode step needs the path of a list."
+            },
+            "table": {
+                "threw": "UnexpectedValueException",
+                "message": "An explode step needs the path of a list."
+            },
+            "end": {
+                "threw": "UnexpectedValueException",
+                "message": "An explode step needs the path of a list."
+            },
+            "bad-end": {
+                "threw": "UnexpectedValueException",
+                "message": "An explode step needs the path of a list."
+            }
+        }
+    },
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\FilterNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowSideEffectFree",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\FilterNodeInterface"
+        ],
+        "id": "openregister.filter",
+        "name": "Filter",
+        "description": "Keep only the items matching a condition.",
+        "icon": "core:actions/filter.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "scriptTask"
+        },
+        "getCategory": {
+            "returned": "logic"
+        },
+        "configKeys": {
+            "returned": [
+                "condition"
+            ]
+        },
+        "validate": {
+            "empty": {
+                "threw": "UnexpectedValueException",
+                "message": "A filter needs a condition."
+            },
+            "path": {
+                "threw": "UnexpectedValueException",
+                "message": "A filter needs a condition."
+            },
+            "blank-path": {
+                "threw": "UnexpectedValueException",
+                "message": "A filter needs a condition."
+            },
+            "condition": {
+                "threw": "UnexpectedValueException",
+                "message": "A filter condition is an expression, not a template. Write {example} rather than \"{given}\". {\"example\":\"{\\\"==\\\": [{\\\"var\\\": \\\"json.status\\\"}, \\\"synced\\\"]}\",\"given\":\"{{ a }} == 1\"}"
+            },
+            "bad-conditions": {
+                "threw": "UnexpectedValueException",
+                "message": "A filter needs a condition."
+            },
+            "mode": {
+                "threw": "UnexpectedValueException",
+                "message": "A filter needs a condition."
+            },
+            "bad-mode": {
+                "threw": "UnexpectedValueException",
+                "message": "A filter needs a condition."
+            },
+            "routes": {
+                "threw": "UnexpectedValueException",
+                "message": "A filter needs a condition."
+            },
+            "bad-routes": {
+                "threw": "UnexpectedValueException",
+                "message": "A filter needs a condition."
+            },
+            "fields": {
+                "threw": "UnexpectedValueException",
+                "message": "A filter needs a condition."
+            },
+            "bad-fields": {
+                "threw": "UnexpectedValueException",
+                "message": "A filter needs a condition."
+            },
+            "mapping": {
+                "threw": "UnexpectedValueException",
+                "message": "A filter needs a condition."
+            },
+            "body": {
+                "threw": "UnexpectedValueException",
+                "message": "A filter needs a condition."
+            },
+            "state": {
+                "threw": "UnexpectedValueException",
+                "message": "A filter needs a condition."
+            },
+            "bad-state": {
+                "threw": "UnexpectedValueException",
+                "message": "A filter needs a condition."
+            },
+            "wait": {
+                "threw": "UnexpectedValueException",
+                "message": "A filter needs a condition."
+            },
+            "bad-wait": {
+                "threw": "UnexpectedValueException",
+                "message": "A filter needs a condition."
+            },
+            "flow": {
+                "threw": "UnexpectedValueException",
+                "message": "A filter needs a condition."
+            },
+            "table": {
+                "threw": "UnexpectedValueException",
+                "message": "A filter needs a condition."
+            },
+            "end": {
+                "threw": "UnexpectedValueException",
+                "message": "A filter needs a condition."
+            },
+            "bad-end": {
+                "threw": "UnexpectedValueException",
+                "message": "A filter needs a condition."
+            }
+        }
+    },
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\FlowStateNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\FlowStateNodeInterface"
+        ],
+        "id": "openregister.flow-state",
+        "name": "Flow state",
+        "description": "Remember something between runs of this flow — a counter, a cursor, or a table of slots.",
+        "icon": "core:actions/history.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "scriptTask"
+        },
+        "getCategory": {
+            "returned": "logic"
+        },
+        "configKeys": {
+            "returned": [
+                "operation",
+                "key",
+                "as",
+                "default",
+                "value",
+                "from",
+                "record",
+                "slots",
+                "capacity",
+                "leaseSeconds",
+                "holder",
+                "slot"
+            ]
+        },
+        "validate": {
+            "empty": {
+                "threw": "InvalidArgumentException",
+                "message": "operation must be one of: get, set, forget, claim, release"
+            },
+            "path": {
+                "threw": "InvalidArgumentException",
+                "message": "operation must be one of: get, set, forget, claim, release"
+            },
+            "blank-path": {
+                "threw": "InvalidArgumentException",
+                "message": "operation must be one of: get, set, forget, claim, release"
+            },
+            "condition": {
+                "threw": "InvalidArgumentException",
+                "message": "operation must be one of: get, set, forget, claim, release"
+            },
+            "bad-conditions": {
+                "threw": "InvalidArgumentException",
+                "message": "operation must be one of: get, set, forget, claim, release"
+            },
+            "mode": {
+                "threw": "InvalidArgumentException",
+                "message": "operation must be one of: get, set, forget, claim, release"
+            },
+            "bad-mode": {
+                "threw": "InvalidArgumentException",
+                "message": "operation must be one of: get, set, forget, claim, release"
+            },
+            "routes": {
+                "threw": "InvalidArgumentException",
+                "message": "operation must be one of: get, set, forget, claim, release"
+            },
+            "bad-routes": {
+                "threw": "InvalidArgumentException",
+                "message": "operation must be one of: get, set, forget, claim, release"
+            },
+            "fields": {
+                "threw": "InvalidArgumentException",
+                "message": "operation must be one of: get, set, forget, claim, release"
+            },
+            "bad-fields": {
+                "threw": "InvalidArgumentException",
+                "message": "operation must be one of: get, set, forget, claim, release"
+            },
+            "mapping": {
+                "threw": "InvalidArgumentException",
+                "message": "operation must be one of: get, set, forget, claim, release"
+            },
+            "body": {
+                "threw": "InvalidArgumentException",
+                "message": "operation must be one of: get, set, forget, claim, release"
+            },
+            "state": {
+                "threw": "InvalidArgumentException",
+                "message": "key is required"
+            },
+            "bad-state": {
+                "threw": "InvalidArgumentException",
+                "message": "operation must be one of: get, set, forget, claim, release"
+            },
+            "wait": {
+                "threw": "InvalidArgumentException",
+                "message": "operation must be one of: get, set, forget, claim, release"
+            },
+            "bad-wait": {
+                "threw": "InvalidArgumentException",
+                "message": "operation must be one of: get, set, forget, claim, release"
+            },
+            "flow": {
+                "threw": "InvalidArgumentException",
+                "message": "operation must be one of: get, set, forget, claim, release"
+            },
+            "table": {
+                "threw": "InvalidArgumentException",
+                "message": "operation must be one of: get, set, forget, claim, release"
+            },
+            "end": {
+                "threw": "InvalidArgumentException",
+                "message": "operation must be one of: get, set, forget, claim, release"
+            },
+            "bad-end": {
+                "threw": "InvalidArgumentException",
+                "message": "operation must be one of: get, set, forget, claim, release"
+            }
+        }
+    },
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\IterateNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\IterateNodeInterface"
+        ],
+        "id": "openregister.iterate",
+        "name": "Repeat until done",
+        "description": "Run a chain of steps once per batch, until the source runs out.",
+        "icon": "core:actions/history.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "scriptTask"
+        },
+        "getCategory": {
+            "returned": "logic"
+        },
+        "configKeys": {
+            "returned": [
+                "source",
+                "body",
+                "maxIterations",
+                "onLimit"
+            ]
+        },
+        "validate": {
+            "empty": {
+                "threw": "UnexpectedValueException",
+                "message": "A repeat step needs a source that produces each batch."
+            },
+            "path": {
+                "threw": "UnexpectedValueException",
+                "message": "A repeat step needs a source that produces each batch."
+            },
+            "blank-path": {
+                "threw": "UnexpectedValueException",
+                "message": "A repeat step needs a source that produces each batch."
+            },
+            "condition": {
+                "threw": "UnexpectedValueException",
+                "message": "A repeat step needs a source that produces each batch."
+            },
+            "bad-conditions": {
+                "threw": "UnexpectedValueException",
+                "message": "A repeat step needs a source that produces each batch."
+            },
+            "mode": {
+                "threw": "UnexpectedValueException",
+                "message": "A repeat step needs a source that produces each batch."
+            },
+            "bad-mode": {
+                "threw": "UnexpectedValueException",
+                "message": "A repeat step needs a source that produces each batch."
+            },
+            "routes": {
+                "threw": "UnexpectedValueException",
+                "message": "A repeat step needs a source that produces each batch."
+            },
+            "bad-routes": {
+                "threw": "UnexpectedValueException",
+                "message": "A repeat step needs a source that produces each batch."
+            },
+            "fields": {
+                "threw": "UnexpectedValueException",
+                "message": "A repeat step needs a source that produces each batch."
+            },
+            "bad-fields": {
+                "threw": "UnexpectedValueException",
+                "message": "A repeat step needs a source that produces each batch."
+            },
+            "mapping": {
+                "threw": "UnexpectedValueException",
+                "message": "A repeat step needs a source that produces each batch."
+            },
+            "body": {
+                "threw": "UnexpectedValueException",
+                "message": "A repeat step needs a source that produces each batch."
+            },
+            "state": {
+                "threw": "UnexpectedValueException",
+                "message": "A repeat step needs a source that produces each batch."
+            },
+            "bad-state": {
+                "threw": "UnexpectedValueException",
+                "message": "A repeat step needs a source that produces each batch."
+            },
+            "wait": {
+                "threw": "UnexpectedValueException",
+                "message": "A repeat step needs a source that produces each batch."
+            },
+            "bad-wait": {
+                "threw": "UnexpectedValueException",
+                "message": "A repeat step needs a source that produces each batch."
+            },
+            "flow": {
+                "threw": "UnexpectedValueException",
+                "message": "A repeat step needs a source that produces each batch."
+            },
+            "table": {
+                "threw": "UnexpectedValueException",
+                "message": "A repeat step needs a source that produces each batch."
+            },
+            "end": {
+                "threw": "UnexpectedValueException",
+                "message": "A repeat step needs a source that produces each batch."
+            },
+            "bad-end": {
+                "threw": "UnexpectedValueException",
+                "message": "A repeat step needs a source that produces each batch."
+            }
+        }
+    },
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\MapNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\MapNodeInterface"
+        ],
+        "id": "openregister.map",
+        "name": "Map",
+        "description": "Reshape each item through a stored mapping.",
+        "icon": "core:actions/rename.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "scriptTask"
+        },
+        "getCategory": {
+            "returned": "logic"
+        },
+        "configKeys": {
+            "returned": [
+                "mapping"
+            ]
+        },
+        "validate": {
+            "empty": {
+                "threw": "UnexpectedValueException",
+                "message": "A map step needs a mapping."
+            },
+            "path": {
+                "threw": "UnexpectedValueException",
+                "message": "A map step needs a mapping."
+            },
+            "blank-path": {
+                "threw": "UnexpectedValueException",
+                "message": "A map step needs a mapping."
+            },
+            "condition": {
+                "threw": "UnexpectedValueException",
+                "message": "A map step needs a mapping."
+            },
+            "bad-conditions": {
+                "threw": "UnexpectedValueException",
+                "message": "A map step needs a mapping."
+            },
+            "mode": {
+                "threw": "UnexpectedValueException",
+                "message": "A map step needs a mapping."
+            },
+            "bad-mode": {
+                "threw": "UnexpectedValueException",
+                "message": "A map step needs a mapping."
+            },
+            "routes": {
+                "threw": "UnexpectedValueException",
+                "message": "A map step needs a mapping."
+            },
+            "bad-routes": {
+                "threw": "UnexpectedValueException",
+                "message": "A map step needs a mapping."
+            },
+            "fields": {
+                "threw": "UnexpectedValueException",
+                "message": "A map step needs a mapping."
+            },
+            "bad-fields": {
+                "threw": "UnexpectedValueException",
+                "message": "A map step needs a mapping."
+            },
+            "mapping": {
+                "returned": null
+            },
+            "body": {
+                "threw": "UnexpectedValueException",
+                "message": "A map step needs a mapping."
+            },
+            "state": {
+                "threw": "UnexpectedValueException",
+                "message": "A map step needs a mapping."
+            },
+            "bad-state": {
+                "threw": "UnexpectedValueException",
+                "message": "A map step needs a mapping."
+            },
+            "wait": {
+                "threw": "UnexpectedValueException",
+                "message": "A map step needs a mapping."
+            },
+            "bad-wait": {
+                "threw": "UnexpectedValueException",
+                "message": "A map step needs a mapping."
+            },
+            "flow": {
+                "threw": "UnexpectedValueException",
+                "message": "A map step needs a mapping."
+            },
+            "table": {
+                "threw": "UnexpectedValueException",
+                "message": "A map step needs a mapping."
+            },
+            "end": {
+                "threw": "UnexpectedValueException",
+                "message": "A map step needs a mapping."
+            },
+            "bad-end": {
+                "threw": "UnexpectedValueException",
+                "message": "A map step needs a mapping."
+            }
+        }
+    },
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\MergeNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowSideEffectFree",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\MergeNodeInterface"
+        ],
+        "id": "openregister.merge",
+        "name": "Merge",
+        "description": "Combine the items arriving from several branches into one list.",
+        "icon": "core:actions/menu.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "gateway"
+        },
+        "getCategory": {
+            "returned": "logic"
+        },
+        "configKeys": {
+            "returned": [
+                "mode",
+                "key"
+            ]
+        },
+        "validate": {
+            "empty": {
+                "returned": null
+            },
+            "path": {
+                "returned": null
+            },
+            "blank-path": {
+                "returned": null
+            },
+            "condition": {
+                "returned": null
+            },
+            "bad-conditions": {
+                "returned": null
+            },
+            "mode": {
+                "threw": "UnexpectedValueException",
+                "message": "Unknown merge mode. Use append, mergeByKey or unique."
+            },
+            "bad-mode": {
+                "threw": "UnexpectedValueException",
+                "message": "Unknown merge mode. Use append, mergeByKey or unique."
+            },
+            "routes": {
+                "returned": null
+            },
+            "bad-routes": {
+                "returned": null
+            },
+            "fields": {
+                "returned": null
+            },
+            "bad-fields": {
+                "returned": null
+            },
+            "mapping": {
+                "returned": null
+            },
+            "body": {
+                "returned": null
+            },
+            "state": {
+                "returned": null
+            },
+            "bad-state": {
+                "returned": null
+            },
+            "wait": {
+                "returned": null
+            },
+            "bad-wait": {
+                "returned": null
+            },
+            "flow": {
+                "threw": "UnexpectedValueException",
+                "message": "Unknown merge mode. Use append, mergeByKey or unique."
+            },
+            "table": {
+                "returned": null
+            },
+            "end": {
+                "returned": null
+            },
+            "bad-end": {
+                "returned": null
+            }
+        }
+    },
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\RouterNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowSideEffectFree",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\RouterNodeInterface"
+        ],
+        "id": "openregister.route",
+        "name": "Route items",
+        "description": "Send each item down a different branch, chosen per item by a rule.",
+        "icon": "core:actions/arrow-right.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "gateway"
+        },
+        "getCategory": {
+            "returned": "logic"
+        },
+        "configKeys": {
+            "returned": [
+                "rules",
+                "default"
+            ]
+        },
+        "validate": {
+            "empty": {
+                "threw": "UnexpectedValueException",
+                "message": "A router needs at least one rule."
+            },
+            "path": {
+                "threw": "UnexpectedValueException",
+                "message": "A router needs at least one rule."
+            },
+            "blank-path": {
+                "threw": "UnexpectedValueException",
+                "message": "A router needs at least one rule."
+            },
+            "condition": {
+                "threw": "UnexpectedValueException",
+                "message": "A router needs at least one rule."
+            },
+            "bad-conditions": {
+                "threw": "UnexpectedValueException",
+                "message": "A router needs at least one rule."
+            },
+            "mode": {
+                "threw": "UnexpectedValueException",
+                "message": "A router needs at least one rule."
+            },
+            "bad-mode": {
+                "threw": "UnexpectedValueException",
+                "message": "A router needs at least one rule."
+            },
+            "routes": {
+                "threw": "UnexpectedValueException",
+                "message": "A router needs at least one rule."
+            },
+            "bad-routes": {
+                "threw": "UnexpectedValueException",
+                "message": "A router needs at least one rule."
+            },
+            "fields": {
+                "threw": "UnexpectedValueException",
+                "message": "A router needs at least one rule."
+            },
+            "bad-fields": {
+                "threw": "UnexpectedValueException",
+                "message": "A router needs at least one rule."
+            },
+            "mapping": {
+                "threw": "UnexpectedValueException",
+                "message": "A router needs at least one rule."
+            },
+            "body": {
+                "threw": "UnexpectedValueException",
+                "message": "A router needs at least one rule."
+            },
+            "state": {
+                "threw": "UnexpectedValueException",
+                "message": "A router needs at least one rule."
+            },
+            "bad-state": {
+                "threw": "UnexpectedValueException",
+                "message": "A router needs at least one rule."
+            },
+            "wait": {
+                "threw": "UnexpectedValueException",
+                "message": "A router needs at least one rule."
+            },
+            "bad-wait": {
+                "threw": "UnexpectedValueException",
+                "message": "A router needs at least one rule."
+            },
+            "flow": {
+                "threw": "UnexpectedValueException",
+                "message": "A router needs at least one rule."
+            },
+            "table": {
+                "threw": "UnexpectedValueException",
+                "message": "A router needs at least one rule."
+            },
+            "end": {
+                "threw": "UnexpectedValueException",
+                "message": "A router needs at least one rule."
+            },
+            "bad-end": {
+                "threw": "UnexpectedValueException",
+                "message": "A router needs at least one rule."
+            }
+        }
+    },
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\SetFieldsNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowSideEffectFree",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\SetFieldsNodeInterface"
+        ],
+        "id": "openregister.set-fields",
+        "name": "Edit fields",
+        "description": "Set, rename or remove fields on every item passing through.",
+        "icon": "core:actions/rename.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "scriptTask"
+        },
+        "getCategory": {
+            "returned": "logic"
+        },
+        "configKeys": {
+            "returned": [
+                "set",
+                "compute",
+                "rename",
+                "remove",
+                "keepOnlySet"
+            ]
+        },
+        "validate": {
+            "empty": {
+                "threw": "UnexpectedValueException",
+                "message": "Choose at least one field to set, compute, rename or remove."
+            },
+            "path": {
+                "threw": "UnexpectedValueException",
+                "message": "Choose at least one field to set, compute, rename or remove."
+            },
+            "blank-path": {
+                "threw": "UnexpectedValueException",
+                "message": "Choose at least one field to set, compute, rename or remove."
+            },
+            "condition": {
+                "threw": "UnexpectedValueException",
+                "message": "Choose at least one field to set, compute, rename or remove."
+            },
+            "bad-conditions": {
+                "threw": "UnexpectedValueException",
+                "message": "Choose at least one field to set, compute, rename or remove."
+            },
+            "mode": {
+                "threw": "UnexpectedValueException",
+                "message": "Choose at least one field to set, compute, rename or remove."
+            },
+            "bad-mode": {
+                "threw": "UnexpectedValueException",
+                "message": "Choose at least one field to set, compute, rename or remove."
+            },
+            "routes": {
+                "threw": "UnexpectedValueException",
+                "message": "Choose at least one field to set, compute, rename or remove."
+            },
+            "bad-routes": {
+                "threw": "UnexpectedValueException",
+                "message": "Choose at least one field to set, compute, rename or remove."
+            },
+            "fields": {
+                "threw": "UnexpectedValueException",
+                "message": "Choose at least one field to set, compute, rename or remove."
+            },
+            "bad-fields": {
+                "threw": "UnexpectedValueException",
+                "message": "Choose at least one field to set, compute, rename or remove."
+            },
+            "mapping": {
+                "threw": "UnexpectedValueException",
+                "message": "Choose at least one field to set, compute, rename or remove."
+            },
+            "body": {
+                "threw": "UnexpectedValueException",
+                "message": "Choose at least one field to set, compute, rename or remove."
+            },
+            "state": {
+                "threw": "UnexpectedValueException",
+                "message": "Choose at least one field to set, compute, rename or remove."
+            },
+            "bad-state": {
+                "threw": "UnexpectedValueException",
+                "message": "Choose at least one field to set, compute, rename or remove."
+            },
+            "wait": {
+                "threw": "UnexpectedValueException",
+                "message": "Choose at least one field to set, compute, rename or remove."
+            },
+            "bad-wait": {
+                "threw": "UnexpectedValueException",
+                "message": "Choose at least one field to set, compute, rename or remove."
+            },
+            "flow": {
+                "threw": "UnexpectedValueException",
+                "message": "Choose at least one field to set, compute, rename or remove."
+            },
+            "table": {
+                "threw": "UnexpectedValueException",
+                "message": "Choose at least one field to set, compute, rename or remove."
+            },
+            "end": {
+                "threw": "UnexpectedValueException",
+                "message": "Choose at least one field to set, compute, rename or remove."
+            },
+            "bad-end": {
+                "threw": "UnexpectedValueException",
+                "message": "Choose at least one field to set, compute, rename or remove."
+            }
+        }
+    },
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\SubFlowNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\SubFlowNodeInterface"
+        ],
+        "id": "openregister.sub-flow",
+        "name": "Run a flow",
+        "description": "Run another flow as a step — wait for its result, or start it and carry on.",
+        "icon": "core:actions/external.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "subProcess"
+        },
+        "getCategory": {
+            "returned": "logic"
+        },
+        "configKeys": {
+            "returned": [
+                "flow",
+                "flowId",
+                "wait",
+                "fanOut"
+            ]
+        },
+        "validate": {
+            "empty": {
+                "threw": "UnexpectedValueException",
+                "message": "A sub-flow step needs a flow to run."
+            },
+            "path": {
+                "threw": "UnexpectedValueException",
+                "message": "A sub-flow step needs a flow to run."
+            },
+            "blank-path": {
+                "threw": "UnexpectedValueException",
+                "message": "A sub-flow step needs a flow to run."
+            },
+            "condition": {
+                "threw": "UnexpectedValueException",
+                "message": "A sub-flow step needs a flow to run."
+            },
+            "bad-conditions": {
+                "threw": "UnexpectedValueException",
+                "message": "A sub-flow step needs a flow to run."
+            },
+            "mode": {
+                "threw": "UnexpectedValueException",
+                "message": "A sub-flow step needs a flow to run."
+            },
+            "bad-mode": {
+                "threw": "UnexpectedValueException",
+                "message": "A sub-flow step needs a flow to run."
+            },
+            "routes": {
+                "threw": "UnexpectedValueException",
+                "message": "A sub-flow step needs a flow to run."
+            },
+            "bad-routes": {
+                "threw": "UnexpectedValueException",
+                "message": "A sub-flow step needs a flow to run."
+            },
+            "fields": {
+                "threw": "UnexpectedValueException",
+                "message": "A sub-flow step needs a flow to run."
+            },
+            "bad-fields": {
+                "threw": "UnexpectedValueException",
+                "message": "A sub-flow step needs a flow to run."
+            },
+            "mapping": {
+                "threw": "UnexpectedValueException",
+                "message": "A sub-flow step needs a flow to run."
+            },
+            "body": {
+                "threw": "UnexpectedValueException",
+                "message": "A sub-flow step needs a flow to run."
+            },
+            "state": {
+                "threw": "UnexpectedValueException",
+                "message": "A sub-flow step needs a flow to run."
+            },
+            "bad-state": {
+                "threw": "UnexpectedValueException",
+                "message": "A sub-flow step needs a flow to run."
+            },
+            "wait": {
+                "threw": "UnexpectedValueException",
+                "message": "A sub-flow step needs a flow to run."
+            },
+            "bad-wait": {
+                "threw": "UnexpectedValueException",
+                "message": "A sub-flow step needs a flow to run."
+            },
+            "flow": {
+                "returned": null
+            },
+            "table": {
+                "threw": "UnexpectedValueException",
+                "message": "A sub-flow step needs a flow to run."
+            },
+            "end": {
+                "threw": "UnexpectedValueException",
+                "message": "A sub-flow step needs a flow to run."
+            },
+            "bad-end": {
+                "threw": "UnexpectedValueException",
+                "message": "A sub-flow step needs a flow to run."
+            }
+        }
+    },
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\SwitchNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowSideEffectFree",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\SwitchNodeInterface"
+        ],
+        "id": "openregister.switch",
+        "name": "Switch",
+        "description": "Send the flow down one of several branches, chosen by the condition on each.",
+        "icon": "core:actions/caret.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "gateway"
+        },
+        "getCategory": {
+            "returned": "logic"
+        },
+        "configKeys": {
+            "returned": []
+        },
+        "validate": {
+            "empty": {
+                "returned": null
+            },
+            "path": {
+                "returned": null
+            },
+            "blank-path": {
+                "returned": null
+            },
+            "condition": {
+                "returned": null
+            },
+            "bad-conditions": {
+                "returned": null
+            },
+            "mode": {
+                "returned": null
+            },
+            "bad-mode": {
+                "returned": null
+            },
+            "routes": {
+                "returned": null
+            },
+            "bad-routes": {
+                "returned": null
+            },
+            "fields": {
+                "returned": null
+            },
+            "bad-fields": {
+                "returned": null
+            },
+            "mapping": {
+                "returned": null
+            },
+            "body": {
+                "returned": null
+            },
+            "state": {
+                "returned": null
+            },
+            "bad-state": {
+                "returned": null
+            },
+            "wait": {
+                "returned": null
+            },
+            "bad-wait": {
+                "returned": null
+            },
+            "flow": {
+                "returned": null
+            },
+            "table": {
+                "returned": null
+            },
+            "end": {
+                "returned": null
+            },
+            "bad-end": {
+                "returned": null
+            }
+        }
+    },
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\WaitNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\WaitNodeInterface"
+        ],
+        "id": "openregister.wait",
+        "name": "Wait",
+        "description": "Pause the flow for a while, then carry on where it left off.",
+        "icon": "core:actions/history.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "event"
+        },
+        "getCategory": {
+            "returned": "logic"
+        },
+        "configKeys": {
+            "returned": [
+                "for",
+                "until"
+            ]
+        },
+        "validate": {
+            "empty": {
+                "threw": "UnexpectedValueException",
+                "message": "A wait needs a duration or a moment to wait until."
+            },
+            "path": {
+                "threw": "UnexpectedValueException",
+                "message": "A wait needs a duration or a moment to wait until."
+            },
+            "blank-path": {
+                "threw": "UnexpectedValueException",
+                "message": "A wait needs a duration or a moment to wait until."
+            },
+            "condition": {
+                "threw": "UnexpectedValueException",
+                "message": "A wait needs a duration or a moment to wait until."
+            },
+            "bad-conditions": {
+                "threw": "UnexpectedValueException",
+                "message": "A wait needs a duration or a moment to wait until."
+            },
+            "mode": {
+                "threw": "UnexpectedValueException",
+                "message": "A wait needs a duration or a moment to wait until."
+            },
+            "bad-mode": {
+                "threw": "UnexpectedValueException",
+                "message": "A wait needs a duration or a moment to wait until."
+            },
+            "routes": {
+                "threw": "UnexpectedValueException",
+                "message": "A wait needs a duration or a moment to wait until."
+            },
+            "bad-routes": {
+                "threw": "UnexpectedValueException",
+                "message": "A wait needs a duration or a moment to wait until."
+            },
+            "fields": {
+                "threw": "UnexpectedValueException",
+                "message": "A wait needs a duration or a moment to wait until."
+            },
+            "bad-fields": {
+                "threw": "UnexpectedValueException",
+                "message": "A wait needs a duration or a moment to wait until."
+            },
+            "mapping": {
+                "threw": "UnexpectedValueException",
+                "message": "A wait needs a duration or a moment to wait until."
+            },
+            "body": {
+                "threw": "UnexpectedValueException",
+                "message": "A wait needs a duration or a moment to wait until."
+            },
+            "state": {
+                "threw": "UnexpectedValueException",
+                "message": "A wait needs a duration or a moment to wait until."
+            },
+            "bad-state": {
+                "threw": "UnexpectedValueException",
+                "message": "A wait needs a duration or a moment to wait until."
+            },
+            "wait": {
+                "threw": "UnexpectedValueException",
+                "message": "A wait needs a duration or a moment to wait until."
+            },
+            "bad-wait": {
+                "threw": "UnexpectedValueException",
+                "message": "That is not a time this flow can wait until."
+            },
+            "flow": {
+                "threw": "UnexpectedValueException",
+                "message": "A wait needs a duration or a moment to wait until."
+            },
+            "table": {
+                "threw": "UnexpectedValueException",
+                "message": "A wait needs a duration or a moment to wait until."
+            },
+            "end": {
+                "threw": "UnexpectedValueException",
+                "message": "A wait needs a duration or a moment to wait until."
+            },
+            "bad-end": {
+                "threw": "UnexpectedValueException",
+                "message": "A wait needs a duration or a moment to wait until."
+            }
+        }
+    }
+]

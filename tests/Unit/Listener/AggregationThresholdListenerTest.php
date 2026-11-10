@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Unit\Listener;
 
-use OCA\OpenRegister\BackgroundJob\AggregationThresholdJob;
+use OCA\OpenRegister\Search\BackgroundJob\AggregationThresholdJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Listener\AggregationThresholdListener;
-use OCA\OpenRegister\Service\Aggregation\ThresholdEvaluationService;
+use OCA\OpenRegister\Search\Listener\AggregationThresholdListener;
+use OCA\OpenRegister\Search\Service\Aggregation\ThresholdEvaluationService;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

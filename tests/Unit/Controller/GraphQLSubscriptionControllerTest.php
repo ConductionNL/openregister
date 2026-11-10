@@ -37,7 +37,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Controller {
+namespace OCA\OpenRegister\Notifications\Controller {
 
 	/**
 	 * Test-only shadow of the global `connection_aborted()`.
@@ -58,8 +58,8 @@ namespace OCA\OpenRegister\Tests\Unit\Controller {
 	// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- PHPUnit arrange/act/assert conventions.
 	// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-	use OCA\OpenRegister\Controller\GraphQLSubscriptionController;
-	use OCA\OpenRegister\Service\GraphQL\SubscriptionService;
+	use OCA\OpenRegister\Notifications\Controller\GraphQLSubscriptionController;
+	use OCA\OpenRegister\Notifications\Service\GraphQL\SubscriptionService;
 	use OCP\AppFramework\Http\Response;
 	use OCP\IRequest;
 	use PHPUnit\Framework\MockObject\MockObject;
@@ -94,7 +94,6 @@ namespace OCA\OpenRegister\Tests\Unit\Controller {
 			$this->subscriptionService = $this->createMock(SubscriptionService::class);
 
 			$this->controller = new GraphQLSubscriptionController(
-				'openregister',
 				$this->request,
 				$this->subscriptionService
 			);

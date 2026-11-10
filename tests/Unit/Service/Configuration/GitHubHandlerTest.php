@@ -721,4 +721,90 @@ class GitHubHandlerTest extends TestCase {
 
 		$this->handler->searchConfigurations();
 	}
+
+	#[Test]
+	public function testGetRepositoriesReturnsEmptyOnUnauthorized(): void {
+		$this->appConfig->method('getValueString')->willReturn('valid-token');
+		$this->client->method('request')->willThrowException(
+			new \GuzzleHttp\Exception\ClientException(
+				'unauthorized',
+				new \GuzzleHttp\Psr7\Request('GET', 'https://api.github.com/user/repos'),
+				new \GuzzleHttp\Psr7\Response(401)
+			)
+		);
+
+		$this->assertSame([], $this->handler->getRepositories());
+	}
+
+	#[Test]
+	public function testGetRepositoriesThrowsOnOtherFailures(): void {
+		$this->appConfig->method('getValueString')->willReturn('valid-token');
+		$this->client->method('request')->willThrowException(
+			new \GuzzleHttp\Exception\ServerException(
+				'boom',
+				new \GuzzleHttp\Psr7\Request('GET', 'https://api.github.com/user/repos'),
+				new \GuzzleHttp\Psr7\Response(500)
+			)
+		);
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('Failed to fetch repositories: boom');
+		$this->handler->getRepositories();
+	}
+
+	#[Test]
+	public function testGetRepositoriesMapsTheFullShapeAndCapsThePageSize(): void {
+		$this->appConfig->method('getValueString')->willReturn('valid-token');
+		$this->client->expects($this->once())
+			->method('request')
+			->with(
+				'GET',
+				'https://api.github.com/user/repos',
+				$this->callback(
+					static fn (array $options): bool => $options['query'] === ['type' => 'all', 'sort' => 'updated', 'direction' => 'desc', 'page' => 3, 'per_page' => 100]
+				)
+			)
+			->willReturn(
+				$this->createMockResponse(
+					(string)json_encode(
+						[[
+							'id' => 7, 'name' => 'r', 'full_name' => 'o/r', 'owner' => ['login' => 'o', 'type' => 'Organization'],
+							'private' => true, 'html_url' => 'h', 'url' => 'u',
+						]]
+					)
+				)
+			);
+
+		$this->assertSame(
+			[[
+				'id' => 7, 'name' => 'r', 'full_name' => 'o/r', 'owner' => 'o', 'owner_type' => 'Organization',
+				'private' => true, 'description' => '', 'default_branch' => 'main', 'url' => 'h', 'api_url' => 'u',
+			]],
+			$this->handler->getRepositories(page: 3, perPage: 500)
+		);
+	}
+
+	#[Test]
+	public function testEnrichConfigurationDetailsRefusesATraversalSegment(): void {
+		$this->client->expects($this->never())->method('request');
+
+		$this->assertNull($this->handler->enrichConfigurationDetails('owner', 'repo', 'a/../b.json'));
+	}
+
+	#[Test]
+	public function testEnrichConfigurationDetailsEncodesSegmentsAndDefaults(): void {
+		$this->client->expects($this->once())
+			->method('request')
+			->with(
+				'GET',
+				'https://raw.githubusercontent.com/my%20org/repo/feat%3Fx/dir/my%23conf.json',
+				['headers' => ['Accept' => 'application/json'], 'allow_redirects' => false]
+			)
+			->willReturn($this->createMockResponse('5'));
+
+		$this->assertSame(
+			['title' => 'my#conf', 'description' => '', 'version' => 'v.unknown', 'app' => null, 'type' => 'unknown', 'openregister' => null],
+			$this->handler->enrichConfigurationDetails('my org', '/repo/', 'dir//my#conf.json', 'feat?x')
+		);
+	}
 }

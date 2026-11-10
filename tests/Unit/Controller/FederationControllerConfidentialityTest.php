@@ -37,9 +37,11 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FederationControllerFactory;
 use OCA\OpenRegister\Controller\FederationController;
 use OCA\OpenRegister\Db\FederatedShare;
 use OCA\OpenRegister\Db\FederatedShareMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FederationShareService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IRequest;
@@ -73,7 +75,7 @@ class FederationControllerConfidentialityTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
-		$this->controller = new FederationController(
+		$this->controller = FederationControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(FederatedShareMapper::class),
@@ -112,10 +114,25 @@ class FederationControllerConfidentialityTest extends TestCase {
 		$m = new ReflectionMethod(FederationController::class, 'applyShareVisibility');
 		$m->setAccessible(true);
 
-		$visible = $m->invoke($this->controller, [$object], $this->schemaScopeShare());
+		$visible = $m->invoke($this->controller, [$this->record(data: $object)], $this->schemaScopeShare());
 
 		return count($visible) === 1;
 	}//end isServed()
+
+	/**
+	 * A record without an organisation carrying the given data.
+	 *
+	 * @param array<string, mixed> $data The record's data.
+	 *
+	 * @return ObjectEntity The record.
+	 */
+	private function record(array $data): ObjectEntity {
+		$entity = new ObjectEntity();
+		$entity->setUuid('obj-1');
+		$entity->setObject($data);
+
+		return $entity;
+	}//end record()
 
 	/**
 	 * Every property name a confidentiality level is stored under is honoured.
@@ -187,7 +204,7 @@ class FederationControllerConfidentialityTest extends TestCase {
 		$m = new ReflectionMethod(FederationController::class, 'applyShareVisibility');
 		$m->setAccessible(true);
 
-		$visible = $m->invoke($this->controller, [['confidentialityLevel' => 'zeer_geheim']], $share);
+		$visible = $m->invoke($this->controller, [$this->record(data: ['confidentialityLevel' => 'zeer_geheim'])], $share);
 
 		$this->assertCount(1, $visible, 'An object-scope share serves the chosen object regardless of its level.');
 

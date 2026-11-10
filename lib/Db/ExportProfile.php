@@ -20,7 +20,7 @@
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.app
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 
 declare(strict_types=1);
@@ -58,13 +58,15 @@ use OCP\AppFramework\Db\Entity;
  * @method void setWholeSet(?bool $wholeSet)
  * @method DateTime|null getCreatedAt()
  * @method void setCreatedAt(?DateTime $createdAt)
+ * @method int|null getRetentionDays()
+ * @method void setRetentionDays(?int $retentionDays)
  * @method DateTime|null getUpdatedAt()
  * @method void setUpdatedAt(?DateTime $updatedAt)
  *
  * @category Db
  * @package  OCA\OpenRegister\Db
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 class ExportProfile extends Entity implements JsonSerializable {
 
@@ -174,6 +176,13 @@ class ExportProfile extends Entity implements JsonSerializable {
 	protected ?bool $wholeSet = null;
 
 	/**
+	 * How many days the files this profile produces are kept, or null to keep them.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $retentionDays = null;
+
+	/**
 	 * When the profile was created.
 	 *
 	 * @var DateTime|null
@@ -202,6 +211,7 @@ class ExportProfile extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'format', type: 'string');
 		$this->addType(fieldName: 'filters', type: 'string');
 		$this->addType(fieldName: 'wholeSet', type: 'boolean');
+		$this->addType(fieldName: 'retentionDays', type: 'integer');
 		$this->addType(fieldName: 'createdAt', type: 'datetime');
 		$this->addType(fieldName: 'updatedAt', type: 'datetime');
 	}//end __construct()
@@ -214,7 +224,7 @@ class ExportProfile extends Entity implements JsonSerializable {
 	 *
 	 * @return array<int, string> The field names, in the profile's order.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function getFieldsArray(): array {
 		if ($this->fields === null || $this->fields === '') {
@@ -234,7 +244,7 @@ class ExportProfile extends Entity implements JsonSerializable {
 	 *
 	 * @return array<string, mixed> The filters.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function getFiltersArray(): array {
 		if ($this->filters === null || $this->filters === '') {
@@ -259,18 +269,33 @@ class ExportProfile extends Entity implements JsonSerializable {
 	 *
 	 * @return bool True when the profile is a whole-set extract.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function isWholeSet(): bool {
 		return ($this->wholeSet === true && $this->getFiltersArray() === []);
 	}//end isWholeSet()
 
 	/**
+	 * The retention a run produced under this profile copies, in seconds.
+	 *
+	 * @return int|null Seconds, or null when the profile keeps its files.
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-an-export-expires-and-the-row-outlives-the-file
+	 */
+	public function getRetentionSeconds(): ?int {
+		if ($this->retentionDays === null) {
+			return null;
+		}
+
+		return ($this->retentionDays * 86400);
+	}//end getRetentionSeconds()
+
+	/**
 	 * JSON serialization.
 	 *
 	 * @return array<string, mixed> The published shape.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function jsonSerialize(): array {
 		return [
@@ -286,6 +311,7 @@ class ExportProfile extends Entity implements JsonSerializable {
 			'format' => ($this->format ?? 'csv'),
 			'filters' => $this->getFiltersArray(),
 			'wholeSet' => ($this->wholeSet ?? false),
+			'retentionDays' => $this->retentionDays,
 			'createdAt' => $this->createdAt?->format(DateTime::ATOM),
 			'updatedAt' => $this->updatedAt?->format(DateTime::ATOM),
 		];

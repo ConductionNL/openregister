@@ -14,7 +14,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
-use OCA\OpenRegister\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 use OCP\Files\File;
 use OCP\IGroupManager;
 use OCP\IUserManager;

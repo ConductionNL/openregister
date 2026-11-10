@@ -27,7 +27,6 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * Configuration entity class
@@ -106,6 +105,8 @@ use Symfony\Component\Uid\Uuid;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class Configuration extends Entity implements JsonSerializable {
+	use IsoTimestampsTrait;
+	use JsonFieldsTrait;
 
 	/**
 	 * Unique identifier for the configuration
@@ -393,44 +394,6 @@ class Configuration extends Entity implements JsonSerializable {
 	}//end __construct()
 
 	/**
-	 * Validate UUID format
-	 *
-	 * @param string $uuid The UUID to validate
-	 *
-	 * @return bool True if UUID format is valid
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::fromString is standard Symfony UID pattern
-	 */
-	public static function isValidUuid(string $uuid): bool {
-		try {
-			Uuid::fromString($uuid);
-			return true;
-		} catch (\InvalidArgumentException $e) {
-			return false;
-		}
-	}//end isValidUuid()
-
-	/**
-	 * Get JSON fields from the entity
-	 *
-	 * Returns all fields that are of type 'json'
-	 *
-	 * @return string[] List of JSON field names
-	 *
-	 * @psalm-return list<string>
-	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
-
-	/**
 	 * Hydrate the entity with data from an array
 	 *
 	 * Sets entity properties based on input array values
@@ -580,24 +543,6 @@ class Configuration extends Entity implements JsonSerializable {
 	}//end isRemoteSource()
 
 	/**
-	 * Check if this configuration is local
-	 *
-	 * @return bool True if source type is local
-	 */
-	public function isLocalSource(): bool {
-		return $this->sourceType === 'local';
-	}//end isLocalSource()
-
-	/**
-	 * Check if this configuration is manually created
-	 *
-	 * @return bool True if source type is manual
-	 */
-	public function isManualSource(): bool {
-		return $this->sourceType === 'manual';
-	}//end isManualSource()
-
-	/**
 	 * String representation of the configuration
 	 *
 	 * This magic method is required for proper entity handling in Nextcloud
@@ -650,30 +595,4 @@ class Configuration extends Entity implements JsonSerializable {
 
 		return null;
 	}//end getLastSyncDateFormatted()
-
-	/**
-	 * Get created date formatted as ISO 8601 string or null
-	 *
-	 * @return string|null Formatted date or null
-	 */
-	private function getCreatedFormatted(): ?string {
-		if ($this->created !== null) {
-			return $this->created->format('c');
-		}
-
-		return null;
-	}//end getCreatedFormatted()
-
-	/**
-	 * Get updated date formatted as ISO 8601 string or null
-	 *
-	 * @return string|null Formatted date or null
-	 */
-	private function getUpdatedFormatted(): ?string {
-		if ($this->updated !== null) {
-			return $this->updated->format('c');
-		}
-
-		return null;
-	}//end getUpdatedFormatted()
 }//end class

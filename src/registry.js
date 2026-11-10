@@ -48,13 +48,10 @@ import { defineAsyncComponent } from 'vue'
  * @return {object} A `{ kind: "page", component }` registry entry.
  */
 function page(component) {
-	return {
-		kind: 'page',
-		component:
-			typeof component === 'function'
-				? defineAsyncComponent(component)
-				: component,
+	if (typeof component !== 'function') {
+		return { kind: 'page', component }
 	}
+	return { kind: 'page', component: defineAsyncComponent(component) }
 }
 
 export default {
@@ -64,6 +61,12 @@ export default {
 	SchemasIndex: page(() => import('./views/schema/SchemasIndex.vue')),
 	SchemaDetails: page(() => import('./views/schema/SchemaDetails.vue')),
 	SourcesIndex: page(() => import('./views/source/SourcesIndex.vue')),
+	MigrationPacksIndex: page(
+		() => import('./views/migrationPack/MigrationPacksIndex.vue'),
+	),
+	MigrationPackDetail: page(
+		() => import('./views/migrationPack/MigrationPackDetail.vue'),
+	),
 	OrganisationsIndex: page(
 		() => import('./views/organisation/OrganisationsIndex.vue'),
 	),

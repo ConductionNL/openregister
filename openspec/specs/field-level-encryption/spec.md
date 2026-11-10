@@ -92,13 +92,20 @@ caller) SHALL instead receive a thrown, typed exception.
 
 ### Requirement: Encrypted fields are excluded from search and facets
 
-A property flagged `x-openregister-encrypted: true` SHALL NOT be given a
-dedicated, independently-queryable magic-table column, SHALL be excluded from
-full-text search scanning, and SHALL be excluded from the facetable-fields
-listing regardless of any `facetable` configuration on the same property. A
-request that filters on an encrypted property SHALL be rejected with a clear,
+A property flagged `x-openregister-encrypted: true` SHALL be stored in its own
+nullable, unindexed `text` magic-table column, whatever type the schema
+declares, and that column SHALL hold only the encryption envelope. The property
+SHALL be excluded from full-text search scanning, and SHALL be excluded from the
+facetable-fields listing regardless of any `facetable` configuration on the same
+property. A request that filters on an encrypted property SHALL be rejected with a clear,
 typed error (HTTP 400) rather than silently executing against ciphertext and
 returning zero results.
+
+#### Scenario: The column of an encrypted property holds only the envelope
+- **WHEN** a magic table is built for a schema where property `age`, declared
+  `integer`, is flagged `x-openregister-encrypted: true`
+- **THEN** `age` has a nullable `text` column without an index, and every value
+  stored in it is an `openregister:enc:v1:` envelope
 
 #### Scenario: Filtering on an encrypted property is rejected, not silently empty
 - **WHEN** a caller issues a list/search request with a filter on property

@@ -7,7 +7,7 @@
 require_once __DIR__ . '/../../../lib/base.php';
 
 use OCA\OpenRegister\Service\Vectorization\ObjectVectorizationStrategy;
-use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Search\Service\VectorizationService;
 
 // Get service from the public OCP container (PSR-11).
 $vectorizationService = \OCP\Server::get(VectorizationService::class);

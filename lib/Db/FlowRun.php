@@ -433,6 +433,36 @@ class FlowRun extends Entity implements JsonSerializable {
 	}//end isTerminal()
 
 	/**
+	 * How this run ended, as a reader should take it.
+	 *
+	 * `stopped` covers two ends: a clean End step, which is how a well-formed
+	 * flow finishes, and an oversight check closing the gate. The stop's log
+	 * entry tells them apart: a check names itself in `checkId`. A clean End
+	 * reads as `completed`; every other run reads as its status.
+	 *
+	 * @return string The outcome, from the status vocabulary.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-says-how-it-ended
+	 */
+	public function getOutcome(): string {
+		$status = (string)$this->status;
+		if ($status !== self::STATUS_STOPPED) {
+			return $status;
+		}
+
+		$stops = array_filter(
+			($this->log ?? []),
+			static fn (mixed $entry): bool => (($entry['status'] ?? '') === self::STATUS_STOPPED)
+		);
+		$vetoes = array_filter($stops, static fn (array $entry): bool => empty($entry['checkId']) === false);
+		if ($stops === [] || $vetoes !== []) {
+			return $status;
+		}
+
+		return self::STATUS_COMPLETED;
+	}//end getOutcome()
+
+	/**
 	 * Serialise for the API.
 	 *
 	 * @return array<string, mixed> The run as plain data.
@@ -461,6 +491,7 @@ class FlowRun extends Entity implements JsonSerializable {
 			'flowId' => $this->flowId,
 			'flowVersion' => $this->flowVersion,
 			'status' => $this->status,
+			'outcome' => $this->getOutcome(),
 			'marking' => ($this->marking ?? []),
 			'placeItems' => $this->placeItems,
 			'firings' => (int)($this->firings ?? 0),

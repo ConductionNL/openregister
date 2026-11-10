@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Event\EntityRelationDecisionUpdatedEvent;
 use OCA\OpenRegister\Exception\CustomValidationException;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IUser;
@@ -86,7 +87,7 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 					$this->db,
 					$this->auditTrailMapper,
 					$this->userSession,
-					$this->eventDispatcher,
+					new EntityEventPublisher(dispatcher: $this->eventDispatcher),
 					$this->logger,
 				]
 			)
@@ -211,6 +212,33 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 		$this->assertSame(['previous' => null, 'new' => ['uuid-a']], $changed['fields']['bases']);
 		$this->assertArrayNotHasKey('skipAnonymization', $changed['fields']);
 	}//end testSettingBasesForFirstTimeEmitsAuditEntry()
+
+	public function testReplacingBasesAuditsThePreviousBases(): void {
+		$relation = new EntityRelation();
+		$relation->setId(43);
+		$relation->setBases(['uuid-a']);
+		$mapper = $this->mapperWithMockedUpdate();
+
+		$captured = null;
+		$this->auditTrailMapper
+			->expects($this->once())
+			->method('insert')
+			->willReturnCallback(
+				function (AuditTrail $entry) use (&$captured) {
+					$captured = $entry;
+					return $entry;
+				}
+			);
+
+		$mapper->updateDecisionMetadata(
+			relation: $relation,
+			fields: ['bases' => ['uuid-b']],
+			actingUser: $this->user
+		);
+
+		$this->assertNotNull($captured);
+		$this->assertSame(['previous' => ['uuid-a'], 'new' => ['uuid-b']], $captured->getChanged()['fields']['bases']);
+	}//end testReplacingBasesAuditsThePreviousBases()
 
 	public function testFlippingSkipEmitsAuditEntry(): void {
 		$relation = new EntityRelation();
@@ -500,4 +528,19 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 
 		$this->assertTrue($result->getSkipAnonymization());
 	}//end testDispatchFailureDoesNotMaskUpdate()
+
+	/**
+	 * Linking a decision stores its uuid on the relation.
+	 *
+	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-a-decision-is-its-own-object-req-dec-001
+	 */
+	public function testLinkDecisionStoresTheUuid(): void {
+		$relation = new EntityRelation();
+		$mapper = $this->mapperWithMockedUpdate();
+		$mapper->expects($this->once())->method('update')->with($this->identicalTo($relation));
+
+		$stored = $mapper->linkDecision(relation: $relation, decisionUuid: 'd-1');
+
+		$this->assertSame('d-1', $stored->getDecisionUuid());
+	}//end testLinkDecisionStoresTheUuid()
 }//end class

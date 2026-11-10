@@ -36,7 +36,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<ImportPreview>
  */
-class ImportPreviewMapper extends QBMapper {
+class ImportPreviewMapper extends QBMapper implements ImportPreviewFinderInterface, ImportPreviewMapperInterface {
 	/**
 	 * Constructor.
 	 *
@@ -104,13 +104,7 @@ class ImportPreviewMapper extends QBMapper {
 			$qb->andWhere($qb->expr()->eq('state', $qb->createNamedParameter($state)));
 		}
 
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
+		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findByActor()

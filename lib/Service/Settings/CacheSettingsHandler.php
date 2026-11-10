@@ -26,8 +26,7 @@ use DateTime;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
-use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
+use OCA\OpenRegister\Service\Object\ObjectCacheMaintenanceInterface;
 use OCP\AppFramework\IAppContainer;
 use OCP\ICacheFactory;
 use RuntimeException;
@@ -56,39 +55,85 @@ use RuntimeException;
 class CacheSettingsHandler {
 
 	/**
-	 * Cache factory
+	 * The cache services each clear type empties, in clearing order.
 	 *
-	 * @var ICacheFactory
+	 * @var array<string, array<int, string>>
 	 */
-	private ICacheFactory $cacheFactory;
+	private const CLEAR_TARGETS = [
+		'all' => ['object', 'schema', 'facet', 'distributed', 'names'],
+		'object' => ['object'],
+		'schema' => ['schema'],
+		'facet' => ['facet'],
+		'distributed' => ['distributed'],
+		'names' => ['names'],
+	];
 
 	/**
-	 * Schema cache handler
+	 * The object cache service block: output field => [stats key, default].
 	 *
-	 * @var SchemaCacheHandler
+	 * @var array<string, array{0: string, 1: int}>
 	 */
-	private SchemaCacheHandler $schemaCacheService;
+	private const SERVICE_FIELDS = [
+		'entries' => ['entries', 0],
+		'hits' => ['hits', 0],
+		'requests' => ['requests', 0],
+		'memoryUsage' => ['memoryUsage', 0],
+	];
 
 	/**
-	 * Schema facet cache service
+	 * The names cache block: output field => [stats key, default].
 	 *
-	 * @var FacetCacheHandler
+	 * @var array<string, array{0: string, 1: int|float}>
 	 */
-	private FacetCacheHandler $schemaFacetCacheService;
+	private const NAME_FIELDS = [
+		'cache_size' => ['name_cache_size', 0],
+		'hit_rate' => ['name_hit_rate', 0.0],
+		'hits' => ['name_hits', 0],
+		'misses' => ['name_misses', 0],
+		'warmups' => ['name_warmups', 0],
+	];
 
 	/**
-	 * Object cache service (lazy-loaded when needed)
+	 * A cache whose statistics are not stored in the database: counting them would be a performance issue.
 	 *
-	 * @var CacheHandler|null
+	 * @var array<string, int>
 	 */
-	private ?CacheHandler $objectCacheService = null;
+	private const UNTRACKED_SERVICE = ['entries' => 0, 'hits' => 0, 'requests' => 0, 'memoryUsage' => 0];
 
 	/**
-	 * Container for lazy loading services
+	 * The safe defaults reported when the statistics are unavailable.
 	 *
-	 * @var IAppContainer|null
+	 * @var array<string, mixed>
 	 */
-	private ?IAppContainer $container = null;
+	private const UNAVAILABLE_STATS = [
+		'overview' => [
+			'totalCacheSize' => 0,
+			'totalCacheEntries' => 0,
+			'overallHitRate' => 0.0,
+			'averageResponseTime' => 0.0,
+			'cacheEfficiency' => 0.0,
+		],
+		'services' => [
+			'object' => self::UNTRACKED_SERVICE,
+			'schema' => self::UNTRACKED_SERVICE,
+			'facet' => self::UNTRACKED_SERVICE,
+		],
+		'names' => [
+			'cache_size' => 0,
+			'hit_rate' => 0.0,
+			'hits' => 0,
+			'misses' => 0,
+			'warmups' => 0,
+			'enabled' => false,
+		],
+		'distributed' => ['type' => 'none', 'backend' => 'Unknown', 'available' => false],
+		'performance' => [
+			'averageHitTime' => 0,
+			'averageMissTime' => 0,
+			'performanceGain' => 0,
+			'optimalHitRate' => 85.0,
+		],
+	];
 
 	/**
 	 * In-process cache for object cache stats with a short TTL to avoid
@@ -110,25 +155,18 @@ class CacheSettingsHandler {
 	 * Constructor for CacheSettingsHandler
 	 *
 	 * @param ICacheFactory $cacheFactory Cache factory.
-	 * @param SchemaCacheHandler $schemaCacheService Schema cache handler.
-	 * @param FacetCacheHandler $facetCacheSvc Schema facet cache service.
-	 * @param CacheHandler|null $objectCacheService Object cache service (optional, lazy-loaded).
+	 * @param SchemaCacheClearers $schemaCaches Schema cache handler and facet result cache clearer.
+	 * @param ObjectCacheMaintenanceInterface|null $objectCacheService Object cache service (optional, lazy-loaded).
 	 * @param IAppContainer|null $container Container for lazy loading (optional).
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		ICacheFactory $cacheFactory,
-		SchemaCacheHandler $schemaCacheService,
-		FacetCacheHandler $facetCacheSvc,
-		?CacheHandler $objectCacheService = null,
-		?IAppContainer $container = null,
+		private readonly ICacheFactory $cacheFactory,
+		private readonly SchemaCacheClearers $schemaCaches,
+		private readonly ?ObjectCacheMaintenanceInterface $objectCacheService = null,
+		private readonly ?IAppContainer $container = null,
 	) {
-		$this->cacheFactory = $cacheFactory;
-		$this->schemaCacheService = $schemaCacheService;
-		$this->schemaFacetCacheService = $facetCacheSvc;
-		$this->objectCacheService = $objectCacheService;
-		$this->container = $container;
 	}//end __construct()
 
 	/**
@@ -141,99 +179,70 @@ class CacheSettingsHandler {
 	 *
 	 * @return array Cache stats with overview, services, names, distributed, performance, and lastUpdated.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complex statistics aggregation requires comprehensive data structure
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-3
 	 */
 	public function getCacheStats(): array {
 		try {
-			// Get basic distributed cache info.
 			$distributedStats = $this->getDistributedCacheStats();
 			$performanceStats = $this->getCachePerformanceMetrics();
 
-			// Get object cache stats (only if CacheHandler provides them)
-			// Use cached stats to avoid expensive operations on every request.
+			// Cached object stats avoid expensive operations on every request.
 			$objectStats = $this->getCachedObjectStats();
 
-			$stats = [
-				'overview' => [
-					'totalCacheSize' => $objectStats['memoryUsage'] ?? 0,
-					'totalCacheEntries' => $objectStats['entries'] ?? 0,
-					'overallHitRate' => $this->calculateHitRate(stats: $objectStats),
-					'averageResponseTime' => $performanceStats['averageHitTime'] ?? 0.0,
-					'cacheEfficiency' => $this->calculateHitRate(stats: $objectStats),
-				],
+			return [
+				'overview' => $this->cacheOverview(objectStats: $objectStats, averageHitTime: $performanceStats['averageHitTime'] ?? 0.0),
 				'services' => [
-					'object' => [
-						'entries' => $objectStats['entries'] ?? 0,
-						'hits' => $objectStats['hits'] ?? 0,
-						'requests' => $objectStats['requests'] ?? 0,
-						'memoryUsage' => $objectStats['memoryUsage'] ?? 0,
-					],
-					'schema' => [
-						'entries' => 0,
-						// Not stored in database - would be performance issue.
-						'hits' => 0,
-						'requests' => 0,
-						'memoryUsage' => 0,
-					],
-					'facet' => [
-						'entries' => 0,
-						// Not stored in database - would be performance issue.
-						'hits' => 0,
-						'requests' => 0,
-						'memoryUsage' => 0,
-					],
+					'object' => $this->countsOf(stats: $objectStats, fields: self::SERVICE_FIELDS),
+					'schema' => self::UNTRACKED_SERVICE,
+					'facet' => self::UNTRACKED_SERVICE,
 				],
-				'names' => [
-					'cache_size' => $objectStats['name_cache_size'] ?? 0,
-					'hit_rate' => $objectStats['name_hit_rate'] ?? 0.0,
-					'hits' => $objectStats['name_hits'] ?? 0,
-					'misses' => $objectStats['name_misses'] ?? 0,
-					'warmups' => $objectStats['name_warmups'] ?? 0,
-					'enabled' => true,
-				],
+				'names' => $this->countsOf(stats: $objectStats, fields: self::NAME_FIELDS) + ['enabled' => true],
 				'distributed' => $distributedStats,
 				'performance' => $performanceStats,
 				'lastUpdated' => (new DateTime())->format('c'),
 			];
-
-			return $stats;
 		} catch (Exception $e) {
-			// Return safe defaults if cache stats unavailable.
-			return [
-				'overview' => [
-					'totalCacheSize' => 0,
-					'totalCacheEntries' => 0,
-					'overallHitRate' => 0.0,
-					'averageResponseTime' => 0.0,
-					'cacheEfficiency' => 0.0,
-				],
-				'services' => [
-					'object' => ['entries' => 0, 'hits' => 0, 'requests' => 0, 'memoryUsage' => 0],
-					'schema' => ['entries' => 0, 'hits' => 0, 'requests' => 0, 'memoryUsage' => 0],
-					'facet' => ['entries' => 0, 'hits' => 0, 'requests' => 0, 'memoryUsage' => 0],
-				],
-				'names' => [
-					'cache_size' => 0,
-					'hit_rate' => 0.0,
-					'hits' => 0,
-					'misses' => 0,
-					'warmups' => 0,
-					'enabled' => false,
-				],
-				'distributed' => ['type' => 'none', 'backend' => 'Unknown', 'available' => false],
-				'performance' => [
-					'averageHitTime' => 0,
-					'averageMissTime' => 0,
-					'performanceGain' => 0,
-					'optimalHitRate' => 85.0,
-				],
+			return self::UNAVAILABLE_STATS + [
 				'lastUpdated' => (new DateTime())->format('c'),
 				'error' => 'Cache statistics unavailable: ' . $e->getMessage(),
 			];
 		}//end try
 	}//end getCacheStats()
+
+	/**
+	 * The overview block: size, entries and hit rate of the object cache.
+	 *
+	 * @param array<string, mixed> $objectStats    The object cache statistics.
+	 * @param mixed                $averageHitTime The average hit time from the performance metrics.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function cacheOverview(array $objectStats, $averageHitTime): array {
+		return [
+			'totalCacheSize' => $objectStats['memoryUsage'] ?? 0,
+			'totalCacheEntries' => $objectStats['entries'] ?? 0,
+			'overallHitRate' => $this->calculateHitRate(stats: $objectStats),
+			'averageResponseTime' => $averageHitTime,
+			'cacheEfficiency' => $this->calculateHitRate(stats: $objectStats),
+		];
+	}//end cacheOverview()
+
+	/**
+	 * Pick fields from a statistics payload: output field => [stats key, default].
+	 *
+	 * @param array<string, mixed>                          $stats  The statistics.
+	 * @param array<string, array{0: string, 1: int|float}> $fields The fields to pick.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function countsOf(array $stats, array $fields): array {
+		$counts = [];
+		foreach ($fields as $field => [$key, $default]) {
+			$counts[$field] = $stats[$key] ?? $default;
+		}
+
+		return $counts;
+	}//end countsOf()
 
 	/**
 	 * Get cached object statistics to avoid expensive operations on every request
@@ -245,18 +254,7 @@ class CacheSettingsHandler {
 		$now = time();
 		if ($this->objectStatsCache === null || ($now - $this->objectStatsCacheTimestamp) > 30) {
 			try {
-				$objectCacheService = $this->objectCacheService;
-				if ($objectCacheService === null && $this->container !== null) {
-					try {
-						$objectCacheService = $this->container->get(CacheHandler::class);
-					} catch (Exception $e) {
-						throw new Exception('CacheHandler not available');
-					}
-				}
-
-				if ($objectCacheService === null) {
-					throw new Exception('CacheHandler not available');
-				}
+				$objectCacheService = $this->objectCacheHandler();
 
 				$this->objectStatsCache = $objectCacheService->getStats();
 			} catch (Exception $e) {
@@ -356,7 +354,6 @@ class CacheSettingsHandler {
 	 *
 	 * @param string $type Cache type: 'all', 'object', 'schema', 'facet', 'distributed', 'names'
 	 * @param string|null $userId Specific user ID to clear cache for (if supported)
-	 * @param array $_options Additional options for cache clearing
 	 *
 	 * @return (((float|int[]|mixed|string)[]|bool|int|mixed|string)[][]|int|mixed|null|string)[]
 	 *
@@ -400,11 +397,10 @@ class CacheSettingsHandler {
 	 *     errors: array<never, never>, totalCleared: 0|mixed}
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple cache types require switch-based routing
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-3
 	 */
-	public function clearCache(string $type = 'all', ?string $userId = null, array $_options = []): array {
+	public function clearCache(string $type = 'all', ?string $userId = null): array {
 		try {
 			$results = [
 				'type' => $type,
@@ -415,52 +411,58 @@ class CacheSettingsHandler {
 				'totalCleared' => 0,
 			];
 
-			switch ($type) {
-				case 'all':
-					$results['results']['object'] = $this->clearObjectCache(_userId: $userId);
-					$results['results']['schema'] = $this->clearSchemaCache(_userId: $userId);
-					$results['results']['facet'] = $this->clearFacetCache(_userId: $userId);
-					$results['results']['distributed'] = $this->clearDistributedCache(_userId: $userId);
-					$results['results']['names'] = $this->clearNamesCache();
-					break;
-
-				case 'object':
-					$results['results']['object'] = $this->clearObjectCache(_userId: $userId);
-					break;
-
-				case 'schema':
-					$results['results']['schema'] = $this->clearSchemaCache(_userId: $userId);
-					break;
-
-				case 'facet':
-					$results['results']['facet'] = $this->clearFacetCache(_userId: $userId);
-					break;
-
-				case 'distributed':
-					$results['results']['distributed'] = $this->clearDistributedCache(_userId: $userId);
-					break;
-
-				case 'names':
-					$results['results']['names'] = $this->clearNamesCache();
-					break;
-
-				default:
-					throw new InvalidArgumentException("Invalid cache type: {$type}");
-			}//end switch
-
-			// Calculate total cleared entries.
-			foreach ($results['results'] as $serviceResult) {
-				$cleared = $serviceResult['cleared'] ?? 0;
-				if (is_int($cleared) === true) {
-					$results['totalCleared'] += $cleared;
-				}
+			if (isset(self::CLEAR_TARGETS[$type]) === false) {
+				throw new InvalidArgumentException("Invalid cache type: {$type}");
 			}
+
+			foreach (self::CLEAR_TARGETS[$type] as $service) {
+				$results['results'][$service] = $this->clearService(service: $service, userId: $userId);
+			}
+
+			$results['totalCleared'] = $this->totalCleared(serviceResults: $results['results']);
 
 			return $results;
 		} catch (Exception $e) {
 			throw new RuntimeException('Failed to clear cache: ' . $e->getMessage());
 		}//end try
 	}//end clearCache()
+
+	/**
+	 * Clear one cache service.
+	 *
+	 * @param string      $service One of `object`, `schema`, `facet`, `distributed`, `names`.
+	 * @param string|null $userId  The user the clear is for.
+	 *
+	 * @return array The service's clear result.
+	 */
+	private function clearService(string $service, ?string $userId): array {
+		return match ($service) {
+			'object' => $this->clearObjectCache(_userId: $userId),
+			'schema' => $this->clearSchemaCache(_userId: $userId),
+			'facet' => $this->clearFacetCache(_userId: $userId),
+			'distributed' => $this->clearDistributedCache(_userId: $userId),
+			default => $this->clearNamesCache(),
+		};
+	}//end clearService()
+
+	/**
+	 * Sum the integer `cleared` counts of the service results.
+	 *
+	 * @param array<string, array> $serviceResults The per-service results.
+	 *
+	 * @return int The total; a non-integer count adds nothing.
+	 */
+	private function totalCleared(array $serviceResults): int {
+		$total = 0;
+		foreach ($serviceResults as $serviceResult) {
+			$cleared = $serviceResult['cleared'] ?? 0;
+			if (is_int($cleared) === true) {
+				$total += $cleared;
+			}
+		}
+
+		return $total;
+	}//end totalCleared()
 
 	/**
 	 * Clear object cache service
@@ -484,18 +486,7 @@ class CacheSettingsHandler {
 	 */
 	private function clearObjectCache(?string $_userId = null): array {
 		try {
-			$objectCacheService = $this->objectCacheService;
-			if ($objectCacheService === null && $this->container !== null) {
-				try {
-					$objectCacheService = $this->container->get(CacheHandler::class);
-				} catch (Exception $e) {
-					throw new Exception('CacheHandler not available');
-				}
-			}
-
-			if ($objectCacheService === null) {
-				throw new Exception('CacheHandler not available');
-			}
+			$objectCacheService = $this->objectCacheHandler();
 
 			$beforeStats = $objectCacheService->getStats();
 			$objectCacheService->clearCache();
@@ -515,12 +506,7 @@ class CacheSettingsHandler {
 				'success' => true,
 			];
 		} catch (Exception $e) {
-			return [
-				'service' => 'object',
-				'cleared' => 0,
-				'success' => false,
-				'error' => $e->getMessage(),
-			];
+			return $this->clearFailed(service: 'object', error: $e);
 		}//end try
 	}//end clearObjectCache()
 
@@ -555,18 +541,7 @@ class CacheSettingsHandler {
 	 */
 	private function clearNamesCache(): array {
 		try {
-			$objectCacheService = $this->objectCacheService;
-			if ($objectCacheService === null && $this->container !== null) {
-				try {
-					$objectCacheService = $this->container->get(CacheHandler::class);
-				} catch (Exception $e) {
-					throw new Exception('CacheHandler not available');
-				}
-			}
-
-			if ($objectCacheService === null) {
-				throw new Exception('CacheHandler not available');
-			}
+			$objectCacheService = $this->objectCacheHandler();
 
 			$beforeStats = $objectCacheService->getStats();
 			$beforeNameCacheSize = $beforeStats['name_cache_size'] ?? 0;
@@ -592,12 +567,7 @@ class CacheSettingsHandler {
 				'success' => true,
 			];
 		} catch (Exception $e) {
-			return [
-				'service' => 'names',
-				'cleared' => 0,
-				'success' => false,
-				'error' => $e->getMessage(),
-			];
+			return $this->clearFailed(service: 'names', error: $e);
 		}//end try
 	}//end clearNamesCache()
 
@@ -614,18 +584,7 @@ class CacheSettingsHandler {
 	public function warmupNamesCache(): array {
 		try {
 			$startTime = microtime(true);
-			$objectCacheService = $this->objectCacheService;
-			if ($objectCacheService === null && $this->container !== null) {
-				try {
-					$objectCacheService = $this->container->get(CacheHandler::class);
-				} catch (Exception $e) {
-					throw new Exception('CacheHandler not available');
-				}
-			}
-
-			if ($objectCacheService === null) {
-				throw new Exception('CacheHandler not available');
-			}
+			$objectCacheService = $this->objectCacheHandler();
 
 			$beforeStats = $objectCacheService->getStats();
 
@@ -668,9 +627,9 @@ class CacheSettingsHandler {
 	 */
 	private function clearSchemaCache(?string $_userId = null): array {
 		try {
-			$beforeStats = $this->schemaCacheService->getCacheStatistics();
-			$this->schemaCacheService->clearAllCaches();
-			$afterStats = $this->schemaCacheService->getCacheStatistics();
+			$beforeStats = $this->schemaCaches->schemaCache->getCacheStatistics();
+			$this->schemaCaches->schemaCache->clearAllCaches();
+			$afterStats = $this->schemaCaches->schemaCache->getCacheStatistics();
 
 			// Stats arrays may contain 'entries' key even if not in type definition.
 			$beforeEntries = $beforeStats['entries'] ?? 0;
@@ -684,12 +643,7 @@ class CacheSettingsHandler {
 				'success' => true,
 			];
 		} catch (Exception $e) {
-			return [
-				'service' => 'schema',
-				'cleared' => 0,
-				'success' => false,
-				'error' => $e->getMessage(),
-			];
+			return $this->clearFailed(service: 'schema', error: $e);
 		}//end try
 	}//end clearSchemaCache()
 
@@ -703,27 +657,40 @@ class CacheSettingsHandler {
 	 * @SuppressWarnings (PHPMD.UnusedFormalParameter)
 	 */
 	private function clearFacetCache(?string $_userId = null): array {
-		try {
-			$beforeStats = $this->schemaFacetCacheService->getCacheStatistics();
-			$this->schemaFacetCacheService->clearAllCaches();
-			$afterStats = $this->schemaFacetCacheService->getCacheStatistics();
+		$before = $this->emptyFacetStatistics();
+		$this->schemaCaches->facetResults->clearAll();
 
-			return [
-				'service' => 'facet',
-				'cleared' => ($beforeStats['total_entries'] ?? 0) - ($afterStats['total_entries'] ?? 0),
-				'before' => $beforeStats,
-				'after' => $afterStats,
-				'success' => true,
-			];
-		} catch (Exception $e) {
-			return [
-				'service' => 'facet',
-				'cleared' => 0,
-				'success' => false,
-				'error' => $e->getMessage(),
-			];
-		}
+		return [
+			'service' => 'facet',
+			'cleared' => 0,
+			'before' => $before,
+			'after' => $this->emptyFacetStatistics(),
+			'success' => true,
+		];
 	}//end clearFacetCache()
+
+	/**
+	 * The facet cache statistics in the shape the cache API has always returned.
+	 *
+	 * Facet results live only in the distributed facet caches, which keep no
+	 * count; the persistent facet table was never written, so its figures are
+	 * zero by construction.
+	 *
+	 * @return array{total_entries: int, by_type: array<string, int>, memory_cache_size: int,
+	 *     cache_table: string, query_time: string, timestamp: int}
+	 */
+	private function emptyFacetStatistics(): array {
+		$startTime = microtime(true);
+
+		return [
+			'total_entries' => 0,
+			'by_type' => [],
+			'memory_cache_size' => 0,
+			'cache_table' => 'openregister_schema_facet_cache',
+			'query_time' => round((microtime(true) - $startTime) * 1000, 2) . 'ms',
+			'timestamp' => time(),
+		];
+	}//end emptyFacetStatistics()
 
 	/**
 	 * Clear distributed cache
@@ -748,12 +715,51 @@ class CacheSettingsHandler {
 				'success' => true,
 			];
 		} catch (Exception $e) {
-			return [
-				'service' => 'distributed',
-				'cleared' => 0,
-				'success' => false,
-				'error' => $e->getMessage(),
-			];
+			return $this->clearFailed(service: 'distributed', error: $e);
 		}
 	}//end clearDistributedCache()
+
+	/**
+	 * The object cache handler: the one injected, else the one the container builds.
+	 *
+	 * @return ObjectCacheMaintenanceInterface The handler.
+	 *
+	 * @throws Exception When neither supplies one.
+	 */
+	private function objectCacheHandler(): ObjectCacheMaintenanceInterface {
+		$objectCacheService = $this->objectCacheService;
+		if ($objectCacheService === null && $this->container !== null) {
+			try {
+				$objectCacheService = $this->container->get(CacheHandler::class);
+			} catch (Exception $e) {
+				throw new Exception('CacheHandler not available');
+			}
+		}
+
+		if ($objectCacheService === null) {
+			throw new Exception('CacheHandler not available');
+		}
+
+		return $objectCacheService;
+	}//end objectCacheHandler()
+
+	/**
+	 * The result of a cache clear that failed.
+	 *
+	 * @param string    $service The cache that was being cleared.
+	 * @param Exception $error   Why it failed.
+	 *
+	 * @return array{service: T, cleared: 0, success: false, error: string}
+	 *
+	 * @template T of string
+	 * @phpstan-param T $service
+	 */
+	private function clearFailed(string $service, Exception $error): array {
+		return [
+			'service' => $service,
+			'cleared' => 0,
+			'success' => false,
+			'error' => $error->getMessage(),
+		];
+	}//end clearFailed()
 }//end class

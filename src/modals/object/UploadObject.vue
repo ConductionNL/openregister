@@ -9,7 +9,7 @@ import {
 </script>
 
 <template>
-	<NcDialog name="Upload Object" size="normal" :canClose="false">
+	<NcDialog name="Upload Object" size="normal" noClose>
 		<NcNoteCard v-if="success" type="success">
 			<p>Object successfully uploaded</p>
 		</NcNoteCard>
@@ -36,12 +36,7 @@ import {
 				</template>
 				Back to Schema
 			</NcButton>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
+			<CloseCancelButton :label="success ? 'Close' : 'Cancel'" @click="closeModal" />
 			<NcButton
 				v-if="success === null"
 				:disabled="
@@ -135,8 +130,9 @@ import {
 import CodeMirror from 'vue-codemirror6'
 import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import AutoFix from 'vue-material-design-icons/AutoFix.vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import { isValidJson } from '../../composables/jsonText.js'
 import { getTheme } from '../../services/getTheme.js'
 
 export default {
@@ -148,7 +144,7 @@ export default {
 		NcNoteCard,
 		NcSelect,
 		// Icons
-		Cancel,
+		CloseCancelButton,
 		Upload,
 	},
 
@@ -290,7 +286,9 @@ export default {
 				.then((data) => {
 					this.success = !!data
 					this.error = false
-					data && setTimeout(this.closeModal, 2000)
+					if (data) {
+						setTimeout(this.closeModal, 2000)
+					}
 				})
 				.catch((error) => {
 					this.success = false
@@ -310,23 +308,14 @@ export default {
 			this.object = JSON.stringify(JSON.parse(this.object), null, 2)
 		},
 
-		/**
-		 * @param json
-		 * @spec exclude client-side JSON validation helper
-		 */
-		validateJson(json) {
-			try {
-				JSON.parse(json)
-				return true
-			} catch (error) {
-				return false
-			}
-		},
+		validateJson: isValidJson,
 	},
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
 /*
     The classes to recognize dark and light mode from the :dark attribute on CodeMirror is:
     - dark: cm-editor ͼ1 ͼ3 ͼ4 ͼr
@@ -339,119 +328,11 @@ export default {
     Number color is .ͼd
 */
 
-.codeMirrorContainer {
-	margin-block-start: 6px;
-}
+@include code-mirror-frame;
 
-.prettifyButton {
-	margin-block-start: 10px;
-}
+@include code-mirror-container-deep-cm-content;
 
-.codeMirrorContainer :deep(.cm-content) {
-	border-radius: 0 !important;
-	border: none !important;
-}
+@include code-mirror-editor;
 
-.codeMirrorContainer :deep(.cm-editor) {
-	outline: none !important;
-}
-
-.codeMirrorContainer.light > .vue-codemirror {
-	border: 1px dotted silver;
-}
-
-.codeMirrorContainer.dark > .vue-codemirror {
-	border: 1px dotted grey;
-}
-
-/* value text color */
-/* string */
-.codeMirrorContainer.light :deep(.ͼe) {
-	color: #448c27;
-}
-
-.codeMirrorContainer.dark :deep(.ͼe) {
-	color: #88c379;
-}
-
-/* boolean */
-.codeMirrorContainer.light :deep(.ͼc) {
-	color: #221199;
-}
-
-.codeMirrorContainer.dark :deep(.ͼc) {
-	color: #8d64f7;
-}
-
-/* null */
-.codeMirrorContainer.light :deep(.ͼb) {
-	color: #770088;
-}
-
-.codeMirrorContainer.dark :deep(.ͼb) {
-	color: #be55cd;
-}
-
-/* number */
-.codeMirrorContainer.light :deep(.ͼd) {
-	color: #d19a66;
-}
-
-.codeMirrorContainer.dark :deep(.ͼd) {
-	color: #9d6c3a;
-}
-
-/* text cursor */
-.codeMirrorContainer :deep(.cm-content) * {
-	cursor: text !important;
-}
-
-/* selection color */
-.codeMirrorContainer.light :deep(.cm-line)::selection,
-.codeMirrorContainer.light :deep(.cm-line) ::selection {
-	background-color: #d7eaff !important;
-	color: black;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line)::selection,
-.codeMirrorContainer.dark :deep(.cm-line) ::selection {
-	background-color: #8fb3e6 !important;
-	color: black;
-}
-
-/* string */
-.codeMirrorContainer.light :deep(.cm-line .ͼe)::selection {
-	color: #2d770f;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line .ͼe)::selection {
-	color: #104e0c;
-}
-
-/* boolean */
-.codeMirrorContainer.light :deep(.cm-line .ͼc)::selection {
-	color: #221199;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line .ͼc)::selection {
-	color: #4026af;
-}
-
-/* null */
-.codeMirrorContainer.light :deep(.cm-line .ͼb)::selection {
-	color: #770088;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line .ͼb)::selection {
-	color: #770088;
-}
-
-/* number */
-.codeMirrorContainer.light :deep(.cm-line .ͼd)::selection {
-	color: #8c5c2c;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line .ͼd)::selection {
-	color: #623907;
-}
+@include code-mirror-theme;
 </style>

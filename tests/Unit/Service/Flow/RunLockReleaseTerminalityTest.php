@@ -47,13 +47,19 @@ use OCA\OpenRegister\Listener\FlowRunLockReleaseListener;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FiringClaim;
 use OCA\OpenRegister\Service\Flow\FlowPlaceClaims;
 use OCA\OpenRegister\Service\Flow\FlowRunCommit;
+use OCA\OpenRegister\Service\Flow\FlowRunCommitRows;
 use OCA\OpenRegister\Service\Flow\FlowRunMarkingStore;
+use OCA\OpenRegister\Service\Flow\FlowRunStart;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\FlowStreamWalk;
+use OCA\OpenRegister\Service\Flow\FlowStreamWalkLimits;
+use OCA\OpenRegister\Service\Flow\FlowStreamWalkParts;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
 use OCA\OpenRegister\Tests\Unit\Db\FluentQueryBuilderTrait;
 use OCP\EventDispatcher\Event;
@@ -82,7 +88,7 @@ class InMemoryFlowRunMapper extends FlowRunMapper {
 		IEventDispatcher $dispatcher,
 		private readonly FlowRun $row,
 	) {
-		parent::__construct(db: $db, dispatcher: $dispatcher);
+		parent::__construct(db: $db, entityEvents: new EntityEventPublisher(dispatcher: $dispatcher));
 	}
 
 	/**
@@ -148,6 +154,12 @@ class LockLifecycleDispatcher implements FlowStepDispatcher {
  *
  * @covers \OCA\OpenRegister\Service\Flow\FlowRunCommit
  * @covers \OCA\OpenRegister\Service\Flow\FlowStreamWalk
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamClosure
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamRef
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamRelease
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamHalt
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamEntries
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamVisits
  * @covers \OCA\OpenRegister\Listener\FlowRunLockReleaseListener
  * @uses \OCA\OpenRegister\Db\FlowRun
  * @uses \OCA\OpenRegister\Db\FlowRunMapper
@@ -161,8 +173,22 @@ class LockLifecycleDispatcher implements FlowStepDispatcher {
  * @uses \OCA\OpenRegister\Service\Flow\FlowItemPlacement
  * @uses \OCA\OpenRegister\Service\Flow\FlowItems
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunMarkingStore
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopAdvance
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopRouting
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopPlan
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunStart
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamHop
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamPass
  * @uses \OCA\OpenRegister\Service\Flow\FlowSuspension
  * @uses \OCA\OpenRegister\Service\Flow\FlowTokenRouter
+ * @uses \OCA\OpenRegister\Event\FlowRunTerminalEvent
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStop
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionSecrets
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHop
+ * @uses \OCA\OpenRegister\Service\Flow\FlowWalkHop
+ * @uses \OCA\OpenRegister\Service\Flow\FlowWalkPass
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeDeclarations
+ * @uses \OCA\OpenRegister\Service\Flow\LoweredFlow
  */
 class RunLockReleaseTerminalityTest extends TestCase {
 	use FluentQueryBuilderTrait;
@@ -275,26 +301,22 @@ class RunLockReleaseTerminalityTest extends TestCase {
 
 		$commit = new FlowRunCommit(
 			db: $db,
-			runs: $runs,
-			streams: $streams,
-			claims: $claims,
-			steps: $steps,
+			rows: new FlowRunCommitRows(runs: $runs, streams: $streams, claims: $claims, steps: $steps),
 			logger: new NullLogger()
 		);
 
 		// Claims are not the property under test: every acquire succeeds.
 		$places = $this->createMock(FlowPlaceClaims::class);
-		$places->method('acquire')->willReturnCallback(static function (string $runUuid, string $streamId, string $transition, array $places): ?array {
+		$places->method('claim')->willReturnCallback(static function (FiringClaim $firing): ?array {
+			$places = $firing->places;
 			sort($places, SORT_STRING);
 			return $places;
 		});
 
 		$this->walk = new FlowStreamWalk(
 			run: $this->row,
-			claims: $places,
-			commit: $commit,
-			streamMapper: $streams,
-			owner: 'pass-1'
+			parts: new FlowStreamWalkParts(claims: $places, commit: $commit, streamMapper: $streams),
+			limits: new FlowStreamWalkLimits(owner: 'pass-1')
 		);
 
 		$this->engine = new FlowEngine(new FlowDefinitionBuilder(), new NullLogger());
@@ -330,14 +352,8 @@ class RunLockReleaseTerminalityTest extends TestCase {
 	 */
 	private function walkFlow(FlowStepDispatcher $dispatcher): array {
 		return $this->engine->run(
-			flow: $this->flow(),
-			store: new FlowRunMarkingStore(run: $this->row),
-			subject: new stdClass(),
-			dispatcher: $dispatcher,
-			context: [],
-			items: [FlowItems::item(json: ['n' => 1])],
-			startAt: null,
-			streams: $this->walk
+			start: (new FlowRunStart(flow: $this->flow(), store: new FlowRunMarkingStore(run: $this->row), subject: new stdClass(), dispatcher: $dispatcher))->withStreams(streams: $this->walk),
+			items: [FlowItems::item(json: ['n' => 1])]
 		);
 	}//end walkFlow()
 
@@ -393,14 +409,8 @@ class RunLockReleaseTerminalityTest extends TestCase {
 			}
 
 			$result = $this->engine->run(
-				flow: $flow,
-				store: new FlowRunMarkingStore(run: $this->row),
-				subject: new stdClass(),
-				dispatcher: $drivers[$status](),
-				context: [],
-				items: [FlowItems::item(json: ['n' => 1])],
-				startAt: null,
-				streams: $this->walk
+				start: (new FlowRunStart(flow: $flow, store: new FlowRunMarkingStore(run: $this->row), subject: new stdClass(), dispatcher: $drivers[$status]()))->withStreams(streams: $this->walk),
+				items: [FlowItems::item(json: ['n' => 1])]
 			);
 
 			$this->assertSame($status, $result['status'], 'the walk did not reach ' . $status);

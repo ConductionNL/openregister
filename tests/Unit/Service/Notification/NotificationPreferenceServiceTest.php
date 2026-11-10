@@ -6,7 +6,7 @@ namespace Unit\Service\Notification;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
 use OCP\IConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -213,5 +213,47 @@ class NotificationPreferenceServiceTest extends TestCase {
 		$this->assertSame('schema-default', $byKey['object_updated']['source']);
 		$this->assertSame('pipelinq', $byKey['object_created']['application']);
 		$this->assertSame('pipelinq', $byKey['object_updated']['application']);
+	}
+
+	/**
+	 * Two schema rows with one slug, an older version left behind by an
+	 * import, list each rule once, read from the highest version: a
+	 * preference is keyed by the slug, so a second row could only repeat it
+	 * (DqPersoonlijkeInstellingen listed "Mijn dagelijkse werkoverzicht" twice).
+	 */
+	public function testOneSlugListsEachRuleOnceFromItsHighestVersion(): void {
+		$old = new Schema();
+		$old->setId(1515);
+		$old->setSlug('workDigest');
+		$old->setTitle('Work digest');
+		$old->setVersion('1.0.0');
+		$old->setApplication('dossiq');
+		$old->setConfiguration(['x-openregister-notifications' => ['workDigestReady' => ['enabled' => false]]]);
+
+		$new = new Schema();
+		$new->setId(1532);
+		$new->setSlug('workDigest');
+		$new->setTitle('Work digest');
+		$new->setVersion('1.0.1');
+		$new->setApplication('dossiq');
+		$new->setConfiguration(['x-openregister-notifications' => ['workDigestReady' => ['enabled' => true]]]);
+
+		$other = new Schema();
+		$other->setId(7);
+		$other->setSlug('workDigest');
+		$other->setTitle('Work digest');
+		$other->setVersion('9.0.0');
+		$other->setApplication('pipelinq');
+		$other->setConfiguration(['x-openregister-notifications' => ['workDigestReady' => ['enabled' => false]]]);
+
+		$this->schemaMapper->method('findAll')->willReturn([$old, $new, $other]);
+		$this->config->method('getUserValue')->willReturnArgument(3);
+
+		$entries = $this->service->getEffectiveForUser('jan');
+
+		$dossiq = array_values(array_filter($entries, static fn (array $e): bool => $e['application'] === 'dossiq'));
+		$this->assertCount(1, $dossiq);
+		$this->assertTrue($dossiq[0]['enabled']);
+		$this->assertCount(2, $entries, 'another app\'s schema with the same slug is its own row');
 	}
 }

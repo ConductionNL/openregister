@@ -26,9 +26,14 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rules\RuleCeilingException;
-use OCA\OpenRegister\Service\Rules\RuleCeilingService;
+use OCA\OpenRegister\Service\Rules\FlowRuleDescriptors;
 use OCA\OpenRegister\Service\Rules\RuleInventoryService;
 use OCA\OpenRegister\Service\Rules\RuleReplayService;
+use OCA\OpenRegister\Service\Rules\RuleTargets;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
@@ -41,7 +46,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @package OCA\OpenRegister\Tests\Unit\Service\Rules
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class RuleReplayServiceTest extends TestCase {
 
@@ -87,10 +92,10 @@ class RuleReplayServiceTest extends TestCase {
 		$summaries->method('findBySchema')->willReturn([]);
 
 		return new RuleInventoryService(
-			triggers: $triggers,
 			summaries: $summaries,
 			propertyCalculations: new PropertyCalculations(),
-			vocabulary: new RuleVocabulary()
+			vocabulary: new RuleVocabulary(),
+			flows: new FlowRuleDescriptors(triggers: $triggers, published: null)
 		);
 	}//end inventory()
 
@@ -142,11 +147,15 @@ class RuleReplayServiceTest extends TestCase {
 	 * @return RuleReplayService The service.
 	 */
 	private function service(): RuleReplayService {
+		$catalog = new SchemaCatalog(
+			registers: $this->createMock(originalClassName: RegisterMapperInterface::class),
+			schemas: $this->createMock(originalClassName: SchemaMapperInterface::class),
+			tables: $this->createMock(originalClassName: MagicMapperInterface::class)
+		);
+
 		return new RuleReplayService(
-			inventory: $this->inventory(),
-			ceiling: new RuleCeilingService(),
-			jobs: $this->jobs,
-			objects: $this->objects
+			targets: new RuleTargets(rules: $this->inventory(), catalog: $catalog, objects: $this->objects),
+			jobs: $this->jobs
 		);
 	}//end service()
 
@@ -159,7 +168,7 @@ class RuleReplayServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testARunawaySelectionIsRefusedBeforeAnythingIsCreated(): void {
 		$this->objects->method('countSearchObjects')->willReturn(4000);
@@ -190,7 +199,7 @@ class RuleReplayServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testTheCountComesFromACountQuery(): void {
 		$this->objects->expects($this->once())
@@ -212,7 +221,7 @@ class RuleReplayServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testASelectionWithinTheCeilingIsPreviewed(): void {
 		$this->objects->method('countSearchObjects')->willReturn(30);
@@ -241,7 +250,7 @@ class RuleReplayServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testARuleWithNoCeilingIsNotRefusedHere(): void {
 		$this->objects->method('countSearchObjects')->willReturn(4000);
@@ -266,7 +275,7 @@ class RuleReplayServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAnIdsSelectionIsCountedByItsDistinctIds(): void {
 		$this->objects->expects($this->never())->method('countSearchObjects');
@@ -290,7 +299,7 @@ class RuleReplayServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAnUnknownRuleIsRefused(): void {
 		$this->jobs->expects($this->never())->method('create');
@@ -314,7 +323,7 @@ class RuleReplayServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAConditionCannotBeReplayed(): void {
 		$this->jobs->expects($this->never())->method('create');
@@ -335,7 +344,7 @@ class RuleReplayServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAnEmptySelectionIsRefused(): void {
 		$this->jobs->expects($this->never())->method('create');
@@ -357,7 +366,7 @@ class RuleReplayServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testACountThatFailsRefusesRatherThanRuns(): void {
 		$this->objects->method('countSearchObjects')->willThrowException(new \RuntimeException('no'));

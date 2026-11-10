@@ -3,87 +3,97 @@ import type { TConfiguration } from './configuration.types'
 
 import { z } from 'zod'
 
+const CONFIGURATION_SCHEMA = z.object({
+	id: z.string().min(1),
+	title: z.string().min(1),
+	description: z.string().nullable(),
+	type: z.string(),
+	application: z.string(),
+	owner: z.string(),
+	organisation: z.number().nullable(),
+	registers: z.array(z.number()).optional(),
+	schemas: z.array(z.number()).optional(),
+	created: z.string(),
+	updated: z.string(),
+})
+
+// The configuration fields, how each is copied: `||` gives the fallback for
+// any falsy value, `??` only for null and undefined, and COPY copies as is.
+const OR = '||'
+const NULLISH = '??'
+const COPY = 'copy'
+const FIELDS = [
+	['id', OR, ''],
+	['title', OR, ''],
+	['description', OR, null],
+	['version', NULLISH, null],
+	['type', OR, ''],
+	['application', OR, ''],
+	['owner', OR, ''],
+	['organisation', OR, null],
+	['registers', OR, []],
+	['schemas', OR, []],
+	['created', OR, ''],
+	['updated', OR, ''],
+	['isLocal', COPY],
+	['sourceType', COPY],
+	['sourceUrl', NULLISH, null],
+	['localVersion', NULLISH, null],
+	['remoteVersion', NULLISH, null],
+	['syncEnabled', COPY],
+	['syncInterval', COPY],
+	['syncStatus', COPY],
+	['lastSyncDate', NULLISH, null],
+	['githubRepo', NULLISH, null],
+	['githubBranch', NULLISH, null],
+	['githubPath', NULLISH, null],
+	['app', COPY],
+] as const
+
+/**
+ * One configuration field, copied the way FIELDS says.
+ *
+ * @param configuration The input.
+ * @param field The field, its copy rule and its fallback.
+ * @return The value.
+ */
+function fieldValue(
+	configuration: TConfiguration,
+	field: readonly unknown[],
+): unknown {
+	const [key, rule, fallback] = field as [keyof TConfiguration, string, unknown]
+	const value = configuration[key]
+	if (rule === OR) {
+		return value || (Array.isArray(fallback) ? [] : fallback)
+	}
+	return rule === NULLISH ? (value ?? fallback) : value
+}
+
+// The instance fields come from TConfiguration, so they are listed once.
+const ConfigurationFields = class {} as new () => TConfiguration
+
 /**
  * Entity class representing a Configuration with validation
  */
-export class ConfigurationEntity implements TConfiguration {
-	id: string
-	title: string
-	description: string | null
-	version?: string | null
-	type: string
-	application: string
-	owner: string
-	organisation: number | null
-	registers?: number[]
-	schemas?: number[]
-	created: string
-	updated: string
-	isLocal?: boolean
-	sourceType?: string
-	sourceUrl?: string | null
-	localVersion?: string | null
-	remoteVersion?: string | null
-	syncEnabled?: boolean
-	syncInterval?: number
-	syncStatus?: string
-	lastSyncDate?: string | null
-	githubRepo?: string | null
-	githubBranch?: string | null
-	githubPath?: string | null
-	app?: string
-
+export class ConfigurationEntity extends ConfigurationFields {
 	/**
-	 * @param configuration
+	 * @param configuration The configuration data to copy.
 	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
 	 */
 	constructor(configuration: TConfiguration) {
-		this.id = configuration.id || ''
-		this.title = configuration.title || ''
-		this.description = configuration.description || null
-		this.version = configuration.version ?? null
-		this.type = configuration.type || ''
-		this.application = configuration.application || ''
-		this.owner = configuration.owner || ''
-		this.organisation = configuration.organisation || null
-		this.registers = configuration.registers || []
-		this.schemas = configuration.schemas || []
-		this.created = configuration.created || ''
-		this.updated = configuration.updated || ''
-		// Configuration management properties
-		this.isLocal = configuration.isLocal
-		this.sourceType = configuration.sourceType
-		this.sourceUrl = configuration.sourceUrl ?? null
-		this.localVersion = configuration.localVersion ?? null
-		this.remoteVersion = configuration.remoteVersion ?? null
-		this.syncEnabled = configuration.syncEnabled
-		this.syncInterval = configuration.syncInterval
-		this.syncStatus = configuration.syncStatus
-		this.lastSyncDate = configuration.lastSyncDate ?? null
-		this.githubRepo = configuration.githubRepo ?? null
-		this.githubBranch = configuration.githubBranch ?? null
-		this.githubPath = configuration.githubPath ?? null
-		this.app = configuration.app
+		super()
+		Object.assign(
+			this,
+			Object.fromEntries(
+				FIELDS.map((field) => [field[0], fieldValue(configuration, field)]),
+			),
+		)
 	}
 
 	/**
 	 * Validates the configuration against a schema
 	 */
 	public validate(): ZodSafeParseResult<unknown> {
-		const schema = z.object({
-			id: z.string().min(1),
-			title: z.string().min(1),
-			description: z.string().nullable(),
-			type: z.string(),
-			application: z.string(),
-			owner: z.string(),
-			organisation: z.number().nullable(),
-			registers: z.array(z.number()).optional(),
-			schemas: z.array(z.number()).optional(),
-			created: z.string(),
-			updated: z.string(),
-		})
-
-		return schema.safeParse(this)
+		return CONFIGURATION_SCHEMA.safeParse(this)
 	}
 }

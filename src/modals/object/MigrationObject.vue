@@ -1,18 +1,13 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import {
-	navigationStore,
-	objectStore,
-	registerStore,
-	schemaStore,
-} from '../../store/store.js'
+import { navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
 	<NcDialog
 		:name="`Migrate ${selectedObjects.length} object${selectedObjects.length !== 1 ? 's' : ''}`"
 		size="large"
-		:canClose="false">
+		noClose>
 		<!-- Source and Target Information -->
 		<div class="migration-overview">
 			<div class="source-info">
@@ -85,43 +80,15 @@ import {
 				don't want to migrate by clicking the remove button.
 			</NcNoteCard>
 
-			<div class="selected-objects-container">
-				<h4>Selected Objects ({{ selectedObjects.length }})</h4>
-
-				<div v-if="selectedObjects.length" class="selected-objects-list">
-					<div
-						v-for="obj in selectedObjects"
-						:key="obj.id"
-						class="selected-object-item">
-						<div class="object-info">
-							<strong>{{
-								obj['@self']?.name
-								|| obj.name
-								|| obj.title
-								|| obj['@self']?.title
-								|| 'Unnamed Object'
-							}}</strong>
-							<p class="object-id">
-								ID: {{ obj.id || obj['@self']?.id }}
-							</p>
-						</div>
-						<NcButton
-							variant="tertiary"
-							:aria-label="`Remove ${obj['@self']?.name || obj.name || obj.title || obj['@self']?.title || obj.id}`"
-							@click="removeObject(obj.id)">
-							<template #icon>
-								<Close :size="20" />
-							</template>
-						</NcButton>
-					</div>
-				</div>
-
-				<NcEmptyContent v-else name="No objects selected">
-					<template #description>
-						No objects are currently selected for migration.
-					</template>
-				</NcEmptyContent>
-			</div>
+			<SelectedObjectsList
+				:objects="selectedObjects"
+				:emptyDescription="
+					t(
+						'openregister',
+						'No objects are currently selected for migration.',
+					)
+				"
+				@remove="removeObject" />
 		</div>
 
 		<!-- Step 2: Select Target Register and Schema -->
@@ -346,7 +313,7 @@ import {
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
+			<NcButton @click="closeDialog">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
@@ -408,7 +375,6 @@ import {
 import {
 	NcButton,
 	NcDialog,
-	NcEmptyContent,
 	NcLoadingIcon,
 	NcNoteCard,
 	NcSelect,
@@ -417,34 +383,37 @@ import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
 // Icons
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Close from 'vue-material-design-icons/Close.vue'
 import DatabaseExport from 'vue-material-design-icons/DatabaseExport.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
+import SelectedObjectsList from '../../components/shared/SelectedObjectsList.vue'
+import selectedObjectsDialog, {
+	refreshObjectLists,
+} from './selectedObjectsDialog.js'
 
 export default {
 	name: 'MigrationObject',
 	components: {
+		SelectedObjectsList,
 		NcButton,
 		NcDialog,
-		NcEmptyContent,
 		NcLoadingIcon,
 		NcNoteCard,
 		NcSelect,
 		Cancel,
 		ArrowRight,
 		ArrowLeft,
-		Close,
 		DatabaseExport,
 		DatabaseOutline,
 		FileTreeOutline,
 	},
 
+	mixins: [selectedObjectsDialog],
+
 	data() {
 		return {
 			step: 1, // 1: confirm selection, 2: select target register/schema, 3: property mapping, 4: report
 			loading: false,
-			selectedObjects: [],
 			availableRegisters: [],
 			availableSchemas: [],
 			targetRegister: null,
@@ -497,13 +466,10 @@ export default {
 		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		initializeMigration() {
-			// Get selected objects from the store or navigation context
-			this.selectedObjects = objectStore.selectedObjects || []
-			if (this.selectedObjects.length === 0) {
-				this.closeModal()
-				return
+			this.initializeSelection()
+			if (this.selectedObjects.length > 0) {
+				this.loadAvailableRegisters()
 			}
-			this.loadAvailableRegisters()
 		},
 
 		/**
@@ -513,7 +479,7 @@ export default {
 			this.loading = true
 			try {
 				const response = await fetch(
-					'/index.php/apps/openregister/api/registers',
+					'/index.php/apps/openregister/api/registers?_extend[]=schemas',
 				)
 				const data = await response.json()
 				this.availableRegisters = data.results || []
@@ -526,28 +492,11 @@ export default {
 		},
 
 		/**
-		 * @spec exclude Reloads target schemas when the register select changes; UI reactivity plumbing.
+		 * @spec exclude Offers the schemas of the chosen register; UI reactivity plumbing.
 		 */
-		async onRegisterChange() {
-			if (!this.targetRegister) {
-				this.availableSchemas = []
-				this.targetSchema = null
-				return
-			}
-
-			this.loading = true
-			try {
-				const response = await fetch(
-					`/index.php/apps/openregister/api/schemas?register=${this.targetRegister.id}`,
-				)
-				const data = await response.json()
-				this.availableSchemas = data.results || []
-			} catch (error) {
-				console.error('Error loading schemas:', error)
-				this.availableSchemas = []
-			} finally {
-				this.loading = false
-			}
+		onRegisterChange() {
+			this.availableSchemas = this.targetRegister?.schemas || []
+			this.targetSchema = null
 		},
 
 		/**
@@ -558,19 +507,6 @@ export default {
 				return
 			}
 			await this.loadSchemaProperties()
-		},
-
-		/**
-		 * @param objectId
-		 * @spec exclude Removes one object from the local migration selection; UI selection plumbing.
-		 */
-		removeObject(objectId) {
-			this.selectedObjects = this.selectedObjects.filter(
-				(obj) => obj.id !== objectId,
-			)
-			if (this.selectedObjects.length === 0) {
-				this.closeModal()
-			}
 		},
 
 		/**
@@ -626,7 +562,7 @@ export default {
 		},
 
 		/**
-		 * @param schema
+		 * @param {object} schema
 		 * @spec exclude Flattens a schema definition into a name/type/required list; UI presentation helper.
 		 */
 		extractSchemaProperties(schema) {
@@ -702,15 +638,14 @@ export default {
 					},
 				)
 
+				const result = await response.json().catch(() => ({}))
 				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
+					throw new Error(result.error)
 				}
 
-				this.migrationResult = await response.json()
+				this.migrationResult = result
 				this.step = 4
-
-				// Refresh the object list
-				objectStore.refreshObjectList()
+				refreshObjectLists()
 			} catch (error) {
 				console.error('Error performing migration:', error)
 				this.migrationResult = {
@@ -726,12 +661,12 @@ export default {
 		/**
 		 * @spec exclude Modal close handler resetting navigationStore.modal; UI plumbing.
 		 */
-		closeModal() {
+		closeDialog() {
 			navigationStore.setModal(false)
 		},
 
 		/**
-		 * @param _sourceProperty
+		 * @param {string} _sourceProperty
 		 * @spec exclude UI-change handler re-syncing the mapping object; UI reactivity plumbing.
 		 */
 		updateMappingFromUI(_sourceProperty) {
@@ -775,7 +710,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
 .migration-step {
 	padding: 0;
 }
@@ -784,45 +721,11 @@ export default {
 	padding-top: 0 !important;
 }
 
-.step-title {
-	margin-top: 0 !important;
-	margin-bottom: 16px;
-	color: var(--color-main-text);
-}
-
-.report-title {
-	margin-top: 0 !important;
-	margin-bottom: 16px;
-	color: var(--color-main-text);
-}
+@include step-title-rules;
 
 .migration-step h3 {
 	margin-bottom: 16px;
 	color: var(--color-main-text);
-}
-
-.selected-objects-container {
-	margin: 20px 0;
-}
-
-.selected-objects-list {
-	max-height: 400px;
-	overflow-y: auto;
-	border: 1px solid var(--color-border);
-	border-radius: 4px;
-}
-
-.selected-object-item {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: 12px;
-	border-bottom: 1px solid var(--color-border);
-	background-color: var(--color-background-hover);
-}
-
-.selected-object-item:last-child {
-	border-bottom: none;
 }
 
 .selection-section {
@@ -989,54 +892,17 @@ export default {
 	font-style: italic;
 }
 
-.loading-container {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 16px;
-	padding: 40px;
-}
+@include loading-container;
 
-.object-info strong {
-	display: block;
-	margin-bottom: 4px;
-	color: var(--color-main-text);
-}
+@include report-section;
 
-.object-id {
-	color: var(--color-text-maxcontrast);
-	font-size: 0.9em;
-	margin: 0;
-}
-
-.report-section {
-	margin-bottom: 20px;
-	padding: 16px;
-	background-color: var(--color-background-hover);
-	border-radius: 4px;
-}
-
-.report-section h4 {
-	margin-bottom: 12px;
-	color: var(--color-main-text);
-}
-
-.report-section ul {
-	margin: 0;
-	padding-left: 20px;
-}
+@include report-section-h4-rules;
 
 .report-section li {
 	margin-bottom: 4px;
 }
 
-.error-text {
-	color: var(--color-error);
-}
-
-.warning-text {
-	color: var(--color-warning);
-}
+@include error-text-rules;
 
 .detail-grid {
 	display: grid;
@@ -1045,11 +911,7 @@ export default {
 	margin: 16px 0;
 }
 
-.detail-item {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-}
+@include detail-item;
 
 .detail-label {
 	font-weight: bold;
@@ -1128,68 +990,5 @@ export default {
 	font-weight: bold;
 	color: var(--color-primary);
 	margin-top: 40px;
-}
-
-/* number */
-.codeMirrorContainer.light :deep(.ͼd) {
-	color: #d19a66;
-}
-
-.codeMirrorContainer.dark :deep(.ͼd) {
-	color: #9d6c3a;
-}
-
-/* text cursor */
-.codeMirrorContainer :deep(.cm-content) * {
-	cursor: text !important;
-}
-
-/* selection color */
-.codeMirrorContainer.light :deep(.cm-line)::selection,
-.codeMirrorContainer.light :deep(.cm-line) ::selection {
-	background-color: #d7eaff !important;
-	color: black;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line)::selection,
-.codeMirrorContainer.dark :deep(.cm-line) ::selection {
-	background-color: #8fb3e6 !important;
-	color: black;
-}
-
-/* string */
-.codeMirrorContainer.light :deep(.cm-line .ͼe)::selection {
-	color: #2d770f;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line .ͼe)::selection {
-	color: #104e0c;
-}
-
-/* boolean */
-.codeMirrorContainer.light :deep(.cm-line .ͼc)::selection {
-	color: #221199;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line .ͼc)::selection {
-	color: #4026af;
-}
-
-/* null */
-.codeMirrorContainer.light :deep(.cm-line .ͼb)::selection {
-	color: #770088;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line .ͼb)::selection {
-	color: #770088;
-}
-
-/* number */
-.codeMirrorContainer.light :deep(.cm-line .ͼd)::selection {
-	color: #8c5c2c;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line .ͼd)::selection {
-	color: #623907;
 }
 </style>

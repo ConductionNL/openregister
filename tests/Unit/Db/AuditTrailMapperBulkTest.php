@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\AuditHashService;
 use OCP\DB\IResult;
@@ -53,6 +54,8 @@ class AuditTrailMapperBulkTest extends TestCase {
 
 	private AuditTrailMapper $mapper;
 
+	private ?\OCA\OpenRegister\Service\Audit\TokenContext $tokenContext = null;
+
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -68,6 +71,10 @@ class AuditTrailMapperBulkTest extends TestCase {
 			function (string $id) {
 				if ($id === AuditHashService::class) {
 					return $this->hashService;
+				}
+
+				if ($id === \OCA\OpenRegister\Service\Audit\TokenContext::class && $this->tokenContext !== null) {
+					return $this->tokenContext;
 				}
 
 				throw new \RuntimeException('not registered: ' . $id);
@@ -97,10 +104,9 @@ class AuditTrailMapperBulkTest extends TestCase {
 
 		$this->mapper = new AuditTrailMapper(
 			$this->db,
-			$this->container,
 			$this->createMock(IUserSession::class),
 			$request,
-			$this->createMock(LoggerInterface::class)
+			new AuditTrailMapperServices($this->container, $this->createMock(LoggerInterface::class))
 		);
 	}//end setUp()
 
@@ -125,6 +131,34 @@ class AuditTrailMapperBulkTest extends TestCase {
 	// -------------------------------------------------------------------------
 	// buildAuditTrail()
 	// -------------------------------------------------------------------------
+
+	public function testBuildAuditTrailInsideAnOrganisationContextNamesTheOrganisation(): void {
+		$trail = \OCA\OpenRegister\Service\OrganisationContext::run(
+			'org-a',
+			fn (): AuditTrail => $this->mapper->buildAuditTrail(old: $this->makeObject('obj-1'), new: null, action: 'delete')
+		);
+
+		$this->assertSame('org-a', ($trail->getResultSummary() ?? [])['organisationContext'] ?? null);
+		$this->assertSame('System', $trail->getUser());
+	}//end testBuildAuditTrailInsideAnOrganisationContextNamesTheOrganisation()
+
+	public function testBuildAuditTrailKeepsTheTokenBesideTheOrganisationContext(): void {
+		$this->tokenContext = new \OCA\OpenRegister\Service\Audit\TokenContext(
+			resolver: $this->createMock(\OCA\OpenRegister\Service\Audit\TokenResolver::class)
+		);
+		$this->tokenContext->claim(
+			identity: new \OCA\OpenRegister\Service\Audit\TokenIdentity(mechanism: 'bearer', token: new \OCA\OpenRegister\Service\Audit\NamedIdentifier(id: 'tok-1'), consumer: new \OCA\OpenRegister\Service\Audit\NamedIdentifier(name: 'portal'))
+		);
+
+		$trail = \OCA\OpenRegister\Service\OrganisationContext::run(
+			'org-a',
+			fn (): AuditTrail => $this->mapper->buildAuditTrail(old: $this->makeObject('obj-1'), new: null, action: 'delete')
+		);
+
+		$this->assertSame('portal', $trail->getConsumer());
+		$this->assertSame('tok-1', ($trail->getResultSummary() ?? [])['token']['reference'] ?? null);
+		$this->assertSame('org-a', ($trail->getResultSummary() ?? [])['organisationContext'] ?? null);
+	}//end testBuildAuditTrailKeepsTheTokenBesideTheOrganisationContext()
 
 	public function testBuildAuditTrailForDeleteProducesEmptyChangeSet(): void {
 		$trail = $this->mapper->buildAuditTrail(old: $this->makeObject('obj-1'), new: null, action: 'delete');

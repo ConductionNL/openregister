@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Psr\Container\ContainerInterface;
@@ -46,13 +46,13 @@ class FlowCaller {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowMapper         $mapper      Reads which flows a uid owns.
+	 * @param FlowMapperInterface         $mapper      Reads which flows a uid owns.
 	 * @param IUserSession       $userSession Identifies the acting user.
 	 * @param ContainerInterface $container   Resolves OrganisationService lazily.
 	 * @param LoggerInterface    $logger      Records an unreadable ownership listing.
 	 */
 	public function __construct(
-		private readonly FlowMapper $mapper,
+		private readonly FlowMapperInterface $mapper,
 		private readonly IUserSession $userSession,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
@@ -140,7 +140,7 @@ class FlowCaller {
 	 */
 	public function activeOrganisation(): ?string {
 		try {
-			$organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationService');
+			$organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationServiceInterface');
 			$uuid = $organisationService->getActiveOrganisation()?->getUuid();
 		} catch (Throwable $e) {
 			$this->logger->debug(

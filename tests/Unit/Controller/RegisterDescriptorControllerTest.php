@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+ * @spec openspec/specs/register-descriptor-admin/spec.md
  */
 
 declare(strict_types=1);
@@ -28,6 +28,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\RegisterDescriptorControllerFactory;
 
 /**
  * Covers the inventory endpoint, the forced re-import, and who may call them.
@@ -46,8 +47,7 @@ class RegisterDescriptorControllerTest extends TestCase {
 		$this->userSession  = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 
-		$this->controller = new RegisterDescriptorController(
-			'openregister',
+		$this->controller = RegisterDescriptorControllerFactory::create(
 			$this->createMock(IRequest::class),
 			$this->descriptors,
 			$this->userSession,

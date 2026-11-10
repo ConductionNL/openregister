@@ -161,9 +161,9 @@ A reusable wrapper component that provides consistent layout and functionality f
 ```vue
 <template>
   <SettingsSection
-    name="Search Configuration"
-    description="Configure Apache SOLR search engine"
-    detailed-description="SOLR provides powerful full-text search capabilities..."
+    name="File configuration"
+    description="Configure text extraction for uploaded files"
+    detailed-description="Extracted text feeds search and vectorisation..."
     :loading="loading"
     :error="error"
     :error-message="errorMessage"

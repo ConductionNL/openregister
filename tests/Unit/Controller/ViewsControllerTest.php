@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\ViewsController;
-use OCA\OpenRegister\Db\View;
+use OCA\OpenRegister\Search\Controller\ViewsController;
+use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
-use OCA\OpenRegister\Service\ViewPresentationService;
-use OCA\OpenRegister\Service\ViewService;
+use OCA\OpenRegister\Search\Service\ViewPresentationService;
+use OCA\OpenRegister\Search\Service\ViewAudience;
+use OCA\OpenRegister\Search\Service\ViewDefinition;
+use OCA\OpenRegister\Search\Service\ViewService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -50,18 +52,18 @@ class ViewsControllerTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->viewers = new ViewerReachResolver(
-			userSession: $this->userSession,
-			groupManager: $this->groupManager,
+			caller: new \OCA\OpenRegister\Service\Rbac\CallerContext($this->userSession, $this->groupManager),
 			logger: $this->logger
 		);
 
 		$this->controller = new ViewsController(
-			'openregister',
 			$this->request,
-			$this->viewService,
-			$this->viewPresentationService,
-			$this->logger,
-			$this->viewers
+			new \OCA\OpenRegister\Search\Controller\Support\ViewsControllerServices(
+				$this->viewService,
+				$this->viewPresentationService,
+				$this->logger,
+				$this->viewers
+			)
 		);
 	}
 
@@ -71,8 +73,8 @@ class ViewsControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 	}
 
-	private function createViewEntity(): \OCA\OpenRegister\Db\View {
-		$view = new \OCA\OpenRegister\Db\View();
+	private function createViewEntity(): \OCA\OpenRegister\Search\Db\View {
+		$view = new \OCA\OpenRegister\Search\Db\View();
 		$ref = new \ReflectionClass($view);
 		$prop = $ref->getProperty('id');
 		$prop->setAccessible(true);
@@ -297,7 +299,7 @@ class ViewsControllerTest extends TestCase {
 
 		$views = [];
 		for ($i = 0; $i < 5; $i++) {
-			$v = new \OCA\OpenRegister\Db\View();
+			$v = new \OCA\OpenRegister\Search\Db\View();
 			$ref = new \ReflectionClass($v);
 			$prop = $ref->getProperty('id');
 			$prop->setAccessible(true);
@@ -326,7 +328,7 @@ class ViewsControllerTest extends TestCase {
 
 		$views = [];
 		for ($i = 0; $i < 5; $i++) {
-			$v = new \OCA\OpenRegister\Db\View();
+			$v = new \OCA\OpenRegister\Search\Db\View();
 			$ref = new \ReflectionClass($v);
 			$prop = $ref->getProperty('id');
 			$prop->setAccessible(true);
@@ -355,7 +357,7 @@ class ViewsControllerTest extends TestCase {
 
 		$views = [];
 		for ($i = 0; $i < 5; $i++) {
-			$v = new \OCA\OpenRegister\Db\View();
+			$v = new \OCA\OpenRegister\Search\Db\View();
 			$ref = new \ReflectionClass($v);
 			$prop = $ref->getProperty('id');
 			$prop->setAccessible(true);
@@ -445,19 +447,15 @@ class ViewsControllerTest extends TestCase {
 		$this->viewService->expects($this->once())
 			->method('create')
 			->with(
-				'Config View',
-				'From configuration',
-				'testuser',
-				true,
-				true,
-				[
+				new ViewDefinition('Config View', 'From configuration', [
 					'registers' => [1, 2],
 					'schemas' => [3],
 					'source' => 'manual',
 					'searchTerms' => ['test'],
 					'facetFilters' => ['status' => 'active'],
 					'enabledFacets' => ['status'],
-				],
+				], null),
+				new ViewAudience('testuser', true, true, null),
 				null
 			)
 			->willReturn($view);
@@ -481,19 +479,15 @@ class ViewsControllerTest extends TestCase {
 		$this->viewService->expects($this->once())
 			->method('create')
 			->with(
-				'Minimal Config View',
-				'',
-				'testuser',
-				false,
-				false,
-				[
+				new ViewDefinition('Minimal Config View', '', [
 					'registers' => [],
 					'schemas' => [],
 					'source' => 'auto',
 					'searchTerms' => [],
 					'facetFilters' => [],
 					'enabledFacets' => [],
-				],
+				], null),
+				new ViewAudience('testuser', false, false, null),
 				null
 			)
 			->willReturn($view);
@@ -929,13 +923,9 @@ class ViewsControllerTest extends TestCase {
 		$this->viewService->expects($this->once())
 			->method('create')
 			->with(
-				'Kanban View',
-				'',
-				'testuser',
-				false,
-				false,
-				['registers' => [1], 'schemas' => [2]],
-				$presentation
+				new ViewDefinition('Kanban View', '', ['registers' => [1], 'schemas' => [2]], $presentation),
+				new ViewAudience('testuser', false, false, null),
+				null
 			)
 			->willReturn($view);
 

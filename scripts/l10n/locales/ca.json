@@ -134,7 +134,9 @@
 		"Text": "\"Text\" is the same word in Catalan for the text field type; no non-identical synonym exists, so the honest label is identical.",
 		"Token": "Catalan IT usage and this bundle have settled on the English loanword: every existing token key here reads 'token' (Crear token d'API, No s'ha pogut revocar el token), so the standalone label is byte-identical.",
 		"Versions": "Same spelling and meaning in Catalan (plural of versió).",
-		"Context": "Same spelling and meaning in Catalan."
+		"Context": "Same spelling and meaning in Catalan.",
+		"Decisions": "Same spelling and meaning in Catalan (plural of decisió is decisions).",
+		"Monumental": "Same spelling and meaning in Catalan as an adjective (here: listed as a monument)."
 	},
 	"corrections": {
 		"Settings": "TERM-SETTINGS",
@@ -167,7 +169,7 @@
 		"OpenAI Chat Settings": "TERM-SETTINGS",
 		"Could not change browser notification settings.": "TERM-SETTINGS",
 		"Notification permission: denied. Re-enable notifications for this site in your browser settings.": "TERM-SETTINGS",
-		"A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.": "TERM-SETTINGS",
+		"A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.": "TERM-SETTINGS",
 		"Manage your account settings, security, and personal data.": "TERM-SETTINGS",
 		"Any favorites and sharing settings for this view": "TERM-SETTINGS",
 		"They will be retained according to their schema's configured retention period and automatically permanently deleted when the retention period expires. The retention period is configurable per schema and can be found in the schema's settings.": "TERM-SETTINGS",

@@ -30,13 +30,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
+use OCA\OpenRegister\Controller\Support\ConfigDeploymentControllerServices;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftsInterface;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
-use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
-use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayer;
-use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistryInterface;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayerInterface;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewServiceInterface;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentRefusedException;
-use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -55,26 +56,52 @@ use OCP\IRequest;
 class ConfigurationDeploymentController extends Controller {
 
 	/**
+	 * The pending values.
+	 *
+	 * @var ConfigurationDraftsInterface
+	 */
+	private readonly ConfigurationDraftsInterface $drafts;
+
+	/**
+	 * The diff.
+	 *
+	 * @var DeploymentPreviewServiceInterface
+	 */
+	private readonly DeploymentPreviewServiceInterface $previews;
+
+	/**
+	 * The apply and the rollback.
+	 *
+	 * @var DeploymentServiceInterface
+	 */
+	private readonly DeploymentServiceInterface $deployments;
+
+	/**
+	 * The effective-configuration read.
+	 *
+	 * @var ConfigurationExplainer
+	 */
+	private readonly ConfigurationExplainer $explainer;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string                    $appName    The app name.
 	 * @param IRequest                  $request    The request.
-	 * @param ConfigurationDraftService $drafts     The pending values.
-	 * @param DeploymentPreviewService  $previews   The diff.
-	 * @param DeploymentService         $deployments The apply and the rollback.
-	 * @param ConfigurationExplainer    $explainer  The effective-configuration read.
-	 * @param ConfigurationKeyRegistry  $registry   The draftable vocabulary.
+	 * @param ConfigDeploymentControllerServices $services The configuration deployment controller services.
+	 * @param ConfigurationKeyRegistryInterface $registry   The draftable vocabulary.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ConfigurationDraftService $drafts,
-		private readonly DeploymentPreviewService $previews,
-		private readonly DeploymentService $deployments,
-		private readonly ConfigurationExplainer $explainer,
-		private readonly ConfigurationKeyRegistry $registry,
+		ConfigDeploymentControllerServices $services,
+		private readonly ConfigurationKeyRegistryInterface $registry,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->drafts = $services->drafts;
+		$this->previews = $services->previews;
+		$this->deployments = $services->deployments;
+		$this->explainer = $services->explainer;
 
 	}//end __construct()
 
@@ -184,7 +211,7 @@ class ConfigurationDeploymentController extends Controller {
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function draftValue(string $id): JSONResponse {
-		$layer = (string)($this->request->getParam(key: 'layer') ?? ConfigurationLayer::INSTANCE);
+		$layer = (string)($this->request->getParam(key: 'layer') ?? ConfigurationLayerInterface::INSTANCE);
 		$layerRef = $this->optional(key: 'layerRef');
 		$configKey = (string)($this->request->getParam(key: 'key') ?? '');
 

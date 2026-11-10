@@ -26,6 +26,8 @@ use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
+use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
@@ -115,6 +117,29 @@ class DeleteObjectTest extends TestCase {
 	// =========================================================================
 	// Helper methods
 	// =========================================================================
+
+	/**
+	 * A handler with a file service, for the folder half of a permanent delete.
+	 *
+	 * @param \OCA\OpenRegister\Service\FileService $files The file service.
+	 *
+	 * @return DeleteObject The handler.
+	 */
+	private function handlerWithFiles(\OCA\OpenRegister\Service\FileService $files): DeleteObject {
+		return new DeleteObject(
+			$this->objectMapper,
+			$this->cacheHandler,
+			$this->userSession,
+			$this->auditTrailMapper,
+			$this->settingsService,
+			$this->logger,
+			$this->integrityService,
+			$this->createMock(\OCP\IDBConnection::class),
+			$this->organisationMapper,
+			$files
+		);
+	}
+
 
 	/**
 	 * Create an ObjectEntity with common fields pre-filled.
@@ -332,6 +357,133 @@ class DeleteObjectTest extends TestCase {
 		$result = $this->handler->delete($object);
 
 		$this->assertTrue($result);
+	}
+
+	/**
+	 * A soft delete asks the delete guards about the object it is deleting, before it writes.
+	 */
+	public function testSoftDeleteAsksTheDeleteGuardsFirst(): void {
+		$object = $this->createObjectEntity('uuid-guarded', '2', '5');
+		$order = [];
+
+		$this->objectMapper
+			->expects($this->once())
+			->method('assertDeletable')
+			->with($this->identicalTo($object))
+			->willReturnCallback(function () use (&$order, $object): void {
+				$order[] = 'guard';
+				$this->assertEmpty($object->getDeleted(), 'the guards see the object before it is marked deleted');
+			});
+		$this->objectMapper
+			->expects($this->once())
+			->method('update')
+			->willReturnCallback(function () use (&$order, $object): ObjectEntity {
+				$order[] = 'write';
+				return $object;
+			});
+
+		$this->withNoUser();
+		$this->withAuditTrailsEnabled(false);
+
+		$this->assertTrue($this->handler->delete($object, null, false, $this->createRegister(2), $this->createSchema(5)));
+		$this->assertSame(['guard', 'write'], $order);
+	}
+
+	/**
+	 * A guard that refuses (a frozen object) stops the soft delete: nothing is written or audited.
+	 */
+	public function testARefusingGuardStopsTheSoftDelete(): void {
+		$object = $this->createObjectEntity('uuid-frozen', '2', '5');
+		$refusal = new HookStoppedException(message: 'This record is locked', errors: ['status' => 409]);
+
+		$this->objectMapper->method('assertDeletable')->willThrowException($refusal);
+		$this->objectMapper->expects($this->never())->method('update');
+		$this->auditTrailMapper->expects($this->never())->method('createAuditTrail');
+		$this->withAuditTrailsEnabled(true);
+
+		try {
+			$this->handler->delete($object, null, false, $this->createRegister(2), $this->createSchema(5));
+			$this->fail('a refused soft delete must throw');
+		} catch (HookStoppedException $exception) {
+			$this->assertSame($refusal, $exception);
+		}
+
+		$this->assertEmpty($object->getDeleted());
+	}
+
+	/**
+	 * A permanent delete asks the guards once, itself, and tells the mapper not to ask again.
+	 */
+	public function testAPermanentDeleteAsksTheGuardsOnce(): void {
+		$object = $this->createObjectEntity('uuid-permanent', '2', '5');
+
+		$this->objectMapper->expects($this->once())->method('assertDeletable')->with($this->identicalTo($object));
+		$this->objectMapper->expects($this->once())->method('deleteObjectEntity')
+			->with($this->identicalTo($object), $this->anything(), $this->anything(), true, false)
+			->willReturn($object);
+		$this->withAuditTrailsEnabled(false);
+
+		$this->assertTrue($this->handler->delete($object, null, true, $this->createRegister(2), $this->createSchema(5)));
+	}
+
+	/**
+	 * A refused permanent delete leaves the object's folder where it is.
+	 */
+	public function testARefusedPermanentDeleteKeepsTheFolder(): void {
+		$object = $this->createObjectEntity('uuid-frozen-folder', '2', '5');
+		$object->setFolder('42');
+		$files = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
+		$files->expects($this->never())->method('getObjectFolder');
+		$handler = $this->handlerWithFiles(files: $files);
+
+		$this->objectMapper->method('assertDeletable')->willThrowException(new HookStoppedException(message: 'locked'));
+		$this->objectMapper->expects($this->never())->method('deleteObjectEntity');
+
+		$this->expectException(HookStoppedException::class);
+		$handler->delete($object, null, true, $this->createRegister(2), $this->createSchema(5));
+	}
+
+	/**
+	 * The root's guards refuse before a cascade:true child is deleted.
+	 */
+	public function testARefusedRootDeletesNoCascadeChild(): void {
+		$parent = $this->createObjectEntity('parent-locked', '1', '10', ['childRef' => 'child-1']);
+		$child = $this->createObjectEntity('child-1', '1', '10');
+		$register = $this->createRegister(1);
+		$schema = $this->createSchema(10, ['childRef' => ['cascade' => true, 'type' => 'string']]);
+		$this->objectMapper->method('findAcrossAllSources')->willReturnCallback(
+			fn (string $identifier) => $this->makeContext($identifier === 'child-1' ? $child : $parent, $register, $schema)
+		);
+		$this->integrityService->method('hasIncomingOnDeleteReferences')->willReturn(false);
+		$this->withNoUser();
+		$this->withAuditTrailsEnabled(false);
+		// Only the root is locked; the child on its own may go.
+		$this->objectMapper->method('assertDeletable')->willReturnCallback(
+			static function (ObjectEntity $object): void {
+				if ($object->getUuid() === 'parent-locked') {
+					throw new HookStoppedException(message: 'locked');
+				}
+			}
+		);
+		$this->objectMapper->expects($this->never())->method('update');
+
+		$this->expectException(HookStoppedException::class);
+		$this->handler->deleteObject(register: 1, schema: 10, uuid: 'parent-locked');
+	}
+
+	/**
+	 * A root delete asks its guards exactly once, before the cascade, not again when it writes.
+	 */
+	public function testARootDeleteAsksItsGuardsOnce(): void {
+		$object = $this->createObjectEntity('uuid-root', '1', '10');
+		$this->objectMapper->method('findAcrossAllSources')->willReturn($this->makeContext($object));
+		$this->objectMapper->method('update')->willReturn($object);
+		$this->integrityService->method('hasIncomingOnDeleteReferences')->willReturn(false);
+		$this->withNoUser();
+		$this->withAuditTrailsEnabled(false);
+		$this->objectMapper->expects($this->once())->method('assertDeletable');
+
+		$this->assertTrue($this->handler->deleteObject(register: 1, schema: 10, uuid: 'uuid-root'));
 	}
 
 	/**
@@ -643,7 +795,7 @@ class DeleteObjectTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			nullifyTargets: [['objectUuid' => 'ref-1', 'property' => 'owner']]
+			effects: new DeletionEffects(nullifyTargets: [['objectUuid' => 'ref-1', 'property' => 'owner']])
 		);
 		$this->integrityService->method('canDelete')->willReturn($analysis);
 
@@ -896,6 +1048,24 @@ class DeleteObjectTest extends TestCase {
 		$this->assertFalse($result);
 	}
 
+	/**
+	 * deleteObject() hands a guard's refusal to its caller instead of reporting a failed delete.
+	 */
+	public function testDeleteObjectPassesAGuardRefusalOn(): void {
+		$object = $this->createObjectEntity('uuid-locked', '1', '10');
+		$refusal = new HookStoppedException(message: 'This record is locked', errors: ['status' => 409]);
+
+		$this->objectMapper->method('findAcrossAllSources')->willReturn($this->makeContext($object));
+		$this->objectMapper->method('assertDeletable')->willThrowException($refusal);
+		$this->integrityService->method('hasIncomingOnDeleteReferences')->willReturn(false);
+		$this->withNoUser();
+		$this->withAuditTrailsEnabled(false);
+
+		$this->expectExceptionObject($refusal);
+
+		$this->handler->deleteObject(register: 1, schema: 10, uuid: 'uuid-locked');
+	}
+
 	// =========================================================================
 	// deleteObject() — multitenancy / RBAC flags
 	// =========================================================================
@@ -1046,9 +1216,7 @@ class DeleteObjectTest extends TestCase {
 	public function testDeletionAnalysisToArray(): void {
 		$analysis = new DeletionAnalysis(
 			deletable: false,
-			cascadeTargets: [['objectUuid' => 'c1']],
-			nullifyTargets: [['objectUuid' => 'n1']],
-			defaultTargets: [['objectUuid' => 'd1']],
+			effects: new DeletionEffects(cascadeTargets: [['objectUuid' => 'c1']], nullifyTargets: [['objectUuid' => 'n1']], defaultTargets: [['objectUuid' => 'd1']]),
 			blockers: [['objectUuid' => 'b1']],
 			chainPaths: [['path' => 'A->B']]
 		);

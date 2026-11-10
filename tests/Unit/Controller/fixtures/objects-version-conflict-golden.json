@@ -1,0 +1,443 @@
+{
+    "plain blank claim": {
+        "response": null,
+        "trail": [],
+        "warned": []
+    },
+    "plain blank param, same header": {
+        "response": null,
+        "trail": [],
+        "warned": []
+    },
+    "plain header a bare date": {
+        "response": {
+            "status": 409,
+            "data": {
+                "error": "Conflict: the object was modified since it was read. Re-read and retry.",
+                "code": "version-conflict",
+                "message": "This object changed since you read it. Re-read it and try again.",
+                "conflicts": [],
+                "changedBy": null,
+                "changedAt": null,
+                "expectedUpdated": "2026-05-05T00:00:00+00:00",
+                "currentUpdated": "2026-05-05T10:00:00+00:00"
+            }
+        },
+        "trail": [
+            {
+                "entry": [
+                    "refused",
+                    {
+                        "reason": "version-conflict",
+                        "expectedUpdated": "2026-05-05T00:00:00+00:00",
+                        "currentUpdated": "2026-05-05T10:00:00+00:00",
+                        "properties": []
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "warned": []
+    },
+    "plain header a date with another offset": {
+        "response": {
+            "status": 409,
+            "data": {
+                "error": "Conflict: the object was modified since it was read. Re-read and retry.",
+                "code": "version-conflict",
+                "message": "This object changed since you read it. Re-read it and try again.",
+                "conflicts": [],
+                "changedBy": null,
+                "changedAt": null,
+                "expectedUpdated": "2026-05-05T12:00:00+02:00",
+                "currentUpdated": "2026-05-05T10:00:00+00:00"
+            }
+        },
+        "trail": [
+            {
+                "entry": [
+                    "refused",
+                    {
+                        "reason": "version-conflict",
+                        "expectedUpdated": "2026-05-05T12:00:00+02:00",
+                        "currentUpdated": "2026-05-05T10:00:00+00:00",
+                        "properties": []
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "warned": []
+    },
+    "plain header a media type": {
+        "response": null,
+        "trail": [],
+        "warned": []
+    },
+    "plain header a year and month": {
+        "response": null,
+        "trail": [],
+        "warned": []
+    },
+    "plain header an etag": {
+        "response": null,
+        "trail": [],
+        "warned": []
+    },
+    "plain header padded": {
+        "response": {
+            "status": 409,
+            "data": {
+                "error": "Conflict: the object was modified since it was read. Re-read and retry.",
+                "code": "version-conflict",
+                "message": "This object changed since you read it. Re-read it and try again.",
+                "conflicts": [],
+                "changedBy": null,
+                "changedAt": null,
+                "expectedUpdated": "2026-05-05T09:00:00+00:00",
+                "currentUpdated": "2026-05-05T10:00:00+00:00"
+            }
+        },
+        "trail": [
+            {
+                "entry": [
+                    "refused",
+                    {
+                        "reason": "version-conflict",
+                        "expectedUpdated": "2026-05-05T09:00:00+00:00",
+                        "currentUpdated": "2026-05-05T10:00:00+00:00",
+                        "properties": []
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "warned": []
+    },
+    "plain header quoted": {
+        "response": {
+            "status": 409,
+            "data": {
+                "error": "Conflict: the object was modified since it was read. Re-read and retry.",
+                "code": "version-conflict",
+                "message": "This object changed since you read it. Re-read it and try again.",
+                "conflicts": [],
+                "changedBy": null,
+                "changedAt": null,
+                "expectedUpdated": "2026-05-05T09:00:00+00:00",
+                "currentUpdated": "2026-05-05T10:00:00+00:00"
+            }
+        },
+        "trail": [
+            {
+                "entry": [
+                    "refused",
+                    {
+                        "reason": "version-conflict",
+                        "expectedUpdated": "2026-05-05T09:00:00+00:00",
+                        "currentUpdated": "2026-05-05T10:00:00+00:00",
+                        "properties": []
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "warned": []
+    },
+    "plain header stale": {
+        "response": {
+            "status": 409,
+            "data": {
+                "error": "Conflict: the object was modified since it was read. Re-read and retry.",
+                "code": "version-conflict",
+                "message": "This object changed since you read it. Re-read it and try again.",
+                "conflicts": [],
+                "changedBy": null,
+                "changedAt": null,
+                "expectedUpdated": "2026-05-05T09:00:00+00:00",
+                "currentUpdated": "2026-05-05T10:00:00+00:00"
+            }
+        },
+        "trail": [
+            {
+                "entry": [
+                    "refused",
+                    {
+                        "reason": "version-conflict",
+                        "expectedUpdated": "2026-05-05T09:00:00+00:00",
+                        "currentUpdated": "2026-05-05T10:00:00+00:00",
+                        "properties": []
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "warned": []
+    },
+    "plain header unparsable with a date in it": {
+        "response": {
+            "status": 409,
+            "data": {
+                "error": "Conflict: the object was modified since it was read. Re-read and retry.",
+                "code": "version-conflict",
+                "message": "This object changed since you read it. Re-read it and try again.",
+                "conflicts": [],
+                "changedBy": null,
+                "changedAt": null,
+                "expectedUpdated": "2026-05-05T00:00:00-11:00",
+                "currentUpdated": "2026-05-05T10:00:00+00:00"
+            }
+        },
+        "trail": [
+            {
+                "entry": [
+                    "refused",
+                    {
+                        "reason": "version-conflict",
+                        "expectedUpdated": "2026-05-05T00:00:00-11:00",
+                        "currentUpdated": "2026-05-05T10:00:00+00:00",
+                        "properties": []
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "warned": []
+    },
+    "plain integer claim": {
+        "response": {
+            "status": 409,
+            "data": {
+                "error": "Conflict: the object was modified since it was read. Re-read and retry.",
+                "code": "version-conflict",
+                "message": "This object changed since you read it. Re-read it and try again.",
+                "conflicts": [],
+                "changedBy": null,
+                "changedAt": null,
+                "expectedUpdated": "5",
+                "currentUpdated": "2026-05-05T10:00:00+00:00"
+            }
+        },
+        "trail": [
+            {
+                "entry": [
+                    "refused",
+                    {
+                        "reason": "version-conflict",
+                        "expectedUpdated": "5",
+                        "currentUpdated": "2026-05-05T10:00:00+00:00",
+                        "properties": []
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "warned": []
+    },
+    "plain nothing claimed": {
+        "response": null,
+        "trail": [],
+        "warned": []
+    },
+    "plain param wins over header": {
+        "response": null,
+        "trail": [],
+        "warned": []
+    },
+    "plain same version": {
+        "response": null,
+        "trail": [],
+        "warned": []
+    },
+    "plain stale version": {
+        "response": {
+            "status": 409,
+            "data": {
+                "error": "Conflict: the object was modified since it was read. Re-read and retry.",
+                "code": "version-conflict",
+                "message": "This object changed since you read it. Re-read it and try again.",
+                "conflicts": [],
+                "changedBy": null,
+                "changedAt": null,
+                "expectedUpdated": "2026-05-05T09:00:00+00:00",
+                "currentUpdated": "2026-05-05T10:00:00+00:00"
+            }
+        },
+        "trail": [
+            {
+                "entry": [
+                    "refused",
+                    {
+                        "reason": "version-conflict",
+                        "expectedUpdated": "2026-05-05T09:00:00+00:00",
+                        "currentUpdated": "2026-05-05T10:00:00+00:00",
+                        "properties": []
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "warned": []
+    },
+    "report": {
+        "response": {
+            "status": 409,
+            "data": {
+                "error": "built",
+                "conflicts": {
+                    "a": 1,
+                    "b": 2
+                },
+                "sent": {
+                    "a": "mine"
+                },
+                "intervening": 1,
+                "expectedUpdated": "2026-05-05T09:00:00+00:00",
+                "currentUpdated": "2026-05-05T10:00:00+00:00"
+            }
+        },
+        "trail": [
+            {
+                "findAll": [
+                    25,
+                    null,
+                    {
+                        "object_uuid": "object-uuid"
+                    },
+                    {
+                        "created": "DESC"
+                    },
+                    null
+                ]
+            },
+            {
+                "entry": [
+                    "refused",
+                    {
+                        "reason": "version-conflict",
+                        "expectedUpdated": "2026-05-05T09:00:00+00:00",
+                        "currentUpdated": "2026-05-05T10:00:00+00:00",
+                        "properties": [
+                            "a",
+                            "b"
+                        ]
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "warned": []
+    },
+    "report fails": {
+        "response": {
+            "status": 409,
+            "data": {
+                "error": "Conflict: the object was modified since it was read. Re-read and retry.",
+                "code": "version-conflict",
+                "message": "This object changed since you read it. Re-read it and try again.",
+                "conflicts": [],
+                "changedBy": null,
+                "changedAt": null,
+                "expectedUpdated": "2026-05-05T09:00:00+00:00",
+                "currentUpdated": "2026-05-05T10:00:00+00:00"
+            }
+        },
+        "trail": [
+            {
+                "findAll": [
+                    25,
+                    null,
+                    {
+                        "object_uuid": "object-uuid"
+                    },
+                    {
+                        "created": "DESC"
+                    },
+                    null
+                ]
+            },
+            {
+                "entry": [
+                    "refused",
+                    {
+                        "reason": "version-conflict",
+                        "expectedUpdated": "2026-05-05T09:00:00+00:00",
+                        "currentUpdated": "2026-05-05T10:00:00+00:00",
+                        "properties": []
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "warned": [
+            "[ObjectsController] a conflict body could not be built: no report"
+        ]
+    },
+    "report unparsable claim": {
+        "response": {
+            "status": 409,
+            "data": {
+                "conflicts": [],
+                "intervening": 0,
+                "expectedUpdated": "not a date",
+                "currentUpdated": "2026-05-05T10:00:00+00:00"
+            }
+        },
+        "trail": [
+            {
+                "entry": [
+                    "refused",
+                    {
+                        "reason": "version-conflict",
+                        "expectedUpdated": "not a date",
+                        "currentUpdated": "2026-05-05T10:00:00+00:00",
+                        "properties": []
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "warned": []
+    },
+    "trail fails": {
+        "response": {
+            "status": 409,
+            "data": {
+                "error": "Conflict: the object was modified since it was read. Re-read and retry.",
+                "code": "version-conflict",
+                "message": "This object changed since you read it. Re-read it and try again.",
+                "conflicts": [],
+                "changedBy": null,
+                "changedAt": null,
+                "expectedUpdated": "2026-05-05T09:00:00+00:00",
+                "currentUpdated": "2026-05-05T10:00:00+00:00"
+            }
+        },
+        "trail": [],
+        "warned": [
+            "[ObjectsController] a refused write could not be recorded: no trail"
+        ]
+    }
+}

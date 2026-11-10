@@ -20,11 +20,16 @@ declare(strict_types=1);
 
 namespace Unit\BackgroundJob;
 
-use OCA\OpenRegister\BackgroundJob\ChunkVectorizationJob;
-use OCA\OpenRegister\Db\Chunk;
-use OCA\OpenRegister\Db\ChunkMapper;
-use OCA\OpenRegister\Service\Vectorization\Handlers\VectorStorageHandler;
-use OCA\OpenRegister\Service\Vectorization\VectorEmbeddings;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorFactory;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorFactoryInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
+use OCA\OpenRegister\Files\BackgroundJob\ChunkVectorizationJob;
+use OCA\OpenRegister\Files\Db\Chunk;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkStoreInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandler;
+use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -32,6 +37,7 @@ use PHPUnit\Framework\TestCase;
 use OCA\OpenRegister\Tests\Unit\Support\RegistersContainerServices;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
 
 /**
  * Test class for ChunkVectorizationJob
@@ -67,15 +73,16 @@ class ChunkVectorizationJobTest extends TestCase {
 		$this->registerService(IAppConfig::class, function () {
 			return $this->appConfig;
 		});
-		$this->registerService(ChunkMapper::class, function () {
+		$this->registerService(ChunkStoreInterface::class, function () {
 			return $this->chunkMapper;
 		});
-		$this->registerService(VectorEmbeddings::class, function () {
+		$this->registerService(EmbeddingGeneratorInterface::class, function () {
 			return $this->embeddings;
 		});
-		$this->registerService(VectorStorageHandler::class, function () {
+		$this->registerService(VectorStorageHandlerInterface::class, function () {
 			return $this->storageHandler;
 		});
+		$this->registerService(ChunkVectorFactoryInterface::class, fn () => new ChunkVectorFactory());
 
 		return new ChunkVectorizationJob($this->timeFactory, $this->containerMock());
 	}
@@ -136,9 +143,9 @@ class ChunkVectorizationJobTest extends TestCase {
 		$this->storageHandler->expects($this->exactly(2))
 			->method('storeVector')
 			->willReturnCallback(
-				function (string $entityType, string $entityId) use (&$storedEntityIds): int {
-					$this->assertSame('file', $entityType);
-					$storedEntityIds[] = $entityId;
+				function (StoredVector $vector) use (&$storedEntityIds): int {
+					$this->assertSame('file', $vector->entityType);
+					$storedEntityIds[] = $vector->entityId;
 					return count($storedEntityIds);
 				}
 			);

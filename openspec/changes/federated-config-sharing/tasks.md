@@ -49,8 +49,19 @@
       nc-vue runtime renders the set's manifest. (openbuild #181)
 
 ## Phase 8 — UI + governance
-- [x] nc-vue `CnConfigurationStore` — user settings pane: pick which GitHub
+- [ ] nc-vue `CnConfigurationStore` — user settings pane: pick which GitHub
       credential the store uses + instance signing key + browse-by-type discovery. (nc-vue #242)
+      Unticked 2026-10-30: `git grep CnConfigurationStore` finds nothing on nextcloud-vue
+      `main` or `development`; the shared store page is `CnStorePage`, which lists only the
+      types a manifest declares.
+- [ ] Store type `nldesign.theme`: add `"nldesign.theme"` to `store.types` in
+      `src/manifest.json` (next to `openregister.configset` and `openregister.flows`), so the
+      Store page offers thematiq's shareable theme (registered by thematiq's
+      `NlDesignThemeShareableConfigType`, id `nldesign.theme`). Only list it when
+      `ShareableConfigTypeRegistry` holds the type: a type no installed app registers
+      must not appear. Test: with thematiq enabled, the Store page lists "NL Design theme"
+      and publishing it calls `FederatedConfigService` with type `nldesign.theme`; with
+      thematiq disabled, the type is absent. (thematiq row `gov-federated-share`)
 - [ ] Org source-allowlist / trusted-keys **admin** UI (config keys exist; no UI yet).
 - [ ] "How to share a config" end-user docs.
 

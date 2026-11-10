@@ -118,48 +118,31 @@ class FlowConcurrency {
 			return [];
 		}
 
-		$indexed = array_values($items);
-		$bound = $this->boundedLimit(limit: $limit);
+		$promises = $this->promisesFor(items: array_values($items), work: $work);
+
+		return $this->settled(promises: $promises, concurrency: $this->boundedLimit(limit: $limit));
+	}//end map()
+
+	/**
+	 * Wait for every promise, at most `$concurrency` in flight, and report each outcome in input order.
+	 *
+	 * @param \Generator $promises    The promises, keyed by input position.
+	 * @param integer    $concurrency How many may be in flight at once.
+	 *
+	 * @return array<int, array{ok: bool, value: mixed, error: Throwable|null}> One result per input, in input order.
+	 */
+	private function settled(\Generator $promises, int $concurrency): array {
 		$results = [];
-
-		$promises = (function () use ($indexed, $work): \Generator {
-			foreach ($indexed as $index => $item) {
-				try {
-					$produced = $work($item, $index);
-				} catch (Throwable $e) {
-					// A `$work` that throws SYNCHRONOUSLY — before it ever
-					// returns a promise — must be caught here. It is not a
-					// rejected promise, so `EachPromise`'s rejection handler
-					// never sees it, and it would escape `map()` and take the
-					// other items' results with it: the exact loss of isolation
-					// this class promises not to have.
-					yield $index => Create::rejectionFor($e);
-					continue;
-				}
-
-				if (($produced instanceof PromiseInterface) === true) {
-					yield $index => $produced;
-					continue;
-				}
-
-				yield $index => Create::promiseFor($produced);
-			}//end foreach
-		})();
 
 		(new EachPromise(
 			$promises,
 			[
-				'concurrency' => $bound,
+				'concurrency' => $concurrency,
 				'fulfilled' => static function ($value, $index) use (&$results): void {
 					$results[$index] = ['ok' => true, 'value' => $value, 'error' => null];
 				},
 				'rejected' => static function ($reason, $index) use (&$results): void {
-					$error = $reason;
-					if (($reason instanceof Throwable) === false) {
-						$error = new RuntimeException((string)$reason);
-					}
-
-					$results[$index] = ['ok' => false, 'value' => null, 'error' => $error];
+					$results[$index] = ['ok' => false, 'value' => null, 'error' => self::errorFrom(reason: $reason)];
 				},
 			]
 		))->promise()->wait();
@@ -171,7 +154,57 @@ class FlowConcurrency {
 		ksort($results);
 
 		return array_values($results);
-	}//end map()
+	}//end settled()
+
+	/**
+	 * One promise per item, created lazily as `EachPromise` pulls them.
+	 *
+	 * A `$work` that throws SYNCHRONOUSLY — before it ever returns a promise —
+	 * is caught here. It is not a rejected promise, so `EachPromise`'s
+	 * rejection handler never sees it, and it would escape `map()` and take
+	 * the other items' results with it: the exact loss of isolation this
+	 * class promises not to have.
+	 *
+	 * @param array<int, mixed> $items The re-indexed item list.
+	 * @param callable          $work  `fn(mixed $item, int $index): PromiseInterface|mixed`.
+	 *
+	 * @return \Generator<int, PromiseInterface> The promises, keyed by item index.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-that-calls-out-per-item-must-be-able-to-do-so-concurrently
+	 */
+	private function promisesFor(array $items, callable $work): \Generator {
+		foreach ($items as $index => $item) {
+			try {
+				$produced = $work($item, $index);
+			} catch (Throwable $e) {
+				yield $index => Create::rejectionFor($e);
+				continue;
+			}
+
+			if (($produced instanceof PromiseInterface) === true) {
+				yield $index => $produced;
+				continue;
+			}
+
+			yield $index => Create::promiseFor($produced);
+		}
+	}//end promisesFor()
+
+	/**
+	 * The error a rejection carries: its reason when that is a throwable,
+	 * otherwise a RuntimeException naming it.
+	 *
+	 * @param mixed $reason The rejection reason.
+	 *
+	 * @return Throwable The error.
+	 */
+	private static function errorFrom(mixed $reason): Throwable {
+		if (($reason instanceof Throwable) === true) {
+			return $reason;
+		}
+
+		return new RuntimeException((string)$reason);
+	}//end errorFrom()
 
 	/**
 	 * The concurrency to actually use.

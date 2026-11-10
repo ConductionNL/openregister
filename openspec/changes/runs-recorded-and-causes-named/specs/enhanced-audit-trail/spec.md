@@ -34,6 +34,14 @@ on the named run.
 - **AND** the attempt to supply a cause is recorded
 - @e2e exclude {request handling, covered by unit tests}
 
+#### Scenario: a create carrying a cause marks the created object only
+
+- **GIVEN** a create request carrying a cause field, with a nested object that cascades
+- **WHEN** the objects are written
+- **THEN** the audit entry of the created object records the attempt
+- **AND** the audit entry of the nested object does not
+- @e2e exclude {request handling, covered by unit tests}
+
 ### Requirement: The cause survives deferred work (REQ-RCN-002)
 
 A write made by a background job on behalf of an earlier act SHALL carry the

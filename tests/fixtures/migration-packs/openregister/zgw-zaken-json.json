@@ -1,0 +1,27 @@
+{
+  "id": "zgw-zaken-json",
+  "name": "ZGW Zaken (JSON) — template",
+  "description": "TEMPLATE, not a ready-to-run pack. Shape as GET /api/migration-packs/{id} returns the seeded pack: PHP stores the empty defaults and skipRows as [].",
+  "sourceFormat": "json",
+  "version": "1.0.0",
+  "idStrategy": { "type": "generate" },
+  "fieldMappings": [
+    { "source": "/identificatie", "target": "caseNumber", "required": true, "transform": { "type": "trim" } },
+    { "source": "/omschrijving", "target": "title", "required": true, "transform": { "type": "trim" } },
+    { "source": "/startdatum", "target": "startDate", "required": false, "transform": { "type": "date", "sourceFormat": "Y-m-d", "targetFormat": "Y-m-d" } },
+    { "source": "/einddatum", "target": "endDate", "required": false, "transform": { "type": "date", "sourceFormat": "Y-m-d", "targetFormat": "Y-m-d" } },
+    { "source": "/status", "target": "status", "required": false, "transform": { "type": "trim" } },
+    {
+      "source": "/zaaktype",
+      "target": "zaakTypeCode",
+      "required": false,
+      "transform": {
+        "type": "lookup",
+        "map": { "https://example.com/catalogi/api/v1/zaaktypen/00000000-0000-0000-0000-000000000000": "VOORBEELD" }
+      }
+    },
+    { "source": "/vertrouwelijkheidaanduiding", "target": "confidentialityLevel", "required": false, "transform": { "type": "trim" } }
+  ],
+  "defaults": [],
+  "skipRows": []
+}

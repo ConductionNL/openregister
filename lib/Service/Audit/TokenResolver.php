@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Audit;
 
 use OCA\OpenRegister\Db\Consumer;
-use OCA\OpenRegister\Db\ConsumerMapper;
+use OCA\OpenRegister\Db\ConsumerMapperInterface;
 use OCP\Authentication\Token\IProvider as ITokenProvider;
 use OCP\Authentication\Token\IToken;
 use OCP\ISession;
@@ -45,7 +45,7 @@ use Throwable;
  * know who called, and a trail that names the WRONG consumer is worse than
  * both, because somebody will act on it.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 class TokenResolver {
 	/**
@@ -61,13 +61,13 @@ class TokenResolver {
 	 * @param ISession       $session       The current session.
 	 * @param ITokenProvider $tokenProvider Resolves an app password to its token record.
 	 * @param IUserSession   $userSession   The authenticated principal.
-	 * @param ConsumerMapper $consumerMapper Registered API consumers.
+	 * @param ConsumerMapperInterface $consumerMapper Registered API consumers.
 	 */
 	public function __construct(
 		private readonly ISession $session,
 		private readonly ITokenProvider $tokenProvider,
 		private readonly IUserSession $userSession,
-		private readonly ConsumerMapper $consumerMapper,
+		private readonly ConsumerMapperInterface $consumerMapper,
 	) {
 	}//end __construct()
 
@@ -76,7 +76,7 @@ class TokenResolver {
 	 *
 	 * @return TokenIdentity|null The identity, or null for an interactive or unauthenticated call.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function resolve(): ?TokenIdentity {
 		$token = $this->currentToken();
@@ -87,12 +87,8 @@ class TokenResolver {
 		$ownerUid = $this->ownerUid(token: $token);
 		$identity = new TokenIdentity(
 			mechanism: 'app-password',
-			reference: (string)$token->getId(),
-			name: $this->tokenName(token: $token),
-			ownerUid: $ownerUid,
-			ownerName: $this->ownerName(ownerUid: $ownerUid),
-			consumerUuid: null,
-			consumerName: null,
+			token: new NamedIdentifier(id: (string)$token->getId(), name: $this->tokenName(token: $token)),
+			owner: new NamedIdentifier(id: $ownerUid, name: $this->ownerName(ownerUid: $ownerUid)),
 		);
 
 		return $this->withConsumer(identity: $identity, ownerUid: $ownerUid);
@@ -103,7 +99,7 @@ class TokenResolver {
 	 *
 	 * @return IToken|null The token, or null when this is not a token call.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function currentToken(): ?IToken {
 		try {
@@ -130,7 +126,7 @@ class TokenResolver {
 	 *
 	 * @return string|null The name, or null when it is blank.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function tokenName(IToken $token): ?string {
 		try {
@@ -158,7 +154,7 @@ class TokenResolver {
 	 *
 	 * @return string|null The uid, or null when the token does not name one.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function ownerUid(IToken $token): ?string {
 		try {
@@ -181,7 +177,7 @@ class TokenResolver {
 	 *
 	 * @return string|null The display name, or null when it cannot be read.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function ownerName(?string $ownerUid): ?string {
 		if ($ownerUid === null) {
@@ -224,7 +220,7 @@ class TokenResolver {
 	 *
 	 * @return TokenIdentity The identity, with the consumer when one was found.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function withConsumer(TokenIdentity $identity, ?string $ownerUid): TokenIdentity {
 		$consumer = $this->findConsumer(ownerUid: $ownerUid);
@@ -232,15 +228,7 @@ class TokenResolver {
 			return $identity;
 		}
 
-		return new TokenIdentity(
-			mechanism: $identity->mechanism(),
-			reference: $identity->reference(),
-			name: $identity->name(),
-			ownerUid: $identity->ownerUid(),
-			ownerName: $identity->ownerName(),
-			consumerUuid: $consumer->getUuid(),
-			consumerName: $consumer->getName(),
-		);
+		return $identity->withConsumer(consumer: new NamedIdentifier(id: $consumer->getUuid(), name: $consumer->getName()));
 	}//end withConsumer()
 
 	/**
@@ -250,7 +238,7 @@ class TokenResolver {
 	 *
 	 * @return Consumer|null The consumer, or null when there is no unambiguous one.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function findConsumer(?string $ownerUid): ?Consumer {
 		if ($ownerUid === null) {

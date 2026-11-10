@@ -1,0 +1,313 @@
+{
+    "empty": {
+        "oas": [],
+        "issues": []
+    },
+    "no paths": {
+        "oas": {
+            "tags": [
+                {
+                    "name": "lonely"
+                }
+            ],
+            "servers": "none"
+        },
+        "issues": [
+            {
+                "path": "tags[0].name",
+                "message": "Top-level tag \"lonely\" is declared but not referenced by any operation.",
+                "code": "unused_tag",
+                "severity": "warning"
+            }
+        ]
+    },
+    "messy": {
+        "oas": {
+            "servers": [
+                {
+                    "url": "/apps/openregister/api"
+                },
+                {
+                    "url": "https://ok.example/api"
+                },
+                {
+                    "description": "no url"
+                }
+            ],
+            "tags": [
+                {
+                    "name": "used"
+                },
+                {
+                    "name": "unused"
+                },
+                "not a tag",
+                {
+                    "description": "no name"
+                },
+                {
+                    "name": "orphan",
+                    "description": "Operations for orphan"
+                },
+                {
+                    "name": "second-orphan",
+                    "description": "Operations for second-orphan"
+                }
+            ],
+            "components": {
+                "schemas": {
+                    "A": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/B"
+                            },
+                            {
+                                "type": "object"
+                            },
+                            {
+                                "properties": {
+                                    "p": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "B": {
+                        "type": "object",
+                        "properties": {
+                            "q": {
+                                "type": "string",
+                                "description": "Reference to Missing"
+                            },
+                            "r": {
+                                "items": {
+                                    "$ref": "B"
+                                }
+                            }
+                        }
+                    },
+                    "C": {
+                        "type": "string",
+                        "description": "Reference to Gone"
+                    },
+                    "D": "not an array",
+                    "E": [],
+                    "F": {
+                        "$ref": "https://elsewhere.example/schema.json"
+                    },
+                    "G": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/B"
+                            },
+                            "x"
+                        ],
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "description": "kept"
+                            }
+                        ]
+                    },
+                    "H": {
+                        "items": "not a schema",
+                        "properties": {
+                            "s": "not a schema",
+                            "t": []
+                        }
+                    }
+                }
+            },
+            "paths": {
+                "/a": {
+                    "parameters": [
+                        {
+                            "name": "id"
+                        }
+                    ],
+                    "summary": "path summary",
+                    "get": {
+                        "operationId": "dup",
+                        "tags": [
+                            "used",
+                            "orphan"
+                        ],
+                        "responses": {
+                            "200": {
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "$ref": "#/components/schemas/Missing"
+                                        }
+                                    }
+                                }
+                            },
+                            "299": {
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "$ref": "#/components/schemas/B"
+                                        }
+                                    }
+                                }
+                            },
+                            "default": []
+                        }
+                    },
+                    "post": {
+                        "operationId": "dup_2",
+                        "tags": [
+                            "orphan",
+                            "",
+                            7
+                        ],
+                        "responses": {
+                            "201": []
+                        }
+                    },
+                    "put": {
+                        "operationId": "dup_3",
+                        "responses": {
+                            "200": {
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "$ref": "#/components/schemas/A"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "delete": {
+                        "operationId": "",
+                        "responses": []
+                    }
+                },
+                "/b": {
+                    "get": {
+                        "operationId": "dup_2_2",
+                        "tags": [
+                            "second-orphan"
+                        ]
+                    },
+                    "TRACE": {
+                        "operationId": "trace"
+                    },
+                    "Patch": {
+                        "operationId": "dup_4",
+                        "responses": {
+                            "600": []
+                        }
+                    },
+                    "head": "not an operation"
+                }
+            }
+        },
+        "issues": [
+            {
+                "path": "components.schemas.B.properties.q.$ref",
+                "message": "Dangling $ref to \"#/components/schemas/Missing\"; substituted with type=string.",
+                "code": "dangling_ref",
+                "severity": "error"
+            },
+            {
+                "path": "components.schemas.C.$ref",
+                "message": "Dangling $ref to \"#/components/schemas/Gone\"; substituted with type=string.",
+                "code": "dangling_ref",
+                "severity": "error"
+            },
+            {
+                "path": "components.schemas.E.allOf",
+                "message": "allOf with no valid items was removed.",
+                "code": "invalid_allof",
+                "severity": "auto_corrected"
+            },
+            {
+                "path": "components.schemas.G.anyOf[0].$ref",
+                "message": "Dangling $ref to \"#/components/schemas/Nope\"; substituted with type=string.",
+                "code": "dangling_ref",
+                "severity": "error"
+            },
+            {
+                "path": "paths./a.get.responses.200.$ref",
+                "message": "Dangling $ref to \"#/components/schemas/Missing\"; substituted with type=string.",
+                "code": "dangling_ref",
+                "severity": "error"
+            },
+            {
+                "path": "servers.0.url",
+                "message": "Server URL must be absolute (http:// or https://). Got: /apps/openregister/api",
+                "code": "relative_server_url",
+                "severity": "error"
+            },
+            {
+                "path": "servers.2.url",
+                "message": "Server URL must be absolute (http:// or https://). Got: ",
+                "code": "relative_server_url",
+                "severity": "error"
+            },
+            {
+                "path": "paths./a.post.operationId",
+                "message": "Duplicate operationId \"dup\" auto-renamed to \"dup_2\".",
+                "code": "duplicate_operation_id",
+                "severity": "auto_corrected"
+            },
+            {
+                "path": "paths./a.put.operationId",
+                "message": "Duplicate operationId \"dup\" auto-renamed to \"dup_3\".",
+                "code": "duplicate_operation_id",
+                "severity": "auto_corrected"
+            },
+            {
+                "path": "paths./b.get.operationId",
+                "message": "Duplicate operationId \"dup_2\" auto-renamed to \"dup_2_2\".",
+                "code": "duplicate_operation_id",
+                "severity": "auto_corrected"
+            },
+            {
+                "path": "paths./b.Patch.operationId",
+                "message": "Duplicate operationId \"dup\" auto-renamed to \"dup_4\".",
+                "code": "duplicate_operation_id",
+                "severity": "auto_corrected"
+            },
+            {
+                "path": "paths./a.get",
+                "message": "Tag \"orphan\" used by operations but not declared in top-level tags; auto-added.",
+                "code": "orphan_tag",
+                "severity": "auto_corrected"
+            },
+            {
+                "path": "paths./b.get",
+                "message": "Tag \"second-orphan\" used by operations but not declared in top-level tags; auto-added.",
+                "code": "orphan_tag",
+                "severity": "auto_corrected"
+            },
+            {
+                "path": "tags[1].name",
+                "message": "Top-level tag \"unused\" is declared but not referenced by any operation.",
+                "code": "unused_tag",
+                "severity": "warning"
+            },
+            {
+                "path": "paths./a.get.responses.299",
+                "message": "Non-standard HTTP status code \"299\" violates NLGov /core/http-response-code conventions.",
+                "code": "invalid_status_code",
+                "severity": "warning"
+            },
+            {
+                "path": "paths./b.TRACE",
+                "message": "Non-standard HTTP method \"TRACE\" violates NLGov /core/http-methods (only GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS allowed).",
+                "code": "invalid_http_method",
+                "severity": "error"
+            },
+            {
+                "path": "paths./b.Patch.responses.600",
+                "message": "Non-standard HTTP status code \"600\" violates NLGov /core/http-response-code conventions.",
+                "code": "invalid_status_code",
+                "severity": "warning"
+            }
+        ]
+    }
+}

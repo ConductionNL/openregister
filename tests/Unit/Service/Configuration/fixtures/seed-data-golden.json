@@ -1,0 +1,3049 @@
+{
+    "configuration-register": [
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed data import context",
+            "context": {
+                "has_user_context": true
+            }
+        },
+        {
+            "register.find": 10
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] SeedData will be imported into register",
+            "context": {
+                "register_id": 10,
+                "register_slug": "reg-10",
+                "register_title": "REG-10"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Importing seed data objects",
+            "context": {
+                "config_title": "Seed test",
+                "description": "Seeds",
+                "object_types": [
+                    "main",
+                    "from-db",
+                    "unknown",
+                    "foreign"
+                ],
+                "target_register": 10
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Importing seed objects for schema 'main'",
+            "context": {
+                "count": 11
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Pre-creating magic mapper table for schema before importing seed objects",
+            "context": {
+                "schema_id": 40,
+                "schema_slug": "main",
+                "register_id": 10
+            }
+        },
+        {
+            "magic.ensureTable": [
+                10,
+                40
+            ]
+        },
+        {
+            "object.find": [
+                "u-new",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "u-new",
+                "register": "10",
+                "schema": "40",
+                "slug": "plain",
+                "object": {
+                    "id": "u-new",
+                    "title": "Plain",
+                    "name": "n"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 9,
+                "slug": "plain"
+            }
+        },
+        {
+            "object.find": [
+                "Title only",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "40",
+                "slug": "Title only",
+                "object": {
+                    "id": "<v4>",
+                    "title": "Title only"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 12,
+                "slug": "Title only"
+            }
+        },
+        {
+            "log": "error",
+            "message": "[ImportHandler] Seed for 'main' missing slug and title",
+            "context": {
+                "objectKeys": [
+                    "name"
+                ]
+            }
+        },
+        {
+            "object.find": [
+                "u-exists",
+                10,
+                40
+            ]
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object already exists - skipping",
+            "context": {
+                "schema": "main",
+                "identifier": "u-exists",
+                "object_id": 900
+            }
+        },
+        {
+            "object.find": [
+                "u-multi",
+                10,
+                40
+            ]
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Multiple seed objects found with identifier 'u-multi' - skipping to avoid duplication",
+            "context": {
+                "schema": "main",
+                "identifier": "u-multi"
+            }
+        },
+        {
+            "object.find": [
+                "u-boom",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "u-boom",
+                "register": "10",
+                "schema": "40",
+                "slug": "boom",
+                "object": {
+                    "id": "u-boom"
+                }
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Skipping seed object for 'main' - import failed: insert failed",
+            "context": {
+                "schemaSlug": "main",
+                "objectSlug": "boom",
+                "error": "insert failed"
+            }
+        },
+        {
+            "object.find": [
+                "related",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "40",
+                "slug": "related",
+                "object": {
+                    "id": "<v4>"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 23,
+                "slug": "related"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Processing related items for seed object",
+            "context": {
+                "object_uuid": "<v4>",
+                "files_count": 0,
+                "notes_count": 1,
+                "tasks_count": 1
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Related items processed for seed object",
+            "context": {
+                "object_uuid": "<v4>",
+                "files_created": 0,
+                "notes_created": 0,
+                "tasks_created": 0
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] SeedData object references external configuration",
+            "context": {
+                "config_url": "https://example.com/c.json",
+                "register_slug": "ext-reg",
+                "schema_slug": "ext-schema",
+                "object_title": "External"
+            }
+        },
+        {
+            "register.find": 20
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Resolved external register for seedData object",
+            "context": {
+                "slug": "ext-reg",
+                "id": 20,
+                "title": "REG-20"
+            }
+        },
+        {
+            "schema.findBySlug": "ext-schema"
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Resolved external schema for seedData object",
+            "context": {
+                "slug": "ext-schema",
+                "id": 30,
+                "title": "Ext-schema"
+            }
+        },
+        {
+            "object.find": [
+                "x-ext-reg-ext-schema",
+                20,
+                30
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "20",
+                "schema": "30",
+                "slug": "x-ext-reg-ext-schema",
+                "object": {
+                    "id": "<v4>",
+                    "@self": {
+                        "configuration": "https://example.com/c.json",
+                        "register": "ext-reg",
+                        "schema": "ext-schema"
+                    },
+                    "title": "External"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 33,
+                "slug": "x-ext-reg-ext-schema"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] SeedData object references external configuration",
+            "context": {
+                "config_url": "https://example.com/c.json",
+                "register_slug": "missing-reg",
+                "schema_slug": "missing-schema",
+                "object_title": "External"
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] External register not found - using default",
+            "context": {
+                "requested_slug": "missing-reg",
+                "available_slugs": [
+                    "ext-reg",
+                    "boom-reg"
+                ]
+            }
+        },
+        {
+            "schema.findBySlug": "missing-schema"
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] External schema not found - using current schema",
+            "context": {
+                "requested_slug": "missing-schema",
+                "current_schema": "main"
+            }
+        },
+        {
+            "object.find": [
+                "x-missing-reg-missing-schema",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "40",
+                "slug": "x-missing-reg-missing-schema",
+                "object": {
+                    "id": "<v4>",
+                    "@self": {
+                        "configuration": "https://example.com/c.json",
+                        "register": "missing-reg",
+                        "schema": "missing-schema"
+                    },
+                    "title": "External"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 40,
+                "slug": "x-missing-reg-missing-schema"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] SeedData object references external configuration",
+            "context": {
+                "config_url": "https://example.com/c.json",
+                "register_slug": "boom-reg",
+                "schema_slug": "boom-schema",
+                "object_title": "External"
+            }
+        },
+        {
+            "register.find": 66
+        },
+        {
+            "log": "error",
+            "message": "[ImportHandler] Failed to resolve external register",
+            "context": {
+                "slug": "boom-reg",
+                "error": "register lookup failed"
+            }
+        },
+        {
+            "schema.findBySlug": "boom-schema"
+        },
+        {
+            "log": "error",
+            "message": "[ImportHandler] Failed to resolve external schema",
+            "context": {
+                "slug": "boom-schema",
+                "error": "schema lookup failed"
+            }
+        },
+        {
+            "object.find": [
+                "x-boom-reg-boom-schema",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "40",
+                "slug": "x-boom-reg-boom-schema",
+                "object": {
+                    "id": "<v4>",
+                    "@self": {
+                        "configuration": "https://example.com/c.json",
+                        "register": "boom-reg",
+                        "schema": "boom-schema"
+                    },
+                    "title": "External"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 48,
+                "slug": "x-boom-reg-boom-schema"
+            }
+        },
+        {
+            "object.find": [
+                "self-without-configuration",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "40",
+                "slug": "self-without-configuration",
+                "object": {
+                    "id": "<v4>",
+                    "@self": {
+                        "register": "ext-reg"
+                    }
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 51,
+                "slug": "self-without-configuration"
+            }
+        },
+        {
+            "schema.find": "from-db"
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Found schema 'from-db' in database for seedData",
+            "context": {
+                "schemaId": 50,
+                "schemaApp": null
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Importing seed objects for schema 'from-db'",
+            "context": {
+                "count": 1
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Pre-creating magic mapper table for schema before importing seed objects",
+            "context": {
+                "schema_id": 50,
+                "schema_slug": "from-db",
+                "register_id": 10
+            }
+        },
+        {
+            "magic.ensureTable": [
+                10,
+                50
+            ]
+        },
+        {
+            "object.find": [
+                "db-object",
+                10,
+                50
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "50",
+                "slug": "db-object",
+                "object": {
+                    "id": "<v4>"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "from-db",
+                "object_id": 59,
+                "slug": "db-object"
+            }
+        },
+        {
+            "schema.find": "unknown"
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Skipping seed data for schema 'unknown' - schema not resolvable: no schema unknown",
+            "context": {
+                "appId": "app",
+                "error": "no schema unknown",
+                "availableSchemasInMap": [
+                    "main",
+                    "foreign"
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Importing seed objects for schema 'foreign'",
+            "context": {
+                "count": 2
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Pre-creating magic mapper table for schema before importing seed objects",
+            "context": {
+                "schema_id": 41,
+                "schema_slug": "foreign",
+                "register_id": 10
+            }
+        },
+        {
+            "magic.ensureTable": [
+                10,
+                41
+            ]
+        },
+        {
+            "object.find": [
+                "f1",
+                10,
+                41
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "41",
+                "slug": "f1",
+                "object": {
+                    "id": "<v4>"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "foreign",
+                "object_id": 67,
+                "slug": "f1"
+            }
+        },
+        {
+            "object.find": [
+                "f2",
+                10,
+                41
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "41",
+                "slug": "f2",
+                "object": {
+                    "id": "<v4>"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "foreign",
+                "object_id": 70,
+                "slug": "f2"
+            }
+        },
+        {
+            "log": "info",
+            "message": "[ImportHandler] Seed data import complete",
+            "context": {
+                "config_title": "Seed test",
+                "imported": 11,
+                "related_files": 0,
+                "related_notes": 0,
+                "related_tasks": 0
+            }
+        },
+        {
+            "result": {
+                "objects": [
+                    9,
+                    12,
+                    900,
+                    23,
+                    33,
+                    40,
+                    48,
+                    51,
+                    59,
+                    67,
+                    70
+                ],
+                "relatedFiles": 0,
+                "relatedNotes": 0,
+                "relatedTasks": 0,
+                "skipped": {
+                    "seedObjects": 1
+                }
+            }
+        }
+    ],
+    "fresh-register": [
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed data import context",
+            "context": {
+                "has_user_context": false
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] SeedData will be imported into register",
+            "context": {
+                "register_id": 10,
+                "register_slug": "main",
+                "register_title": "MAIN"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Importing seed data objects",
+            "context": {
+                "config_title": "Seed test",
+                "description": "Seeds",
+                "object_types": [
+                    "main",
+                    "from-db",
+                    "unknown",
+                    "foreign"
+                ],
+                "target_register": 10
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Importing seed objects for schema 'main'",
+            "context": {
+                "count": 11
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Pre-creating magic mapper table for schema before importing seed objects",
+            "context": {
+                "schema_id": 40,
+                "schema_slug": "main",
+                "register_id": 10
+            }
+        },
+        {
+            "magic.ensureTable": [
+                10,
+                40
+            ]
+        },
+        {
+            "object.find": [
+                "u-new",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "u-new",
+                "register": "10",
+                "schema": "40",
+                "slug": "plain",
+                "object": {
+                    "id": "u-new",
+                    "title": "Plain",
+                    "name": "n"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 8,
+                "slug": "plain"
+            }
+        },
+        {
+            "object.find": [
+                "Title only",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "40",
+                "slug": "Title only",
+                "object": {
+                    "id": "<v4>",
+                    "title": "Title only"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 11,
+                "slug": "Title only"
+            }
+        },
+        {
+            "log": "error",
+            "message": "[ImportHandler] Seed for 'main' missing slug and title",
+            "context": {
+                "objectKeys": [
+                    "name"
+                ]
+            }
+        },
+        {
+            "object.find": [
+                "u-exists",
+                10,
+                40
+            ]
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object already exists - skipping",
+            "context": {
+                "schema": "main",
+                "identifier": "u-exists",
+                "object_id": 900
+            }
+        },
+        {
+            "object.find": [
+                "u-multi",
+                10,
+                40
+            ]
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Multiple seed objects found with identifier 'u-multi' - skipping to avoid duplication",
+            "context": {
+                "schema": "main",
+                "identifier": "u-multi"
+            }
+        },
+        {
+            "object.find": [
+                "u-boom",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "u-boom",
+                "register": "10",
+                "schema": "40",
+                "slug": "boom",
+                "object": {
+                    "id": "u-boom"
+                }
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Skipping seed object for 'main' - import failed: insert failed",
+            "context": {
+                "schemaSlug": "main",
+                "objectSlug": "boom",
+                "error": "insert failed"
+            }
+        },
+        {
+            "object.find": [
+                "related",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "40",
+                "slug": "related",
+                "object": {
+                    "id": "<v4>"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 22,
+                "slug": "related"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Processing related items for seed object",
+            "context": {
+                "object_uuid": "<v4>",
+                "files_count": 0,
+                "notes_count": 1,
+                "tasks_count": 1
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Related items processed for seed object",
+            "context": {
+                "object_uuid": "<v4>",
+                "files_created": 0,
+                "notes_created": 0,
+                "tasks_created": 0
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] SeedData object references external configuration",
+            "context": {
+                "config_url": "https://example.com/c.json",
+                "register_slug": "ext-reg",
+                "schema_slug": "ext-schema",
+                "object_title": "External"
+            }
+        },
+        {
+            "register.find": 20
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Resolved external register for seedData object",
+            "context": {
+                "slug": "ext-reg",
+                "id": 20,
+                "title": "REG-20"
+            }
+        },
+        {
+            "schema.findBySlug": "ext-schema"
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Resolved external schema for seedData object",
+            "context": {
+                "slug": "ext-schema",
+                "id": 30,
+                "title": "Ext-schema"
+            }
+        },
+        {
+            "object.find": [
+                "x-ext-reg-ext-schema",
+                20,
+                30
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "20",
+                "schema": "30",
+                "slug": "x-ext-reg-ext-schema",
+                "object": {
+                    "id": "<v4>",
+                    "@self": {
+                        "configuration": "https://example.com/c.json",
+                        "register": "ext-reg",
+                        "schema": "ext-schema"
+                    },
+                    "title": "External"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 32,
+                "slug": "x-ext-reg-ext-schema"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] SeedData object references external configuration",
+            "context": {
+                "config_url": "https://example.com/c.json",
+                "register_slug": "missing-reg",
+                "schema_slug": "missing-schema",
+                "object_title": "External"
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] External register not found - using default",
+            "context": {
+                "requested_slug": "missing-reg",
+                "available_slugs": [
+                    "ext-reg",
+                    "boom-reg"
+                ]
+            }
+        },
+        {
+            "schema.findBySlug": "missing-schema"
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] External schema not found - using current schema",
+            "context": {
+                "requested_slug": "missing-schema",
+                "current_schema": "main"
+            }
+        },
+        {
+            "object.find": [
+                "x-missing-reg-missing-schema",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "40",
+                "slug": "x-missing-reg-missing-schema",
+                "object": {
+                    "id": "<v4>",
+                    "@self": {
+                        "configuration": "https://example.com/c.json",
+                        "register": "missing-reg",
+                        "schema": "missing-schema"
+                    },
+                    "title": "External"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 39,
+                "slug": "x-missing-reg-missing-schema"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] SeedData object references external configuration",
+            "context": {
+                "config_url": "https://example.com/c.json",
+                "register_slug": "boom-reg",
+                "schema_slug": "boom-schema",
+                "object_title": "External"
+            }
+        },
+        {
+            "register.find": 66
+        },
+        {
+            "log": "error",
+            "message": "[ImportHandler] Failed to resolve external register",
+            "context": {
+                "slug": "boom-reg",
+                "error": "register lookup failed"
+            }
+        },
+        {
+            "schema.findBySlug": "boom-schema"
+        },
+        {
+            "log": "error",
+            "message": "[ImportHandler] Failed to resolve external schema",
+            "context": {
+                "slug": "boom-schema",
+                "error": "schema lookup failed"
+            }
+        },
+        {
+            "object.find": [
+                "x-boom-reg-boom-schema",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "40",
+                "slug": "x-boom-reg-boom-schema",
+                "object": {
+                    "id": "<v4>",
+                    "@self": {
+                        "configuration": "https://example.com/c.json",
+                        "register": "boom-reg",
+                        "schema": "boom-schema"
+                    },
+                    "title": "External"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 47,
+                "slug": "x-boom-reg-boom-schema"
+            }
+        },
+        {
+            "object.find": [
+                "self-without-configuration",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "40",
+                "slug": "self-without-configuration",
+                "object": {
+                    "id": "<v4>",
+                    "@self": {
+                        "register": "ext-reg"
+                    }
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 50,
+                "slug": "self-without-configuration"
+            }
+        },
+        {
+            "schema.find": "from-db"
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Found schema 'from-db' in database for seedData",
+            "context": {
+                "schemaId": 50,
+                "schemaApp": null
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Importing seed objects for schema 'from-db'",
+            "context": {
+                "count": 1
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Pre-creating magic mapper table for schema before importing seed objects",
+            "context": {
+                "schema_id": 50,
+                "schema_slug": "from-db",
+                "register_id": 10
+            }
+        },
+        {
+            "magic.ensureTable": [
+                10,
+                50
+            ]
+        },
+        {
+            "object.find": [
+                "db-object",
+                10,
+                50
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "50",
+                "slug": "db-object",
+                "object": {
+                    "id": "<v4>"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "from-db",
+                "object_id": 58,
+                "slug": "db-object"
+            }
+        },
+        {
+            "schema.find": "unknown"
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Skipping seed data for schema 'unknown' - schema not resolvable: no schema unknown",
+            "context": {
+                "appId": "app",
+                "error": "no schema unknown",
+                "availableSchemasInMap": [
+                    "main",
+                    "foreign"
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Importing seed objects for schema 'foreign'",
+            "context": {
+                "count": 2
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Pre-creating magic mapper table for schema before importing seed objects",
+            "context": {
+                "schema_id": 41,
+                "schema_slug": "foreign",
+                "register_id": 10
+            }
+        },
+        {
+            "magic.ensureTable": [
+                10,
+                41
+            ]
+        },
+        {
+            "object.find": [
+                "f1",
+                10,
+                41
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "41",
+                "slug": "f1",
+                "object": {
+                    "id": "<v4>"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "foreign",
+                "object_id": 66,
+                "slug": "f1"
+            }
+        },
+        {
+            "object.find": [
+                "f2",
+                10,
+                41
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "41",
+                "slug": "f2",
+                "object": {
+                    "id": "<v4>"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "foreign",
+                "object_id": 69,
+                "slug": "f2"
+            }
+        },
+        {
+            "log": "info",
+            "message": "[ImportHandler] Seed data import complete",
+            "context": {
+                "config_title": "Seed test",
+                "imported": 11,
+                "related_files": 0,
+                "related_notes": 0,
+                "related_tasks": 0
+            }
+        },
+        {
+            "result": {
+                "objects": [
+                    8,
+                    11,
+                    900,
+                    22,
+                    32,
+                    39,
+                    47,
+                    50,
+                    58,
+                    66,
+                    69
+                ],
+                "relatedFiles": 0,
+                "relatedNotes": 0,
+                "relatedTasks": 0,
+                "skipped": {
+                    "seedObjects": 1
+                }
+            }
+        }
+    ],
+    "linked-register": [
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed data import context",
+            "context": {
+                "has_user_context": false
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] SeedData will be imported into register",
+            "context": {
+                "register_id": 10,
+                "register_slug": "main",
+                "register_title": "MAIN"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Importing seed data objects",
+            "context": {
+                "config_title": "Seed test",
+                "description": "Seeds",
+                "object_types": [
+                    "main",
+                    "from-db",
+                    "unknown",
+                    "foreign"
+                ],
+                "target_register": 10
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Importing seed objects for schema 'main'",
+            "context": {
+                "count": 11
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Pre-creating magic mapper table for schema before importing seed objects",
+            "context": {
+                "schema_id": 40,
+                "schema_slug": "main",
+                "register_id": 10
+            }
+        },
+        {
+            "magic.ensureTable": [
+                10,
+                40
+            ]
+        },
+        {
+            "object.find": [
+                "u-new",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "u-new",
+                "register": "10",
+                "schema": "40",
+                "slug": "plain",
+                "object": {
+                    "id": "u-new",
+                    "title": "Plain",
+                    "name": "n"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 8,
+                "slug": "plain"
+            }
+        },
+        {
+            "object.find": [
+                "Title only",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "40",
+                "slug": "Title only",
+                "object": {
+                    "id": "<v4>",
+                    "title": "Title only"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 11,
+                "slug": "Title only"
+            }
+        },
+        {
+            "log": "error",
+            "message": "[ImportHandler] Seed for 'main' missing slug and title",
+            "context": {
+                "objectKeys": [
+                    "name"
+                ]
+            }
+        },
+        {
+            "object.find": [
+                "u-exists",
+                10,
+                40
+            ]
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object already exists - skipping",
+            "context": {
+                "schema": "main",
+                "identifier": "u-exists",
+                "object_id": 900
+            }
+        },
+        {
+            "object.find": [
+                "u-multi",
+                10,
+                40
+            ]
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Multiple seed objects found with identifier 'u-multi' - skipping to avoid duplication",
+            "context": {
+                "schema": "main",
+                "identifier": "u-multi"
+            }
+        },
+        {
+            "object.find": [
+                "u-boom",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "u-boom",
+                "register": "10",
+                "schema": "40",
+                "slug": "boom",
+                "object": {
+                    "id": "u-boom"
+                }
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Skipping seed object for 'main' - import failed: insert failed",
+            "context": {
+                "schemaSlug": "main",
+                "objectSlug": "boom",
+                "error": "insert failed"
+            }
+        },
+        {
+            "object.find": [
+                "related",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "40",
+                "slug": "related",
+                "object": {
+                    "id": "<v4>"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 22,
+                "slug": "related"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Processing related items for seed object",
+            "context": {
+                "object_uuid": "<v4>",
+                "files_count": 0,
+                "notes_count": 1,
+                "tasks_count": 1
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Related items processed for seed object",
+            "context": {
+                "object_uuid": "<v4>",
+                "files_created": 0,
+                "notes_created": 0,
+                "tasks_created": 0
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] SeedData object references external configuration",
+            "context": {
+                "config_url": "https://example.com/c.json",
+                "register_slug": "ext-reg",
+                "schema_slug": "ext-schema",
+                "object_title": "External"
+            }
+        },
+        {
+            "register.find": 20
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Resolved external register for seedData object",
+            "context": {
+                "slug": "ext-reg",
+                "id": 20,
+                "title": "REG-20"
+            }
+        },
+        {
+            "schema.findBySlug": "ext-schema"
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Resolved external schema for seedData object",
+            "context": {
+                "slug": "ext-schema",
+                "id": 30,
+                "title": "Ext-schema"
+            }
+        },
+        {
+            "object.find": [
+                "x-ext-reg-ext-schema",
+                20,
+                30
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "20",
+                "schema": "30",
+                "slug": "x-ext-reg-ext-schema",
+                "object": {
+                    "id": "<v4>",
+                    "@self": {
+                        "configuration": "https://example.com/c.json",
+                        "register": "ext-reg",
+                        "schema": "ext-schema"
+                    },
+                    "title": "External"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 32,
+                "slug": "x-ext-reg-ext-schema"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] SeedData object references external configuration",
+            "context": {
+                "config_url": "https://example.com/c.json",
+                "register_slug": "missing-reg",
+                "schema_slug": "missing-schema",
+                "object_title": "External"
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] External register not found - using default",
+            "context": {
+                "requested_slug": "missing-reg",
+                "available_slugs": [
+                    "ext-reg",
+                    "boom-reg"
+                ]
+            }
+        },
+        {
+            "schema.findBySlug": "missing-schema"
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] External schema not found - using current schema",
+            "context": {
+                "requested_slug": "missing-schema",
+                "current_schema": "main"
+            }
+        },
+        {
+            "object.find": [
+                "x-missing-reg-missing-schema",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "40",
+                "slug": "x-missing-reg-missing-schema",
+                "object": {
+                    "id": "<v4>",
+                    "@self": {
+                        "configuration": "https://example.com/c.json",
+                        "register": "missing-reg",
+                        "schema": "missing-schema"
+                    },
+                    "title": "External"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 39,
+                "slug": "x-missing-reg-missing-schema"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] SeedData object references external configuration",
+            "context": {
+                "config_url": "https://example.com/c.json",
+                "register_slug": "boom-reg",
+                "schema_slug": "boom-schema",
+                "object_title": "External"
+            }
+        },
+        {
+            "register.find": 66
+        },
+        {
+            "log": "error",
+            "message": "[ImportHandler] Failed to resolve external register",
+            "context": {
+                "slug": "boom-reg",
+                "error": "register lookup failed"
+            }
+        },
+        {
+            "schema.findBySlug": "boom-schema"
+        },
+        {
+            "log": "error",
+            "message": "[ImportHandler] Failed to resolve external schema",
+            "context": {
+                "slug": "boom-schema",
+                "error": "schema lookup failed"
+            }
+        },
+        {
+            "object.find": [
+                "x-boom-reg-boom-schema",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "40",
+                "slug": "x-boom-reg-boom-schema",
+                "object": {
+                    "id": "<v4>",
+                    "@self": {
+                        "configuration": "https://example.com/c.json",
+                        "register": "boom-reg",
+                        "schema": "boom-schema"
+                    },
+                    "title": "External"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 47,
+                "slug": "x-boom-reg-boom-schema"
+            }
+        },
+        {
+            "object.find": [
+                "self-without-configuration",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "40",
+                "slug": "self-without-configuration",
+                "object": {
+                    "id": "<v4>",
+                    "@self": {
+                        "register": "ext-reg"
+                    }
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 50,
+                "slug": "self-without-configuration"
+            }
+        },
+        {
+            "schema.find": "from-db"
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Found schema 'from-db' in database for seedData",
+            "context": {
+                "schemaId": 50,
+                "schemaApp": null
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Importing seed objects for schema 'from-db'",
+            "context": {
+                "count": 1
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Pre-creating magic mapper table for schema before importing seed objects",
+            "context": {
+                "schema_id": 50,
+                "schema_slug": "from-db",
+                "register_id": 10
+            }
+        },
+        {
+            "magic.ensureTable": [
+                10,
+                50
+            ]
+        },
+        {
+            "object.find": [
+                "db-object",
+                10,
+                50
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "50",
+                "slug": "db-object",
+                "object": {
+                    "id": "<v4>"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "from-db",
+                "object_id": 58,
+                "slug": "db-object"
+            }
+        },
+        {
+            "schema.find": "unknown"
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Skipping seed data for schema 'unknown' - schema not resolvable: no schema unknown",
+            "context": {
+                "appId": "app",
+                "error": "no schema unknown",
+                "availableSchemasInMap": [
+                    "main",
+                    "foreign"
+                ]
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Skipping seed object: its schema belongs to another app and is not in its register",
+            "context": {
+                "appId": "app",
+                "registerSlug": "main",
+                "schemaSlug": "foreign",
+                "schemaId": 41,
+                "schemaApplication": "other-app"
+            }
+        },
+        {
+            "log": "info",
+            "message": "[ImportHandler] Seed data import complete",
+            "context": {
+                "config_title": "Seed test",
+                "imported": 9,
+                "related_files": 0,
+                "related_notes": 0,
+                "related_tasks": 0
+            }
+        },
+        {
+            "result": {
+                "objects": [
+                    8,
+                    11,
+                    900,
+                    22,
+                    32,
+                    39,
+                    47,
+                    50,
+                    58
+                ],
+                "relatedFiles": 0,
+                "relatedNotes": 0,
+                "relatedTasks": 0,
+                "skipped": {
+                    "seedObjects": 3
+                }
+            }
+        }
+    ],
+    "magic-table-fails": [
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed data import context",
+            "context": {
+                "has_user_context": true
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] SeedData will be imported into register",
+            "context": {
+                "register_id": 10,
+                "register_slug": "main",
+                "register_title": "MAIN"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Importing seed data objects",
+            "context": {
+                "config_title": "Seed test",
+                "description": "Seeds",
+                "object_types": [
+                    "main",
+                    "from-db",
+                    "unknown",
+                    "foreign"
+                ],
+                "target_register": 10
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Importing seed objects for schema 'main'",
+            "context": {
+                "count": 11
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Pre-creating magic mapper table for schema before importing seed objects",
+            "context": {
+                "schema_id": 40,
+                "schema_slug": "main",
+                "register_id": 10
+            }
+        },
+        {
+            "magic.ensureTable": [
+                10,
+                40
+            ]
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Failed to pre-create magic mapper table",
+            "context": {
+                "schema_slug": "main",
+                "register_id": 10,
+                "error": "table failed"
+            }
+        },
+        {
+            "object.find": [
+                "u-new",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "u-new",
+                "register": "10",
+                "schema": "40",
+                "slug": "plain",
+                "object": {
+                    "id": "u-new",
+                    "title": "Plain",
+                    "name": "n"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 9,
+                "slug": "plain"
+            }
+        },
+        {
+            "object.find": [
+                "Title only",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "40",
+                "slug": "Title only",
+                "object": {
+                    "id": "<v4>",
+                    "title": "Title only"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 12,
+                "slug": "Title only"
+            }
+        },
+        {
+            "log": "error",
+            "message": "[ImportHandler] Seed for 'main' missing slug and title",
+            "context": {
+                "objectKeys": [
+                    "name"
+                ]
+            }
+        },
+        {
+            "object.find": [
+                "u-exists",
+                10,
+                40
+            ]
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object already exists - skipping",
+            "context": {
+                "schema": "main",
+                "identifier": "u-exists",
+                "object_id": 900
+            }
+        },
+        {
+            "object.find": [
+                "u-multi",
+                10,
+                40
+            ]
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Multiple seed objects found with identifier 'u-multi' - skipping to avoid duplication",
+            "context": {
+                "schema": "main",
+                "identifier": "u-multi"
+            }
+        },
+        {
+            "object.find": [
+                "u-boom",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "u-boom",
+                "register": "10",
+                "schema": "40",
+                "slug": "boom",
+                "object": {
+                    "id": "u-boom"
+                }
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Skipping seed object for 'main' - import failed: insert failed",
+            "context": {
+                "schemaSlug": "main",
+                "objectSlug": "boom",
+                "error": "insert failed"
+            }
+        },
+        {
+            "object.find": [
+                "related",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "40",
+                "slug": "related",
+                "object": {
+                    "id": "<v4>"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 23,
+                "slug": "related"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Processing related items for seed object",
+            "context": {
+                "object_uuid": "<v4>",
+                "files_count": 0,
+                "notes_count": 1,
+                "tasks_count": 1
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Related items processed for seed object",
+            "context": {
+                "object_uuid": "<v4>",
+                "files_created": 0,
+                "notes_created": 0,
+                "tasks_created": 0
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] SeedData object references external configuration",
+            "context": {
+                "config_url": "https://example.com/c.json",
+                "register_slug": "ext-reg",
+                "schema_slug": "ext-schema",
+                "object_title": "External"
+            }
+        },
+        {
+            "register.find": 20
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Resolved external register for seedData object",
+            "context": {
+                "slug": "ext-reg",
+                "id": 20,
+                "title": "REG-20"
+            }
+        },
+        {
+            "schema.findBySlug": "ext-schema"
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Resolved external schema for seedData object",
+            "context": {
+                "slug": "ext-schema",
+                "id": 30,
+                "title": "Ext-schema"
+            }
+        },
+        {
+            "object.find": [
+                "x-ext-reg-ext-schema",
+                20,
+                30
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "20",
+                "schema": "30",
+                "slug": "x-ext-reg-ext-schema",
+                "object": {
+                    "id": "<v4>",
+                    "@self": {
+                        "configuration": "https://example.com/c.json",
+                        "register": "ext-reg",
+                        "schema": "ext-schema"
+                    },
+                    "title": "External"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 33,
+                "slug": "x-ext-reg-ext-schema"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] SeedData object references external configuration",
+            "context": {
+                "config_url": "https://example.com/c.json",
+                "register_slug": "missing-reg",
+                "schema_slug": "missing-schema",
+                "object_title": "External"
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] External register not found - using default",
+            "context": {
+                "requested_slug": "missing-reg",
+                "available_slugs": [
+                    "ext-reg",
+                    "boom-reg"
+                ]
+            }
+        },
+        {
+            "schema.findBySlug": "missing-schema"
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] External schema not found - using current schema",
+            "context": {
+                "requested_slug": "missing-schema",
+                "current_schema": "main"
+            }
+        },
+        {
+            "object.find": [
+                "x-missing-reg-missing-schema",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "40",
+                "slug": "x-missing-reg-missing-schema",
+                "object": {
+                    "id": "<v4>",
+                    "@self": {
+                        "configuration": "https://example.com/c.json",
+                        "register": "missing-reg",
+                        "schema": "missing-schema"
+                    },
+                    "title": "External"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 40,
+                "slug": "x-missing-reg-missing-schema"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] SeedData object references external configuration",
+            "context": {
+                "config_url": "https://example.com/c.json",
+                "register_slug": "boom-reg",
+                "schema_slug": "boom-schema",
+                "object_title": "External"
+            }
+        },
+        {
+            "register.find": 66
+        },
+        {
+            "log": "error",
+            "message": "[ImportHandler] Failed to resolve external register",
+            "context": {
+                "slug": "boom-reg",
+                "error": "register lookup failed"
+            }
+        },
+        {
+            "schema.findBySlug": "boom-schema"
+        },
+        {
+            "log": "error",
+            "message": "[ImportHandler] Failed to resolve external schema",
+            "context": {
+                "slug": "boom-schema",
+                "error": "schema lookup failed"
+            }
+        },
+        {
+            "object.find": [
+                "x-boom-reg-boom-schema",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "40",
+                "slug": "x-boom-reg-boom-schema",
+                "object": {
+                    "id": "<v4>",
+                    "@self": {
+                        "configuration": "https://example.com/c.json",
+                        "register": "boom-reg",
+                        "schema": "boom-schema"
+                    },
+                    "title": "External"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 48,
+                "slug": "x-boom-reg-boom-schema"
+            }
+        },
+        {
+            "object.find": [
+                "self-without-configuration",
+                10,
+                40
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "40",
+                "slug": "self-without-configuration",
+                "object": {
+                    "id": "<v4>",
+                    "@self": {
+                        "register": "ext-reg"
+                    }
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 51,
+                "slug": "self-without-configuration"
+            }
+        },
+        {
+            "schema.find": "from-db"
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Found schema 'from-db' in database for seedData",
+            "context": {
+                "schemaId": 50,
+                "schemaApp": null
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Importing seed objects for schema 'from-db'",
+            "context": {
+                "count": 1
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Pre-creating magic mapper table for schema before importing seed objects",
+            "context": {
+                "schema_id": 50,
+                "schema_slug": "from-db",
+                "register_id": 10
+            }
+        },
+        {
+            "magic.ensureTable": [
+                10,
+                50
+            ]
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Failed to pre-create magic mapper table",
+            "context": {
+                "schema_slug": "from-db",
+                "register_id": 10,
+                "error": "table failed"
+            }
+        },
+        {
+            "object.find": [
+                "db-object",
+                10,
+                50
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "50",
+                "slug": "db-object",
+                "object": {
+                    "id": "<v4>"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "from-db",
+                "object_id": 60,
+                "slug": "db-object"
+            }
+        },
+        {
+            "schema.find": "unknown"
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Skipping seed data for schema 'unknown' - schema not resolvable: no schema unknown",
+            "context": {
+                "appId": "app",
+                "error": "no schema unknown",
+                "availableSchemasInMap": [
+                    "main",
+                    "foreign"
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Importing seed objects for schema 'foreign'",
+            "context": {
+                "count": 2
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Pre-creating magic mapper table for schema before importing seed objects",
+            "context": {
+                "schema_id": 41,
+                "schema_slug": "foreign",
+                "register_id": 10
+            }
+        },
+        {
+            "magic.ensureTable": [
+                10,
+                41
+            ]
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Failed to pre-create magic mapper table",
+            "context": {
+                "schema_slug": "foreign",
+                "register_id": 10,
+                "error": "table failed"
+            }
+        },
+        {
+            "object.find": [
+                "f1",
+                10,
+                41
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "41",
+                "slug": "f1",
+                "object": {
+                    "id": "<v4>"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "foreign",
+                "object_id": 69,
+                "slug": "f1"
+            }
+        },
+        {
+            "object.find": [
+                "f2",
+                10,
+                41
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "10",
+                "schema": "41",
+                "slug": "f2",
+                "object": {
+                    "id": "<v4>"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "foreign",
+                "object_id": 72,
+                "slug": "f2"
+            }
+        },
+        {
+            "log": "info",
+            "message": "[ImportHandler] Seed data import complete",
+            "context": {
+                "config_title": "Seed test",
+                "imported": 11,
+                "related_files": 0,
+                "related_notes": 0,
+                "related_tasks": 0
+            }
+        },
+        {
+            "result": {
+                "objects": [
+                    9,
+                    12,
+                    900,
+                    23,
+                    33,
+                    40,
+                    48,
+                    51,
+                    60,
+                    69,
+                    72
+                ],
+                "relatedFiles": 0,
+                "relatedNotes": 0,
+                "relatedTasks": 0,
+                "skipped": {
+                    "seedObjects": 1
+                }
+            }
+        }
+    ],
+    "no-register": [
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed data import context",
+            "context": {
+                "has_user_context": false
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] No register found for seedData - using register 0",
+            "context": {
+                "appId": "app",
+                "config_title": "Seed test"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Importing seed data objects",
+            "context": {
+                "config_title": "Seed test",
+                "description": "Seeds",
+                "object_types": [
+                    "main",
+                    "from-db",
+                    "unknown",
+                    "foreign"
+                ],
+                "target_register": 0
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Importing seed objects for schema 'main'",
+            "context": {
+                "count": 11
+            }
+        },
+        {
+            "object.insert": {
+                "uuid": "u-new",
+                "register": "0",
+                "schema": "40",
+                "slug": "plain",
+                "object": {
+                    "id": "u-new",
+                    "title": "Plain",
+                    "name": "n"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 5,
+                "slug": "plain"
+            }
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "0",
+                "schema": "40",
+                "slug": "Title only",
+                "object": {
+                    "id": "<v4>",
+                    "title": "Title only"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 7,
+                "slug": "Title only"
+            }
+        },
+        {
+            "log": "error",
+            "message": "[ImportHandler] Seed for 'main' missing slug and title",
+            "context": {
+                "objectKeys": [
+                    "name"
+                ]
+            }
+        },
+        {
+            "object.insert": {
+                "uuid": "u-exists",
+                "register": "0",
+                "schema": "40",
+                "slug": "exists",
+                "object": {
+                    "id": "u-exists"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 10,
+                "slug": "exists"
+            }
+        },
+        {
+            "object.insert": {
+                "uuid": "u-multi",
+                "register": "0",
+                "schema": "40",
+                "slug": "multi",
+                "object": {
+                    "id": "u-multi"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 12,
+                "slug": "multi"
+            }
+        },
+        {
+            "object.insert": {
+                "uuid": "u-boom",
+                "register": "0",
+                "schema": "40",
+                "slug": "boom",
+                "object": {
+                    "id": "u-boom"
+                }
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Skipping seed object for 'main' - import failed: insert failed",
+            "context": {
+                "schemaSlug": "main",
+                "objectSlug": "boom",
+                "error": "insert failed"
+            }
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "0",
+                "schema": "40",
+                "slug": "related",
+                "object": {
+                    "id": "<v4>"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 16,
+                "slug": "related"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Processing related items for seed object",
+            "context": {
+                "object_uuid": "<v4>",
+                "files_count": 0,
+                "notes_count": 1,
+                "tasks_count": 1
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Related items processed for seed object",
+            "context": {
+                "object_uuid": "<v4>",
+                "files_created": 0,
+                "notes_created": 0,
+                "tasks_created": 0
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] SeedData object references external configuration",
+            "context": {
+                "config_url": "https://example.com/c.json",
+                "register_slug": "ext-reg",
+                "schema_slug": "ext-schema",
+                "object_title": "External"
+            }
+        },
+        {
+            "register.find": 20
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Resolved external register for seedData object",
+            "context": {
+                "slug": "ext-reg",
+                "id": 20,
+                "title": "REG-20"
+            }
+        },
+        {
+            "schema.findBySlug": "ext-schema"
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Resolved external schema for seedData object",
+            "context": {
+                "slug": "ext-schema",
+                "id": 30,
+                "title": "Ext-schema"
+            }
+        },
+        {
+            "object.find": [
+                "x-ext-reg-ext-schema",
+                20,
+                30
+            ]
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "20",
+                "schema": "30",
+                "slug": "x-ext-reg-ext-schema",
+                "object": {
+                    "id": "<v4>",
+                    "@self": {
+                        "configuration": "https://example.com/c.json",
+                        "register": "ext-reg",
+                        "schema": "ext-schema"
+                    },
+                    "title": "External"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 26,
+                "slug": "x-ext-reg-ext-schema"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] SeedData object references external configuration",
+            "context": {
+                "config_url": "https://example.com/c.json",
+                "register_slug": "missing-reg",
+                "schema_slug": "missing-schema",
+                "object_title": "External"
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] External register not found - using default",
+            "context": {
+                "requested_slug": "missing-reg",
+                "available_slugs": [
+                    "ext-reg",
+                    "boom-reg"
+                ]
+            }
+        },
+        {
+            "schema.findBySlug": "missing-schema"
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] External schema not found - using current schema",
+            "context": {
+                "requested_slug": "missing-schema",
+                "current_schema": "main"
+            }
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "0",
+                "schema": "40",
+                "slug": "x-missing-reg-missing-schema",
+                "object": {
+                    "id": "<v4>",
+                    "@self": {
+                        "configuration": "https://example.com/c.json",
+                        "register": "missing-reg",
+                        "schema": "missing-schema"
+                    },
+                    "title": "External"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 32,
+                "slug": "x-missing-reg-missing-schema"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] SeedData object references external configuration",
+            "context": {
+                "config_url": "https://example.com/c.json",
+                "register_slug": "boom-reg",
+                "schema_slug": "boom-schema",
+                "object_title": "External"
+            }
+        },
+        {
+            "register.find": 66
+        },
+        {
+            "log": "error",
+            "message": "[ImportHandler] Failed to resolve external register",
+            "context": {
+                "slug": "boom-reg",
+                "error": "register lookup failed"
+            }
+        },
+        {
+            "schema.findBySlug": "boom-schema"
+        },
+        {
+            "log": "error",
+            "message": "[ImportHandler] Failed to resolve external schema",
+            "context": {
+                "slug": "boom-schema",
+                "error": "schema lookup failed"
+            }
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "0",
+                "schema": "40",
+                "slug": "x-boom-reg-boom-schema",
+                "object": {
+                    "id": "<v4>",
+                    "@self": {
+                        "configuration": "https://example.com/c.json",
+                        "register": "boom-reg",
+                        "schema": "boom-schema"
+                    },
+                    "title": "External"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 39,
+                "slug": "x-boom-reg-boom-schema"
+            }
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "0",
+                "schema": "40",
+                "slug": "self-without-configuration",
+                "object": {
+                    "id": "<v4>",
+                    "@self": {
+                        "register": "ext-reg"
+                    }
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "main",
+                "object_id": 41,
+                "slug": "self-without-configuration"
+            }
+        },
+        {
+            "schema.find": "from-db"
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Found schema 'from-db' in database for seedData",
+            "context": {
+                "schemaId": 50,
+                "schemaApp": null
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Importing seed objects for schema 'from-db'",
+            "context": {
+                "count": 1
+            }
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "0",
+                "schema": "50",
+                "slug": "db-object",
+                "object": {
+                    "id": "<v4>"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "from-db",
+                "object_id": 46,
+                "slug": "db-object"
+            }
+        },
+        {
+            "schema.find": "unknown"
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Skipping seed data for schema 'unknown' - schema not resolvable: no schema unknown",
+            "context": {
+                "appId": "app",
+                "error": "no schema unknown",
+                "availableSchemasInMap": [
+                    "main",
+                    "foreign"
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Importing seed objects for schema 'foreign'",
+            "context": {
+                "count": 2
+            }
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "0",
+                "schema": "41",
+                "slug": "f1",
+                "object": {
+                    "id": "<v4>"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "foreign",
+                "object_id": 51,
+                "slug": "f1"
+            }
+        },
+        {
+            "object.insert": {
+                "uuid": "<v4>",
+                "register": "0",
+                "schema": "41",
+                "slug": "f2",
+                "object": {
+                    "id": "<v4>"
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Seed object imported",
+            "context": {
+                "schema": "foreign",
+                "object_id": 53,
+                "slug": "f2"
+            }
+        },
+        {
+            "log": "info",
+            "message": "[ImportHandler] Seed data import complete",
+            "context": {
+                "config_title": "Seed test",
+                "imported": 12,
+                "related_files": 0,
+                "related_notes": 0,
+                "related_tasks": 0
+            }
+        },
+        {
+            "result": {
+                "objects": [
+                    5,
+                    7,
+                    10,
+                    12,
+                    16,
+                    26,
+                    32,
+                    39,
+                    41,
+                    46,
+                    51,
+                    53
+                ],
+                "relatedFiles": 0,
+                "relatedNotes": 0,
+                "relatedTasks": 0,
+                "skipped": {
+                    "seedObjects": 1
+                }
+            }
+        }
+    ]
+}

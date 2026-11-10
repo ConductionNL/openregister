@@ -12,8 +12,8 @@
  * All endpoints are authenticated steward endpoints (`@NoAdminRequired`), never
  * `@PublicPage`; `@NoCSRFRequired` is added ONLY to the download route (a
  * browser navigation that cannot supply a CSRF token). Every method that acts on
- * an existing case loads it through {@see CaseObjectAccessor} (ObjectService,
- * RBAC + multitenancy) and gates it with {@see CaseAccessControl} (handler-
+ * an existing case loads it through {@see CaseObjectAccessorInterface} (ObjectService,
+ * RBAC + multitenancy) and gates it with {@see CaseAccessControlInterface} (handler-
  * scopes-own + officer-override, fail closed) BEFORE any effect — avoiding IDOR
  * (ADR-023 / OWASP A01).
  *
@@ -36,16 +36,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControl;
-use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
-use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceHarvestService;
-use OCA\OpenRegister\Service\Gdpr\Export\ExportBundleService;
-use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry;
-use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolver;
-use OCA\OpenRegister\Service\Gdpr\Redaction\RedactionWriteService;
-use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry;
+use OCA\OpenRegister\Controller\Support\DsarCaseControllerServices;
+use OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControlInterface;
+use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessorInterface;
+use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceHarvestServiceInterface;
+use OCA\OpenRegister\Service\Gdpr\Export\ExportBundleServiceInterface;
+use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistryInterface;
+use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolverInterface;
+use OCA\OpenRegister\Service\Gdpr\Redaction\RedactionWriteServiceInterface;
+use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistryInterface;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -62,38 +63,106 @@ use Throwable;
  */
 class DsarCaseController extends Controller {
 	/**
+	 * RBAC + tenant scoped object store (case creation).
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * RBAC-scoped case load helper.
+	 *
+	 * @var CaseObjectAccessorInterface
+	 */
+	private readonly CaseObjectAccessorInterface $accessor;
+
+	/**
+	 * Case-level access-control check (fail closed).
+	 *
+	 * @var CaseAccessControlInterface
+	 */
+	private readonly CaseAccessControlInterface $accessControl;
+
+	/**
+	 * Lifecycle transition driver (runs the guard on save).
+	 *
+	 * @var TransitionEngine
+	 */
+	private readonly TransitionEngine $transitionEngine;
+
+	/**
+	 * Evidence-collection service.
+	 *
+	 * @var EvidenceHarvestServiceInterface
+	 */
+	private readonly EvidenceHarvestServiceInterface $harvestService;
+
+	/**
+	 * Field-level redaction write path.
+	 *
+	 * @var RedactionWriteServiceInterface
+	 */
+	private readonly RedactionWriteServiceInterface $redactionService;
+
+	/**
+	 * Export-bundle + dossier service.
+	 *
+	 * @var ExportBundleServiceInterface
+	 */
+	private readonly ExportBundleServiceInterface $bundleService;
+
+	/**
+	 * Current caller (anonymous rejection).
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Resolves the case's active pack seam selectors.
+	 *
+	 * @var DsarPolicyPackResolverInterface
+	 */
+	private readonly DsarPolicyPackResolverInterface $packResolver;
+
+	/**
+	 * Identity-verify seam registry (pack-selector-driven, fail-closed).
+	 *
+	 * @var IdentityVerifyRegistryInterface
+	 */
+	private readonly IdentityVerifyRegistryInterface $identityRegistry;
+
+	/**
+	 * Regulator-escalate seam registry (pack-selector-driven, fail-closed).
+	 *
+	 * @var RegulatorEscalateRegistryInterface
+	 */
+	private readonly RegulatorEscalateRegistryInterface $regulatorRegistry;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
-	 * @param ObjectService $objectService RBAC + tenant scoped object store (case creation).
-	 * @param CaseObjectAccessor $accessor RBAC-scoped case load helper.
-	 * @param CaseAccessControl $accessControl Case-level access-control check (fail closed).
-	 * @param TransitionEngine $transitionEngine Lifecycle transition driver (runs the guard on save).
-	 * @param EvidenceHarvestService $harvestService Evidence-collection service.
-	 * @param RedactionWriteService $redactionService Field-level redaction write path.
-	 * @param ExportBundleService $bundleService Export-bundle + dossier service.
-	 * @param IUserSession $userSession Current caller (anonymous rejection).
-	 * @param DsarPolicyPackResolver $packResolver Resolves the case's active pack seam selectors.
-	 * @param IdentityVerifyRegistry $identityRegistry Identity-verify seam registry (pack-selector-driven, fail-closed).
-	 * @param RegulatorEscalateRegistry $regulatorRegistry Regulator-escalate seam registry (pack-selector-driven, fail-closed).
+	 * @param DsarCaseControllerServices $services The dsar case controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objectService,
-		private readonly CaseObjectAccessor $accessor,
-		private readonly CaseAccessControl $accessControl,
-		private readonly TransitionEngine $transitionEngine,
-		private readonly EvidenceHarvestService $harvestService,
-		private readonly RedactionWriteService $redactionService,
-		private readonly ExportBundleService $bundleService,
-		private readonly IUserSession $userSession,
-		private readonly DsarPolicyPackResolver $packResolver,
-		private readonly IdentityVerifyRegistry $identityRegistry,
-		private readonly RegulatorEscalateRegistry $regulatorRegistry,
+		DsarCaseControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->objectService = $services->cases->objectService;
+		$this->accessor = $services->cases->accessor;
+		$this->accessControl = $services->cases->accessControl;
+		$this->transitionEngine = $services->cases->transitionEngine;
+		$this->harvestService = $services->disclosure->harvestService;
+		$this->redactionService = $services->disclosure->redactionService;
+		$this->bundleService = $services->disclosure->bundleService;
+		$this->userSession = $services->platform->userSession;
+		$this->packResolver = $services->disclosure->packResolver;
+		$this->identityRegistry = $services->registries->identityRegistry;
+		$this->regulatorRegistry = $services->registries->regulatorRegistry;
 
 	}//end __construct()
 
@@ -132,8 +201,8 @@ class DsarCaseController extends Controller {
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $body,
-				register: CaseObjectAccessor::REGISTER_SLUG,
-				schema: CaseObjectAccessor::SCHEMA_SLUG,
+				register: CaseObjectAccessorInterface::REGISTER_SLUG,
+				schema: CaseObjectAccessorInterface::SCHEMA_SLUG,
 				_rbac: true,
 				_multitenancy: true
 			);
@@ -376,7 +445,7 @@ class DsarCaseController extends Controller {
 	 * identity via the pack-selected identity-verify seam provider.
 	 *
 	 * Resolves the provider named by the case's active `dsarPolicyPack`
-	 * `identityVerifyProvider` selector through {@see IdentityVerifyRegistry}
+	 * `identityVerifyProvider` selector through {@see IdentityVerifyRegistryInterface}
 	 * (never a hardcoded provider) and runs it. Resolution is FAIL-CLOSED: an
 	 * unset/unknown selector resolves to the OR default that returns `needs-more`
 	 * (never `verified`), so a missing provider can never pass identity
@@ -436,7 +505,7 @@ class DsarCaseController extends Controller {
 	 * authority via the pack-selected regulator-escalate seam provider.
 	 *
 	 * Resolves the provider named by the case's active `dsarPolicyPack`
-	 * `regulatorEscalateProvider` selector through {@see RegulatorEscalateRegistry}
+	 * `regulatorEscalateProvider` selector through {@see RegulatorEscalateRegistryInterface}
 	 * (never a hardcoded provider) and runs it. Resolution is FAIL-CLOSED: an
 	 * unset/unknown selector resolves to the OR default that REFUSES (never a
 	 * silent success), so a case is never recorded as escalated when the seam is

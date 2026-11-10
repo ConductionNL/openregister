@@ -33,11 +33,8 @@ namespace OCA\OpenRegister\Service;
  * RenderObject / SaveObject read it when processing translatable properties.
  *
  * @package OCA\OpenRegister\Service
- *
- * @SuppressWarnings(PHPMD.CyclomaticComplexity)
- * @SuppressWarnings(PHPMD.NPathComplexity)
  */
-class LanguageService {
+class LanguageService implements LanguageServiceInterface {
 
 	/**
 	 * The preferred language code resolved from the request.
@@ -257,24 +254,37 @@ class LanguageService {
 			return $this->preferredLanguage;
 		}
 
-		// Try each accepted language in priority order.
-		foreach ($this->acceptedLanguages as $accepted) {
-			// Exact match.
-			if (in_array($accepted, $registerLanguages, true) === true) {
-				return $accepted;
-			}
-
-			// Try base language (e.g., "en" from "en-US").
-			$baseLong = strtolower(explode('-', $accepted)[0]);
-			if (in_array($baseLong, $registerLanguages, true) === true) {
-				return $baseLong;
-			}
+		$match = $this->matchAcceptedLanguage(registerLanguages: $registerLanguages);
+		if ($match !== null) {
+			return $match;
 		}
 
 		// Fall back to register's default language (first in list).
 		$this->fallbackUsed = true;
 		return $registerLanguages[0];
 	}//end resolveLanguageForRegister()
+
+	/**
+	 * The first accepted language a register offers, in priority order.
+	 *
+	 * Each accepted language is tried as-is, then as its lower-cased base
+	 * language (e.g. "en" from "en-US").
+	 *
+	 * @param array $registerLanguages Array of language codes from the register
+	 *
+	 * @return string|null The match, or null when none of the accepted languages is offered
+	 */
+	private function matchAcceptedLanguage(array $registerLanguages): ?string {
+		foreach ($this->acceptedLanguages as $accepted) {
+			foreach ([$accepted, strtolower(explode('-', $accepted)[0])] as $candidate) {
+				if (in_array($candidate, $registerLanguages, true) === true) {
+					return $candidate;
+				}
+			}
+		}
+
+		return null;
+	}//end matchAcceptedLanguage()
 
 	/**
 	 * Parse an Accept-Language header string per RFC 9110.
@@ -297,62 +307,69 @@ class LanguageService {
 			return [];
 		}
 
-		$languages = [];
-		$parts = explode(',', $headerValue);
+		$languages = self::parseLanguageRanges(headerValue: $headerValue);
 
-		foreach ($parts as $part) {
-			$part = trim($part);
-			if ($part === '') {
-				continue;
-			}
+		// Sort by quality descending; usort is stable, so ties keep their order of appearance.
+		usort($languages, static fn (array $left, array $right): int => $right['quality'] <=> $left['quality']);
 
-			// Split on semicolon to separate language from quality.
-			$segments = explode(';', $part);
-			$language = trim($segments[0]);
-
-			if ($language === '' || $language === '*') {
-				continue;
-			}
-
-			// Extract quality factor (default 1.0).
-			$quality = 1.0;
-			$segmentCount = count($segments);
-			for ($i = 1; $i < $segmentCount; $i++) {
-				$segment = trim($segments[$i]);
-				if (strpos($segment, 'q=') === 0) {
-					$qValue = substr($segment, 2);
-					$quality = (float)$qValue;
-					break;
-				}
-			}
-
-			$languages[] = [
-				'language' => $language,
-				'quality' => $quality,
-			];
-		}//end foreach
-
-		// Sort by quality descending, then by order of appearance.
-		usort(
-			$languages,
-			function ($a, $b) {
-				if ($a['quality'] === $b['quality']) {
-					return 0;
-				}
-
-				if ($a['quality'] > $b['quality']) {
-					return -1;
-				}
-
-				return 1;
-			}
-		);
-
-		return array_map(
-			function ($item) {
-				return $item['language'];
-			},
-			$languages
-		);
+		return array_column($languages, 'language');
 	}//end parseAcceptLanguageHeader()
+
+	/**
+	 * Parse every non-empty, non-wildcard range of an Accept-Language header, in order of appearance.
+	 *
+	 * @param string $headerValue The Accept-Language header value
+	 *
+	 * @return array<int,array{language: string, quality: float}>
+	 */
+	private static function parseLanguageRanges(string $headerValue): array {
+		$languages = [];
+		foreach (explode(',', $headerValue) as $part) {
+			$range = self::parseLanguageRange(part: $part);
+			if ($range !== null) {
+				$languages[] = $range;
+			}
+		}
+
+		return $languages;
+	}//end parseLanguageRanges()
+
+	/**
+	 * Parse one comma-separated range of an Accept-Language header.
+	 *
+	 * @param string $part The range, e.g. "en;q=0.9"
+	 *
+	 * @return array{language: string, quality: float}|null Null for an empty or wildcard range
+	 */
+	private static function parseLanguageRange(string $part): ?array {
+		// Split on semicolon to separate language from its parameters.
+		$segments = explode(';', trim($part));
+		$language = trim($segments[0]);
+		if ($language === '' || $language === '*') {
+			return null;
+		}
+
+		return [
+			'language' => $language,
+			'quality' => self::qualityOf(parameters: array_slice($segments, 1)),
+		];
+	}//end parseLanguageRange()
+
+	/**
+	 * The quality factor of a range: the first `q=` parameter, default 1.0.
+	 *
+	 * @param string[] $parameters The range's parameters after the language
+	 *
+	 * @return float
+	 */
+	private static function qualityOf(array $parameters): float {
+		foreach ($parameters as $parameter) {
+			$parameter = trim($parameter);
+			if (strpos($parameter, 'q=') === 0) {
+				return (float)substr($parameter, 2);
+			}
+		}
+
+		return 1.0;
+	}//end qualityOf()
 }//end class

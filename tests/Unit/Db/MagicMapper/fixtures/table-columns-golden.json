@@ -1,0 +1,2496 @@
+{
+    "empty properties": {
+        "columns": {
+            "_id": {
+                "name": "_id",
+                "type": "bigint",
+                "nullable": false,
+                "autoincrement": true,
+                "primary": true
+            },
+            "_uuid": {
+                "name": "_uuid",
+                "type": "string",
+                "length": 40,
+                "nullable": false,
+                "unique": true,
+                "index": true
+            },
+            "_slug": {
+                "name": "_slug",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "index": true
+            },
+            "_uri": {
+                "name": "_uri",
+                "type": "text",
+                "nullable": true
+            },
+            "_version": {
+                "name": "_version",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_register": {
+                "name": "_register",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "index": true
+            },
+            "_schema": {
+                "name": "_schema",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "index": true
+            },
+            "_owner": {
+                "name": "_owner",
+                "type": "string",
+                "length": 64,
+                "nullable": true,
+                "index": true
+            },
+            "_organisation": {
+                "name": "_organisation",
+                "type": "string",
+                "length": 36,
+                "nullable": true,
+                "index": true
+            },
+            "_application": {
+                "name": "_application",
+                "type": "string",
+                "length": 255,
+                "nullable": true
+            },
+            "_folder": {
+                "name": "_folder",
+                "type": "string",
+                "length": 255,
+                "nullable": true
+            },
+            "_name": {
+                "name": "_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "index": true
+            },
+            "_description": {
+                "name": "_description",
+                "type": "text",
+                "nullable": true
+            },
+            "_summary": {
+                "name": "_summary",
+                "type": "text",
+                "nullable": true
+            },
+            "_image": {
+                "name": "_image",
+                "type": "text",
+                "nullable": true
+            },
+            "_size": {
+                "name": "_size",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_schema_version": {
+                "name": "_schema_version",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_created": {
+                "name": "_created",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_updated": {
+                "name": "_updated",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_last_user_activity": {
+                "name": "_last_user_activity",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_expires": {
+                "name": "_expires",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_files": {
+                "name": "_files",
+                "type": "json",
+                "nullable": true
+            },
+            "_relations": {
+                "name": "_relations",
+                "type": "json",
+                "nullable": true
+            },
+            "_locked": {
+                "name": "_locked",
+                "type": "json",
+                "nullable": true
+            },
+            "_authorization": {
+                "name": "_authorization",
+                "type": "json",
+                "nullable": true
+            },
+            "_validation": {
+                "name": "_validation",
+                "type": "json",
+                "nullable": true
+            },
+            "_quality": {
+                "name": "_quality",
+                "type": "json",
+                "nullable": true
+            },
+            "_deleted": {
+                "name": "_deleted",
+                "type": "json",
+                "nullable": true
+            },
+            "_archived": {
+                "name": "_archived",
+                "type": "json",
+                "nullable": true
+            },
+            "_frozen": {
+                "name": "_frozen",
+                "type": "json",
+                "nullable": true
+            },
+            "_status": {
+                "name": "_status",
+                "type": "string",
+                "length": 16,
+                "nullable": true,
+                "index": true
+            },
+            "_geo": {
+                "name": "_geo",
+                "type": "json",
+                "nullable": true
+            },
+            "_retention": {
+                "name": "_retention",
+                "type": "json",
+                "nullable": true
+            },
+            "_groups": {
+                "name": "_groups",
+                "type": "json",
+                "nullable": true
+            },
+            "_tmlo": {
+                "name": "_tmlo",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        "events": []
+    },
+    "configuration fields": {
+        "columns": {
+            "_id": {
+                "name": "_id",
+                "type": "bigint",
+                "nullable": false,
+                "autoincrement": true,
+                "primary": true
+            },
+            "_uuid": {
+                "name": "_uuid",
+                "type": "string",
+                "length": 40,
+                "nullable": false,
+                "unique": true,
+                "index": true
+            },
+            "_slug": {
+                "name": "_slug",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "index": true
+            },
+            "_uri": {
+                "name": "_uri",
+                "type": "text",
+                "nullable": true
+            },
+            "_version": {
+                "name": "_version",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_register": {
+                "name": "_register",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "index": true
+            },
+            "_schema": {
+                "name": "_schema",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "index": true
+            },
+            "_owner": {
+                "name": "_owner",
+                "type": "string",
+                "length": 64,
+                "nullable": true,
+                "index": true
+            },
+            "_organisation": {
+                "name": "_organisation",
+                "type": "string",
+                "length": 36,
+                "nullable": true,
+                "index": true
+            },
+            "_application": {
+                "name": "_application",
+                "type": "string",
+                "length": 255,
+                "nullable": true
+            },
+            "_folder": {
+                "name": "_folder",
+                "type": "string",
+                "length": 255,
+                "nullable": true
+            },
+            "_name": {
+                "name": "_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "index": true
+            },
+            "_description": {
+                "name": "_description",
+                "type": "text",
+                "nullable": true
+            },
+            "_summary": {
+                "name": "_summary",
+                "type": "text",
+                "nullable": true
+            },
+            "_image": {
+                "name": "_image",
+                "type": "text",
+                "nullable": true
+            },
+            "_size": {
+                "name": "_size",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_schema_version": {
+                "name": "_schema_version",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_created": {
+                "name": "_created",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_updated": {
+                "name": "_updated",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_last_user_activity": {
+                "name": "_last_user_activity",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_expires": {
+                "name": "_expires",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_files": {
+                "name": "_files",
+                "type": "json",
+                "nullable": true
+            },
+            "_relations": {
+                "name": "_relations",
+                "type": "json",
+                "nullable": true
+            },
+            "_locked": {
+                "name": "_locked",
+                "type": "json",
+                "nullable": true
+            },
+            "_authorization": {
+                "name": "_authorization",
+                "type": "json",
+                "nullable": true
+            },
+            "_validation": {
+                "name": "_validation",
+                "type": "json",
+                "nullable": true
+            },
+            "_quality": {
+                "name": "_quality",
+                "type": "json",
+                "nullable": true
+            },
+            "_deleted": {
+                "name": "_deleted",
+                "type": "json",
+                "nullable": true
+            },
+            "_archived": {
+                "name": "_archived",
+                "type": "json",
+                "nullable": true
+            },
+            "_frozen": {
+                "name": "_frozen",
+                "type": "json",
+                "nullable": true
+            },
+            "_status": {
+                "name": "_status",
+                "type": "string",
+                "length": 16,
+                "nullable": true,
+                "index": true
+            },
+            "_geo": {
+                "name": "_geo",
+                "type": "json",
+                "nullable": true
+            },
+            "_retention": {
+                "name": "_retention",
+                "type": "json",
+                "nullable": true
+            },
+            "_groups": {
+                "name": "_groups",
+                "type": "json",
+                "nullable": true
+            },
+            "_tmlo": {
+                "name": "_tmlo",
+                "type": "json",
+                "nullable": true
+            },
+            "title": {
+                "name": "title",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        "events": []
+    },
+    "non-array configs": {
+        "columns": {
+            "_id": {
+                "name": "_id",
+                "type": "bigint",
+                "nullable": false,
+                "autoincrement": true,
+                "primary": true
+            },
+            "_uuid": {
+                "name": "_uuid",
+                "type": "string",
+                "length": 40,
+                "nullable": false,
+                "unique": true,
+                "index": true
+            },
+            "_slug": {
+                "name": "_slug",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "index": true
+            },
+            "_uri": {
+                "name": "_uri",
+                "type": "text",
+                "nullable": true
+            },
+            "_version": {
+                "name": "_version",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_register": {
+                "name": "_register",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "index": true
+            },
+            "_schema": {
+                "name": "_schema",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "index": true
+            },
+            "_owner": {
+                "name": "_owner",
+                "type": "string",
+                "length": 64,
+                "nullable": true,
+                "index": true
+            },
+            "_organisation": {
+                "name": "_organisation",
+                "type": "string",
+                "length": 36,
+                "nullable": true,
+                "index": true
+            },
+            "_application": {
+                "name": "_application",
+                "type": "string",
+                "length": 255,
+                "nullable": true
+            },
+            "_folder": {
+                "name": "_folder",
+                "type": "string",
+                "length": 255,
+                "nullable": true
+            },
+            "_name": {
+                "name": "_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "index": true
+            },
+            "_description": {
+                "name": "_description",
+                "type": "text",
+                "nullable": true
+            },
+            "_summary": {
+                "name": "_summary",
+                "type": "text",
+                "nullable": true
+            },
+            "_image": {
+                "name": "_image",
+                "type": "text",
+                "nullable": true
+            },
+            "_size": {
+                "name": "_size",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_schema_version": {
+                "name": "_schema_version",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_created": {
+                "name": "_created",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_updated": {
+                "name": "_updated",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_last_user_activity": {
+                "name": "_last_user_activity",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_expires": {
+                "name": "_expires",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_files": {
+                "name": "_files",
+                "type": "json",
+                "nullable": true
+            },
+            "_relations": {
+                "name": "_relations",
+                "type": "json",
+                "nullable": true
+            },
+            "_locked": {
+                "name": "_locked",
+                "type": "json",
+                "nullable": true
+            },
+            "_authorization": {
+                "name": "_authorization",
+                "type": "json",
+                "nullable": true
+            },
+            "_validation": {
+                "name": "_validation",
+                "type": "json",
+                "nullable": true
+            },
+            "_quality": {
+                "name": "_quality",
+                "type": "json",
+                "nullable": true
+            },
+            "_deleted": {
+                "name": "_deleted",
+                "type": "json",
+                "nullable": true
+            },
+            "_archived": {
+                "name": "_archived",
+                "type": "json",
+                "nullable": true
+            },
+            "_frozen": {
+                "name": "_frozen",
+                "type": "json",
+                "nullable": true
+            },
+            "_status": {
+                "name": "_status",
+                "type": "string",
+                "length": 16,
+                "nullable": true,
+                "index": true
+            },
+            "_geo": {
+                "name": "_geo",
+                "type": "json",
+                "nullable": true
+            },
+            "_retention": {
+                "name": "_retention",
+                "type": "json",
+                "nullable": true
+            },
+            "_groups": {
+                "name": "_groups",
+                "type": "json",
+                "nullable": true
+            },
+            "_tmlo": {
+                "name": "_tmlo",
+                "type": "json",
+                "nullable": true
+            },
+            "kept": {
+                "name": "kept",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        "events": [
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Skipping non-array property in schema",
+                "context": {
+                    "propertyName": "type",
+                    "propertyType": "string"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Skipping non-array property in schema",
+                "context": {
+                    "propertyName": "count",
+                    "propertyType": "integer"
+                }
+            }
+        ]
+    },
+    "collision": {
+        "columns": {
+            "_id": {
+                "name": "_id",
+                "type": "bigint",
+                "nullable": false,
+                "autoincrement": true,
+                "primary": true
+            },
+            "_uuid": {
+                "name": "_uuid",
+                "type": "string",
+                "length": 40,
+                "nullable": false,
+                "unique": true,
+                "index": true
+            },
+            "_slug": {
+                "name": "_slug",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "index": true
+            },
+            "_uri": {
+                "name": "_uri",
+                "type": "text",
+                "nullable": true
+            },
+            "_version": {
+                "name": "_version",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_register": {
+                "name": "_register",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "index": true
+            },
+            "_schema": {
+                "name": "_schema",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "index": true
+            },
+            "_owner": {
+                "name": "_owner",
+                "type": "string",
+                "length": 64,
+                "nullable": true,
+                "index": true
+            },
+            "_organisation": {
+                "name": "_organisation",
+                "type": "string",
+                "length": 36,
+                "nullable": true,
+                "index": true
+            },
+            "_application": {
+                "name": "_application",
+                "type": "string",
+                "length": 255,
+                "nullable": true
+            },
+            "_folder": {
+                "name": "_folder",
+                "type": "string",
+                "length": 255,
+                "nullable": true
+            },
+            "_name": {
+                "name": "_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "index": true
+            },
+            "_description": {
+                "name": "_description",
+                "type": "text",
+                "nullable": true
+            },
+            "_summary": {
+                "name": "_summary",
+                "type": "text",
+                "nullable": true
+            },
+            "_image": {
+                "name": "_image",
+                "type": "text",
+                "nullable": true
+            },
+            "_size": {
+                "name": "_size",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_schema_version": {
+                "name": "_schema_version",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_created": {
+                "name": "_created",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_updated": {
+                "name": "_updated",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_last_user_activity": {
+                "name": "_last_user_activity",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_expires": {
+                "name": "_expires",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_files": {
+                "name": "_files",
+                "type": "json",
+                "nullable": true
+            },
+            "_relations": {
+                "name": "_relations",
+                "type": "json",
+                "nullable": true
+            },
+            "_locked": {
+                "name": "_locked",
+                "type": "json",
+                "nullable": true
+            },
+            "_authorization": {
+                "name": "_authorization",
+                "type": "json",
+                "nullable": true
+            },
+            "_validation": {
+                "name": "_validation",
+                "type": "json",
+                "nullable": true
+            },
+            "_quality": {
+                "name": "_quality",
+                "type": "json",
+                "nullable": true
+            },
+            "_deleted": {
+                "name": "_deleted",
+                "type": "json",
+                "nullable": true
+            },
+            "_archived": {
+                "name": "_archived",
+                "type": "json",
+                "nullable": true
+            },
+            "_frozen": {
+                "name": "_frozen",
+                "type": "json",
+                "nullable": true
+            },
+            "_status": {
+                "name": "_status",
+                "type": "string",
+                "length": 16,
+                "nullable": true,
+                "index": true
+            },
+            "_geo": {
+                "name": "_geo",
+                "type": "json",
+                "nullable": true
+            },
+            "_retention": {
+                "name": "_retention",
+                "type": "json",
+                "nullable": true
+            },
+            "_groups": {
+                "name": "_groups",
+                "type": "json",
+                "nullable": true
+            },
+            "_tmlo": {
+                "name": "_tmlo",
+                "type": "json",
+                "nullable": true
+            },
+            "firstName": {
+                "name": "first_name",
+                "type": "text",
+                "nullable": true
+            },
+            "first_name": {
+                "name": "first_name_1",
+                "type": "text",
+                "nullable": true
+            },
+            "first__name": {
+                "name": "first_name_2",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        "events": [
+            {
+                "log": "warning",
+                "message": "[MagicMapper] Column name collision after sanitisation; disambiguating",
+                "context": {
+                    "propertyName": "first_name",
+                    "collidingColumn": "first_name",
+                    "resolvedColumn": "first_name_1"
+                }
+            },
+            {
+                "log": "warning",
+                "message": "[MagicMapper] Column name collision after sanitisation; disambiguating",
+                "context": {
+                    "propertyName": "first__name",
+                    "collidingColumn": "first_name",
+                    "resolvedColumn": "first_name_2"
+                }
+            }
+        ]
+    },
+    "collision with metadata": {
+        "columns": {
+            "_id": {
+                "name": "_id",
+                "type": "bigint",
+                "nullable": false,
+                "autoincrement": true,
+                "primary": true
+            },
+            "_uuid": {
+                "name": "_uuid",
+                "type": "string",
+                "length": 40,
+                "nullable": false,
+                "unique": true,
+                "index": true
+            },
+            "_slug": {
+                "name": "_slug",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "index": true
+            },
+            "_uri": {
+                "name": "_uri",
+                "type": "text",
+                "nullable": true
+            },
+            "_version": {
+                "name": "_version",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_register": {
+                "name": "_register",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "index": true
+            },
+            "_schema": {
+                "name": "_schema",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "index": true
+            },
+            "_owner": {
+                "name": "_owner",
+                "type": "string",
+                "length": 64,
+                "nullable": true,
+                "index": true
+            },
+            "_organisation": {
+                "name": "_organisation",
+                "type": "string",
+                "length": 36,
+                "nullable": true,
+                "index": true
+            },
+            "_application": {
+                "name": "_application",
+                "type": "string",
+                "length": 255,
+                "nullable": true
+            },
+            "_folder": {
+                "name": "_folder",
+                "type": "string",
+                "length": 255,
+                "nullable": true
+            },
+            "_name": {
+                "name": "_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "index": true
+            },
+            "_description": {
+                "name": "_description",
+                "type": "text",
+                "nullable": true
+            },
+            "_summary": {
+                "name": "_summary",
+                "type": "text",
+                "nullable": true
+            },
+            "_image": {
+                "name": "_image",
+                "type": "text",
+                "nullable": true
+            },
+            "_size": {
+                "name": "_size",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_schema_version": {
+                "name": "_schema_version",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_created": {
+                "name": "_created",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_updated": {
+                "name": "_updated",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_last_user_activity": {
+                "name": "_last_user_activity",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_expires": {
+                "name": "_expires",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_files": {
+                "name": "_files",
+                "type": "json",
+                "nullable": true
+            },
+            "_relations": {
+                "name": "_relations",
+                "type": "json",
+                "nullable": true
+            },
+            "_locked": {
+                "name": "_locked",
+                "type": "json",
+                "nullable": true
+            },
+            "_authorization": {
+                "name": "_authorization",
+                "type": "json",
+                "nullable": true
+            },
+            "_validation": {
+                "name": "_validation",
+                "type": "json",
+                "nullable": true
+            },
+            "_quality": {
+                "name": "_quality",
+                "type": "json",
+                "nullable": true
+            },
+            "_deleted": {
+                "name": "_deleted",
+                "type": "json",
+                "nullable": true
+            },
+            "_archived": {
+                "name": "_archived",
+                "type": "json",
+                "nullable": true
+            },
+            "_frozen": {
+                "name": "_frozen",
+                "type": "json",
+                "nullable": true
+            },
+            "_status": {
+                "name": "_status",
+                "type": "string",
+                "length": 16,
+                "nullable": true,
+                "index": true
+            },
+            "_geo": {
+                "name": "_geo",
+                "type": "json",
+                "nullable": true
+            },
+            "_retention": {
+                "name": "_retention",
+                "type": "json",
+                "nullable": true
+            },
+            "_groups": {
+                "name": "_groups",
+                "type": "json",
+                "nullable": true
+            },
+            "_tmlo": {
+                "name": "_tmlo",
+                "type": "json",
+                "nullable": true
+            },
+            "name": {
+                "name": "name",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        "events": []
+    },
+    "collision with linked type": {
+        "columns": {
+            "_id": {
+                "name": "_id",
+                "type": "bigint",
+                "nullable": false,
+                "autoincrement": true,
+                "primary": true
+            },
+            "_uuid": {
+                "name": "_uuid",
+                "type": "string",
+                "length": 40,
+                "nullable": false,
+                "unique": true,
+                "index": true
+            },
+            "_slug": {
+                "name": "_slug",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "index": true
+            },
+            "_uri": {
+                "name": "_uri",
+                "type": "text",
+                "nullable": true
+            },
+            "_version": {
+                "name": "_version",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_register": {
+                "name": "_register",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "index": true
+            },
+            "_schema": {
+                "name": "_schema",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "index": true
+            },
+            "_owner": {
+                "name": "_owner",
+                "type": "string",
+                "length": 64,
+                "nullable": true,
+                "index": true
+            },
+            "_organisation": {
+                "name": "_organisation",
+                "type": "string",
+                "length": 36,
+                "nullable": true,
+                "index": true
+            },
+            "_application": {
+                "name": "_application",
+                "type": "string",
+                "length": 255,
+                "nullable": true
+            },
+            "_folder": {
+                "name": "_folder",
+                "type": "string",
+                "length": 255,
+                "nullable": true
+            },
+            "_name": {
+                "name": "_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "index": true
+            },
+            "_description": {
+                "name": "_description",
+                "type": "text",
+                "nullable": true
+            },
+            "_summary": {
+                "name": "_summary",
+                "type": "text",
+                "nullable": true
+            },
+            "_image": {
+                "name": "_image",
+                "type": "text",
+                "nullable": true
+            },
+            "_size": {
+                "name": "_size",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_schema_version": {
+                "name": "_schema_version",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_created": {
+                "name": "_created",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_updated": {
+                "name": "_updated",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_last_user_activity": {
+                "name": "_last_user_activity",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_expires": {
+                "name": "_expires",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_files": {
+                "name": "_files",
+                "type": "json",
+                "nullable": true
+            },
+            "_relations": {
+                "name": "_relations",
+                "type": "json",
+                "nullable": true
+            },
+            "_locked": {
+                "name": "_locked",
+                "type": "json",
+                "nullable": true
+            },
+            "_authorization": {
+                "name": "_authorization",
+                "type": "json",
+                "nullable": true
+            },
+            "_validation": {
+                "name": "_validation",
+                "type": "json",
+                "nullable": true
+            },
+            "_quality": {
+                "name": "_quality",
+                "type": "json",
+                "nullable": true
+            },
+            "_deleted": {
+                "name": "_deleted",
+                "type": "json",
+                "nullable": true
+            },
+            "_archived": {
+                "name": "_archived",
+                "type": "json",
+                "nullable": true
+            },
+            "_frozen": {
+                "name": "_frozen",
+                "type": "json",
+                "nullable": true
+            },
+            "_status": {
+                "name": "_status",
+                "type": "string",
+                "length": 16,
+                "nullable": true,
+                "index": true
+            },
+            "_geo": {
+                "name": "_geo",
+                "type": "json",
+                "nullable": true
+            },
+            "_retention": {
+                "name": "_retention",
+                "type": "json",
+                "nullable": true
+            },
+            "_groups": {
+                "name": "_groups",
+                "type": "json",
+                "nullable": true
+            },
+            "_tmlo": {
+                "name": "_tmlo",
+                "type": "json",
+                "nullable": true
+            },
+            "_mail": {
+                "name": "_mail",
+                "type": "json",
+                "nullable": true,
+                "index": true
+            }
+        },
+        "events": []
+    },
+    "encrypted": {
+        "columns": {
+            "_id": {
+                "name": "_id",
+                "type": "bigint",
+                "nullable": false,
+                "autoincrement": true,
+                "primary": true
+            },
+            "_uuid": {
+                "name": "_uuid",
+                "type": "string",
+                "length": 40,
+                "nullable": false,
+                "unique": true,
+                "index": true
+            },
+            "_slug": {
+                "name": "_slug",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "index": true
+            },
+            "_uri": {
+                "name": "_uri",
+                "type": "text",
+                "nullable": true
+            },
+            "_version": {
+                "name": "_version",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_register": {
+                "name": "_register",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "index": true
+            },
+            "_schema": {
+                "name": "_schema",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "index": true
+            },
+            "_owner": {
+                "name": "_owner",
+                "type": "string",
+                "length": 64,
+                "nullable": true,
+                "index": true
+            },
+            "_organisation": {
+                "name": "_organisation",
+                "type": "string",
+                "length": 36,
+                "nullable": true,
+                "index": true
+            },
+            "_application": {
+                "name": "_application",
+                "type": "string",
+                "length": 255,
+                "nullable": true
+            },
+            "_folder": {
+                "name": "_folder",
+                "type": "string",
+                "length": 255,
+                "nullable": true
+            },
+            "_name": {
+                "name": "_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "index": true
+            },
+            "_description": {
+                "name": "_description",
+                "type": "text",
+                "nullable": true
+            },
+            "_summary": {
+                "name": "_summary",
+                "type": "text",
+                "nullable": true
+            },
+            "_image": {
+                "name": "_image",
+                "type": "text",
+                "nullable": true
+            },
+            "_size": {
+                "name": "_size",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_schema_version": {
+                "name": "_schema_version",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_created": {
+                "name": "_created",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_updated": {
+                "name": "_updated",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_last_user_activity": {
+                "name": "_last_user_activity",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_expires": {
+                "name": "_expires",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_files": {
+                "name": "_files",
+                "type": "json",
+                "nullable": true
+            },
+            "_relations": {
+                "name": "_relations",
+                "type": "json",
+                "nullable": true
+            },
+            "_locked": {
+                "name": "_locked",
+                "type": "json",
+                "nullable": true
+            },
+            "_authorization": {
+                "name": "_authorization",
+                "type": "json",
+                "nullable": true
+            },
+            "_validation": {
+                "name": "_validation",
+                "type": "json",
+                "nullable": true
+            },
+            "_quality": {
+                "name": "_quality",
+                "type": "json",
+                "nullable": true
+            },
+            "_deleted": {
+                "name": "_deleted",
+                "type": "json",
+                "nullable": true
+            },
+            "_archived": {
+                "name": "_archived",
+                "type": "json",
+                "nullable": true
+            },
+            "_frozen": {
+                "name": "_frozen",
+                "type": "json",
+                "nullable": true
+            },
+            "_status": {
+                "name": "_status",
+                "type": "string",
+                "length": 16,
+                "nullable": true,
+                "index": true
+            },
+            "_geo": {
+                "name": "_geo",
+                "type": "json",
+                "nullable": true
+            },
+            "_retention": {
+                "name": "_retention",
+                "type": "json",
+                "nullable": true
+            },
+            "_groups": {
+                "name": "_groups",
+                "type": "json",
+                "nullable": true
+            },
+            "_tmlo": {
+                "name": "_tmlo",
+                "type": "json",
+                "nullable": true
+            },
+            "secret": {
+                "name": "secret",
+                "type": "text",
+                "nullable": true,
+                "comment": "Encrypted value (x-openregister-encrypted)"
+            },
+            "open": {
+                "name": "open",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            },
+            "text": {
+                "name": "text",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        "events": []
+    },
+    "encrypted collision": {
+        "columns": {
+            "_id": {
+                "name": "_id",
+                "type": "bigint",
+                "nullable": false,
+                "autoincrement": true,
+                "primary": true
+            },
+            "_uuid": {
+                "name": "_uuid",
+                "type": "string",
+                "length": 40,
+                "nullable": false,
+                "unique": true,
+                "index": true
+            },
+            "_slug": {
+                "name": "_slug",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "index": true
+            },
+            "_uri": {
+                "name": "_uri",
+                "type": "text",
+                "nullable": true
+            },
+            "_version": {
+                "name": "_version",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_register": {
+                "name": "_register",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "index": true
+            },
+            "_schema": {
+                "name": "_schema",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "index": true
+            },
+            "_owner": {
+                "name": "_owner",
+                "type": "string",
+                "length": 64,
+                "nullable": true,
+                "index": true
+            },
+            "_organisation": {
+                "name": "_organisation",
+                "type": "string",
+                "length": 36,
+                "nullable": true,
+                "index": true
+            },
+            "_application": {
+                "name": "_application",
+                "type": "string",
+                "length": 255,
+                "nullable": true
+            },
+            "_folder": {
+                "name": "_folder",
+                "type": "string",
+                "length": 255,
+                "nullable": true
+            },
+            "_name": {
+                "name": "_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "index": true
+            },
+            "_description": {
+                "name": "_description",
+                "type": "text",
+                "nullable": true
+            },
+            "_summary": {
+                "name": "_summary",
+                "type": "text",
+                "nullable": true
+            },
+            "_image": {
+                "name": "_image",
+                "type": "text",
+                "nullable": true
+            },
+            "_size": {
+                "name": "_size",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_schema_version": {
+                "name": "_schema_version",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_created": {
+                "name": "_created",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_updated": {
+                "name": "_updated",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_last_user_activity": {
+                "name": "_last_user_activity",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_expires": {
+                "name": "_expires",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_files": {
+                "name": "_files",
+                "type": "json",
+                "nullable": true
+            },
+            "_relations": {
+                "name": "_relations",
+                "type": "json",
+                "nullable": true
+            },
+            "_locked": {
+                "name": "_locked",
+                "type": "json",
+                "nullable": true
+            },
+            "_authorization": {
+                "name": "_authorization",
+                "type": "json",
+                "nullable": true
+            },
+            "_validation": {
+                "name": "_validation",
+                "type": "json",
+                "nullable": true
+            },
+            "_quality": {
+                "name": "_quality",
+                "type": "json",
+                "nullable": true
+            },
+            "_deleted": {
+                "name": "_deleted",
+                "type": "json",
+                "nullable": true
+            },
+            "_archived": {
+                "name": "_archived",
+                "type": "json",
+                "nullable": true
+            },
+            "_frozen": {
+                "name": "_frozen",
+                "type": "json",
+                "nullable": true
+            },
+            "_status": {
+                "name": "_status",
+                "type": "string",
+                "length": 16,
+                "nullable": true,
+                "index": true
+            },
+            "_geo": {
+                "name": "_geo",
+                "type": "json",
+                "nullable": true
+            },
+            "_retention": {
+                "name": "_retention",
+                "type": "json",
+                "nullable": true
+            },
+            "_groups": {
+                "name": "_groups",
+                "type": "json",
+                "nullable": true
+            },
+            "_tmlo": {
+                "name": "_tmlo",
+                "type": "json",
+                "nullable": true
+            },
+            "myKey": {
+                "name": "my_key",
+                "type": "text",
+                "nullable": true
+            },
+            "my_key": {
+                "name": "my_key_1",
+                "type": "text",
+                "nullable": true,
+                "comment": "Encrypted value (x-openregister-encrypted)"
+            }
+        },
+        "events": [
+            {
+                "log": "warning",
+                "message": "[MagicMapper] Column name collision after sanitisation; disambiguating",
+                "context": {
+                    "propertyName": "my_key",
+                    "collidingColumn": "my_key",
+                    "resolvedColumn": "my_key_1"
+                }
+            }
+        ]
+    },
+    "linked types": {
+        "columns": {
+            "_id": {
+                "name": "_id",
+                "type": "bigint",
+                "nullable": false,
+                "autoincrement": true,
+                "primary": true
+            },
+            "_uuid": {
+                "name": "_uuid",
+                "type": "string",
+                "length": 40,
+                "nullable": false,
+                "unique": true,
+                "index": true
+            },
+            "_slug": {
+                "name": "_slug",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "index": true
+            },
+            "_uri": {
+                "name": "_uri",
+                "type": "text",
+                "nullable": true
+            },
+            "_version": {
+                "name": "_version",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_register": {
+                "name": "_register",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "index": true
+            },
+            "_schema": {
+                "name": "_schema",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "index": true
+            },
+            "_owner": {
+                "name": "_owner",
+                "type": "string",
+                "length": 64,
+                "nullable": true,
+                "index": true
+            },
+            "_organisation": {
+                "name": "_organisation",
+                "type": "string",
+                "length": 36,
+                "nullable": true,
+                "index": true
+            },
+            "_application": {
+                "name": "_application",
+                "type": "string",
+                "length": 255,
+                "nullable": true
+            },
+            "_folder": {
+                "name": "_folder",
+                "type": "string",
+                "length": 255,
+                "nullable": true
+            },
+            "_name": {
+                "name": "_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "index": true
+            },
+            "_description": {
+                "name": "_description",
+                "type": "text",
+                "nullable": true
+            },
+            "_summary": {
+                "name": "_summary",
+                "type": "text",
+                "nullable": true
+            },
+            "_image": {
+                "name": "_image",
+                "type": "text",
+                "nullable": true
+            },
+            "_size": {
+                "name": "_size",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_schema_version": {
+                "name": "_schema_version",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_created": {
+                "name": "_created",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_updated": {
+                "name": "_updated",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_last_user_activity": {
+                "name": "_last_user_activity",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_expires": {
+                "name": "_expires",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_files": {
+                "name": "_files",
+                "type": "json",
+                "nullable": true
+            },
+            "_relations": {
+                "name": "_relations",
+                "type": "json",
+                "nullable": true
+            },
+            "_locked": {
+                "name": "_locked",
+                "type": "json",
+                "nullable": true
+            },
+            "_authorization": {
+                "name": "_authorization",
+                "type": "json",
+                "nullable": true
+            },
+            "_validation": {
+                "name": "_validation",
+                "type": "json",
+                "nullable": true
+            },
+            "_quality": {
+                "name": "_quality",
+                "type": "json",
+                "nullable": true
+            },
+            "_deleted": {
+                "name": "_deleted",
+                "type": "json",
+                "nullable": true
+            },
+            "_archived": {
+                "name": "_archived",
+                "type": "json",
+                "nullable": true
+            },
+            "_frozen": {
+                "name": "_frozen",
+                "type": "json",
+                "nullable": true
+            },
+            "_status": {
+                "name": "_status",
+                "type": "string",
+                "length": 16,
+                "nullable": true,
+                "index": true
+            },
+            "_geo": {
+                "name": "_geo",
+                "type": "json",
+                "nullable": true
+            },
+            "_retention": {
+                "name": "_retention",
+                "type": "json",
+                "nullable": true
+            },
+            "_groups": {
+                "name": "_groups",
+                "type": "json",
+                "nullable": true
+            },
+            "_tmlo": {
+                "name": "_tmlo",
+                "type": "json",
+                "nullable": true
+            },
+            "_mail": {
+                "name": "_mail",
+                "type": "json",
+                "nullable": true,
+                "index": true
+            },
+            "_contacts": {
+                "name": "_contacts",
+                "type": "json",
+                "nullable": true,
+                "index": true
+            },
+            "_notes": {
+                "name": "_notes",
+                "type": "json",
+                "nullable": true,
+                "index": true
+            },
+            "_todos": {
+                "name": "_todos",
+                "type": "json",
+                "nullable": true,
+                "index": true
+            },
+            "_calendar": {
+                "name": "_calendar",
+                "type": "json",
+                "nullable": true,
+                "index": true
+            },
+            "_talk": {
+                "name": "_talk",
+                "type": "json",
+                "nullable": true,
+                "index": true
+            },
+            "_deck": {
+                "name": "_deck",
+                "type": "json",
+                "nullable": true,
+                "index": true
+            },
+            "a": {
+                "name": "a",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        "events": []
+    },
+    "boolean true as type": {
+        "columns": {
+            "_id": {
+                "name": "_id",
+                "type": "bigint",
+                "nullable": false,
+                "autoincrement": true,
+                "primary": true
+            },
+            "_uuid": {
+                "name": "_uuid",
+                "type": "string",
+                "length": 40,
+                "nullable": false,
+                "unique": true,
+                "index": true
+            },
+            "_slug": {
+                "name": "_slug",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "index": true
+            },
+            "_uri": {
+                "name": "_uri",
+                "type": "text",
+                "nullable": true
+            },
+            "_version": {
+                "name": "_version",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_register": {
+                "name": "_register",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "index": true
+            },
+            "_schema": {
+                "name": "_schema",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "index": true
+            },
+            "_owner": {
+                "name": "_owner",
+                "type": "string",
+                "length": 64,
+                "nullable": true,
+                "index": true
+            },
+            "_organisation": {
+                "name": "_organisation",
+                "type": "string",
+                "length": 36,
+                "nullable": true,
+                "index": true
+            },
+            "_application": {
+                "name": "_application",
+                "type": "string",
+                "length": 255,
+                "nullable": true
+            },
+            "_folder": {
+                "name": "_folder",
+                "type": "string",
+                "length": 255,
+                "nullable": true
+            },
+            "_name": {
+                "name": "_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "index": true
+            },
+            "_description": {
+                "name": "_description",
+                "type": "text",
+                "nullable": true
+            },
+            "_summary": {
+                "name": "_summary",
+                "type": "text",
+                "nullable": true
+            },
+            "_image": {
+                "name": "_image",
+                "type": "text",
+                "nullable": true
+            },
+            "_size": {
+                "name": "_size",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_schema_version": {
+                "name": "_schema_version",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_created": {
+                "name": "_created",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_updated": {
+                "name": "_updated",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_last_user_activity": {
+                "name": "_last_user_activity",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_expires": {
+                "name": "_expires",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_files": {
+                "name": "_files",
+                "type": "json",
+                "nullable": true
+            },
+            "_relations": {
+                "name": "_relations",
+                "type": "json",
+                "nullable": true
+            },
+            "_locked": {
+                "name": "_locked",
+                "type": "json",
+                "nullable": true
+            },
+            "_authorization": {
+                "name": "_authorization",
+                "type": "json",
+                "nullable": true
+            },
+            "_validation": {
+                "name": "_validation",
+                "type": "json",
+                "nullable": true
+            },
+            "_quality": {
+                "name": "_quality",
+                "type": "json",
+                "nullable": true
+            },
+            "_deleted": {
+                "name": "_deleted",
+                "type": "json",
+                "nullable": true
+            },
+            "_archived": {
+                "name": "_archived",
+                "type": "json",
+                "nullable": true
+            },
+            "_frozen": {
+                "name": "_frozen",
+                "type": "json",
+                "nullable": true
+            },
+            "_status": {
+                "name": "_status",
+                "type": "string",
+                "length": 16,
+                "nullable": true,
+                "index": true
+            },
+            "_geo": {
+                "name": "_geo",
+                "type": "json",
+                "nullable": true
+            },
+            "_retention": {
+                "name": "_retention",
+                "type": "json",
+                "nullable": true
+            },
+            "_groups": {
+                "name": "_groups",
+                "type": "json",
+                "nullable": true
+            },
+            "_tmlo": {
+                "name": "_tmlo",
+                "type": "json",
+                "nullable": true
+            },
+            "odd": {
+                "name": "odd",
+                "type": "string",
+                "length": 320,
+                "nullable": true,
+                "index": true
+            },
+            "zero": {
+                "name": "zero",
+                "type": "json",
+                "nullable": true
+            },
+            "list": {
+                "name": "list",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        "events": [
+            {
+                "log": "warning",
+                "message": "[MagicMapper] Unknown schema property type, storing as JSON",
+                "context": {
+                    "propertyName": "zero",
+                    "type": 0
+                }
+            },
+            {
+                "log": "warning",
+                "message": "[MagicMapper] Unknown schema property type, storing as JSON",
+                "context": {
+                    "propertyName": "list",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            }
+        ]
+    },
+    "numeric property name": {
+        "columns": {
+            "_id": {
+                "name": "_id",
+                "type": "bigint",
+                "nullable": false,
+                "autoincrement": true,
+                "primary": true
+            },
+            "_uuid": {
+                "name": "_uuid",
+                "type": "string",
+                "length": 40,
+                "nullable": false,
+                "unique": true,
+                "index": true
+            },
+            "_slug": {
+                "name": "_slug",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "index": true
+            },
+            "_uri": {
+                "name": "_uri",
+                "type": "text",
+                "nullable": true
+            },
+            "_version": {
+                "name": "_version",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_register": {
+                "name": "_register",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "index": true
+            },
+            "_schema": {
+                "name": "_schema",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "index": true
+            },
+            "_owner": {
+                "name": "_owner",
+                "type": "string",
+                "length": 64,
+                "nullable": true,
+                "index": true
+            },
+            "_organisation": {
+                "name": "_organisation",
+                "type": "string",
+                "length": 36,
+                "nullable": true,
+                "index": true
+            },
+            "_application": {
+                "name": "_application",
+                "type": "string",
+                "length": 255,
+                "nullable": true
+            },
+            "_folder": {
+                "name": "_folder",
+                "type": "string",
+                "length": 255,
+                "nullable": true
+            },
+            "_name": {
+                "name": "_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "index": true
+            },
+            "_description": {
+                "name": "_description",
+                "type": "text",
+                "nullable": true
+            },
+            "_summary": {
+                "name": "_summary",
+                "type": "text",
+                "nullable": true
+            },
+            "_image": {
+                "name": "_image",
+                "type": "text",
+                "nullable": true
+            },
+            "_size": {
+                "name": "_size",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_schema_version": {
+                "name": "_schema_version",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_created": {
+                "name": "_created",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_updated": {
+                "name": "_updated",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_last_user_activity": {
+                "name": "_last_user_activity",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_expires": {
+                "name": "_expires",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_files": {
+                "name": "_files",
+                "type": "json",
+                "nullable": true
+            },
+            "_relations": {
+                "name": "_relations",
+                "type": "json",
+                "nullable": true
+            },
+            "_locked": {
+                "name": "_locked",
+                "type": "json",
+                "nullable": true
+            },
+            "_authorization": {
+                "name": "_authorization",
+                "type": "json",
+                "nullable": true
+            },
+            "_validation": {
+                "name": "_validation",
+                "type": "json",
+                "nullable": true
+            },
+            "_quality": {
+                "name": "_quality",
+                "type": "json",
+                "nullable": true
+            },
+            "_deleted": {
+                "name": "_deleted",
+                "type": "json",
+                "nullable": true
+            },
+            "_archived": {
+                "name": "_archived",
+                "type": "json",
+                "nullable": true
+            },
+            "_frozen": {
+                "name": "_frozen",
+                "type": "json",
+                "nullable": true
+            },
+            "_status": {
+                "name": "_status",
+                "type": "string",
+                "length": 16,
+                "nullable": true,
+                "index": true
+            },
+            "_geo": {
+                "name": "_geo",
+                "type": "json",
+                "nullable": true
+            },
+            "_retention": {
+                "name": "_retention",
+                "type": "json",
+                "nullable": true
+            },
+            "_groups": {
+                "name": "_groups",
+                "type": "json",
+                "nullable": true
+            },
+            "_tmlo": {
+                "name": "_tmlo",
+                "type": "json",
+                "nullable": true
+            },
+            "7": {
+                "name": "7",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        "events": []
+    },
+    "numeric format": {
+        "columns": "TypeError",
+        "events": []
+    }
+}

@@ -15,7 +15,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 				|| 'Object')
 		"
 		size="normal"
-		:canClose="false">
+		noClose>
 		<div v-if="success === null">
 			<p>
 				Create a copy of
@@ -46,12 +46,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 		</NcNoteCard>
 
 		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success === null ? 'Cancel' : 'Close' }}
-			</NcButton>
+			<CloseCancelButton :label="success === null ? 'Cancel' : 'Close'" @click="closeDialog" />
 			<NcButton
 				v-if="success === null"
 				:disabled="loading || !copyName.trim()"
@@ -75,8 +70,9 @@ import {
 	NcNoteCard,
 	NcTextField,
 } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import { renameCopy, withoutOriginalMetadata } from '../../services/objectCopy.js'
 
 export default {
 	name: 'CopyObject',
@@ -88,7 +84,7 @@ export default {
 		NcTextField,
 		// Icons
 		ContentCopy,
-		Cancel,
+		CloseCancelButton,
 	},
 
 	data() {
@@ -102,6 +98,9 @@ export default {
 	},
 
 	computed: {
+		// A <script setup> binding is not on `this`, and a watch path reads `this`.
+		navigationStore: () => navigationStore,
+
 		/**
 		 * @spec exclude computed display helper for default copy name
 		 */
@@ -153,58 +152,21 @@ export default {
 			this.error = false
 
 			try {
-				// Create a copy of the object with the new name
-				const objectToCopy = { ...objectStore.objectItem }
+				const objectToCopy = withoutOriginalMetadata(objectStore.objectItem)
+				renameCopy(objectToCopy, this.copyName.trim())
+				const data = await this.saveCopy(objectToCopy)
 
-				// Remove the root-level id field that should not be copied
-				delete objectToCopy.id
-
-				// Remove metadata that should not be copied
-				if (objectToCopy['@self']) {
-					delete objectToCopy['@self'].id
-					delete objectToCopy['@self'].uuid
-					delete objectToCopy['@self'].uri
-					delete objectToCopy['@self'].created
-					delete objectToCopy['@self'].updated
-					delete objectToCopy['@self'].version
-					delete objectToCopy['@self'].files
-					delete objectToCopy['@self'].relations
-					delete objectToCopy['@self'].folder
-					delete objectToCopy['@self'].size
-					delete objectToCopy['@self'].deleted
-
-					// Set the new name
-					objectToCopy['@self'].name = this.copyName.trim()
-				}
-
-				// If the object has a name property at root level, update it too
-				if (objectToCopy.name !== undefined) {
-					objectToCopy.name = this.copyName.trim()
-				}
-				if (objectToCopy.title !== undefined) {
-					objectToCopy.title = this.copyName.trim()
-				}
-
-				// Create the new object using the proper register and schema
-				const register = objectStore.objectItem['@self'].register
-				const schema = objectStore.objectItem['@self'].schema
-				const type = `${register}-${schema}`
-				objectStore.registerObjectType(type, schema, register)
-				const data = await objectStore.saveObject(type, objectToCopy)
-				await objectStore.refreshObjectList({ register, schema })
-
-				if (data) {
-					this.success = true
-					this.closeModalTimeout = setTimeout(() => {
-						this.closeDialog()
-
-						// Set the new object as selected and open ViewObject modal
-						objectStore.setObjectItem(data)
-						navigationStore.setModal('viewObject')
-					}, 2000)
-				} else {
+				if (!data) {
 					throw new Error('Failed to create copy')
 				}
+				this.success = true
+				this.closeModalTimeout = setTimeout(() => {
+					this.closeDialog()
+
+					// Set the new object as selected and open ViewObject modal
+					objectStore.setObjectItem(data)
+					navigationStore.setModal('viewObject')
+				}, 2000)
 			} catch (error) {
 				this.success = false
 				this.error =
@@ -213,18 +175,33 @@ export default {
 				this.loading = false
 			}
 		},
+
+		/**
+		 * Save the copy in the original's register and schema, then reload that list.
+		 *
+		 * @param {object} objectToCopy The copy to save
+		 * @spec exclude UI plumbing — saves the copy through the object store
+		 * @return {Promise<object|null>} The saved object
+		 */
+		async saveCopy(objectToCopy) {
+			const register = objectStore.objectItem['@self'].register
+			const schema = objectStore.objectItem['@self'].schema
+			const type = `${register}-${schema}`
+			objectStore.registerObjectType(type, schema, register)
+			const data = await objectStore.saveObject(type, objectToCopy)
+			await objectStore.refreshObjectList({ register, schema })
+			return data
+		},
 	},
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
 .form-group {
 	margin-bottom: 1rem;
 }
 
-.form-group label {
-	display: block;
-	margin-bottom: 0.5rem;
-	font-weight: bold;
-}
+@include form-group-label;
 </style>

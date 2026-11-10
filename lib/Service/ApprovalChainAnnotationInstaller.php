@@ -10,9 +10,10 @@
  * an `ApprovalChain` row, it now compiles the declaration into a task
  * TEMPLATE: a deterministic template id, one ordered position per
  * `approvers` entry, and the chain-level policy (`transition`,
- * `separationOfDuties`, `onApprove`, `amountField`). The template is a pure
- * function of the schema, so provisioning is idempotent by construction: a
- * re-save produces the same template, no second one and no new version.
+ * `separationOfDuties`, `onApprove`, `amountField`, `approvingOutcomes`). The
+ * template is a pure function of the schema, so provisioning is idempotent
+ * by construction: a re-save produces the same template, no second one and
+ * no new version.
  *
  * The class keeps its name and its schema-save subscription on purpose: the
  * refusal path and its callers stay recognisable, which is what makes the
@@ -41,6 +42,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Task\ApprovingOutcomeSet;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -189,7 +191,7 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 			return null;
 		}
 
-		return [
+		$template = [
 			'templateId' => $this->templateIdFor(schemaId: (int)$schemaId, chainKey: $chainKey),
 			'templateVersion' => self::TEMPLATE_VERSION,
 			'name' => $chainKey,
@@ -201,6 +203,13 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 			'tiers' => $tiers,
 			'positions' => $positions,
 		];
+
+		$approving = (new ApprovingOutcomeSet(declared: ($spec['approvingOutcomes'] ?? null)))->entries();
+		if ($approving !== []) {
+			$template['approvingOutcomes'] = $approving;
+		}
+
+		return $template;
 	}//end compile()
 
 	/**

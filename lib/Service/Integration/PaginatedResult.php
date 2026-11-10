@@ -117,14 +117,24 @@ final class PaginatedResult {
 			return new self(items: [], total: 0, nextCursor: null);
 		}
 
-		// Envelope shape: has an explicit items/results key.
+		return self::fromArray(value: $value);
+	}//end fromMixed()
+
+	/**
+	 * Parse an array: an envelope when it has an explicit `items` / `results`
+	 * key, else a flat list of rows.
+	 *
+	 * @param array<mixed> $value The array.
+	 *
+	 * @return self The normalized envelope.
+	 */
+	private static function fromArray(array $value): self {
 		if (array_key_exists('items', $value) === true || array_key_exists('results', $value) === true) {
 			return self::fromEnvelope(value: $value);
 		}
 
-		// Flat list: numeric-keyed array of rows.
 		return new self(items: array_values($value), total: count($value), nextCursor: null);
-	}//end fromMixed()
+	}//end fromArray()
 
 	/**
 	 * Parse an envelope-shaped array (has `items` or `results` key) into a PaginatedResult.
@@ -134,23 +144,61 @@ final class PaginatedResult {
 	 * @return self
 	 */
 	private static function fromEnvelope(array $value): self {
-		$items = $value['items'] ?? $value['results'] ?? [];
-		if (is_array($items) === false) {
-			$items = [];
-		}
+		$items = self::envelopeItems(value: $value);
 
-		$total = count($items);
-		if (array_key_exists('total', $value) === true && is_numeric($value['total']) === true) {
-			$total = (int)$value['total'];
-		}
-
-		$nextCursor = null;
-		if (array_key_exists('nextCursor', $value) === true && $value['nextCursor'] !== null) {
-			$nextCursor = (string)$value['nextCursor'];
-		}
-
-		return new self(items: array_values($items), total: $total, nextCursor: $nextCursor);
+		return new self(
+			items: array_values($items),
+			total: self::envelopeTotal(value: $value, itemCount: count($items)),
+			nextCursor: self::envelopeCursor(value: $value)
+		);
 	}//end fromEnvelope()
+
+	/**
+	 * The envelope's `items`, else its `results`; none when that is not an array.
+	 *
+	 * @param array<string,mixed> $value The envelope array.
+	 *
+	 * @return array<mixed> The items.
+	 */
+	private static function envelopeItems(array $value): array {
+		$items = ($value['items'] ?? $value['results'] ?? []);
+		if (is_array($items) === false) {
+			return [];
+		}
+
+		return $items;
+	}//end envelopeItems()
+
+	/**
+	 * The envelope's numeric `total`, else the item count.
+	 *
+	 * @param array<string,mixed> $value The envelope array.
+	 * @param int $itemCount The number of items.
+	 *
+	 * @return int The total.
+	 */
+	private static function envelopeTotal(array $value, int $itemCount): int {
+		if (array_key_exists('total', $value) === true && is_numeric($value['total']) === true) {
+			return (int)$value['total'];
+		}
+
+		return $itemCount;
+	}//end envelopeTotal()
+
+	/**
+	 * The envelope's non-null `nextCursor` as a string, else null.
+	 *
+	 * @param array<string,mixed> $value The envelope array.
+	 *
+	 * @return string|null The cursor.
+	 */
+	private static function envelopeCursor(array $value): ?string {
+		if (array_key_exists('nextCursor', $value) === true && $value['nextCursor'] !== null) {
+			return (string)$value['nextCursor'];
+		}
+
+		return null;
+	}//end envelopeCursor()
 
 	/**
 	 * Serialize to the canonical wire shape.

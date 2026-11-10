@@ -14,10 +14,12 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowStream;
 use OCA\OpenRegister\Db\FlowStreamMapper;
+use OCA\OpenRegister\Db\FlowStreamMapperInterface;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -57,9 +59,9 @@ class FlowTaskBridgeTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			function (string $id): object {
 				return match ($id) {
-					FlowRunService::class => $this->runService,
+					FlowRunServiceInterface::class => $this->runService,
 					FlowRunAdvancer::class => $this->advancer,
-					FlowStreamMapper::class => $this->streams,
+					FlowStreamMapperInterface::class => $this->streams,
 					default => throw new RuntimeException('unexpected service ' . $id),
 				};
 			}
@@ -200,6 +202,38 @@ class FlowTaskBridgeTest extends TestCase {
 		$this->assertSame(FlowRun::STATUS_SUSPENDED, $after->getStatus());
 		$this->assertNotNull($after->getResumeAt(), 'the run must be due for the worker');
 	}//end testTheDefaultBudgetParksForTheWorker()
+
+	/**
+	 * The wake carries the task's outcome bag, never an empty payload.
+	 *
+	 * A second listener on the same terminal event may signal the run with its
+	 * own payload (dossiq's ask step sends who answered). `signal()` assigns the
+	 * payload outright, so an empty one sent here erased that, and the node read
+	 * the empty signal as a missed wake. The bag is what `outcomeBagFor()`
+	 * already assembles for the items, `completedBy` included.
+	 */
+	public function testTheWakeCarriesTheOutcomeBagNotAnEmptyPayload(): void {
+		$run = $this->suspendedRun(advance: null);
+		$this->runs->method('findByUuid')->willReturn($run);
+		$task = $this->terminalTask();
+		$task->setCompletedBy('anna');
+		$payloads = [];
+		$this->runService->method('signal')->willReturnCallback(
+			static function (FlowRun $run, array $payload = []) use (&$payloads): FlowRun {
+				$payloads[] = $payload;
+				$run->setResumeAt(new DateTime());
+
+				return $run;
+			}
+		);
+
+		$this->bridge->continueRun(task: $task);
+
+		$this->assertCount(1, $payloads);
+		$this->assertNotSame([], $payloads[0], 'an empty payload overwrites what another listener signalled');
+		$this->assertSame(FlowTaskBridge::outcomeBagFor($task), $payloads[0]);
+		$this->assertSame('anna', $payloads[0]['completedBy']);
+	}//end testTheWakeCarriesTheOutcomeBagNotAnEmptyPayload()
 
 	/**
 	 * A budget of N continues THE STREAM parked on the node, for N + 1

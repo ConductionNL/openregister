@@ -44,6 +44,8 @@ use Throwable;
  * Read-only object-source provider backed by the Nextcloud user directory.
  */
 class UserDirectoryObjectSourceProvider implements ObjectSourceProvider {
+
+	use CountsThroughFindAll;
 	/**
 	 * Constructor.
 	 *
@@ -105,6 +107,18 @@ class UserDirectoryObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-3.1
 	 */
 	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
+		return $this->findUser(binding: new SourcedObjectBinding(register: $register, schema: $schema), id: $id);
+	}//end find()
+
+	/**
+	 * Read one object for the bound register and schema.
+	 *
+	 * @param SourcedObjectBinding $binding The register and schema the objects belong to.
+	 * @param string               $id      The object id.
+	 *
+	 * @return ObjectEntity|null The virtual object, or null when absent/denied.
+	 */
+	private function findUser(SourcedObjectBinding $binding, string $id): ?ObjectEntity {
 		try {
 			$user = $this->userManager->get($id);
 		} catch (Throwable $e) {
@@ -116,8 +130,8 @@ class UserDirectoryObjectSourceProvider implements ObjectSourceProvider {
 			return null;
 		}
 
-		return $this->toObjectEntity(register: $register, schema: $schema, user: $user);
-	}//end find()
+		return $this->toObjectEntity(binding: $binding, user: $user);
+	}//end findUser()
 
 	/**
 	 * {@inheritDoc}
@@ -137,29 +151,25 @@ class UserDirectoryObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-3.1
 	 */
 	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
-		$objects = [];
-		foreach ($this->readUsers(query: $query) as $user) {
-			$objects[] = $this->toObjectEntity(register: $register, schema: $schema, user: $user);
-		}
-
-		return $objects;
+		return $this->listUsers(binding: new SourcedObjectBinding(register: $register, schema: $schema), query: $query);
 	}//end findAll()
 
 	/**
-	 * {@inheritDoc}
+	 * Read one page of objects for the bound register and schema.
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
-	 * @param array<string, mixed> $query Query (filters/search).
-	 * @param array<string, mixed> $config The object-source config block (unused).
+	 * @param SourcedObjectBinding $binding The register and schema the objects belong to.
+	 * @param array<string, mixed> $query   Query (filters/search/limit/offset).
 	 *
-	 * @return int The number of matching virtual objects.
-	 *
-	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-3.1
+	 * @return ObjectEntity[] The matching virtual objects.
 	 */
-	public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
-		return count($this->findAll(register: $register, schema: $schema, query: $query, config: $config));
-	}//end count()
+	private function listUsers(SourcedObjectBinding $binding, array $query): array {
+		$objects = [];
+		foreach ($this->readUsers(query: $query) as $user) {
+			$objects[] = $this->toObjectEntity(binding: $binding, user: $user);
+		}
+
+		return $objects;
+	}//end listUsers()
 
 	/**
 	 * Read the users visible to the acting user, failing closed to an empty list.
@@ -244,15 +254,14 @@ class UserDirectoryObjectSourceProvider implements ObjectSourceProvider {
 	/**
 	 * Map a Nextcloud user onto a non-persisted virtual ObjectEntity.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema $schema The sourced schema.
-	 * @param IUser $user The Nextcloud user.
+	 * @param SourcedObjectBinding $binding The bound register and schema.
+	 * @param IUser                $user    The Nextcloud user.
 	 *
 	 * @return ObjectEntity The virtual object (never saved).
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-3.1
 	 */
-	private function toObjectEntity(Register $register, Schema $schema, IUser $user): ObjectEntity {
+	private function toObjectEntity(SourcedObjectBinding $binding, IUser $user): ObjectEntity {
 		$uid = $user->getUID();
 
 		$data = [
@@ -261,12 +270,6 @@ class UserDirectoryObjectSourceProvider implements ObjectSourceProvider {
 			'email' => ($user->getEMailAddress() ?? ''),
 		];
 
-		$entity = new ObjectEntity();
-		$entity->setUuid($uid);
-		$entity->setRegister((string)$register->getId());
-		$entity->setSchema((string)$schema->getId());
-		$entity->setObject($data);
-
-		return $entity;
+		return $binding->toEntity(uuid: $uid, data: $data);
 	}//end toObjectEntity()
 }//end class

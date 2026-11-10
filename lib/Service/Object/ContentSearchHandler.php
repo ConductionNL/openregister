@@ -23,9 +23,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\ChunkMapper;
-use OCA\OpenRegister\Db\FileMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
+use OCA\OpenRegister\Files\Db\FileMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use Psr\Log\LoggerInterface;
 
@@ -99,17 +99,17 @@ class ContentSearchHandler {
 	/**
 	 * Constructor for ContentSearchHandler.
 	 *
-	 * @param ChunkMapper $chunkMapper Chunk store mapper (keyword search over body text).
-	 * @param FileMapper $fileMapper File mapper, used to resolve a file chunk's owning object.
-	 * @param MagicMapper $objectMapper Unified object mapper, used to resolve chunk hits to ObjectEntity rows.
+	 * @param ChunkMapperInterface $chunkMapper Chunk store mapper (keyword search over body text).
+	 * @param FileMapperInterface $fileMapper File mapper, used to resolve a file chunk's owning object.
+	 * @param MagicMapperInterface $objectMapper Unified object mapper, used to resolve chunk hits to ObjectEntity rows.
 	 * @param LoggerInterface $logger Logger for DEBUG-level unresolvable-chunk diagnostics.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
-		private readonly ChunkMapper $chunkMapper,
-		private readonly FileMapper $fileMapper,
-		private readonly MagicMapper $objectMapper,
+		private readonly ChunkMapperInterface $chunkMapper,
+		private readonly FileMapperInterface $fileMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -413,9 +413,8 @@ class ContentSearchHandler {
 	/**
 	 * The caller's query with paging and scope stripped, ready to be aimed at
 	 * one table with `_ids`. The restriction travels as `_ids` on the
-	 * single-table path; a `_ids` key on an UNSCOPED query would switch
-	 * MagicMapper to its id-lookup path, which ignores `_search`, so the scope
-	 * keys are always set by the caller before use.
+	 * single-table path, so the scope keys are always set by the caller before
+	 * use.
 	 *
 	 * @param array $query The original search query.
 	 *

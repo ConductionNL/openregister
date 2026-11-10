@@ -124,9 +124,7 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 	 *   this abstract stub intentionally throws — concrete providers override and use all parameters.
 	 */
 	public function get(string $register, string $schema, string $objectId, string $entityId): array {
-		throw new NotImplementedException(
-			message: sprintf('Provider %s does not support get()', $this->getId())
-		);
+		throw $this->unsupported(operation: 'get');
 	}//end get()
 
 	/**
@@ -148,9 +146,7 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 	 *   this abstract stub intentionally throws — concrete providers override and use all parameters.
 	 */
 	public function create(string $register, string $schema, string $objectId, array $payload): array {
-		throw new NotImplementedException(
-			message: sprintf('Provider %s does not support create()', $this->getId())
-		);
+		throw $this->unsupported(operation: 'create');
 	}//end create()
 
 	/**
@@ -173,9 +169,7 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 	 *   this abstract stub intentionally throws — concrete providers override and use all parameters.
 	 */
 	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
-		throw new NotImplementedException(
-			message: sprintf('Provider %s does not support update()', $this->getId())
-		);
+		throw $this->unsupported(operation: 'update');
 	}//end update()
 
 	/**
@@ -197,10 +191,21 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 	 *   this abstract stub intentionally throws — concrete providers override and use all parameters.
 	 */
 	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
-		throw new NotImplementedException(
-			message: sprintf('Provider %s does not support delete()', $this->getId())
-		);
+		throw $this->unsupported(operation: 'delete');
 	}//end delete()
+
+	/**
+	 * The NotImplementedException a provider answers for an operation it does not support.
+	 *
+	 * @param string $operation The operation, as the message names it: `get`, `create`, `update` or `delete`.
+	 *
+	 * @return NotImplementedException
+	 */
+	private function unsupported(string $operation): NotImplementedException {
+		return new NotImplementedException(
+			message: sprintf('Provider %s does not support %s()', $this->getId(), $operation)
+		);
+	}//end unsupported()
 
 	/**
 	 * Default health descriptor — assumes a healthy, configured integration.
@@ -221,4 +226,21 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 			'message' => null,
 		];
 	}//end health()
+
+	/**
+	 * Health descriptor of a provider that needs one Nextcloud app: ok when it
+	 * is available, otherwise unavailable with the given message.
+	 *
+	 * @param bool   $available Whether the backing app is available.
+	 * @param string $missing   The message when it is not.
+	 *
+	 * @return array{status: string, authStatus: string, message: ?string}
+	 */
+	protected function installedHealth(bool $available, string $missing): array {
+		if ($available === true) {
+			return ['status' => 'ok', 'authStatus' => 'configured', 'message' => null];
+		}
+
+		return ['status' => 'unavailable', 'authStatus' => 'configured', 'message' => $missing];
+	}//end installedHealth()
 }//end class

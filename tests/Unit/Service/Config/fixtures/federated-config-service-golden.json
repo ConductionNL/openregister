@@ -1,0 +1,1478 @@
+{
+    "discover anonymous": {
+        "outcome": [
+            {
+                "repo": "o/a",
+                "name": "a",
+                "description": "",
+                "url": "u",
+                "stars": 7,
+                "updated": "d",
+                "topics": [
+                    "t",
+                    "u"
+                ]
+            },
+            {
+                "repo": "",
+                "name": "",
+                "description": "",
+                "url": "",
+                "stars": 0,
+                "updated": "",
+                "topics": []
+            },
+            {
+                "repo": "o/b",
+                "name": "",
+                "description": "",
+                "url": "",
+                "stars": 0,
+                "updated": "",
+                "topics": [
+                    "single"
+                ]
+            }
+        ],
+        "record": {
+            "broker": [],
+            "client": [
+                [
+                    "https://api.github.com/search/repositories?q=topic%3Ademo%20topic&sort=updated&per_page=50",
+                    {
+                        "headers": {
+                            "Accept": "application/vnd.github+json"
+                        },
+                        "http_errors": false
+                    }
+                ]
+            ],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "discover blank topic": {
+        "outcome": [],
+        "record": {
+            "broker": [],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "discover broker throws": {
+        "outcome": [],
+        "record": {
+            "broker": [
+                [
+                    "cred-1",
+                    "openregister",
+                    "GET",
+                    "/search/repositories?q=topic%3Ademo&sort=updated&per_page=50",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ]
+            ],
+            "client": [],
+            "warnings": [
+                "[FederatedConfigService] discovery failed for topic demo: broker down: /search/repositories?q=topic%3Ademo&sort=updated&per_page=50"
+            ],
+            "deserialised": []
+        }
+    },
+    "discover client throws": {
+        "outcome": [],
+        "record": {
+            "broker": [],
+            "client": [
+                [
+                    "https://api.github.com/search/repositories?q=topic%3Ademo&sort=updated&per_page=50",
+                    {
+                        "headers": {
+                            "Accept": "application/vnd.github+json"
+                        },
+                        "http_errors": false
+                    }
+                ]
+            ],
+            "warnings": [
+                "[FederatedConfigService] discovery failed for topic demo: network down"
+            ],
+            "deserialised": []
+        }
+    },
+    "discover credential no body": {
+        "outcome": [],
+        "record": {
+            "broker": [
+                [
+                    "cred-1",
+                    "openregister",
+                    "GET",
+                    "/search/repositories?q=topic%3Ademo&sort=updated&per_page=50",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ]
+            ],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "discover empty credential is anonymous": {
+        "outcome": [
+            {
+                "repo": "o/a",
+                "name": "a",
+                "description": "",
+                "url": "u",
+                "stars": 7,
+                "updated": "d",
+                "topics": [
+                    "t",
+                    "u"
+                ]
+            },
+            {
+                "repo": "",
+                "name": "",
+                "description": "",
+                "url": "",
+                "stars": 0,
+                "updated": "",
+                "topics": []
+            },
+            {
+                "repo": "o/b",
+                "name": "",
+                "description": "",
+                "url": "",
+                "stars": 0,
+                "updated": "",
+                "topics": [
+                    "single"
+                ]
+            }
+        ],
+        "record": {
+            "broker": [],
+            "client": [
+                [
+                    "https://api.github.com/search/repositories?q=topic%3Ademo&sort=updated&per_page=50",
+                    {
+                        "headers": {
+                            "Accept": "application/vnd.github+json"
+                        },
+                        "http_errors": false
+                    }
+                ]
+            ],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "discover items not a list": {
+        "outcome": [],
+        "record": {
+            "broker": [],
+            "client": [
+                [
+                    "https://api.github.com/search/repositories?q=topic%3Ademo&sort=updated&per_page=50",
+                    {
+                        "headers": {
+                            "Accept": "application/vnd.github+json"
+                        },
+                        "http_errors": false
+                    }
+                ]
+            ],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "discover no items": {
+        "outcome": [],
+        "record": {
+            "broker": [],
+            "client": [
+                [
+                    "https://api.github.com/search/repositories?q=topic%3Ademo&sort=updated&per_page=50",
+                    {
+                        "headers": {
+                            "Accept": "application/vnd.github+json"
+                        },
+                        "http_errors": false
+                    }
+                ]
+            ],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "discover not json": {
+        "outcome": [],
+        "record": {
+            "broker": [],
+            "client": [
+                [
+                    "https://api.github.com/search/repositories?q=topic%3Ademo&sort=updated&per_page=50",
+                    {
+                        "headers": {
+                            "Accept": "application/vnd.github+json"
+                        },
+                        "http_errors": false
+                    }
+                ]
+            ],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "discover scalar json": {
+        "outcome": [],
+        "record": {
+            "broker": [],
+            "client": [
+                [
+                    "https://api.github.com/search/repositories?q=topic%3Ademo&sort=updated&per_page=50",
+                    {
+                        "headers": {
+                            "Accept": "application/vnd.github+json"
+                        },
+                        "http_errors": false
+                    }
+                ]
+            ],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "discover with credential": {
+        "outcome": [
+            {
+                "repo": "o/a",
+                "name": "a",
+                "description": "",
+                "url": "u",
+                "stars": 7,
+                "updated": "d",
+                "topics": [
+                    "t",
+                    "u"
+                ]
+            },
+            {
+                "repo": "",
+                "name": "",
+                "description": "",
+                "url": "",
+                "stars": 0,
+                "updated": "",
+                "topics": []
+            },
+            {
+                "repo": "o/b",
+                "name": "",
+                "description": "",
+                "url": "",
+                "stars": 0,
+                "updated": "",
+                "topics": [
+                    "single"
+                ]
+            }
+        ],
+        "record": {
+            "broker": [
+                [
+                    "cred-1",
+                    "openregister",
+                    "GET",
+                    "/search/repositories?q=topic%3Ademo&sort=updated&per_page=50",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ]
+            ],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "fetch anonymous": {
+        "outcome": {
+            "type": "demo.type",
+            "x": 1
+        },
+        "record": {
+            "broker": [],
+            "client": [
+                [
+                    "https://api.github.com/repos/o/r/contents/b.json",
+                    {
+                        "headers": {
+                            "Accept": "application/vnd.github+json"
+                        },
+                        "http_errors": false
+                    }
+                ]
+            ],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "fetch bad base64": {
+        "outcome": {
+            "thrown": "RuntimeException",
+            "message": "Bundle at b.json in o/r is not valid base64."
+        },
+        "record": {
+            "broker": [],
+            "client": [
+                [
+                    "https://api.github.com/repos/o/r/contents/b.json",
+                    {
+                        "headers": {
+                            "Accept": "application/vnd.github+json"
+                        },
+                        "http_errors": false
+                    }
+                ]
+            ],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "fetch broker throws": {
+        "outcome": {
+            "thrown": "RuntimeException",
+            "message": "Could not fetch b.json from o/r: broker down: /repos/o/r/contents/b.json"
+        },
+        "record": {
+            "broker": [
+                [
+                    "cred-1",
+                    "openregister",
+                    "GET",
+                    "/repos/o/r/contents/b.json",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ]
+            ],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "fetch client throws": {
+        "outcome": {
+            "thrown": "RuntimeException",
+            "message": "Could not fetch b.json from o/r: network down"
+        },
+        "record": {
+            "broker": [],
+            "client": [
+                [
+                    "https://api.github.com/repos/o/r/contents/b.json",
+                    {
+                        "headers": {
+                            "Accept": "application/vnd.github+json"
+                        },
+                        "http_errors": false
+                    }
+                ]
+            ],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "fetch content not json": {
+        "outcome": {
+            "thrown": "RuntimeException",
+            "message": "Bundle at b.json in o/r is not valid JSON."
+        },
+        "record": {
+            "broker": [],
+            "client": [
+                [
+                    "https://api.github.com/repos/o/r/contents/b.json",
+                    {
+                        "headers": {
+                            "Accept": "application/vnd.github+json"
+                        },
+                        "http_errors": false
+                    }
+                ]
+            ],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "fetch content numeric": {
+        "outcome": {
+            "thrown": "RuntimeException",
+            "message": "Bundle at b.json in o/r is not valid JSON."
+        },
+        "record": {
+            "broker": [],
+            "client": [
+                [
+                    "https://api.github.com/repos/o/r/contents/b.json",
+                    {
+                        "headers": {
+                            "Accept": "application/vnd.github+json"
+                        },
+                        "http_errors": false
+                    }
+                ]
+            ],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "fetch content scalar json": {
+        "outcome": {
+            "thrown": "RuntimeException",
+            "message": "Bundle at b.json in o/r is not valid JSON."
+        },
+        "record": {
+            "broker": [],
+            "client": [
+                [
+                    "https://api.github.com/repos/o/r/contents/b.json",
+                    {
+                        "headers": {
+                            "Accept": "application/vnd.github+json"
+                        },
+                        "http_errors": false
+                    }
+                ]
+            ],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "fetch empty path": {
+        "outcome": {
+            "thrown": "RuntimeException",
+            "message": "Fetching a bundle needs a repo and a path."
+        },
+        "record": {
+            "broker": [],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "fetch empty repo": {
+        "outcome": {
+            "thrown": "RuntimeException",
+            "message": "Fetching a bundle needs a repo and a path."
+        },
+        "record": {
+            "broker": [],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "fetch no content": {
+        "outcome": {
+            "thrown": "RuntimeException",
+            "message": "No bundle at b.json in o/r."
+        },
+        "record": {
+            "broker": [],
+            "client": [
+                [
+                    "https://api.github.com/repos/o/r/contents/b.json",
+                    {
+                        "headers": {
+                            "Accept": "application/vnd.github+json"
+                        },
+                        "http_errors": false
+                    }
+                ]
+            ],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "fetch not json": {
+        "outcome": {
+            "thrown": "RuntimeException",
+            "message": "No bundle at b.json in o/r."
+        },
+        "record": {
+            "broker": [],
+            "client": [
+                [
+                    "https://api.github.com/repos/o/r/contents/b.json",
+                    {
+                        "headers": {
+                            "Accept": "application/vnd.github+json"
+                        },
+                        "http_errors": false
+                    }
+                ]
+            ],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "fetch trims repo and path": {
+        "outcome": {
+            "type": "demo.type",
+            "x": 1
+        },
+        "record": {
+            "broker": [],
+            "client": [
+                [
+                    "https://api.github.com/repos/o/r/contents/dir/b.json",
+                    {
+                        "headers": {
+                            "Accept": "application/vnd.github+json"
+                        },
+                        "http_errors": false
+                    }
+                ]
+            ],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "fetch with credential": {
+        "outcome": {
+            "type": "demo.type",
+            "x": 1
+        },
+        "record": {
+            "broker": [
+                [
+                    "cred-1",
+                    "openregister",
+                    "GET",
+                    "/repos/o/r/contents/b.json",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ]
+            ],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "install empty source with allowlist": {
+        "outcome": {
+            "thrown": "RuntimeException",
+            "message": "Source \"\" is not on this organisation's allowlist."
+        },
+        "record": {
+            "broker": [],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "install enforced unsigned": {
+        "outcome": {
+            "installed": [
+                "x"
+            ]
+        },
+        "record": {
+            "broker": [],
+            "client": [],
+            "warnings": [],
+            "deserialised": [
+                {
+                    "type": "demo.type"
+                }
+            ]
+        }
+    },
+    "install enforced valid": {
+        "outcome": {
+            "installed": [
+                "x"
+            ]
+        },
+        "record": {
+            "broker": [],
+            "client": [],
+            "warnings": [],
+            "deserialised": [
+                {
+                    "type": "demo.type"
+                }
+            ]
+        }
+    },
+    "install no allowlist unsigned allowed": {
+        "outcome": {
+            "installed": [
+                "x"
+            ]
+        },
+        "record": {
+            "broker": [],
+            "client": [],
+            "warnings": [],
+            "deserialised": [
+                {
+                    "type": "demo.type"
+                }
+            ]
+        }
+    },
+    "install source exact": {
+        "outcome": {
+            "installed": [
+                "x"
+            ]
+        },
+        "record": {
+            "broker": [],
+            "client": [],
+            "warnings": [],
+            "deserialised": [
+                {
+                    "type": "demo.type"
+                }
+            ]
+        }
+    },
+    "install source org prefix": {
+        "outcome": {
+            "installed": [
+                "x"
+            ]
+        },
+        "record": {
+            "broker": [],
+            "client": [],
+            "warnings": [],
+            "deserialised": [
+                {
+                    "type": "demo.type"
+                }
+            ]
+        }
+    },
+    "install source prefix not a segment": {
+        "outcome": {
+            "thrown": "RuntimeException",
+            "message": "Source \"ConductionNLx/pack\" is not on this organisation's allowlist."
+        },
+        "record": {
+            "broker": [],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "install source refused": {
+        "outcome": {
+            "thrown": "RuntimeException",
+            "message": "Source \"evil/repo\" is not on this organisation's allowlist."
+        },
+        "record": {
+            "broker": [],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "install tampered": {
+        "outcome": {
+            "thrown": "RuntimeException",
+            "message": "Bundle signature is invalid \u2014 refusing to install a tampered bundle."
+        },
+        "record": {
+            "broker": [],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "install tampered and untrusted": {
+        "outcome": {
+            "thrown": "RuntimeException",
+            "message": "Bundle signature is invalid \u2014 refusing to install a tampered bundle."
+        },
+        "record": {
+            "broker": [],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "install unknown type": {
+        "outcome": {
+            "thrown": "UnexpectedValueException",
+            "message": "No shareable configuration type \"nope\"."
+        },
+        "record": {
+            "broker": [],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "install unsigned untrusted": {
+        "outcome": {
+            "thrown": "RuntimeException",
+            "message": "Bundle publisher key is not trusted by this organisation."
+        },
+        "record": {
+            "broker": [],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "install untrusted": {
+        "outcome": {
+            "thrown": "RuntimeException",
+            "message": "Bundle publisher key is not trusted by this organisation."
+        },
+        "record": {
+            "broker": [],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "install unverified allowance not exact": {
+        "outcome": {
+            "thrown": "RuntimeException",
+            "message": "This organisation has no trusted publisher keys, so this bundle cannot be verified. An administrator can add a trusted key or allow unverified bundles."
+        },
+        "record": {
+            "broker": [],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "install unverified not allowed": {
+        "outcome": {
+            "thrown": "RuntimeException",
+            "message": "This organisation has no trusted publisher keys, so this bundle cannot be verified. An administrator can add a trusted key or allow unverified bundles."
+        },
+        "record": {
+            "broker": [],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "publish no create succeeds": {
+        "outcome": {
+            "published": true,
+            "repo": "o/r",
+            "path": "/dir/set.json",
+            "topic": "demo-topic",
+            "status": 201
+        },
+        "record": {
+            "broker": [
+                [
+                    "cred-1",
+                    "openregister",
+                    "GET",
+                    "/repos/o/r",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "POST",
+                    "/orgs/o/repos",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"name\":\"r\",\"private\":false,\"auto_init\":true}"
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "POST",
+                    "/user/repos",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"name\":\"r\",\"private\":false,\"auto_init\":true}"
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "PUT",
+                    "/repos/o/r/topics",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"names\":[\"demo-topic\"]}"
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "PUT",
+                    "/repos/o/r/contents/dir/set.json",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"message\":\"Publish demo.type configuration\",\"content\":\"ewogICAgInR5cGUiOiAiZGVtby50eXBlIiwKICAgICJwaWNrZWQiOiB7CiAgICAgICAgIngiOiAxCiAgICB9LAogICAgInNpZ25hdHVyZSI6ICJzaWciCn0=\",\"branch\":\"main\"}"
+                ]
+            ],
+            "client": [],
+            "warnings": [
+                "[FederatedConfigService] could not ensure repo o/r exists; relying on the write to report it."
+            ],
+            "deserialised": []
+        }
+    },
+    "publish org create fails, user ok": {
+        "outcome": {
+            "published": true,
+            "repo": "o/r",
+            "path": "/dir/set.json",
+            "topic": "demo-topic",
+            "status": 201
+        },
+        "record": {
+            "broker": [
+                [
+                    "cred-1",
+                    "openregister",
+                    "GET",
+                    "/repos/o/r",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "POST",
+                    "/orgs/o/repos",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"name\":\"r\",\"private\":false,\"auto_init\":true}"
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "POST",
+                    "/user/repos",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"name\":\"r\",\"private\":false,\"auto_init\":true}"
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "PUT",
+                    "/repos/o/r/topics",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"names\":[\"demo-topic\"]}"
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "PUT",
+                    "/repos/o/r/contents/dir/set.json",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"message\":\"Publish demo.type configuration\",\"content\":\"ewogICAgInR5cGUiOiAiZGVtby50eXBlIiwKICAgICJwaWNrZWQiOiB7CiAgICAgICAgIngiOiAxCiAgICB9LAogICAgInNpZ25hdHVyZSI6ICJzaWciCn0=\",\"branch\":\"main\"}"
+                ]
+            ],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "publish org create throws, user ok": {
+        "outcome": {
+            "published": true,
+            "repo": "o/r",
+            "path": "/dir/set.json",
+            "topic": "demo-topic",
+            "status": 201
+        },
+        "record": {
+            "broker": [
+                [
+                    "cred-1",
+                    "openregister",
+                    "GET",
+                    "/repos/o/r",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "POST",
+                    "/orgs/o/repos",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"name\":\"r\",\"private\":false,\"auto_init\":true}"
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "POST",
+                    "/user/repos",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"name\":\"r\",\"private\":false,\"auto_init\":true}"
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "PUT",
+                    "/repos/o/r/topics",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"names\":[\"demo-topic\"]}"
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "PUT",
+                    "/repos/o/r/contents/dir/set.json",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"message\":\"Publish demo.type configuration\",\"content\":\"ewogICAgInR5cGUiOiAiZGVtby50eXBlIiwKICAgICJwaWNrZWQiOiB7CiAgICAgICAgIngiOiAxCiAgICB9LAogICAgInNpZ25hdHVyZSI6ICJzaWciCn0=\",\"branch\":\"main\"}"
+                ]
+            ],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "publish private branch": {
+        "outcome": {
+            "published": true,
+            "repo": "o/r",
+            "path": "/dir/set.json",
+            "topic": "demo-topic",
+            "status": 201
+        },
+        "record": {
+            "broker": [
+                [
+                    "cred-1",
+                    "openregister",
+                    "GET",
+                    "/repos/o/r",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "POST",
+                    "/orgs/o/repos",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"name\":\"r\",\"private\":true,\"auto_init\":true}"
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "PUT",
+                    "/repos/o/r/topics",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"names\":[\"demo-topic\"]}"
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "PUT",
+                    "/repos/o/r/contents/dir/set.json",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"message\":\"Publish demo.type configuration\",\"content\":\"ewogICAgInR5cGUiOiAiZGVtby50eXBlIiwKICAgICJwaWNrZWQiOiB7CiAgICAgICAgIngiOiAxCiAgICB9LAogICAgInNpZ25hdHVyZSI6ICJzaWciCn0=\",\"branch\":\"dev\"}"
+                ]
+            ],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "publish repo created in org": {
+        "outcome": {
+            "published": true,
+            "repo": "o/r",
+            "path": "/dir/set.json",
+            "topic": "demo-topic",
+            "status": 201
+        },
+        "record": {
+            "broker": [
+                [
+                    "cred-1",
+                    "openregister",
+                    "GET",
+                    "/repos/o/r",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "POST",
+                    "/orgs/o/repos",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"name\":\"r\",\"private\":false,\"auto_init\":true}"
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "PUT",
+                    "/repos/o/r/topics",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"names\":[\"demo-topic\"]}"
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "PUT",
+                    "/repos/o/r/contents/dir/set.json",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"message\":\"Publish demo.type configuration\",\"content\":\"ewogICAgInR5cGUiOiAiZGVtby50eXBlIiwKICAgICJwaWNrZWQiOiB7CiAgICAgICAgIngiOiAxCiAgICB9LAogICAgInNpZ25hdHVyZSI6ICJzaWciCn0=\",\"branch\":\"main\"}"
+                ]
+            ],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "publish repo empty owner": {
+        "outcome": {
+            "published": true,
+            "repo": "/r",
+            "path": "/dir/set.json",
+            "topic": "demo-topic",
+            "status": 201
+        },
+        "record": {
+            "broker": [
+                [
+                    "cred-1",
+                    "openregister",
+                    "PUT",
+                    "/repos//r/topics",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"names\":[\"demo-topic\"]}"
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "PUT",
+                    "/repos//r/contents/dir/set.json",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"message\":\"Publish demo.type configuration\",\"content\":\"ewogICAgInR5cGUiOiAiZGVtby50eXBlIiwKICAgICJwaWNrZWQiOiB7CiAgICAgICAgIngiOiAxCiAgICB9LAogICAgInNpZ25hdHVyZSI6ICJzaWciCn0=\",\"branch\":\"main\"}"
+                ]
+            ],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "publish repo exists": {
+        "outcome": {
+            "published": true,
+            "repo": "o/r",
+            "path": "/dir/set.json",
+            "topic": "demo-topic",
+            "status": 201
+        },
+        "record": {
+            "broker": [
+                [
+                    "cred-1",
+                    "openregister",
+                    "GET",
+                    "/repos/o/r",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "PUT",
+                    "/repos/o/r/topics",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"names\":[\"demo-topic\"]}"
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "PUT",
+                    "/repos/o/r/contents/dir/set.json",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"message\":\"Publish demo.type configuration\",\"content\":\"ewogICAgInR5cGUiOiAiZGVtby50eXBlIiwKICAgICJwaWNrZWQiOiB7CiAgICAgICAgIngiOiAxCiAgICB9LAogICAgInNpZ25hdHVyZSI6ICJzaWciCn0=\",\"branch\":\"main\"}"
+                ]
+            ],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "publish repo lookup throws": {
+        "outcome": {
+            "published": true,
+            "repo": "o/r",
+            "path": "/dir/set.json",
+            "topic": "demo-topic",
+            "status": 201
+        },
+        "record": {
+            "broker": [
+                [
+                    "cred-1",
+                    "openregister",
+                    "GET",
+                    "/repos/o/r",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "POST",
+                    "/orgs/o/repos",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"name\":\"r\",\"private\":false,\"auto_init\":true}"
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "PUT",
+                    "/repos/o/r/topics",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"names\":[\"demo-topic\"]}"
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "PUT",
+                    "/repos/o/r/contents/dir/set.json",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"message\":\"Publish demo.type configuration\",\"content\":\"ewogICAgInR5cGUiOiAiZGVtby50eXBlIiwKICAgICJwaWNrZWQiOiB7CiAgICAgICAgIngiOiAxCiAgICB9LAogICAgInNpZ25hdHVyZSI6ICJzaWciCn0=\",\"branch\":\"main\"}"
+                ]
+            ],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "publish repo without name": {
+        "outcome": {
+            "published": true,
+            "repo": "lonely",
+            "path": "/dir/set.json",
+            "topic": "demo-topic",
+            "status": 201
+        },
+        "record": {
+            "broker": [
+                [
+                    "cred-1",
+                    "openregister",
+                    "PUT",
+                    "/repos/lonely/topics",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"names\":[\"demo-topic\"]}"
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "PUT",
+                    "/repos/lonely/contents/dir/set.json",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"message\":\"Publish demo.type configuration\",\"content\":\"ewogICAgInR5cGUiOiAiZGVtby50eXBlIiwKICAgICJwaWNrZWQiOiB7CiAgICAgICAgIngiOiAxCiAgICB9LAogICAgInNpZ25hdHVyZSI6ICJzaWciCn0=\",\"branch\":\"main\"}"
+                ]
+            ],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "publish status 199 create": {
+        "outcome": {
+            "published": true,
+            "repo": "o/r",
+            "path": "/dir/set.json",
+            "topic": "demo-topic",
+            "status": 201
+        },
+        "record": {
+            "broker": [
+                [
+                    "cred-1",
+                    "openregister",
+                    "GET",
+                    "/repos/o/r",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "POST",
+                    "/orgs/o/repos",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"name\":\"r\",\"private\":false,\"auto_init\":true}"
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "POST",
+                    "/user/repos",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"name\":\"r\",\"private\":false,\"auto_init\":true}"
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "PUT",
+                    "/repos/o/r/topics",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"names\":[\"demo-topic\"]}"
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "PUT",
+                    "/repos/o/r/contents/dir/set.json",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"message\":\"Publish demo.type configuration\",\"content\":\"ewogICAgInR5cGUiOiAiZGVtby50eXBlIiwKICAgICJwaWNrZWQiOiB7CiAgICAgICAgIngiOiAxCiAgICB9LAogICAgInNpZ25hdHVyZSI6ICJzaWciCn0=\",\"branch\":\"main\"}"
+                ]
+            ],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "publish topics throw": {
+        "outcome": {
+            "published": true,
+            "repo": "o/r",
+            "path": "/dir/set.json",
+            "topic": "demo-topic",
+            "status": 201
+        },
+        "record": {
+            "broker": [
+                [
+                    "cred-1",
+                    "openregister",
+                    "GET",
+                    "/repos/o/r",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "PUT",
+                    "/repos/o/r/topics",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"names\":[\"demo-topic\"]}"
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "PUT",
+                    "/repos/o/r/contents/dir/set.json",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"message\":\"Publish demo.type configuration\",\"content\":\"ewogICAgInR5cGUiOiAiZGVtby50eXBlIiwKICAgICJwaWNrZWQiOiB7CiAgICAgICAgIngiOiAxCiAgICB9LAogICAgInNpZ25hdHVyZSI6ICJzaWciCn0=\",\"branch\":\"main\"}"
+                ]
+            ],
+            "client": [],
+            "warnings": [
+                "[FederatedConfigService] could not set topics on o/r: broker down: /repos/o/r/topics"
+            ],
+            "deserialised": []
+        }
+    },
+    "publish unknown type": {
+        "outcome": {
+            "thrown": "UnexpectedValueException",
+            "message": "No shareable configuration type \"nope\"."
+        },
+        "record": {
+            "broker": [],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "publish write fails": {
+        "outcome": {
+            "thrown": "RuntimeException",
+            "message": "GitHub publish failed (409)."
+        },
+        "record": {
+            "broker": [
+                [
+                    "cred-1",
+                    "openregister",
+                    "GET",
+                    "/repos/o/r",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "PUT",
+                    "/repos/o/r/topics",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"names\":[\"demo-topic\"]}"
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "PUT",
+                    "/repos/o/r/contents/dir/set.json",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"message\":\"Publish demo.type configuration\",\"content\":\"ewogICAgInR5cGUiOiAiZGVtby50eXBlIiwKICAgICJwaWNrZWQiOiB7CiAgICAgICAgIngiOiAxCiAgICB9LAogICAgInNpZ25hdHVyZSI6ICJzaWciCn0=\",\"branch\":\"main\"}"
+                ]
+            ],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    },
+    "publish write no status": {
+        "outcome": {
+            "thrown": "RuntimeException",
+            "message": "GitHub publish failed (0)."
+        },
+        "record": {
+            "broker": [
+                [
+                    "cred-1",
+                    "openregister",
+                    "GET",
+                    "/repos/o/r",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "PUT",
+                    "/repos/o/r/topics",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"names\":[\"demo-topic\"]}"
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "PUT",
+                    "/repos/o/r/contents/dir/set.json",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    "{\"message\":\"Publish demo.type configuration\",\"content\":\"ewogICAgInR5cGUiOiAiZGVtby50eXBlIiwKICAgICJwaWNrZWQiOiB7CiAgICAgICAgIngiOiAxCiAgICB9LAogICAgInNpZ25hdHVyZSI6ICJzaWciCn0=\",\"branch\":\"main\"}"
+                ]
+            ],
+            "client": [],
+            "warnings": [],
+            "deserialised": []
+        }
+    }
+}

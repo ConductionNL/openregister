@@ -37,8 +37,11 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use Exception;
+use OCA\OpenRegister\Service\CardDraft;
 use OCA\OpenRegister\Service\DeckLinkService;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -48,6 +51,7 @@ use Throwable;
  * Deck (Kanban cards) integration provider.
  */
 class DeckProvider extends AbstractIntegrationProvider {
+	use LinkTableAppDescriptor;
 
 	/**
 	 * NC app id required for this integration.
@@ -86,14 +90,6 @@ class DeckProvider extends AbstractIntegrationProvider {
 		return 'workflow';
 	}//end getGroup()
 
-	public function getRequiredApp(): ?string {
-		return self::REQUIRED_APP;
-	}//end getRequiredApp()
-
-	public function getStorageStrategy(): string {
-		return 'link-table';
-	}//end getStorageStrategy()
-
 	public function isEnabled(): bool {
 		return $this->deckLinkService->isDeckAvailable();
 	}//end isEnabled()
@@ -113,12 +109,23 @@ class DeckProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/specs/integration-deck/spec.md
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+		return $this->cardsOf(objectId: $objectId);
+	}//end list()
+
+	/**
+	 * The Deck cards linked to an object; none when they cannot be read.
+	 *
+	 * @param string $objectId Owning object uuid.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function cardsOf(string $objectId): array {
 		try {
 			return $this->deckLinkService->getLinkedCards($objectId);
 		} catch (Throwable $e) {
 			return [];
 		}
-	}//end list()
+	}//end cardsOf()
 
 	/**
 	 * Create or link a Deck card.
@@ -139,50 +146,67 @@ class DeckProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/specs/integration-deck/spec.md
 	 */
 	public function create(string $register, string $schema, string $objectId, array $payload): array {
-		$registerId = (int)($payload['registerId'] ?? $register);
-		$schemaId = (int)($payload['schemaId'] ?? $schema);
+		return $this->linkCardFor(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId), payload: $payload);
+	}//end create()
 
-		$hasCardId = (empty($payload['cardId']) === false);
-		$hasBoardData = (empty($payload['boardId']) === false && empty($payload['stackId']) === false);
+	/**
+	 * Link an existing card, or create one on a board and stack and link it.
+	 *
+	 * @param ObjectRef           $ref     The owning object; the payload may name its register and schema ids.
+	 * @param array<string,mixed> $payload `cardId`, or `boardId` + `stackId` and the card fields.
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @throws Exception When neither a card nor a board and stack is named.
+	 */
+	private function linkCardFor(ObjectRef $ref, array $payload): array {
+		$registerId = (int)($payload['registerId'] ?? $ref->register);
+		$schemaId = (int)($payload['schemaId'] ?? $ref->schema);
+		$target = (new LinkTarget(objectUuid: $ref->id, registerId: $registerId))->inSchema(schemaId: $schemaId);
 
-		if ($hasCardId === true) {
-			$link = $this->deckLinkService->linkCard(
-				$objectId,
-				$registerId,
-				$schemaId,
-				(int)$payload['cardId']
-			);
-
-			return $link->jsonSerialize();
+		if (empty($payload['cardId']) === false) {
+			return $this->deckLinkService->linkCard(target: $target, cardId: (int)$payload['cardId'])->jsonSerialize();
 		}
 
-		if ($hasBoardData === true) {
-			$description = null;
-			if (isset($payload['description']) === true) {
-				$description = (string)$payload['description'];
-			}
+		if (empty($payload['boardId']) === true || empty($payload['stackId']) === true) {
+			throw new Exception('Either cardId or boardId+stackId is required', 400);
+		}
 
-			$duedate = null;
-			if (isset($payload['duedate']) === true) {
-				$duedate = (string)$payload['duedate'];
-			}
+		$card = $this->cardDraft(payload: $payload);
 
-			$link = $this->deckLinkService->createAndLinkCard(
-				$objectId,
-				$registerId,
-				$schemaId,
-				(int)$payload['boardId'],
-				(int)$payload['stackId'],
-				(string)($payload['title'] ?? 'Untitled'),
-				$description,
-				$duedate
-			);
+		return $this->deckLinkService->createAndLinkCard(target: $target, card: $card)->jsonSerialize();
+	}//end linkCardFor()
 
-			return $link->jsonSerialize();
-		}//end if
+	/**
+	 * The new card a payload describes.
+	 *
+	 * @param array<string,mixed> $payload Payload with boardId and stackId.
+	 *
+	 * @return CardDraft The card.
+	 */
+	private function cardDraft(array $payload): CardDraft {
+		$card = new CardDraft(title: (string)($payload['title'] ?? 'Untitled'), stackId: (int)$payload['stackId']);
+		$description = $this->optionalText(payload: $payload, key: 'description');
+		$duedate = $this->optionalText(payload: $payload, key: 'duedate');
 
-		throw new Exception('Either cardId or boardId+stackId is required', 400);
-	}//end create()
+		return $card->onBoard(boardId: (int)$payload['boardId'])->withDetails(description: $description, duedate: $duedate);
+	}//end cardDraft()
+
+	/**
+	 * A payload field as text, null when absent.
+	 *
+	 * @param array<string,mixed> $payload The payload.
+	 * @param string              $key     The field.
+	 *
+	 * @return string|null The text.
+	 */
+	private function optionalText(array $payload, string $key): ?string {
+		if (isset($payload[$key]) === false) {
+			return null;
+		}
+
+		return (string)$payload[$key];
+	}//end optionalText()
 
 	/**
 	 * Unlink a Deck card. The card itself stays in Deck.
@@ -211,19 +235,6 @@ class DeckProvider extends AbstractIntegrationProvider {
 	 *       the health/OCS contract is owned by pluggable-integration-registry task-2.
 	 */
 	public function health(): array {
-		$available = $this->deckLinkService->isDeckAvailable();
-
-		$status = 'unavailable';
-		$message = 'NC Deck app is not installed';
-		if ($available === true) {
-			$status = 'ok';
-			$message = null;
-		}
-
-		return [
-			'status' => $status,
-			'authStatus' => 'configured',
-			'message' => $message,
-		];
+		return $this->installedHealth(available: $this->deckLinkService->isDeckAvailable(), missing: 'NC Deck app is not installed');
 	}//end health()
 }//end class

@@ -28,8 +28,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Mcp\IMcpToolProvider;
-use OCA\OpenRegister\Service\RegisterService;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Service\Rbac\DefinitionWriteRightsInterface;
+use OCA\OpenRegister\Service\RegisterServiceInterface;
+use RuntimeException;
 
 /**
  * RegistersToolProvider
@@ -42,7 +44,7 @@ use OCA\OpenRegister\Service\RegisterService;
  *
  * @psalm-suppress UnusedClass - Injected via DI container
  */
-class RegistersToolProvider implements IMcpToolProvider {
+class RegistersToolProvider extends AbstractBuiltInToolProvider {
 
 	/**
 	 * Tool id for the registers tool
@@ -52,63 +54,43 @@ class RegistersToolProvider implements IMcpToolProvider {
 	/**
 	 * Constructor
 	 *
-	 * @param RegisterService $registerService Register service for CRUD operations
+	 * @param RegisterServiceInterface       $registerService Register service for CRUD operations
+	 * @param DefinitionWriteRightsInterface $rights          The rights of the signed-in user
 	 */
 	public function __construct(
-		private readonly RegisterService $registerService,
+		private readonly RegisterServiceInterface $registerService,
+		private readonly DefinitionWriteRightsInterface $rights,
 	) {
 	}//end __construct()
 
 	/**
-	 * Returns the owning app id.
+	 * The tool definitions.
 	 *
-	 * @return string Always "openregister"
+	 * @var array<int, array<string, mixed>>
 	 */
-	public function getAppId(): string {
-		return 'openregister';
-	}//end getAppId()
-
-	/**
-	 * Returns tool descriptors.
-	 *
-	 * @return list<array{id: string, name: string, description: string, inputSchema: array}>
-	 */
-	public function getTools(): array {
-		return [
-			[
-				'id' => self::TOOL_ID,
-				'name' => 'registers',
-				'description' => 'Manage registers (data containers that group schemas and objects)',
-				'inputSchema' => [
-					'type' => 'object',
-					'properties' => [
-						'action' => [
-							'type' => 'string',
-							'enum' => ['list', 'get', 'create', 'update', 'delete'],
-							'description' => 'The CRUD action to perform',
-						],
-						'id' => [
-							'type' => 'integer',
-							'description' => 'Register ID (required for get, update, delete)',
-						],
-						'data' => [
-							'type' => 'object',
-							'description' => 'Register fields (for create and update)',
-						],
-						'limit' => [
-							'type' => 'integer',
-							'description' => 'Maximum number of results (for list)',
-						],
-						'offset' => [
-							'type' => 'integer',
-							'description' => 'Number of results to skip (for list)',
-						],
+	protected const TOOLS = [
+		[
+			'id' => self::TOOL_ID,
+			'name' => 'registers',
+			'description' => 'Manage registers (data containers that group schemas and objects)',
+			'inputSchema' => [
+				'type' => 'object',
+				'properties' => [
+					...CrudToolSchema::ACTION,
+					'id' => [
+						'type' => 'integer',
+						'description' => 'Register ID (required for get, update, delete)',
 					],
-					'required' => ['action'],
+					'data' => [
+						'type' => 'object',
+						'description' => 'Register fields (for create and update)',
+					],
+					...CrudToolSchema::PAGING,
 				],
+				'required' => ['action'],
 			],
-		];
-	}//end getTools()
+		],
+	];
 
 	/**
 	 * Invoke the registers tool.
@@ -144,7 +126,7 @@ class RegistersToolProvider implements IMcpToolProvider {
 		$limit = $arguments['limit'] ?? null;
 		$offset = $arguments['offset'] ?? null;
 
-		// IDOR boundary (IMcpToolProvider contract): RegisterService::findAll
+		// IDOR boundary (IMcpToolProvider contract): RegisterServiceInterface::findAll
 		// applies RBAC + multi-tenancy filtering by default — the underlying
 		// mapper joins on the active organisation and filters by RBAC role.
 		// We pass the flags explicitly so a future refactor of the service
@@ -184,6 +166,10 @@ class RegistersToolProvider implements IMcpToolProvider {
 	 */
 	private function createRegister(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'data');
+		if ($this->rights->isAdmin() === false) {
+			throw new RuntimeException('Only administrators may create registers');
+		}
+
 		$register = $this->registerService->createFromArray(data: $arguments['data']);
 		return $register->jsonSerialize();
 	}//end createRegister()
@@ -198,9 +184,12 @@ class RegistersToolProvider implements IMcpToolProvider {
 	private function updateRegister(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'id');
 		$this->requireParam(arguments: $arguments, param: 'data');
+		$this->manageableRegister(id: $arguments['id']);
+		$data = $arguments['data'];
+		unset($data['id'], $data['organisation'], $data['owner'], $data['created']);
 		$register = $this->registerService->updateFromArray(
 			id: $arguments['id'],
-			data: $arguments['data']
+			data: $data
 		);
 		return $register->jsonSerialize();
 	}//end updateRegister()
@@ -214,24 +203,26 @@ class RegistersToolProvider implements IMcpToolProvider {
 	 */
 	private function deleteRegister(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'id');
-		$register = $this->registerService->find(id: $arguments['id']);
+		$register = $this->manageableRegister(id: $arguments['id']);
 		$this->registerService->delete(register: $register);
 		return ['deleted' => true, 'id' => $arguments['id']];
 	}//end deleteRegister()
 
 	/**
-	 * Assert a parameter is present in arguments.
+	 * The register with this id, when the signed-in user may manage it.
 	 *
-	 * @param array<string, mixed> $arguments Tool arguments
-	 * @param string $param Required parameter name
+	 * @param mixed $id The register id
 	 *
-	 * @return void
+	 * @return Register The register
 	 *
-	 * @throws InvalidArgumentException If parameter is missing
+	 * @throws RuntimeException When the user may not manage it
 	 */
-	private function requireParam(array $arguments, string $param): void {
-		if (isset($arguments[$param]) === false) {
-			throw new InvalidArgumentException('Missing required parameter: ' . $param);
+	private function manageableRegister(mixed $id): Register {
+		$register = $this->registerService->find(id: $id);
+		if ($this->rights->mayManage(authorization: $register->getAuthorization()) === false) {
+			throw new RuntimeException('User does not have permission to manage this register');
 		}
-	}//end requireParam()
+
+		return $register;
+	}//end manageableRegister()
 }//end class

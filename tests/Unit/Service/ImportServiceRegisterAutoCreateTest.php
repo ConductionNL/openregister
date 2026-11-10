@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Service\MigrationPack\PassThroughL10nTrait;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -57,6 +58,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 
 class ImportServiceRegisterAutoCreateTest extends TestCase {
+	use PassThroughL10nTrait;
 
 	/** @var RegisterMapper&MockObject */
 	private RegisterMapper $registerMapper;
@@ -94,11 +96,9 @@ class ImportServiceRegisterAutoCreateTest extends TestCase {
 			objectEntityMapper: $this->createMock(MagicMapper::class),
 			configurationMapper: $this->createMock(ConfigurationMapper::class),
 			mappingMapper: $this->createMock(MappingMapper::class),
-			client: $this->createMock(Client::class),
 			appConfig: $this->createMock(IAppConfig::class),
 			logger: $this->createMock(LoggerInterface::class),
 			appDataPath: sys_get_temp_dir(),
-			uploadHandler: $this->createMock(UploadHandler::class),
 			objectService: $this->objectService
 		);
 
@@ -119,15 +119,10 @@ class ImportServiceRegisterAutoCreateTest extends TestCase {
 		$translationCsvCodec->method('unflattenFromCsv')->willReturnCallback(static fn (array $row) => $row);
 
 		$this->service = new ImportService(
-			$this->schemaMapper,
-			$this->objectService,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IGroupManager::class),
-			$translationCsvCodec,
-			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class),
-			new MappingEngine(),
-			$this->createMock(ValidateObject::class),
-			$container
+			new \OCA\OpenRegister\Service\Import\ImportServiceStores($this->schemaMapper, $this->objectService, $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class), $this->createMock(ValidateObject::class)),
+			new \OCA\OpenRegister\Service\Import\ImportServiceCodecs($translationCsvCodec, new MappingEngine($this->passThroughL10n())),
+			new \OCA\OpenRegister\Service\Import\ImportServiceRuntime($container, new \OCA\OpenRegister\Listener\NotifyPushBatch(), $this->createMock(LoggerInterface::class)),
+			$this->createMock(IGroupManager::class)
 		);
 	}//end setUp()
 

@@ -34,7 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\Task\TaskSubjectLocator;
+use OCA\OpenRegister\Service\Task\TaskSubjectLocatorInterface;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
@@ -97,7 +97,7 @@ class BackfillTaskSubjectLocation implements IRepairStep {
 	public function run(IOutput $output): void {
 		try {
 			$db = $this->container->get(IDBConnection::class);
-			$locator = $this->container->get(TaskSubjectLocator::class);
+			$locator = $this->container->get(TaskSubjectLocatorInterface::class);
 			if ($db->tableExists('openregister_tasks') === false) {
 				$output->info('Task subject location: no task table yet.');
 				return;
@@ -113,7 +113,7 @@ class BackfillTaskSubjectLocation implements IRepairStep {
 		foreach (array_chunk($uuids, self::BATCH) as $batch) {
 			try {
 				foreach ($locator->locateMany(uuids: $batch) as $uuid => $location) {
-					$located += $this->record(db: $db, uuid: $uuid, location: $location);
+					$located += $this->record(db: $db, location: ['uuid' => (string)$uuid] + $location);
 				}
 			} catch (Throwable $e) {
 				$this->logger->warning(
@@ -191,19 +191,18 @@ class BackfillTaskSubjectLocation implements IRepairStep {
 	 * Write one subject's location onto its unlocated tasks.
 	 *
 	 * @param IDBConnection $db The connection.
-	 * @param string $uuid The subject uuid.
-	 * @param array{registerId: int, schemaId: int} $location Where it lives.
+	 * @param array{uuid: string, registerId: int, schemaId: int} $location The subject uuid and where it lives.
 	 *
 	 * @return int Tasks updated.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md
 	 */
-	private function record(IDBConnection $db, string $uuid, array $location): int {
+	private function record(IDBConnection $db, array $location): int {
 		$qb = $db->getQueryBuilder();
 		$qb->update('openregister_tasks')
 			->set('register_id', $qb->createNamedParameter($location['registerId'], IQueryBuilder::PARAM_INT))
 			->set('schema_id', $qb->createNamedParameter($location['schemaId'], IQueryBuilder::PARAM_INT))
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($uuid)))
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($location['uuid'])))
 			->andWhere(
 				$qb->expr()->orX(
 					$qb->expr()->isNull('register_id'),

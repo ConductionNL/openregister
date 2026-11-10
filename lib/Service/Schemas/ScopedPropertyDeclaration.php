@@ -87,6 +87,24 @@ final class ScopedPropertyDeclaration {
 	public const NAME_PATTERN = '/^[A-Za-z0-9][A-Za-z0-9 ._-]{0,63}$/';
 
 	/**
+	 * The refusal for a scope that is not a non-empty string: annotation, path.
+	 */
+	private const MSG_NOT_A_STRING = '\'%s\' at \'%s\' must name one team or unit as a non-empty string.';
+
+	/**
+	 * The refusal for a scope that cannot name a group: annotation, path, scope.
+	 */
+	private const MSG_NOT_A_GROUP = '\'%s\' at \'%s\' is \'%s\', which cannot name a group. '
+		. 'A scope that matches no group denies everybody, silently.';
+
+	/**
+	 * The refusal for a scope beside an authorization block: annotation, path, annotation, block key.
+	 */
+	private const MSG_BOTH = '\'%s\' at \'%s\' declares both \'%s\' and \'%s\'. '
+		. 'A scope IS an authorization block, so declaring both leaves two answers to one question '
+		. 'and the quiet resolution is whichever the code reads first. Keep one.';
+
+	/**
 	 * Read the scope off a property, refusing anything malformed.
 	 *
 	 * @param array<string, mixed> $property The compiled property.
@@ -103,48 +121,37 @@ final class ScopedPropertyDeclaration {
 			return null;
 		}
 
-		$scope = $property[self::ANNOTATION];
-
-		if (is_string($scope) === false || trim($scope) === '') {
-			throw new ScopedPropertyException(
-				sprintf(
-					'\'%s\' at \'%s\' must name one team or unit as a non-empty string.',
-					self::ANNOTATION,
-					$path
-				)
-			);
-		}
-
-		$scope = trim($scope);
-
-		if (preg_match(self::NAME_PATTERN, $scope) !== 1) {
-			throw new ScopedPropertyException(
-				sprintf(
-					'\'%s\' at \'%s\' is \'%s\', which cannot name a group. '
-					. 'A scope that matches no group denies everybody, silently.',
-					self::ANNOTATION,
-					$path,
-					$scope
-				)
-			);
-		}
+		$scope = self::groupName(scope: $property[self::ANNOTATION], path: $path);
 
 		if (empty($property[self::COMPILES_INTO] ?? null) === false) {
-			throw new ScopedPropertyException(
-				sprintf(
-					'\'%s\' at \'%s\' declares both \'%s\' and \'%s\'. '
-					. 'A scope IS an authorization block, so declaring both leaves two answers to one question '
-					. 'and the quiet resolution is whichever the code reads first. Keep one.',
-					self::ANNOTATION,
-					$path,
-					self::ANNOTATION,
-					self::COMPILES_INTO
-				)
-			);
+			throw new ScopedPropertyException(sprintf(self::MSG_BOTH, self::ANNOTATION, $path, self::ANNOTATION, self::COMPILES_INTO));
 		}
 
 		return $scope;
 	}//end fromProperty()
+
+	/**
+	 * The declared scope, trimmed, refusing one that cannot name a group.
+	 *
+	 * @param mixed  $scope The declared value.
+	 * @param string $path  Where the property sits, for the message.
+	 *
+	 * @return string The scope.
+	 *
+	 * @throws ScopedPropertyException When the value cannot name a group.
+	 */
+	private static function groupName(mixed $scope, string $path): string {
+		if (is_string($scope) === false || trim($scope) === '') {
+			throw new ScopedPropertyException(sprintf(self::MSG_NOT_A_STRING, self::ANNOTATION, $path));
+		}
+
+		$scope = trim($scope);
+		if (preg_match(self::NAME_PATTERN, $scope) !== 1) {
+			throw new ScopedPropertyException(sprintf(self::MSG_NOT_A_GROUP, self::ANNOTATION, $path, $scope));
+		}
+
+		return $scope;
+	}//end groupName()
 
 	/**
 	 * The authorization block a scope means.

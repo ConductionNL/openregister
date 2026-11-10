@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\DeletedControllerFactory;
 use OCA\OpenRegister\Controller\DeletedController;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -28,6 +29,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer;
 use OCA\OpenRegister\Service\Deletion\DeletionServiceBundle;
+use OCA\OpenRegister\Service\Deletion\DestructionServices;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCA\OpenRegister\Service\Deletion\DestroyRightService;
 use OCA\OpenRegister\Service\Deletion\DestructionRecorder;
@@ -82,9 +84,8 @@ class DeletedControllerReadScopeTest extends TestCase {
 		$deletion = new DeletionServiceBundle(
 			$this->createMock(DeletionWindowService::class),
 			$this->createMock(DestroyRightService::class),
-			$this->createMock(DestructionScopeService::class),
-			$this->createMock(DestructionRecorder::class),
 			$this->createMock(RetentionClockService::class),
+			new DestructionServices($this->createMock(DestructionScopeService::class), $this->createMock(DestructionRecorder::class)),
 		);
 
 		$authorizer = new DeletedObjectAuthorizer(
@@ -94,7 +95,7 @@ class DeletedControllerReadScopeTest extends TestCase {
 			$this->createMock(PermissionHandler::class),
 		);
 
-		$this->controller = new DeletedController(
+		$this->controller = DeletedControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->objectMapper,

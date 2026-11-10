@@ -30,7 +30,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -109,7 +109,7 @@ class ConceptLifecycle {
 	 *
 	 * @return boolean True when the value may be put in front of someone.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function isOfferable(array $concept, DateTimeInterface $at, bool $allowDeprecated = false): bool {
 		if ($allowDeprecated === false && ($concept['deprecated'] ?? false) === true) {
@@ -132,7 +132,7 @@ class ConceptLifecycle {
 	 *
 	 * @return boolean True when `$at` is inside the window.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function isWithinWindow(array $concept, DateTimeInterface $at): bool {
 		$from = $this->parseBound(value: ($concept[self::FIELD_VALID_FROM] ?? null));
@@ -156,7 +156,7 @@ class ConceptLifecycle {
 	 *
 	 * @return string A human-readable window, e.g. "valid from 2019-01-01 until 2025-12-31".
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function describeWindow(array $concept): string {
 		$from = $this->parseBound(value: ($concept[self::FIELD_VALID_FROM] ?? null));
@@ -188,7 +188,7 @@ class ConceptLifecycle {
 	 *
 	 * @return string|null The group name.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function exclusiveGroupOf(array $concept): ?string {
 		$group = ($concept[self::FIELD_EXCLUSIVE_GROUP] ?? null);
@@ -214,7 +214,7 @@ class ConceptLifecycle {
 	 *
 	 * @return float The weight.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function weightOf(array $concept): float {
 		$weight = ($concept[self::FIELD_WEIGHT] ?? null);
@@ -240,7 +240,7 @@ class ConceptLifecycle {
 	 *
 	 * @return boolean True when the value is system-defined.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function isSystemDefined(array $concept): bool {
 		return ($concept[self::FIELD_SYSTEM_DEFINED] ?? false) === true;
@@ -253,7 +253,7 @@ class ConceptLifecycle {
 	 *
 	 * @return float The rolled-up score.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function rollUpWeights(array $concepts): float {
 		$total = 0.0;
@@ -283,7 +283,7 @@ class ConceptLifecycle {
 	 *
 	 * @return array<int,string> The names of the fields that are missing or ill-typed.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function validateAgainstShape(array $concept, array $shape): array {
 		$properties = ($shape['properties'] ?? null);
@@ -297,7 +297,9 @@ class ConceptLifecycle {
 		$failed = [];
 		foreach ($properties as $name => $definition) {
 			$name = (string)$name;
-			if ($this->fieldViolatesShape(name: $name, fields: $fields, required: $required, definition: $definition) === true) {
+			$value = ($fields[$name] ?? null);
+			$missing = ($value === null && in_array($name, $required, true) === true);
+			if ($missing === true || $this->isIllTyped(value: $value, definition: $definition) === true) {
 				$failed[] = $name;
 			}
 		}//end foreach
@@ -306,30 +308,20 @@ class ConceptLifecycle {
 	}//end validateAgainstShape()
 
 	/**
-	 * Whether a single shape-declared field is missing-when-required or ill-typed.
+	 * Whether a present field value does not satisfy its declared type.
 	 *
-	 * An absent or null value fails only when the shape lists the field as
-	 * required; a present value fails when it does not satisfy the declared
-	 * type. This is the per-field half of {@see self::validateAgainstShape()},
-	 * pulled out so the caller stays a flat gather-the-failures loop.
+	 * An absent or null value is never ill-typed: whether it is missing is the
+	 * shape's `required` list's question, which {@see self::validateAgainstShape()}
+	 * asks.
 	 *
-	 * @param string              $name       The field name being judged.
-	 * @param array<string,mixed> $fields     The concept's submitted fields.
-	 * @param array<int,mixed>    $required   The shape's required field names.
-	 * @param mixed               $definition The shape property's definition.
+	 * @param mixed $value      The concept's submitted value, null when absent.
+	 * @param mixed $definition The shape property's definition.
 	 *
-	 * @return boolean True when the field is missing-when-required or ill-typed.
+	 * @return boolean True when the value is present and ill-typed.
 	 */
-	private function fieldViolatesShape(string $name, array $fields, array $required, mixed $definition): bool {
-		$present = array_key_exists($name, $fields);
-		$value = ($fields[$name] ?? null);
-
-		if ($present === false || $value === null) {
-			return in_array($name, $required, true) === true;
-		}
-
-		return $this->matchesDeclaredType(value: $value, definition: $definition) === false;
-	}//end fieldViolatesShape()
+	private function isIllTyped(mixed $value, mixed $definition): bool {
+		return $value !== null && $this->matchesDeclaredType(value: $value, definition: $definition) === false;
+	}//end isIllTyped()
 
 	/**
 	 * Coerce a value to an array, treating a non-array as an empty one.

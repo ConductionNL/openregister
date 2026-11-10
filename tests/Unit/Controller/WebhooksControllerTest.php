@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\WebhooksControllerFactory;
 use OCA\OpenRegister\Controller\WebhooksController;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
@@ -45,7 +46,7 @@ class WebhooksControllerTest extends TestCase {
 		// Anonymous / non-admin behaviour is verified in dedicated tests below.
 		$this->setupAdminUser();
 
-		$this->controller = new WebhooksController(
+		$this->controller = WebhooksControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->webhookMapper,
@@ -343,6 +344,27 @@ class WebhooksControllerTest extends TestCase {
 		$result = $this->controller->create();
 
 		$this->assertEquals(201, $result->getStatus());
+	}
+
+	public function testFailedCreateAndUpdateLogFieldNamesNotValues(): void {
+		$logged = [];
+		$this->logger->method('error')->willReturnCallback(
+			static function (string $message, array $context) use (&$logged): void {
+				$logged[] = $context['fields'] ?? $context;
+			}
+		);
+		$this->request->method('getParams')->willReturn([
+			'name' => 'New Hook',
+			'url' => 'https://example.com/hook',
+			'secret' => 'the-signing-secret',
+		]);
+		$this->webhookMapper->method('createFromArray')->willThrowException(new \RuntimeException('refused'));
+		$this->webhookMapper->method('updateFromArray')->willThrowException(new \RuntimeException('refused'));
+
+		$this->controller->create();
+		$this->controller->update(1);
+
+		$this->assertSame([['name', 'url', 'secret'], ['name', 'url', 'secret']], $logged);
 	}
 
 	public function testCreateMissingRequired(): void {
@@ -1487,7 +1509,7 @@ class WebhooksControllerTest extends TestCase {
 		$this->nonAdminLogMapper = $webhookLogMapper;
 		$this->nonAdminWebhookService = $webhookService;
 
-		return new WebhooksController(
+		return WebhooksControllerFactory::create(
 			'openregister',
 			$request,
 			$webhookMapper,
@@ -1517,7 +1539,7 @@ class WebhooksControllerTest extends TestCase {
 		$this->nonAdminLogMapper = $webhookLogMapper;
 		$this->nonAdminWebhookService = $webhookService;
 
-		return new WebhooksController(
+		return WebhooksControllerFactory::create(
 			'openregister',
 			$request,
 			$webhookMapper,

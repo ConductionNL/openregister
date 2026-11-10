@@ -1,0 +1,302 @@
+{
+    "available": {
+        "result": {
+            "returned": true
+        },
+        "calls": [
+            "getProviders()"
+        ],
+        "distinctNames": 0
+    },
+    "convert-throws": {
+        "result": {
+            "threw": "RuntimeException: The office server could not convert the document: richdocuments refused <- RuntimeException: richdocuments refused"
+        },
+        "calls": [
+            "getProviders()",
+            "workFolder.get()",
+            "folder.newFile(<name>.pdf, PDF)",
+            "folder.getPath()",
+            "convert(<name>.pdf, application/vnd.oasis.opendocument.text, /openregister/files/conversions/<name>.odt)",
+            "delete(<name>.pdf)"
+        ],
+        "distinctNames": 1
+    },
+    "doc-target-docx": {
+        "result": {
+            "returned": "docx"
+        },
+        "calls": [
+            "getProviders()"
+        ],
+        "distinctNames": 0
+    },
+    "doc-target-none": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getProviders()",
+            "getProviders()"
+        ],
+        "distinctNames": 0
+    },
+    "doc-target-txt": {
+        "result": {
+            "returned": "txt"
+        },
+        "calls": [
+            "getProviders()",
+            "getProviders()"
+        ],
+        "distinctNames": 0
+    },
+    "doc-to-docx-unsupported": {
+        "result": {
+            "threw": "OCA\\OpenRegister\\Exception\\OfficeServerRequiredException: PDF output requires an office server (Collabora or Euro-Office) that converts documents to PDF. Ask your administrator to install one, or choose another format."
+        },
+        "calls": [
+            "getProviders()"
+        ],
+        "distinctNames": 0
+    },
+    "doc-to-pdf-refused": {
+        "result": {
+            "threw": "RuntimeException: Unsupported target for a legacy .doc"
+        },
+        "calls": [],
+        "distinctNames": 0
+    },
+    "doc-to-txt": {
+        "result": {
+            "returned": "converted:<name>.txt"
+        },
+        "calls": [
+            "getProviders()",
+            "workFolder.get()",
+            "folder.newFile(<name>.doc, DOC)",
+            "folder.getPath()",
+            "convert(<name>.doc, text/plain, /openregister/files/conversions/<name>.txt)",
+            "folder.get(<name>.txt)",
+            "getContent(<name>.txt)",
+            "delete(<name>.txt)",
+            "delete(<name>.doc)"
+        ],
+        "distinctNames": 1
+    },
+    "folder-path-throws": {
+        "result": {
+            "threw": "RuntimeException: The office server could not convert the document: folder gone <- OCP\\Files\\NotFoundException: folder gone"
+        },
+        "calls": [
+            "getProviders()",
+            "workFolder.get()",
+            "folder.newFile(<name>.pdf, PDF)",
+            "folder.getPath()",
+            "delete(<name>.pdf)"
+        ],
+        "distinctNames": 1
+    },
+    "new-file-throws": {
+        "result": {
+            "threw": "RuntimeException: disk full"
+        },
+        "calls": [
+            "getProviders()",
+            "workFolder.get()",
+            "folder.newFile(<name>.pdf, PDF)"
+        ],
+        "distinctNames": 1
+    },
+    "not-available": {
+        "result": {
+            "returned": false
+        },
+        "calls": [
+            "getProviders()"
+        ],
+        "distinctNames": 0
+    },
+    "odt-to-pdf": {
+        "result": {
+            "returned": "converted:<name>.pdf"
+        },
+        "calls": [
+            "getProviders()",
+            "workFolder.get()",
+            "folder.newFile(<name>.odt, ODT)",
+            "folder.getPath()",
+            "convert(<name>.odt, application/pdf, /openregister/files/conversions/<name>.pdf)",
+            "folder.get(<name>.pdf)",
+            "getContent(<name>.pdf)",
+            "delete(<name>.pdf)",
+            "delete(<name>.odt)"
+        ],
+        "distinctNames": 1
+    },
+    "odt-to-pdf-providers-throw": {
+        "result": {
+            "threw": "OCA\\OpenRegister\\Exception\\OfficeServerRequiredException: PDF output requires an office server (Collabora or Euro-Office) that converts documents to PDF. Ask your administrator to install one, or choose another format."
+        },
+        "calls": [
+            "getProviders()"
+        ],
+        "distinctNames": 0
+    },
+    "odt-to-pdf-unsupported": {
+        "result": {
+            "threw": "OCA\\OpenRegister\\Exception\\OfficeServerRequiredException: PDF output requires an office server (Collabora or Euro-Office) that converts documents to PDF. Ask your administrator to install one, or choose another format."
+        },
+        "calls": [
+            "getProviders()"
+        ],
+        "distinctNames": 0
+    },
+    "pdf-to-odt": {
+        "result": {
+            "returned": "converted:<name>.odt"
+        },
+        "calls": [
+            "getProviders()",
+            "workFolder.get()",
+            "folder.newFile(<name>.pdf, PDF)",
+            "folder.getPath()",
+            "convert(<name>.pdf, application/vnd.oasis.opendocument.text, /openregister/files/conversions/<name>.odt)",
+            "folder.get(<name>.odt)",
+            "getContent(<name>.odt)",
+            "delete(<name>.odt)",
+            "delete(<name>.pdf)"
+        ],
+        "distinctNames": 1
+    },
+    "providers-throw": {
+        "result": {
+            "returned": false
+        },
+        "calls": [
+            "getProviders()"
+        ],
+        "distinctNames": 0
+    },
+    "result-elsewhere": {
+        "result": {
+            "returned": "converted:other.odt"
+        },
+        "calls": [
+            "getProviders()",
+            "workFolder.get()",
+            "folder.newFile(<name>.pdf, PDF)",
+            "folder.getPath()",
+            "convert(<name>.pdf, application/vnd.oasis.opendocument.text, /openregister/files/conversions/<name>.odt)",
+            "folder.get(other.odt)",
+            "getContent(other.odt)",
+            "delete(other.odt)",
+            "delete(<name>.pdf)"
+        ],
+        "distinctNames": 1
+    },
+    "result-is-folder": {
+        "result": {
+            "threw": "RuntimeException: The office server could not convert the document: The conversion did not produce a file <- RuntimeException: The conversion did not produce a file"
+        },
+        "calls": [
+            "getProviders()",
+            "workFolder.get()",
+            "folder.newFile(<name>.pdf, PDF)",
+            "folder.getPath()",
+            "convert(<name>.pdf, application/vnd.oasis.opendocument.text, /openregister/files/conversions/<name>.odt)",
+            "folder.get(<name>.odt)",
+            "delete(<name>.pdf)"
+        ],
+        "distinctNames": 1
+    },
+    "result-missing": {
+        "result": {
+            "threw": "RuntimeException: The office server could not convert the document: no result <- OCP\\Files\\NotFoundException: no result"
+        },
+        "calls": [
+            "getProviders()",
+            "workFolder.get()",
+            "folder.newFile(<name>.pdf, PDF)",
+            "folder.getPath()",
+            "convert(<name>.pdf, application/vnd.oasis.opendocument.text, /openregister/files/conversions/<name>.odt)",
+            "folder.get(<name>.odt)",
+            "delete(<name>.pdf)"
+        ],
+        "distinctNames": 1
+    },
+    "result-undeletable": {
+        "result": {
+            "threw": "RuntimeException: The office server could not convert the document: cannot delete <name>.odt <- RuntimeException: cannot delete <name>.odt"
+        },
+        "calls": [
+            "getProviders()",
+            "workFolder.get()",
+            "folder.newFile(<name>.pdf, PDF)",
+            "folder.getPath()",
+            "convert(<name>.pdf, application/vnd.oasis.opendocument.text, /openregister/files/conversions/<name>.odt)",
+            "folder.get(<name>.odt)",
+            "getContent(<name>.odt)",
+            "delete(<name>.odt)",
+            "delete(<name>.pdf)"
+        ],
+        "distinctNames": 1
+    },
+    "result-unreadable": {
+        "result": {
+            "threw": "RuntimeException: The office server could not convert the document: cannot read result <- RuntimeException: cannot read result"
+        },
+        "calls": [
+            "getProviders()",
+            "workFolder.get()",
+            "folder.newFile(<name>.pdf, PDF)",
+            "folder.getPath()",
+            "convert(<name>.pdf, application/vnd.oasis.opendocument.text, /openregister/files/conversions/<name>.odt)",
+            "folder.get(<name>.odt)",
+            "getContent(<name>.odt)",
+            "delete(<name>.pdf)"
+        ],
+        "distinctNames": 1
+    },
+    "source-undeletable": {
+        "result": {
+            "threw": "RuntimeException: cannot delete <name>.pdf"
+        },
+        "calls": [
+            "getProviders()",
+            "workFolder.get()",
+            "folder.newFile(<name>.pdf, PDF)",
+            "folder.getPath()",
+            "convert(<name>.pdf, application/vnd.oasis.opendocument.text, /openregister/files/conversions/<name>.odt)",
+            "folder.get(<name>.odt)",
+            "getContent(<name>.odt)",
+            "delete(<name>.odt)",
+            "delete(<name>.pdf)"
+        ],
+        "distinctNames": 1
+    },
+    "source-undeletable-after-failure": {
+        "result": {
+            "threw": "RuntimeException: cannot delete <name>.pdf <- RuntimeException: The office server could not convert the document: richdocuments refused <- RuntimeException: richdocuments refused"
+        },
+        "calls": [
+            "getProviders()",
+            "workFolder.get()",
+            "folder.newFile(<name>.pdf, PDF)",
+            "folder.getPath()",
+            "convert(<name>.pdf, application/vnd.oasis.opendocument.text, /openregister/files/conversions/<name>.odt)",
+            "delete(<name>.pdf)"
+        ],
+        "distinctNames": 1
+    },
+    "work-folder-throws": {
+        "result": {
+            "threw": "OCP\\Files\\NotFoundException: no work folder"
+        },
+        "calls": [
+            "getProviders()",
+            "workFolder.get()"
+        ],
+        "distinctNames": 0
+    }
+}

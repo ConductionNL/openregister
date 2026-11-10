@@ -29,7 +29,6 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Calendar;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
-use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeService;
@@ -90,15 +89,14 @@ class AppointmentAttendeeServiceTest extends TestCase {
 			objectUuid: 'object-uuid',
 			attendee: 'ana@example.org',
 			status: 'accepted',
-			respondedBy: 'ana',
-			respondedAt: new DateTime('2026-09-14T10:00:00+02:00')
+			respondedBy: 'ana'
 		);
 
 		$this->assertCount(1, $responses);
 		$this->assertSame('ana@example.org', $responses[0]['attendee']);
 		$this->assertSame(AppointmentAttendeeService::STATUS_ACCEPTED, $responses[0]['status']);
 		$this->assertSame('ana', $responses[0]['respondedBy']);
-		$this->assertSame('2026-09-14T10:00:00+02:00', $responses[0]['respondedAt']);
+		$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $responses[0]['respondedAt']);
 
 		$this->assertNotNull($this->saved);
 		$this->assertSame($responses, $this->saved[AppointmentAttendeeService::RESPONSES_PROPERTY]);

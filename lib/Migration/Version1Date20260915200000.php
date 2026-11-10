@@ -31,7 +31,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Adds the dispatch event id and the broadcast tables.
  *
- * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 class Version1Date20260915200000 extends SimpleMigrationStep {
 
@@ -81,7 +81,7 @@ class Version1Date20260915200000 extends SimpleMigrationStep {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
@@ -110,7 +110,7 @@ class Version1Date20260915200000 extends SimpleMigrationStep {
 	 *
 	 * @return integer How many pieces were added.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-one-rule-reaches-a-person-and-an-integration-recorded-once-req-nrg-004
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-one-rule-reaches-a-person-and-an-integration-recorded-once-req-nrg-004
 	 */
 	private function addEventId(ISchemaWrapper $schema): int {
 		if ($schema->hasTable(self::HISTORY_TABLE) === false) {
@@ -143,7 +143,7 @@ class Version1Date20260915200000 extends SimpleMigrationStep {
 	 *
 	 * @return integer How many tables were created.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
 	 */
 	private function createBroadcastTables(ISchemaWrapper $schema): int {
 		$created = 0;

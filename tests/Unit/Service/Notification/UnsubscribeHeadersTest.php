@@ -15,21 +15,21 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-openregister-owns-one-shared-list-unsubscribe-helper-req-ero-005
+ * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-openregister-owns-one-shared-list-unsubscribe-helper-req-ero-005
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 
-use OCA\OpenRegister\Service\Notification\UnsubscribeHeaders;
+use OCA\OpenRegister\Notifications\Service\Notification\UnsubscribeHeaders;
 use OCA\OpenRegister\Tests\Unit\Service\Notification\Fixture\RecordingMessage;
 use OCA\OpenRegister\Tests\Unit\Service\Notification\Fixture\RecordingSymfonyMessage;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * @covers \OCA\OpenRegister\Service\Notification\UnsubscribeHeaders
+ * @covers \OCA\OpenRegister\Notifications\Service\Notification\UnsubscribeHeaders
  */
 class UnsubscribeHeadersTest extends TestCase {
 

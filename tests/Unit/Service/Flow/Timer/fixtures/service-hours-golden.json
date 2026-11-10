@@ -1,0 +1,702 @@
+{
+    "null": {
+        "declared": false,
+        "all": [],
+        "derivedHours": 0,
+        "perWeekday": [
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ]
+        ]
+    },
+    "empty": {
+        "declared": false,
+        "all": [],
+        "derivedHours": 0,
+        "perWeekday": [
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ]
+        ]
+    },
+    "not array": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'cal' declares serviceHours that is not a map of weekday to windows."
+    },
+    "names and numbers": {
+        "declared": true,
+        "all": {
+            "1": [
+                {
+                    "start": 540,
+                    "end": 720
+                },
+                {
+                    "start": 780,
+                    "end": 1050
+                }
+            ],
+            "2": [
+                {
+                    "start": 480,
+                    "end": 960
+                }
+            ],
+            "3": [
+                {
+                    "start": 480,
+                    "end": 960
+                }
+            ],
+            "5": [
+                {
+                    "start": 540,
+                    "end": 1440
+                }
+            ]
+        },
+        "derivedHours": 15,
+        "perWeekday": [
+            [
+                0,
+                []
+            ],
+            [
+                450,
+                [
+                    {
+                        "start": 540,
+                        "end": 720
+                    },
+                    {
+                        "start": 780,
+                        "end": 1050
+                    }
+                ]
+            ],
+            [
+                480,
+                [
+                    {
+                        "start": 480,
+                        "end": 960
+                    }
+                ]
+            ],
+            [
+                480,
+                [
+                    {
+                        "start": 480,
+                        "end": 960
+                    }
+                ]
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                900,
+                [
+                    {
+                        "start": 540,
+                        "end": 1440
+                    }
+                ]
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ]
+        ]
+    },
+    "unsorted windows": {
+        "declared": true,
+        "all": {
+            "1": [
+                {
+                    "start": 480,
+                    "end": 720
+                },
+                {
+                    "start": 780,
+                    "end": 1020
+                }
+            ]
+        },
+        "derivedHours": 8,
+        "perWeekday": [
+            [
+                0,
+                []
+            ],
+            [
+                480,
+                [
+                    {
+                        "start": 480,
+                        "end": 720
+                    },
+                    {
+                        "start": 780,
+                        "end": 1020
+                    }
+                ]
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ]
+        ]
+    },
+    "touching windows": {
+        "declared": true,
+        "all": {
+            "1": [
+                {
+                    "start": 480,
+                    "end": 720
+                },
+                {
+                    "start": 720,
+                    "end": 780
+                }
+            ]
+        },
+        "derivedHours": 5,
+        "perWeekday": [
+            [
+                0,
+                []
+            ],
+            [
+                300,
+                [
+                    {
+                        "start": 480,
+                        "end": 720
+                    },
+                    {
+                        "start": 720,
+                        "end": 780
+                    }
+                ]
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ]
+        ]
+    },
+    "weekday keys unsorted": {
+        "declared": true,
+        "all": {
+            "1": [
+                {
+                    "start": 540,
+                    "end": 1020
+                }
+            ],
+            "5": [
+                {
+                    "start": 540,
+                    "end": 600
+                }
+            ]
+        },
+        "derivedHours": 8,
+        "perWeekday": [
+            [
+                0,
+                []
+            ],
+            [
+                480,
+                [
+                    {
+                        "start": 540,
+                        "end": 1020
+                    }
+                ]
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                60,
+                [
+                    {
+                        "start": 540,
+                        "end": 600
+                    }
+                ]
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ]
+        ]
+    },
+    "weekday duplicated by number and name": {
+        "declared": true,
+        "all": {
+            "1": [
+                {
+                    "start": 660,
+                    "end": 720
+                }
+            ]
+        },
+        "derivedHours": 1,
+        "perWeekday": [
+            [
+                0,
+                []
+            ],
+            [
+                60,
+                [
+                    {
+                        "start": 660,
+                        "end": 720
+                    }
+                ]
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ]
+        ]
+    },
+    "unknown weekday name": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'cal' declares serviceHours for 'funday', which is not a weekday."
+    },
+    "weekday zero": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'cal' declares serviceHours for '0', which is not a weekday."
+    },
+    "weekday eight string": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'cal' declares serviceHours for '8', which is not a weekday."
+    },
+    "off day": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'cal' declares service hours on Saturday, which is not one of its working weekdays."
+    },
+    "off day by number": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'cal' declares service hours on Sunday, which is not one of its working weekdays."
+    },
+    "day windows empty": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'cal' declares no usable window on Monday."
+    },
+    "day windows not array": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'cal' declares no usable window on Monday."
+    },
+    "window not array": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'cal' declares a window on Monday without a readable start and end (HH:MM)."
+    },
+    "window missing end": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'cal' declares a window on Monday without a readable start and end (HH:MM)."
+    },
+    "window bad text": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'cal' declares a window on Monday without a readable start and end (HH:MM)."
+    },
+    "window minute 60": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'cal' declares a window on Monday without a readable start and end (HH:MM)."
+    },
+    "window hour 25": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'cal' declares a window on Monday without a readable start and end (HH:MM)."
+    },
+    "window 24:30": {
+        "declared": true,
+        "all": {
+            "1": [
+                {
+                    "start": 540,
+                    "end": 1470
+                }
+            ]
+        },
+        "derivedHours": 15.5,
+        "perWeekday": [
+            [
+                0,
+                []
+            ],
+            [
+                930,
+                [
+                    {
+                        "start": 540,
+                        "end": 1470
+                    }
+                ]
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ]
+        ]
+    },
+    "window int negative": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'cal' declares a window on Monday without a readable start and end (HH:MM)."
+    },
+    "window int 1441": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'cal' declares a window on Monday without a readable start and end (HH:MM)."
+    },
+    "window int 1440": {
+        "declared": true,
+        "all": {
+            "1": [
+                {
+                    "start": 600,
+                    "end": 1440
+                }
+            ]
+        },
+        "derivedHours": 14,
+        "perWeekday": [
+            [
+                0,
+                []
+            ],
+            [
+                840,
+                [
+                    {
+                        "start": 600,
+                        "end": 1440
+                    }
+                ]
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ]
+        ]
+    },
+    "window float": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'cal' declares a window on Monday without a readable start and end (HH:MM)."
+    },
+    "window padded text": {
+        "declared": true,
+        "all": {
+            "1": [
+                {
+                    "start": 540,
+                    "end": 1020
+                }
+            ]
+        },
+        "derivedHours": 8,
+        "perWeekday": [
+            [
+                0,
+                []
+            ],
+            [
+                480,
+                [
+                    {
+                        "start": 540,
+                        "end": 1020
+                    }
+                ]
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ],
+            [
+                0,
+                []
+            ]
+        ]
+    },
+    "window ends at start": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'cal' declares a window on Monday that ends at or before it starts."
+    },
+    "window ends before start": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'cal' declares a window on Monday that ends at or before it starts."
+    },
+    "overlap": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'cal' declares overlapping service hours on Tuesday; the overlap would be counted twice and every hours term on this calendar would fire early."
+    },
+    "overlap after sort": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'cal' declares overlapping service hours on Tuesday; the overlap would be counted twice and every hours term on this calendar would fire early."
+    },
+    "contained": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'cal' declares overlapping service hours on Tuesday; the overlap would be counted twice and every hours term on this calendar would fire early."
+    },
+    "fault order: weekday before windows": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'cal' declares serviceHours for 'funday', which is not a weekday."
+    },
+    "fault order: unreadable before order": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'cal' declares a window on Monday that ends at or before it starts."
+    },
+    "fault order: per window before overlap": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'cal' declares a window on Monday that ends at or before it starts."
+    },
+    "fault order: first weekday first": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Working calendar 'cal' declares a window on Monday that ends at or before it starts."
+    },
+    "none": [
+        false,
+        [],
+        0,
+        0
+    ]
+}

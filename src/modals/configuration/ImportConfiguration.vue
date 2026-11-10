@@ -14,7 +14,7 @@ import {
 		name="importConfiguration"
 		:title="t('openregister', 'Import Configuration')"
 		size="large"
-		:canClose="!loading"
+		:noClose="loading"
 		@update:open="closeModal">
 		<NcNoteCard v-if="success" type="success">
 			<p>{{ successMessage }}</p>
@@ -359,12 +359,7 @@ import {
 		</div>
 
 		<template #actions>
-			<NcButton :disabled="loading" @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ t('openregister', 'Cancel') }}
-			</NcButton>
+			<CloseCancelButton :label="t('openregister', 'Cancel')" :disabled="loading" @click="closeModal" />
 			<NcButton
 				:disabled="loading || !canImport"
 				variant="primary"
@@ -381,7 +376,6 @@ import {
 
 <script>
 import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
@@ -403,8 +397,66 @@ import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import SourceBranch from 'vue-material-design-icons/SourceBranch.vue'
 import ConfigurationCard from '../../components/cards/ConfigurationCard.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
+import { checkConfigurationVersion } from '../../services/configurationDisplay.js'
+
+/**
+ * Import a discovered configuration from GitHub (a result with a repository) or GitLab.
+ *
+ * @param {object} result The discovered configuration
+ * @return {Promise<void>}
+ */
+async function importDiscovered(result) {
+	if (result.repository) {
+		const [owner, repo] = result.repository.split('/')
+		await configurationStore.importFromGitHub({
+			owner,
+			repo,
+			path: result.path,
+			branch: result.ref || 'main',
+			syncEnabled: true,
+			syncInterval: 24,
+		})
+		return
+	}
+	await configurationStore.importFromGitLab({
+		namespace: result.namespace,
+		project: result.project,
+		path: result.path,
+		ref: result.ref || 'main',
+		syncEnabled: true,
+		syncInterval: 24,
+	})
+}
+
+/**
+ * Reload the configuration, register and schema lists after an import.
+ *
+ * @return {Promise<Array>}
+ */
+function refreshImportedLists() {
+	return Promise.all([
+		configurationStore.refreshConfigurationList(),
+		registerStore.refreshRegisterList(),
+		schemaStore.refreshSchemaList(),
+	])
+}
+
+/**
+ * Whether a text is a URL.
+ *
+ * @param {string} value The text
+ * @return {boolean} True for a valid URL
+ */
+function isValidUrl(value) {
+	try {
+		return Boolean(new URL(value).href)
+	} catch {
+		return false
+	}
+}
 
 export default {
 	name: 'ImportConfiguration',
@@ -422,6 +474,7 @@ export default {
 		ConfigurationCard,
 		// Icons
 		Cancel,
+		CloseCancelButton,
 		Import,
 		Magnify,
 		Github,
@@ -524,6 +577,8 @@ export default {
 	},
 
 	methods: {
+		handleCheckVersion: checkConfigurationVersion,
+
 		/**
 		 * Check if API tokens are configured
 		 *
@@ -546,7 +601,7 @@ export default {
 				)
 
 				// Debug logging removed for production
-			} catch (error) {
+			} catch {
 				// Debug logging removed for production
 				// Assume no tokens if check fails
 				this.hasGithubToken = false
@@ -649,7 +704,7 @@ export default {
 		},
 
 		/**
-		 * @param result
+		 * @param {object} result
 		 * @spec exclude Per-card import handler dispatching to configurationStore.importFromGitHub/GitLab and refreshing lists; UI orchestration plumbing.
 		 */
 		async importDiscoveredConfiguration(result) {
@@ -657,38 +712,12 @@ export default {
 			this.error = null
 
 			try {
-				// Determine import method based on source
-				if (result.repository) {
-					// GitHub result
-					const [owner, repo] = result.repository.split('/')
-					await configurationStore.importFromGitHub({
-						owner,
-						repo,
-						path: result.path,
-						branch: result.ref || 'main',
-						syncEnabled: true,
-						syncInterval: 24,
-					})
-				} else {
-					// GitLab result
-					await configurationStore.importFromGitLab({
-						namespace: result.namespace,
-						project: result.project,
-						path: result.path,
-						ref: result.ref || 'main',
-						syncEnabled: true,
-						syncInterval: 24,
-					})
-				}
+				await importDiscovered(result)
 
 				this.successMessage = 'Configuration imported successfully!'
 				this.success = true
 				// Refresh all lists to show newly imported entities
-				await Promise.all([
-					configurationStore.refreshConfigurationList(),
-					registerStore.refreshRegisterList(),
-					schemaStore.refreshSchemaList(),
-				])
+				await refreshImportedLists()
 				setTimeout(() => this.closeModal(), 1500)
 			} catch (error) {
 				// Don't show error if configuration already exists (UI shows this visually)
@@ -698,11 +727,7 @@ export default {
 					this.error = errorMessage
 				}
 				// Always refresh all lists to update UI
-				await Promise.all([
-					configurationStore.refreshConfigurationList(),
-					registerStore.refreshRegisterList(),
-					schemaStore.refreshSchemaList(),
-				])
+				await refreshImportedLists()
 			} finally {
 				this.loading = false
 			}
@@ -793,66 +818,17 @@ export default {
 			this.error = null
 
 			try {
-				// Tab 1: GitHub/GitLab
-				if (this.activeTab === 1) {
-					const params = {
-						path: this.selectedFile.path,
-						syncEnabled: this.syncEnabled,
-						syncInterval: parseInt(this.syncInterval),
-					}
-
-					if (this.repoSource === 'GitHub') {
-						await configurationStore.importFromGitHub({
-							owner: this.repoOwner,
-							repo: this.repoName,
-							branch: this.selectedBranch.id,
-							...params,
-						})
-					} else {
-						await configurationStore.importFromGitLab({
-							namespace: this.repoNamespace,
-							project: this.repoName,
-							ref: this.selectedBranch.id,
-							...params,
-						})
-					}
-
-					this.successMessage = `Configuration imported from ${this.repoSource}!`
-				} else if (this.activeTab === 2) {
-					// Tab 2: URL
-					// Validate URL
-					try {
-						const validUrl = new URL(this.importUrl) // URL validation successful
-						// Use validUrl.href to avoid no-new and no-void rule violations
-						if (!validUrl.href) {
-							throw new Error('Invalid URL')
-						}
-					} catch {
-						this.urlError = 'Please enter a valid URL'
-						this.loading = false
-						return
-					}
-
-					await configurationStore.importFromUrl({
-						url: this.importUrl,
-						syncEnabled: this.syncEnabled,
-						syncInterval: parseInt(this.syncInterval),
-					})
-
-					this.successMessage = 'Configuration imported from URL!'
-				} else if (this.activeTab === 3) {
-					// Tab 3: File Upload
-					await this.importFromFile()
-					this.successMessage = 'Configuration imported from file!'
+				const message = await this.importFromTab()
+				if (message === false) {
+					return
+				}
+				if (message) {
+					this.successMessage = message
 				}
 
 				this.success = true
 				// Refresh all lists to show newly imported entities
-				await Promise.all([
-					configurationStore.refreshConfigurationList(),
-					registerStore.refreshRegisterList(),
-					schemaStore.refreshSchemaList(),
-				])
+				await refreshImportedLists()
 				setTimeout(() => this.closeModal(), 1500)
 			} catch (error) {
 				this.error = error.message || 'Failed to import configuration'
@@ -862,7 +838,80 @@ export default {
 		},
 
 		/**
-		 * @param event
+		 * Import from the active tab: 1 a repository, 2 a URL, 3 a file.
+		 *
+		 * @spec exclude Per-tab import dispatch for the import button; UI orchestration plumbing.
+		 * @return {Promise<string|false|undefined>} The success message, false when the URL is not valid, undefined for another tab
+		 */
+		async importFromTab() {
+			if (this.activeTab === 1) {
+				await this.importFromRepository()
+				return `Configuration imported from ${this.repoSource}!`
+			}
+			if (this.activeTab === 2) {
+				return this.importFromUrlTab()
+			}
+			if (this.activeTab === 3) {
+				await this.importFromFile()
+				return 'Configuration imported from file!'
+			}
+			return undefined
+		},
+
+		/**
+		 * Import the selected file from the chosen GitHub or GitLab repository.
+		 *
+		 * @spec exclude Repository-tab import delegating to configurationStore.importFromGitHub/GitLab; UI orchestration plumbing.
+		 * @return {Promise<void>}
+		 */
+		async importFromRepository() {
+			const params = {
+				path: this.selectedFile.path,
+				syncEnabled: this.syncEnabled,
+				syncInterval: parseInt(this.syncInterval),
+			}
+
+			if (this.repoSource === 'GitHub') {
+				await configurationStore.importFromGitHub({
+					owner: this.repoOwner,
+					repo: this.repoName,
+					branch: this.selectedBranch.id,
+					...params,
+				})
+			} else {
+				await configurationStore.importFromGitLab({
+					namespace: this.repoNamespace,
+					project: this.repoName,
+					ref: this.selectedBranch.id,
+					...params,
+				})
+			}
+		},
+
+		/**
+		 * Import from the entered URL, or mark the URL as not valid.
+		 *
+		 * @spec exclude URL-tab import delegating to configurationStore.importFromUrl; UI orchestration plumbing.
+		 * @return {Promise<string|false>} The success message, or false when the URL is not valid
+		 */
+		async importFromUrlTab() {
+			if (!isValidUrl(this.importUrl)) {
+				this.urlError = 'Please enter a valid URL'
+				this.loading = false
+				return false
+			}
+
+			await configurationStore.importFromUrl({
+				url: this.importUrl,
+				syncEnabled: this.syncEnabled,
+				syncInterval: parseInt(this.syncInterval),
+			})
+
+			return 'Configuration imported from URL!'
+		},
+
+		/**
+		 * @param {Event} event
 		 * @spec exclude File-input change handler passing the picked file to validateAndSetFile; UI file-picker plumbing.
 		 */
 		handleFileSelect(event) {
@@ -873,7 +922,7 @@ export default {
 		},
 
 		/**
-		 * @param event
+		 * @param {DragEvent} event
 		 * @spec exclude Drag-drop handler passing the dropped file to validateAndSetFile; UI file-picker plumbing.
 		 */
 		handleFileDrop(event) {
@@ -885,7 +934,7 @@ export default {
 		},
 
 		/**
-		 * @param file
+		 * @param {File} file
 		 * @spec exclude Client-side JSON-type/size validation before accepting an upload file; UI validation helper.
 		 */
 		validateAndSetFile(file) {
@@ -918,7 +967,7 @@ export default {
 		},
 
 		/**
-		 * @param bytes
+		 * @param {number} bytes
 		 * @spec exclude Human-readable byte-size formatter for the file display; UI presentation helper.
 		 */
 		formatFileSize(bytes) {
@@ -951,42 +1000,6 @@ export default {
 			}
 
 			return response.data
-		},
-
-		/**
-		 * @param configuration
-		 * @spec exclude Triggers the configurations check-version endpoint and surfaces update toasts; UI orchestration plumbing.
-		 */
-		async handleCheckVersion(configuration) {
-			// Handle check version for already imported configurations
-			try {
-				const response = await axios.post(
-					generateUrl(
-						`/apps/openregister/api/configurations/${configuration.id}/check-version`,
-					),
-				)
-
-				if (response.data.hasUpdate) {
-					showSuccess(
-						t('openregister', 'Update available: {local} → {remote}', {
-							local: response.data.localVersion,
-							remote: response.data.remoteVersion,
-						}),
-					)
-				} else {
-					showSuccess(t('openregister', 'Configuration is up to date'))
-				}
-
-				// Refresh the list to show updated version info
-				await configurationStore.refreshConfigurationList()
-			} catch (error) {
-				console.error('Failed to check version:', error)
-				showError(
-					t('openregister', 'Failed to check version: {error}', {
-						error: error.response?.data?.error || error.message,
-					}),
-				)
-			}
 		},
 	},
 }

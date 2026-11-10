@@ -28,11 +28,17 @@ already lives in the database. After upgrading:
   dashboard, setup, manage), `/api/settings/solr-info`,
   `/api/settings/solr-facet-config`, and the SOLR-backed file endpoints
   (`/api/solr/warmup/files`, `/api/solr/files/*`, `/api/search/files/keyword`,
-  `/api/files/chunks/process`, `/api/files/chunks/stats`).
-- In-process semantic/hybrid vector search (PostgreSQL `pgvector`) is unchanged;
-  its endpoints (`/api/search/files/semantic`, `/api/search/files/hybrid`,
-  `/api/settings/search/semantic|hybrid`, `/api/objects/vectorize/*`,
-  `/api/vectors/test-embedding`, …) keep working.
+  `/api/files/chunks/process`, `/api/files/chunks/stats`), the settings-level
+  `/api/settings/search/semantic` and `/api/settings/search/hybrid`,
+  `PUT`/`PATCH /api/settings/search-backend` (`GET` stays as a read-only
+  report) and `GET /api/objects/vectorize/count`.
+- In-process semantic/hybrid vector search (PostgreSQL `pgvector`) is unchanged.
+  These endpoints keep working: `/api/search/files/semantic`,
+  `/api/search/files/hybrid`, `/api/objects/vectorize/batch`,
+  `/api/objects/vectorize/stats`, `/api/settings/objects/vectorize`,
+  `/api/files/vectorize/batch`, `/api/vectors/test-embedding`,
+  `/api/vectors/stats`, `/api/vectors/check-model-mismatch` and
+  `/api/vectors/clear-all`.
 
 > Note: SOLR's relevance ranking (BM25/TF-IDF) is gone. Database search uses
 > `ILIKE`/`pg_trgm` matching without relevance scoring.

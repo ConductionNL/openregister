@@ -31,11 +31,11 @@ declare(strict_types=1);
 namespace Unit\Service\Timeline;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\TimelineEntry;
-use OCA\OpenRegister\Service\NoteService;
-use OCA\OpenRegister\Service\Timeline\PublicTimeline;
-use OCA\OpenRegister\Service\Timeline\TimelineEntryService;
-use OCA\OpenRegister\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Notifications\Db\TimelineEntry;
+use OCA\OpenRegister\Files\Service\NoteService;
+use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimeline;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryService;
+use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -44,7 +44,7 @@ use RuntimeException;
 /**
  * Unit tests for the one anonymous timeline reader.
  *
- * @covers \OCA\OpenRegister\Service\Timeline\PublicTimeline
+ * @covers \OCA\OpenRegister\Notifications\Service\Timeline\PublicTimeline
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class PublicTimelineTest extends TestCase {

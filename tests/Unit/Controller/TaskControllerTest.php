@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\TaskControllerFactory;
 use OCA\OpenRegister\Controller\TaskController;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
@@ -35,6 +36,7 @@ use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskFormRefusedException;
 use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Service\Task\TaskAnswer;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskFormCompletion;
 use OCA\OpenRegister\Service\Task\TaskFormResolver;
@@ -52,11 +54,16 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Task\TaskInboxPage;
 
 /**
  * HTTP status and body translation for every task route.
  *
  * @covers \OCA\OpenRegister\Controller\TaskController
+ * @uses \OCA\OpenRegister\Controller\Support\TaskWork
+ * @uses \OCA\OpenRegister\Controller\Support\TaskCompletion
+ * @uses \OCA\OpenRegister\Controller\Support\TaskPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\TaskControllerServices
  * @covers \OCA\OpenRegister\Db\TaskInboxCriteria
  * @covers \OCA\OpenRegister\Db\Task
  * @covers \OCA\OpenRegister\Service\Task\TaskTemporalProjection
@@ -137,8 +144,11 @@ class TaskControllerTest extends TestCase {
 		$this->inbox->method('row')->willReturnCallback(
 			static fn (Task $task): array => ['uuid' => $task->getUuid(), 'row' => true]
 		);
+		$this->inbox->method('enrich')->willReturnCallback(
+			static fn (Task $task): array => ['uuid' => $task->getUuid(), 'row' => true]
+		);
 
-		$this->controller = new TaskController(
+		$this->controller = TaskControllerFactory::create(
 			appName: 'openregister',
 			request: $request,
 			tasks: $this->tasks,
@@ -173,7 +183,9 @@ class TaskControllerTest extends TestCase {
 	 */
 	public function testIndexReturnsTheInboxPageForTheSession(): void {
 		$this->inbox->expects($this->once())->method('inbox')->willReturnCallback(
-			function (TaskInboxCriteria $criteria, int $limit, int $offset): array {
+			function (TaskInboxCriteria $criteria, TaskInboxPage $page): array {
+				$limit = $page->limit;
+				$offset = $page->offset;
 				$this->assertSame('alice', $criteria->uid);
 				$this->assertSame(['reviewers'], $criteria->groupIds);
 				$this->assertFalse($criteria->isAdmin);
@@ -190,6 +202,32 @@ class TaskControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 		$this->assertSame(0, $response->getData()['total']);
 	}//end testIndexReturnsTheInboxPageForTheSession()
+
+	/**
+	 * `openFirst=true` asks for the open tasks before the finished ones; it is
+	 * off unless asked, so an existing caller's order does not change.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/task-inbox-open-first/specs/flow-tasks/spec.md#requirement-the-inbox-can-list-open-tasks-before-finished-ones
+	 */
+	public function testIndexPassesOpenFirstIntoTheCriteria(): void {
+		$seen = [];
+		$this->inbox->expects($this->exactly(2))->method('inbox')->willReturnCallback(
+			function (TaskInboxCriteria $criteria, TaskInboxPage $page) use (&$seen): array {
+				$limit = $page->limit;
+				$offset = $page->offset;
+				$seen[] = $criteria->openFirst;
+
+				return ['results' => [], 'total' => 0, 'limit' => $limit, 'offset' => $offset];
+			}
+		);
+
+		$this->controller->index(sort: 'dueAt', openFirst: 'true');
+		$this->controller->index(sort: 'dueAt');
+
+		$this->assertSame([true, false], $seen);
+	}//end testIndexPassesOpenFirstIntoTheCriteria()
 
 	/**
 	 * GET /api/flow-tasks/{uuid}: 404 for the invisible, 200 for the visible.
@@ -210,6 +248,37 @@ class TaskControllerTest extends TestCase {
 	}//end testShowIs404ForAnInvisibleTaskAnd200ForAVisibleOne()
 
 	/**
+	 * GET /api/flow-tasks/{uuid} carries the task's subject context, as an
+	 * inbox row does, so a task page can name its case ("bij zaak 2026-0074").
+	 *
+	 * @return void
+	 */
+	public function testShowCarriesTheSubjectContext(): void {
+		$this->tasks->method('get')->willReturn($this->task());
+		$this->authorization->method('mayRead')->willReturn(true);
+		$inbox = $this->createMock(originalClassName: TaskInboxService::class);
+		$inbox->expects($this->never())->method('row');
+		$inbox->expects($this->once())->method('enrich')->willReturn(
+			['uuid' => 't-1', 'subject' => ['uuid' => 'case-1', 'title' => 'Bezwaar parkeerboete Havenstraat', 'identifier' => '2026-0074']]
+		);
+		$controller = TaskControllerFactory::create(
+			appName: 'openregister',
+			request: $this->createMock(originalClassName: IRequest::class),
+			tasks: $this->tasks,
+			inbox: $inbox,
+			authorization: $this->authorization,
+			temporal: new TaskTemporalProjection(),
+			userSession: $this->createMock(originalClassName: IUserSession::class),
+			forms: $this->createMock(originalClassName: TaskFormResolver::class),
+			completion: $this->completion
+		);
+
+		$data = $controller->show(uuid: 't-1')->getData();
+
+		$this->assertSame(expected: '2026-0074', actual: $data['subject']['identifier']);
+	}//end testShowCarriesTheSubjectContext()
+
+	/**
 	 * GET /api/flow-tasks/{uuid} carries the resolved form and the checklist
 	 * rule, so the completion surface needs no second round-trip.
 	 *
@@ -225,7 +294,7 @@ class TaskControllerTest extends TestCase {
 				'requireChecklist' => true,
 			]
 		);
-		$controller = new TaskController(
+		$controller = TaskControllerFactory::create(
 			appName: 'openregister',
 			request: $this->createMock(originalClassName: IRequest::class),
 			tasks: $this->tasks,
@@ -252,7 +321,7 @@ class TaskControllerTest extends TestCase {
 	 */
 	public function testCompletePassesTheFieldValuesThrough(): void {
 		$this->completion->expects($this->once())->method('complete')
-			->with('t-1', 'rejected', null, 'late', ['reason' => 'late'], 'alice')
+			->with('t-1', new TaskAnswer(outcome: 'rejected', comment: 'late'), ['reason' => 'late'], 'alice')
 			->willReturn($this->task());
 
 		$response = $this->controller->complete(uuid: 't-1', outcome: 'rejected', comment: 'late', data: ['reason' => 'late']);
@@ -413,6 +482,41 @@ class TaskControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
 		$this->assertStringContainsString('assignee', $response->getData()['error']);
 	}//end testADeniedVerbIs403WhenTheCallerMayReadTheTask()
+
+	/**
+	 * PATCH /api/flow-tasks/{uuid}: the body goes to the service as the
+	 * changes, without the route bookkeeping, and the row comes back.
+	 *
+	 * @return void
+	 */
+	public function testEditPassesTheBodyAsTheChanges(): void {
+		$this->tasks->expects($this->once())->method('edit')
+			->with(uuid: 't-1', changes: ['title' => 'x'], actor: 'alice')
+			->willReturn($this->task());
+
+		$response = $this->controller->edit(uuid: 't-1');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(['uuid' => 't-1', 'row' => true], $response->getData());
+	}//end testEditPassesTheBodyAsTheChanges()
+
+	/**
+	 * An edit by someone who may read the task but not work it is 403, and
+	 * one that cannot be stored is 400.
+	 *
+	 * @return void
+	 */
+	public function testARefusedEditIs403AndAnInvalidOne400(): void {
+		$this->tasks->method('get')->willReturn($this->task());
+		$this->authorization->method('mayRead')->willReturn(true);
+		$this->tasks->method('edit')->willReturnOnConsecutiveCalls(
+			$this->throwException(new TaskAccessDeniedException("Verb 'edit' denied: not a member of the task's candidate pool.")),
+			$this->throwException(new TaskValidationException("Field 'title' may not be emptied."))
+		);
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $this->controller->edit(uuid: 't-1')->getStatus());
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $this->controller->edit(uuid: 't-1')->getStatus());
+	}//end testARefusedEditIs403AndAnInvalidOne400()
 
 	/**
 	 * A conflict is 409 carrying the message (the current state, per spec).
@@ -589,6 +693,29 @@ class TaskControllerTest extends TestCase {
 	}//end testIndexWithoutADueWindowCarriesNone()
 
 	/**
+	 * `includeBlocked=true` reaches the criteria; without it blocked tasks stay out.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
+	 */
+	public function testIndexPassesIncludeBlockedIntoTheCriteria(): void {
+		$seen = [];
+		$this->inbox->expects($this->exactly(2))->method('inbox')->willReturnCallback(
+			function (TaskInboxCriteria $criteria) use (&$seen): array {
+				$seen[] = $criteria->includeBlocked;
+
+				return ['results' => [], 'total' => 0, 'limit' => 25, 'offset' => 0];
+			}
+		);
+
+		$this->controller->index(includeBlocked: 'true');
+		$this->controller->index();
+
+		$this->assertSame([true, false], $seen);
+	}//end testIndexPassesIncludeBlockedIntoTheCriteria()
+
+	/**
 	 * With overdue unset the criteria carry no clock instant.
 	 *
 	 * @return void
@@ -679,7 +806,7 @@ class TaskControllerTest extends TestCase {
 				return ['results' => [], 'total' => 0, 'limit' => 25, 'offset' => 0];
 			}
 		);
-		$controller = new TaskController(
+		$controller = TaskControllerFactory::create(
 			appName: 'openregister',
 			request: $this->createMock(originalClassName: IRequest::class),
 			tasks: $this->tasks,
@@ -704,7 +831,7 @@ class TaskControllerTest extends TestCase {
 	public function testIndexWithoutASessionIs401(): void {
 		$session = $this->createMock(originalClassName: IUserSession::class);
 		$session->method('getUser')->willReturn(null);
-		$controller = new TaskController(
+		$controller = TaskControllerFactory::create(
 			appName: 'openregister',
 			request: $this->createMock(originalClassName: IRequest::class),
 			tasks: $this->tasks,

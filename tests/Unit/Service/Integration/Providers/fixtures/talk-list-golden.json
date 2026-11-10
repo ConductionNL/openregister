@@ -1,0 +1,263 @@
+{
+    "app missing": {
+        "rows": [],
+        "container": []
+    },
+    "no user": {
+        "rows": [],
+        "container": []
+    },
+    "linked rows": {
+        "rows": [
+            {
+                "id": "tok1",
+                "title": "Linked",
+                "type": 3,
+                "subtitle": "Public",
+                "participantCount": 5,
+                "lastMessage": null,
+                "unreadMessages": null,
+                "lastActivity": 1700000200,
+                "url": "/index.php/call/tok1"
+            },
+            {
+                "id": "",
+                "title": "",
+                "type": null,
+                "subtitle": null,
+                "participantCount": null,
+                "lastMessage": null,
+                "unreadMessages": null,
+                "lastActivity": null,
+                "url": null
+            }
+        ],
+        "container": []
+    },
+    "no mapper, marker scan": {
+        "rows": [
+            {
+                "id": "tok1",
+                "title": "Case room",
+                "type": 2,
+                "subtitle": "T:Group",
+                "participantCount": 4,
+                "lastMessage": {
+                    "actor": {
+                        "type": "users",
+                        "id": "u1"
+                    },
+                    "text": "hi",
+                    "timestamp": 1700000100
+                },
+                "unreadMessages": null,
+                "lastActivity": 1700000000,
+                "url": "/index.php/call/tok1"
+            },
+            {
+                "id": "tok2",
+                "title": "Named",
+                "type": 6,
+                "subtitle": "About",
+                "participantCount": 4,
+                "lastMessage": null,
+                "unreadMessages": null,
+                "lastActivity": null,
+                "url": "/index.php/call/tok2"
+            },
+            {
+                "id": "",
+                "title": "",
+                "type": 9,
+                "subtitle": null,
+                "participantCount": 4,
+                "lastMessage": {
+                    "actor": {
+                        "type": "",
+                        "id": ""
+                    },
+                    "text": "",
+                    "timestamp": null
+                },
+                "unreadMessages": null,
+                "lastActivity": null,
+                "url": "/index.php/call/"
+            }
+        ],
+        "container": [
+            "OCA\\Talk\\Manager",
+            "OCA\\Talk\\Service\\ParticipantService"
+        ]
+    },
+    "mapper fails, marker scan": {
+        "rows": [
+            {
+                "id": "tok1",
+                "title": "Case room",
+                "type": 2,
+                "subtitle": "T:Group",
+                "participantCount": 4,
+                "lastMessage": {
+                    "actor": {
+                        "type": "users",
+                        "id": "u1"
+                    },
+                    "text": "hi",
+                    "timestamp": 1700000100
+                },
+                "unreadMessages": null,
+                "lastActivity": 1700000000,
+                "url": "/index.php/call/tok1"
+            },
+            {
+                "id": "tok2",
+                "title": "Named",
+                "type": 6,
+                "subtitle": "About",
+                "participantCount": 4,
+                "lastMessage": null,
+                "unreadMessages": null,
+                "lastActivity": null,
+                "url": "/index.php/call/tok2"
+            },
+            {
+                "id": "",
+                "title": "",
+                "type": 9,
+                "subtitle": null,
+                "participantCount": 4,
+                "lastMessage": {
+                    "actor": {
+                        "type": "",
+                        "id": ""
+                    },
+                    "text": "",
+                    "timestamp": null
+                },
+                "unreadMessages": null,
+                "lastActivity": null,
+                "url": "/index.php/call/"
+            }
+        ],
+        "container": [
+            "OCA\\Talk\\Manager",
+            "OCA\\Talk\\Service\\ParticipantService"
+        ]
+    },
+    "no links, participants missing": {
+        "rows": [
+            {
+                "id": "tok1",
+                "title": "Case room",
+                "type": 2,
+                "subtitle": "T:Group",
+                "participantCount": null,
+                "lastMessage": {
+                    "actor": {
+                        "type": "users",
+                        "id": "u1"
+                    },
+                    "text": "hi",
+                    "timestamp": 1700000100
+                },
+                "unreadMessages": null,
+                "lastActivity": 1700000000,
+                "url": "/index.php/call/tok1"
+            },
+            {
+                "id": "tok2",
+                "title": "Named",
+                "type": 6,
+                "subtitle": "About",
+                "participantCount": null,
+                "lastMessage": null,
+                "unreadMessages": null,
+                "lastActivity": null,
+                "url": "/index.php/call/tok2"
+            },
+            {
+                "id": "",
+                "title": "",
+                "type": 9,
+                "subtitle": null,
+                "participantCount": null,
+                "lastMessage": {
+                    "actor": {
+                        "type": "",
+                        "id": ""
+                    },
+                    "text": "",
+                    "timestamp": null
+                },
+                "unreadMessages": null,
+                "lastActivity": null,
+                "url": "/index.php/call/"
+            }
+        ],
+        "container": [
+            "OCA\\Talk\\Manager",
+            "OCA\\Talk\\Service\\ParticipantService"
+        ]
+    },
+    "no links, participants throw": {
+        "rows": [
+            {
+                "id": "tok1",
+                "title": "Case room",
+                "type": 2,
+                "subtitle": "T:Group",
+                "participantCount": null,
+                "lastMessage": {
+                    "actor": {
+                        "type": "users",
+                        "id": "u1"
+                    },
+                    "text": "hi",
+                    "timestamp": 1700000100
+                },
+                "unreadMessages": null,
+                "lastActivity": 1700000000,
+                "url": "/index.php/call/tok1"
+            },
+            {
+                "id": "tok2",
+                "title": "Named",
+                "type": 6,
+                "subtitle": "About",
+                "participantCount": null,
+                "lastMessage": null,
+                "unreadMessages": null,
+                "lastActivity": null,
+                "url": "/index.php/call/tok2"
+            },
+            {
+                "id": "",
+                "title": "",
+                "type": 9,
+                "subtitle": null,
+                "participantCount": null,
+                "lastMessage": {
+                    "actor": {
+                        "type": "",
+                        "id": ""
+                    },
+                    "text": "",
+                    "timestamp": null
+                },
+                "unreadMessages": null,
+                "lastActivity": null,
+                "url": "/index.php/call/"
+            }
+        ],
+        "container": [
+            "OCA\\Talk\\Manager",
+            "OCA\\Talk\\Service\\ParticipantService"
+        ]
+    },
+    "no links, no Talk manager": {
+        "rows": [],
+        "container": [
+            "OCA\\Talk\\Manager"
+        ]
+    }
+}

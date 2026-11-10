@@ -36,7 +36,7 @@ use RuntimeException;
  * exhaustively without a database, a Nextcloud server or an app on disk. The
  * classes that surround it only fetch the inputs and carry out the verdict.
  *
- * @spec openspec/changes/dedupe-shared-schemas/proposal.md
+ * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
  */
 class SchemaAttribution {
 
@@ -73,7 +73,7 @@ class SchemaAttribution {
 	 * @return array<int, int[]> schemaId => the register ids referencing it, ascending.
 	 *         Only schemas with more than one referencing register are returned.
 	 *
-	 * @spec openspec/changes/dedupe-shared-schemas/proposal.md
+	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	public function indexShared(array $registerSchemas): array {
 		$index = [];
@@ -115,7 +115,7 @@ class SchemaAttribution {
 	 *
 	 * @return array{properties: string[], required: string[]} The normalised signature.
 	 *
-	 * @spec openspec/changes/dedupe-shared-schemas/proposal.md
+	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	public function signature(array $definition): array {
 		$properties = ($definition['properties'] ?? []);
@@ -155,7 +155,7 @@ class SchemaAttribution {
 	 * @return array{status: string, owner: int|null, matches: int[]} The verdict. `owner` is
 	 *         set only for {@see self::STATUS_ONE_MATCH}.
 	 *
-	 * @spec openspec/changes/dedupe-shared-schemas/proposal.md
+	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	public function classify(array $candidates, array $entity): array {
 		$target  = $this->signature(definition: $entity);
@@ -198,7 +198,7 @@ class SchemaAttribution {
 	 *
 	 * @throws RuntimeException When a value is not a positive id or id pair.
 	 *
-	 * @spec openspec/changes/dedupe-shared-schemas/proposal.md
+	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	public function parseKeep(array $raw): array {
 		$perSchema = [];
@@ -240,7 +240,7 @@ class SchemaAttribution {
 	 *
 	 * @return array{owner: int|null, source: string} The resolved owner and where it came from.
 	 *
-	 * @spec openspec/changes/dedupe-shared-schemas/proposal.md
+	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	public function resolveOwner(array $verdict, int $schemaId, array $registerIds, array $keep): array {
 		$pinned = ($keep['perSchema'][$schemaId] ?? null);
@@ -274,7 +274,7 @@ class SchemaAttribution {
 	 *
 	 * @return array<int, mixed> The rewritten list.
 	 *
-	 * @spec openspec/changes/dedupe-shared-schemas/proposal.md
+	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	public function replaceSchemaId(array $schemas, int $oldId, int $newId): array {
 		$result = [];

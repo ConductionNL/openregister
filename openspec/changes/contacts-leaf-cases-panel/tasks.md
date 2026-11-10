@@ -16,15 +16,19 @@
       **The reads are bounded**, because one read per link means an unbounded
       list is an unbounded number of reads to render a sidebar, and the cut is
       declared as `truncated` rather than left to look like the whole answer.
-- [ ] 1.2 `GET /api/integrations/contacts/search?q=` over
+- [x] 1.2 `GET /api/integrations/contacts/search?q=` over
       `IManager::search()`, limited to readable address books.
+      `ContactSearchController` + `lib/Service/Integration/ContactSearch.php`:
+      name, e-mail and organisation, at least 2 characters, 25 rows, one row
+      per contact UID. The manager searches only the address books registered
+      for the current user. Tests `ContactSearchTest` (4).
 
 ## 2. Surfaces
 
-- [ ] 2.1 Detail surface: contact card plus the cases panel.
-- [ ] 2.2 Index surface: name search with a result list that opens the
+- [ ] 2.1 Detail surface: contact card plus the cases panel. (not run: the leaf surfaces are nextcloud-vue's (registerLeafIntegrations))
+- [ ] 2.2 Index surface: name search with a result list that opens the (not run: the leaf surfaces are nextcloud-vue's (registerLeafIntegrations))
       detail surface.
-- [ ] 2.3 Register both as leaf surfaces so a manifest can place them.
+- [ ] 2.3 Register both as leaf surfaces so a manifest can place them. (not run: the leaf surfaces are nextcloud-vue's (registerLeafIntegrations))
 
 ## 3. Tests
 
@@ -34,5 +38,5 @@
       the constant. The readable-address-book bound itself is `ContactService`'s
       existing IDOR guard (`currentUserAddressbookIds()`), which these classes
       narrow further and widen never; its own tests cover it.
-- [ ] 3.2 `tests/e2e/ci/contacts-leaf-cases-panel.spec.ts`: link a contact
+- [ ] 3.2 `tests/e2e/ci/contacts-leaf-cases-panel.spec.ts`: link a contact (not run: e2e waits on the surfaces and needs a browser)
       to two objects, open the detail surface, see both under their schema.

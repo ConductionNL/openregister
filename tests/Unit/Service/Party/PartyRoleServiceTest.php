@@ -18,7 +18,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
+use OCA\OpenRegister\Service\Party\PartyLinkTarget;
 use OCA\OpenRegister\Service\Party\PartyLinkWriter;
+use OCA\OpenRegister\Service\Party\PartyRoleRecords;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Service\PersonLinkEvents;
@@ -30,7 +32,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * A party on an object, in a role, and which one the object is filed against.
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md
+ * @spec openspec/specs/party-model/spec.md
  */
 class PartyRoleServiceTest extends TestCase {
 
@@ -124,11 +126,9 @@ class PartyRoleServiceTest extends TestCase {
 		);
 
 		$this->service = new PartyRoleService(
-			$this->links,
-			$this->writer,
+			new PartyRoleRecords($this->links, $this->writer, $this->audit),
 			$this->parties,
 			$this->schemas,
-			$this->audit,
 			new PersonLinkEvents($dispatcher)
 		);
 	}//end setUp()
@@ -162,6 +162,26 @@ class PartyRoleServiceTest extends TestCase {
 	}//end partyOfKind()
 
 	/**
+	 * The object a trusted import puts the party on.
+	 *
+	 * @param string $uuid The object uuid.
+	 * @param int $registerId The register id.
+	 * @param int|string|null $schemaId The object's schema id.
+	 *
+	 * @return ObjectEntity The object.
+	 */
+	private function objectOn(string $uuid, int $registerId, int|string|null $schemaId): ObjectEntity {
+		$object = new ObjectEntity();
+		$object->setUuid($uuid);
+		$object->setRegister((string) $registerId);
+		if ($schemaId !== null) {
+			$object->setSchema((string) $schemaId);
+		}
+
+		return $object;
+	}//end objectOn()
+
+	/**
 	 * A stored party link.
 	 *
 	 * @param string $partyUuid The party.
@@ -189,7 +209,7 @@ class PartyRoleServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function testTwoGemachtigdenOnOneCase(): void {
 		$first = $this->storedLink(partyUuid: 'party-a', role: 'gemachtigde');
@@ -208,12 +228,70 @@ class PartyRoleServiceTest extends TestCase {
 	}//end testTwoGemachtigdenOnOneCase()
 
 	/**
+	 * The trusted path passes the named linker to the writer, with the period and note,
+	 * and the API path passes none, so a request can never name its own linker.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
+	 */
+	public function testImportNamesTheLinkerAndAddDoesNot(): void {
+		$linkers = [];
+		$this->writer->method('write')->willReturnCallback(
+			function (PartyLinkTarget $target, string $partyUuid, ?string $role, ?string $linkedBy = null) use (&$linkers): ContactLink {
+				$linkers[] = $linkedBy;
+				return $this->storedLink(partyUuid: $partyUuid, role: (string) $role);
+			}
+		);
+
+		$link = $this->service->importParty(
+			object: $this->objectOn(uuid: 'case-1', registerId: 3, schemaId: null),
+			payload: ['partyUuid' => 'party-a', 'role' => 'gemachtigde', 'validUntil' => '2026-12-31', 'note' => 'Awb 2:1'],
+			linkedBy: 'dossiq'
+		);
+		$this->service->addParty(objectUuid: 'case-1', registerId: 3, schemaId: null, payload: ['partyUuid' => 'party-b', 'role' => 'gemachtigde', 'linkedBy' => 'spoofed']);
+
+		$this->assertSame(expected: ['dossiq', null], actual: $linkers);
+		$this->assertSame(expected: '2026-12-31', actual: $link->getValidUntil()?->format('Y-m-d'));
+		$this->assertSame(expected: 'Awb 2:1', actual: $link->getNote());
+	}//end testImportNamesTheLinkerAndAddDoesNot()
+
+	/**
+	 * The trusted import (an occ example-set install, no user) finds the party
+	 * without RBAC; a request's addParty still reads it with the caller's rights.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-install-agrees-with-the-store/specs/example-sets/spec.md
+	 */
+	public function testTheTrustedImportFindsAPartyTheCallerCouldNotRead(): void {
+		$this->schemaAccepts(kinds: [['key' => 'person', 'label' => 'Persoon']]);
+		$party = new ObjectEntity();
+		$party->setUuid('party-a');
+		$this->parties->method('find')->willReturn(null);
+		$this->parties->method('findUnscoped')->willReturn($party);
+		$this->parties->method('definitionFor')->willReturn(new PartyDefinition(kind: 'person'));
+		$this->writer->method('write')->willReturn($this->storedLink(partyUuid: 'party-a', role: 'aanvrager'));
+
+		$link = $this->service->importParty(
+			object: $this->objectOn(uuid: 'case-1', registerId: 1, schemaId: 7),
+			payload: ['partyUuid' => 'party-a', 'role' => 'aanvrager'],
+			linkedBy: 'portaliq'
+		);
+		$this->assertSame(expected: 'party-a', actual: $link->getPartyUuid());
+
+		$this->expectException(exception: Exception::class);
+		$this->expectExceptionMessage(message: 'Party not found');
+		$this->service->addParty(objectUuid: 'case-1', registerId: 1, schemaId: 7, payload: ['partyUuid' => 'party-a', 'role' => 'aanvrager']);
+	}//end testTheTrustedImportFindsAPartyTheCallerCouldNotRead()
+
+	/**
 	 * A party of a kind the schema does not accept is refused, and the
 	 * message names the kind.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function testAnUndeclaredPartyKindIsRefusedNamingTheKind(): void {
 		$this->schemaAccepts(kinds: [['key' => 'organisation', 'label' => 'Organisatie']]);
@@ -236,7 +314,7 @@ class PartyRoleServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function testARoleOutsideTheKindsRolesIsRefused(): void {
 		$this->schemaAccepts(
@@ -261,7 +339,7 @@ class PartyRoleServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function testASchemaDeclaringNoKindsAcceptsAnyParty(): void {
 		$this->schemaAccepts(kinds: []);
@@ -287,7 +365,7 @@ class PartyRoleServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function testReplacingThePrimaryPartyIsRecorded(): void {
 		$this->schemaAccepts(kinds: []);
@@ -329,7 +407,7 @@ class PartyRoleServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function testOneRoleGoesAndTheOtherStays(): void {
 		$kept = $this->storedLink(partyUuid: 'party-a', role: 'aanvrager');
@@ -355,7 +433,7 @@ class PartyRoleServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function testRemovingAPartyThatIsNotThereIs404(): void {
 		$this->rows = [];

@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime;
 use OCA\OpenRegister\BackgroundJob\DsarDpiaDetectionJob;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -40,6 +41,7 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\BackgroundJob\Support\DsarDpiaDetectionServices;
 
 /**
  * DsarDpiaDetectionJobTest.
@@ -68,13 +70,8 @@ class DsarDpiaDetectionJobTest extends TestCase {
 		);
 
 		$this->job = new DsarDpiaDetectionJob(
-			time: $this->createMock(ITimeFactory::class),
-			appConfig: $this->appConfig,
-			objectService: $this->objectService,
-			packResolver: $this->packResolver,
-			detectionService: new DpiaPatternDetectionService(),
-			auditTrailMapper: $this->auditTrailMapper,
-			logger: $this->createMock(LoggerInterface::class),
+			runtime: new ConfiguredJobRuntime(time: $this->createMock(ITimeFactory::class), appConfig: $this->appConfig, logger: $this->createMock(LoggerInterface::class)),
+			services: new DsarDpiaDetectionServices(objectService: $this->objectService, packResolver: $this->packResolver, detectionService: new DpiaPatternDetectionService(), auditTrailMapper: $this->auditTrailMapper)
 		);
 
 	}//end setUp()
@@ -150,6 +147,59 @@ class DsarDpiaDetectionJobTest extends TestCase {
 	}//end testThresholdCrossingFlagsUnflaggedCasesWithAudit()
 
 	/**
+	 * A found row without a uuid is not written: there is nothing to name it by.
+	 *
+	 * @return void
+	 */
+	public function testARowWithoutUuidIsNotFlagged(): void {
+		$this->wirePack(dpiaDetection: ['threshold' => 2, 'windowDays' => 30, 'groupBy' => ['type']]);
+		$this->wireCases([$this->renderedCase(uuid: 'a', flagged: false), $this->renderedCase(uuid: 'b', flagged: false)]);
+		$this->objectService->method('find')->willReturnCallback(
+			function () {
+				$entity = new ObjectEntity();
+				$entity->setObject(['type' => 'access', 'dpiaRequired' => false]);
+				return $entity;
+			}
+		);
+		$this->objectService->expects($this->never())->method('saveObject');
+
+		$this->runJob();
+	}//end testARowWithoutUuidIsNotFlagged()
+
+	/**
+	 * A flag is written on the row the lookup found, by that row's uuid.
+	 *
+	 * @return void
+	 */
+	public function testTheFlagIsWrittenOnTheFoundRowByItsUuid(): void {
+		$this->wirePack(dpiaDetection: ['threshold' => 2, 'windowDays' => 30, 'groupBy' => ['type']]);
+		$this->wireCases([$this->renderedCase(uuid: 'a', flagged: false), $this->renderedCase(uuid: 'b', flagged: false)]);
+
+		$written = [];
+		$this->objectService->method('find')->willReturnCallback(
+			function ($id) {
+				$entity = new ObjectEntity();
+				$entity->setUuid('stored-'.$id);
+				$entity->setObject(['type' => 'access', 'dpiaRequired' => false]);
+				return $entity;
+			}
+		);
+		$this->objectService->method('saveObject')->willReturnCallback(
+			static function ($object, $extend = [], $register = null, $schema = null, $uuid = null) use (&$written) {
+				$written[] = $uuid;
+				$saved = new ObjectEntity();
+				$saved->setUuid((string)$uuid);
+				return $saved;
+			}
+		);
+		$this->auditTrailMapper->method('createAuditTrailEntry')->willReturn($this->createMock(\OCA\OpenRegister\Db\AuditTrail::class));
+
+		$this->runJob();
+
+		$this->assertEqualsCanonicalizing(['stored-a', 'stored-b'], $written);
+	}//end testTheFlagIsWrittenOnTheFoundRowByItsUuid()
+
+	/**
 	 * Re-run over a fully-flagged group: no write, no audit (idempotent),
 	 * and the manual flag is never cleared (ratchet).
 	 *
@@ -210,13 +260,8 @@ class DsarDpiaDetectionJobTest extends TestCase {
 		$appConfig->method('getValueString')->willReturn('false');
 
 		$job = new DsarDpiaDetectionJob(
-			time: $this->createMock(ITimeFactory::class),
-			appConfig: $appConfig,
-			objectService: $this->objectService,
-			packResolver: $this->packResolver,
-			detectionService: new DpiaPatternDetectionService(),
-			auditTrailMapper: $this->auditTrailMapper,
-			logger: $this->createMock(LoggerInterface::class),
+			runtime: new ConfiguredJobRuntime(time: $this->createMock(ITimeFactory::class), appConfig: $appConfig, logger: $this->createMock(LoggerInterface::class)),
+			services: new DsarDpiaDetectionServices(objectService: $this->objectService, packResolver: $this->packResolver, detectionService: new DpiaPatternDetectionService(), auditTrailMapper: $this->auditTrailMapper)
 		);
 
 		$this->objectService->expects($this->never())->method('findAll');

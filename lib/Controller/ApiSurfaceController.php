@@ -35,17 +35,20 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesService;
-use OCA\OpenRegister\Service\ApiVersion\ApiContractService;
-use OCA\OpenRegister\Service\ApiVersion\ApiVersion;
-use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue;
+use JsonSerializable;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\ApiSurfaceControllerServices;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesServiceInterface;
+use OCA\OpenRegister\Service\ApiVersion\ApiContractServiceInterface;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogueInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -56,7 +59,6 @@ use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -71,29 +73,59 @@ use Throwable;
 class ApiSurfaceController extends Controller {
 
 	/**
+	 * The user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Builds the capabilities answer.
+	 *
+	 * @var ApiCapabilitiesServiceInterface
+	 */
+	private readonly ApiCapabilitiesServiceInterface $capabilities;
+
+	/**
+	 * The declared contract versions.
+	 *
+	 * @var ApiVersionCatalogueInterface
+	 */
+	private readonly ApiVersionCatalogueInterface $catalogue;
+
+	/**
+	 * Builds one description per version.
+	 *
+	 * @var ApiContractServiceInterface
+	 */
+	private readonly ApiContractServiceInterface $contracts;
+
+	/**
+	 * The session bundle; the user session and the logger come from it.
+	 *
+	 * @var ControllerSession
+	 */
+	private readonly ControllerSession $session;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
 	 * @param IRequest $request The incoming request.
-	 * @param ApiCapabilitiesService $capabilities Builds the capabilities answer.
-	 * @param ApiVersionCatalogue $catalogue The declared contract versions.
-	 * @param ApiContractService $contracts Builds one description per version.
-	 * @param IUserSession $userSession Decides which half of the answer is returned.
-	 * @param LoggerInterface $logger Records a description that could not be generated.
+	 * @param ApiSurfaceControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly ApiCapabilitiesService $capabilities,
-		private readonly ApiVersionCatalogue $catalogue,
-		private readonly ApiContractService $contracts,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		ApiSurfaceControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->capabilities = $services->capabilities;
+		$this->catalogue = $services->catalogue;
+		$this->contracts = $services->contracts;
 
+		$this->session = $services->session;
+		$this->userSession = $services->session->userSession;
 	}//end __construct()
 
 	/**
@@ -107,7 +139,7 @@ class ApiSurfaceController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<200, array<string, mixed>, array<never, never>>
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-publishes-its-capabilities-and-its-limits-req-avs-002
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-publishes-its-capabilities-and-its-limits-req-avs-002
 	 *
 	 * @contract tests/Unit/Controller/ApiSurfaceControllerTest.php
 	 */
@@ -135,7 +167,7 @@ class ApiSurfaceController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<200, array<string, mixed>, array<never, never>>
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md#requirement-two-contract-versions-are-served-at-once-with-a-declared-lifecycle-req-avs-005
+	 * @spec openspec/specs/openapi-generation/spec.md#requirement-two-contract-versions-are-served-at-once-with-a-declared-lifecycle-req-avs-005
 	 *
 	 * @contract tests/Unit/Controller/ApiSurfaceControllerTest.php
 	 */
@@ -148,7 +180,7 @@ class ApiSurfaceController extends Controller {
 			data: [
 				'currentVersion' => $this->catalogue->current()->id,
 				'versions' => array_values(array_map(
-					static fn (ApiVersion $version): array => $version->jsonSerialize(),
+					static fn (JsonSerializable $version): array => $version->jsonSerialize(),
 					$this->catalogue->all()
 				)),
 			]
@@ -171,7 +203,7 @@ class ApiSurfaceController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<200|404|410|500, array<string, mixed>, array<never, never>>
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md#requirement-two-contract-versions-are-served-at-once-with-a-declared-lifecycle-req-avs-005
+	 * @spec openspec/specs/openapi-generation/spec.md#requirement-two-contract-versions-are-served-at-once-with-a-declared-lifecycle-req-avs-005
 	 *
 	 * @contract tests/Unit/Controller/ApiSurfaceControllerTest.php
 	 *
@@ -218,7 +250,7 @@ class ApiSurfaceController extends Controller {
 				registerId: $this->registerFilter(),
 			);
 		} catch (Throwable $e) {
-			$this->logger->error(
+			$this->session->logger->error(
 				'OpenRegister: could not generate the description for API version ' . $declared->id . '.',
 				['exception' => $e]
 			);

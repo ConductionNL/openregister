@@ -39,9 +39,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
+use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -56,7 +56,7 @@ use RuntimeException;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class DsarService {
+class DsarService implements DsarServiceInterface {
 
 	/**
 	 * App-config key for the DSAR processing-activity reference.
@@ -87,11 +87,11 @@ class DsarService {
 	 *                          GdprEntity +
 	 *                          entity_relations
 	 *                          lookup.
-	 * @param MagicMapper $objectMapper Object-routing
+	 * @param MagicMapperInterface $objectMapper Object-routing
 	 *                                  mapper used to
 	 *                                  load found
 	 *                                  objects.
-	 * @param VerwerkingsactiviteitMapper $vrwMapper Resolves the
+	 * @param VerwerkingsactiviteitMapperInterface $vrwMapper Resolves the
 	 *                                               configured DSAR
 	 *                                               activity reference.
 	 * @param IAppConfig $appConfig App-config reader.
@@ -110,8 +110,8 @@ class DsarService {
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
-		private readonly MagicMapper $objectMapper,
-		private readonly VerwerkingsactiviteitMapper $vrwMapper,
+		private readonly MagicMapperInterface $objectMapper,
+		private readonly VerwerkingsactiviteitMapperInterface $vrwMapper,
 		private readonly IAppConfig $appConfig,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
@@ -197,33 +197,8 @@ class DsarService {
 			return [];
 		}
 
-		// Group entity hits by the canonical object key. We prefer
-		// `object_uuid` (globally unique across magic-tables) when
-		// present, falling back to the legacy int `object_id` for rows
-		// predating the disambiguation migration.
-		$groupedByObject = [];
-		foreach ($hits as $hit) {
-			$key = $this->buildObjectKey(hit: $hit);
-			if ($key === null) {
-				continue;
-			}
-
-			$groupedByObject[$key] ??= [
-				'object_id' => (int)($hit['object_id'] ?? 0),
-				'object_uuid' => (string)($hit['object_uuid'] ?? ''),
-				'gdprEntities' => [],
-			];
-
-			$groupedByObject[$key]['gdprEntities'][] = [
-				'type' => (string)($hit['type'] ?? ''),
-				'value' => (string)($hit['value'] ?? ''),
-				'category' => (string)($hit['category'] ?? ''),
-				'detectedAt' => (string)($hit['detected_at'] ?? ''),
-			];
-		}
-
 		$envelopes = [];
-		foreach ($groupedByObject as $entry) {
+		foreach ($this->groupHitsByObject(hits: $hits) as $entry) {
 			$object = $this->loadObjectByEntry(entry: $entry);
 			if ($object === null) {
 				continue;
@@ -292,76 +267,34 @@ class DsarService {
 	public function eraseObjectsForSubject(string $subject, ?string $type = null, bool $dryRun = false): array {
 		$this->assertPrivileged();
 
-		$hits = $this->matchEntities(subject: $subject, type: $type, mode: 'exact');
-
-		// Dedupe by canonical key — uuid (preferred) or int id (legacy).
-		$entries = [];
-		foreach ($hits as $hit) {
-			$key = $this->buildObjectKey(hit: $hit);
-			if ($key === null) {
-				continue;
-			}
-
-			$entries[$key] ??= [
-				'object_id' => (int)($hit['object_id'] ?? 0),
-				'object_uuid' => (string)($hit['object_uuid'] ?? ''),
-			];
-		}
+		// Dedupe by canonical key: uuid (preferred) or int id (legacy).
+		$entries = array_map(
+			static fn (array $group): array => ['object_id' => $group['object_id'], 'object_uuid' => $group['object_uuid']],
+			$this->groupHitsByObject(hits: $this->matchEntities(subject: $subject, type: $type, mode: 'exact'))
+		);
 
 		$summary = [
 			'subject' => $subject,
 			'type' => $type,
 			'dryRun' => $dryRun,
 			'matchedCount' => count($entries),
-			'erased' => [],
-			// BUG-SVC-2: objects whose erasure failed are collected here so the
-			// caller can report a partial failure instead of a false "complete".
-			'failed' => [],
-			// RETENTION WINS OVER ERASURE: records held under an archival
-			// obligation are refused, named here, and reported back with the
-			// rest of the answer. A refusal the requester never sees is a
-			// silent skip, which is what this bucket exists to prevent.
-			'withheld' => [],
 		];
 
-		if ($dryRun === true || $entries === []) {
-			$summary['complete'] = true;
-			$summary['failedCount'] = 0;
-			$summary['withheldCount'] = 0;
-			return $summary;
+		$run = new DsarErasureRun();
+		if ($dryRun === false && $entries !== []) {
+			$run = $this->startErasure(subject: $subject);
+			foreach ($entries as $entry) {
+				$this->eraseOneEntry(entry: $entry, run: $run);
+			}
 		}
 
-		$dsarActivityUuid = $this->getDsarProcessingActivityUuid();
-		$userId = ($this->userSession->getUser()?->getUID() ?? 'system');
-		$deletionData = [
-			'deletedBy' => $userId,
-			'deletedAt' => (new DateTime())->format(DateTime::ATOM),
-			'reason' => 'avg-vergetelheid',
-			'subject' => $subject,
-		];
-
-		foreach ($entries as $entry) {
-			$this->eraseOneEntry(
-				entry: $entry,
-				deletionData: $deletionData,
-				dsarActivityUuid: $dsarActivityUuid,
-				summary: $summary
-			);
-		}//end foreach
-
-		// BUG-SVC-2: surface partial completion so callers don't treat a run
-		// with failures as a fully-successful erasure.
-		//
-		// A WITHHELD RECORD MAKES THE ERASURE INCOMPLETE, exactly as a failure
-		// does. The row is still there, so reporting `complete: true` would tell
-		// the data subject their data is gone while the law keeps it. The two
-		// counts stay separate because the answers differ: a failure is retried,
-		// a withheld record is explained.
-		$summary['complete'] = ($summary['failed'] === [] && $summary['withheld'] === []);
-		$summary['failedCount'] = count($summary['failed']);
-		$summary['withheldCount'] = count($summary['withheld']);
-
-		return $summary;
+		// BUG-SVC-2: objects whose erasure failed are reported, so a run with failures
+		// is not read as a complete erasure. RETENTION WINS OVER ERASURE: records held
+		// under an archival obligation are refused and named in `withheld`; a withheld
+		// record makes the erasure incomplete exactly as a failure does, because the
+		// row is still there. The counts stay separate: a failure is retried, a
+		// withheld record is explained.
+		return $summary + $run->outcome();
 	}//end eraseObjectsForSubject()
 
 	/**
@@ -372,26 +305,16 @@ class DsarService {
 	 * caller is never told about.
 	 *
 	 * @param array<string, mixed> $entry The deduped match (object_id / object_uuid).
-	 * @param array<string, mixed> $deletionData Soft-delete metadata to stamp.
-	 * @param string|null $dsarActivityUuid Configured DSAR activity, when set.
-	 * @param array<string, mixed> $summary Run summary, mutated in place.
+	 * @param DsarErasureRun       $run   The run: stamp, activity and buckets.
 	 *
 	 * @return void
 	 */
-	private function eraseOneEntry(
-		array $entry,
-		array $deletionData,
-		?string $dsarActivityUuid,
-		array &$summary,
-	): void {
+	private function eraseOneEntry(array $entry, DsarErasureRun $run): void {
 		$object = $this->loadObjectByEntry(entry: $entry);
 		if ($object === null) {
 			// BUG-SVC-2: a matched object we cannot load was NOT erased —
 			// record it as a failure rather than silently skipping it.
-			$summary['failed'][] = [
-				'object' => $entry,
-				'error' => 'Object could not be loaded for erasure',
-			];
+			$run->fail(entry: $entry, error: 'Object could not be loaded for erasure');
 			$this->logger->warning(
 				message: '[DSAR] Matched object could not be loaded during vergetelheid',
 				context: ['object' => $entry]
@@ -407,33 +330,83 @@ class DsarService {
 		// erased.
 		$refusal = $this->archivalGuard->erasureRefusal(object: $object);
 		if ($refusal !== null) {
-			$summary['withheld'][] = $refusal;
+			$run->withheld[] = $refusal;
 			return;
 		}
 
-		$object->setDeleted($deletionData);
-		if ($dsarActivityUuid !== null) {
-			$object->setProcessingActivityId($dsarActivityUuid);
-		}
+		$run->stamp(object: $object);
 
 		try {
 			$this->objectMapper->update(entity: $object);
-			$summary['erased'][] = [
+			$run->erased[] = [
 				'uuid' => $object->getUuid(),
 				'register' => $object->getRegister(),
 				'schema' => $object->getSchema(),
 			];
 		} catch (\Throwable $e) {
-			$summary['failed'][] = [
-				'object' => $entry,
-				'error' => $e->getMessage(),
-			];
+			$run->fail(entry: $entry, error: $e->getMessage());
 			$this->logger->warning(
 				message: '[DSAR] Soft-delete failed during vergetelheid',
 				context: ['object' => $entry, 'error' => $e->getMessage()]
 			);
 		}
 	}//end eraseOneEntry()
+
+	/**
+	 * A run that erases on behalf of the current user (or `system`) for a subject,
+	 * under the configured DSAR processing activity.
+	 *
+	 * @param string $subject Subject identifier.
+	 *
+	 * @return DsarErasureRun
+	 */
+	private function startErasure(string $subject): DsarErasureRun {
+		$activityUuid = $this->getDsarProcessingActivityUuid();
+		$run = new DsarErasureRun(
+			deletionData: [
+				'deletedBy' => ($this->userSession->getUser()?->getUID() ?? 'system'),
+				'deletedAt' => (new DateTime())->format(DateTime::ATOM),
+				'reason' => 'avg-vergetelheid',
+				'subject' => $subject,
+			]
+		);
+		$run->activityUuid = $activityUuid;
+		return $run;
+	}//end startErasure()
+
+	/**
+	 * Group entity hits by the canonical object key: `object_uuid` (globally unique
+	 * across magic tables) when present, else the legacy int `object_id`; hits with
+	 * neither are dropped. The first hit of an object sets its ids.
+	 *
+	 * @param array<int, array<string, mixed>> $hits Rows from matchEntities.
+	 *
+	 * @return array<string, array{object_id: int, object_uuid: string, gdprEntities: array}>
+	 */
+	private function groupHitsByObject(array $hits): array {
+		$groups = [];
+		foreach ($hits as $hit) {
+			$key = $this->buildObjectKey(hit: $hit);
+			if ($key === null) {
+				continue;
+			}
+
+			$groups[$key] ??= [
+				'object_id' => (int)($hit['object_id'] ?? 0),
+				'object_uuid' => (string)($hit['object_uuid'] ?? ''),
+				'gdprEntities' => [],
+			];
+
+			$groups[$key]['gdprEntities'][] = [
+				'type' => (string)($hit['type'] ?? ''),
+				'value' => (string)($hit['value'] ?? ''),
+				'category' => (string)($hit['category'] ?? ''),
+				'detectedAt' => (string)($hit['detected_at'] ?? ''),
+			];
+		}
+
+		return $groups;
+	}//end groupHitsByObject()
 
 	/**
 	 * Build a dedup key for a relation hit row.

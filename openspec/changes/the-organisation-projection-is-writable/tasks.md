@@ -45,7 +45,7 @@
 
 ## 5. Not in this change
 
-- [ ] 5.1 Each app's own migration off its `organization` schema. This unblocks
+- [ ] 5.1 Each app's own migration off its `organization` schema. This unblocks (not run: each consuming app migrates in its own repo)
       them; it performs none of them.
 - [x] 5.2 `ObjectsController::destroy()` resolves the uuid through `MagicMapper`
       before the object-source dispatch, so a delete on ANY virtual schema

@@ -253,4 +253,37 @@ class SchemaMigrationServiceTest extends TestCase {
 		$this->expectException(\InvalidArgumentException::class);
 		$this->service->rollback(7);
 	}
+
+	public function testStartCountsThePopulationAndReadsBatchesAfterTheProcessedOffset(): void {
+		$this->runMapper->method('findActiveForSchema')->willReturn(null);
+		$this->objectService->expects($this->exactly(2))->method('count')
+			->with(['filters' => ['register' => 2, 'schema' => 1]])
+			->willReturnOnConsecutiveCalls(12, $this->throwException(new \RuntimeException('down')));
+		$totals = [];
+		$this->runMapper->method('createFromArray')->willReturnCallback(
+			function (array $a) use (&$totals): SchemaRun {
+				$totals[] = $a['total'];
+				return new SchemaRun();
+			}
+		);
+		$plan = [['op' => 'setDefault', 'field' => 'status', 'value' => 'active']];
+		$this->service->start(1, 2, $plan);
+		$this->service->start(1, 2, $plan);
+		$this->assertSame([12, 0], $totals);
+
+		$run = $this->makeRun(SchemaRun::TYPE_MIGRATION);
+		$run->setProcessed(4);
+		$run->setCursor(6);
+		$this->objectService->expects($this->once())->method('findAll')
+			->with(
+				['limit' => 25, 'offset' => 4, 'sort' => ['id' => 'ASC'], 'filters' => ['register' => 2, 'schema' => 1]],
+				false,
+				false
+			)
+			->willReturn(['not an entity']);
+		$this->runMapper->expects($this->once())->method('save');
+		$this->assertFalse($this->service->processBatch($run, 25));
+		$this->assertSame(SchemaRun::STATE_COMPLETED, $run->getState());
+		$this->assertSame(6, $run->getCursor());
+	}
 }

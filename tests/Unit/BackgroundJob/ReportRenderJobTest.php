@@ -19,14 +19,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
-use OCA\OpenRegister\BackgroundJob\ReportRenderJob;
+use OCA\OpenRegister\Search\BackgroundJob\ReportRenderJob;
+use OCA\OpenRegister\Search\BackgroundJob\Support\ReportRenderDelivery;
+use OCA\OpenRegister\Search\BackgroundJob\Support\ReportRenderPlatform;
+use OCA\OpenRegister\Search\BackgroundJob\Support\ReportRenderSources;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Reporting\ReportRenderService;
+use OCA\OpenRegister\Search\Service\Reporting\ReportRenderService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Files\IRootFolder;
 use OCP\IAppConfig;
@@ -163,13 +166,9 @@ class ReportRenderJobTest extends TestCase {
 
 		$job = new ReportRenderJob(
 			$this->createMock(ITimeFactory::class),
-			$appConfig,
-			$renderService,
-			$registerMapper,
-			$schemaMapper,
-			$objectMapper,
-			$this->createMock(IRootFolder::class),
-			$this->createMock(LoggerInterface::class)
+			new ReportRenderSources(new \OCA\OpenRegister\Db\SchemaCatalog($registerMapper, $schemaMapper, $objectMapper)),
+			new ReportRenderDelivery($renderService, $this->createMock(IRootFolder::class)),
+			new ReportRenderPlatform($appConfig, $this->createMock(LoggerInterface::class))
 		);
 
 		$run = new ReflectionMethod(ReportRenderJob::class, 'run');

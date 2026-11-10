@@ -3,7 +3,6 @@
 		v-if="navigationStore.modal === 'viewWebhookLog'"
 		:name="t('openregister', 'Webhook Log Details')"
 		size="large"
-		:canClose="true"
 		:open="true"
 		@update:open="handleDialogClose">
 		<div v-if="logItem" class="logDetailsContainer">
@@ -232,7 +231,7 @@ export default {
 				if (response.data && Array.isArray(response.data)) {
 					this.webhooksList = response.data
 				}
-			} catch (error) {
+			} catch {
 				// Silently fail - webhook name lookup is not critical.
 			}
 		},
@@ -263,7 +262,7 @@ export default {
 			try {
 				const date = new Date(dateString)
 				return date.toLocaleString()
-			} catch (error) {
+			} catch {
 				return dateString
 			}
 		},
@@ -282,7 +281,7 @@ export default {
 			try {
 				const parsed = JSON.parse(jsonString)
 				return JSON.stringify(parsed, null, 2)
-			} catch (error) {
+			} catch {
 				// If not valid JSON, return as-is.
 				return jsonString
 			}
@@ -361,7 +360,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/common.scss' as *;
+
 .logDetailsContainer {
 	padding: 20px;
 }
@@ -413,15 +414,7 @@ export default {
 	font-size: 12px;
 }
 
-.status-success {
-	color: var(--color-success);
-	font-weight: 600;
-}
-
-.status-failed {
-	color: var(--color-error);
-	font-weight: 600;
-}
+@include status-success-rules;
 
 .text-muted {
 	color: var(--color-text-maxcontrast);

@@ -5,8 +5,8 @@ namespace Unit\Event;
 use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
 use OCA\OpenRegister\Event\ToolRegistrationEvent;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
-use OCA\OpenRegister\Service\ToolRegistry;
-use OCA\OpenRegister\Tool\ToolInterface;
+use OCA\OpenRegister\Mcp\Service\ToolRegistry;
+use OCA\OpenRegister\Mcp\Tool\ToolInterface;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\TestCase;
 

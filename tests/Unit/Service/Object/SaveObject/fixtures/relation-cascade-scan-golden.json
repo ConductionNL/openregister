@@ -1,0 +1,110 @@
+{
+    "scan": {
+        "noSchema": [
+            "owner",
+            "list",
+            "nested",
+            "prefixed"
+        ],
+        "withSchema": [
+            "owner",
+            "list",
+            "nested",
+            "prefixed"
+        ],
+        "prefixed": [
+            "root.owner",
+            "root.list",
+            "root.nested",
+            "root.prefixed"
+        ],
+        "intKeys": [
+            0,
+            2
+        ],
+        "intKeysPrefixed": [
+            "list.0"
+        ],
+        "intKeyArrayWithSchema": {
+            "threw": "TypeError"
+        },
+        "intKeyNestedNoSchema": {
+            "threw": "TypeError"
+        },
+        "flatDefinition": {
+            "threw": "TypeError"
+        }
+    },
+    "update": {
+        "mixed": {
+            "id": null,
+            "a": "6f1c2a3b-4d5e-4f60-8a71-92b3c4d5e6f7",
+            "b": [
+                "21aab6e0-2177-4920-beb0-391492fed04b",
+                "6f1c2a3b-4d5e-4f60-8a71-92b3c4d5e6f7"
+            ],
+            "c": [
+                "6f1c2a3b-4d5e-4f60-8a71-92b3c4d5e6f7"
+            ]
+        },
+        "missing": {
+            "id": null,
+            "z": 1
+        },
+        "noRelations": {
+            "id": null,
+            "a": "plain"
+        },
+        "unresolvable": {
+            "id": null,
+            "a": "404",
+            "b": "x/objects/a/objects/21aab6e0-2177-4920-beb0-391492fed04b"
+        },
+        "nonStringTarget": {
+            "id": null,
+            "a": 12
+        },
+        "nullIntermediate": {
+            "id": null,
+            "c": null
+        }
+    },
+    "cascade": {
+        "cascade": {
+            "children": [
+                "21aab6e0-2177-4920-beb0-391492fed04b"
+            ],
+            "child": {
+                "name": "b"
+            },
+            "scalarChild": [
+                "x",
+                "y"
+            ],
+            "stringChild": "text",
+            "emptyChild": [],
+            "plain": "keep"
+        },
+        "arrayString": {
+            "threw": "TypeError"
+        },
+        "multiple": [
+            "21aab6e0-2177-4920-beb0-391492fed04b",
+            "6f1c2a3b-4d5e-4f60-8a71-92b3c4d5e6f7"
+        ]
+    },
+    "isReference": {
+        "21aab6e0-2177-4920-beb0-391492fed04b": true,
+        "id-21aab6e0-2177-4920-beb0-391492fed04b": true,
+        "21aab6e021774920beb0391492fed04b": true,
+        "a/objects/b": true,
+        "a/api/b": true,
+        "12": true,
+        "0": false,
+        "-3": false,
+        "1.5": true,
+        "1e3": true,
+        "x": false,
+        "": false
+    }
+}

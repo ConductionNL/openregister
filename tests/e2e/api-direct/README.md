@@ -21,13 +21,13 @@ assertions is the Newman collections:**
   integration registry / OCS capabilities + sub-resource endpoints.
 - `tests/integration/openregister-referential-integrity.postman_collection.json`
   — relations, referential integrity.
-- `tests/newman/openregister-auth-matrix.postman_collection.json` — auth-system
+- `tests/integration/openregister-auth-matrix.postman_collection.json` — auth-system
   / RBAC posture.
-- `tests/newman/openregister-error-matrix.postman_collection.json` — error
+- `tests/integration/openregister-error-matrix.postman_collection.json` — error
   responses.
-- `tests/newman/openregister-files-domain.postman_collection.json` — file
+- `tests/integration/openregister-files-domain.postman_collection.json` — file
   actions / risk classification.
-- `tests/newman/openregister-chat-streaming.postman_collection.json` /
+- `tests/integration/openregister-chat-streaming.postman_collection.json` /
   `agent-cms-testing.postman_collection.json` — chat / agent surfaces.
 
 Run the Newman suite via `tests/newman/run-all.sh` and the integration

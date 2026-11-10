@@ -1,0 +1,6057 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`LlmConfiguration.loadChatStats keeps the stats when the store fails 1`] = `
+"{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 4,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadChatStats reads empty stats 1`] = `
+"{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadChatStats reads full stats 1`] = `
+"{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 3,
+  "totalConversations": 5,
+  "totalMessages": 8
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadChatStats reads nothing stats 1`] = `
+"{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 9
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadChatStats reads partial stats 1`] = `
+"{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 2,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadDatabaseInfo keeps the defaults on a failing request 1`] = `
+{
+  "calls": [
+    [
+      "/apps/openregister/api/settings/database",
+    ],
+  ],
+  "state": "{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+}
+`;
+
+exports[`LlmConfiguration.loadDatabaseInfo keeps the defaults on a successful answer without a database 1`] = `
+{
+  "calls": [
+    [
+      "/apps/openregister/api/settings/database",
+    ],
+  ],
+  "state": "{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+}
+`;
+
+exports[`LlmConfiguration.loadDatabaseInfo keeps the defaults on an unsuccessful answer 1`] = `
+{
+  "calls": [
+    [
+      "/apps/openregister/api/settings/database",
+    ],
+  ],
+  "state": "{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+}
+`;
+
+exports[`LlmConfiguration.loadDatabaseInfo keeps the defaults on no data 1`] = `
+{
+  "calls": [
+    [
+      "/apps/openregister/api/settings/database",
+    ],
+  ],
+  "state": "{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+}
+`;
+
+exports[`LlmConfiguration.loadDatabaseInfo reads bare with backend database 1`] = `
+{
+  "state": "{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "recommendedPlugin": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "urls": [
+    "/apps/openregister/api/settings/database",
+    "/apps/openregister/api/settings/llm",
+  ],
+}
+`;
+
+exports[`LlmConfiguration.loadDatabaseInfo reads bare with backend failing 1`] = `
+{
+  "state": "{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "recommendedPlugin": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "urls": [
+    "/apps/openregister/api/settings/database",
+    "/apps/openregister/api/settings/llm",
+  ],
+}
+`;
+
+exports[`LlmConfiguration.loadDatabaseInfo reads bare with backend php 1`] = `
+{
+  "state": "{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "recommendedPlugin": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "urls": [
+    "/apps/openregister/api/settings/database",
+    "/apps/openregister/api/settings/llm",
+  ],
+}
+`;
+
+exports[`LlmConfiguration.loadDatabaseInfo reads bare with backend unset 1`] = `
+{
+  "state": "{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "recommendedPlugin": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "urls": [
+    "/apps/openregister/api/settings/database",
+    "/apps/openregister/api/settings/llm",
+  ],
+}
+`;
+
+exports[`LlmConfiguration.loadDatabaseInfo reads full with backend database 1`] = `
+{
+  "state": "{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "PostgreSQL",
+  "version": "16",
+  "vectorSupport": true,
+  "recommendedPlugin": "pgvector (active ✓)",
+  "performanceNote": "✅ Using PostgreSQL with native vector operations for fast similarity search.",
+  "extensions": [
+   "vector"
+  ],
+  "hybridSearch": {
+   "enabled": true
+  },
+  "lastUpdated": "2026-01-01"
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "urls": [
+    "/apps/openregister/api/settings/database",
+    "/apps/openregister/api/settings/llm",
+  ],
+}
+`;
+
+exports[`LlmConfiguration.loadDatabaseInfo reads full with backend failing 1`] = `
+{
+  "state": "{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "PostgreSQL",
+  "version": "16",
+  "vectorSupport": true,
+  "recommendedPlugin": "pgvector",
+  "performanceNote": "fast",
+  "extensions": [
+   "vector"
+  ],
+  "hybridSearch": {
+   "enabled": true
+  },
+  "lastUpdated": "2026-01-01"
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "urls": [
+    "/apps/openregister/api/settings/database",
+    "/apps/openregister/api/settings/llm",
+  ],
+}
+`;
+
+exports[`LlmConfiguration.loadDatabaseInfo reads full with backend php 1`] = `
+{
+  "state": "{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "PostgreSQL",
+  "version": "16",
+  "vectorSupport": true,
+  "recommendedPlugin": "pgvector",
+  "performanceNote": "fast",
+  "extensions": [
+   "vector"
+  ],
+  "hybridSearch": {
+   "enabled": true
+  },
+  "lastUpdated": "2026-01-01"
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "urls": [
+    "/apps/openregister/api/settings/database",
+    "/apps/openregister/api/settings/llm",
+  ],
+}
+`;
+
+exports[`LlmConfiguration.loadDatabaseInfo reads full with backend unset 1`] = `
+{
+  "state": "{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "PostgreSQL",
+  "version": "16",
+  "vectorSupport": true,
+  "recommendedPlugin": "pgvector",
+  "performanceNote": "fast",
+  "extensions": [
+   "vector"
+  ],
+  "hybridSearch": {
+   "enabled": true
+  },
+  "lastUpdated": "2026-01-01"
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "urls": [
+    "/apps/openregister/api/settings/database",
+    "/apps/openregister/api/settings/llm",
+  ],
+}
+`;
+
+exports[`LlmConfiguration.loadDatabaseInfo reads noPlugin with backend database 1`] = `
+{
+  "state": "{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "SQLite",
+  "version": "Unknown",
+  "vectorSupport": true,
+  "recommendedPlugin": " (active ✓)",
+  "performanceNote": "✅ Using SQLite with native vector operations for fast similarity search.",
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "urls": [
+    "/apps/openregister/api/settings/database",
+    "/apps/openregister/api/settings/llm",
+  ],
+}
+`;
+
+exports[`LlmConfiguration.loadDatabaseInfo reads noPlugin with backend failing 1`] = `
+{
+  "state": "{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "SQLite",
+  "version": "Unknown",
+  "vectorSupport": 1,
+  "recommendedPlugin": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "urls": [
+    "/apps/openregister/api/settings/database",
+    "/apps/openregister/api/settings/llm",
+  ],
+}
+`;
+
+exports[`LlmConfiguration.loadDatabaseInfo reads noPlugin with backend php 1`] = `
+{
+  "state": "{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "SQLite",
+  "version": "Unknown",
+  "vectorSupport": 1,
+  "recommendedPlugin": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "urls": [
+    "/apps/openregister/api/settings/database",
+    "/apps/openregister/api/settings/llm",
+  ],
+}
+`;
+
+exports[`LlmConfiguration.loadDatabaseInfo reads noPlugin with backend unset 1`] = `
+{
+  "state": "{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "SQLite",
+  "version": "Unknown",
+  "vectorSupport": 1,
+  "recommendedPlugin": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "urls": [
+    "/apps/openregister/api/settings/database",
+    "/apps/openregister/api/settings/llm",
+  ],
+}
+`;
+
+exports[`LlmConfiguration.loadDatabaseInfo reads noVector with backend database 1`] = `
+{
+  "state": "{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "MariaDB",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": "none",
+  "performanceNote": "slow",
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "urls": [
+    "/apps/openregister/api/settings/database",
+    "/apps/openregister/api/settings/llm",
+  ],
+}
+`;
+
+exports[`LlmConfiguration.loadDatabaseInfo reads noVector with backend failing 1`] = `
+{
+  "state": "{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "MariaDB",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": "none",
+  "performanceNote": "slow",
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "urls": [
+    "/apps/openregister/api/settings/database",
+    "/apps/openregister/api/settings/llm",
+  ],
+}
+`;
+
+exports[`LlmConfiguration.loadDatabaseInfo reads noVector with backend php 1`] = `
+{
+  "state": "{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "MariaDB",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": "none",
+  "performanceNote": "slow",
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "urls": [
+    "/apps/openregister/api/settings/database",
+    "/apps/openregister/api/settings/llm",
+  ],
+}
+`;
+
+exports[`LlmConfiguration.loadDatabaseInfo reads noVector with backend unset 1`] = `
+{
+  "state": "{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "MariaDB",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": "none",
+  "performanceNote": "slow",
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "urls": [
+    "/apps/openregister/api/settings/database",
+    "/apps/openregister/api/settings/llm",
+  ],
+}
+`;
+
+exports[`LlmConfiguration.loadSettings keeps the defaults when the store fails 1`] = `
+"{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads embed fireworks chat fireworks 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "fireworks",
+  "chatProvider": "fireworks",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "fireworks",
+  "embeddingModel": "fw-embed",
+  "chatProvider": "fireworks",
+  "chatModel": "fw-chat"
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads embed fireworks chat ollama 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "fireworks",
+  "chatProvider": "ollama",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "fireworks",
+  "embeddingModel": "fw-embed",
+  "chatProvider": "ollama",
+  "chatModel": "ol-chat"
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads embed fireworks chat openai 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "fireworks",
+  "chatProvider": "openai",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "fireworks",
+  "embeddingModel": "fw-embed",
+  "chatProvider": "openai",
+  "chatModel": "oa-chat"
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads embed fireworks chat other 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "fireworks",
+  "chatProvider": "other",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "fireworks",
+  "embeddingModel": "fw-embed",
+  "chatProvider": "other",
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads embed fireworks chat undefined 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "fireworks",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "fireworks",
+  "embeddingModel": "fw-embed",
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads embed ollama chat fireworks 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "ollama",
+  "chatProvider": "fireworks",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "ollama",
+  "embeddingModel": "ol-embed",
+  "chatProvider": "fireworks",
+  "chatModel": "fw-chat"
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads embed ollama chat ollama 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "ollama",
+  "chatProvider": "ollama",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "ollama",
+  "embeddingModel": "ol-embed",
+  "chatProvider": "ollama",
+  "chatModel": "ol-chat"
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads embed ollama chat openai 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "ollama",
+  "chatProvider": "openai",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "ollama",
+  "embeddingModel": "ol-embed",
+  "chatProvider": "openai",
+  "chatModel": "oa-chat"
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads embed ollama chat other 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "ollama",
+  "chatProvider": "other",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "ollama",
+  "embeddingModel": "ol-embed",
+  "chatProvider": "other",
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads embed ollama chat undefined 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "ollama",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "ollama",
+  "embeddingModel": "ol-embed",
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads embed openai chat fireworks 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "openai",
+  "chatProvider": "fireworks",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "openai",
+  "embeddingModel": "oa-embed",
+  "chatProvider": "fireworks",
+  "chatModel": "fw-chat"
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads embed openai chat ollama 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "openai",
+  "chatProvider": "ollama",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "openai",
+  "embeddingModel": "oa-embed",
+  "chatProvider": "ollama",
+  "chatModel": "ol-chat"
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads embed openai chat openai 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "openai",
+  "chatProvider": "openai",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "openai",
+  "embeddingModel": "oa-embed",
+  "chatProvider": "openai",
+  "chatModel": "oa-chat"
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads embed openai chat other 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "openai",
+  "chatProvider": "other",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "openai",
+  "embeddingModel": "oa-embed",
+  "chatProvider": "other",
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads embed openai chat undefined 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "openai",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "openai",
+  "embeddingModel": "oa-embed",
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads embed other chat fireworks 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "other",
+  "chatProvider": "fireworks",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "other",
+  "embeddingModel": null,
+  "chatProvider": "fireworks",
+  "chatModel": "fw-chat"
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads embed other chat ollama 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "other",
+  "chatProvider": "ollama",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "other",
+  "embeddingModel": null,
+  "chatProvider": "ollama",
+  "chatModel": "ol-chat"
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads embed other chat openai 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "other",
+  "chatProvider": "openai",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "other",
+  "embeddingModel": null,
+  "chatProvider": "openai",
+  "chatModel": "oa-chat"
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads embed other chat other 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "other",
+  "chatProvider": "other",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "other",
+  "embeddingModel": null,
+  "chatProvider": "other",
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads embed other chat undefined 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "other",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "other",
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads embed undefined chat fireworks 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "chatProvider": "fireworks",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": "fireworks",
+  "chatModel": "fw-chat"
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads embed undefined chat ollama 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "chatProvider": "ollama",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": "ollama",
+  "chatModel": "ol-chat"
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads embed undefined chat openai 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "chatProvider": "openai",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": "openai",
+  "chatModel": "oa-chat"
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads embed undefined chat other 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "chatProvider": "other",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": "other",
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads embed undefined chat undefined 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads empty config for fireworks 1`] = `
+"{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": "top",
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "fireworks",
+  "chatProvider": "fireworks",
+  "openaiConfig": {},
+  "fireworksConfig": {},
+  "ollamaConfig": {}
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "fireworks",
+  "embeddingModel": null,
+  "chatProvider": "fireworks",
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads empty config for ollama 1`] = `
+"{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": "top",
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "ollama",
+  "chatProvider": "ollama",
+  "openaiConfig": {},
+  "fireworksConfig": {},
+  "ollamaConfig": {}
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "ollama",
+  "embeddingModel": null,
+  "chatProvider": "ollama",
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads empty config for openai 1`] = `
+"{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": "top",
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "openai",
+  "chatProvider": "openai",
+  "openaiConfig": {},
+  "fireworksConfig": {},
+  "ollamaConfig": {}
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "openai",
+  "embeddingModel": null,
+  "chatProvider": "openai",
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads empty-string providers 1`] = `
+"{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "",
+  "chatProvider": ""
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads full config for fireworks 1`] = `
+"{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": "top",
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "fireworks",
+  "chatProvider": "fireworks",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "fireworks",
+  "embeddingModel": "fw-embed",
+  "chatProvider": "fireworks",
+  "chatModel": "fw-chat"
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads full config for ollama 1`] = `
+"{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": "top",
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "ollama",
+  "chatProvider": "ollama",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "ollama",
+  "embeddingModel": "ol-embed",
+  "chatProvider": "ollama",
+  "chatModel": "ol-chat"
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads full config for openai 1`] = `
+"{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": "top",
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "openai",
+  "chatProvider": "openai",
+  "openaiConfig": {
+   "model": "oa-embed",
+   "chatModel": "oa-chat"
+  },
+  "fireworksConfig": {
+   "embeddingModel": "fw-embed",
+   "chatModel": "fw-chat",
+   "model": "fw-wrong"
+  },
+  "ollamaConfig": {
+   "model": "ol-embed",
+   "chatModel": "ol-chat"
+  }
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "openai",
+  "embeddingModel": "oa-embed",
+  "chatProvider": "openai",
+  "chatModel": "oa-chat"
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads missing config for fireworks 1`] = `
+"{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": "top",
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "fireworks",
+  "chatProvider": "fireworks"
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "fireworks",
+  "embeddingModel": null,
+  "chatProvider": "fireworks",
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads missing config for ollama 1`] = `
+"{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": "top",
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "ollama",
+  "chatProvider": "ollama"
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "ollama",
+  "embeddingModel": null,
+  "chatProvider": "ollama",
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads missing config for openai 1`] = `
+"{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": "top",
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "embeddingProvider": "openai",
+  "chatProvider": "openai"
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": "openai",
+  "embeddingModel": null,
+  "chatProvider": "openai",
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadSettings loads no settings 1`] = `
+"{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadVectorStats does nothing while the LLM is disabled 1`] = `
+"{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadVectorStats marks the connection down on a failure with a message 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": true,
+ "llmErrorMessage": "timeout",
+ "llmConnectionStatus": "Disconnected",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadVectorStats marks the connection down on a failure without a message 1`] = `
+"{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": true,
+ "llmErrorMessage": "Failed to connect to LLM service",
+ "llmConnectionStatus": "Disconnected",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadVectorStats reads byTypeZero 1`] = `
+{
+  "after": "{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Connected",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 7,
+  "fileVectors": 8,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "during": "{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": true,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+}
+`;
+
+exports[`LlmConfiguration.loadVectorStats reads empty 1`] = `
+{
+  "after": "{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Disconnected",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "during": "{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": true,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+}
+`;
+
+exports[`LlmConfiguration.loadVectorStats reads filesOnly 1`] = `
+{
+  "after": "{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Connected",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 2,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 9
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "during": "{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": true,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+}
+`;
+
+exports[`LlmConfiguration.loadVectorStats reads flat 1`] = `
+{
+  "after": "{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Disconnected",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 3,
+  "objectVectors": 2,
+  "fileVectors": 1,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "during": "{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": true,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+}
+`;
+
+exports[`LlmConfiguration.loadVectorStats reads nested 1`] = `
+{
+  "after": "{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Connected",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 10,
+  "objectVectors": 6,
+  "fileVectors": 4,
+  "storageMB": "12.3"
+ },
+ "fileStats": {
+  "totalFiles": 5,
+  "vectorizedFiles": 3,
+  "filesExtracted": 4,
+  "pendingFiles": 2,
+  "totalChunks": 50
+ },
+ "objectStats": {
+  "totalObjects": 20,
+  "vectorizedObjects": 15,
+  "pendingObjects": 5,
+  "progressPercentage": 75
+ }
+}",
+  "during": "{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": true,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+}
+`;
+
+exports[`LlmConfiguration.loadVectorStats reads none 1`] = `
+{
+  "after": "{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "during": "{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": true,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+}
+`;
+
+exports[`LlmConfiguration.loadVectorStats reads objectsOnly 1`] = `
+{
+  "after": "{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Connected",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 6,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 50
+ }
+}",
+  "during": "{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": true,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+}
+`;
+
+exports[`LlmConfiguration.loadVectorStats reads stringStorage 1`] = `
+{
+  "after": "{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": true,
+ "llmErrorMessage": "stats.storage?.total_mb?.toFixed is not a function",
+ "llmConnectionStatus": "Disconnected",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 4,
+  "objectVectors": 1,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "during": "{
+ "llmSettings": {
+  "enabled": true,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": true,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+}
+`;
+
+exports[`LlmConfiguration.refreshDatabaseInfo fails to refresh 1`] = `
+{
+  "during": undefined,
+  "error": [
+    [
+      "Failed to refresh database information",
+    ],
+  ],
+  "posted": [
+    [
+      "/apps/openregister/api/settings/database/refresh",
+    ],
+  ],
+  "state": "{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "success": [],
+}
+`;
+
+exports[`LlmConfiguration.refreshDatabaseInfo fails to reload 1`] = `
+{
+  "during": true,
+  "error": [
+    [
+      "Failed to refresh database information",
+    ],
+  ],
+  "posted": [
+    [
+      "/apps/openregister/api/settings/database/refresh",
+    ],
+  ],
+  "state": "{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "success": [],
+}
+`;
+
+exports[`LlmConfiguration.refreshDatabaseInfo refreshes 1`] = `
+{
+  "during": true,
+  "error": [],
+  "posted": [
+    [
+      "/apps/openregister/api/settings/database/refresh",
+    ],
+  ],
+  "state": "{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "success": [
+    [
+      "Database information refreshed",
+    ],
+  ],
+}
+`;

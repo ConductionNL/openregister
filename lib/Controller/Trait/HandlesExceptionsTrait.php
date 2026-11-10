@@ -203,22 +203,8 @@ trait HandlesExceptionsTrait {
 	 * @return void
 	 */
 	private function logTranslatedException(Throwable $e, int $status, string $context): void {
-		$logger = null;
-		if (property_exists($this, 'logger') === true) {
-			$logger = $this->logger;
-		}
-
-		if (($logger instanceof LoggerInterface) === false) {
-			return;
-		}
-
-		$contextPrefix = '';
-		if ($context !== '') {
-			$contextPrefix = $context . ': ';
-		}
-
-		$logger->warning(
-			message: '[' . static::class . '] ' . $contextPrefix . $e->getMessage() . ' (translated to HTTP ' . $status . ')',
+		$this->exceptionLogger()?->warning(
+			message: $this->exceptionLogLine(e: $e, context: $context) . ' (translated to HTTP ' . $status . ')',
 			context: [
 				'exception' => $e,
 				'status' => $status,
@@ -238,27 +224,48 @@ trait HandlesExceptionsTrait {
 	 * @return JSONResponse A generic internal-server-error response.
 	 */
 	protected function errorResponse(Throwable $e, string $context = ''): JSONResponse {
-		// Log server-side when the consuming controller exposes a logger.
-		if (property_exists($this, 'logger') === true && $this->logger instanceof LoggerInterface) {
-			if ($context !== '') {
-				$contextPrefix = $context . ': ';
-			} else {
-				$contextPrefix = '';
-			}
-
-			$this->logger->error(
-				message: '[' . static::class . '] ' . $contextPrefix . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'exception' => $e,
-				]
-			);
-		}
+		$this->exceptionLogger()?->error(
+			message: $this->exceptionLogLine(e: $e, context: $context),
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'exception' => $e,
+			]
+		);
 
 		return new JSONResponse(
 			data: ['error' => 'Internal server error'],
 			statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
 		);
 	}//end errorResponse()
+
+	/**
+	 * The consuming controller's logger, or null when it exposes none.
+	 *
+	 * @return LoggerInterface|null The logger.
+	 */
+	private function exceptionLogger(): ?LoggerInterface {
+		if (property_exists($this, 'logger') === true && $this->logger instanceof LoggerInterface) {
+			return $this->logger;
+		}
+
+		return null;
+	}//end exceptionLogger()
+
+	/**
+	 * The log line of an exception: `[Class] context: message`, or `[Class] message` without a context label.
+	 *
+	 * @param Throwable $e The caught exception.
+	 * @param string $context Optional short context label.
+	 *
+	 * @return string The log line.
+	 */
+	private function exceptionLogLine(Throwable $e, string $context): string {
+		$contextPrefix = '';
+		if ($context !== '') {
+			$contextPrefix = $context . ': ';
+		}
+
+		return '[' . static::class . '] ' . $contextPrefix . $e->getMessage();
+	}//end exceptionLogLine()
 }//end trait

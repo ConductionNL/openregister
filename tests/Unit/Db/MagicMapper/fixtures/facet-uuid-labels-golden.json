@@ -1,0 +1,1495 @@
+{
+    "object names only": [
+        {
+            "labels": {
+                "u1": "One",
+                "u2": "Two"
+            },
+            "events": [
+                {
+                    "names": [
+                        "u1",
+                        "u2"
+                    ]
+                },
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: Resolved via CacheHandler and cached",
+                    "context": {
+                        "field": "f",
+                        "requested": 2,
+                        "resolved": 2
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 0,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 1,
+                "total_uuids_resolved": 2
+            }
+        },
+        {
+            "labels": {
+                "u1": "One",
+                "u2": "Two"
+            },
+            "events": [
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: All labels from in-memory field cache",
+                    "context": {
+                        "field": "f",
+                        "count": 2
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 1,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 1,
+                "total_uuids_resolved": 4
+            }
+        },
+        {
+            "labels": {
+                "u1": "One",
+                "u3": "Three"
+            },
+            "events": [
+                {
+                    "names": [
+                        "u3"
+                    ]
+                },
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: Resolved via CacheHandler and cached",
+                    "context": {
+                        "field": "f",
+                        "requested": 2,
+                        "resolved": 1
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 1,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 2,
+                "total_uuids_resolved": 5
+            }
+        },
+        {
+            "labels": {
+                "u4": "Four"
+            },
+            "events": [
+                {
+                    "names": [
+                        "u4",
+                        "u9"
+                    ]
+                },
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: Resolved via CacheHandler and cached",
+                    "context": {
+                        "field": "g",
+                        "requested": 2,
+                        "resolved": 1
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 1,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 3,
+                "total_uuids_resolved": 6
+            }
+        },
+        {
+            "labels": {
+                "u4": "Four"
+            },
+            "events": [
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: All labels from in-memory field cache",
+                    "context": {
+                        "field": "g",
+                        "count": 1
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 2,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 3,
+                "total_uuids_resolved": 7
+            }
+        },
+        {
+            "labels": [],
+            "events": [],
+            "stats": {
+                "field_cache_hits": 2,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 3,
+                "total_uuids_resolved": 7
+            }
+        },
+        {
+            "fieldLabelCache": {
+                "facet_labels_1_2_f": {
+                    "u1": "One",
+                    "u2": "Two",
+                    "u3": "Three"
+                },
+                "facet_labels_1_2_g": {
+                    "u4": "Four"
+                }
+            },
+            "warmedFields": [],
+            "uuidLabelCache": {
+                "u1": "One",
+                "u2": "Two",
+                "u3": "Three",
+                "u4": "Four"
+            }
+        }
+    ],
+    "distributed empty": [
+        {
+            "labels": {
+                "u1": "One",
+                "u2": "Two"
+            },
+            "events": [
+                {
+                    "distGet": "facet_labels_1_2_f"
+                },
+                {
+                    "names": [
+                        "u1",
+                        "u2"
+                    ]
+                },
+                {
+                    "distSet": [
+                        "facet_labels_1_2_f",
+                        {
+                            "u1": "One",
+                            "u2": "Two"
+                        },
+                        86400
+                    ]
+                },
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: Resolved via CacheHandler and cached",
+                    "context": {
+                        "field": "f",
+                        "requested": 2,
+                        "resolved": 2
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 0,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 1,
+                "total_uuids_resolved": 2
+            }
+        },
+        {
+            "labels": {
+                "u1": "One",
+                "u2": "Two"
+            },
+            "events": [
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: All labels from in-memory field cache",
+                    "context": {
+                        "field": "f",
+                        "count": 2
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 1,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 1,
+                "total_uuids_resolved": 4
+            }
+        },
+        {
+            "labels": {
+                "u1": "One",
+                "u3": "Three"
+            },
+            "events": [
+                {
+                    "names": [
+                        "u3"
+                    ]
+                },
+                {
+                    "distSet": [
+                        "facet_labels_1_2_f",
+                        {
+                            "u1": "One",
+                            "u2": "Two",
+                            "u3": "Three"
+                        },
+                        86400
+                    ]
+                },
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: Resolved via CacheHandler and cached",
+                    "context": {
+                        "field": "f",
+                        "requested": 2,
+                        "resolved": 1
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 1,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 2,
+                "total_uuids_resolved": 5
+            }
+        },
+        {
+            "labels": {
+                "u4": "Four"
+            },
+            "events": [
+                {
+                    "distGet": "facet_labels_1_2_g"
+                },
+                {
+                    "names": [
+                        "u4",
+                        "u9"
+                    ]
+                },
+                {
+                    "distSet": [
+                        "facet_labels_1_2_g",
+                        {
+                            "u4": "Four"
+                        },
+                        86400
+                    ]
+                },
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: Resolved via CacheHandler and cached",
+                    "context": {
+                        "field": "g",
+                        "requested": 2,
+                        "resolved": 1
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 1,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 3,
+                "total_uuids_resolved": 6
+            }
+        },
+        {
+            "labels": {
+                "u4": "Four"
+            },
+            "events": [
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: All labels from in-memory field cache",
+                    "context": {
+                        "field": "g",
+                        "count": 1
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 2,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 3,
+                "total_uuids_resolved": 7
+            }
+        },
+        {
+            "labels": [],
+            "events": [],
+            "stats": {
+                "field_cache_hits": 2,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 3,
+                "total_uuids_resolved": 7
+            }
+        },
+        {
+            "fieldLabelCache": {
+                "facet_labels_1_2_f": {
+                    "u1": "One",
+                    "u2": "Two",
+                    "u3": "Three"
+                },
+                "facet_labels_1_2_g": {
+                    "u4": "Four"
+                }
+            },
+            "warmedFields": {
+                "facet_labels_1_2_f": true,
+                "facet_labels_1_2_g": true
+            },
+            "uuidLabelCache": {
+                "u1": "One",
+                "u2": "Two",
+                "u3": "Three",
+                "u4": "Four"
+            }
+        }
+    ],
+    "distributed full": [
+        {
+            "labels": {
+                "u1": "One",
+                "u2": "Two"
+            },
+            "events": [
+                {
+                    "distGet": "facet_labels_1_2_f"
+                },
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: All labels from distributed cache",
+                    "context": {
+                        "field": "f",
+                        "count": 2
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 0,
+                "distributed_cache_hits": 1,
+                "cache_handler_calls": 0,
+                "total_uuids_resolved": 2
+            }
+        },
+        {
+            "labels": {
+                "u1": "One",
+                "u2": "Two"
+            },
+            "events": [
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: All labels from in-memory field cache",
+                    "context": {
+                        "field": "f",
+                        "count": 2
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 1,
+                "distributed_cache_hits": 1,
+                "cache_handler_calls": 0,
+                "total_uuids_resolved": 4
+            }
+        },
+        {
+            "labels": {
+                "u1": "One",
+                "u3": "Three"
+            },
+            "events": [
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: All labels from in-memory field cache",
+                    "context": {
+                        "field": "f",
+                        "count": 2
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 2,
+                "distributed_cache_hits": 1,
+                "cache_handler_calls": 0,
+                "total_uuids_resolved": 6
+            }
+        },
+        {
+            "labels": {
+                "u4": "Four"
+            },
+            "events": [
+                {
+                    "distGet": "facet_labels_1_2_g"
+                },
+                {
+                    "names": [
+                        "u9"
+                    ]
+                },
+                {
+                    "distSet": [
+                        "facet_labels_1_2_g",
+                        {
+                            "u1": "One",
+                            "u2": "Two",
+                            "u3": "Three",
+                            "u4": "Four"
+                        },
+                        86400
+                    ]
+                },
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: Resolved via CacheHandler and cached",
+                    "context": {
+                        "field": "g",
+                        "requested": 2,
+                        "resolved": 0
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 2,
+                "distributed_cache_hits": 1,
+                "cache_handler_calls": 1,
+                "total_uuids_resolved": 6
+            }
+        },
+        {
+            "labels": {
+                "u4": "Four"
+            },
+            "events": [
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: All labels from in-memory field cache",
+                    "context": {
+                        "field": "g",
+                        "count": 1
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 3,
+                "distributed_cache_hits": 1,
+                "cache_handler_calls": 1,
+                "total_uuids_resolved": 7
+            }
+        },
+        {
+            "labels": [],
+            "events": [],
+            "stats": {
+                "field_cache_hits": 3,
+                "distributed_cache_hits": 1,
+                "cache_handler_calls": 1,
+                "total_uuids_resolved": 7
+            }
+        },
+        {
+            "fieldLabelCache": {
+                "facet_labels_1_2_f": {
+                    "u1": "One",
+                    "u2": "Two",
+                    "u3": "Three",
+                    "u4": "Four"
+                },
+                "facet_labels_1_2_g": {
+                    "u1": "One",
+                    "u2": "Two",
+                    "u3": "Three",
+                    "u4": "Four"
+                }
+            },
+            "warmedFields": {
+                "facet_labels_1_2_f": true,
+                "facet_labels_1_2_g": true
+            },
+            "uuidLabelCache": []
+        }
+    ],
+    "distributed partial": [
+        {
+            "labels": {
+                "u1": "Cached one",
+                "u2": "Two"
+            },
+            "events": [
+                {
+                    "distGet": "facet_labels_1_2_f"
+                },
+                {
+                    "names": [
+                        "u2"
+                    ]
+                },
+                {
+                    "distSet": [
+                        "facet_labels_1_2_f",
+                        {
+                            "u1": "Cached one",
+                            "u2": "Two"
+                        },
+                        86400
+                    ]
+                },
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: Resolved via CacheHandler and cached",
+                    "context": {
+                        "field": "f",
+                        "requested": 2,
+                        "resolved": 1
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 0,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 1,
+                "total_uuids_resolved": 1
+            }
+        },
+        {
+            "labels": {
+                "u1": "Cached one",
+                "u2": "Two"
+            },
+            "events": [
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: All labels from in-memory field cache",
+                    "context": {
+                        "field": "f",
+                        "count": 2
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 1,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 1,
+                "total_uuids_resolved": 3
+            }
+        },
+        {
+            "labels": {
+                "u1": "Cached one",
+                "u3": "Three"
+            },
+            "events": [
+                {
+                    "names": [
+                        "u3"
+                    ]
+                },
+                {
+                    "distSet": [
+                        "facet_labels_1_2_f",
+                        {
+                            "u1": "Cached one",
+                            "u2": "Two",
+                            "u3": "Three"
+                        },
+                        86400
+                    ]
+                },
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: Resolved via CacheHandler and cached",
+                    "context": {
+                        "field": "f",
+                        "requested": 2,
+                        "resolved": 1
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 1,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 2,
+                "total_uuids_resolved": 4
+            }
+        },
+        {
+            "labels": {
+                "u4": "Four"
+            },
+            "events": [
+                {
+                    "distGet": "facet_labels_1_2_g"
+                },
+                {
+                    "names": [
+                        "u4",
+                        "u9"
+                    ]
+                },
+                {
+                    "distSet": [
+                        "facet_labels_1_2_g",
+                        {
+                            "u1": "Cached one",
+                            "u4": "Four"
+                        },
+                        86400
+                    ]
+                },
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: Resolved via CacheHandler and cached",
+                    "context": {
+                        "field": "g",
+                        "requested": 2,
+                        "resolved": 1
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 1,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 3,
+                "total_uuids_resolved": 5
+            }
+        },
+        {
+            "labels": {
+                "u4": "Four"
+            },
+            "events": [
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: All labels from in-memory field cache",
+                    "context": {
+                        "field": "g",
+                        "count": 1
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 2,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 3,
+                "total_uuids_resolved": 6
+            }
+        },
+        {
+            "labels": [],
+            "events": [],
+            "stats": {
+                "field_cache_hits": 2,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 3,
+                "total_uuids_resolved": 6
+            }
+        },
+        {
+            "fieldLabelCache": {
+                "facet_labels_1_2_f": {
+                    "u1": "Cached one",
+                    "u2": "Two",
+                    "u3": "Three"
+                },
+                "facet_labels_1_2_g": {
+                    "u1": "Cached one",
+                    "u4": "Four"
+                }
+            },
+            "warmedFields": {
+                "facet_labels_1_2_f": true,
+                "facet_labels_1_2_g": true
+            },
+            "uuidLabelCache": {
+                "u2": "Two",
+                "u3": "Three",
+                "u4": "Four"
+            }
+        }
+    ],
+    "distributed not an array": [
+        {
+            "labels": {
+                "u1": "One",
+                "u2": "Two"
+            },
+            "events": [
+                {
+                    "distGet": "facet_labels_1_2_f"
+                },
+                {
+                    "names": [
+                        "u1",
+                        "u2"
+                    ]
+                },
+                {
+                    "distSet": [
+                        "facet_labels_1_2_f",
+                        {
+                            "u1": "One",
+                            "u2": "Two"
+                        },
+                        86400
+                    ]
+                },
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: Resolved via CacheHandler and cached",
+                    "context": {
+                        "field": "f",
+                        "requested": 2,
+                        "resolved": 2
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 0,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 1,
+                "total_uuids_resolved": 2
+            }
+        },
+        {
+            "labels": {
+                "u1": "One",
+                "u2": "Two"
+            },
+            "events": [
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: All labels from in-memory field cache",
+                    "context": {
+                        "field": "f",
+                        "count": 2
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 1,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 1,
+                "total_uuids_resolved": 4
+            }
+        },
+        {
+            "labels": {
+                "u1": "One",
+                "u3": "Three"
+            },
+            "events": [
+                {
+                    "names": [
+                        "u3"
+                    ]
+                },
+                {
+                    "distSet": [
+                        "facet_labels_1_2_f",
+                        {
+                            "u1": "One",
+                            "u2": "Two",
+                            "u3": "Three"
+                        },
+                        86400
+                    ]
+                },
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: Resolved via CacheHandler and cached",
+                    "context": {
+                        "field": "f",
+                        "requested": 2,
+                        "resolved": 1
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 1,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 2,
+                "total_uuids_resolved": 5
+            }
+        },
+        {
+            "labels": {
+                "u4": "Four"
+            },
+            "events": [
+                {
+                    "distGet": "facet_labels_1_2_g"
+                },
+                {
+                    "names": [
+                        "u4",
+                        "u9"
+                    ]
+                },
+                {
+                    "distSet": [
+                        "facet_labels_1_2_g",
+                        {
+                            "u4": "Four"
+                        },
+                        86400
+                    ]
+                },
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: Resolved via CacheHandler and cached",
+                    "context": {
+                        "field": "g",
+                        "requested": 2,
+                        "resolved": 1
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 1,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 3,
+                "total_uuids_resolved": 6
+            }
+        },
+        {
+            "labels": {
+                "u4": "Four"
+            },
+            "events": [
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: All labels from in-memory field cache",
+                    "context": {
+                        "field": "g",
+                        "count": 1
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 2,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 3,
+                "total_uuids_resolved": 7
+            }
+        },
+        {
+            "labels": [],
+            "events": [],
+            "stats": {
+                "field_cache_hits": 2,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 3,
+                "total_uuids_resolved": 7
+            }
+        },
+        {
+            "fieldLabelCache": {
+                "facet_labels_1_2_f": {
+                    "u1": "One",
+                    "u2": "Two",
+                    "u3": "Three"
+                },
+                "facet_labels_1_2_g": {
+                    "u4": "Four"
+                }
+            },
+            "warmedFields": {
+                "facet_labels_1_2_f": true,
+                "facet_labels_1_2_g": true
+            },
+            "uuidLabelCache": {
+                "u1": "One",
+                "u2": "Two",
+                "u3": "Three",
+                "u4": "Four"
+            }
+        }
+    ],
+    "distributed get throws": [
+        {
+            "labels": {
+                "u1": "One",
+                "u2": "Two"
+            },
+            "events": [
+                {
+                    "distGet": "facet_labels_1_2_f"
+                },
+                {
+                    "log": "warning",
+                    "message": "[MagicFacetHandler] Failed to get facet labels from distributed cache: cache down",
+                    "context": []
+                },
+                {
+                    "names": [
+                        "u1",
+                        "u2"
+                    ]
+                },
+                {
+                    "distSet": [
+                        "facet_labels_1_2_f",
+                        {
+                            "u1": "One",
+                            "u2": "Two"
+                        },
+                        86400
+                    ]
+                },
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: Resolved via CacheHandler and cached",
+                    "context": {
+                        "field": "f",
+                        "requested": 2,
+                        "resolved": 2
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 0,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 1,
+                "total_uuids_resolved": 2
+            }
+        },
+        {
+            "labels": {
+                "u1": "One",
+                "u2": "Two"
+            },
+            "events": [
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: All labels from in-memory field cache",
+                    "context": {
+                        "field": "f",
+                        "count": 2
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 1,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 1,
+                "total_uuids_resolved": 4
+            }
+        },
+        {
+            "labels": {
+                "u1": "One",
+                "u3": "Three"
+            },
+            "events": [
+                {
+                    "names": [
+                        "u3"
+                    ]
+                },
+                {
+                    "distSet": [
+                        "facet_labels_1_2_f",
+                        {
+                            "u1": "One",
+                            "u2": "Two",
+                            "u3": "Three"
+                        },
+                        86400
+                    ]
+                },
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: Resolved via CacheHandler and cached",
+                    "context": {
+                        "field": "f",
+                        "requested": 2,
+                        "resolved": 1
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 1,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 2,
+                "total_uuids_resolved": 5
+            }
+        },
+        {
+            "labels": {
+                "u4": "Four"
+            },
+            "events": [
+                {
+                    "distGet": "facet_labels_1_2_g"
+                },
+                {
+                    "log": "warning",
+                    "message": "[MagicFacetHandler] Failed to get facet labels from distributed cache: cache down",
+                    "context": []
+                },
+                {
+                    "names": [
+                        "u4",
+                        "u9"
+                    ]
+                },
+                {
+                    "distSet": [
+                        "facet_labels_1_2_g",
+                        {
+                            "u4": "Four"
+                        },
+                        86400
+                    ]
+                },
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: Resolved via CacheHandler and cached",
+                    "context": {
+                        "field": "g",
+                        "requested": 2,
+                        "resolved": 1
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 1,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 3,
+                "total_uuids_resolved": 6
+            }
+        },
+        {
+            "labels": {
+                "u4": "Four"
+            },
+            "events": [
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: All labels from in-memory field cache",
+                    "context": {
+                        "field": "g",
+                        "count": 1
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 2,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 3,
+                "total_uuids_resolved": 7
+            }
+        },
+        {
+            "labels": [],
+            "events": [],
+            "stats": {
+                "field_cache_hits": 2,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 3,
+                "total_uuids_resolved": 7
+            }
+        },
+        {
+            "fieldLabelCache": {
+                "facet_labels_1_2_f": {
+                    "u1": "One",
+                    "u2": "Two",
+                    "u3": "Three"
+                },
+                "facet_labels_1_2_g": {
+                    "u4": "Four"
+                }
+            },
+            "warmedFields": {
+                "facet_labels_1_2_f": true,
+                "facet_labels_1_2_g": true
+            },
+            "uuidLabelCache": {
+                "u1": "One",
+                "u2": "Two",
+                "u3": "Three",
+                "u4": "Four"
+            }
+        }
+    ],
+    "distributed set throws": [
+        {
+            "labels": {
+                "u1": "One",
+                "u2": "Two"
+            },
+            "events": [
+                {
+                    "distGet": "facet_labels_1_2_f"
+                },
+                {
+                    "names": [
+                        "u1",
+                        "u2"
+                    ]
+                },
+                {
+                    "distSet": [
+                        "facet_labels_1_2_f",
+                        {
+                            "u1": "One",
+                            "u2": "Two"
+                        },
+                        86400
+                    ]
+                },
+                {
+                    "log": "warning",
+                    "message": "[MagicFacetHandler] Failed to persist facet labels to distributed cache: cache full",
+                    "context": []
+                },
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: Resolved via CacheHandler and cached",
+                    "context": {
+                        "field": "f",
+                        "requested": 2,
+                        "resolved": 2
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 0,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 1,
+                "total_uuids_resolved": 2
+            }
+        },
+        {
+            "labels": {
+                "u1": "One",
+                "u2": "Two"
+            },
+            "events": [
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: All labels from in-memory field cache",
+                    "context": {
+                        "field": "f",
+                        "count": 2
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 1,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 1,
+                "total_uuids_resolved": 4
+            }
+        },
+        {
+            "labels": {
+                "u1": "One",
+                "u3": "Three"
+            },
+            "events": [
+                {
+                    "distGet": "facet_labels_1_2_f"
+                },
+                {
+                    "names": [
+                        "u3"
+                    ]
+                },
+                {
+                    "distSet": [
+                        "facet_labels_1_2_f",
+                        {
+                            "u1": "One",
+                            "u2": "Two",
+                            "u3": "Three"
+                        },
+                        86400
+                    ]
+                },
+                {
+                    "log": "warning",
+                    "message": "[MagicFacetHandler] Failed to persist facet labels to distributed cache: cache full",
+                    "context": []
+                },
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: Resolved via CacheHandler and cached",
+                    "context": {
+                        "field": "f",
+                        "requested": 2,
+                        "resolved": 1
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 1,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 2,
+                "total_uuids_resolved": 5
+            }
+        },
+        {
+            "labels": {
+                "u4": "Four"
+            },
+            "events": [
+                {
+                    "distGet": "facet_labels_1_2_g"
+                },
+                {
+                    "names": [
+                        "u4",
+                        "u9"
+                    ]
+                },
+                {
+                    "distSet": [
+                        "facet_labels_1_2_g",
+                        {
+                            "u4": "Four"
+                        },
+                        86400
+                    ]
+                },
+                {
+                    "log": "warning",
+                    "message": "[MagicFacetHandler] Failed to persist facet labels to distributed cache: cache full",
+                    "context": []
+                },
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: Resolved via CacheHandler and cached",
+                    "context": {
+                        "field": "g",
+                        "requested": 2,
+                        "resolved": 1
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 1,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 3,
+                "total_uuids_resolved": 6
+            }
+        },
+        {
+            "labels": {
+                "u4": "Four"
+            },
+            "events": [
+                {
+                    "log": "debug",
+                    "message": "[MagicFacetHandler] batchResolveUuidLabels: All labels from in-memory field cache",
+                    "context": {
+                        "field": "g",
+                        "count": 1
+                    }
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 2,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 3,
+                "total_uuids_resolved": 7
+            }
+        },
+        {
+            "labels": [],
+            "events": [],
+            "stats": {
+                "field_cache_hits": 2,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 3,
+                "total_uuids_resolved": 7
+            }
+        },
+        {
+            "fieldLabelCache": {
+                "facet_labels_1_2_f": {
+                    "u1": "One",
+                    "u2": "Two",
+                    "u3": "Three"
+                },
+                "facet_labels_1_2_g": {
+                    "u4": "Four"
+                }
+            },
+            "warmedFields": [],
+            "uuidLabelCache": {
+                "u1": "One",
+                "u2": "Two",
+                "u3": "Three",
+                "u4": "Four"
+            }
+        }
+    ],
+    "no object name cache": [
+        {
+            "labels": [],
+            "events": [
+                {
+                    "distGet": "facet_labels_1_2_f"
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 0,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 0,
+                "total_uuids_resolved": 0
+            }
+        },
+        {
+            "labels": [],
+            "events": [
+                {
+                    "distGet": "facet_labels_1_2_f"
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 0,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 0,
+                "total_uuids_resolved": 0
+            }
+        },
+        {
+            "labels": [],
+            "events": [
+                {
+                    "distGet": "facet_labels_1_2_f"
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 0,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 0,
+                "total_uuids_resolved": 0
+            }
+        },
+        {
+            "labels": [],
+            "events": [
+                {
+                    "distGet": "facet_labels_1_2_g"
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 0,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 0,
+                "total_uuids_resolved": 0
+            }
+        },
+        {
+            "labels": [],
+            "events": [
+                {
+                    "distGet": "facet_labels_1_2_g"
+                }
+            ],
+            "stats": {
+                "field_cache_hits": 0,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 0,
+                "total_uuids_resolved": 0
+            }
+        },
+        {
+            "labels": [],
+            "events": [],
+            "stats": {
+                "field_cache_hits": 0,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 0,
+                "total_uuids_resolved": 0
+            }
+        },
+        {
+            "fieldLabelCache": [],
+            "warmedFields": [],
+            "uuidLabelCache": []
+        }
+    ],
+    "nothing at all": [
+        {
+            "labels": [],
+            "events": [],
+            "stats": {
+                "field_cache_hits": 0,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 0,
+                "total_uuids_resolved": 0
+            }
+        },
+        {
+            "labels": [],
+            "events": [],
+            "stats": {
+                "field_cache_hits": 0,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 0,
+                "total_uuids_resolved": 0
+            }
+        },
+        {
+            "labels": [],
+            "events": [],
+            "stats": {
+                "field_cache_hits": 0,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 0,
+                "total_uuids_resolved": 0
+            }
+        },
+        {
+            "labels": [],
+            "events": [],
+            "stats": {
+                "field_cache_hits": 0,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 0,
+                "total_uuids_resolved": 0
+            }
+        },
+        {
+            "labels": [],
+            "events": [],
+            "stats": {
+                "field_cache_hits": 0,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 0,
+                "total_uuids_resolved": 0
+            }
+        },
+        {
+            "labels": [],
+            "events": [],
+            "stats": {
+                "field_cache_hits": 0,
+                "distributed_cache_hits": 0,
+                "cache_handler_calls": 0,
+                "total_uuids_resolved": 0
+            }
+        },
+        {
+            "fieldLabelCache": [],
+            "warmedFields": [],
+            "uuidLabelCache": []
+        }
+    ]
+}

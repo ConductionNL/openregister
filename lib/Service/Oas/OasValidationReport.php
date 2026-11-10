@@ -27,10 +27,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Oas;
 
+use OCA\OpenRegister\Exception\OasValidationException;
+
 /**
  * Collects validation issues for a single OAS generation pass.
  */
-final class OasValidationReport {
+final class OasValidationReport implements OasValidationReportInterface {
 
 	/**
 	 * Severity codes.
@@ -72,6 +74,25 @@ final class OasValidationReport {
 	private array $issues = [];
 
 	/**
+	 * Record an issue at the given severity.
+	 *
+	 * @param OasIssue $issue    The issue: path, message and code.
+	 * @param string   $severity One of the SEVERITY_* constants.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-9
+	 */
+	public function add(OasIssue $issue, string $severity): void {
+		$this->issues[] = [
+			'path' => $issue->path,
+			'message' => $issue->message,
+			'code' => $issue->code,
+			'severity' => $severity,
+		];
+	}//end add()
+
+	/**
 	 * Record a hard error.
 	 *
 	 * @param string $path JSON Pointer path identifying the offending location.
@@ -83,13 +104,7 @@ final class OasValidationReport {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-9
 	 */
 	public function addError(string $path, string $message, string $code): void {
-		$this->issues[] = [
-			'path' => $path,
-			'message' => $message,
-			'code' => $code,
-			'severity' => self::SEVERITY_ERROR,
-		];
-
+		$this->add(issue: new OasIssue(path: $path, message: $message, code: $code), severity: self::SEVERITY_ERROR);
 	}//end addError()
 
 	/**
@@ -104,13 +119,7 @@ final class OasValidationReport {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-9
 	 */
 	public function addWarning(string $path, string $message, string $code): void {
-		$this->issues[] = [
-			'path' => $path,
-			'message' => $message,
-			'code' => $code,
-			'severity' => self::SEVERITY_WARNING,
-		];
-
+		$this->add(issue: new OasIssue(path: $path, message: $message, code: $code), severity: self::SEVERITY_WARNING);
 	}//end addWarning()
 
 	/**
@@ -125,13 +134,7 @@ final class OasValidationReport {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-9
 	 */
 	public function addAutoCorrection(string $path, string $message, string $code): void {
-		$this->issues[] = [
-			'path' => $path,
-			'message' => $message,
-			'code' => $code,
-			'severity' => self::SEVERITY_AUTO_CORRECTED,
-		];
-
+		$this->add(issue: new OasIssue(path: $path, message: $message, code: $code), severity: self::SEVERITY_AUTO_CORRECTED);
 	}//end addAutoCorrection()
 
 	/**
@@ -200,6 +203,20 @@ final class OasValidationReport {
 	}//end isEmpty()
 
 	/**
+	 * The refusal of an invalid document in strict mode, carrying this report.
+	 *
+	 * @return OasValidationException The exception to throw
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	public function strictFailure(): OasValidationException {
+		return new OasValidationException(
+			message: 'Generated OAS failed strict validation: ' . count($this->getErrors()) . ' error(s)',
+			report: $this,
+		);
+	}//end strictFailure()
+
+	/**
 	 * Compact summary intended for the `x-validation-summary` extension
 	 * field on the generated OAS document.
 	 *
@@ -239,4 +256,17 @@ final class OasValidationReport {
 		);
 
 	}//end filterBySeverity()
+
+	/**
+	 * A reference repair pass that reports here.
+	 *
+	 * @param list<string> $componentNames The component schemas of the document
+	 *
+	 * @return OasReferenceRepair
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md#scenario-pagination-structure-follows-api-42
+	 */
+	public function referenceRepair(array $componentNames): OasReferenceRepair {
+		return new OasReferenceRepair(componentNames: $componentNames, report: $this);
+	}//end referenceRepair()
 }//end class

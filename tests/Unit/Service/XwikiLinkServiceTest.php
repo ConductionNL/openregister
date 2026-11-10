@@ -30,8 +30,10 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use Exception;
 use OCA\OpenRegister\Db\XwikiLink;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCA\OpenRegister\Db\XwikiLinkMapper;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
@@ -48,6 +50,7 @@ use Psr\Log\LoggerInterface;
  * XwikiLinkServiceTest.
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @uses \OCA\OpenRegister\Service\LinkTarget
  */
 class XwikiLinkServiceTest extends TestCase {
 
@@ -88,9 +91,11 @@ class XwikiLinkServiceTest extends TestCase {
 		$this->service = new XwikiLinkService(
 			$this->mapper,
 			$this->container,
-			$this->appManager,
-			$this->userSession,
-			$this->logger
+			new LinkServiceRuntime(
+				$this->appManager,
+				$this->userSession,
+				$this->logger
+			)
 		);
 	}//end setUp()
 
@@ -130,7 +135,7 @@ class XwikiLinkServiceTest extends TestCase {
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(503);
-		$this->service->linkPage('obj-1', 1, 2, 'Space.Page');
+		$this->service->linkPage((new LinkTarget('obj-1', 1))->inSchema(2), 'Space.Page');
 	}//end testLinkPageThrowsWhenConnectorUnavailable()
 
 	public function testLinkPageRequiresReference(): void {
@@ -138,7 +143,7 @@ class XwikiLinkServiceTest extends TestCase {
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(400);
-		$this->service->linkPage('obj-1', 1, 2, '   ');
+		$this->service->linkPage((new LinkTarget('obj-1', 1))->inSchema(2), '   ');
 	}//end testLinkPageRequiresReference()
 
 	public function testLinkPageResolvesCanonicalReferenceAndCachesMetadata(): void {
@@ -160,7 +165,7 @@ class XwikiLinkServiceTest extends TestCase {
 			->method('insert')
 			->willReturnCallback(static fn (XwikiLink $l) => $l);
 
-		$link = $this->service->linkPage('obj-1', 1, 2, 'https://wiki/bin/view/Sales/Pitch');
+		$link = $this->service->linkPage((new LinkTarget('obj-1', 1))->inSchema(2), 'https://wiki/bin/view/Sales/Pitch');
 
 		$this->assertSame('Sales.Pitch', $link->getPageReference());
 		$this->assertSame('Pitch', $link->getTitle());
@@ -168,6 +173,7 @@ class XwikiLinkServiceTest extends TestCase {
 		$this->assertSame('https://wiki/bin/view/Sales/Pitch', $link->getUrl());
 		$this->assertSame('alice', $link->getLinkedBy());
 		$this->assertNotNull($link->getCachedAt());
+		$this->assertSame(['obj-1', 1, 2], [$link->getObjectUuid(), $link->getRegisterId(), $link->getSchemaId()]);
 	}//end testLinkPageResolvesCanonicalReferenceAndCachesMetadata()
 
 	public function testLinkPageRejectsDuplicate(): void {
@@ -180,7 +186,7 @@ class XwikiLinkServiceTest extends TestCase {
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(409);
-		$this->service->linkPage('obj-1', 1, 2, 'A.B');
+		$this->service->linkPage((new LinkTarget('obj-1', 1))->inSchema(2), 'A.B');
 	}//end testLinkPageRejectsDuplicate()
 
 	public function testLinkPageSurfacesUnconfiguredSourceAs503WithCause(): void {
@@ -196,7 +202,7 @@ class XwikiLinkServiceTest extends TestCase {
 		);
 
 		try {
-			$this->service->linkPage('obj-1', 1, 2, 'A.B');
+			$this->service->linkPage((new LinkTarget('obj-1', 1))->inSchema(2), 'A.B');
 			$this->fail('Expected a 503 exception');
 		} catch (Exception $e) {
 			$this->assertSame(503, $e->getCode());
@@ -209,7 +215,7 @@ class XwikiLinkServiceTest extends TestCase {
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(400);
-		$this->service->createAndLinkPage('obj-1', 1, 2, 'Sales', '   ');
+		$this->service->createAndLinkPage((new LinkTarget('obj-1', 1))->inSchema(2), 'Sales', '   ');
 	}//end testCreateAndLinkPageRequiresSpaceAndTitle()
 
 	public function testCreateAndLinkPagePostsViaProviderAndLinks(): void {
@@ -233,11 +239,12 @@ class XwikiLinkServiceTest extends TestCase {
 			->method('insert')
 			->willReturnCallback(static fn (XwikiLink $l) => $l);
 
-		$link = $this->service->createAndLinkPage('obj-1', 1, 2, 'Sales', 'New Page');
+		$link = $this->service->createAndLinkPage((new LinkTarget('obj-1', 1))->inSchema(2), 'Sales', 'New Page');
 
 		$this->assertSame('Sales.NewPage', $link->getPageReference());
 		$this->assertSame('New Page', $link->getTitle());
 		$this->assertSame('Sales', $link->getSpace());
+		$this->assertSame(['obj-1', 1, 2], [$link->getObjectUuid(), $link->getRegisterId(), $link->getSchemaId()]);
 	}//end testCreateAndLinkPagePostsViaProviderAndLinks()
 
 	public function testUnlinkPageThrowsWhenNoMatch(): void {

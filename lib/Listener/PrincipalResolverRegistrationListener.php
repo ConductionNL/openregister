@@ -28,10 +28,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Service\Flow\Principal\AgentPrincipalResolver;
-use OCA\OpenRegister\Service\Flow\Principal\GroupPrincipalResolver;
+use OCA\OpenRegister\Service\Flow\Principal\AgentPrincipalResolverInterface;
+use OCA\OpenRegister\Service\Flow\Principal\GroupPrincipalResolverInterface;
 use OCA\OpenRegister\Service\Flow\Principal\RegisterPrincipalResolversEvent;
-use OCA\OpenRegister\Service\Flow\Principal\UserPrincipalResolver;
+use OCA\OpenRegister\Service\Flow\Principal\UserPrincipalResolverInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -45,17 +45,17 @@ class PrincipalResolverRegistrationListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param UserPrincipalResolver  $users  Resolves `user` references.
-	 * @param GroupPrincipalResolver $groups Resolves `group` references.
-	 * @param AgentPrincipalResolver $agents Resolves `agent` references — one
+	 * @param UserPrincipalResolverInterface  $users  Resolves `user` references.
+	 * @param GroupPrincipalResolverInterface $groups Resolves `group` references.
+	 * @param AgentPrincipalResolverInterface $agents Resolves `agent` references — one
 	 *                                       identity, never a group's members.
 	 *
 	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
 	 */
 	public function __construct(
-		private readonly UserPrincipalResolver $users,
-		private readonly GroupPrincipalResolver $groups,
-		private readonly AgentPrincipalResolver $agents,
+		private readonly UserPrincipalResolverInterface $users,
+		private readonly GroupPrincipalResolverInterface $groups,
+		private readonly AgentPrincipalResolverInterface $agents,
 	) {
 
 	}//end __construct()

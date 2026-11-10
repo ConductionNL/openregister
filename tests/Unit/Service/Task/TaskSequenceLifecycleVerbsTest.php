@@ -33,9 +33,13 @@ use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskSeparationOfDutiesException;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
+use OCA\OpenRegister\Service\Task\TaskCommit;
+use OCA\OpenRegister\Service\Task\TaskIntake;
+use OCA\OpenRegister\Service\Task\TaskLifecycleServices;
 use OCA\OpenRegister\Service\Task\TaskPerformerResolver;
 use OCA\OpenRegister\Service\Task\TaskSequenceDecisionGuard;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskTables;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -49,6 +53,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\TaskSequence
  * @uses \OCA\OpenRegister\Service\Task\TaskBuilder
  * @uses \OCA\OpenRegister\Service\Task\TaskState
+ * @uses \OCA\OpenRegister\Service\Task\ApprovingOutcomeSet
  * @uses \OCA\OpenRegister\Exception\TaskConflictException
  * @uses \OCA\OpenRegister\Exception\TaskSeparationOfDutiesException
  * @uses \OCA\OpenRegister\Exception\TaskValidationException
@@ -73,16 +78,24 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 		$audits->method('insert')->willReturnArgument(0);
 
 		return new TaskService(
-			tasks: $this->tasks,
-			candidates: $this->createMock(TaskCandidateMapper::class),
-			relations: $this->createMock(TaskRelationMapper::class),
-			audits: $audits,
 			authorization: $this->authorization,
-			resolver: $this->createMock(TaskPerformerResolver::class),
-			db: $this->createMock(IDBConnection::class),
-			logger: new NullLogger(),
-			builder: new TaskBuilder(),
-			dispatcher: null,
+			services: new TaskLifecycleServices(
+				tables: new TaskTables(
+					tasks: $this->tasks,
+					candidates: $this->createMock(TaskCandidateMapper::class),
+					relations: $this->createMock(TaskRelationMapper::class),
+					audits: $audits
+				),
+				commit: new TaskCommit(
+					db: $this->createMock(IDBConnection::class),
+					logger: new NullLogger(),
+					dispatcher: null
+				),
+				intake: new TaskIntake(
+					builder: new TaskBuilder()
+				),
+				resolver: $this->createMock(TaskPerformerResolver::class)
+			),
 			sequenceGuard: new TaskSequenceDecisionGuard(sequences: $this->sequences)
 		);
 	}//end service()
@@ -212,4 +225,81 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 		$this->expectException(TaskConflictException::class);
 		$this->service()->consume(uuid: 't-7', source: 'sync-run:s-1', reason: 'r');
 	}//end testConsumeRefusesAnOpenTask()
+
+	public function testConsumeRefusesAnOpenTaskThatStillCarriesAnApprovingOutcome(): void {
+		$this->tasks->method('findByUuid')->willReturn($this->task(Task::STATE_ENABLED, 'approved'));
+
+		$this->expectException(TaskConflictException::class);
+		$this->expectExceptionMessage("is not an approving decision (state 'enabled'");
+		$this->service()->consume(uuid: 't-7', source: 'sync-run:s-1', reason: 'r');
+	}//end testConsumeRefusesAnOpenTaskThatStillCarriesAnApprovingOutcome()
+
+	/**
+	 * Completed outcomes that neither approve nor reject.
+	 *
+	 * @return array<string, array{0: string|null}>
+	 */
+	public static function undecidedOutcomes(): array {
+		return [
+			'null' => [null],
+			'empty' => [''],
+			'resolved' => ['resolved'],
+			'unknown' => ['looks-fine'],
+		];
+	}//end undecidedOutcomes()
+
+	/**
+	 * @dataProvider undecidedOutcomes
+	 */
+	public function testConsumeRefusesAnUndecidedCompletion(?string $outcome): void {
+		$task = $this->task(Task::STATE_COMPLETED, $outcome);
+		$this->tasks->method('findByUuid')->willReturn($task);
+		$this->tasks->expects(self::never())->method('update');
+
+		$this->expectException(TaskConflictException::class);
+		$this->expectExceptionMessage('is undecided');
+		$this->service()->consume(uuid: 't-7', source: 'sync-run:s-1', reason: 'r');
+	}//end testConsumeRefusesAnUndecidedCompletion()
+
+	public function testConsumeAcceptsDoneUnderTheDefaultSet(): void {
+		$this->tasks->method('findByUuid')->willReturn($this->task(Task::STATE_COMPLETED, ' Done '));
+
+		$consumed = $this->service()->consume(uuid: 't-7', source: 'sync-run:s-1', reason: 'r');
+
+		self::assertSame('sync-run:s-1', $consumed->getMetadata()['consumedBy']);
+	}//end testConsumeAcceptsDoneUnderTheDefaultSet()
+
+	public function testADeclaredSetOnTheTaskReplacesTheDefault(): void {
+		$task = $this->task(Task::STATE_COMPLETED, 'done');
+		$task->setTemplateSnapshot(['order' => 1, 'role' => 'signers', 'approvingOutcomes' => ['approved']]);
+		$this->tasks->method('findByUuid')->willReturn($task);
+
+		$this->expectException(TaskConflictException::class);
+		$this->expectExceptionMessage('is undecided');
+		$this->service()->consume(uuid: 't-7', source: 'sync-run:s-1', reason: 'r');
+	}//end testADeclaredSetOnTheTaskReplacesTheDefault()
+
+	public function testADeclaredSetOnTheTaskApprovesItsOwnOutcome(): void {
+		$task = $this->task(Task::STATE_COMPLETED, 'Signed');
+		$task->setTemplateSnapshot(['approvingOutcomes' => [' signed ']]);
+		$this->tasks->method('findByUuid')->willReturn($task);
+
+		$consumed = $this->service()->consume(uuid: 't-7', source: 'sync-run:s-1', reason: 'r');
+
+		self::assertSame('sync-run:s-1', $consumed->getMetadata()['consumedBy']);
+	}//end testADeclaredSetOnTheTaskApprovesItsOwnOutcome()
+
+	public function testARejectionIsNotReportedAsUndecided(): void {
+		$task = $this->task(Task::STATE_COMPLETED, 'rejected');
+		$task->setTemplateSnapshot(['approvingOutcomes' => ['rejected']]);
+		$this->tasks->method('findByUuid')->willReturn($task);
+
+		try {
+			$this->service()->consume(uuid: 't-7', source: 'sync-run:s-1', reason: 'r');
+			self::fail('a rejection must not be consumed');
+		} catch (TaskConflictException $refused) {
+			self::assertStringContainsString('not an approving decision', $refused->getMessage());
+			self::assertStringNotContainsString('undecided', $refused->getMessage());
+		}
+	}//end testARejectionIsNotReportedAsUndecided()
 }//end class

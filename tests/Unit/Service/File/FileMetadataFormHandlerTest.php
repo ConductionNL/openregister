@@ -12,7 +12,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -20,15 +20,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\File\FileAuditHandler;
-use OCA\OpenRegister\Service\File\FileMetadataFormHandler;
+use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Files\Service\File\FileMetadataFormHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCP\Files\File;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OCA\OpenRegister\Service\File\FileMetadataFormHandler
+ * @covers \OCA\OpenRegister\Files\Service\File\FileMetadataFormHandler
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 final class FileMetadataFormHandlerTest extends TestCase {

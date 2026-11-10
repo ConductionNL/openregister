@@ -10,8 +10,9 @@
  * the vocabulary.
  *
  * BACKWARD: when a task the graph raised reaches a terminal state, this class
- * wakes the run (D-2: `signal()` with an EMPTY payload, because the answer is
- * in the task row, not in transit) and spends the node's `advance` budget by
+ * wakes the run (D-2: the answer is in the task row, not in transit; the
+ * signal carries the task's outcome bag so it cannot erase what another
+ * listener on the same event signalled) and spends the node's `advance` budget by
  * calling the SAME advance path the worker and a synchronous run use
  * ({@see FlowRunAdvancer::advance()}). There is no second walk implementation:
  * the budget travels as a per-walk ceiling on the run context and the engine's
@@ -42,10 +43,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
-use OCA\OpenRegister\Db\FlowStreamMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Db\FlowStreamMapperInterface;
 use OCA\OpenRegister\Db\Task;
-use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskState;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Container\ContainerInterface;
@@ -64,7 +65,7 @@ use Throwable;
  * name it imports is one side or the other; splitting it would put the two
  * halves of "a task the graph raised" in two files that must agree.
  */
-class FlowTaskBridge {
+class FlowTaskBridge implements FlowTaskBridgeInterface {
 
 	/**
 	 * Resume-slot key holding the created task's uuid.
@@ -97,14 +98,14 @@ class FlowTaskBridge {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskService $tasks The task lifecycle.
-	 * @param FlowRunMapper $runs Reads the run for its version pin, and to wake it.
+	 * @param TaskServiceInterface $tasks The task lifecycle.
+	 * @param FlowRunMapperInterface $runs Reads the run for its version pin, and to wake it.
 	 * @param ContainerInterface $container Lazily resolves the run service and advancer.
 	 * @param LoggerInterface $logger Diagnostics.
 	 */
 	public function __construct(
-		private readonly TaskService $tasks,
-		private readonly FlowRunMapper $runs,
+		private readonly TaskServiceInterface $tasks,
+		private readonly FlowRunMapperInterface $runs,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
 	) {
@@ -127,10 +128,10 @@ class FlowTaskBridge {
 	 * actor, and a task with a direct assignee is created active and never
 	 * offered.
 	 *
-	 * @param array<string, mixed> $data The task fields the node assembled.
-	 * @param string $runUuid The run raising the task.
-	 * @param string $nodeId The node raising it.
-	 * @param string|null $actor The run's acting identity; the task's requester.
+	 * @param array<string, mixed> $data    The task fields the node assembled.
+	 * @param string               $runUuid The run raising the task.
+	 * @param string               $nodeId  The node raising it.
+	 * @param string|null          $actor   The run's acting identity; the task's requester.
 	 *
 	 * @return Task The persisted task.
 	 *
@@ -140,32 +141,73 @@ class FlowTaskBridge {
 	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
 	 */
 	public function createTask(array $data, string $runUuid, string $nodeId, ?string $actor): Task {
-		$data['runUuid'] = $runUuid;
-		$data['nodeId'] = $nodeId;
-		$data['requester'] = ($data['requester'] ?? $actor);
-		$data['definitionVersion'] = $this->definitionVersionOf(runUuid: $runUuid);
+		return $this->create(request: new FlowTaskRequest(data: $data, runUuid: $runUuid, nodeId: $nodeId, actor: $actor));
+	}//end createTask()
 
+	/**
+	 * Create the task through the trusted intake, then route it.
+	 *
+	 * @param FlowTaskRequest $request The task fields, and the run, node and identity raising it.
+	 *
+	 * @return Task The created task.
+	 *
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
+	 */
+	private function create(FlowTaskRequest $request): Task {
 		// The TRUSTED intake, not the HTTP one: `create()` pins the requester
 		// to the caller and refuses anything an ordinary user may not write,
 		// because it answers a request body. This payload was assembled by a
 		// node from a saved definition and is stamped with the run's owner as
 		// requester, which is the fact the node knows and a browser does not.
-		$task = $this->tasks->import(data: $data, actor: $actor);
+		$task = $this->tasks->import(data: $this->stamped(request: $request), actor: $request->actor);
 
-		$strategy = trim((string)($data['routingStrategy'] ?? ''));
-		if ($strategy !== '' && trim((string)($data['assignee'] ?? '')) === '') {
-			$task = $this->tasks->offer(
-				uuid: (string)$task->getUuid(),
-				pool: [
-					'routingStrategy' => $strategy,
-					'routingFallback' => ($data['routingFallback'] ?? null),
-				],
-				actor: $actor
-			);
+		return $this->routed(task: $task, request: $request);
+	}//end create()
+
+	/**
+	 * The node's task fields, stamped with the run, the node, the requester and the version pin.
+	 *
+	 * @param FlowTaskRequest $request The request.
+	 *
+	 * @return array<string, mixed> The fields to import.
+	 *
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
+	 */
+	private function stamped(FlowTaskRequest $request): array {
+		$data = $request->data;
+		$data['runUuid'] = $request->runUuid;
+		$data['nodeId'] = $request->nodeId;
+		$data['requester'] = ($data['requester'] ?? $request->actor);
+		$data['definitionVersion'] = $this->definitionVersionOf(runUuid: $request->runUuid);
+
+		return $data;
+	}//end stamped()
+
+	/**
+	 * The task, offered to its pool when it names a routing strategy and no direct assignee.
+	 *
+	 * @param Task            $task    The imported task.
+	 * @param FlowTaskRequest $request The request it was imported from.
+	 *
+	 * @return Task The task as it now stands.
+	 *
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
+	 */
+	private function routed(Task $task, FlowTaskRequest $request): Task {
+		$strategy = trim((string)($request->data['routingStrategy'] ?? ''));
+		if ($strategy === '' || trim((string)($request->data['assignee'] ?? '')) !== '') {
+			return $task;
 		}
 
-		return $task;
-	}//end createTask()
+		return $this->tasks->offer(
+			uuid: (string)$task->getUuid(),
+			pool: [
+				'routingStrategy' => $strategy,
+				'routingFallback' => ($request->data['routingFallback'] ?? null),
+			],
+			actor: $request->actor
+		);
+	}//end routed()
 
 	/**
 	 * Record a fact about a task the graph raised, in its audit, without
@@ -323,7 +365,11 @@ class FlowTaskBridge {
 	 *
 	 * Three steps, each of which may legitimately do nothing:
 	 *
-	 * 1. `signal()` with an empty payload parks the run as due. Null means the
+	 * 1. `signal()` with the task's outcome bag parks the run as due. It used
+	 *    to send an empty payload, and `signal()` assigns the payload outright,
+	 *    so a second listener's payload (dossiq's ask step sends who answered)
+	 *    was erased whenever this one ran last. The bag carries the same
+	 *    fields the items get, `completedBy` included. Null means the
 	 *    run is not suspended: it is mid-walk (and will read the task itself)
 	 *    or already terminal. Nothing more to do.
 	 * 2. The node's stored budget decides whether to go on. Zero returns here,
@@ -360,8 +406,8 @@ class FlowTaskBridge {
 			return null;
 		}
 
-		$runService = $this->container->get(FlowRunService::class);
-		$woken = $runService->signal(run: $run, payload: []);
+		$runService = $this->container->get(FlowRunServiceInterface::class);
+		$woken = $runService->signal(run: $run, payload: self::outcomeBagFor(task: $task));
 		if ($woken === null) {
 			return null;
 		}
@@ -433,7 +479,7 @@ class FlowTaskBridge {
 		}
 
 		try {
-			$streams = $this->container->get(FlowStreamMapper::class)->findByRun(runUuid: $runUuid);
+			$streams = $this->container->get(FlowStreamMapperInterface::class)->findByRun(runUuid: $runUuid);
 		} catch (Throwable $unavailable) {
 			$this->logger->debug(
 				message: '[FlowTaskBridge] The stream layer is not available: ' . $unavailable->getMessage(),

@@ -38,7 +38,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistryInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
@@ -52,19 +53,17 @@ class FlowPrincipalController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                    $appName    The app id.
 	 * @param IRequest                  $request    The request.
-	 * @param PrincipalResolverRegistry $principals Says which kinds of principal
+	 * @param PrincipalResolverRegistryInterface $principals Says which kinds of principal
 	 *                                              this instance understands.
 	 *
 	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly PrincipalResolverRegistry $principals,
+		private readonly PrincipalResolverRegistryInterface $principals,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
 	}//end __construct()
 

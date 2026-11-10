@@ -258,7 +258,7 @@ class HealthCheckExecutor {
 	 * @return array{0: bool, 1: string}
 	 */
 	private function checkOrAvailable(): array {
-		$service = $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
+		$service = $this->container->get(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class);
 		if ($service !== null) {
 			return [true, ''];
 		}

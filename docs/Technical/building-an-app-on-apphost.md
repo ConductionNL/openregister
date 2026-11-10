@@ -202,7 +202,7 @@ The same pattern applies to the settings service (`AppHostSettingsService::confi
 the action-auth service, the repair steps, the admin settings, and the deep-link
 listener.
 
-## Publishing to a store registry
+## Publishing to a marketplace registry
 
 The store plane can write one object to the registry your app's store reads from.
 Never build the objects-API URL yourself: hydra gate 62 fails any `lib/` file that

@@ -4,7 +4,6 @@
 	"cognates": {
 		"3": "Numeric literal; identical in every locale.",
 		"30": "Numeric literal; identical in every locale.",
-		"A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.": "Technical token / API or config example; not translatable prose.",
 		"App": "Proper noun / product or brand name; kept as-is in Swedish.",
 		"Attribute": "Proper noun / product or brand name; kept as-is in Swedish.",
 		"Available": "Proper noun / product or brand name; kept as-is in Swedish.",
@@ -132,6 +131,7 @@
 		"Operator": "The engine's comparison/logic operator. Swedish uses the identically-spelled international term \"operator\", so the value coincides with the English key; no distinct synonym exists.",
 		"Period": "'Period' is the ordinary Swedish word for a span of time and is spelled identically to the English.",
 		"Respondent": "'Respondent' is the established Swedish term for a person answering a survey and is spelled identically to the English.",
-		"Token": "'Token' is the established Swedish loanword for a signed credential and is already used unchanged elsewhere in this app (API-token)."
+		"Token": "'Token' is the established Swedish loanword for a signed credential and is already used unchanged elsewhere in this app (API-token).",
+		"Definition": "Same spelling and meaning in Swedish."
 	}
 }

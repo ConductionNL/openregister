@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\CaseControllerFactory;
 use OCA\OpenRegister\Controller\CaseController;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Exception\CaseAccessDeniedException;
@@ -50,8 +51,19 @@ use RuntimeException;
  * HTTP translation, route contract and structural absences.
  *
  * @covers \OCA\OpenRegister\Controller\CaseController
+ * @uses \OCA\OpenRegister\Controller\Support\CaseControllerServices
  * @uses \OCA\OpenRegister\Db\CaseItem
  * @uses \OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapper
+ * @uses \OCA\OpenRegister\Service\Case\ZaaktypeSkeletonDraft
+ * @uses \OCA\OpenRegister\Service\Case\ZaaktypeStageBuilder
+ * @uses \OCA\OpenRegister\Service\Case\ZaaktypeRoleMapper
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopAdvance
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopRouting
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopPlan
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunStart
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHop
+ * @uses \OCA\OpenRegister\Service\Flow\FlowWalkHop
+ * @uses \OCA\OpenRegister\Service\Flow\FlowWalkPass
  */
 class CaseControllerTest extends TestCase {
 
@@ -108,7 +120,7 @@ class CaseControllerTest extends TestCase {
 			}
 		);
 
-		return new CaseController(
+		return CaseControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			plans: $this->plans,

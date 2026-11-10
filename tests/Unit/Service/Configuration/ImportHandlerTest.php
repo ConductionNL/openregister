@@ -24,10 +24,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
 use Exception;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
-use GuzzleHttp\Psr7\Request;
-use GuzzleHttp\Psr7\Response;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -39,7 +35,6 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
-use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
@@ -78,17 +73,11 @@ class ImportHandlerTest extends TestCase {
 	/** @var MappingMapper&MockObject */
 	private MappingMapper $mappingMapper;
 
-	/** @var Client&MockObject */
-	private Client $client;
-
 	/** @var IAppConfig&MockObject */
 	private IAppConfig $appConfig;
 
 	/** @var LoggerInterface&MockObject */
 	private LoggerInterface $logger;
-
-	/** @var UploadHandler&MockObject */
-	private UploadHandler $uploadHandler;
 
 	/** @var ObjectService&MockObject */
 	private ObjectService $objectService;
@@ -106,10 +95,8 @@ class ImportHandlerTest extends TestCase {
 		$this->objectEntityMapper = $this->createMock(MagicMapper::class);
 		$this->configurationMapper = $this->createMock(ConfigurationMapper::class);
 		$this->mappingMapper = $this->createMock(MappingMapper::class);
-		$this->client = $this->createMock(Client::class);
 		$this->appConfig = $this->createMock(IAppConfig::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->uploadHandler = $this->createMock(UploadHandler::class);
 		$this->objectService = $this->createMock(ObjectService::class);
 
 		// Logger methods are void — just let them be called without restrictions.
@@ -121,11 +108,9 @@ class ImportHandlerTest extends TestCase {
 			objectEntityMapper:  $this->objectEntityMapper,
 			configurationMapper: $this->configurationMapper,
 			mappingMapper:       $this->mappingMapper,
-			client:              $this->client,
 			appConfig:           $this->appConfig,
 			logger:              $this->logger,
 			appDataPath:         '/tmp',
-			uploadHandler:       $this->uploadHandler,
 			objectService:       $this->objectService
 		);
 
@@ -168,11 +153,9 @@ class ImportHandlerTest extends TestCase {
 			objectEntityMapper:  $this->objectEntityMapper,
 			configurationMapper: $this->configurationMapper,
 			mappingMapper:       $this->mappingMapper,
-			client:              $this->client,
 			appConfig:           $this->appConfig,
 			logger:              $this->logger,
 			appDataPath:         $appDataPath,
-			uploadHandler:       $this->uploadHandler,
 			objectService:       $this->objectService
 		);
 
@@ -246,314 +229,17 @@ class ImportHandlerTest extends TestCase {
 	// decode()
 	// =========================================================================
 
-	/**
-	 * decode() returns null for completely invalid input when type is null.
-	 */
-	public function testDecodeReturnsNullForGarbageInput(): void {
-		$result = $this->handler->decode('%%%not json or yaml%%%', null);
-		$this->assertNull($result);
-
-	}//end testDecodeReturnsNullForGarbageInput()
-
-	/**
-	 * decode() parses valid JSON when type is application/json.
-	 */
-	public function testDecodeJsonExplicitType(): void {
-		$json = json_encode(['key' => 'value', 'nested' => ['a' => 1]]);
-		$result = $this->handler->decode($json, 'application/json');
-
-		$this->assertIsArray($result);
-		$this->assertSame('value', $result['key']);
-		$this->assertSame(1, $result['nested']['a']);
-
-	}//end testDecodeJsonExplicitType()
-
-	/**
-	 * decode() parses valid JSON when no explicit type is given (auto-detect).
-	 */
-	public function testDecodeJsonAutoDetect(): void {
-		$json = '{"hello":"world"}';
-		$result = $this->handler->decode($json, null);
-
-		$this->assertIsArray($result);
-		$this->assertSame('world', $result['hello']);
-
-	}//end testDecodeJsonAutoDetect()
-
-	/**
-	 * decode() parses valid YAML when type is application/yaml.
-	 */
-	public function testDecodeYamlExplicitType(): void {
-		$yaml = "title: My Register\nversion: 1.0.0\n";
-		$result = $this->handler->decode($yaml, 'application/yaml');
-
-		$this->assertIsArray($result);
-		$this->assertSame('My Register', $result['title']);
-		$this->assertSame('1.0.0', $result['version']);
-
-	}//end testDecodeYamlExplicitType()
-
-	/**
-	 * decode() falls back to YAML parsing when JSON fails and type is null.
-	 */
-	public function testDecodeFallsBackToYamlOnJsonFailure(): void {
-		$yaml = "name: fallback\ntype: yaml\n";
-		$result = $this->handler->decode($yaml, null);
-
-		$this->assertIsArray($result);
-		$this->assertSame('fallback', $result['name']);
-
-	}//end testDecodeFallsBackToYamlOnJsonFailure()
-
-	/**
-	 * decode() returns null when both JSON and YAML fail to produce an array.
-	 */
-	public function testDecodeReturnsNullWhenBothParsersFail(): void {
-		// '>>> bad <<<' is not valid JSON and causes Symfony Yaml to throw a ParseException,
-		// which the handler catches and converts to null.
-		$result = $this->handler->decode('>>> bad <<<', null);
-		$this->assertNull($result);
-
-	}//end testDecodeReturnsNullWhenBothParsersFail()
-
-	/**
-	 * decode() converts stdClass objects in decoded JSON to arrays.
-	 */
-	public function testDecodeConvertsStdClassToArray(): void {
-		$json = '{"nested": {"deep": true}}';
-		$result = $this->handler->decode($json, 'application/json');
-
-		$this->assertIsArray($result['nested']);
-		$this->assertTrue($result['nested']['deep']);
-
-	}//end testDecodeConvertsStdClassToArray()
-
-	// =========================================================================
-	// ensureArrayStructure()
-	// =========================================================================
-
-	/**
-	 * ensureArrayStructure() converts a flat stdClass to an array.
-	 */
-	public function testEnsureArrayStructureConvertsStdClass(): void {
-		$obj = new \stdClass();
-		$obj->key = 'val';
-		$obj->other = 42;
-
-		$result = $this->handler->ensureArrayStructure($obj);
-
-		$this->assertIsArray($result);
-		$this->assertSame('val', $result['key']);
-		$this->assertSame(42, $result['other']);
-
-	}//end testEnsureArrayStructureConvertsStdClass()
-
-	/**
-	 * ensureArrayStructure() recursively converts nested stdClass objects.
-	 */
-	public function testEnsureArrayStructureConvertsNestedObjects(): void {
-		$inner = new \stdClass();
-		$inner->deep = 'value';
-		$outer = new \stdClass();
-		$outer->child = $inner;
-
-		$result = $this->handler->ensureArrayStructure($outer);
-
-		$this->assertIsArray($result['child']);
-		$this->assertSame('value', $result['child']['deep']);
-
-	}//end testEnsureArrayStructureConvertsNestedObjects()
-
-	/**
-	 * ensureArrayStructure() leaves a plain array untouched.
-	 */
-	public function testEnsureArrayStructureLeavesArraysIntact(): void {
-		$input = ['a' => 1, 'b' => [2, 3]];
-		$result = $this->handler->ensureArrayStructure($input);
-
-		$this->assertSame($input, $result);
-
-	}//end testEnsureArrayStructureLeavesArraysIntact()
-
-	/**
-	 * ensureArrayStructure() handles arrays containing objects.
-	 */
-	public function testEnsureArrayStructureConvertsObjectsInsideArray(): void {
-		$obj = new \stdClass();
-		$obj->foo = 'bar';
-		$input = ['item' => $obj, 'plain' => 'text'];
-
-		$result = $this->handler->ensureArrayStructure($input);
-
-		$this->assertIsArray($result['item']);
-		$this->assertSame('bar', $result['item']['foo']);
-		$this->assertSame('text', $result['plain']);
-
-	}//end testEnsureArrayStructureConvertsObjectsInsideArray()
-
 	// =========================================================================
 	// getJSONfromFile()
 	// =========================================================================
-
-	/**
-	 * getJSONfromFile() returns a JSONResponse when upload error is set.
-	 */
-	public function testGetJSONfromFileReturnsErrorResponseOnUploadError(): void {
-		$uploadedFile = [
-			'error' => UPLOAD_ERR_NO_FILE,
-			'name' => 'test.json',
-			'tmp_name' => '',
-		];
-
-		$result = $this->handler->getJSONfromFile($uploadedFile);
-
-		$this->assertInstanceOf(JSONResponse::class, $result);
-		$this->assertSame(400, $result->getStatus());
-
-	}//end testGetJSONfromFileReturnsErrorResponseOnUploadError()
-
-	/**
-	 * getJSONfromFile() returns a JSONResponse when file content cannot be decoded.
-	 */
-	public function testGetJSONfromFileReturnsErrorResponseOnDecodeFailure(): void {
-		// Write garbage content to a temp file.
-		$tmpFile = tempnam(sys_get_temp_dir(), 'phpunit_');
-		file_put_contents($tmpFile, '%%% invalid %%%');
-
-		$uploadedFile = [
-			'error' => UPLOAD_ERR_OK,
-			'name' => 'config.json',
-			'tmp_name' => $tmpFile,
-		];
-
-		$result = $this->handler->getJSONfromFile($uploadedFile);
-
-		$this->assertInstanceOf(JSONResponse::class, $result);
-		$this->assertSame(400, $result->getStatus());
-
-		unlink($tmpFile);
-
-	}//end testGetJSONfromFileReturnsErrorResponseOnDecodeFailure()
-
-	/**
-	 * getJSONfromFile() returns a decoded array for a valid JSON temp file.
-	 */
-	public function testGetJSONfromFileReturnsArrayForValidJsonFile(): void {
-		$tmpFile = tempnam(sys_get_temp_dir(), 'phpunit_');
-		file_put_contents($tmpFile, json_encode(['title' => 'Test Config', 'version' => '1.0.0']));
-
-		$uploadedFile = [
-			'error' => UPLOAD_ERR_OK,
-			'name' => 'config.json',
-			'tmp_name' => $tmpFile,
-		];
-
-		$result = $this->handler->getJSONfromFile($uploadedFile);
-
-		$this->assertIsArray($result);
-		$this->assertSame('Test Config', $result['title']);
-
-		unlink($tmpFile);
-
-	}//end testGetJSONfromFileReturnsArrayForValidJsonFile()
 
 	// =========================================================================
 	// getJSONfromURL()
 	// =========================================================================
 
-	/**
-	 * getJSONfromURL() returns JSONResponse when Guzzle throws.
-	 */
-	public function testGetJSONfromURLReturnsErrorOnGuzzleException(): void {
-		$this->client->method('request')
-			->willThrowException(new RequestException('Connection refused', new Request('GET', 'http://example.com')));
-
-		$result = $this->handler->getJSONfromURL('http://example.com/config.json');
-
-		$this->assertInstanceOf(JSONResponse::class, $result);
-		$this->assertSame(400, $result->getStatus());
-
-	}//end testGetJSONfromURLReturnsErrorOnGuzzleException()
-
-	/**
-	 * getJSONfromURL() returns JSONResponse when response body cannot be decoded.
-	 */
-	public function testGetJSONfromURLReturnsErrorWhenBodyNotDecodable(): void {
-		$stream = \GuzzleHttp\Psr7\Utils::streamFor('%%% invalid %%%');
-		$response = new Response(200, ['Content-Type' => 'application/json'], $stream);
-		$this->client->method('request')->willReturn($response);
-
-		$result = $this->handler->getJSONfromURL('http://example.com/config.json');
-
-		$this->assertInstanceOf(JSONResponse::class, $result);
-		$this->assertSame(400, $result->getStatus());
-
-	}//end testGetJSONfromURLReturnsErrorWhenBodyNotDecodable()
-
-	/**
-	 * getJSONfromURL() returns decoded array on successful JSON response.
-	 */
-	public function testGetJSONfromURLReturnsArrayOnSuccess(): void {
-		$body = json_encode(['components' => ['schemas' => []]]);
-		$stream = \GuzzleHttp\Psr7\Utils::streamFor($body);
-		$response = new Response(200, ['Content-Type' => 'application/json'], $stream);
-		$this->client->method('request')->willReturn($response);
-
-		$result = $this->handler->getJSONfromURL('http://example.com/config.json');
-
-		$this->assertIsArray($result);
-		$this->assertArrayHasKey('components', $result);
-
-	}//end testGetJSONfromURLReturnsArrayOnSuccess()
-
 	// =========================================================================
 	// getJSONfromBody()
 	// =========================================================================
-
-	/**
-	 * getJSONfromBody() returns array when already an array.
-	 */
-	public function testGetJSONfromBodyPassthroughArray(): void {
-		$input = ['key' => 'value'];
-		$result = $this->handler->getJSONfromBody($input);
-
-		$this->assertSame($input, $result);
-
-	}//end testGetJSONfromBodyPassthroughArray()
-
-	/**
-	 * getJSONfromBody() decodes a JSON string.
-	 */
-	public function testGetJSONfromBodyDecodesJsonString(): void {
-		$result = $this->handler->getJSONfromBody('{"hello":"world"}');
-
-		$this->assertIsArray($result);
-		$this->assertSame('world', $result['hello']);
-
-	}//end testGetJSONfromBodyDecodesJsonString()
-
-	/**
-	 * getJSONfromBody() returns JSONResponse for invalid JSON string.
-	 */
-	public function testGetJSONfromBodyReturnsErrorForInvalidJson(): void {
-		$result = $this->handler->getJSONfromBody('%%%not json%%%');
-
-		$this->assertInstanceOf(JSONResponse::class, $result);
-		$this->assertSame(400, $result->getStatus());
-
-	}//end testGetJSONfromBodyReturnsErrorForInvalidJson()
-
-	/**
-	 * getJSONfromBody() converts stdClass objects inside the array.
-	 */
-	public function testGetJSONfromBodyConvertsStdClassObjects(): void {
-		$input = ['nested' => (object)['deep' => 'value']];
-		$result = $this->handler->getJSONfromBody($input);
-
-		$this->assertIsArray($result['nested']);
-		$this->assertSame('value', $result['nested']['deep']);
-
-	}//end testGetJSONfromBodyConvertsStdClassObjects()
 
 	// =========================================================================
 	// importRegister()
@@ -1016,8 +702,8 @@ class ImportHandlerTest extends TestCase {
 			'appId' => 'myapp',
 			'version' => '1.0.0',
 		];
-		// No `components`, so the hash falls back to the whole payload.
-		$contentHash = hash('sha256', json_encode($data));
+		// No `components`, so the hash falls back to the whole payload, after the generation of the import's rules.
+		$contentHash = hash('sha256', 'seed-content-3:'.json_encode($data));
 
 		$this->appConfig->method('getValueString')
 			->willReturnCallback(function (string $app, string $key, string $default = '') use ($contentHash) {
@@ -1559,228 +1245,8 @@ class ImportHandlerTest extends TestCase {
 	}//end testImportFromAppWrapsException()
 
 	// =========================================================================
-	// createOrUpdateConfiguration()
-	// =========================================================================
-
-	/**
-	 * createOrUpdateConfiguration() creates new Configuration when none exists for app.
-	 */
-	public function testCreateOrUpdateConfigurationCreatesNew(): void {
-		$this->configurationMapper->method('findByApp')->willReturn([]);
-
-		$inserted = $this->makeConfiguration(77, 'newapp', '1.0.0');
-		$this->configurationMapper->expects($this->once())
-			->method('insert')
-			->willReturn($inserted);
-
-		$result = $this->handler->createOrUpdateConfiguration(
-			data:    ['info' => ['title' => 'New App Config']],
-			appId:   'newapp',
-			version: '1.0.0',
-			result:  ['registers' => [], 'schemas' => [], 'objects' => []]
-		);
-
-		$this->assertInstanceOf(Configuration::class, $result);
-		$this->assertSame(77, $result->getId());
-
-	}//end testCreateOrUpdateConfigurationCreatesNew()
-
-	/**
-	 * createOrUpdateConfiguration() updates existing Configuration.
-	 */
-	public function testCreateOrUpdateConfigurationUpdatesExisting(): void {
-		$existing = $this->makeConfiguration(77, 'existingapp', '0.9.0');
-		$existing->setRegisters([10]);
-		$existing->setSchemas([20]);
-		$existing->setObjects([]);
-
-		$this->configurationMapper->method('findByApp')->willReturn([$existing]);
-
-		$this->configurationMapper->expects($this->never())->method('insert');
-		$this->configurationMapper->expects($this->once())
-			->method('update')
-			->willReturn($existing);
-
-		$newRegister = $this->makeRegister(30, 'new-register');
-		$newSchema = $this->makeSchema(40, 'new-schema');
-
-		$result = $this->handler->createOrUpdateConfiguration(
-			data:    ['info' => ['title' => 'Existing App']],
-			appId:   'existingapp',
-			version: '1.0.0',
-			result:  [
-				'registers' => [$newRegister],
-				'schemas' => [$newSchema],
-				'objects' => [],
-			]
-		);
-
-		// The result merges existing IDs with new ones.
-		$this->assertContains(10, $result->getRegisters());
-		$this->assertContains(30, $result->getRegisters());
-		$this->assertContains(20, $result->getSchemas());
-		$this->assertContains(40, $result->getSchemas());
-
-	}//end testCreateOrUpdateConfigurationUpdatesExisting()
-
-	/**
-	 * createOrUpdateConfiguration() sets owner when provided.
-	 */
-	public function testCreateOrUpdateConfigurationSetsOwner(): void {
-		$this->configurationMapper->method('findByApp')->willReturn([]);
-
-		$capturedConfig = null;
-		$this->configurationMapper->expects($this->once())
-			->method('insert')
-			->willReturnCallback(function (Configuration $c) use (&$capturedConfig) {
-				$capturedConfig = $c;
-				$this->setEntityId($c, 1);
-				return $c;
-			});
-
-		$this->handler->createOrUpdateConfiguration(
-			data:    [],
-			appId:   'ownerapp',
-			version: '1.0.0',
-			result:  ['registers' => [], 'schemas' => [], 'objects' => []],
-			owner:   'the-owner'
-		);
-
-		$this->assertSame('the-owner', $capturedConfig->getOwner());
-
-	}//end testCreateOrUpdateConfigurationSetsOwner()
-
-	/**
-	 * createOrUpdateConfiguration() reads title from info.title (OAS standard).
-	 */
-	public function testCreateOrUpdateConfigurationReadsTitleFromInfoSection(): void {
-		$this->configurationMapper->method('findByApp')->willReturn([]);
-
-		$capturedConfig = null;
-		$this->configurationMapper->expects($this->once())
-			->method('insert')
-			->willReturnCallback(function (Configuration $c) use (&$capturedConfig) {
-				$capturedConfig = $c;
-				$this->setEntityId($c, 1);
-				return $c;
-			});
-
-		$this->handler->createOrUpdateConfiguration(
-			data: [
-				'info' => ['title' => 'OAS Title', 'description' => 'OAS Desc'],
-				'x-openregister' => ['title' => 'Should be ignored'],
-			],
-			appId:   'titledapp',
-			version: '1.0.0',
-			result:  ['registers' => [], 'schemas' => [], 'objects' => []]
-		);
-
-		$this->assertSame('OAS Title', $capturedConfig->getTitle());
-		$this->assertSame('OAS Desc', $capturedConfig->getDescription());
-
-	}//end testCreateOrUpdateConfigurationReadsTitleFromInfoSection()
-
-	/**
-	 * createOrUpdateConfiguration() falls back to x-openregister.title when info.title is absent.
-	 */
-	public function testCreateOrUpdateConfigurationFallsBackToXOpenregisterTitle(): void {
-		$this->configurationMapper->method('findByApp')->willReturn([]);
-
-		$capturedConfig = null;
-		$this->configurationMapper->expects($this->once())
-			->method('insert')
-			->willReturnCallback(function (Configuration $c) use (&$capturedConfig) {
-				$capturedConfig = $c;
-				$this->setEntityId($c, 1);
-				return $c;
-			});
-
-		$this->handler->createOrUpdateConfiguration(
-			data: [
-				'x-openregister' => ['title' => 'X-OR Title'],
-			],
-			appId:   'xorapp',
-			version: '1.0.0',
-			result:  ['registers' => [], 'schemas' => [], 'objects' => []]
-		);
-
-		$this->assertSame('X-OR Title', $capturedConfig->getTitle());
-
-	}//end testCreateOrUpdateConfigurationFallsBackToXOpenregisterTitle()
-
-	/**
-	 * createOrUpdateConfiguration() sets sourceUrl from x-openregister.
-	 */
-	public function testCreateOrUpdateConfigurationSetsSourceUrl(): void {
-		$this->configurationMapper->method('findByApp')->willReturn([]);
-
-		$capturedConfig = null;
-		$this->configurationMapper->expects($this->once())
-			->method('insert')
-			->willReturnCallback(function (Configuration $c) use (&$capturedConfig) {
-				$capturedConfig = $c;
-				$this->setEntityId($c, 1);
-				return $c;
-			});
-
-		$this->handler->createOrUpdateConfiguration(
-			data: [
-				'x-openregister' => ['sourceUrl' => 'https://example.com/cfg.json', 'sourceType' => 'github'],
-			],
-			appId:   'sourceapp',
-			version: '1.0.0',
-			result:  ['registers' => [], 'schemas' => [], 'objects' => []]
-		);
-
-		$this->assertSame('https://example.com/cfg.json', $capturedConfig->getSourceUrl());
-		$this->assertSame('github', $capturedConfig->getSourceType());
-
-	}//end testCreateOrUpdateConfigurationSetsSourceUrl()
-
-	/**
-	 * createOrUpdateConfiguration() throws wrapped exception on mapper insert failure.
-	 *
-	 * findByApp exceptions are swallowed (treated as "no config found"), so we
-	 * must make insert() fail to exercise the outer try/catch rethrow path.
-	 */
-	public function testCreateOrUpdateConfigurationThrowsOnMapperError(): void {
-		// findByApp returns empty — triggers the create-new path.
-		$this->configurationMapper->method('findByApp')->willReturn([]);
-
-		// insert() fails — outer try/catch must rethrow as wrapped exception.
-		$this->configurationMapper->method('insert')
-			->willThrowException(new Exception('Insert failed'));
-
-		$this->expectException(Exception::class);
-		$this->expectExceptionMessageMatches('/Failed to create or update configuration/');
-
-		$this->handler->createOrUpdateConfiguration(
-			data:    [],
-			appId:   'failapp',
-			version: '1.0.0',
-			result:  ['registers' => [], 'schemas' => [], 'objects' => []]
-		);
-
-	}//end testCreateOrUpdateConfigurationThrowsOnMapperError()
-
-	// =========================================================================
 	// Setter methods
 	// =========================================================================
-
-	/**
-	 * setObjectService() replaces the objectService dependency.
-	 */
-	public function testSetObjectService(): void {
-		$newService = $this->createMock(ObjectService::class);
-		$this->handler->setObjectService($newService);
-
-		$ref = new ReflectionClass($this->handler);
-		$prop = $ref->getProperty('objectService');
-		$prop->setAccessible(true);
-
-		$this->assertSame($newService, $prop->getValue($this->handler));
-
-	}//end testSetObjectService()
 
 	/**
 	 * setOpenConnectorConfigurationService() stores the connector service.
@@ -2348,30 +1814,6 @@ class ImportHandlerTest extends TestCase {
 	// =========================================================================
 	// decode() — additional branches
 	// =========================================================================
-
-	/**
-	 * decode() parses valid YAML when type is the yaml extension string (not MIME type).
-	 */
-	public function testDecodeYamlExtensionType(): void {
-		// When a YAML file is uploaded, the extension 'yaml' is passed as $type.
-		// The default case in decode() tries JSON first (fails), then tries Yaml::parse.
-		$yaml = "title: My Config\nversion: 2.0.0\n";
-		$result = $this->handler->decode($yaml, 'yaml');
-
-		$this->assertIsArray($result);
-		$this->assertSame('My Config', $result['title']);
-		$this->assertSame('2.0.0', $result['version']);
-
-	}//end testDecodeYamlExtensionType()
-
-	/**
-	 * decode() returns null when type is application/json and input is not valid JSON.
-	 */
-	public function testDecodeReturnsNullForInvalidJsonWithExplicitType(): void {
-		$result = $this->handler->decode('not valid json at all', 'application/json');
-		$this->assertNull($result);
-
-	}//end testDecodeReturnsNullForInvalidJsonWithExplicitType()
 
 	// =========================================================================
 	// Setter methods — remaining setters
@@ -3423,182 +2865,6 @@ class ImportHandlerTest extends TestCase {
 	}//end testImportFromAppSetsTypeFromXOpenregister()
 
 	// =========================================================================
-	// createOrUpdateConfiguration() — additional branches
-	// =========================================================================
-
-	/**
-	 * createOrUpdateConfiguration() sets openregister version requirement.
-	 */
-	public function testCreateOrUpdateConfigurationSetsOpenregisterVersion(): void {
-		$this->configurationMapper->method('findByApp')->willReturn([]);
-
-		$capturedConfig = null;
-		$this->configurationMapper->expects($this->once())
-			->method('insert')
-			->willReturnCallback(function (Configuration $c) use (&$capturedConfig) {
-				$capturedConfig = $c;
-				$this->setEntityId($c, 1);
-				return $c;
-			});
-
-		$this->handler->createOrUpdateConfiguration(
-			data: [
-				'x-openregister' => ['openregister' => '>=1.5.0'],
-			],
-			appId:   'orapp',
-			version: '1.0.0',
-			result:  ['registers' => [], 'schemas' => [], 'objects' => []]
-		);
-
-		$this->assertSame('>=1.5.0', $capturedConfig->getOpenregister());
-
-	}//end testCreateOrUpdateConfigurationSetsOpenregisterVersion()
-
-	/**
-	 * createOrUpdateConfiguration() uses description from x-openregister when info is absent.
-	 */
-	public function testCreateOrUpdateConfigurationFallsBackToXOpenregisterDescription(): void {
-		$this->configurationMapper->method('findByApp')->willReturn([]);
-
-		$capturedConfig = null;
-		$this->configurationMapper->expects($this->once())
-			->method('insert')
-			->willReturnCallback(function (Configuration $c) use (&$capturedConfig) {
-				$capturedConfig = $c;
-				$this->setEntityId($c, 1);
-				return $c;
-			});
-
-		$this->handler->createOrUpdateConfiguration(
-			data: [
-				'x-openregister' => ['description' => 'X-OR Description'],
-			],
-			appId:   'descapp',
-			version: '1.0.0',
-			result:  ['registers' => [], 'schemas' => [], 'objects' => []]
-		);
-
-		$this->assertSame('X-OR Description', $capturedConfig->getDescription());
-
-	}//end testCreateOrUpdateConfigurationFallsBackToXOpenregisterDescription()
-
-	/**
-	 * createOrUpdateConfiguration() sets github fields (nested structure) for new config.
-	 */
-	public function testCreateOrUpdateConfigurationSetsGithubFieldsNested(): void {
-		$this->configurationMapper->method('findByApp')->willReturn([]);
-
-		$capturedConfig = null;
-		$this->configurationMapper->expects($this->once())
-			->method('insert')
-			->willReturnCallback(function (Configuration $c) use (&$capturedConfig) {
-				$capturedConfig = $c;
-				$this->setEntityId($c, 1);
-				return $c;
-			});
-
-		$this->handler->createOrUpdateConfiguration(
-			data: [
-				'x-openregister' => [
-					'github' => [
-						'repo' => 'org/myrepo',
-						'branch' => 'main',
-						'path' => 'configs/app.json',
-					],
-				],
-			],
-			appId:   'githubapp',
-			version: '1.0.0',
-			result:  ['registers' => [], 'schemas' => [], 'objects' => []]
-		);
-
-		$this->assertSame('org/myrepo', $capturedConfig->getGithubRepo());
-		$this->assertSame('main', $capturedConfig->getGithubBranch());
-		$this->assertSame('configs/app.json', $capturedConfig->getGithubPath());
-
-	}//end testCreateOrUpdateConfigurationSetsGithubFieldsNested()
-
-	/**
-	 * createOrUpdateConfiguration() sets github fields (flat structure) for new config.
-	 */
-	public function testCreateOrUpdateConfigurationSetsGithubFieldsFlat(): void {
-		$this->configurationMapper->method('findByApp')->willReturn([]);
-
-		$capturedConfig = null;
-		$this->configurationMapper->expects($this->once())
-			->method('insert')
-			->willReturnCallback(function (Configuration $c) use (&$capturedConfig) {
-				$capturedConfig = $c;
-				$this->setEntityId($c, 1);
-				return $c;
-			});
-
-		$this->handler->createOrUpdateConfiguration(
-			data: [
-				'x-openregister' => [
-					'githubRepo' => 'flat/repo',
-					'githubBranch' => 'develop',
-					'githubPath' => 'flat/config.json',
-				],
-			],
-			appId:   'flatgithubapp',
-			version: '1.0.0',
-			result:  ['registers' => [], 'schemas' => [], 'objects' => []]
-		);
-
-		$this->assertSame('flat/repo', $capturedConfig->getGithubRepo());
-		$this->assertSame('develop', $capturedConfig->getGithubBranch());
-		$this->assertSame('flat/config.json', $capturedConfig->getGithubPath());
-
-	}//end testCreateOrUpdateConfigurationSetsGithubFieldsFlat()
-
-	/**
-	 * createOrUpdateConfiguration() merges entity IDs when updating existing config.
-	 */
-	public function testCreateOrUpdateConfigurationMergesEntityIdsOnUpdate(): void {
-		$existing = $this->makeConfiguration(77, 'mergeapp', '0.9.0');
-		$existing->setRegisters([1, 2]);
-		$existing->setSchemas([10]);
-		$existing->setObjects([]);
-
-		$this->configurationMapper->method('findByApp')->willReturn([$existing]);
-
-		$this->configurationMapper->expects($this->never())->method('insert');
-		$this->configurationMapper->expects($this->once())
-			->method('update')
-			->willReturn($existing);
-
-		$newRegister = $this->makeRegister(3, 'new-register');
-		$newSchema = $this->makeSchema(20, 'new-schema');
-
-		$objectEntity = new ObjectEntity();
-		$this->setEntityId($objectEntity, 100);
-
-		$result = $this->handler->createOrUpdateConfiguration(
-			data:    [],
-			appId:   'mergeapp',
-			version: '1.0.0',
-			result:  [
-				'registers' => [$newRegister],
-				'schemas' => [$newSchema],
-				'objects' => [$objectEntity],
-			]
-		);
-
-		$registers = $result->getRegisters();
-		$schemas = $result->getSchemas();
-		$objects = $result->getObjects();
-
-		$this->assertContains(1, $registers);
-		$this->assertContains(2, $registers);
-		$this->assertContains(3, $registers);
-		$this->assertContains(10, $schemas);
-		$this->assertContains(20, $schemas);
-		$this->assertContains(100, $objects);
-
-	}//end testCreateOrUpdateConfigurationMergesEntityIdsOnUpdate()
-
-	// =========================================================================
 	// importSeedData() — tested via importFromJson() with x-openregister.seedData
 	// =========================================================================
 
@@ -4333,67 +3599,9 @@ class ImportHandlerTest extends TestCase {
 	// getJSONfromURL() — YAML response
 	// =========================================================================
 
-	/**
-	 * getJSONfromURL() parses YAML content-type response correctly.
-	 */
-	public function testGetJSONfromURLParsesYamlResponse(): void {
-		$yaml = "title: YAML Config\nversion: 1.0.0\n";
-		$stream = \GuzzleHttp\Psr7\Utils::streamFor($yaml);
-		$response = new \GuzzleHttp\Psr7\Response(200, ['Content-Type' => 'application/yaml'], $stream);
-		$this->client->method('request')->willReturn($response);
-
-		$result = $this->handler->getJSONfromURL('http://example.com/config.yaml');
-
-		$this->assertIsArray($result);
-		$this->assertSame('YAML Config', $result['title']);
-
-	}//end testGetJSONfromURLParsesYamlResponse()
-
 	// =========================================================================
 	// decode() — edge cases
 	// =========================================================================
-
-	/**
-	 * decode() returns null when type is application/yaml and YAML is invalid.
-	 */
-	public function testDecodeReturnsNullForInvalidYamlWithExplicitType(): void {
-		// Symfony Yaml is lenient, so we use a value that json_decode can't handle
-		// AND Yaml::parse returns a scalar (not array). Using a bare string that's
-		// valid YAML scalar but not an array → ensureArrayStructure wraps it → but
-		// actually decode() returns null because $phpArray is not array/stdClass.
-		// A bare integer is valid YAML, but decode() calls ensureArrayStructure() on it
-		// which tries to iterate over it — but the null/false check fires first.
-		// Actually decode() returns null when $phpArray === null or false.
-		// An empty YAML string → Yaml::parse returns null → returns null.
-		$result = $this->handler->decode('', 'application/yaml');
-		$this->assertNull($result);
-
-	}//end testDecodeReturnsNullForInvalidYamlWithExplicitType()
-
-	/**
-	 * ensureArrayStructure() handles mixed array containing both objects and scalars.
-	 *
-	 * When an array contains objects nested alongside scalar values, the recursive
-	 * call should convert only the object entries while leaving scalars unchanged.
-	 */
-	public function testEnsureArrayStructureHandlesMixedArray(): void {
-		$inner = new \stdClass();
-		$inner->key = 'value';
-
-		$input = [
-			'scalar' => 42,
-			'nested' => $inner,
-			'list' => ['a', 'b'],
-		];
-
-		$result = $this->handler->ensureArrayStructure($input);
-
-		$this->assertSame(42, $result['scalar']);
-		$this->assertIsArray($result['nested']);
-		$this->assertSame('value', $result['nested']['key']);
-		$this->assertSame(['a', 'b'], $result['list']);
-
-	}//end testEnsureArrayStructureHandlesMixedArray()
 
 	// =========================================================================
 	// importFromJson() — result structure completeness
@@ -5013,6 +4221,91 @@ class ImportHandlerTest extends TestCase {
 	// =========================================================================
 
 	/**
+	 * A row of a duplicate slug, as the mappers return it.
+	 *
+	 * @param object $row  An empty register or schema.
+	 * @param string $slug The slug.
+	 * @param int    $id   The id; it also numbers the uuid and title.
+	 */
+	private function duplicateRow(object $row, string $slug, int $id): object {
+		$row->setSlug($slug);
+		$row->setUuid('uuid-' . $id);
+		$row->setTitle('Row ' . $id);
+		$row->id = $id;
+		$row->setCreated(new \DateTime('2024-01-0' . $id . ' 10:30:00'));
+		return $row;
+	}
+
+	/**
+	 * The error names the rows of the slug, whatever their case, and no others, and is logged.
+	 */
+	public function testADuplicateRegisterIsNamedInFull(): void {
+		$this->registerMapper->method('find')
+			->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('duplicate'));
+		$this->registerMapper->method('findAll')->willReturn([
+			$this->duplicateRow(new Register(), 'dup-register', 1),
+			$this->duplicateRow(new Register(), 'DUP-Register', 2),
+			$this->duplicateRow(new Register(), 'other', 3),
+		]);
+		$this->schemaMapper->method('findAll')->willReturn([]);
+
+		$message = "Duplicate register detected during import from app 'unknown' (version unknown). "
+			. "Register with slug 'dup-register' has multiple entries in the database: "
+			. "ID: 1, UUID: uuid-1, Title: 'Row 1', Created: 2024-01-01 10:30:00; "
+			. "ID: 2, UUID: uuid-2, Title: 'Row 2', Created: 2024-01-02 10:30:00. "
+			. 'Please resolve this by removing duplicate entries or updating the register slugs to be unique. '
+			. 'You can identify duplicates by checking registers with the same slug, uuid, or id.';
+		$logged = [];
+		$this->logger->method('error')->willReturnCallback(static function (string $line) use (&$logged): void {
+			$logged[] = $line;
+		});
+
+		try {
+			$this->handler->importRegister(['slug' => 'dup-register', 'version' => '1.0.0', 'title' => 'Duplicate']);
+			$this->fail('The duplicate must stop the import.');
+		} catch (Exception $e) {
+			$this->assertSame('Failed to import register: ' . $message, $e->getMessage());
+		}
+
+		$this->assertContains('[ImportHandler] ' . $message, $logged);
+	}
+
+	/**
+	 * The schema error reads the schemas, not the registers.
+	 */
+	public function testADuplicateSchemaIsNamedInFull(): void {
+		$this->schemaMapper->method('find')
+			->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('duplicate'));
+		$this->registerMapper->method('findAll')->willReturn([]);
+		$this->schemaMapper->method('findAll')->willReturn([
+			$this->duplicateRow(new Schema(), 'dup-schema', 1),
+			$this->duplicateRow(new Schema(), 'dup-schema', 2),
+		]);
+
+		$message = "Duplicate schema detected during import from app 'unknown' (version unknown). "
+			. "Schema with slug 'dup-schema' has multiple entries in the database: "
+			. "ID: 1, UUID: uuid-1, Title: 'Row 1', Created: 2024-01-01 10:30:00; "
+			. "ID: 2, UUID: uuid-2, Title: 'Row 2', Created: 2024-01-02 10:30:00. "
+			. 'Please resolve this by removing duplicate entries or updating the schema slugs to be unique. '
+			. 'You can identify duplicates by checking schemas with the same slug, uuid, or id.';
+
+		$this->expectExceptionMessage($message);
+		$this->handler->importSchema(data: ['slug' => 'dup-schema', 'version' => '1.0.0', 'title' => 'Dup'], slugsAndIdsMap: []);
+	}
+
+	/**
+	 * With one row or fewer behind the slug there is nothing to list.
+	 */
+	public function testADuplicateWithoutRowsSaysSo(): void {
+		$this->schemaMapper->method('find')
+			->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('duplicate'));
+		$this->schemaMapper->method('findAll')->willReturn([$this->duplicateRow(new Schema(), 'dup-schema', 1)]);
+
+		$this->expectExceptionMessage('multiple entries in the database: Unable to retrieve detailed duplicate information.');
+		$this->handler->importSchema(data: ['slug' => 'dup-schema', 'version' => '1.0.0', 'title' => 'Dup'], slugsAndIdsMap: []);
+	}
+
+	/**
 	 * getDuplicateSchemaInfo returns fallback when findAll() throws.
 	 */
 	public function testDuplicateSchemaInfoHandlesFindAllFailure(): void {
@@ -5534,130 +4827,6 @@ class ImportHandlerTest extends TestCase {
 		$this->cleanupContainedHandler($base);
 
 	}//end testImportFromFilePathDoesNotOverwriteExistingSourceMetadata()
-
-	// =========================================================================
-	// createOrUpdateConfiguration() — additional object ID collection
-	// =========================================================================
-
-	/**
-	 * createOrUpdateConfiguration() collects object IDs from result.
-	 */
-	public function testCreateOrUpdateConfigurationCollectsObjectIds(): void {
-		$this->configurationMapper->method('findByApp')->willReturn([]);
-
-		$capturedConfig = null;
-		$this->configurationMapper->expects($this->once())
-			->method('insert')
-			->willReturnCallback(function (Configuration $c) use (&$capturedConfig) {
-				$capturedConfig = $c;
-				$this->setEntityId($c, 1);
-				return $c;
-			});
-
-		$obj1 = new ObjectEntity();
-		$this->setEntityId($obj1, 100);
-		$obj2 = new ObjectEntity();
-		$this->setEntityId($obj2, 200);
-
-		$result = $this->handler->createOrUpdateConfiguration(
-			data:    [],
-			appId:   'objapp',
-			version: '1.0.0',
-			result:  [
-				'registers' => [],
-				'schemas' => [],
-				'objects' => [$obj1, $obj2],
-			]
-		);
-
-		$this->assertContains(100, $result->getObjects());
-		$this->assertContains(200, $result->getObjects());
-
-	}//end testCreateOrUpdateConfigurationCollectsObjectIds()
-
-	/**
-	 * createOrUpdateConfiguration() uses data.title fallback when info and x-openregister absent.
-	 */
-	public function testCreateOrUpdateConfigurationUsesDataTitleFallback(): void {
-		$this->configurationMapper->method('findByApp')->willReturn([]);
-
-		$capturedConfig = null;
-		$this->configurationMapper->expects($this->once())
-			->method('insert')
-			->willReturnCallback(function (Configuration $c) use (&$capturedConfig) {
-				$capturedConfig = $c;
-				$this->setEntityId($c, 1);
-				return $c;
-			});
-
-		$this->handler->createOrUpdateConfiguration(
-			data: [
-				'title' => 'Data Level Title',
-				'description' => 'Data Level Description',
-			],
-			appId:   'datatitleapp',
-			version: '1.0.0',
-			result:  ['registers' => [], 'schemas' => [], 'objects' => []]
-		);
-
-		$this->assertSame('Data Level Title', $capturedConfig->getTitle());
-		$this->assertSame('Data Level Description', $capturedConfig->getDescription());
-
-	}//end testCreateOrUpdateConfigurationUsesDataTitleFallback()
-
-	/**
-	 * createOrUpdateConfiguration() uses default title when none provided.
-	 */
-	public function testCreateOrUpdateConfigurationUsesDefaultTitle(): void {
-		$this->configurationMapper->method('findByApp')->willReturn([]);
-
-		$capturedConfig = null;
-		$this->configurationMapper->expects($this->once())
-			->method('insert')
-			->willReturnCallback(function (Configuration $c) use (&$capturedConfig) {
-				$capturedConfig = $c;
-				$this->setEntityId($c, 1);
-				return $c;
-			});
-
-		$this->handler->createOrUpdateConfiguration(
-			data:    [],
-			appId:   'notitleapp',
-			version: '1.0.0',
-			result:  ['registers' => [], 'schemas' => [], 'objects' => []]
-		);
-
-		$this->assertSame('Configuration for notitleapp', $capturedConfig->getTitle());
-
-	}//end testCreateOrUpdateConfigurationUsesDefaultTitle()
-
-	/**
-	 * createOrUpdateConfiguration() uses data.type when x-openregister.type is absent.
-	 */
-	public function testCreateOrUpdateConfigurationUsesDataType(): void {
-		$this->configurationMapper->method('findByApp')->willReturn([]);
-
-		$capturedConfig = null;
-		$this->configurationMapper->expects($this->once())
-			->method('insert')
-			->willReturnCallback(function (Configuration $c) use (&$capturedConfig) {
-				$capturedConfig = $c;
-				$this->setEntityId($c, 1);
-				return $c;
-			});
-
-		$this->handler->createOrUpdateConfiguration(
-			data: [
-				'type' => 'custom-type',
-			],
-			appId:   'typeapp',
-			version: '1.0.0',
-			result:  ['registers' => [], 'schemas' => [], 'objects' => []]
-		);
-
-		$this->assertSame('custom-type', $capturedConfig->getType());
-
-	}//end testCreateOrUpdateConfigurationUsesDataType()
 
 	// =========================================================================
 	// importFromJson() — Pass 2 cross-reference resolution

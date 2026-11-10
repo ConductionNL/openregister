@@ -187,30 +187,6 @@ class ConfigurationServiceTest extends TestCase {
 	}//end testIsRemoteSource()
 
 	/**
-	 * Test configuration helper method: isLocalSource.
-	 *
-	 * @return void
-	 */
-	public function testIsLocalSource(): void {
-		$config = new Configuration();
-
-		// Test local source.
-		$config->setSourceType('local');
-		$this->assertTrue($config->isLocalSource());
-
-		// Test remote sources.
-		$config->setSourceType('github');
-		$this->assertFalse($config->isLocalSource());
-
-		$config->setSourceType('gitlab');
-		$this->assertFalse($config->isLocalSource());
-
-		$config->setSourceType('url');
-		$this->assertFalse($config->isLocalSource());
-
-	}//end testIsLocalSource()
-
-	/**
 	 * Test configuration JSON serialization includes new fields.
 	 *
 	 * @return void

@@ -32,7 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -199,16 +199,6 @@ class FileActionsLifecycleIntegrationTest extends TestCase {
 		$afterRename = $this->fileMapper->findByFileId($fileId);
 		$this->assertNotNull($afterRename);
 		$this->assertSame('integration', $afterRename->getCategory());
-
-		// 4. LOCK ------------------------------------------------------
-		$lockedFile = $this->fileMapper->setLockForFile(
-			$fileId,
-			'admin',
-			new \DateTime(),
-			new \DateTime('+1 hour')
-		);
-		$this->assertSame('admin', $lockedFile->getLockedBy());
-		$this->assertNotNull($lockedFile->getLockedAt());
 
 		// 5. COPY ------------------------------------------------------
 		$copy = $this->fileService->copyFile(

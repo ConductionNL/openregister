@@ -125,7 +125,7 @@
 
 ## Phase 9: Download Audit Logging
 
-- [x] Implement `FileAuditHandler::logDownload()` creating audit trail entries — `logFileAction('file.downloaded')`
+- [x] Download audit trail entries through `FileAuditHandler::logFileAction('file.downloaded')`
 - [x] Integrate download logging into `FilesController::show()` endpoint — `recordDownloadEvent()`
 - [x] Integrate download logging into `FilesController::downloadById()` endpoint — `recordDownloadEvent()`
 - [x] Log anonymous downloads with IP and user-agent

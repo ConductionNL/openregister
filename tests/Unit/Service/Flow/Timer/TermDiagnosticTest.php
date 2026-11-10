@@ -26,7 +26,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Timer;
 use DateTimeImmutable;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
+use OCA\OpenRegister\Service\Flow\Timer\SlaCalculatorInterface;
 use OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic;
+use OCA\OpenRegister\Service\Flow\Timer\TermQuery;
 use OCA\OpenRegister\Service\Flow\Timer\WalkCollector;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use PHPUnit\Framework\TestCase;
@@ -75,9 +77,11 @@ class TermDiagnosticTest extends TestCase {
 	 */
 	public function testTheWorkingOfATermAcrossEasterIsPrinted(): void {
 		$result = $this->diagnostic->explain(
-			calendar: $this->calendar,
-			anchor: new DateTimeImmutable('2026-04-02T09:00:00+02:00'),
-			sla: ['value' => 2, 'unit' => SlaCalculator::UNIT_BUSINESS_DAYS]
+			query: new TermQuery(
+				calendar: $this->calendar,
+				anchor: new DateTimeImmutable('2026-04-02T09:00:00+02:00'),
+				sla: ['value' => 2, 'unit' => SlaCalculator::UNIT_BUSINESS_DAYS]
+			)
 		);
 
 		$skipped = array_column($result['skipped'], 'kind', 'date');
@@ -119,9 +123,11 @@ class TermDiagnosticTest extends TestCase {
 	 */
 	public function testTheWalkNamesTheDaysItCounted(): void {
 		$result = $this->diagnostic->explain(
-			calendar: $this->calendar,
-			anchor: new DateTimeImmutable('2026-04-02T09:00:00+02:00'),
-			sla: ['value' => 2, 'unit' => SlaCalculator::UNIT_BUSINESS_DAYS]
+			query: new TermQuery(
+				calendar: $this->calendar,
+				anchor: new DateTimeImmutable('2026-04-02T09:00:00+02:00'),
+				sla: ['value' => 2, 'unit' => SlaCalculator::UNIT_BUSINESS_DAYS]
+			)
 		);
 
 		$counted = array_values(
@@ -143,9 +149,11 @@ class TermDiagnosticTest extends TestCase {
 	 */
 	public function testATermInsideOneWeekSkipsNothing(): void {
 		$result = $this->diagnostic->explain(
-			calendar: $this->calendar,
-			anchor: new DateTimeImmutable('2026-06-01T09:00:00+02:00'),
-			sla: ['value' => 2, 'unit' => SlaCalculator::UNIT_BUSINESS_DAYS]
+			query: new TermQuery(
+				calendar: $this->calendar,
+				anchor: new DateTimeImmutable('2026-06-01T09:00:00+02:00'),
+				sla: ['value' => 2, 'unit' => SlaCalculator::UNIT_BUSINESS_DAYS]
+			)
 		);
 
 		$this->assertSame([], $result['skipped'], 'the control: a Monday-to-Wednesday term skips nothing');
@@ -171,9 +179,11 @@ class TermDiagnosticTest extends TestCase {
 		);
 
 		$explained = $this->diagnostic->explain(
-			calendar: $this->calendar,
-			anchor: $anchor,
-			sla: ['value' => 2, 'unit' => SlaCalculator::UNIT_BUSINESS_DAYS]
+			query: new TermQuery(
+				calendar: $this->calendar,
+				anchor: $anchor,
+				sla: ['value' => 2, 'unit' => SlaCalculator::UNIT_BUSINESS_DAYS]
+			)
 		);
 
 		$this->assertSame(
@@ -202,7 +212,7 @@ class TermDiagnosticTest extends TestCase {
 		}
 
 		$this->assertSame(
-			[SlaCalculator::class],
+			[SlaCalculatorInterface::class],
 			$types,
 			'a mapper, a connection or a dispatcher here would be something that could arm a timer'
 		);
@@ -217,10 +227,12 @@ class TermDiagnosticTest extends TestCase {
 		$first = null;
 		for ($i = 0; $i < 10; $i++) {
 			$result = $this->diagnostic->explain(
+			query: new TermQuery(
 				calendar: $this->calendar,
 				anchor: new DateTimeImmutable('2026-04-02T09:00:00+02:00'),
 				sla: ['value' => 2, 'unit' => SlaCalculator::UNIT_BUSINESS_DAYS]
-			);
+			)
+		);
 
 			if ($first === null) {
 				$first = $result;
@@ -237,13 +249,15 @@ class TermDiagnosticTest extends TestCase {
 	 */
 	public function testALadderReturnsTheInstantOfEachRung(): void {
 		$result = $this->diagnostic->explain(
-			calendar: $this->calendar,
-			anchor: new DateTimeImmutable('2026-06-01T09:00:00+02:00'),
-			sla: ['value' => 5, 'unit' => SlaCalculator::UNIT_BUSINESS_DAYS],
-			ladder: [
+			query: new TermQuery(
+				calendar: $this->calendar,
+				anchor: new DateTimeImmutable('2026-06-01T09:00:00+02:00'),
+				sla: ['value' => 5, 'unit' => SlaCalculator::UNIT_BUSINESS_DAYS],
+				ladder: [
 				['value' => 1, 'unit' => SlaCalculator::UNIT_BUSINESS_DAYS],
 				['value' => 3, 'unit' => SlaCalculator::UNIT_BUSINESS_DAYS],
 			]
+			)
 		);
 
 		$this->assertCount(2, $result['ladder']);
@@ -271,9 +285,11 @@ class TermDiagnosticTest extends TestCase {
 	 */
 	public function testARequestedRollIsNarratedThroughTheEnginesOwnRoll(): void {
 		$result = $this->diagnostic->explain(
-			calendar: $this->calendar,
-			anchor: new DateTimeImmutable('2026-04-02T09:00:00+02:00'),
-			sla: ['value' => 2, 'unit' => SlaCalculator::UNIT_CALENDAR_DAYS, 'rollToWorkingDay' => 'next']
+			query: new TermQuery(
+				calendar: $this->calendar,
+				anchor: new DateTimeImmutable('2026-04-02T09:00:00+02:00'),
+				sla: ['value' => 2, 'unit' => SlaCalculator::UNIT_CALENDAR_DAYS, 'rollToWorkingDay' => 'next']
+			)
 		);
 
 		$this->assertSame('next', $result['roll']);
@@ -291,10 +307,12 @@ class TermDiagnosticTest extends TestCase {
 	public function testARollOutsideTheVocabularyIsRefused(): void {
 		try {
 			$this->diagnostic->explain(
+			query: new TermQuery(
 				calendar: $this->calendar,
 				anchor: new DateTimeImmutable('2026-04-02T09:00:00+02:00'),
 				sla: ['value' => 2, 'unit' => SlaCalculator::UNIT_CALENDAR_DAYS, 'rollToWorkingDay' => 'nextWorkingDay']
-			);
+			)
+		);
 			$this->fail('an unknown roll must not be read as none');
 		} catch (FlowTimerValidationException $e) {
 			$this->assertStringContainsString('refused', $e->getMessage());
@@ -308,9 +326,11 @@ class TermDiagnosticTest extends TestCase {
 	 */
 	public function testNoRollAskedForExplainsFine(): void {
 		$result = $this->diagnostic->explain(
-			calendar: $this->calendar,
-			anchor: new DateTimeImmutable('2026-04-02T09:00:00+02:00'),
-			sla: ['value' => 2, 'unit' => SlaCalculator::UNIT_CALENDAR_DAYS]
+			query: new TermQuery(
+				calendar: $this->calendar,
+				anchor: new DateTimeImmutable('2026-04-02T09:00:00+02:00'),
+				sla: ['value' => 2, 'unit' => SlaCalculator::UNIT_CALENDAR_DAYS]
+			)
 		);
 
 		$this->assertSame('none', $result['roll']);
@@ -330,9 +350,11 @@ class TermDiagnosticTest extends TestCase {
 		$this->expectException(FlowTimerValidationException::class);
 
 		$this->diagnostic->explain(
-			calendar: $this->calendar,
-			anchor: new DateTimeImmutable('2026-04-02T09:00:00+02:00'),
-			sla: ['value' => 2, 'unit' => SlaCalculator::UNIT_BUSINESS_DAYS, 'rollToWorkingDay' => 'sideways']
+			query: new TermQuery(
+				calendar: $this->calendar,
+				anchor: new DateTimeImmutable('2026-04-02T09:00:00+02:00'),
+				sla: ['value' => 2, 'unit' => SlaCalculator::UNIT_BUSINESS_DAYS, 'rollToWorkingDay' => 'sideways']
+			)
 		);
 	}//end testAnUnknownRollValueIsRefused()
 
@@ -345,10 +367,12 @@ class TermDiagnosticTest extends TestCase {
 		$this->expectException(FlowTimerValidationException::class);
 
 		$this->diagnostic->explain(
-			calendar: $this->calendar,
-			anchor: new DateTimeImmutable('2026-06-01T09:00:00+02:00'),
-			sla: ['value' => 5, 'unit' => SlaCalculator::UNIT_BUSINESS_DAYS],
-			ladder: array_fill(0, (TermDiagnostic::MAX_RUNGS + 1), ['value' => 1, 'unit' => SlaCalculator::UNIT_BUSINESS_DAYS])
+			query: new TermQuery(
+				calendar: $this->calendar,
+				anchor: new DateTimeImmutable('2026-06-01T09:00:00+02:00'),
+				sla: ['value' => 5, 'unit' => SlaCalculator::UNIT_BUSINESS_DAYS],
+				ladder: array_fill(0, (TermDiagnostic::MAX_RUNGS + 1), ['value' => 1, 'unit' => SlaCalculator::UNIT_BUSINESS_DAYS])
+			)
 		);
 	}//end testALadderLongerThanTheCeilingIsRefused()
 
@@ -360,9 +384,11 @@ class TermDiagnosticTest extends TestCase {
 	 */
 	public function testALongWalkTruncatesItsNarrationAndSaysSo(): void {
 		$result = $this->diagnostic->explain(
-			calendar: $this->calendar,
-			anchor: new DateTimeImmutable('2026-01-05T09:00:00+01:00'),
-			sla: ['value' => 900, 'unit' => SlaCalculator::UNIT_BUSINESS_DAYS]
+			query: new TermQuery(
+				calendar: $this->calendar,
+				anchor: new DateTimeImmutable('2026-01-05T09:00:00+01:00'),
+				sla: ['value' => 900, 'unit' => SlaCalculator::UNIT_BUSINESS_DAYS]
+			)
 		);
 
 		$this->assertTrue($result['walkTruncated'], 'a short list must not read as a short walk');
@@ -393,9 +419,11 @@ class TermDiagnosticTest extends TestCase {
 	 */
 	public function testTheZoneIsReported(): void {
 		$result = $this->diagnostic->explain(
-			calendar: $this->calendar,
-			anchor: new DateTimeImmutable('2026-06-01T09:00:00+02:00'),
-			sla: ['value' => 1, 'unit' => SlaCalculator::UNIT_BUSINESS_DAYS]
+			query: new TermQuery(
+				calendar: $this->calendar,
+				anchor: new DateTimeImmutable('2026-06-01T09:00:00+02:00'),
+				sla: ['value' => 1, 'unit' => SlaCalculator::UNIT_BUSINESS_DAYS]
+			)
 		);
 
 		$this->assertSame($this->calendar->getTimezone(), $result['zone']);
@@ -411,9 +439,11 @@ class TermDiagnosticTest extends TestCase {
 		$this->expectException(FlowTimerValidationException::class);
 
 		$this->diagnostic->explain(
-			calendar: $this->calendar,
-			anchor: new DateTimeImmutable('2026-06-01T09:00:00+02:00'),
-			sla: ['value' => 0, 'unit' => SlaCalculator::UNIT_BUSINESS_DAYS]
+			query: new TermQuery(
+				calendar: $this->calendar,
+				anchor: new DateTimeImmutable('2026-06-01T09:00:00+02:00'),
+				sla: ['value' => 0, 'unit' => SlaCalculator::UNIT_BUSINESS_DAYS]
+			)
 		);
 	}//end testARefusedSlaIsRefused()
 }//end class

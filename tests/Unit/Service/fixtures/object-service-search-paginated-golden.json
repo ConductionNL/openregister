@@ -1,0 +1,2806 @@
+{
+    "no context": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_limit": 5
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_limit": 5
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_limit": 5
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "register and schema context": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_limit": 5,
+                    "_register": 1,
+                    "_schema": 10
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_limit": 5,
+                    "_register": 1,
+                    "_schema": 10
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_limit": 5,
+                    "_register": 1,
+                    "_schema": 10
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "register only": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_register": 1
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_register": 1
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_register": 1
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "schema only": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_schema": 10
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_schema": 10
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_schema": 10
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "explicit null register and schema": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_register": null,
+                    "_schema": null
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_register": null,
+                    "_schema": null
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_register": null,
+                    "_schema": null
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "caller register and schema kept": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_register": 7,
+                    "_schema": 70
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_register": 7,
+                    "_schema": 70
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_register": 7,
+                    "_schema": 70
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "_schemas: no schema, register kept": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_schemas": [
+                        10,
+                        11
+                    ]
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_schemas": [
+                        10,
+                        11
+                    ]
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_schemas": [
+                        10,
+                        11
+                    ]
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "@self.schema array": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "@self": {
+                        "schema": [
+                            10,
+                            11
+                        ]
+                    },
+                    "_schema": 10
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "@self": {
+                        "schema": [
+                            10,
+                            11
+                        ]
+                    },
+                    "_schema": 10
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "@self": {
+                        "schema": [
+                            10,
+                            11
+                        ]
+                    },
+                    "_schema": 10
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "@self.schema empty array": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "@self": {
+                        "schema": []
+                    },
+                    "_register": 1,
+                    "_schema": 10
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "@self": {
+                        "schema": []
+                    },
+                    "_register": 1,
+                    "_schema": 10
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "@self": {
+                        "schema": []
+                    },
+                    "_register": 1,
+                    "_schema": 10
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "@self.schema scalar": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "@self": {
+                        "schema": 10
+                    },
+                    "_register": 1,
+                    "_schema": 10
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "@self": {
+                        "schema": 10
+                    },
+                    "_register": 1,
+                    "_schema": 10
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "@self": {
+                        "schema": 10
+                    },
+                    "_register": 1,
+                    "_schema": 10
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "@self.schemas": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "@self": {
+                        "schemas": [
+                            10
+                        ]
+                    },
+                    "_schema": 10
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "@self": {
+                        "schemas": [
+                            10
+                        ]
+                    },
+                    "_schema": 10
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "@self": {
+                        "schemas": [
+                            10
+                        ]
+                    },
+                    "_schema": 10
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "@self.schemas null": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "@self": {
+                        "schemas": null
+                    },
+                    "_register": 1
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "@self": {
+                        "schemas": null
+                    },
+                    "_register": 1
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "@self": {
+                        "schemas": null
+                    },
+                    "_register": 1
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "_schemas null": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_schemas": null
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_schemas": null
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_schemas": null
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "views applied": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_search": "x",
+                    "_register": 1,
+                    "_schema": 10,
+                    "_viewFilter": [
+                        3,
+                        4
+                    ]
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "applyViews": [
+                    3,
+                    4
+                ],
+                "query": {
+                    "_search": "x",
+                    "_register": 1,
+                    "_schema": 10
+                }
+            },
+            {
+                "database": {
+                    "_search": "x",
+                    "_register": 1,
+                    "_schema": 10,
+                    "_viewFilter": [
+                        3,
+                        4
+                    ]
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_search": "x",
+                    "_register": 1,
+                    "_schema": 10,
+                    "_viewFilter": [
+                        3,
+                        4
+                    ]
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "empty views": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_schema": 10
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_schema": 10
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_schema": 10
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "_source stripped": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "a": 1
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "a": 1
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "a": 1
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "_source reaches views, then stripped": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "a": 1,
+                    "_viewFilter": [
+                        9
+                    ]
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "applyViews": [
+                    9
+                ],
+                "query": {
+                    "_source": "index",
+                    "a": 1
+                }
+            },
+            {
+                "database": {
+                    "a": 1,
+                    "_viewFilter": [
+                        9
+                    ]
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "a": 1,
+                    "_viewFilter": [
+                        9
+                    ]
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "_source stripped after views": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "a": 1,
+                    "_viewFilter": [
+                        9
+                    ]
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "applyViews": [
+                    9
+                ],
+                "query": {
+                    "a": 1
+                }
+            },
+            {
+                "database": {
+                    "a": 1,
+                    "_viewFilter": [
+                        9
+                    ]
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "a": 1,
+                    "_viewFilter": [
+                        9
+                    ]
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "public read drops multitenancy": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_schema": 10
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_schema": 10
+                },
+                "rbac": true,
+                "multitenancy": false,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_schema": 10
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "public read, multitenancy off": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_schema": 10
+                },
+                "rbac": true,
+                "multi": false,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_schema": 10
+                },
+                "rbac": true,
+                "multitenancy": false,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_schema": 10
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "loose public is not public": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_schema": 10
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_schema": 10
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_schema": 10
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "group read keeps multitenancy": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_schema": 10
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_schema": 10
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_schema": 10
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "group read, multitenancy off": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_schema": 10
+                },
+                "rbac": true,
+                "multi": false,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_schema": 10
+                },
+                "rbac": true,
+                "multitenancy": false,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_schema": 10
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "public read, no schema context": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "@self": {
+                        "schema": 10
+                    }
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "@self": {
+                        "schema": 10
+                    }
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "@self": {
+                        "schema": 10
+                    }
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "flags passed through": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": [],
+                "rbac": false,
+                "multi": false,
+                "deleted": true
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": [],
+                "rbac": false,
+                "multitenancy": false,
+                "deleted": true,
+                "ids": [
+                    "a",
+                    "b"
+                ],
+                "uses": "u-1"
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": [],
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "forged flags in the query": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "userId": "alice",
+                    "_owner": "alice",
+                    "owner": "alice",
+                    "@self": {
+                        "owner": "alice"
+                    },
+                    "_schema": 10
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "userId": "alice",
+                    "_owner": "alice",
+                    "owner": "alice",
+                    "@self": {
+                        "owner": "alice"
+                    },
+                    "_schema": 10
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "userId": "alice",
+                    "_owner": "alice",
+                    "owner": "alice",
+                    "@self": {
+                        "owner": "alice"
+                    },
+                    "_schema": 10
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "source kept from result": {
+        "returned": {
+            "results": [],
+            "total": 0,
+            "@self": {
+                "source": "magic_mapper",
+                "x": 1,
+                "query": [],
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": [],
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": [],
+                "count": 0,
+                "total": 0,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "index source": {
+        "returned": {
+            "results": [
+                1,
+                2
+            ],
+            "total": 9,
+            "@self": {
+                "source": "index",
+                "query": {
+                    "_search": "q"
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_search": "q"
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_search": "q"
+                },
+                "count": 2,
+                "total": 9,
+                "type": "index",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "extend array": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_extend": [
+                        "a"
+                    ]
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false,
+                "objects": {
+                    "o-1": {
+                        "title": "extended"
+                    }
+                }
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_extend": [
+                        "a"
+                    ]
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "objectsCache"
+            ],
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_extend": [
+                        "a"
+                    ]
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "extend string with blanks": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_extend": " a , ,b "
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false,
+                "objects": {
+                    "o-1": {
+                        "title": "extended"
+                    }
+                }
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_extend": " a , ,b "
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "objectsCache"
+            ],
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_extend": " a , ,b "
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "extend empty string": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_extend": ""
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_extend": ""
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_extend": ""
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "extend only commas": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_extend": " , "
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_extend": " , "
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_extend": " , "
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "extend zero string": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_extend": "0"
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_extend": "0"
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_extend": "0"
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "extend empty array": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_extend": []
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_extend": []
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_extend": []
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "extend scalar": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_extend": 5
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false,
+                "objects": {
+                    "o-1": {
+                        "title": "extended"
+                    }
+                }
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_extend": 5
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "objectsCache"
+            ],
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_extend": 5
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "names from string": {
+        "returned": {
+            "results": [
+                {
+                    "@self": {
+                        "relations": [
+                            "0b3f2c1a-1111-4222-8333-944455556666"
+                        ],
+                        "owner": "0b3f2c1a-1111-4222-8333-000000000001"
+                    },
+                    "title": "a"
+                },
+                {
+                    "id": 2,
+                    "ref": "0b3f2c1a-1111-4222-8333-944455556666"
+                },
+                "not-an-array"
+            ],
+            "total": 3,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_extend": "a,_names"
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false,
+                "objects": {
+                    "o-1": {
+                        "title": "extended"
+                    }
+                },
+                "names": {
+                    "0b3f2c1a-1111-4222-8333-944455556666": "Name",
+                    "0b3f2c1a-1111-4222-8333-000000000001": "Name"
+                }
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_extend": "a,_names"
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "objectsCache"
+            ],
+            {
+                "names": [
+                    "0b3f2c1a-1111-4222-8333-944455556666",
+                    "0b3f2c1a-1111-4222-8333-000000000001"
+                ]
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_extend": "a,_names"
+                },
+                "count": 3,
+                "total": 3,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "names from array": {
+        "returned": {
+            "results": [
+                {
+                    "@self": {
+                        "relations": [
+                            "0b3f2c1a-1111-4222-8333-944455556666"
+                        ],
+                        "owner": "0b3f2c1a-1111-4222-8333-000000000001"
+                    },
+                    "title": "a"
+                },
+                {
+                    "id": 2,
+                    "ref": "0b3f2c1a-1111-4222-8333-944455556666"
+                },
+                "not-an-array"
+            ],
+            "total": 3,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_extend": [
+                        "_names"
+                    ]
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false,
+                "objects": {
+                    "o-1": {
+                        "title": "extended"
+                    }
+                },
+                "names": {
+                    "0b3f2c1a-1111-4222-8333-944455556666": "Name",
+                    "0b3f2c1a-1111-4222-8333-000000000001": "Name"
+                }
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_extend": [
+                        "_names"
+                    ]
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "objectsCache"
+            ],
+            {
+                "names": [
+                    "0b3f2c1a-1111-4222-8333-944455556666",
+                    "0b3f2c1a-1111-4222-8333-000000000001"
+                ]
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_extend": [
+                        "_names"
+                    ]
+                },
+                "count": 3,
+                "total": 3,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "names, no results": {
+        "returned": {
+            "results": [],
+            "total": 0,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_extend": "_names"
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false,
+                "objects": {
+                    "o-1": {
+                        "title": "extended"
+                    }
+                },
+                "names": []
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_extend": "_names"
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "objectsCache"
+            ],
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_extend": "_names"
+                },
+                "count": 0,
+                "total": 0,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "names, results missing": {
+        "returned": {
+            "total": 0,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_extend": "_names"
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false,
+                "objects": {
+                    "o-1": {
+                        "title": "extended"
+                    }
+                },
+                "names": []
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_extend": "_names"
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "objectsCache"
+            ],
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_extend": "_names"
+                },
+                "count": 0,
+                "total": 0,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "names, results not an array": {
+        "returned": {
+            "results": "x",
+            "total": 0,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_extend": "_names"
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false,
+                "objects": {
+                    "o-1": {
+                        "title": "extended"
+                    }
+                },
+                "names": []
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_extend": "_names"
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "objectsCache"
+            ],
+            [
+                "recordingMode"
+            ],
+            {
+                "log": "warning",
+                "message": "[ObjectService] recordSearchTrail failed: count(): Argument #1 ($value) must be of type Countable|array, string given",
+                "context": []
+            }
+        ]
+    },
+    "names lookup fails": {
+        "returned": {
+            "results": [
+                {
+                    "@self": {
+                        "relations": [
+                            "0b3f2c1a-1111-4222-8333-944455556666"
+                        ],
+                        "owner": "0b3f2c1a-1111-4222-8333-000000000001"
+                    },
+                    "title": "a"
+                },
+                {
+                    "id": 2,
+                    "ref": "0b3f2c1a-1111-4222-8333-944455556666"
+                },
+                "not-an-array"
+            ],
+            "total": 3,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_extend": "_names"
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false,
+                "objects": {
+                    "o-1": {
+                        "title": "extended"
+                    }
+                },
+                "names": [],
+                "names_error": "name cache down"
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_extend": "_names"
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "objectsCache"
+            ],
+            {
+                "names": [
+                    "0b3f2c1a-1111-4222-8333-944455556666",
+                    "0b3f2c1a-1111-4222-8333-000000000001"
+                ]
+            },
+            {
+                "log": "error",
+                "message": "[ObjectService] _names extension failed: name cache down at FILE:LINE",
+                "context": []
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_extend": "_names"
+                },
+                "count": 3,
+                "total": 3,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "names, no uuids": {
+        "returned": {
+            "results": [
+                {
+                    "n": 1
+                }
+            ],
+            "total": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_extend": [
+                        "_names"
+                    ]
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false,
+                "objects": {
+                    "o-1": {
+                        "title": "extended"
+                    }
+                },
+                "names": []
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_extend": [
+                        "_names"
+                    ]
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "objectsCache"
+            ],
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_extend": [
+                        "_names"
+                    ]
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "names needs strict match, true": {
+        "returned": {
+            "results": [
+                {
+                    "@self": {
+                        "relations": [
+                            "0b3f2c1a-1111-4222-8333-944455556666"
+                        ],
+                        "owner": "0b3f2c1a-1111-4222-8333-000000000001"
+                    },
+                    "title": "a"
+                },
+                {
+                    "id": 2,
+                    "ref": "0b3f2c1a-1111-4222-8333-944455556666"
+                },
+                "not-an-array"
+            ],
+            "total": 3,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_extend": [
+                        true
+                    ]
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false,
+                "objects": {
+                    "o-1": {
+                        "title": "extended"
+                    }
+                }
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_extend": [
+                        true
+                    ]
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "objectsCache"
+            ],
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_extend": [
+                        true
+                    ]
+                },
+                "count": 3,
+                "total": 3,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "names needs strict match": {
+        "returned": {
+            "results": [
+                {
+                    "@self": {
+                        "relations": [
+                            "0b3f2c1a-1111-4222-8333-944455556666"
+                        ],
+                        "owner": "0b3f2c1a-1111-4222-8333-000000000001"
+                    },
+                    "title": "a"
+                },
+                {
+                    "id": 2,
+                    "ref": "0b3f2c1a-1111-4222-8333-944455556666"
+                },
+                "not-an-array"
+            ],
+            "total": 3,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_extend": [
+                        0
+                    ]
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false,
+                "objects": {
+                    "o-1": {
+                        "title": "extended"
+                    }
+                }
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_extend": [
+                        0
+                    ]
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "objectsCache"
+            ],
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_extend": [
+                        0
+                    ]
+                },
+                "count": 3,
+                "total": 3,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "trail mode none": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_search": "q"
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_search": "q"
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ]
+        ]
+    },
+    "trail mode _search, no term": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_search": "  "
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_search": "  "
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ]
+        ]
+    },
+    "trail mode _search, term": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": {
+                    "_search": " q "
+                },
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": {
+                    "_search": " q "
+                },
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "trail": {
+                    "_search": " q "
+                },
+                "count": 1,
+                "total": 1,
+                "type": "database",
+                "timeIsNonNegative": true
+            }
+        ]
+    },
+    "trail fails": {
+        "returned": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1,
+            "@self": {
+                "source": "database",
+                "query": [],
+                "rbac": true,
+                "multi": true,
+                "deleted": false
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "database": [],
+                "rbac": true,
+                "multitenancy": true,
+                "deleted": false,
+                "ids": null,
+                "uses": null
+            },
+            [
+                "recordingMode"
+            ],
+            {
+                "log": "warning",
+                "message": "[ObjectService] recordSearchTrail failed: trail settings unavailable",
+                "context": []
+            }
+        ]
+    },
+    "source schema, allowed": {
+        "returned": {
+            "results": [],
+            "total": 0,
+            "@self": {
+                "total": 0,
+                "page": 1,
+                "pages": 1,
+                "limit": 2,
+                "next": null,
+                "prev": null
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "acting": "alice",
+                "owner": null,
+                "rbac": true
+            },
+            {
+                "objectSource.get": "ext"
+            },
+            {
+                "log": "warning",
+                "message": "[ObjectSource] schema \"schema-10\" declares provider \"ext\" but it is missing/disabled or has no register context \u2014 returning empty list",
+                "context": []
+            }
+        ]
+    },
+    "source schema, rbac off": {
+        "returned": {
+            "results": [],
+            "total": 0,
+            "@self": {
+                "total": 0,
+                "page": 1,
+                "pages": 1,
+                "limit": 0,
+                "next": null,
+                "prev": null
+            }
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "acting": "mallory",
+                "owner": null,
+                "rbac": false
+            },
+            {
+                "objectSource.get": "ext"
+            },
+            {
+                "log": "warning",
+                "message": "[ObjectSource] schema \"schema-10\" declares provider \"ext\" but it is missing/disabled or has no register context \u2014 returning empty list",
+                "context": []
+            }
+        ]
+    },
+    "source schema, forged user denied": {
+        "returned": {
+            "exception": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "read denied for mallory"
+            ]
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "acting": "mallory",
+                "owner": null,
+                "rbac": true
+            }
+        ]
+    },
+    "source schema, no session": {
+        "returned": {
+            "exception": [
+                "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+                "read denied for "
+            ]
+        },
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[ObjectService] ObjectService constructor completed.",
+                "context": []
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "acting": null,
+                "owner": null,
+                "rbac": true
+            }
+        ]
+    }
+}

@@ -1,0 +1,1081 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ExportConfiguration.exportConfiguration exports noId, answering bareName, objects false 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Invalid configuration selected","includeObjects":false,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports noId, answering bareName, objects true 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Invalid configuration selected","includeObjects":true,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports noId, answering named, objects false 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Invalid configuration selected","includeObjects":false,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports noId, answering named, objects true 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Invalid configuration selected","includeObjects":true,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports noId, answering plainError, objects false 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Invalid configuration selected","includeObjects":false,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports noId, answering plainError, objects true 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Invalid configuration selected","includeObjects":true,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports noId, answering serverError, objects false 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Invalid configuration selected","includeObjects":false,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports noId, answering serverError, objects true 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Invalid configuration selected","includeObjects":true,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports noId, answering silentError, objects false 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Invalid configuration selected","includeObjects":false,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports noId, answering silentError, objects true 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Invalid configuration selected","includeObjects":true,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports noId, answering unnamed, objects false 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Invalid configuration selected","includeObjects":false,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports noId, answering unnamed, objects true 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Invalid configuration selected","includeObjects":true,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports none, answering bareName, objects false 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Invalid configuration selected","includeObjects":false,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports none, answering bareName, objects true 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Invalid configuration selected","includeObjects":true,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports none, answering named, objects false 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Invalid configuration selected","includeObjects":false,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports none, answering named, objects true 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Invalid configuration selected","includeObjects":true,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports none, answering plainError, objects false 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Invalid configuration selected","includeObjects":false,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports none, answering plainError, objects true 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Invalid configuration selected","includeObjects":true,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports none, answering serverError, objects false 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Invalid configuration selected","includeObjects":false,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports none, answering serverError, objects true 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Invalid configuration selected","includeObjects":true,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports none, answering silentError, objects false 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Invalid configuration selected","includeObjects":false,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports none, answering silentError, objects true 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Invalid configuration selected","includeObjects":true,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports none, answering unnamed, objects false 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Invalid configuration selected","includeObjects":false,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports none, answering unnamed, objects true 1`] = `
+{
+  "browser": [],
+  "requests": [],
+  "state": "{"loading":false,"error":"Invalid configuration selected","includeObjects":true,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports numbered, answering bareName, objects false 1`] = `
+{
+  "browser": [
+    [
+      "loading",
+      true,
+      null,
+    ],
+    [
+      "blob",
+      "application/json",
+      2,
+    ],
+    [
+      "create",
+      "a",
+    ],
+    [
+      "append",
+    ],
+    [
+      "click",
+      "blob:url",
+      "plain.json",
+    ],
+    [
+      "remove",
+    ],
+    [
+      "revoke",
+      "blob:url",
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "includeObjects": false,
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/configurations/12/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":null,"includeObjects":false,"closed":1}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports numbered, answering bareName, objects true 1`] = `
+{
+  "browser": [
+    [
+      "loading",
+      true,
+      null,
+    ],
+    [
+      "blob",
+      "application/json",
+      2,
+    ],
+    [
+      "create",
+      "a",
+    ],
+    [
+      "append",
+    ],
+    [
+      "click",
+      "blob:url",
+      "plain.json",
+    ],
+    [
+      "remove",
+    ],
+    [
+      "revoke",
+      "blob:url",
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "includeObjects": true,
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/configurations/12/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":null,"includeObjects":true,"closed":1}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports numbered, answering named, objects false 1`] = `
+{
+  "browser": [
+    [
+      "loading",
+      true,
+      null,
+    ],
+    [
+      "blob",
+      "application/json",
+      7,
+    ],
+    [
+      "create",
+      "a",
+    ],
+    [
+      "append",
+    ],
+    [
+      "click",
+      "blob:url",
+      "conf.json",
+    ],
+    [
+      "remove",
+    ],
+    [
+      "revoke",
+      "blob:url",
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "includeObjects": false,
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/configurations/12/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":null,"includeObjects":false,"closed":1}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports numbered, answering named, objects true 1`] = `
+{
+  "browser": [
+    [
+      "loading",
+      true,
+      null,
+    ],
+    [
+      "blob",
+      "application/json",
+      7,
+    ],
+    [
+      "create",
+      "a",
+    ],
+    [
+      "append",
+    ],
+    [
+      "click",
+      "blob:url",
+      "conf.json",
+    ],
+    [
+      "remove",
+    ],
+    [
+      "revoke",
+      "blob:url",
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "includeObjects": true,
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/configurations/12/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":null,"includeObjects":true,"closed":1}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports numbered, answering plainError, objects false 1`] = `
+{
+  "browser": [
+    [
+      "loading",
+      true,
+      null,
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "includeObjects": false,
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/configurations/12/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"Network","includeObjects":false,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports numbered, answering plainError, objects true 1`] = `
+{
+  "browser": [
+    [
+      "loading",
+      true,
+      null,
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "includeObjects": true,
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/configurations/12/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"Network","includeObjects":true,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports numbered, answering serverError, objects false 1`] = `
+{
+  "browser": [
+    [
+      "loading",
+      true,
+      null,
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "includeObjects": false,
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/configurations/12/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"No access","includeObjects":false,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports numbered, answering serverError, objects true 1`] = `
+{
+  "browser": [
+    [
+      "loading",
+      true,
+      null,
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "includeObjects": true,
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/configurations/12/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"No access","includeObjects":true,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports numbered, answering silentError, objects false 1`] = `
+{
+  "browser": [
+    [
+      "loading",
+      true,
+      null,
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "includeObjects": false,
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/configurations/12/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"Failed to export configuration","includeObjects":false,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports numbered, answering silentError, objects true 1`] = `
+{
+  "browser": [
+    [
+      "loading",
+      true,
+      null,
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "includeObjects": true,
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/configurations/12/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"Failed to export configuration","includeObjects":true,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports numbered, answering unnamed, objects false 1`] = `
+{
+  "browser": [
+    [
+      "loading",
+      true,
+      null,
+    ],
+    [
+      "blob",
+      "application/json",
+      2,
+    ],
+    [
+      "create",
+      "a",
+    ],
+    [
+      "append",
+    ],
+    [
+      "click",
+      "blob:url",
+      "configuration_12_2026-03-04.json",
+    ],
+    [
+      "remove",
+    ],
+    [
+      "revoke",
+      "blob:url",
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "includeObjects": false,
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/configurations/12/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":null,"includeObjects":false,"closed":1}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports numbered, answering unnamed, objects true 1`] = `
+{
+  "browser": [
+    [
+      "loading",
+      true,
+      null,
+    ],
+    [
+      "blob",
+      "application/json",
+      2,
+    ],
+    [
+      "create",
+      "a",
+    ],
+    [
+      "append",
+    ],
+    [
+      "click",
+      "blob:url",
+      "configuration_12_2026-03-04.json",
+    ],
+    [
+      "remove",
+    ],
+    [
+      "revoke",
+      "blob:url",
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "includeObjects": true,
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/configurations/12/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":null,"includeObjects":true,"closed":1}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports uuid, answering bareName, objects false 1`] = `
+{
+  "browser": [
+    [
+      "loading",
+      true,
+      null,
+    ],
+    [
+      "blob",
+      "application/json",
+      2,
+    ],
+    [
+      "create",
+      "a",
+    ],
+    [
+      "append",
+    ],
+    [
+      "click",
+      "blob:url",
+      "plain.json",
+    ],
+    [
+      "remove",
+    ],
+    [
+      "revoke",
+      "blob:url",
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "includeObjects": false,
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/configurations/a-b-c/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":null,"includeObjects":false,"closed":1}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports uuid, answering bareName, objects true 1`] = `
+{
+  "browser": [
+    [
+      "loading",
+      true,
+      null,
+    ],
+    [
+      "blob",
+      "application/json",
+      2,
+    ],
+    [
+      "create",
+      "a",
+    ],
+    [
+      "append",
+    ],
+    [
+      "click",
+      "blob:url",
+      "plain.json",
+    ],
+    [
+      "remove",
+    ],
+    [
+      "revoke",
+      "blob:url",
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "includeObjects": true,
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/configurations/a-b-c/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":null,"includeObjects":true,"closed":1}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports uuid, answering named, objects false 1`] = `
+{
+  "browser": [
+    [
+      "loading",
+      true,
+      null,
+    ],
+    [
+      "blob",
+      "application/json",
+      7,
+    ],
+    [
+      "create",
+      "a",
+    ],
+    [
+      "append",
+    ],
+    [
+      "click",
+      "blob:url",
+      "conf.json",
+    ],
+    [
+      "remove",
+    ],
+    [
+      "revoke",
+      "blob:url",
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "includeObjects": false,
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/configurations/a-b-c/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":null,"includeObjects":false,"closed":1}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports uuid, answering named, objects true 1`] = `
+{
+  "browser": [
+    [
+      "loading",
+      true,
+      null,
+    ],
+    [
+      "blob",
+      "application/json",
+      7,
+    ],
+    [
+      "create",
+      "a",
+    ],
+    [
+      "append",
+    ],
+    [
+      "click",
+      "blob:url",
+      "conf.json",
+    ],
+    [
+      "remove",
+    ],
+    [
+      "revoke",
+      "blob:url",
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "includeObjects": true,
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/configurations/a-b-c/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":null,"includeObjects":true,"closed":1}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports uuid, answering plainError, objects false 1`] = `
+{
+  "browser": [
+    [
+      "loading",
+      true,
+      null,
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "includeObjects": false,
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/configurations/a-b-c/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"Network","includeObjects":false,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports uuid, answering plainError, objects true 1`] = `
+{
+  "browser": [
+    [
+      "loading",
+      true,
+      null,
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "includeObjects": true,
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/configurations/a-b-c/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"Network","includeObjects":true,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports uuid, answering serverError, objects false 1`] = `
+{
+  "browser": [
+    [
+      "loading",
+      true,
+      null,
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "includeObjects": false,
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/configurations/a-b-c/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"No access","includeObjects":false,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports uuid, answering serverError, objects true 1`] = `
+{
+  "browser": [
+    [
+      "loading",
+      true,
+      null,
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "includeObjects": true,
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/configurations/a-b-c/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"No access","includeObjects":true,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports uuid, answering silentError, objects false 1`] = `
+{
+  "browser": [
+    [
+      "loading",
+      true,
+      null,
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "includeObjects": false,
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/configurations/a-b-c/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"Failed to export configuration","includeObjects":false,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports uuid, answering silentError, objects true 1`] = `
+{
+  "browser": [
+    [
+      "loading",
+      true,
+      null,
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "includeObjects": true,
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/configurations/a-b-c/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":"Failed to export configuration","includeObjects":true,"closed":0}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports uuid, answering unnamed, objects false 1`] = `
+{
+  "browser": [
+    [
+      "loading",
+      true,
+      null,
+    ],
+    [
+      "blob",
+      "application/json",
+      2,
+    ],
+    [
+      "create",
+      "a",
+    ],
+    [
+      "append",
+    ],
+    [
+      "click",
+      "blob:url",
+      "configuration_a-b-c_2026-03-04.json",
+    ],
+    [
+      "remove",
+    ],
+    [
+      "revoke",
+      "blob:url",
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "includeObjects": false,
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/configurations/a-b-c/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":null,"includeObjects":false,"closed":1}",
+}
+`;
+
+exports[`ExportConfiguration.exportConfiguration exports uuid, answering unnamed, objects true 1`] = `
+{
+  "browser": [
+    [
+      "loading",
+      true,
+      null,
+    ],
+    [
+      "blob",
+      "application/json",
+      2,
+    ],
+    [
+      "create",
+      "a",
+    ],
+    [
+      "append",
+    ],
+    [
+      "click",
+      "blob:url",
+      "configuration_a-b-c_2026-03-04.json",
+    ],
+    [
+      "remove",
+    ],
+    [
+      "revoke",
+      "blob:url",
+    ],
+  ],
+  "requests": [
+    [
+      {
+        "method": "GET",
+        "params": {
+          "includeObjects": true,
+        },
+        "responseType": "blob",
+        "url": "/index.php/apps/openregister/api/configurations/a-b-c/export",
+      },
+    ],
+  ],
+  "state": "{"loading":false,"error":null,"includeObjects":true,"closed":1}",
+}
+`;

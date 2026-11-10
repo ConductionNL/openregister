@@ -19,9 +19,9 @@ declare(strict_types=1);
 
 namespace Unit\Service\Geo;
 
-use OCA\OpenRegister\Service\Geo\GeoFilter;
-use OCA\OpenRegister\Service\Geo\GeoFilterApplier;
-use OCA\OpenRegister\Service\Geo\GeoSpatialEvaluator;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilter;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier;
+use OCA\OpenRegister\Search\Service\Geo\GeoSpatialEvaluator;
 use PHPUnit\Framework\TestCase;
 
 class GeoFilterApplierTest extends TestCase {

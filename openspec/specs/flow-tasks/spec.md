@@ -594,3 +594,54 @@ which this capability already declares carried and never interpreted.
 - **WHEN** it is claimed and completed
 - **THEN** it SHALL reach the same states, write the same audit entries and
   refuse the same callers as the identical task without one
+
+### Requirement: A task's own fields can be edited by the people working it
+
+`PATCH /api/flow-tasks/{uuid}` SHALL change the `title`, `description`, `dueAt` and `priority` it is given and nothing
+else. The caller SHALL be the assignee, a member of the candidate pool or an administrator, checked before anything is
+written; any other caller SHALL be refused (403 when they may read the task, 404 otherwise) with the task unchanged and
+the denial audited. An unknown field, an emptied title, a due date that is not an ISO date or lies after the expiry, and
+a priority on no known scale SHALL be refused with 400. A change SHALL be audited as `edit`, naming the changed fields,
+in the same transaction.
+
+#### Scenario: The assignee moves the due date
+
+- **GIVEN** a task assigned to alice
+- **WHEN** alice sends `{ "dueAt": "2026-10-28", "priority": "high" }`
+- **THEN** the task has that due date and priority, and its trail has an `edit` entry naming both fields
+
+#### Scenario: A stranger is refused
+
+- **GIVEN** a task assigned to alice in the pool `reviewers`
+- **WHEN** mallory, in neither, sends `{ "title": "Mine now" }`
+- **THEN** nothing is written and the denial is audited
+
+### Requirement: Tasks can be found by their external key
+
+`TaskService::findByKey` SHALL return every task carrying the key, terminal ones included, and nothing for a blank key.
+
+#### Scenario: A task added once per case
+
+- **GIVEN** a task with key `dossiq:once:rule:t:r:case-1`
+- **WHEN** the caller asks for that key
+- **THEN** it gets that task, and for a blank key it gets none
+- @e2e exclude {service lookup, covered by unit tests}
+
+### Requirement: A task key is unique
+
+The tasks table SHALL refuse a second task with a key another task carries. An upgrade that finds keys already shared
+SHALL warn with their count and leave the table unchanged.
+
+#### Scenario: Two saves add the same keyed task
+
+- **GIVEN** a task with key `dossiq:once:rule:t:r:case-1`
+- **WHEN** a second task with that key is inserted
+- **THEN** the database refuses it
+- @e2e exclude {database constraint, covered by the migration unit test}
+
+#### Scenario: An instance with shared keys
+
+- **GIVEN** two stored tasks sharing a key
+- **WHEN** the upgrade runs
+- **THEN** it warns with the count and adds no index
+- @e2e exclude {migration path, covered by the migration unit test}

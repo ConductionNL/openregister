@@ -522,6 +522,6 @@ const collection = {
 	item: [setup, scene, noRole, unheld, teardown],
 }
 
-const out = join(here, 'openregister-flow-subjects.postman_collection.json')
+const out = join(here, '..', 'integration', 'openregister-flow-subjects.postman_collection.json')
 writeFileSync(out, `${JSON.stringify(collection, null, 2)}\n`)
 process.stdout.write(`wrote ${out}\n`)

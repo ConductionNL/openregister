@@ -51,7 +51,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
@@ -61,7 +61,7 @@ use Throwable;
  *
  * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
  */
-class RevealFlusher {
+class RevealFlusher implements RevealFlusherInterface {
 
 	/**
 	 * How many rows go into one insert.
@@ -77,12 +77,12 @@ class RevealFlusher {
 	 * Constructor.
 	 *
 	 * @param RevealCollector $collector What the read path collected.
-	 * @param AuditTrailMapper $mapper The trail, which owns the chain.
+	 * @param AuditTrailMapperInterface $mapper The trail, which owns the chain.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		private readonly RevealCollector $collector,
-		private readonly AuditTrailMapper $mapper,
+		private readonly AuditTrailMapperInterface $mapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

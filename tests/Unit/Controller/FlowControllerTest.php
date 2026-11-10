@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FlowControllerFactory;
 use OCA\OpenRegister\Controller\FlowController;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
@@ -43,6 +44,10 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Controller\FlowController
+ * @uses \OCA\OpenRegister\Controller\Support\FlowCatalogue
+ * @uses \OCA\OpenRegister\Controller\Support\FlowNodeTypes
+ * @uses \OCA\OpenRegister\Controller\Support\FlowDefinitions
+ * @uses \OCA\OpenRegister\Controller\Support\FlowControllerServices
  *
  * The uses-list below is load-bearing, not decoration. phpunit.xml sets
  * `beStrictAboutCoverageMetadata`, so a covers-tagged test that executes an
@@ -60,6 +65,9 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnVocabulary
  * @uses \OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnExporter
  * @uses \OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnImporter
+ * @uses \OCA\OpenRegister\Exception\FlowRunRefused
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnDiagramLayout
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnMappingReport
  */
 class FlowControllerTest extends TestCase {
 
@@ -157,7 +165,7 @@ class FlowControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($adminUser);
 		$this->groupManager->method('isAdmin')->willReturn(true);
 
-		$this->controller = new FlowController(
+		$this->controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->eventCatalog,
@@ -320,7 +328,7 @@ class FlowControllerTest extends TestCase {
 
 		$this->request->method('getParam')->willReturn('slots');
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -371,7 +379,7 @@ class FlowControllerTest extends TestCase {
 		$this->flows->method('find')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('No such flow'));
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -408,7 +416,7 @@ class FlowControllerTest extends TestCase {
 		$this->flows->method('find')->willReturn(new \OCA\OpenRegister\Db\Flow());
 		$this->request->method('getParam')->willReturn('');
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -457,7 +465,7 @@ class FlowControllerTest extends TestCase {
 				]
 			);
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -493,7 +501,7 @@ class FlowControllerTest extends TestCase {
 		);
 		$this->request->method('getParam')->willReturn('');
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -520,7 +528,7 @@ class FlowControllerTest extends TestCase {
 
 		$this->request->method('getParam')->willReturn('');
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -655,7 +663,7 @@ class FlowControllerTest extends TestCase {
 			->with(IManager::SCOPE_USER)
 			->willReturn([]);
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -690,7 +698,7 @@ class FlowControllerTest extends TestCase {
 			->with(IManager::SCOPE_USER)
 			->willReturn([]);
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -723,7 +731,7 @@ class FlowControllerTest extends TestCase {
 			->with(IManager::SCOPE_USER)
 			->willReturn([]);
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -756,7 +764,7 @@ class FlowControllerTest extends TestCase {
 		$denying = $this->createMock(\OCA\OpenRegister\Service\OpenRegisterActionAuthService::class);
 		$denying->method('can')->willReturn(false);
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -1043,7 +1051,7 @@ class FlowControllerTest extends TestCase {
 		$denying = $this->createMock(\OCA\OpenRegister\Service\OpenRegisterActionAuthService::class);
 		$denying->method('can')->willReturn(false);
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -1071,7 +1079,7 @@ class FlowControllerTest extends TestCase {
 		$anonymous = $this->createMock(IUserSession::class);
 		$anonymous->method('getUser')->willReturn(null);
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -1231,6 +1239,63 @@ class FlowControllerTest extends TestCase {
 		$this->assertSame('Bezwaar behandelen', $response->getData()['flow']['name']);
 		$this->assertArrayHasKey('report', $response->getData());
 	}//end testImportBpmnStoresTheFlowAndReturnsTheReport()
+
+	/**
+	 * A file sent as a multipart upload (field `file`) imports the same way a
+	 * raw body does: the browser's file picker posts a form, not an XML body.
+	 *
+	 * @return void
+	 */
+	public function testImportBpmnReadsAMultipartUpload(): void {
+		$xml = (new \OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnExporter(
+			vocabulary: new \OCA\OpenRegister\Service\Flow\Bpmn\BpmnVocabulary(),
+			validator: new \OCA\OpenRegister\Service\Flow\Bpmn\BpmnSchemaValidator()
+		))->export(flow: $this->exportableFlow());
+
+		$tmp = tempnam(sys_get_temp_dir(), 'bpmn');
+		file_put_contents($tmp, $xml);
+
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, $default = null) => $default
+		);
+		$this->request->method('getUploadedFile')->willReturnCallback(
+			static fn (string $key) => ($key === 'file' ? ['name' => 'bezwaar.bpmn', 'tmp_name' => $tmp, 'error' => UPLOAD_ERR_OK, 'size' => strlen($xml)] : null)
+		);
+
+		$stored = new Flow();
+		$stored->setUuid('7f1e2a10-0000-4000-8000-000000000001');
+		$stored->setName('Bezwaar behandelen');
+		$this->flows->expects($this->once())->method('save')->willReturn($stored);
+
+		$response = $this->controller->importBpmn();
+		unlink($tmp);
+
+		$this->assertSame(201, $response->getStatus());
+		$this->assertArrayHasKey('report', $response->getData());
+	}//end testImportBpmnReadsAMultipartUpload()
+
+	/**
+	 * An upload that failed in transit is answered 400 and names the upload,
+	 * rather than reaching the importer as an empty document and coming back
+	 * as "malformed", which would send the user hunting in a file that is fine.
+	 *
+	 * @return void
+	 */
+	public function testImportBpmnRefusesAFailedUploadWith400(): void {
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, $default = null) => $default
+		);
+		$this->request->method('getUploadedFile')->willReturn(
+			['name' => 'bezwaar.bpmn', 'tmp_name' => '', 'error' => UPLOAD_ERR_PARTIAL, 'size' => 0]
+		);
+		$this->flows->expects($this->never())->method('save');
+
+		$response = $this->controller->importBpmn();
+
+		$this->assertSame(400, $response->getStatus());
+		$this->assertFalse($response->getData()['malformed']);
+		$this->assertStringContainsString('upload', $response->getData()['error']);
+	}//end testImportBpmnRefusesAFailedUploadWith400()
 
 	/**
 	 * A flow the exporter can serialise, borrowed from the round-trip suite.

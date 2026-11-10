@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\BulkControllerFactory;
 use OCA\OpenRegister\Controller\BulkController;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
+use OCA\OpenRegister\Exception\LockedException;
+use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -41,7 +45,7 @@ class BulkControllerTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 
-		$this->controller = new BulkController(
+		$this->controller = BulkControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->objectService,
@@ -457,6 +461,45 @@ class BulkControllerTest extends TestCase {
 		$data = $result->getData();
 		$this->assertTrue($data['success']);
 		$this->assertEquals(1, $data['saved_count']);
+	}
+
+	/**
+	 * The mixed-schema route checks the manage rule of every schema its rows name.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-mixed-schema-bulk-route-checks-every-schema-its-rows-name
+	 */
+	public function testSaveMixedSchemaRefusesARowSchemaTheCallerMayNotManage(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('regular-user');
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->groupManager->method('isAdmin')->willReturn(false);
+		$this->schemaMapper->method('find')->willReturn(new Schema());
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setSchema')->willReturnSelf();
+		$this->objectService->method('getRegister')->willReturn(1);
+		$this->objectService->method('getSchema')->willReturn(0);
+		$this->objectService->expects($this->never())->method('saveObjects');
+		$this->request->method('getParams')->willReturn([
+			'objects' => [['@self' => ['schema' => 'document'], 'restricted' => false]],
+		]);
+
+		$result = $this->controller->save('1', '0');
+
+		$this->assertEquals(Http::STATUS_FORBIDDEN, $result->getStatus());
+		$this->assertStringContainsString('document', $result->getData()['error']);
+	}
+
+	public function testSaveMixedSchemaRefusesARowSchemaThatCannotBeResolved(): void {
+		$this->stubAdminUser();
+		$this->schemaMapper->method('find')->willThrowException(new \Exception('no such schema'));
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setSchema')->willReturnSelf();
+		$this->objectService->method('getRegister')->willReturn(1);
+		$this->objectService->method('getSchema')->willReturn(0);
+		$this->objectService->expects($this->never())->method('saveObjects');
+		$this->request->method('getParams')->willReturn(['objects' => [['@self' => ['schema' => 'ghost']]]]);
+
+		$this->assertEquals(Http::STATUS_FORBIDDEN, $this->controller->save('1', '0')->getStatus());
 	}
 
 	public function testSaveWithStatisticsMissingSavedKey(): void {
@@ -1016,6 +1059,7 @@ class BulkControllerTest extends TestCase {
 	// ========================================================================
 
 	public function testDeleteSchemaInvalidId(): void {
+		$this->stubAdminUser();
 		$result = $this->controller->deleteSchema('1', 'abc');
 
 		$this->assertEquals(Http::STATUS_BAD_REQUEST, $result->getStatus());
@@ -1114,6 +1158,87 @@ class BulkControllerTest extends TestCase {
 		$this->assertSame('SCHEMA_ARCHIVAL_IMMUTABLE', $data['error']);
 		$this->assertSame('retained-case', $data['schema']);
 		$this->assertSame('delete', $data['operation']);
+	}
+
+	/**
+	 * A table holding a frozen row is refused with the 409 state body, not a 500.
+	 *
+	 * @return void
+	 */
+	public function testDeleteSchemaObjectsOverAFrozenRowIsRefusedWith409(): void {
+		$this->stubAdminUser();
+		$this->setupResolveSuccess();
+		$this->stubSchemaLookup(2);
+		$this->objectService->method('deleteObjectsBySchema')->willThrowException($this->frozenRefusal());
+		$this->request->method('getParams')->willReturn([]);
+
+		$result = $this->controller->deleteSchemaObjects('my-register', 'my-schema');
+
+		$this->assertSame(409, $result->getStatus());
+		$this->assertSame($this->frozenRefusal()->toResponseBody(), $result->getData());
+	}
+
+	/**
+	 * The same refusal on the legacy delete-schema route.
+	 *
+	 * @return void
+	 */
+	public function testDeleteSchemaOverAFrozenRowIsRefusedWith409(): void {
+		$this->stubAdminUser();
+		$this->stubSchemaLookup(2);
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setSchema')->willReturnSelf();
+		$this->objectService->method('deleteObjectsBySchema')->willThrowException($this->frozenRefusal());
+		$this->request->method('getParams')->willReturn([]);
+
+		$this->assertSame(409, $this->controller->deleteSchema('1', '2')->getStatus());
+	}
+
+	/**
+	 * The same refusal on the register-wide route.
+	 *
+	 * @return void
+	 */
+	public function testDeleteRegisterOverAFrozenRowIsRefusedWith409(): void {
+		$this->stubAdminUser();
+		$this->objectService->method('deleteObjectsByRegister')->willThrowException($this->frozenRefusal());
+		$this->request->method('getParams')->willReturn([]);
+
+		$this->assertSame(409, $this->controller->deleteRegister('1')->getStatus());
+	}
+
+	/**
+	 * A locked row answers 423 on each table route.
+	 *
+	 * @return void
+	 */
+	public function testATableDeleteOverALockedRowIsRefusedWith423(): void {
+		$object = new ObjectEntity();
+		$object->setLocked(['kind' => ObjectEntity::LOCK_KIND_USER, 'user' => 'bob']);
+		$refusal = LockedException::forObject($object);
+		$this->stubAdminUser();
+		$this->setupResolveSuccess();
+		$this->stubSchemaLookup(2);
+		$this->objectService->method('deleteObjectsBySchema')->willThrowException($refusal);
+		$this->objectService->method('deleteObjectsByRegister')->willThrowException($refusal);
+		$this->request->method('getParams')->willReturn([]);
+
+		$this->assertSame(423, $this->controller->deleteSchemaObjects('my-register', 'my-schema')->getStatus());
+		$this->assertSame(423, $this->controller->deleteSchema('1', '2')->getStatus());
+		$this->assertSame(423, $this->controller->deleteRegister('1')->getStatus());
+	}
+
+	/**
+	 * The refusal a table delete raises over a frozen row.
+	 *
+	 * @return ObjectStateWriteException
+	 */
+	private function frozenRefusal(): ObjectStateWriteException {
+		$object = new ObjectEntity();
+		$object->setUuid('11111111-1111-4111-8111-111111111111');
+		$object->setFrozen(['by' => 'alice', 'at' => '2026-01-01T00:00:00+00:00', 'reason' => 'kept']);
+
+		return ObjectStateWriteException::frozen($object);
 	}
 
 	/**
@@ -1223,6 +1348,7 @@ class BulkControllerTest extends TestCase {
 	}
 
 	public function testDeleteSchemaObjectsRegisterNotFound(): void {
+		$this->stubAdminUser();
 		$this->objectService->method('setRegister')
 			->willThrowException(new DoesNotExistException('not found'));
 
@@ -1236,6 +1362,7 @@ class BulkControllerTest extends TestCase {
 	}
 
 	public function testDeleteSchemaObjectsSchemaNotFound(): void {
+		$this->stubAdminUser();
 		$this->objectService->method('setRegister')->willReturnSelf();
 		$this->objectService->method('setSchema')
 			->willThrowException(new DoesNotExistException('not found'));
@@ -1271,6 +1398,7 @@ class BulkControllerTest extends TestCase {
 	// ========================================================================
 
 	public function testDeleteRegisterInvalidId(): void {
+		$this->stubAdminUser();
 		$result = $this->controller->deleteRegister('abc');
 
 		$this->assertEquals(Http::STATUS_BAD_REQUEST, $result->getStatus());
@@ -1345,42 +1473,6 @@ class BulkControllerTest extends TestCase {
 		$this->assertEquals(Http::STATUS_FORBIDDEN, $result->getStatus());
 		$this->assertSame('SCHEMA_ARCHIVAL_IMMUTABLE', $result->getData()['error']);
 		$this->assertSame('retained-case', $result->getData()['schema']);
-	}
-
-	/**
-	 * Managing the register is not enough: every schema it empties must be manageable.
-	 *
-	 * @return void
-	 */
-	public function testDeleteRegisterRefusesWhenOneOfItsSchemasIsNotManageable(): void {
-		$user = $this->createMock(IUser::class);
-		$user->method('getUID')->willReturn('alice');
-		$this->userSession->method('getUser')->willReturn($user);
-		$this->groupManager->method('isAdmin')->with('alice')->willReturn(false);
-		$this->groupManager->method('getUserGroupIds')->willReturn(['editors']);
-
-		$register = new Register();
-		$register->setId(1);
-		$register->setAuthorization(['manage' => ['editors']]);
-		$register->setSchemas([42, 43]);
-		$this->registerMapper->method('find')->willReturn($register);
-
-		$manageable = new Schema();
-		$manageable->setId(42);
-		$manageable->setAuthorization(['manage' => ['editors']]);
-		// No manage rule: admin-only, so alice may not empty it.
-		$locked = new Schema();
-		$locked->setId(43);
-		$this->schemaMapper->method('find')->willReturnCallback(
-			static fn (int|string $id): Schema => ((int)$id === 42 ? $manageable : $locked)
-		);
-
-		$this->objectService->expects($this->never())->method('deleteObjectsByRegister');
-
-		$result = $this->controller->deleteRegister('1');
-
-		$this->assertEquals(Http::STATUS_FORBIDDEN, $result->getStatus());
-		$this->assertStringContainsString('43', $result->getData()['error']);
 	}
 
 	/**

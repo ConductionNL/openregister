@@ -1,0 +1,1854 @@
+{
+    "clear cache re-enumerates": {
+        "results": [
+            [
+                10,
+                ""
+            ],
+            "cleared",
+            [
+                10,
+                ""
+            ]
+        ],
+        "log": [
+            [
+                "call",
+                [
+                    "resolve",
+                    "https://schema.org/Organization",
+                    null
+                ]
+            ],
+            [
+                "schemas.findAll"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "appa"
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "appb"
+            ],
+            [
+                "schemas.find",
+                1
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "appb"
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "apps.isEnabledForUser",
+                "offapp"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "throwapp"
+            ],
+            [
+                "apps.isInstalled",
+                "throwapp"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "doublethrow"
+            ],
+            [
+                "apps.isInstalled",
+                "doublethrow"
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "log.warning",
+                "[SemanticTypeResolver] 6 schemas implement 'https://schema.org/Organization'; picked '10' (id 10)",
+                {
+                    "uri": "https://schema.org/Organization",
+                    "candidates": [
+                        "10",
+                        "doublethrow-org",
+                        "no-id",
+                        "org-a",
+                        "org-b",
+                        "u3"
+                    ],
+                    "picked": "10",
+                    "pickedId": 10,
+                    "consumingReg": null
+                }
+            ],
+            [
+                "call",
+                [
+                    "clear"
+                ]
+            ],
+            [
+                "call",
+                [
+                    "resolve",
+                    "https://schema.org/Organization",
+                    null
+                ]
+            ],
+            [
+                "schemas.findAll"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "appa"
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "appb"
+            ],
+            [
+                "schemas.find",
+                1
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "appb"
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "apps.isEnabledForUser",
+                "offapp"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "throwapp"
+            ],
+            [
+                "apps.isInstalled",
+                "throwapp"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "doublethrow"
+            ],
+            [
+                "apps.isInstalled",
+                "doublethrow"
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "log.warning",
+                "[SemanticTypeResolver] 6 schemas implement 'https://schema.org/Organization'; picked '10' (id 10)",
+                {
+                    "uri": "https://schema.org/Organization",
+                    "candidates": [
+                        "10",
+                        "doublethrow-org",
+                        "no-id",
+                        "org-a",
+                        "org-b",
+                        "u3"
+                    ],
+                    "picked": "10",
+                    "pickedId": 10,
+                    "consumingReg": null
+                }
+            ]
+        ]
+    },
+    "empty uri": {
+        "results": [
+            null
+        ],
+        "log": [
+            [
+                "call",
+                [
+                    "resolve",
+                    "",
+                    null
+                ]
+            ]
+        ]
+    },
+    "event via self allOf": {
+        "results": [
+            [
+                null,
+                "no-id"
+            ]
+        ],
+        "log": [
+            [
+                "call",
+                [
+                    "resolve",
+                    "https://schema.org/Event",
+                    null
+                ]
+            ],
+            [
+                "schemas.findAll"
+            ],
+            [
+                "schemas.find",
+                1
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "registers.findAll"
+            ]
+        ]
+    },
+    "find register for schemas": {
+        "results": [
+            10,
+            20,
+            null,
+            40
+        ],
+        "log": [
+            [
+                "call",
+                [
+                    "register",
+                    3
+                ]
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "call",
+                [
+                    "register",
+                    5
+                ]
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "call",
+                [
+                    "register",
+                    12
+                ]
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "call",
+                [
+                    "register",
+                    1
+                ]
+            ],
+            [
+                "registers.findAll"
+            ]
+        ]
+    },
+    "no app manager": {
+        "results": [
+            [
+                10,
+                ""
+            ],
+            [
+                4,
+                "person"
+            ]
+        ],
+        "log": [
+            [
+                "call",
+                [
+                    "resolve",
+                    "https://schema.org/Organization",
+                    null
+                ]
+            ],
+            [
+                "schemas.findAll"
+            ],
+            [
+                "schemas.find",
+                1
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "log.warning",
+                "[SemanticTypeResolver] 8 schemas implement 'https://schema.org/Organization'; picked '10' (id 10)",
+                {
+                    "uri": "https://schema.org/Organization",
+                    "candidates": [
+                        "10",
+                        "disabled-org",
+                        "doublethrow-org",
+                        "no-id",
+                        "org-a",
+                        "org-b",
+                        "throwy-org",
+                        "u3"
+                    ],
+                    "picked": "10",
+                    "pickedId": 10,
+                    "consumingReg": null
+                }
+            ],
+            [
+                "call",
+                [
+                    "resolve",
+                    "https://schema.org/Person",
+                    null
+                ]
+            ],
+            [
+                "schemas.findAll"
+            ],
+            [
+                "schemas.find",
+                1
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "log.warning",
+                "[SemanticTypeResolver] 3 schemas implement 'https://schema.org/Person'; picked 'person' (id 4)",
+                {
+                    "uri": "https://schema.org/Person",
+                    "candidates": [
+                        "person",
+                        "person-child",
+                        "reg-app-person"
+                    ],
+                    "picked": "person",
+                    "pickedId": 4,
+                    "consumingReg": null
+                }
+            ]
+        ]
+    },
+    "org biased to consumer 10": {
+        "results": [
+            [
+                2,
+                "org-b"
+            ]
+        ],
+        "log": [
+            [
+                "call",
+                [
+                    "resolve",
+                    "https://schema.org/Organization",
+                    10
+                ]
+            ],
+            [
+                "schemas.findAll"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "appa"
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "appb"
+            ],
+            [
+                "schemas.find",
+                1
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "appb"
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "apps.isEnabledForUser",
+                "offapp"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "throwapp"
+            ],
+            [
+                "apps.isInstalled",
+                "throwapp"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "doublethrow"
+            ],
+            [
+                "apps.isInstalled",
+                "doublethrow"
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "registers.find",
+                "10"
+            ],
+            [
+                "log.warning",
+                "[SemanticTypeResolver] 6 schemas implement 'https://schema.org/Organization'; picked 'org-b' (id 2)",
+                {
+                    "uri": "https://schema.org/Organization",
+                    "candidates": [
+                        "10",
+                        "doublethrow-org",
+                        "no-id",
+                        "org-a",
+                        "org-b",
+                        "u3"
+                    ],
+                    "picked": "org-b",
+                    "pickedId": 2,
+                    "consumingReg": 10
+                }
+            ]
+        ]
+    },
+    "org consumer 40": {
+        "results": [
+            [
+                10,
+                ""
+            ]
+        ],
+        "log": [
+            [
+                "call",
+                [
+                    "resolve",
+                    "https://schema.org/Organization",
+                    40
+                ]
+            ],
+            [
+                "schemas.findAll"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "appa"
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "appb"
+            ],
+            [
+                "schemas.find",
+                1
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "appb"
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "apps.isEnabledForUser",
+                "offapp"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "throwapp"
+            ],
+            [
+                "apps.isInstalled",
+                "throwapp"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "doublethrow"
+            ],
+            [
+                "apps.isInstalled",
+                "doublethrow"
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "registers.find",
+                "40"
+            ],
+            [
+                "log.warning",
+                "[SemanticTypeResolver] 6 schemas implement 'https://schema.org/Organization'; picked '10' (id 10)",
+                {
+                    "uri": "https://schema.org/Organization",
+                    "candidates": [
+                        "10",
+                        "doublethrow-org",
+                        "no-id",
+                        "org-a",
+                        "org-b",
+                        "u3"
+                    ],
+                    "picked": "10",
+                    "pickedId": 10,
+                    "consumingReg": 40
+                }
+            ]
+        ]
+    },
+    "org consumer unknown": {
+        "results": [
+            [
+                10,
+                ""
+            ]
+        ],
+        "log": [
+            [
+                "call",
+                [
+                    "resolve",
+                    "https://schema.org/Organization",
+                    99
+                ]
+            ],
+            [
+                "schemas.findAll"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "appa"
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "appb"
+            ],
+            [
+                "schemas.find",
+                1
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "appb"
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "apps.isEnabledForUser",
+                "offapp"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "throwapp"
+            ],
+            [
+                "apps.isInstalled",
+                "throwapp"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "doublethrow"
+            ],
+            [
+                "apps.isInstalled",
+                "doublethrow"
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "registers.find",
+                "99"
+            ],
+            [
+                "log.warning",
+                "[SemanticTypeResolver] 6 schemas implement 'https://schema.org/Organization'; picked '10' (id 10)",
+                {
+                    "uri": "https://schema.org/Organization",
+                    "candidates": [
+                        "10",
+                        "doublethrow-org",
+                        "no-id",
+                        "org-a",
+                        "org-b",
+                        "u3"
+                    ],
+                    "picked": "10",
+                    "pickedId": 10,
+                    "consumingReg": 99
+                }
+            ]
+        ]
+    },
+    "org twice without consumer": {
+        "results": [
+            [
+                10,
+                ""
+            ],
+            [
+                10,
+                ""
+            ]
+        ],
+        "log": [
+            [
+                "call",
+                [
+                    "resolve",
+                    "https://schema.org/Organization",
+                    null
+                ]
+            ],
+            [
+                "schemas.findAll"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "appa"
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "appb"
+            ],
+            [
+                "schemas.find",
+                1
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "appb"
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "apps.isEnabledForUser",
+                "offapp"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "throwapp"
+            ],
+            [
+                "apps.isInstalled",
+                "throwapp"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "doublethrow"
+            ],
+            [
+                "apps.isInstalled",
+                "doublethrow"
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "log.warning",
+                "[SemanticTypeResolver] 6 schemas implement 'https://schema.org/Organization'; picked '10' (id 10)",
+                {
+                    "uri": "https://schema.org/Organization",
+                    "candidates": [
+                        "10",
+                        "doublethrow-org",
+                        "no-id",
+                        "org-a",
+                        "org-b",
+                        "u3"
+                    ],
+                    "picked": "10",
+                    "pickedId": 10,
+                    "consumingReg": null
+                }
+            ],
+            [
+                "call",
+                [
+                    "resolve",
+                    "https://schema.org/Organization",
+                    null
+                ]
+            ]
+        ]
+    },
+    "person through allOf cycle": {
+        "results": [
+            [
+                4,
+                "person"
+            ]
+        ],
+        "log": [
+            [
+                "call",
+                [
+                    "resolve",
+                    "https://schema.org/Person",
+                    null
+                ]
+            ],
+            [
+                "schemas.findAll"
+            ],
+            [
+                "schemas.find",
+                1
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "offapp"
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "log.warning",
+                "[SemanticTypeResolver] 2 schemas implement 'https://schema.org/Person'; picked 'person' (id 4)",
+                {
+                    "uri": "https://schema.org/Person",
+                    "candidates": [
+                        "person",
+                        "person-child"
+                    ],
+                    "picked": "person",
+                    "pickedId": 4,
+                    "consumingReg": null
+                }
+            ]
+        ]
+    },
+    "register enumeration fails": {
+        "results": [
+            [
+                10,
+                ""
+            ],
+            [
+                4,
+                "person"
+            ],
+            null
+        ],
+        "log": [
+            [
+                "call",
+                [
+                    "resolve",
+                    "https://schema.org/Organization",
+                    null
+                ]
+            ],
+            [
+                "schemas.findAll"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "appa"
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] register enumeration failed",
+                {
+                    "schemaId": 2,
+                    "exception": "register db down"
+                }
+            ],
+            [
+                "schemas.find",
+                1
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] register enumeration failed",
+                {
+                    "schemaId": 3,
+                    "exception": "register db down"
+                }
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "apps.isEnabledForUser",
+                "offapp"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "throwapp"
+            ],
+            [
+                "apps.isInstalled",
+                "throwapp"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "doublethrow"
+            ],
+            [
+                "apps.isInstalled",
+                "doublethrow"
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] register enumeration failed",
+                {
+                    "schemaId": 10,
+                    "exception": "register db down"
+                }
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] register enumeration failed",
+                {
+                    "schemaId": null,
+                    "exception": "register db down"
+                }
+            ],
+            [
+                "log.warning",
+                "[SemanticTypeResolver] 6 schemas implement 'https://schema.org/Organization'; picked '10' (id 10)",
+                {
+                    "uri": "https://schema.org/Organization",
+                    "candidates": [
+                        "10",
+                        "doublethrow-org",
+                        "no-id",
+                        "org-a",
+                        "org-b",
+                        "u3"
+                    ],
+                    "picked": "10",
+                    "pickedId": 10,
+                    "consumingReg": null
+                }
+            ],
+            [
+                "call",
+                [
+                    "resolve",
+                    "https://schema.org/Person",
+                    null
+                ]
+            ],
+            [
+                "schemas.findAll"
+            ],
+            [
+                "schemas.find",
+                1
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] register enumeration failed",
+                {
+                    "schemaId": 4,
+                    "exception": "register db down"
+                }
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] register enumeration failed",
+                {
+                    "schemaId": 5,
+                    "exception": "register db down"
+                }
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] register enumeration failed",
+                {
+                    "schemaId": 11,
+                    "exception": "register db down"
+                }
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "log.warning",
+                "[SemanticTypeResolver] 3 schemas implement 'https://schema.org/Person'; picked 'person' (id 4)",
+                {
+                    "uri": "https://schema.org/Person",
+                    "candidates": [
+                        "person",
+                        "person-child",
+                        "reg-app-person"
+                    ],
+                    "picked": "person",
+                    "pickedId": 4,
+                    "consumingReg": null
+                }
+            ],
+            [
+                "call",
+                [
+                    "register",
+                    3
+                ]
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] register enumeration failed",
+                {
+                    "schemaId": 3,
+                    "exception": "register db down"
+                }
+            ]
+        ]
+    },
+    "schema enumeration fails": {
+        "results": [
+            null,
+            null
+        ],
+        "log": [
+            [
+                "call",
+                [
+                    "resolve",
+                    "https://schema.org/Organization",
+                    null
+                ]
+            ],
+            [
+                "schemas.findAll"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] schema enumeration failed — treating as no providers",
+                {
+                    "uri": "https://schema.org/Organization",
+                    "exception": "schema db down"
+                }
+            ],
+            [
+                "call",
+                [
+                    "resolve",
+                    "https://schema.org/Organization",
+                    null
+                ]
+            ]
+        ]
+    },
+    "thing candidates": {
+        "results": [
+            [
+                10,
+                ""
+            ],
+            [
+                10,
+                ""
+            ]
+        ],
+        "log": [
+            [
+                "call",
+                [
+                    "resolve",
+                    "https://schema.org/Thing",
+                    null
+                ]
+            ],
+            [
+                "schemas.findAll"
+            ],
+            [
+                "schemas.find",
+                1
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "appb"
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "log.warning",
+                "[SemanticTypeResolver] 3 schemas implement 'https://schema.org/Thing'; picked '10' (id 10)",
+                {
+                    "uri": "https://schema.org/Thing",
+                    "candidates": [
+                        "10",
+                        "core-thing",
+                        "u3"
+                    ],
+                    "picked": "10",
+                    "pickedId": 10,
+                    "consumingReg": null
+                }
+            ],
+            [
+                "call",
+                [
+                    "resolve",
+                    "https://schema.org/Thing",
+                    40
+                ]
+            ],
+            [
+                "schemas.findAll"
+            ],
+            [
+                "schemas.find",
+                1
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "appb"
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "registers.findAll"
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "registers.find",
+                "40"
+            ],
+            [
+                "log.warning",
+                "[SemanticTypeResolver] 3 schemas implement 'https://schema.org/Thing'; picked '10' (id 10)",
+                {
+                    "uri": "https://schema.org/Thing",
+                    "candidates": [
+                        "10",
+                        "core-thing",
+                        "u3"
+                    ],
+                    "picked": "10",
+                    "pickedId": 10,
+                    "consumingReg": 40
+                }
+            ]
+        ]
+    },
+    "unknown uri cached": {
+        "results": [
+            null,
+            null
+        ],
+        "log": [
+            [
+                "call",
+                [
+                    "resolve",
+                    "https://schema.org/None",
+                    null
+                ]
+            ],
+            [
+                "schemas.findAll"
+            ],
+            [
+                "schemas.find",
+                1
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "schemas.find",
+                4
+            ],
+            [
+                "schemas.find",
+                5
+            ],
+            [
+                "schemas.find",
+                "missing"
+            ],
+            [
+                "log.debug",
+                "[SemanticTypeResolver] allOf ancestor unresolved — skipping",
+                {
+                    "ref": "missing",
+                    "exception": "schema missing not found"
+                }
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "schemas.find",
+                "org-a"
+            ],
+            [
+                "call",
+                [
+                    "resolve",
+                    "https://schema.org/None",
+                    null
+                ]
+            ]
+        ]
+    }
+}

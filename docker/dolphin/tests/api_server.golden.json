@@ -1,0 +1,6852 @@
+{
+ "/parse model fails to load": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ]
+  ],
+  "logged": [
+   [
+    "Parse error",
+    "RuntimeError"
+   ]
+  ],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Error loading Dolphin model: no weights"
+  ],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "/parse_pdf model fails to load": {
+  "body": {
+   "error": "PDF parsing failed"
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ],
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ]
+  ],
+  "logged": [
+   [
+    "PDF parse error",
+    "RuntimeError"
+   ]
+  ],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Error loading Dolphin model: no weights"
+  ],
+  "status": 500,
+  "temp_file_left": false
+ },
+ "GET /health": {
+  "body": {
+   "service": "dolphin-api",
+   "status": "ok"
+  },
+  "status": 200
+ },
+ "GET /info": {
+  "body": {
+   "capabilities": [
+    "document_parsing",
+    "layout_analysis",
+    "table_extraction",
+    "formula_extraction",
+    "ocr"
+   ],
+   "model": "ByteDance Dolphin-1.5",
+   "model_path": "/app/models",
+   "version": "1.5"
+  },
+  "status": 200
+ },
+ "parse base64 / elements only / cuda=False": {
+  "body": {
+   "layout": {
+    "elements": [
+     "e"
+    ],
+    "reading_order": [
+     0
+    ]
+   },
+   "metadata": {
+    "device": "cpu",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "{\"elements\": [\"e\"], \"reading_order\": [0]}"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 41"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse base64 / elements only / cuda=True": {
+  "body": {
+   "layout": {
+    "elements": [
+     "e"
+    ],
+    "reading_order": [
+     0
+    ]
+   },
+   "metadata": {
+    "device": "cuda",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "{\"elements\": [\"e\"], \"reading_order\": [0]}"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "30x40"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 41"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse base64 / empty json / cuda=False": {
+  "body": {
+   "layout": {
+    "elements": [],
+    "reading_order": []
+   },
+   "metadata": {
+    "device": "cpu",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "{}"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 2"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse base64 / empty json / cuda=True": {
+  "body": {
+   "layout": {
+    "elements": [],
+    "reading_order": []
+   },
+   "metadata": {
+    "device": "cuda",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "{}"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "30x40"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 2"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse base64 / json / cuda=False": {
+  "body": {
+   "layout": {
+    "blocks": 1
+   },
+   "metadata": {
+    "device": "cpu",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [
+    [
+     1
+    ]
+   ],
+   "text": "Hello"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 5"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse base64 / json / cuda=True": {
+  "body": {
+   "layout": {
+    "blocks": 1
+   },
+   "metadata": {
+    "device": "cuda",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [
+    [
+     1
+    ]
+   ],
+   "text": "Hello"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "30x40"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 5"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse base64 / json list / cuda=False": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40"
+    ],
+    true
+   ]
+  ],
+  "logged": [
+   [
+    "Parse error",
+    "AttributeError"
+   ]
+  ],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)"
+  ],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse base64 / json list / cuda=True": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "30x40"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [
+   [
+    "Parse error",
+    "AttributeError"
+   ]
+  ],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)"
+  ],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse base64 / per page / cuda=False": {
+  "body": {
+   "layout": {
+    "elements": [],
+    "reading_order": []
+   },
+   "metadata": {
+    "device": "cpu",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "{}"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 2"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse base64 / per page / cuda=True": {
+  "body": {
+   "layout": {
+    "elements": [],
+    "reading_order": []
+   },
+   "metadata": {
+    "device": "cuda",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "{}"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "30x40"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 2"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse base64 / plain text / cuda=False": {
+  "body": {
+   "layout": {
+    "elements": [],
+    "reading_order": []
+   },
+   "metadata": {
+    "device": "cpu",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "just text"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 9"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse base64 / plain text / cuda=True": {
+  "body": {
+   "layout": {
+    "elements": [],
+    "reading_order": []
+   },
+   "metadata": {
+    "device": "cuda",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "just text"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "30x40"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 9"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse grey png / elements only / cuda=False": {
+  "body": {
+   "layout": {
+    "elements": [
+     "e"
+    ],
+    "reading_order": [
+     0
+    ]
+   },
+   "metadata": {
+    "device": "cpu",
+    "image_size": [
+     5,
+     6
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "{\"elements\": [\"e\"], \"reading_order\": [0]}"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     5,
+     6
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "5x6"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "5x6"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing image size: (5, 6)",
+   "Parsing complete. Text length: 41"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse grey png / elements only / cuda=True": {
+  "body": {
+   "layout": {
+    "elements": [
+     "e"
+    ],
+    "reading_order": [
+     0
+    ]
+   },
+   "metadata": {
+    "device": "cuda",
+    "image_size": [
+     5,
+     6
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "{\"elements\": [\"e\"], \"reading_order\": [0]}"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     5,
+     6
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "5x6"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "5x6@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "5x6@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing image size: (5, 6)",
+   "Parsing complete. Text length: 41"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse grey png / empty json / cuda=False": {
+  "body": {
+   "layout": {
+    "elements": [],
+    "reading_order": []
+   },
+   "metadata": {
+    "device": "cpu",
+    "image_size": [
+     5,
+     6
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "{}"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     5,
+     6
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "5x6"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "5x6"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing image size: (5, 6)",
+   "Parsing complete. Text length: 2"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse grey png / empty json / cuda=True": {
+  "body": {
+   "layout": {
+    "elements": [],
+    "reading_order": []
+   },
+   "metadata": {
+    "device": "cuda",
+    "image_size": [
+     5,
+     6
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "{}"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     5,
+     6
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "5x6"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "5x6@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "5x6@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing image size: (5, 6)",
+   "Parsing complete. Text length: 2"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse grey png / json / cuda=False": {
+  "body": {
+   "layout": {
+    "blocks": 1
+   },
+   "metadata": {
+    "device": "cpu",
+    "image_size": [
+     5,
+     6
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [
+    [
+     1
+    ]
+   ],
+   "text": "Hello"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     5,
+     6
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "5x6"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "5x6"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing image size: (5, 6)",
+   "Parsing complete. Text length: 5"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse grey png / json / cuda=True": {
+  "body": {
+   "layout": {
+    "blocks": 1
+   },
+   "metadata": {
+    "device": "cuda",
+    "image_size": [
+     5,
+     6
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [
+    [
+     1
+    ]
+   ],
+   "text": "Hello"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     5,
+     6
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "5x6"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "5x6@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "5x6@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing image size: (5, 6)",
+   "Parsing complete. Text length: 5"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse grey png / json list / cuda=False": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     5,
+     6
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "5x6"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "5x6"
+    ],
+    true
+   ]
+  ],
+  "logged": [
+   [
+    "Parse error",
+    "AttributeError"
+   ]
+  ],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing image size: (5, 6)"
+  ],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse grey png / json list / cuda=True": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     5,
+     6
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "5x6"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "5x6@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "5x6@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [
+   [
+    "Parse error",
+    "AttributeError"
+   ]
+  ],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing image size: (5, 6)"
+  ],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse grey png / per page / cuda=False": {
+  "body": {
+   "layout": {
+    "elements": [],
+    "reading_order": []
+   },
+   "metadata": {
+    "device": "cpu",
+    "image_size": [
+     5,
+     6
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "{}"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     5,
+     6
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "5x6"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "5x6"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing image size: (5, 6)",
+   "Parsing complete. Text length: 2"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse grey png / per page / cuda=True": {
+  "body": {
+   "layout": {
+    "elements": [],
+    "reading_order": []
+   },
+   "metadata": {
+    "device": "cuda",
+    "image_size": [
+     5,
+     6
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "{}"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     5,
+     6
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "5x6"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "5x6@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "5x6@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing image size: (5, 6)",
+   "Parsing complete. Text length: 2"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse grey png / plain text / cuda=False": {
+  "body": {
+   "layout": {
+    "elements": [],
+    "reading_order": []
+   },
+   "metadata": {
+    "device": "cpu",
+    "image_size": [
+     5,
+     6
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "just text"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     5,
+     6
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "5x6"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "5x6"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing image size: (5, 6)",
+   "Parsing complete. Text length: 9"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse grey png / plain text / cuda=True": {
+  "body": {
+   "layout": {
+    "elements": [],
+    "reading_order": []
+   },
+   "metadata": {
+    "device": "cuda",
+    "image_size": [
+     5,
+     6
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "just text"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     5,
+     6
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "5x6"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "5x6@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "5x6@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing image size: (5, 6)",
+   "Parsing complete. Text length: 9"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse json without image / elements only / cuda=False": {
+  "body": {
+   "error": "No image provided. Send file or image_base64"
+  },
+  "calls": [],
+  "logged": [],
+  "printed": [],
+  "status": 400,
+  "temp_file_left": null
+ },
+ "parse json without image / elements only / cuda=True": {
+  "body": {
+   "error": "No image provided. Send file or image_base64"
+  },
+  "calls": [],
+  "logged": [],
+  "printed": [],
+  "status": 400,
+  "temp_file_left": null
+ },
+ "parse json without image / empty json / cuda=False": {
+  "body": {
+   "error": "No image provided. Send file or image_base64"
+  },
+  "calls": [],
+  "logged": [],
+  "printed": [],
+  "status": 400,
+  "temp_file_left": null
+ },
+ "parse json without image / empty json / cuda=True": {
+  "body": {
+   "error": "No image provided. Send file or image_base64"
+  },
+  "calls": [],
+  "logged": [],
+  "printed": [],
+  "status": 400,
+  "temp_file_left": null
+ },
+ "parse json without image / json / cuda=False": {
+  "body": {
+   "error": "No image provided. Send file or image_base64"
+  },
+  "calls": [],
+  "logged": [],
+  "printed": [],
+  "status": 400,
+  "temp_file_left": null
+ },
+ "parse json without image / json / cuda=True": {
+  "body": {
+   "error": "No image provided. Send file or image_base64"
+  },
+  "calls": [],
+  "logged": [],
+  "printed": [],
+  "status": 400,
+  "temp_file_left": null
+ },
+ "parse json without image / json list / cuda=False": {
+  "body": {
+   "error": "No image provided. Send file or image_base64"
+  },
+  "calls": [],
+  "logged": [],
+  "printed": [],
+  "status": 400,
+  "temp_file_left": null
+ },
+ "parse json without image / json list / cuda=True": {
+  "body": {
+   "error": "No image provided. Send file or image_base64"
+  },
+  "calls": [],
+  "logged": [],
+  "printed": [],
+  "status": 400,
+  "temp_file_left": null
+ },
+ "parse json without image / per page / cuda=False": {
+  "body": {
+   "error": "No image provided. Send file or image_base64"
+  },
+  "calls": [],
+  "logged": [],
+  "printed": [],
+  "status": 400,
+  "temp_file_left": null
+ },
+ "parse json without image / per page / cuda=True": {
+  "body": {
+   "error": "No image provided. Send file or image_base64"
+  },
+  "calls": [],
+  "logged": [],
+  "printed": [],
+  "status": 400,
+  "temp_file_left": null
+ },
+ "parse json without image / plain text / cuda=False": {
+  "body": {
+   "error": "No image provided. Send file or image_base64"
+  },
+  "calls": [],
+  "logged": [],
+  "printed": [],
+  "status": 400,
+  "temp_file_left": null
+ },
+ "parse json without image / plain text / cuda=True": {
+  "body": {
+   "error": "No image provided. Send file or image_base64"
+  },
+  "calls": [],
+  "logged": [],
+  "printed": [],
+  "status": 400,
+  "temp_file_left": null
+ },
+ "parse not an image / elements only / cuda=False": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [],
+  "logged": [
+   [
+    "Parse error",
+    "UnidentifiedImageError"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse not an image / elements only / cuda=True": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [],
+  "logged": [
+   [
+    "Parse error",
+    "UnidentifiedImageError"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse not an image / empty json / cuda=False": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [],
+  "logged": [
+   [
+    "Parse error",
+    "UnidentifiedImageError"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse not an image / empty json / cuda=True": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [],
+  "logged": [
+   [
+    "Parse error",
+    "UnidentifiedImageError"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse not an image / json / cuda=False": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [],
+  "logged": [
+   [
+    "Parse error",
+    "UnidentifiedImageError"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse not an image / json / cuda=True": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [],
+  "logged": [
+   [
+    "Parse error",
+    "UnidentifiedImageError"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse not an image / json list / cuda=False": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [],
+  "logged": [
+   [
+    "Parse error",
+    "UnidentifiedImageError"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse not an image / json list / cuda=True": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [],
+  "logged": [
+   [
+    "Parse error",
+    "UnidentifiedImageError"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse not an image / per page / cuda=False": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [],
+  "logged": [
+   [
+    "Parse error",
+    "UnidentifiedImageError"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse not an image / per page / cuda=True": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [],
+  "logged": [
+   [
+    "Parse error",
+    "UnidentifiedImageError"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse not an image / plain text / cuda=False": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [],
+  "logged": [
+   [
+    "Parse error",
+    "UnidentifiedImageError"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse not an image / plain text / cuda=True": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [],
+  "logged": [
+   [
+    "Parse error",
+    "UnidentifiedImageError"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse nothing / elements only / cuda=False": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [],
+  "logged": [
+   [
+    "Parse error",
+    "UnsupportedMediaType"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse nothing / elements only / cuda=True": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [],
+  "logged": [
+   [
+    "Parse error",
+    "UnsupportedMediaType"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse nothing / empty json / cuda=False": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [],
+  "logged": [
+   [
+    "Parse error",
+    "UnsupportedMediaType"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse nothing / empty json / cuda=True": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [],
+  "logged": [
+   [
+    "Parse error",
+    "UnsupportedMediaType"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse nothing / json / cuda=False": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [],
+  "logged": [
+   [
+    "Parse error",
+    "UnsupportedMediaType"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse nothing / json / cuda=True": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [],
+  "logged": [
+   [
+    "Parse error",
+    "UnsupportedMediaType"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse nothing / json list / cuda=False": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [],
+  "logged": [
+   [
+    "Parse error",
+    "UnsupportedMediaType"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse nothing / json list / cuda=True": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [],
+  "logged": [
+   [
+    "Parse error",
+    "UnsupportedMediaType"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse nothing / per page / cuda=False": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [],
+  "logged": [
+   [
+    "Parse error",
+    "UnsupportedMediaType"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse nothing / per page / cuda=True": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [],
+  "logged": [
+   [
+    "Parse error",
+    "UnsupportedMediaType"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse nothing / plain text / cuda=False": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [],
+  "logged": [
+   [
+    "Parse error",
+    "UnsupportedMediaType"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse nothing / plain text / cuda=True": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [],
+  "logged": [
+   [
+    "Parse error",
+    "UnsupportedMediaType"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse options off / elements only / cuda=False": {
+  "body": {
+   "layout": {
+    "elements": [
+     "e"
+    ],
+    "reading_order": [
+     0
+    ]
+   },
+   "metadata": {
+    "device": "cpu",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "{\"elements\": [\"e\"], \"reading_order\": [0]}"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 41"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse options off / elements only / cuda=True": {
+  "body": {
+   "layout": {
+    "elements": [
+     "e"
+    ],
+    "reading_order": [
+     0
+    ]
+   },
+   "metadata": {
+    "device": "cuda",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "{\"elements\": [\"e\"], \"reading_order\": [0]}"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "30x40"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 41"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse options off / empty json / cuda=False": {
+  "body": {
+   "layout": {
+    "elements": [],
+    "reading_order": []
+   },
+   "metadata": {
+    "device": "cpu",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "{}"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 2"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse options off / empty json / cuda=True": {
+  "body": {
+   "layout": {
+    "elements": [],
+    "reading_order": []
+   },
+   "metadata": {
+    "device": "cuda",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "{}"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "30x40"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 2"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse options off / json / cuda=False": {
+  "body": {
+   "layout": {
+    "blocks": 1
+   },
+   "metadata": {
+    "device": "cpu",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [
+    [
+     1
+    ]
+   ],
+   "text": "Hello"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 5"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse options off / json / cuda=True": {
+  "body": {
+   "layout": {
+    "blocks": 1
+   },
+   "metadata": {
+    "device": "cuda",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [
+    [
+     1
+    ]
+   ],
+   "text": "Hello"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "30x40"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 5"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse options off / json list / cuda=False": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40"
+    ],
+    true
+   ]
+  ],
+  "logged": [
+   [
+    "Parse error",
+    "AttributeError"
+   ]
+  ],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)"
+  ],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse options off / json list / cuda=True": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "30x40"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [
+   [
+    "Parse error",
+    "AttributeError"
+   ]
+  ],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)"
+  ],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse options off / per page / cuda=False": {
+  "body": {
+   "layout": {
+    "elements": [],
+    "reading_order": []
+   },
+   "metadata": {
+    "device": "cpu",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "{}"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 2"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse options off / per page / cuda=True": {
+  "body": {
+   "layout": {
+    "elements": [],
+    "reading_order": []
+   },
+   "metadata": {
+    "device": "cuda",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "{}"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "30x40"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 2"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse options off / plain text / cuda=False": {
+  "body": {
+   "layout": {
+    "elements": [],
+    "reading_order": []
+   },
+   "metadata": {
+    "device": "cpu",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "just text"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 9"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse options off / plain text / cuda=True": {
+  "body": {
+   "layout": {
+    "elements": [],
+    "reading_order": []
+   },
+   "metadata": {
+    "device": "cuda",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "just text"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "30x40"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 9"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse rgb png / elements only / cuda=False": {
+  "body": {
+   "layout": {
+    "elements": [
+     "e"
+    ],
+    "reading_order": [
+     0
+    ]
+   },
+   "metadata": {
+    "device": "cpu",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "{\"elements\": [\"e\"], \"reading_order\": [0]}"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 41"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse rgb png / elements only / cuda=True": {
+  "body": {
+   "layout": {
+    "elements": [
+     "e"
+    ],
+    "reading_order": [
+     0
+    ]
+   },
+   "metadata": {
+    "device": "cuda",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "{\"elements\": [\"e\"], \"reading_order\": [0]}"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "30x40"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 41"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse rgb png / empty json / cuda=False": {
+  "body": {
+   "layout": {
+    "elements": [],
+    "reading_order": []
+   },
+   "metadata": {
+    "device": "cpu",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "{}"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 2"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse rgb png / empty json / cuda=True": {
+  "body": {
+   "layout": {
+    "elements": [],
+    "reading_order": []
+   },
+   "metadata": {
+    "device": "cuda",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "{}"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "30x40"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 2"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse rgb png / json / cuda=False": {
+  "body": {
+   "layout": {
+    "blocks": 1
+   },
+   "metadata": {
+    "device": "cpu",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [
+    [
+     1
+    ]
+   ],
+   "text": "Hello"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 5"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse rgb png / json / cuda=True": {
+  "body": {
+   "layout": {
+    "blocks": 1
+   },
+   "metadata": {
+    "device": "cuda",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [
+    [
+     1
+    ]
+   ],
+   "text": "Hello"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "30x40"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 5"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse rgb png / json list / cuda=False": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40"
+    ],
+    true
+   ]
+  ],
+  "logged": [
+   [
+    "Parse error",
+    "AttributeError"
+   ]
+  ],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)"
+  ],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse rgb png / json list / cuda=True": {
+  "body": {
+   "error": "Document parsing failed"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "30x40"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [
+   [
+    "Parse error",
+    "AttributeError"
+   ]
+  ],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)"
+  ],
+  "status": 500,
+  "temp_file_left": null
+ },
+ "parse rgb png / per page / cuda=False": {
+  "body": {
+   "layout": {
+    "elements": [],
+    "reading_order": []
+   },
+   "metadata": {
+    "device": "cpu",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "{}"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 2"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse rgb png / per page / cuda=True": {
+  "body": {
+   "layout": {
+    "elements": [],
+    "reading_order": []
+   },
+   "metadata": {
+    "device": "cuda",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "{}"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "30x40"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 2"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse rgb png / plain text / cuda=False": {
+  "body": {
+   "layout": {
+    "elements": [],
+    "reading_order": []
+   },
+   "metadata": {
+    "device": "cpu",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "just text"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 9"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse rgb png / plain text / cuda=True": {
+  "body": {
+   "layout": {
+    "elements": [],
+    "reading_order": []
+   },
+   "metadata": {
+    "device": "cuda",
+    "image_size": [
+     30,
+     40
+    ],
+    "model": "Dolphin-1.5"
+   },
+   "tables": [],
+   "text": "just text"
+  },
+  "calls": [
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     30,
+     40
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "30x40"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "30x40@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "30x40@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing image size: (30, 40)",
+   "Parsing complete. Text length: 9"
+  ],
+  "status": 200,
+  "temp_file_left": null
+ },
+ "parse_pdf convert fails / elements only / cuda=False": {
+  "body": {
+   "error": "PDF parsing failed"
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ]
+  ],
+  "logged": [
+   [
+    "PDF parse error",
+    "RuntimeError"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": false
+ },
+ "parse_pdf convert fails / elements only / cuda=True": {
+  "body": {
+   "error": "PDF parsing failed"
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ]
+  ],
+  "logged": [
+   [
+    "PDF parse error",
+    "RuntimeError"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": false
+ },
+ "parse_pdf convert fails / empty json / cuda=False": {
+  "body": {
+   "error": "PDF parsing failed"
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ]
+  ],
+  "logged": [
+   [
+    "PDF parse error",
+    "RuntimeError"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": false
+ },
+ "parse_pdf convert fails / empty json / cuda=True": {
+  "body": {
+   "error": "PDF parsing failed"
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ]
+  ],
+  "logged": [
+   [
+    "PDF parse error",
+    "RuntimeError"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": false
+ },
+ "parse_pdf convert fails / json / cuda=False": {
+  "body": {
+   "error": "PDF parsing failed"
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ]
+  ],
+  "logged": [
+   [
+    "PDF parse error",
+    "RuntimeError"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": false
+ },
+ "parse_pdf convert fails / json / cuda=True": {
+  "body": {
+   "error": "PDF parsing failed"
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ]
+  ],
+  "logged": [
+   [
+    "PDF parse error",
+    "RuntimeError"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": false
+ },
+ "parse_pdf convert fails / json list / cuda=False": {
+  "body": {
+   "error": "PDF parsing failed"
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ]
+  ],
+  "logged": [
+   [
+    "PDF parse error",
+    "RuntimeError"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": false
+ },
+ "parse_pdf convert fails / json list / cuda=True": {
+  "body": {
+   "error": "PDF parsing failed"
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ]
+  ],
+  "logged": [
+   [
+    "PDF parse error",
+    "RuntimeError"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": false
+ },
+ "parse_pdf convert fails / per page / cuda=False": {
+  "body": {
+   "error": "PDF parsing failed"
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ]
+  ],
+  "logged": [
+   [
+    "PDF parse error",
+    "RuntimeError"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": false
+ },
+ "parse_pdf convert fails / per page / cuda=True": {
+  "body": {
+   "error": "PDF parsing failed"
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ]
+  ],
+  "logged": [
+   [
+    "PDF parse error",
+    "RuntimeError"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": false
+ },
+ "parse_pdf convert fails / plain text / cuda=False": {
+  "body": {
+   "error": "PDF parsing failed"
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ]
+  ],
+  "logged": [
+   [
+    "PDF parse error",
+    "RuntimeError"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": false
+ },
+ "parse_pdf convert fails / plain text / cuda=True": {
+  "body": {
+   "error": "PDF parsing failed"
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ]
+  ],
+  "logged": [
+   [
+    "PDF parse error",
+    "RuntimeError"
+   ]
+  ],
+  "printed": [],
+  "status": 500,
+  "temp_file_left": false
+ },
+ "parse_pdf no file / elements only / cuda=False": {
+  "body": {
+   "error": "No PDF file provided"
+  },
+  "calls": [],
+  "logged": [],
+  "printed": [],
+  "status": 400,
+  "temp_file_left": null
+ },
+ "parse_pdf no file / elements only / cuda=True": {
+  "body": {
+   "error": "No PDF file provided"
+  },
+  "calls": [],
+  "logged": [],
+  "printed": [],
+  "status": 400,
+  "temp_file_left": null
+ },
+ "parse_pdf no file / empty json / cuda=False": {
+  "body": {
+   "error": "No PDF file provided"
+  },
+  "calls": [],
+  "logged": [],
+  "printed": [],
+  "status": 400,
+  "temp_file_left": null
+ },
+ "parse_pdf no file / empty json / cuda=True": {
+  "body": {
+   "error": "No PDF file provided"
+  },
+  "calls": [],
+  "logged": [],
+  "printed": [],
+  "status": 400,
+  "temp_file_left": null
+ },
+ "parse_pdf no file / json / cuda=False": {
+  "body": {
+   "error": "No PDF file provided"
+  },
+  "calls": [],
+  "logged": [],
+  "printed": [],
+  "status": 400,
+  "temp_file_left": null
+ },
+ "parse_pdf no file / json / cuda=True": {
+  "body": {
+   "error": "No PDF file provided"
+  },
+  "calls": [],
+  "logged": [],
+  "printed": [],
+  "status": 400,
+  "temp_file_left": null
+ },
+ "parse_pdf no file / json list / cuda=False": {
+  "body": {
+   "error": "No PDF file provided"
+  },
+  "calls": [],
+  "logged": [],
+  "printed": [],
+  "status": 400,
+  "temp_file_left": null
+ },
+ "parse_pdf no file / json list / cuda=True": {
+  "body": {
+   "error": "No PDF file provided"
+  },
+  "calls": [],
+  "logged": [],
+  "printed": [],
+  "status": 400,
+  "temp_file_left": null
+ },
+ "parse_pdf no file / per page / cuda=False": {
+  "body": {
+   "error": "No PDF file provided"
+  },
+  "calls": [],
+  "logged": [],
+  "printed": [],
+  "status": 400,
+  "temp_file_left": null
+ },
+ "parse_pdf no file / per page / cuda=True": {
+  "body": {
+   "error": "No PDF file provided"
+  },
+  "calls": [],
+  "logged": [],
+  "printed": [],
+  "status": 400,
+  "temp_file_left": null
+ },
+ "parse_pdf no file / plain text / cuda=False": {
+  "body": {
+   "error": "No PDF file provided"
+  },
+  "calls": [],
+  "logged": [],
+  "printed": [],
+  "status": 400,
+  "temp_file_left": null
+ },
+ "parse_pdf no file / plain text / cuda=True": {
+  "body": {
+   "error": "No PDF file provided"
+  },
+  "calls": [],
+  "logged": [],
+  "printed": [],
+  "status": 400,
+  "temp_file_left": null
+ },
+ "parse_pdf no pages / elements only / cuda=False": {
+  "body": {
+   "metadata": {
+    "device": "cpu",
+    "model": "Dolphin-1.5",
+    "total_pages": 0
+   },
+   "pages": []
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ],
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully"
+  ],
+  "status": 200,
+  "temp_file_left": false
+ },
+ "parse_pdf no pages / elements only / cuda=True": {
+  "body": {
+   "metadata": {
+    "device": "cuda",
+    "model": "Dolphin-1.5",
+    "total_pages": 0
+   },
+   "pages": []
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ],
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully"
+  ],
+  "status": 200,
+  "temp_file_left": false
+ },
+ "parse_pdf no pages / empty json / cuda=False": {
+  "body": {
+   "metadata": {
+    "device": "cpu",
+    "model": "Dolphin-1.5",
+    "total_pages": 0
+   },
+   "pages": []
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ],
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully"
+  ],
+  "status": 200,
+  "temp_file_left": false
+ },
+ "parse_pdf no pages / empty json / cuda=True": {
+  "body": {
+   "metadata": {
+    "device": "cuda",
+    "model": "Dolphin-1.5",
+    "total_pages": 0
+   },
+   "pages": []
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ],
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully"
+  ],
+  "status": 200,
+  "temp_file_left": false
+ },
+ "parse_pdf no pages / json / cuda=False": {
+  "body": {
+   "metadata": {
+    "device": "cpu",
+    "model": "Dolphin-1.5",
+    "total_pages": 0
+   },
+   "pages": []
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ],
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully"
+  ],
+  "status": 200,
+  "temp_file_left": false
+ },
+ "parse_pdf no pages / json / cuda=True": {
+  "body": {
+   "metadata": {
+    "device": "cuda",
+    "model": "Dolphin-1.5",
+    "total_pages": 0
+   },
+   "pages": []
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ],
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully"
+  ],
+  "status": 200,
+  "temp_file_left": false
+ },
+ "parse_pdf no pages / json list / cuda=False": {
+  "body": {
+   "metadata": {
+    "device": "cpu",
+    "model": "Dolphin-1.5",
+    "total_pages": 0
+   },
+   "pages": []
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ],
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully"
+  ],
+  "status": 200,
+  "temp_file_left": false
+ },
+ "parse_pdf no pages / json list / cuda=True": {
+  "body": {
+   "metadata": {
+    "device": "cuda",
+    "model": "Dolphin-1.5",
+    "total_pages": 0
+   },
+   "pages": []
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ],
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully"
+  ],
+  "status": 200,
+  "temp_file_left": false
+ },
+ "parse_pdf no pages / per page / cuda=False": {
+  "body": {
+   "metadata": {
+    "device": "cpu",
+    "model": "Dolphin-1.5",
+    "total_pages": 0
+   },
+   "pages": []
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ],
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully"
+  ],
+  "status": 200,
+  "temp_file_left": false
+ },
+ "parse_pdf no pages / per page / cuda=True": {
+  "body": {
+   "metadata": {
+    "device": "cuda",
+    "model": "Dolphin-1.5",
+    "total_pages": 0
+   },
+   "pages": []
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ],
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully"
+  ],
+  "status": 200,
+  "temp_file_left": false
+ },
+ "parse_pdf no pages / plain text / cuda=False": {
+  "body": {
+   "metadata": {
+    "device": "cpu",
+    "model": "Dolphin-1.5",
+    "total_pages": 0
+   },
+   "pages": []
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ],
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully"
+  ],
+  "status": 200,
+  "temp_file_left": false
+ },
+ "parse_pdf no pages / plain text / cuda=True": {
+  "body": {
+   "metadata": {
+    "device": "cuda",
+    "model": "Dolphin-1.5",
+    "total_pages": 0
+   },
+   "pages": []
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ],
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully"
+  ],
+  "status": 200,
+  "temp_file_left": false
+ },
+ "parse_pdf two pages / elements only / cuda=False": {
+  "body": {
+   "metadata": {
+    "device": "cpu",
+    "model": "Dolphin-1.5",
+    "total_pages": 2
+   },
+   "pages": [
+    {
+     "layout": {},
+     "page": 1,
+     "tables": [],
+     "text": "{\"elements\": [\"e\"], \"reading_order\": [0]}"
+    },
+    {
+     "layout": {},
+     "page": 2,
+     "tables": [],
+     "text": "{\"elements\": [\"e\"], \"reading_order\": [0]}"
+    }
+   ]
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ],
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     10,
+     20
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "10x20"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "10x20"
+    ],
+    true
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     11,
+     20
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "11x20"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "11x20"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing page 1/2",
+   "Processing page 2/2"
+  ],
+  "status": 200,
+  "temp_file_left": false
+ },
+ "parse_pdf two pages / elements only / cuda=True": {
+  "body": {
+   "metadata": {
+    "device": "cuda",
+    "model": "Dolphin-1.5",
+    "total_pages": 2
+   },
+   "pages": [
+    {
+     "layout": {},
+     "page": 1,
+     "tables": [],
+     "text": "{\"elements\": [\"e\"], \"reading_order\": [0]}"
+    },
+    {
+     "layout": {},
+     "page": 2,
+     "tables": [],
+     "text": "{\"elements\": [\"e\"], \"reading_order\": [0]}"
+    }
+   ]
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ],
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     10,
+     20
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "10x20"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "10x20@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "10x20@cuda"
+    ],
+    true
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     11,
+     20
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "11x20"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "11x20@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "11x20@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing page 1/2",
+   "Processing page 2/2"
+  ],
+  "status": 200,
+  "temp_file_left": false
+ },
+ "parse_pdf two pages / empty json / cuda=False": {
+  "body": {
+   "metadata": {
+    "device": "cpu",
+    "model": "Dolphin-1.5",
+    "total_pages": 2
+   },
+   "pages": [
+    {
+     "layout": {},
+     "page": 1,
+     "tables": [],
+     "text": "{}"
+    },
+    {
+     "layout": {},
+     "page": 2,
+     "tables": [],
+     "text": "{}"
+    }
+   ]
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ],
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     10,
+     20
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "10x20"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "10x20"
+    ],
+    true
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     11,
+     20
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "11x20"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "11x20"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing page 1/2",
+   "Processing page 2/2"
+  ],
+  "status": 200,
+  "temp_file_left": false
+ },
+ "parse_pdf two pages / empty json / cuda=True": {
+  "body": {
+   "metadata": {
+    "device": "cuda",
+    "model": "Dolphin-1.5",
+    "total_pages": 2
+   },
+   "pages": [
+    {
+     "layout": {},
+     "page": 1,
+     "tables": [],
+     "text": "{}"
+    },
+    {
+     "layout": {},
+     "page": 2,
+     "tables": [],
+     "text": "{}"
+    }
+   ]
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ],
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     10,
+     20
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "10x20"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "10x20@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "10x20@cuda"
+    ],
+    true
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     11,
+     20
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "11x20"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "11x20@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "11x20@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing page 1/2",
+   "Processing page 2/2"
+  ],
+  "status": 200,
+  "temp_file_left": false
+ },
+ "parse_pdf two pages / json / cuda=False": {
+  "body": {
+   "metadata": {
+    "device": "cpu",
+    "model": "Dolphin-1.5",
+    "total_pages": 2
+   },
+   "pages": [
+    {
+     "layout": {
+      "blocks": 1
+     },
+     "page": 1,
+     "tables": [
+      [
+       1
+      ]
+     ],
+     "text": "Hello"
+    },
+    {
+     "layout": {
+      "blocks": 1
+     },
+     "page": 2,
+     "tables": [
+      [
+       1
+      ]
+     ],
+     "text": "Hello"
+    }
+   ]
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ],
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     10,
+     20
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "10x20"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "10x20"
+    ],
+    true
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     11,
+     20
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "11x20"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "11x20"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing page 1/2",
+   "Processing page 2/2"
+  ],
+  "status": 200,
+  "temp_file_left": false
+ },
+ "parse_pdf two pages / json / cuda=True": {
+  "body": {
+   "metadata": {
+    "device": "cuda",
+    "model": "Dolphin-1.5",
+    "total_pages": 2
+   },
+   "pages": [
+    {
+     "layout": {
+      "blocks": 1
+     },
+     "page": 1,
+     "tables": [
+      [
+       1
+      ]
+     ],
+     "text": "Hello"
+    },
+    {
+     "layout": {
+      "blocks": 1
+     },
+     "page": 2,
+     "tables": [
+      [
+       1
+      ]
+     ],
+     "text": "Hello"
+    }
+   ]
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ],
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     10,
+     20
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "10x20"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "10x20@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "10x20@cuda"
+    ],
+    true
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     11,
+     20
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "11x20"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "11x20@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "11x20@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing page 1/2",
+   "Processing page 2/2"
+  ],
+  "status": 200,
+  "temp_file_left": false
+ },
+ "parse_pdf two pages / json list / cuda=False": {
+  "body": {
+   "error": "PDF parsing failed"
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ],
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     10,
+     20
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "10x20"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "10x20"
+    ],
+    true
+   ]
+  ],
+  "logged": [
+   [
+    "PDF parse error",
+    "AttributeError"
+   ]
+  ],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing page 1/2"
+  ],
+  "status": 500,
+  "temp_file_left": false
+ },
+ "parse_pdf two pages / json list / cuda=True": {
+  "body": {
+   "error": "PDF parsing failed"
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ],
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     10,
+     20
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "10x20"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "10x20@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "10x20@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [
+   [
+    "PDF parse error",
+    "AttributeError"
+   ]
+  ],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing page 1/2"
+  ],
+  "status": 500,
+  "temp_file_left": false
+ },
+ "parse_pdf two pages / per page / cuda=False": {
+  "body": {
+   "metadata": {
+    "device": "cpu",
+    "model": "Dolphin-1.5",
+    "total_pages": 2
+   },
+   "pages": [
+    {
+     "layout": {
+      "p": 1
+     },
+     "page": 1,
+     "tables": [],
+     "text": "one"
+    },
+    {
+     "layout": {},
+     "page": 2,
+     "tables": [],
+     "text": "two"
+    }
+   ]
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ],
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     10,
+     20
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "10x20"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "10x20"
+    ],
+    true
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     11,
+     20
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "11x20"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "11x20"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing page 1/2",
+   "Processing page 2/2"
+  ],
+  "status": 200,
+  "temp_file_left": false
+ },
+ "parse_pdf two pages / per page / cuda=True": {
+  "body": {
+   "metadata": {
+    "device": "cuda",
+    "model": "Dolphin-1.5",
+    "total_pages": 2
+   },
+   "pages": [
+    {
+     "layout": {
+      "p": 1
+     },
+     "page": 1,
+     "tables": [],
+     "text": "one"
+    },
+    {
+     "layout": {},
+     "page": 2,
+     "tables": [],
+     "text": "two"
+    }
+   ]
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ],
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     10,
+     20
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "10x20"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "10x20@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "10x20@cuda"
+    ],
+    true
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     11,
+     20
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "11x20"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "11x20@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "11x20@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing page 1/2",
+   "Processing page 2/2"
+  ],
+  "status": 200,
+  "temp_file_left": false
+ },
+ "parse_pdf two pages / plain text / cuda=False": {
+  "body": {
+   "metadata": {
+    "device": "cpu",
+    "model": "Dolphin-1.5",
+    "total_pages": 2
+   },
+   "pages": [
+    {
+     "layout": {},
+     "page": 1,
+     "tables": [],
+     "text": "just text"
+    },
+    {
+     "layout": {},
+     "page": 2,
+     "tables": [],
+     "text": "just text"
+    }
+   ]
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ],
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     10,
+     20
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "10x20"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "10x20"
+    ],
+    true
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     11,
+     20
+    ],
+    "pt"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "11x20"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "11x20"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on CPU (slower)",
+   "Dolphin model loaded successfully",
+   "Processing page 1/2",
+   "Processing page 2/2"
+  ],
+  "status": 200,
+  "temp_file_left": false
+ },
+ "parse_pdf two pages / plain text / cuda=True": {
+  "body": {
+   "metadata": {
+    "device": "cuda",
+    "model": "Dolphin-1.5",
+    "total_pages": 2
+   },
+   "pages": [
+    {
+     "layout": {},
+     "page": 1,
+     "tables": [],
+     "text": "just text"
+    },
+    {
+     "layout": {},
+     "page": 2,
+     "tables": [],
+     "text": "just text"
+    }
+   ]
+  },
+  "calls": [
+   [
+    "convert_from_path",
+    true,
+    true
+   ],
+   [
+    "processor.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.from_pretrained",
+    "/app/models",
+    true
+   ],
+   [
+    "model.cuda"
+   ],
+   [
+    "model.eval"
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     10,
+     20
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "10x20"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "10x20@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "10x20@cuda"
+    ],
+    true
+   ],
+   [
+    "processor",
+    "RGB",
+    [
+     11,
+     20
+    ],
+    "pt"
+   ],
+   [
+    "tensor.cuda",
+    "11x20"
+   ],
+   [
+    "generate",
+    [
+     [
+      "do_sample",
+      false
+     ],
+     [
+      "max_new_tokens",
+      2048
+     ],
+     [
+      "pixel_values",
+      "11x20@cuda"
+     ]
+    ]
+   ],
+   [
+    "batch_decode",
+    [
+     "11x20@cuda"
+    ],
+    true
+   ]
+  ],
+  "logged": [],
+  "printed": [
+   "Loading Dolphin model...",
+   "Loading from /app/models",
+   "Model loaded on GPU",
+   "Dolphin model loaded successfully",
+   "Processing page 1/2",
+   "Processing page 2/2"
+  ],
+  "status": 200,
+  "temp_file_left": false
+ },
+ "second request reuses the model": {
+  "first": {
+   "body": {
+    "layout": {
+     "blocks": 1
+    },
+    "metadata": {
+     "device": "cpu",
+     "image_size": [
+      30,
+      40
+     ],
+     "model": "Dolphin-1.5"
+    },
+    "tables": [
+     [
+      1
+     ]
+    ],
+    "text": "Hello"
+   },
+   "calls": [
+    [
+     "processor.from_pretrained",
+     "/app/models",
+     true
+    ],
+    [
+     "model.from_pretrained",
+     "/app/models",
+     true
+    ],
+    [
+     "model.eval"
+    ],
+    [
+     "processor",
+     "RGB",
+     [
+      30,
+      40
+     ],
+     "pt"
+    ],
+    [
+     "generate",
+     [
+      [
+       "do_sample",
+       false
+      ],
+      [
+       "max_new_tokens",
+       2048
+      ],
+      [
+       "pixel_values",
+       "30x40"
+      ]
+     ]
+    ],
+    [
+     "batch_decode",
+     [
+      "30x40"
+     ],
+     true
+    ]
+   ],
+   "logged": [],
+   "printed": [
+    "Loading Dolphin model...",
+    "Loading from /app/models",
+    "Model loaded on CPU (slower)",
+    "Dolphin model loaded successfully",
+    "Processing image size: (30, 40)",
+    "Parsing complete. Text length: 5"
+   ],
+   "status": 200,
+   "temp_file_left": null
+  },
+  "second": {
+   "body": {
+    "metadata": {
+     "device": "cpu",
+     "model": "Dolphin-1.5",
+     "total_pages": 1
+    },
+    "pages": [
+     {
+      "layout": {
+       "blocks": 1
+      },
+      "page": 1,
+      "tables": [
+       [
+        1
+       ]
+      ],
+      "text": "Hello"
+     }
+    ]
+   },
+   "calls": [
+    [
+     "convert_from_path",
+     true,
+     true
+    ],
+    [
+     "processor",
+     "RGB",
+     [
+      10,
+      20
+     ],
+     "pt"
+    ],
+    [
+     "generate",
+     [
+      [
+       "do_sample",
+       false
+      ],
+      [
+       "max_new_tokens",
+       2048
+      ],
+      [
+       "pixel_values",
+       "10x20"
+      ]
+     ]
+    ],
+    [
+     "batch_decode",
+     [
+      "10x20"
+     ],
+     true
+    ]
+   ],
+   "logged": [],
+   "printed": [
+    "Processing page 1/1"
+   ],
+   "status": 200,
+   "temp_file_left": false
+  }
+ }
+}

@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md
+ * @spec openspec/specs/party-model/spec.md
  */
 
 declare(strict_types=1);
@@ -34,15 +34,12 @@ use OCA\OpenRegister\Db\Schema;
 /**
  * The party declaration of one schema.
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+ * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) An immutable value object with one
  *   reader per declared field. The count IS the annotation's field count, and
  *   collapsing them into a `get(string $key)` would trade a typed reader for a
  *   string nobody can check.
- * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   `unionAddresses` is a value the
- *   schema declares, not a mode the caller picks. It is read off the annotation
- *   and carried; no call site passes a literal.
  */
 class PartyDefinition {
 
@@ -63,27 +60,83 @@ class PartyDefinition {
 	public const ADDRESS_KINDS = ['correspondence', 'case', 'location'];
 
 	/**
+	 * The kind of party objects of this schema are.
+	 *
+	 * @var string
+	 */
+	private readonly string $kind;
+
+	/**
+	 * The property carrying the party's display name.
+	 *
+	 * @var string|null
+	 */
+	private readonly ?string $nameProperty;
+
+	/**
+	 * The property carrying the addresses.
+	 *
+	 * @var string
+	 */
+	private readonly string $addressesProperty;
+
+	/**
+	 * The property carrying the indicators.
+	 *
+	 * @var string
+	 */
+	private readonly string $indicatorsProperty;
+
+	/**
+	 * The property naming the parent party, organisations only.
+	 *
+	 * @var string|null
+	 */
+	private readonly ?string $parentProperty;
+
+	/**
+	 * How deep the parent chain may go.
+	 *
+	 * @var int
+	 */
+	private readonly int $maxDepth;
+
+	/**
+	 * Properties the merge keeps from the survivor.
+	 *
+	 * @var array<int, string>
+	 */
+	private readonly array $survivingProperties;
+
+	/**
+	 * Whether a merge unions both parties' addresses.
+	 *
+	 * @var bool
+	 */
+	private readonly bool $unionAddresses;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $kind The kind of party objects of this schema are.
-	 * @param string|null $nameProperty The property carrying the party's display name.
-	 * @param string $addressesProperty The property carrying the addresses.
-	 * @param string $indicatorsProperty The property carrying the indicators.
-	 * @param string|null $parentProperty The property naming the parent party, organisations only.
+	 * @param PartyPropertyNames $properties Which properties carry the name, addresses, indicators and parent.
 	 * @param int $maxDepth How deep the parent chain may go.
-	 * @param array<int, string> $survivingProperties Properties the merge keeps from the survivor.
-	 * @param bool $unionAddresses Whether a merge unions both parties' addresses.
+	 * @param PartyMergeRules $merge What a merge keeps and unions.
 	 */
 	public function __construct(
-		private readonly string $kind = self::DEFAULT_KIND,
-		private readonly ?string $nameProperty = null,
-		private readonly string $addressesProperty = 'addresses',
-		private readonly string $indicatorsProperty = 'indicators',
-		private readonly ?string $parentProperty = null,
-		private readonly int $maxDepth = self::DEFAULT_MAX_DEPTH,
-		private readonly array $survivingProperties = [],
-		private readonly bool $unionAddresses = true,
+		string $kind = self::DEFAULT_KIND,
+		PartyPropertyNames $properties = new PartyPropertyNames(),
+		int $maxDepth = self::DEFAULT_MAX_DEPTH,
+		PartyMergeRules $merge = new PartyMergeRules(survivingProperties: [], unionAddresses: true),
 	) {
+		$this->kind = $kind;
+		$this->nameProperty = $properties->nameProperty;
+		$this->addressesProperty = $properties->addressesProperty;
+		$this->indicatorsProperty = $properties->indicatorsProperty;
+		$this->parentProperty = $properties->parentProperty;
+		$this->maxDepth = $maxDepth;
+		$this->survivingProperties = $merge->survivingProperties;
+		$this->unionAddresses = $merge->unionAddresses;
 	}//end __construct()
 
 	/**
@@ -93,7 +146,7 @@ class PartyDefinition {
 	 *
 	 * @return self|null The declaration.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public static function fromSchema(Schema $schema): ?self {
 		$annotation = $schema->getPartyAnnotation();
@@ -111,7 +164,7 @@ class PartyDefinition {
 	 *
 	 * @return self The declaration, every key defaulted.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public static function fromAnnotation(array $annotation): self {
 		$merge = ($annotation['merge'] ?? []);
@@ -129,13 +182,17 @@ class PartyDefinition {
 
 		return new self(
 			kind: (self::text(value: ($annotation['kind'] ?? null)) ?? self::DEFAULT_KIND),
-			nameProperty: self::text(value: ($annotation['nameProperty'] ?? null)),
-			addressesProperty: (self::text(value: ($annotation['addressesProperty'] ?? null)) ?? 'addresses'),
-			indicatorsProperty: (self::text(value: ($annotation['indicatorsProperty'] ?? null)) ?? 'indicators'),
-			parentProperty: self::text(value: ($annotation['parentProperty'] ?? null)),
+			properties: new PartyPropertyNames(
+				nameProperty: self::text(value: ($annotation['nameProperty'] ?? null)),
+				addressesProperty: (self::text(value: ($annotation['addressesProperty'] ?? null)) ?? 'addresses'),
+				indicatorsProperty: (self::text(value: ($annotation['indicatorsProperty'] ?? null)) ?? 'indicators'),
+				parentProperty: self::text(value: ($annotation['parentProperty'] ?? null)),
+			),
 			maxDepth: self::depth(value: ($annotation['maxDepth'] ?? null)),
-			survivingProperties: $surviving,
-			unionAddresses: (($merge['unionAddresses'] ?? true) !== false),
+			merge: new PartyMergeRules(
+				survivingProperties: $surviving,
+				unionAddresses: (($merge['unionAddresses'] ?? true) !== false),
+			),
 		);
 	}//end fromAnnotation()
 
@@ -144,7 +201,7 @@ class PartyDefinition {
 	 *
 	 * @return string The kind.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function kind(): string {
 		return $this->kind;
@@ -155,7 +212,7 @@ class PartyDefinition {
 	 *
 	 * @return string|null The property name.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function nameProperty(): ?string {
 		return $this->nameProperty;
@@ -166,7 +223,7 @@ class PartyDefinition {
 	 *
 	 * @return string The property name.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function addressesProperty(): string {
 		return $this->addressesProperty;
@@ -177,7 +234,7 @@ class PartyDefinition {
 	 *
 	 * @return string The property name.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function indicatorsProperty(): string {
 		return $this->indicatorsProperty;
@@ -188,7 +245,7 @@ class PartyDefinition {
 	 *
 	 * @return string|null The property name.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function parentProperty(): ?string {
 		return $this->parentProperty;
@@ -199,7 +256,7 @@ class PartyDefinition {
 	 *
 	 * @return int The bound, at least one.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function maxDepth(): int {
 		return $this->maxDepth;
@@ -210,7 +267,7 @@ class PartyDefinition {
 	 *
 	 * @return array<int, string> The property names, [] when the schema names none.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function survivingProperties(): array {
 		return $this->survivingProperties;
@@ -221,7 +278,7 @@ class PartyDefinition {
 	 *
 	 * @return bool True when it does.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function unionAddresses(): bool {
 		return $this->unionAddresses;

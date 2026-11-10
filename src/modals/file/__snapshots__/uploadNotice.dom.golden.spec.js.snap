@@ -1,0 +1,281 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`upload drop panel shows its notes after a failure without a message 1`] = `
+"<div class="filesListDragDropNotice tabPanelFileUpload">
+<div>
+</div>
+<div class="filesListDragDropNoticeWrapper">
+<div class="filesListDragDropNoticeWrapperIcon">
+<x-trayarrowdown size="48"></x-trayarrowdown>
+<h3 class="filesListDragDropNoticeTitle">t:Drag a file or files here</h3>
+</div>
+<h3 class="filesListDragDropNoticeTitle">t:Or</h3>
+<div class="filesListDragDropNoticeTitle">
+<x-ncbutton disabled="false" variant="primary">
+<slot-default>t:Add a file or files</slot-default>
+<slot-icon>
+<x-plus size="20"></x-plus>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>"
+`;
+
+exports[`upload drop panel shows its notes after an error with labels 1`] = `
+"<div class="filesListDragDropNotice tabPanelFileUpload">
+<div>
+<x-ncnotecard type="error">
+<slot-default>
+<p>t:Something went wrong while adding files</p>
+</slot-default>
+</x-ncnotecard>
+<x-ncnotecard type="error">
+<slot-default>
+<p>Broken</p>
+</slot-default>
+</x-ncnotecard>
+</div>
+<div class="filesListDragDropNoticeWrapper">
+<div class="filesListDragDropNoticeWrapperIcon">
+<x-trayarrowdown size="48"></x-trayarrowdown>
+<h3 class="filesListDragDropNoticeTitle">t:Drag a file or files here</h3>
+</div>
+<h3 class="filesListDragDropNoticeTitle">t:Or</h3>
+<div class="filesListDragDropNoticeTitle">
+<x-ncbutton disabled="false" variant="primary">
+<slot-default>t:Add a file or files</slot-default>
+<slot-icon>
+<x-plus size="20"></x-plus>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>"
+`;
+
+exports[`upload drop panel shows its notes after an error without labels 1`] = `
+"<div class="filesListDragDropNotice tabPanelFileUpload">
+<div>
+<x-ncnotecard type="info">
+<slot-default>
+<p>t:Select or create labels, or select "No label" to add files</p>
+</slot-default>
+</x-ncnotecard>
+</div>
+<div>
+<x-ncnotecard type="error">
+<slot-default>
+<p>t:Something went wrong while adding files</p>
+</slot-default>
+</x-ncnotecard>
+<x-ncnotecard type="error">
+<slot-default>
+<p>Broken</p>
+</slot-default>
+</x-ncnotecard>
+</div>
+<div class="filesListDragDropNoticeWrapper filesListDragDropNoticeWrapper--disabled">
+<div class="filesListDragDropNoticeWrapperIcon">
+<x-trayarrowdown size="48"></x-trayarrowdown>
+<h3 class="filesListDragDropNoticeTitle">t:Drag a file or files here</h3>
+</div>
+<h3 class="filesListDragDropNoticeTitle">t:Or</h3>
+<div class="filesListDragDropNoticeTitle">
+<x-ncbutton disabled="true" variant="primary">
+<slot-default>t:Add a file or files</slot-default>
+<slot-icon>
+<x-plus size="20"></x-plus>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>"
+`;
+
+exports[`upload drop panel shows its notes after success with an error left 1`] = `
+"<div class="filesListDragDropNotice tabPanelFileUpload">
+<div>
+<x-ncnotecard type="success">
+<slot-default>
+<p>t:Files added successfully</p>
+</slot-default>
+</x-ncnotecard>
+</div>
+<div class="filesListDragDropNoticeWrapper">
+<div class="filesListDragDropNoticeWrapperIcon">
+<x-trayarrowdown size="48"></x-trayarrowdown>
+<h3 class="filesListDragDropNoticeTitle">t:Drag a file or files here</h3>
+</div>
+<h3 class="filesListDragDropNoticeTitle">t:Or</h3>
+<div class="filesListDragDropNoticeTitle">
+<x-ncbutton disabled="false" variant="primary">
+<slot-default>t:Add a file or files</slot-default>
+<slot-icon>
+<x-plus size="20"></x-plus>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>"
+`;
+
+exports[`upload drop panel shows its notes after success with labels 1`] = `
+"<div class="filesListDragDropNotice tabPanelFileUpload">
+<div>
+<x-ncnotecard type="success">
+<slot-default>
+<p>t:Files added successfully</p>
+</slot-default>
+</x-ncnotecard>
+</div>
+<div class="filesListDragDropNoticeWrapper">
+<div class="filesListDragDropNoticeWrapperIcon">
+<x-trayarrowdown size="48"></x-trayarrowdown>
+<h3 class="filesListDragDropNoticeTitle">t:Drag a file or files here</h3>
+</div>
+<h3 class="filesListDragDropNoticeTitle">t:Or</h3>
+<div class="filesListDragDropNoticeTitle">
+<x-ncbutton disabled="false" variant="primary">
+<slot-default>t:Add a file or files</slot-default>
+<slot-icon>
+<x-plus size="20"></x-plus>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>"
+`;
+
+exports[`upload drop panel shows its notes after success without labels 1`] = `
+"<div class="filesListDragDropNotice tabPanelFileUpload">
+<div>
+<x-ncnotecard type="info">
+<slot-default>
+<p>t:Select or create labels, or select "No label" to add files</p>
+</slot-default>
+</x-ncnotecard>
+</div>
+<div>
+<x-ncnotecard type="success">
+<slot-default>
+<p>t:Files added successfully</p>
+</slot-default>
+</x-ncnotecard>
+</div>
+<div class="filesListDragDropNoticeWrapper filesListDragDropNoticeWrapper--disabled">
+<div class="filesListDragDropNoticeWrapperIcon">
+<x-trayarrowdown size="48"></x-trayarrowdown>
+<h3 class="filesListDragDropNoticeTitle">t:Drag a file or files here</h3>
+</div>
+<h3 class="filesListDragDropNoticeTitle">t:Or</h3>
+<div class="filesListDragDropNoticeTitle">
+<x-ncbutton disabled="true" variant="primary">
+<slot-default>t:Add a file or files</slot-default>
+<slot-icon>
+<x-plus size="20"></x-plus>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>"
+`;
+
+exports[`upload drop panel shows its notes while loading 1`] = `
+"<div class="filesListDragDropNotice tabPanelFileUpload">
+<div class="filesListDragDropNoticeWrapper filesListDragDropNoticeWrapper--disabled">
+<div class="filesListDragDropNoticeWrapperIcon">
+<x-trayarrowdown size="48"></x-trayarrowdown>
+<h3 class="filesListDragDropNoticeTitle">t:Drag a file or files here</h3>
+</div>
+<h3 class="filesListDragDropNoticeTitle">t:Or</h3>
+<div class="filesListDragDropNoticeTitle">
+<x-ncbutton disabled="true" variant="primary">
+<slot-default>t:Add a file or files</slot-default>
+<slot-icon>
+<x-plus size="20"></x-plus>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>"
+`;
+
+exports[`upload drop panel shows its notes with a file too big 1`] = `
+"<div class="filesListDragDropNotice tabPanelFileUpload">
+<div>
+<x-ncnotecard type="warning">
+<slot-default>
+<p class="folderLink">t:To add files larger than or equal to 512MB, go to the<x-ncbutton variant="secondary" class="folderLinkButton" aria-label="t:Open folder">
+<slot-default>t:folder</slot-default>
+<slot-icon>
+<x-folderoutline size="20"></x-folderoutline>
+</slot-icon>
+</x-ncbutton>t:and add the files there.</p>
+</slot-default>
+</x-ncnotecard>
+</div>
+<div class="filesListDragDropNoticeWrapper">
+<div class="filesListDragDropNoticeWrapperIcon">
+<x-trayarrowdown size="48"></x-trayarrowdown>
+<h3 class="filesListDragDropNoticeTitle">t:Drag a file or files here</h3>
+</div>
+<h3 class="filesListDragDropNoticeTitle">t:Or</h3>
+<div class="filesListDragDropNoticeTitle">
+<x-ncbutton disabled="false" variant="primary">
+<slot-default>t:Add a file or files</slot-default>
+<slot-icon>
+<x-plus size="20"></x-plus>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>"
+`;
+
+exports[`upload drop panel shows its notes with labels 1`] = `
+"<div class="filesListDragDropNotice tabPanelFileUpload">
+<div class="filesListDragDropNoticeWrapper">
+<div class="filesListDragDropNoticeWrapperIcon">
+<x-trayarrowdown size="48"></x-trayarrowdown>
+<h3 class="filesListDragDropNoticeTitle">t:Drag a file or files here</h3>
+</div>
+<h3 class="filesListDragDropNoticeTitle">t:Or</h3>
+<div class="filesListDragDropNoticeTitle">
+<x-ncbutton disabled="false" variant="primary">
+<slot-default>t:Add a file or files</slot-default>
+<slot-icon>
+<x-plus size="20"></x-plus>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>"
+`;
+
+exports[`upload drop panel shows its notes without labels 1`] = `
+"<div class="filesListDragDropNotice tabPanelFileUpload">
+<div>
+<x-ncnotecard type="info">
+<slot-default>
+<p>t:Select or create labels, or select "No label" to add files</p>
+</slot-default>
+</x-ncnotecard>
+</div>
+<div class="filesListDragDropNoticeWrapper filesListDragDropNoticeWrapper--disabled">
+<div class="filesListDragDropNoticeWrapperIcon">
+<x-trayarrowdown size="48"></x-trayarrowdown>
+<h3 class="filesListDragDropNoticeTitle">t:Drag a file or files here</h3>
+</div>
+<h3 class="filesListDragDropNoticeTitle">t:Or</h3>
+<div class="filesListDragDropNoticeTitle">
+<x-ncbutton disabled="true" variant="primary">
+<slot-default>t:Add a file or files</slot-default>
+<slot-icon>
+<x-plus size="20"></x-plus>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>"
+`;

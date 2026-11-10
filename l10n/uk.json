@@ -43,7 +43,7 @@
         ", {failed} failed": ", {failed} неудачно",
         "0 = unlimited": "0 = неограниченно",
         "A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself. This list shows every app's flows.": "Потік запускає серію кроків, коли щось відбувається — об'єкт змінюється, спрацьовує розклад або ви запускаєте його самі. Цей список показує потоки всіх застосунків.",
-        "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.": "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.",
+        "A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.": "Пару ключів VAPID налаштовано. Користувачі можуть увімкнути сповіщення браузера в налаштуваннях користувача; їх доставляють, навіть коли вкладка браузера закрита.",
         "A deactivation request is pending.": "Запит на деактивацію ожидает обробки.",
         "AI Assistant": "ИИ-помощник",
         "AI Chat": "ИИ-чат",
@@ -2925,7 +2925,7 @@
         "Complete: {outcome}": "Завершити: {outcome}",
         "Could not load the task": "Не вдалося завантажити завдання",
         "The task refused that action": "Завдання відхилило цю дію",
-        "Store": "Магазин",
+        "Marketplace": "Магазин",
         "Install registers, schemas and flows that other organisations have published.": "Встановлюйте реєстри, схеми та потоки, опубліковані іншими організаціями.",
         "No such run": "Немає такого запуску",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Запуск не існує, або ви не маєте права його бачити. Видалення потоку видаляє і його запуски.",
@@ -3351,7 +3351,10 @@
         "{schema} {title} deleted": "{schema} {title} видалено",
         "Object \"%1$s\" created": "Об’єкт \"%1$s\" створено",
         "Object \"%1$s\" updated": "Об’єкт \"%1$s\" оновлено",
-        "Object \"%1$s\" assigned to you": "Об’єкт \"%1$s\" призначено вам"
+        "Object \"%1$s\" assigned to you": "Об’єкт \"%1$s\" призначено вам",
+        "Audit trail export ready": "Експорт журналу аудиту готовий",
+        "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Ваш експорт журналу аудиту (%1$s записів) збережено в %2$s%3$s.",
+        "Open Files": "Відкрити Файли"
     },
     "pluralForm": "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);",
     "plurals": {

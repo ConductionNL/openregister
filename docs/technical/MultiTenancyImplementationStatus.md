@@ -18,7 +18,7 @@
 
 ### **Frontend Implementation**
 - ✅ **Entities** - DONE (organisation.ts, organisation.types.ts, organisation.mock.ts, organisation.spec.ts)
-- ✅ **Store** - DONE (organisation.js, organisation.spec.js)
+- ✅ **Marketplace** - DONE (organisation.js, organisation.spec.js)
 - ✅ **Views** - DONE (OrganisationsIndex.vue, OrganisationDetails.vue)
 - ✅ **Modals** - DONE (EditOrganisation.vue, DeleteOrganisation.vue, JoinOrganisation.vue)
 - ✅ **Store Integration** - DONE (organisationStore exported from main store)

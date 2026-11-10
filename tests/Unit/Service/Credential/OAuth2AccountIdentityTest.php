@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace Unit\Service\Credential;
 
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\TokenSetAddress;
 use OCA\OpenRegister\Service\Credential\OAuth2AccountIdentity;
 use OCA\OpenRegister\Service\Credential\OAuth2RefreshService;
 use OCA\OpenRegister\Service\Credential\OAuth2TokenSet;
@@ -58,11 +59,13 @@ class OAuth2AccountIdentityTest extends TestCase {
 
 	public function testTheHandleIsReadThroughTheBrokerAndRecordedOnTheCredential(): void {
 		$this->makeIdentity()->record(
-			provider: $this->mastodon(),
-			credentialId: 'cred-1',
-			scope: 'personal',
-			set: $this->tokenSet(),
-			owner: 'alice'
+			connection: new \OCA\OpenRegister\Service\Credential\RedeemedConnection(
+				provider: $this->mastodon(),
+				flow: new \OCA\OpenRegister\Service\Credential\OAuth2FlowClaims(claims: ['u' => 'alice']),
+				existing: null,
+				tokenSet: $this->tokenSet()
+			),
+			address: new TokenSetAddress(credentialId: 'cred-1', scope: 'personal')
 		);
 
 		$this->assertCount(1, $this->brokered);
@@ -83,19 +86,21 @@ class OAuth2AccountIdentityTest extends TestCase {
 		$identity = $this->makeIdentity(body: ['data' => ['id' => '7', 'username' => 'reisbureau', 'name' => 'Reisbureau']]);
 
 		$identity->record(
-			provider: [
-				'identity' => [
-					'method' => 'GET',
-					'path' => '/2/users/me',
-					'idField' => 'data.id',
-					'handleField' => 'data.username',
-					'displayNameField' => 'data.name',
+			connection: new \OCA\OpenRegister\Service\Credential\RedeemedConnection(
+				provider: [
+					'identity' => [
+						'method' => 'GET',
+						'path' => '/2/users/me',
+						'idField' => 'data.id',
+						'handleField' => 'data.username',
+						'displayNameField' => 'data.name',
+					],
 				],
-			],
-			credentialId: 'cred-1',
-			scope: 'personal',
-			set: $this->tokenSet(),
-			owner: 'alice'
+				flow: new \OCA\OpenRegister\Service\Credential\OAuth2FlowClaims(claims: ['u' => 'alice']),
+				existing: null,
+				tokenSet: $this->tokenSet()
+			),
+			address: new TokenSetAddress(credentialId: 'cred-1', scope: 'personal')
 		);
 
 		$this->assertSame(
@@ -106,11 +111,13 @@ class OAuth2AccountIdentityTest extends TestCase {
 
 	public function testAProviderThatDeclaresNoIdentityCallIsNotAsked(): void {
 		$this->makeIdentity()->record(
-			provider: ['identifier' => 'google-search-console'],
-			credentialId: 'cred-1',
-			scope: 'personal',
-			set: $this->tokenSet(),
-			owner: 'alice'
+			connection: new \OCA\OpenRegister\Service\Credential\RedeemedConnection(
+				provider: ['identifier' => 'google-search-console'],
+				flow: new \OCA\OpenRegister\Service\Credential\OAuth2FlowClaims(claims: ['u' => 'alice']),
+				existing: null,
+				tokenSet: $this->tokenSet()
+			),
+			address: new TokenSetAddress(credentialId: 'cred-1', scope: 'personal')
 		);
 
 		$this->assertSame([], $this->brokered);
@@ -121,11 +128,13 @@ class OAuth2AccountIdentityTest extends TestCase {
 		$identity = $this->makeIdentity(requestThrows: new RuntimeException('the provider is having a day'));
 
 		$identity->record(
-			provider: $this->mastodon(),
-			credentialId: 'cred-1',
-			scope: 'personal',
-			set: $this->tokenSet(),
-			owner: 'alice'
+			connection: new \OCA\OpenRegister\Service\Credential\RedeemedConnection(
+				provider: $this->mastodon(),
+				flow: new \OCA\OpenRegister\Service\Credential\OAuth2FlowClaims(claims: ['u' => 'alice']),
+				existing: null,
+				tokenSet: $this->tokenSet()
+			),
+			address: new TokenSetAddress(credentialId: 'cred-1', scope: 'personal')
 		);
 
 		$this->assertSame([], $this->persisted, 'a failed label read must leave the stored token set alone');
@@ -135,11 +144,13 @@ class OAuth2AccountIdentityTest extends TestCase {
 		$identity = $this->makeIdentity(rawBody: '<html>rate limited</html>');
 
 		$identity->record(
-			provider: $this->mastodon(),
-			credentialId: 'cred-1',
-			scope: 'personal',
-			set: $this->tokenSet(),
-			owner: 'alice'
+			connection: new \OCA\OpenRegister\Service\Credential\RedeemedConnection(
+				provider: $this->mastodon(),
+				flow: new \OCA\OpenRegister\Service\Credential\OAuth2FlowClaims(claims: ['u' => 'alice']),
+				existing: null,
+				tokenSet: $this->tokenSet()
+			),
+			address: new TokenSetAddress(credentialId: 'cred-1', scope: 'personal')
 		);
 
 		$this->assertSame([], $this->persisted);
@@ -223,7 +234,7 @@ class OAuth2AccountIdentityTest extends TestCase {
 
 		$refresh = $this->createMock(OAuth2RefreshService::class);
 		$refresh->method('persist')->willReturnCallback(
-			function (string $credentialId, string $scope, OAuth2TokenSet $set): void {
+			function (TokenSetAddress $address, OAuth2TokenSet $set): void {
 				$this->persisted[] = $set;
 			}
 		);

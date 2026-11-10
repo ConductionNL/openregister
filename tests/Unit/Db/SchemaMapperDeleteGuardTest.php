@@ -206,6 +206,24 @@ class SchemaMapperDeleteGuardTest extends TestCase {
 	}//end testDeleteRefusesWhenMagicTableHoldsObjects()
 
 	/**
+	 * One attached object is enough to refuse.
+	 *
+	 * @return void
+	 */
+	public function testDeleteRefusesForASingleObject(): void {
+		$this->db->method('tableExists')->willReturn(true);
+		$this->db->method('getQueryBuilder')->willReturnOnConsecutiveCalls(
+			$this->registerListQueryBuilder(),
+			$this->countQueryBuilder(1)
+		);
+
+		$this->expectException(ValidationException::class);
+		$this->expectExceptionMessage('Cannot delete schema: 1 objects are still attached.');
+
+		$this->mapper->delete($this->schema);
+	}//end testDeleteRefusesForASingleObject()
+
+	/**
 	 * The force bypass — and ONLY the force bypass — permits orphaning the objects.
 	 *
 	 * It skips the count entirely: no register lookup, no count query, straight to the

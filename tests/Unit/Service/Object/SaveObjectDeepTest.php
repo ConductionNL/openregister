@@ -47,7 +47,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
-use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ReferenceText;
+use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
 
 /**
  * Deep coverage tests for SaveObject
@@ -120,41 +122,78 @@ class SaveObjectDeepTest extends TestCase {
 		$this->propertyRbacHandler = $this->createMock(PropertyRbacHandler::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$arrayLoader = new ArrayLoader();
+		$permissionHandler = $this->createMock(PermissionHandler::class);
 
 		$this->handler = new SaveObject(
-			$this->objectEntityMapper,
-			$this->unifiedObjectMapper,
-			$this->metaHydrationHandler,
-			$this->filePropertyHandler,
-			$this->createMock(LinkedEntityPropertyHandler::class),
-			$this->userSession,
-			$this->auditTrailMapper,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->urlGenerator,
-			$this->organisationService,
-			$this->cacheHandler,
-			$this->settingsService,
-			$this->propertyRbacHandler,
-			$this->createMock(ComputedFieldHandler::class),
-			$this->createMock(TranslationHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->logger,
-			$this->createMock(TmloService::class),
-			$this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			$arrayLoader
+			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
+				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
+					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
+						objectEntityMapper: $this->objectEntityMapper,
+						unifiedObjectMapper: $this->unifiedObjectMapper,
+						schemaMapper: $this->schemaMapper,
+						registerMapper: $this->registerMapper
+					),
+					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
+						auditTrailMapper: $this->auditTrailMapper,
+						settingsService: $this->settingsService,
+						tmloService: $this->createMock(TmloService::class)
+					),
+					runtime: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime(
+						cacheHandler: $this->cacheHandler
+					)
+				),
+				handlers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers(
+					properties: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers(
+						metaHydrationHandler: $this->metaHydrationHandler,
+						filePropertyHandler: $this->filePropertyHandler,
+						linkedEntityHandler: $this->createMock(LinkedEntityPropertyHandler::class),
+						computedFieldHandler: $this->createMock(ComputedFieldHandler::class)
+					),
+					values: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers(
+						translationHandler: $this->createMock(TranslationHandler::class),
+						translationProjectionService: $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+						translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class)
+					)
+				),
+				platform: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform(
+					userSession: $this->userSession,
+					urlGenerator: $this->urlGenerator,
+					logger: $this->logger
+				),
+				tenancy: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy(
+					organisationService: $this->organisationService
+				)
+			),
+			propertyRbacHandler: $this->propertyRbacHandler,
+			permissionHandler: $permissionHandler,
+			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class)
 		);
 	}
 
 	private function invokePrivateMethod(string $methodName, array $args = []) {
+		if (in_array($methodName, EmptyValueCalls::METHODS, true) === true) {
+			return EmptyValueCalls::{$methodName}($this->handler, $args);
+		}
+
+		if (in_array($methodName, RelationCalls::METHODS, true) === true) {
+			return RelationCalls::{$methodName}($this->handler, $args);
+		}
+
+		if (in_array($methodName, PropertyDefaultsCalls::METHODS, true) === true) {
+			return PropertyDefaultsCalls::{$methodName}($this->handler, $args);
+		}
+
 		$reflection = new ReflectionMethod(SaveObject::class, $methodName);
 		$reflection->setAccessible(true);
 		return $reflection->invoke($this->handler, ...$args);
 	}
 
 	private function setPrivateProperty(string $property, $value): void {
+		if (in_array($property, SaveLookupsAccess::CACHES, true) === true) {
+			SaveLookupsAccess::set($this->handler, $property, $value);
+			return;
+		}
+
 		$ref = new ReflectionClass(SaveObject::class);
 		$prop = $ref->getProperty($property);
 		$prop->setAccessible(true);
@@ -162,6 +201,10 @@ class SaveObjectDeepTest extends TestCase {
 	}
 
 	private function getPrivateProperty(string $property) {
+		if (in_array($property, SaveLookupsAccess::CACHES, true) === true) {
+			return SaveLookupsAccess::get($this->handler, $property);
+		}
+
 		$ref = new ReflectionClass(SaveObject::class);
 		$prop = $ref->getProperty($property);
 		$prop->setAccessible(true);
@@ -324,7 +367,7 @@ class SaveObjectDeepTest extends TestCase {
 	// ── resolveRegisterReference tests ──────────────────────────────────
 
 	public function testResolveRegisterReferenceEmpty(): void {
-		$result = $this->invokePrivateMethod('resolveRegisterReference', ['']);
+		$result = SaveLookupsAccess::of($this->handler)->registerId(reference: '');
 		$this->assertNull($result);
 	}
 
@@ -334,7 +377,7 @@ class SaveObjectDeepTest extends TestCase {
 		$this->registerMapper->method('find')
 			->willReturn($register);
 
-		$result = $this->invokePrivateMethod('resolveRegisterReference', ['5']);
+		$result = SaveLookupsAccess::of($this->handler)->registerId(reference: '5');
 		$this->assertSame('5', $result);
 	}
 
@@ -346,7 +389,7 @@ class SaveObjectDeepTest extends TestCase {
 		$this->registerMapper->method('findAll')
 			->willReturn([]);
 
-		$result = $this->invokePrivateMethod('resolveRegisterReference', [$uuid]);
+		$result = SaveLookupsAccess::of($this->handler)->registerId(reference: $uuid);
 		$this->assertNull($result);
 	}
 
@@ -356,7 +399,7 @@ class SaveObjectDeepTest extends TestCase {
 		$this->registerMapper->method('findAll')
 			->willReturn([$register]);
 
-		$result = $this->invokePrivateMethod('resolveRegisterReference', ['publication']);
+		$result = SaveLookupsAccess::of($this->handler)->registerId(reference: 'publication');
 		$this->assertSame('3', $result);
 	}
 
@@ -366,9 +409,7 @@ class SaveObjectDeepTest extends TestCase {
 		$this->registerMapper->method('findAll')
 			->willReturn([$register]);
 
-		$result = $this->invokePrivateMethod('resolveRegisterReference', [
-			'http://example.com/api/registers/voorzieningen',
-		]);
+		$result = SaveLookupsAccess::of($this->handler)->registerId(reference: 'http://example.com/api/registers/voorzieningen');
 		$this->assertSame('8', $result);
 	}
 
@@ -378,7 +419,7 @@ class SaveObjectDeepTest extends TestCase {
 		$this->registerMapper->method('find')
 			->willThrowException(new Exception('not found'));
 
-		$result = $this->invokePrivateMethod('resolveRegisterReference', ['broken-slug']);
+		$result = SaveLookupsAccess::of($this->handler)->registerId(reference: 'broken-slug');
 		$this->assertNull($result);
 	}
 
@@ -390,19 +431,19 @@ class SaveObjectDeepTest extends TestCase {
 		$this->registerMapper->method('find')
 			->willReturn($register);
 
-		$result = $this->invokePrivateMethod('resolveRegisterReference', ['custom-register']);
+		$result = SaveLookupsAccess::of($this->handler)->registerId(reference: 'custom-register');
 		$this->assertSame('11', $result);
 	}
 
 	// ── removeQueryParameters tests ─────────────────────────────────────
 
 	public function testRemoveQueryParametersNoParams(): void {
-		$result = $this->invokePrivateMethod('removeQueryParameters', ['simple-ref']);
+		$result = (new ReferenceText())->withoutQuery(reference: 'simple-ref');
 		$this->assertSame('simple-ref', $result);
 	}
 
 	public function testRemoveQueryParametersStrips(): void {
-		$result = $this->invokePrivateMethod('removeQueryParameters', ['schema?key=val']);
+		$result = (new ReferenceText())->withoutQuery(reference: 'schema?key=val');
 		$this->assertSame('schema', $result);
 	}
 
@@ -613,70 +654,7 @@ class SaveObjectDeepTest extends TestCase {
 		$this->assertNull($result);
 	}
 
-	// ── createSlug tests ────────────────────────────────────────────────
-
-	public function testCreateSlugSimple(): void {
-		$this->assertSame('hello-world', $this->invokePrivateMethod('createSlug', ['Hello World']));
-	}
-
-	public function testCreateSlugSpecialChars(): void {
-		$this->assertSame('hello-world-2024', $this->invokePrivateMethod('createSlug', ['Hello! @World# $2024']));
-	}
-
-	public function testCreateSlugLongTextTruncation(): void {
-		$longText = str_repeat('a', 60);
-		$result = $this->invokePrivateMethod('createSlug', [$longText]);
-		$this->assertLessThanOrEqual(50, strlen($result));
-	}
-
-	public function testCreateSlugTrimsTrailingHyphens(): void {
-		$text = str_repeat('a', 49) . ' b';
-		$result = $this->invokePrivateMethod('createSlug', [$text]);
-		$this->assertStringEndsNotWith('-', $result);
-	}
-
-	// ── generateSlug tests ──────────────────────────────────────────────
-
-	public function testGenerateSlugNoConfig(): void {
-		$schema = $this->createMockSchema(1, 'test', []);
-		$this->assertNull($this->invokePrivateMethod('generateSlug', [['name' => 'test'], $schema]));
-	}
-
-	public function testGenerateSlugWithConfig(): void {
-		$schema = $this->createMockSchema(1, 'test', ['objectSlugField' => 'name']);
-		$result = $this->invokePrivateMethod('generateSlug', [['name' => 'Test Object'], $schema]);
-		$this->assertNotNull($result);
-		$this->assertStringStartsWith('test-object-', $result);
-	}
-
-	public function testGenerateSlugMissingFieldValue(): void {
-		$schema = $this->createMockSchema(1, 'test', ['objectSlugField' => 'title']);
-		$this->assertNull($this->invokePrivateMethod('generateSlug', [['name' => 'test'], $schema]));
-	}
-
-	public function testGenerateSlugException(): void {
-		$schema = $this->getMockBuilder(Schema::class)
-			->onlyMethods(['getConfiguration', 'getProperties', 'getSchemaObject', 'hasPropertyAuthorization'])
-			->getMock();
-		$schema->method('getConfiguration')->willThrowException(new Exception('Config error'));
-
-		$this->assertNull($this->invokePrivateMethod('generateSlug', [['name' => 'test'], $schema]));
-	}
-
-	// ── getValueFromPath tests ──────────────────────────────────────────
-
-	public function testGetValueFromPathNested(): void {
-		$data = ['contact' => ['email' => 'test@test.nl']];
-		$this->assertSame('test@test.nl', $this->invokePrivateMethod('getValueFromPath', [$data, 'contact.email']));
-	}
-
-	public function testGetValueFromPathMissing(): void {
-		$this->assertNull($this->invokePrivateMethod('getValueFromPath', [['name' => 'test'], 'missing.path']));
-	}
-
-	public function testGetValueFromPathConvertsToString(): void {
-		$this->assertSame('42', $this->invokePrivateMethod('getValueFromPath', [['count' => 42], 'count']));
-	}
+	// createSlug() / generateSlug() were removed (#4037); see ObjectSlugHandlerTest.
 
 	// ── isEffectivelyEmptyObject tests ──────────────────────────────────
 
@@ -978,10 +956,15 @@ class SaveObjectDeepTest extends TestCase {
 
 	// ── setSelfMetadata tests ───────────────────────────────────────────
 
-	public function testSetSelfMetadataSlug(): void {
+	public function testSetSelfMetadataNoLongerSetsTheSlug(): void {
+		// ObjectSlugHandler decides the slug after hydration (#4037).
 		$entity = $this->createObjectEntity(1, 'uuid-1');
 		$this->invokePrivateMethod('setSelfMetadata', [$entity, ['slug' => 'my-slug'], []]);
-		$this->assertSame('my-slug', $entity->getSlug());
+		$this->assertNull($entity->getSlug());
+	}
+
+	public function testClientSlugReadsSelfFirst(): void {
+		$this->assertSame('my-slug', $this->invokePrivateMethod('clientSlug', [['slug' => 'my-slug'], ['slug' => 'data-slug']]));
 	}
 
 	public function testSetSelfMetadataPublishedDate(): void {
@@ -1065,10 +1048,9 @@ class SaveObjectDeepTest extends TestCase {
 		$this->assertSame('org-uuid', $entity->getOrganisation());
 	}
 
-	public function testSetSelfMetadataSlugFromData(): void {
-		$entity = $this->createObjectEntity(1, 'uuid-1');
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, [], ['slug' => 'data-slug']]);
-		$this->assertSame('data-slug', $entity->getSlug());
+	public function testClientSlugFallsBackToTheData(): void {
+		$this->assertSame('data-slug', $this->invokePrivateMethod('clientSlug', [[], ['slug' => 'data-slug']]));
+		$this->assertNull($this->invokePrivateMethod('clientSlug', [['slug' => ''], []]));
 	}
 
 	public function testSetSelfMetadataDepublishedNotPresent(): void {

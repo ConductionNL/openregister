@@ -2,18 +2,37 @@ import type { ZodSafeParseResult } from 'zod'
 import type { TRegister } from './register.types'
 
 import { z } from 'zod'
+import { COPY, NO_QUOTA, NO_USAGE, withFallbacks } from '../withFallbacks.js'
+
+const FALLBACKS = {
+	id: '',
+	title: COPY,
+	description: COPY,
+	schemas: [],
+	source: '',
+	databaseId: COPY,
+	tablePrefix: '',
+	updated: '',
+	created: '',
+	slug: '',
+	groups: [],
+	languages: [],
+	quota: NO_QUOTA,
+	usage: NO_USAGE,
+	stats: COPY,
+}
 
 export class Register implements TRegister {
-	public id: string
-	public title: string
-	public description: string
-	public schemas: string[]
-	public source: string
-	public databaseId: string
-	public tablePrefix: string
-	public updated: string
-	public created: string
-	public slug: string
+	public id!: string
+	public title!: string
+	public description!: string
+	public schemas!: string[]
+	public source!: string
+	public databaseId!: string
+	public tablePrefix!: string
+	public updated!: string
+	public created!: string
+	public slug!: string
 	public groups?: string[]
 	public languages?: string[]
 	public quota?: TRegister['quota']
@@ -25,33 +44,7 @@ export class Register implements TRegister {
 	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
 	 */
 	constructor(register: TRegister) {
-		this.id = register.id || ''
-		this.title = register.title
-		this.description = register.description
-		this.schemas = register.schemas || []
-		this.source = register.source || ''
-		this.databaseId = register.databaseId
-		this.tablePrefix = register.tablePrefix || ''
-		this.updated = register.updated || ''
-		this.created = register.created || ''
-		this.slug = register.slug || ''
-		this.groups = register.groups || []
-		this.languages = register.languages || []
-		this.quota = register.quota || {
-			storage: null,
-			bandwidth: null,
-			requests: null,
-			users: null,
-			groups: null,
-		}
-		this.usage = register.usage || {
-			storage: 0,
-			bandwidth: 0,
-			requests: 0,
-			users: 0,
-			groups: 0,
-		}
-		this.stats = register.stats
+		Object.assign(this, withFallbacks(register, FALLBACKS))
 	}
 
 	public validate(): ZodSafeParseResult<unknown> {

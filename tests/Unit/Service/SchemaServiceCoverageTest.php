@@ -25,6 +25,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 
 /**
  * Coverage-focused unit tests for SchemaService
@@ -74,8 +76,7 @@ class SchemaServiceCoverageTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new SchemaService(
-			$this->schemaMapper,
-			$this->objectMapper,
+			new SchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->schemaMapper, tables: $this->objectMapper),
 			$this->logger
 		);
 	}
@@ -597,6 +598,19 @@ class SchemaServiceCoverageTest extends TestCase {
 		$this->assertEmpty($result['suggestions']);
 	}
 
+	public function testCompareTypeUnionContainingRecommendedMatches(): void {
+		$result = $this->invokeMethod('compareType', [['type' => ['string', 'null']], 'string']);
+		$this->assertSame([], $result['issues']);
+		$this->assertSame([], $result['suggestions']);
+	}
+
+	public function testCompareTypeUnionWithoutRecommendedIsAMismatch(): void {
+		$result = $this->invokeMethod('compareType', [['type' => ['integer', 'null']], 'string']);
+		$this->assertSame(["Type mismatch: current type is 'integer, null', recommended type is 'string'"], $result['issues']);
+		$this->assertSame(['integer', 'null'], $result['suggestions'][0]['current']);
+		$this->assertSame("Analysis suggests type 'string' but schema defines 'integer, null'", $result['suggestions'][0]['description']);
+	}
+
 	// =========================================================================
 	// compareStringConstraints
 	// =========================================================================
@@ -626,8 +640,9 @@ class SchemaServiceCoverageTest extends TestCase {
 	}
 
 	public function testCompareStringConstraintsNonStringType(): void {
-		$analysis = ['max_length' => 100, 'detected_format' => null, 'string_patterns' => []];
-		$result = $this->invokeMethod('compareStringConstraints', [['type' => 'integer'], $analysis, 'integer']);
+		$analysis = ['max_length' => 100, 'detected_format' => null, 'string_patterns' => [], 'types' => ['integer'], 'examples' => [1, 2]];
+		$result = $this->invokeMethod('comparePropertyWithAnalysis', [['type' => 'integer'], $analysis]);
+		$this->assertSame('integer', $result['recommended_type']);
 		$this->assertEmpty($result['issues']);
 	}
 
@@ -636,8 +651,9 @@ class SchemaServiceCoverageTest extends TestCase {
 	// =========================================================================
 
 	public function testCompareNumericConstraintsNonNumeric(): void {
-		$analysis = ['numeric_range' => ['min' => 1, 'max' => 10]];
-		$result = $this->invokeMethod('compareNumericConstraints', [['type' => 'string'], $analysis, 'string']);
+		$analysis = ['numeric_range' => ['min' => 1, 'max' => 10], 'types' => ['string'], 'examples' => ['a', 'b'], 'max_length' => 0];
+		$result = $this->invokeMethod('comparePropertyWithAnalysis', [['type' => 'string', 'minimum' => 50, 'maximum' => 2], $analysis]);
+		$this->assertSame('string', $result['recommended_type']);
 		$this->assertEmpty($result['issues']);
 	}
 
@@ -645,6 +661,27 @@ class SchemaServiceCoverageTest extends TestCase {
 		$analysis = ['numeric_range' => ['min' => 1, 'max' => 100]];
 		$result = $this->invokeMethod('compareNumericConstraints', [['type' => 'integer', 'minimum' => 10], $analysis, 'integer']);
 		$this->assertContains('minimum_too_high', $result['issues']);
+	}
+
+	public function testCompareNumericConstraintsUnsetMaximumIsMissing(): void {
+		$analysis = ['numeric_range' => ['min' => 1, 'max' => 100]];
+		$result = $this->invokeMethod('compareNumericConstraints', [['type' => 'integer', 'minimum' => 1], $analysis]);
+		$this->assertSame(['missing_maximum'], $result['issues']);
+		$this->assertSame('unlimited', $result['suggestions'][0]['current']);
+		$this->assertSame(100, $result['suggestions'][0]['recommended']);
+	}
+
+	public function testCompareNumericConstraintsUnsetMinimumIsMissing(): void {
+		$analysis = ['numeric_range' => ['min' => -3, 'max' => 9]];
+		$result = $this->invokeMethod('compareNumericConstraints', [['type' => 'integer', 'maximum' => 9], $analysis]);
+		$this->assertSame(['missing_minimum'], $result['issues']);
+		$this->assertSame(-3, $result['suggestions'][0]['recommended']);
+	}
+
+	public function testCompareNumericConstraintsUnsetBoundsOnASingleValueAreFine(): void {
+		$analysis = ['numeric_range' => ['min' => 4, 'max' => 4]];
+		$result = $this->invokeMethod('compareNumericConstraints', [['type' => 'integer'], $analysis]);
+		$this->assertSame([], $result['issues']);
 	}
 
 	public function testCompareNumericConstraintsMaximumTooLow(): void {

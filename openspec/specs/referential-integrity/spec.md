@@ -151,7 +151,7 @@ The system MUST support a `validateReference` boolean on schema properties. When
 - **AND** the save MUST succeed
 
 ### Requirement 5: Orphan detection and cleanup MUST be supported for inversedBy relations
-When a parent object is updated and sub-objects are removed from an `inversedBy` array property, the system MUST detect and soft-delete orphaned sub-objects. `SaveObject::deleteOrphanedRelatedObjects()` handles this cleanup.
+When a parent object is updated and sub-objects are removed from an `inversedBy` array property, the system MUST detect and soft-delete orphaned sub-objects. `SaveObject::deleteOrphanedRelatedObjects()` handles this cleanup. The cleanup is opt-in per parent schema through `configuration.orphanCleanup` (default false: the child stays and only loses the reference), and it deletes only a row the caller may delete within the caller's organisations.
 
 #### Scenario: Sub-objects removed during update are soft-deleted
 - **GIVEN** an `incident` object with property `notes` (array, `inversedBy: "incident"`, `cascade: true`)
@@ -291,7 +291,7 @@ Each integrity action MUST produce an audit trail entry via `ReferentialIntegrit
 - **AND** expired entries SHALL be eligible for cleanup per the deletion-audit-trail spec
 
 ### Requirement 11: API _extend parameter MUST support lazy and eager reference resolution
-The API MUST support an `_extend` query parameter that controls whether referenced objects are resolved inline (eager) or returned as UUIDs (lazy, default). `RelationHandler::extractAllRelationshipIds()` and `bulkLoadRelationshipsBatched()` handle bulk resolution.
+The API MUST support an `_extend` query parameter that controls whether referenced objects are resolved inline (eager) or returned as UUIDs (lazy, default). `RelationHandler::bulkLoadRelationshipsBatched()` handles bulk resolution.
 
 #### Scenario: Lazy resolution (default)
 - **GIVEN** an order object with `assignee: "person-uuid"`
@@ -307,9 +307,8 @@ The API MUST support an `_extend` query parameter that controls whether referenc
 #### Scenario: Performance circuit breaker on relationship loading
 - **GIVEN** an object with 500 relationship IDs across multiple properties
 - **WHEN** `_extend` is requested
-- **THEN** `extractAllRelationshipIds()` MUST cap extraction at `$maxIds = 200`
+- **THEN** `bulkLoadRelationshipsBatched()` MUST cap the load at 200 relationship ids, logging a warning
 - **AND** `bulkLoadRelationshipsBatched()` MUST process in batches of 50
-- **AND** array relationships per object MUST be limited to 10 entries
 
 #### Scenario: _extend across registers
 - **GIVEN** an order with `customer` referencing a person in a different register
@@ -414,6 +413,26 @@ Referential integrity operations MUST bypass RBAC and multi-tenancy filters when
 - **THEN** `filterByRbac()` MUST check schema authorization for each result
 - **AND** only the 3 accessible orders MUST be returned
 
+### Requirement 16: A reference that cites a row by a key property MUST be able to refuse its delete
+A schema property whose values cite rows of another schema by a key property (a code, not a uuid) MUST be able to declare `referenceSchema` (the cited schema, on the property or on `items`), `referenceKey` (the cited schema's property, e.g. `code`) and `onDelete: RESTRICT`. Deleting a cited row MUST then be refused with the citing rows as blockers, exactly as for a uuid reference. `referenceSchema` MUST NOT engage the `$ref` relation behaviour (rendering, `_extend`, uuid validation). A key reference MUST be honoured only with `RESTRICT`: saving a schema that declares `referenceKey` with any other action MUST be refused (a `referenceKey` that is empty or the literal `uuid` is a plain uuid reference, to which every action applies, and is read that way by the save and by the delete), and such a relation that reaches the relation index anyway MUST be left out with a warning. `onDelete` MUST be accepted on a property with `referenceSchema` as it is on one with `$ref`. The check MUST fail closed: when the citing rows cannot be read, the delete MUST be refused with a blocker whose `reason` is `unverifiable`; only a citing table that does not exist yet MUST count as "nothing cites it". A row without a value for the key MUST be deletable. This is the generic reference guard (capability C25 of hydra's `procedures-are-configuration`), so an app needs no delete listener of its own.
+
+#### Scenario: A cited code refuses the delete
+- **GIVEN** schema `note` with property `labels` = `{type: array, items: {type: string}, referenceSchema: label, referenceKey: code, onDelete: RESTRICT}`
+- **AND** a note whose `labels` holds `A1`
+- **WHEN** the `label` row with `code` `A1` is deleted
+- **THEN** the delete MUST be refused with `DELETION_BLOCKED`, naming the note as blocker
+- **AND** the citing table MUST be searched for `A1`, not for the label's uuid
+
+#### Scenario: An unreadable citation refuses the delete
+- **GIVEN** the same schemas, and the citing table exists but cannot be read
+- **WHEN** the `label` row is deleted
+- **THEN** the delete MUST be refused with a blocker whose `reason` is `unverifiable`
+
+#### Scenario: A key reference does not cascade
+- **GIVEN** a key reference declared with `onDelete: CASCADE`
+- **WHEN** the relation index is built
+- **THEN** the relation MUST be left out and a warning logged
+
 ## Current Implementation Status
 
 **Substantially implemented.** Core referential integrity logic exists:
@@ -445,8 +464,7 @@ Referential integrity operations MUST bypass RBAC and multi-tenancy filters when
 - `lib/Service/Object/RelationHandler.php` -- Relation graph traversal:
   - `getUses()` -- outgoing references with cross-register magic table search
   - `getUsedBy()` -- incoming references via `_relations_contains` search
-  - `extractAllRelationshipIds()` with circuit breaker (200 max IDs)
-  - `bulkLoadRelationshipsBatched()` with 50-object batch size
+  - `bulkLoadRelationshipsBatched()` with a 200-id cap and 50-object batch size
   - `filterByRbac()` for RBAC-filtered relation results
 - `lib/Db/Schema.php` -- Schema property `onDelete`, `validateReference`, `inversedBy`, `writeBack`, `cascade` configuration
 - Schema property `onDelete` configuration supported and validated

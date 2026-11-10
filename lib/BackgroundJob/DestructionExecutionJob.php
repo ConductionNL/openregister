@@ -30,18 +30,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Service\Archival\RecordState;
-use OCA\OpenRegister\Service\Object\DeleteObject;
-use OCA\OpenRegister\Service\RetentionService;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
-use OCP\IGroupManager;
-use OCP\Notification\IManager as INotificationManager;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -51,29 +42,13 @@ use Psr\Log\LoggerInterface;
  * Processes destruction in batches, respects legal holds at execution time,
  * and generates destruction certificates.
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class DestructionExecutionJob extends QueuedJob {
+class DestructionExecutionJob extends QueuedJob implements DestructionExecutionJobInterface {
 
 	/**
 	 * Default batch size for destruction processing.
 	 */
-	private const DEFAULT_BATCH_SIZE = 50;
-
-	/**
-	 * Review answers that forbid destroying the entry carrying them.
-	 *
-	 * Read from DestructionReviewService's own constants rather than copied as
-	 * literals: the class that writes the value and the class that refuses to
-	 * act on it must not be able to drift apart. The third answer, `destroy`,
-	 * is the one this job exists to carry out.
-	 *
-	 * @var string[]
-	 */
-	private const WITHHELD_DECISIONS = [
-		\OCA\OpenRegister\Service\Archival\DestructionReviewService::ANSWER_RETAIN,
-		\OCA\OpenRegister\Service\Archival\DestructionReviewService::ANSWER_TRANSFER,
-	];
+	public const DEFAULT_BATCH_SIZE = 50;
 
 	/**
 	 * Constructor.
@@ -92,10 +67,6 @@ class DestructionExecutionJob extends QueuedJob {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
@@ -112,232 +83,9 @@ class DestructionExecutionJob extends QueuedJob {
 		$logger->info('[DestructionExecutionJob] Processing destruction list: ' . $listUuid);
 
 		try {
-			$retentionService = $this->container->get(RetentionService::class);
-			$settingsHandler = $this->container->get(ObjectRetentionHandler::class);
-			$objectMapper = $this->container->get(MagicMapper::class);
-			$auditMapper = $this->container->get(AuditTrailMapper::class);
-			$deleteObject = $this->container->get(DeleteObject::class);
-			$saveObject = $this->container->get(\OCA\OpenRegister\Service\Object\SaveObject::class);
-			$settings = $settingsHandler->getArchivalSettingsOnly();
-			$batchSize = (int)($settings['destructionBatchSize'] ?? self::DEFAULT_BATCH_SIZE);
-
-			// Load the destruction list object.
-			$listObject = $objectMapper->find($listUuid, null, null, false, false, false);
-
-			if ($listObject === null) {
-				$logger->error('[DestructionExecutionJob] Destruction list not found: ' . $listUuid);
-				return;
-			}
-
-			$listData = $listObject->getObject();
-
-			if (($listData['status'] ?? '') !== 'approved') {
-				$logger->warning('[DestructionExecutionJob] List not approved: ' . $listUuid);
-				return;
-			}
-
-			// Re-entrancy guard (harden-retention-destruction): claim the list by
-			// transitioning approved -> executing and persisting it BEFORE the
-			// batch loop. A concurrent or retried run then loads status
-			// 'executing', fails the approved-check above, and exits — preventing
-			// the same objects being deleted twice and duplicate audit rows.
-			$listData['status'] = 'executing';
-			$listData['executingAt'] = (new DateTime())->format('c');
-			$listObject->setObject($listData);
-			$objectMapper->update($listObject);
-
-			$objects = $listData['objects'] ?? [];
-			$destroyedCount = 0;
-			$skippedHolds = 0;
-			$skippedErrors = 0;
-			$skippedDecisions = 0;
-			$batches = array_chunk($objects, $batchSize);
-
-			foreach ($batches as $batchIndex => $batch) {
-				$logger->info(
-					'[DestructionExecutionJob] Batch ' . ($batchIndex + 1) . '/' . count($batches)
-				);
-
-				foreach ($batch as $objRef) {
-					$uuid = $objRef['uuid'] ?? null;
-					if ($uuid === null) {
-						$skippedErrors++;
-						continue;
-					}
-
-					// 🔴 A RECORDED "KEEP THIS" IS NEVER DESTROYED, whatever the
-					// list says. DestructionService::approveList() already takes
-					// these entries off the list at approval; this is the second
-					// lock on the same door, because the door opens onto an
-					// irreversible statutory act. A list approved before that fix
-					// shipped, a list written by some other path, or a future
-					// caller that queues this job directly all arrive here with
-					// the reviewer's answer still on the entry — and reading it
-					// costs one array lookup.
-					$decision = $objRef['decision'] ?? null;
-					if (in_array($decision, self::WITHHELD_DECISIONS, true) === true) {
-						$skippedDecisions++;
-						$logger->warning(
-							sprintf(
-								'[DestructionExecutionJob] Refusing to destroy %s: review decision "%s"',
-								(string)$uuid,
-								(string)$decision
-							)
-						);
-						continue;
-					}
-
-					try {
-						$object = $objectMapper->find($uuid, null, null, false, false, false);
-
-						if ($object === null) {
-							$skippedErrors++;
-							continue;
-						}
-
-						// Re-check legal hold at execution time.
-						if ($retentionService->hasActiveLegalHold($object) === true) {
-							$skippedHolds++;
-							continue;
-						}
-
-						// Update archiefstatus before deletion.
-						$retention = $object->getRetention() ?? [];
-						$retention['archiefstatus'] = RecordState::DESTROYED;
-						$object->setRetention($retention);
-
-						// Create audit trail entry.
-						$auditMapper->createAuditTrailEntry(
-							$object,
-							'archival.destroyed',
-							[
-								'destructionListUuid' => $listUuid,
-								'classification' => $objRef['classification'] ?? null,
-								'approvedBy' => array_column(
-									$listData['approvals'] ?? [],
-									'userId'
-								),
-							]
-						);
-
-						// Permanently delete using register, schema, uuid.
-						$deleteObject->deleteObject(
-							$object->getRegister(),
-							$object->getSchema(),
-							$uuid,
-							null,
-							false,
-							false
-						);
-						$destroyedCount++;
-					} catch (Exception $e) {
-						$skippedErrors++;
-						$logger->warning(
-							'[DestructionExecutionJob] Failed: ' . $uuid . ': ' . $e->getMessage()
-						);
-					}//end try
-				}//end foreach
-			}//end foreach
-
-			// Update destruction list status.
-			$listData['status'] = 'executed';
-			$listData['executedAt'] = (new DateTime())->format('c');
-			$listData['destroyedCount'] = $destroyedCount;
-			$listData['skippedHolds'] = $skippedHolds;
-			$listData['skippedErrors'] = $skippedErrors;
-			$listData['skippedDecisions'] = $skippedDecisions;
-
-			// Generate destruction certificate.
-			$certificate = $retentionService->generateDestructionCertificate(
-				$listData,
-				$destroyedCount,
-				$listData['executedAt']
-			);
-
-			if (empty($settings['archivalRegister']) === false
-				&& empty($settings['destructionListSchema']) === false
-			) {
-				try {
-					$savedCert = $saveObject->saveObject(
-						$settings['archivalRegister'],
-						$settings['destructionListSchema'],
-						$certificate,
-						null,
-						null,
-						false,
-						false,
-						true,
-						true
-					);
-					$listData['certificateUuid'] = $savedCert->getUuid();
-				} catch (Exception $e) {
-					$logger->warning('[DestructionExecutionJob] Certificate save error: ' . $e->getMessage());
-				}
-			}
-
-			$listObject->setObject($listData);
-			$objectMapper->update($listObject);
-
-			if ($skippedHolds > 0) {
-				$this->notifySkippedHolds(listUuid: $listUuid, skippedCount: $skippedHolds, logger: $logger);
-			}
-
-			$logger->info(
-				sprintf(
-					'[DestructionExecutionJob] Done: %d destroyed, %d held, %d withheld by decision, %d errors',
-					$destroyedCount,
-					$skippedHolds,
-					$skippedDecisions,
-					$skippedErrors
-				)
-			);
+			(new DestructionListRun(container: $this->container, logger: $logger))->execute(listUuid: (string)$listUuid);
 		} catch (Exception $e) {
-			$logger->error('[DestructionExecutionJob] Fatal: ' . $e->getMessage(), ['exception' => $e]);
-		}//end try
+			$logger->error('[DestructionExecutionJob] Fatal: '.$e->getMessage(), ['exception' => $e]);
+		}
 	}//end run()
-
-	/**
-	 * Notify archivaris group about objects skipped due to legal holds.
-	 *
-	 * @param string $listUuid Destruction list UUID
-	 * @param int $skippedCount Number of skipped objects
-	 * @param LoggerInterface $logger Logger
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/archival-destruction-workflow/spec.md
-	 */
-	private function notifySkippedHolds(
-		string $listUuid,
-		int $skippedCount,
-		LoggerInterface $logger,
-	): void {
-		try {
-			$notificationManager = $this->container->get(INotificationManager::class);
-			$groupManager = $this->container->get(IGroupManager::class);
-
-			$group = $groupManager->get('archivaris');
-			if ($group === null) {
-				return;
-			}
-
-			foreach ($group->getUsers() as $user) {
-				$notification = $notificationManager->createNotification();
-				$notification->setApp('openregister')
-					->setUser($user->getUID())
-					->setDateTime(new DateTime())
-					->setObject('destruction_list', $listUuid)
-					->setSubject(
-						'destruction_holds_skipped',
-						[
-							'listUuid' => $listUuid,
-							'skippedCount' => $skippedCount,
-						]
-					);
-				$notificationManager->notify($notification);
-			}
-		} catch (Exception $e) {
-			$logger->warning('[DestructionExecutionJob] Hold notify error: ' . $e->getMessage());
-		}//end try
-	}//end notifySkippedHolds()
 }//end class

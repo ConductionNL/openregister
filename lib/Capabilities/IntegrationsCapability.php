@@ -31,9 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Capabilities;
 
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
-use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
-use OCA\OpenRegister\Service\Integration\LeafRegistry;
-use OCP\App\IAppManager;
+use OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface;
 use OCP\Capabilities\ICapability;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -57,20 +55,18 @@ class IntegrationsCapability implements ICapability {
 	/**
 	 * Constructor.
 	 *
-	 * @param IntegrationRegistry $registry Integration registry.
-	 * @param IUserSession $userSession Current user session.
-	 * @param IGroupManager $groupManager Group manager (admin check).
-	 * @param IAppManager $appManager App manager (installed check).
-	 * @param LeafRegistry $leafRegistry Cross-app leaf catalogue (ADR-066).
+	 * @param IntegrationCatalogueInterface  $registry     Integration registry.
+	 * @param IUserSession                   $userSession  Current user session.
+	 * @param IGroupManager                  $groupManager Group manager (admin check).
+	 * @param IntegrationsCapabilityServices $services     App manager (installed check) and cross-app leaf catalogue.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private IntegrationRegistry $registry,
+		private IntegrationCatalogueInterface $registry,
 		private IUserSession $userSession,
 		private IGroupManager $groupManager,
-		private IAppManager $appManager,
-		private LeafRegistry $leafRegistry,
+		private IntegrationsCapabilityServices $services,
 	) {
 	}//end __construct()
 
@@ -111,7 +107,7 @@ class IntegrationsCapability implements ICapability {
 					// surface leaf renders. Render-surface parity to the JS
 					// registration — including the renderMode correlation — is
 					// keyed by the shared id.
-					'leaves' => $this->leafRegistry->describeForCapabilities(),
+					'leaves' => $this->services->leafRegistry->describeForCapabilities(),
 				],
 			],
 		];
@@ -179,7 +175,7 @@ class IntegrationsCapability implements ICapability {
 			return true;
 		}
 
-		return $this->appManager->isEnabledForUser($appId);
+		return $this->services->appManager->isEnabledForUser($appId);
 	}//end appIsInstalled()
 
 	/**

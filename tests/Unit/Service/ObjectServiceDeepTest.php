@@ -16,7 +16,6 @@
  * - count
  * - findByRelations
  * - deleteObject
- * - getActiveOrganisationForContext
  *
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Service
@@ -30,7 +29,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -735,54 +734,5 @@ class ObjectServiceDeepTest extends TestCase {
 	// =========================================================================
 	// getActiveOrganisationForContext (private)
 	// =========================================================================
-
-	/**
-	 * Test getActiveOrganisationForContext returns UUID
-	 *
-	 * @return void
-	 */
-	public function testGetActiveOrganisationForContextReturnsUuid(): void {
-		$method = new \ReflectionMethod(ObjectService::class, 'getActiveOrganisationForContext');
-
-		$org = new \OCA\OpenRegister\Db\Organisation();
-		$org->setUuid('org-uuid');
-
-		$this->organisationService->method('getActiveOrganisation')->willReturn($org);
-
-		$result = $method->invoke($this->service);
-		$this->assertEquals('org-uuid', $result);
-
-	}//end testGetActiveOrganisationForContextReturnsUuid()
-
-	/**
-	 * Test getActiveOrganisationForContext returns null when no org
-	 *
-	 * @return void
-	 */
-	public function testGetActiveOrganisationForContextReturnsNull(): void {
-		$method = new \ReflectionMethod(ObjectService::class, 'getActiveOrganisationForContext');
-
-		$this->organisationService->method('getActiveOrganisation')->willReturn(null);
-
-		$result = $method->invoke($this->service);
-		$this->assertNull($result);
-
-	}//end testGetActiveOrganisationForContextReturnsNull()
-
-	/**
-	 * Test getActiveOrganisationForContext handles exception
-	 *
-	 * @return void
-	 */
-	public function testGetActiveOrganisationForContextException(): void {
-		$method = new \ReflectionMethod(ObjectService::class, 'getActiveOrganisationForContext');
-
-		$this->organisationService->method('getActiveOrganisation')
-			->willThrowException(new \Exception('Service error'));
-
-		$result = $method->invoke($this->service);
-		$this->assertNull($result);
-
-	}//end testGetActiveOrganisationForContextException()
 
 }//end class

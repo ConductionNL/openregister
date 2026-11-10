@@ -29,18 +29,25 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Controller\Support\OrganisationControllerServices;
 use OCA\OpenRegister\Db\Organisation;
-use OCA\OpenRegister\Db\OrganisationMapper;
-use OCA\OpenRegister\Db\TenantUsageMapper;
-use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\TenantLifecycleService;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
+use OCA\OpenRegister\Db\TenantUsageMapperInterface;
+use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
+use OCA\OpenRegister\Service\OrganisationUsageServiceInterface;
+use OCA\OpenRegister\Service\Organisation\OrganisationEditAuditorInterface;
+use OCA\OpenRegister\Service\Rbac\GrantChangeAuditorInterface;
+use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRightsInterface;
+use OCA\OpenRegister\Service\TenantLifecycleServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -68,16 +75,16 @@ class OrganisationController extends Controller {
 	/**
 	 * Organisation service for business logic
 	 *
-	 * @var OrganisationService
+	 * @var OrganisationServiceInterface
 	 */
-	private OrganisationService $organisationService;
+	private OrganisationServiceInterface $organisationService;
 
 	/**
 	 * Organisation mapper for direct database operations
 	 *
-	 * @var OrganisationMapper
+	 * @var OrganisationMapperInterface
 	 */
-	private OrganisationMapper $organisationMapper;
+	private OrganisationMapperInterface $organisationMapper;
 
 	/**
 	 * Logger for debugging and error tracking
@@ -89,16 +96,23 @@ class OrganisationController extends Controller {
 	/**
 	 * Tenant lifecycle service for state transitions
 	 *
-	 * @var TenantLifecycleService
+	 * @var TenantLifecycleServiceInterface
 	 */
-	private TenantLifecycleService $tenantLifecycleService;
+	private TenantLifecycleServiceInterface $tenantLifecycleService;
 
 	/**
 	 * Tenant usage mapper for quota data
 	 *
-	 * @var TenantUsageMapper
+	 * @var TenantUsageMapperInterface
 	 */
-	private TenantUsageMapper $tenantUsageMapper;
+	private TenantUsageMapperInterface $tenantUsageMapper;
+
+	/**
+	 * The session bundle, which answers the admin check.
+	 *
+	 * @var ControllerSession
+	 */
+	private readonly ControllerSession $session;
 
 	/**
 	 * User session for authorization checks
@@ -108,46 +122,47 @@ class OrganisationController extends Controller {
 	private IUserSession $userSession;
 
 	/**
-	 * Group manager for admin/group membership checks
+	 * Records a change of who holds the special right `grant_manage`.
 	 *
-	 * @var IGroupManager
+	 * @var GrantChangeAuditorInterface|null
 	 */
-	private IGroupManager $groupManager;
+	private ?GrantChangeAuditorInterface $grantAuditor;
+
+	/**
+	 * Measures an organisation's usage
+	 *
+	 * @var OrganisationUsageServiceInterface
+	 */
+	private readonly OrganisationUsageServiceInterface $usageService;
+
+	/**
+	 * Records an edit of an organisation's details. Null only in legacy fixtures.
+	 *
+	 * @var ?OrganisationEditAuditorInterface
+	 */
+	private readonly ?OrganisationEditAuditorInterface $lifecycleAuditor;
 
 	/**
 	 * OrganisationController constructor
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request
-	 * @param OrganisationService $organisationService Organisation service
-	 * @param OrganisationMapper $organisationMapper Organisation mapper
-	 * @param LoggerInterface $logger Logger service
-	 * @param TenantLifecycleService $tenantLifecycleService Lifecycle service
-	 * @param TenantUsageMapper $tenantUsageMapper Usage mapper
-	 * @param IUserSession $userSession User session for authorization checks
-	 * @param IGroupManager $groupManager Group manager for admin checks
-	 *
-	 * @spec openspec/specs/tenant-lifecycle/spec.md
+	 * @param OrganisationControllerServices $services The organisation controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		OrganisationService $organisationService,
-		OrganisationMapper $organisationMapper,
-		LoggerInterface $logger,
-		TenantLifecycleService $tenantLifecycleService,
-		TenantUsageMapper $tenantUsageMapper,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
+		OrganisationControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
-		$this->organisationService = $organisationService;
-		$this->organisationMapper = $organisationMapper;
-		$this->logger = $logger;
-		$this->tenantLifecycleService = $tenantLifecycleService;
-		$this->tenantUsageMapper = $tenantUsageMapper;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->usageService = $services->domain->usageService;
+		$this->lifecycleAuditor = $services->auditing->lifecycleAuditor;
+		$this->grantAuditor = $services->domain->grantAuditor;
+		$this->organisationService = $services->domain->organisationService;
+		$this->organisationMapper = $services->mappers->organisationMapper;
+		$this->logger = $services->session->logger;
+		$this->tenantLifecycleService = $services->domain->tenantLifecycle;
+		$this->tenantUsageMapper = $services->mappers->tenantUsageMapper;
+		$this->userSession = $services->session->userSession;
+		$this->session = $services->session;
 	}//end __construct()
 
 	/**
@@ -156,12 +171,7 @@ class OrganisationController extends Controller {
 	 * @return bool True if a user is signed in and belongs to the admin group.
 	 */
 	private function isCurrentUserAdmin(): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return $this->groupManager->isAdmin($user->getUID());
+		return $this->session->isAdmin();
 	}//end isCurrentUserAdmin()
 
 	/**
@@ -261,7 +271,7 @@ class OrganisationController extends Controller {
 	 *     active: bool|null, parent: null|string, children: array,
 	 *     quota: array{storage: int|null, bandwidth: int|null,
 	 *     requests: int|null, users: null, groups: null},
-	 *     usage: array{storage: 0, bandwidth: 0, requests: 0,
+	 *     usage: array{storage: null, bandwidth: null, requests: null,
 	 *     users: int<0, max>, groups: int<0, max>}, authorization: array,
 	 *     created: null|string, updated: null|string}|null}, array<never, never>>
 	 *
@@ -331,7 +341,7 @@ class OrganisationController extends Controller {
 	 *     active: bool|null, parent: null|string, children: array,
 	 *     quota: array{storage: int|null, bandwidth: int|null,
 	 *     requests: int|null, users: null, groups: null},
-	 *     usage: array{storage: 0, bandwidth: 0, requests: 0,
+	 *     usage: array{storage: null, bandwidth: null, requests: null,
 	 *     users: int<0, max>, groups: int<0, max>}, authorization: array,
 	 *     created: null|string, updated: null|string}|null}, array<never, never>>
 	 *
@@ -385,7 +395,7 @@ class OrganisationController extends Controller {
 	 * @no-admin-idor-exempt Self-service, no object read: creates a new organisation with the current user added as owner;
 	 *   no caller-supplied object id is read.
 	 *
-	 * @psalm-return JSONResponse<201|400,
+	 * @psalm-return JSONResponse<201|400|409,
 	 *     array{error?: string, message?: 'Organisation created successfully',
 	 *     organisation?: array{id: int, uuid: null|string, slug: null|string,
 	 *     name: null|string, description: null|string, users: array,
@@ -393,7 +403,7 @@ class OrganisationController extends Controller {
 	 *     parent: null|string, children: array,
 	 *     quota: array{storage: int|null, bandwidth: int|null,
 	 *     requests: int|null, users: null, groups: null},
-	 *     usage: array{storage: 0, bandwidth: 0, requests: 0,
+	 *     usage: array{storage: null, bandwidth: null, requests: null,
 	 *     users: int<0, max>, groups: int<0, max>}, authorization: array,
 	 *     created: null|string, updated: null|string}}, array<never, never>>
 	 *
@@ -429,6 +439,8 @@ class OrganisationController extends Controller {
 				],
 				statusCode: Http::STATUS_CREATED
 			);
+		} catch (OrganisationSlugConflictException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_CONFLICT);
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[OrganisationController] Failed to create organisation',
@@ -634,7 +646,7 @@ class OrganisationController extends Controller {
 	 *     parent: null|string, children: array,
 	 *     quota: array{storage: int|null, bandwidth: int|null,
 	 *     requests: int|null, users: null, groups: null},
-	 *     usage: array{storage: 0, bandwidth: 0, requests: 0,
+	 *     usage: array{storage: int|null, bandwidth: null, requests: int|null,
 	 *     users: int<0, max>, groups: int<0, max>}, authorization: array,
 	 *     created: null|string, updated: null|string}}, array<never, never>>
 	 *
@@ -658,9 +670,14 @@ class OrganisationController extends Controller {
 			$children = $this->organisationMapper->findChildrenChain($uuid);
 			$organisation->setChildren($children);
 
+			// The measured usage replaces the entity's, which cannot measure
+			// storage or requests.
+			$data = $organisation->jsonSerialize();
+			$data['usage'] = $this->usageService->measure(organisation: $organisation);
+
 			return new JSONResponse(
 				data: [
-					'organisation' => $organisation->jsonSerialize(),
+					'organisation' => $data,
 				],
 				statusCode: Http::STATUS_OK
 			);
@@ -687,6 +704,10 @@ class OrganisationController extends Controller {
 	/**
 	 * Update organisation details
 	 *
+	 * Members read their organisation; only a Nextcloud administrator or the
+	 * organisation's own administrator (its owner) may change it. The role is
+	 * checked before anything is read from the request or written.
+	 *
 	 * @param string $uuid Organisation UUID.
 	 *
 	 * @NoAdminRequired
@@ -709,10 +730,21 @@ class OrganisationController extends Controller {
 				);
 			}
 
+			if ($this->organisationService->isOrganisationAdmin($uuid) === false) {
+				return new JSONResponse(
+					data: [
+						'error' => 'Only an administrator or an administrator of this organisation may change it. Members can read it.',
+					],
+					statusCode: Http::STATUS_FORBIDDEN
+				);
+			}
+
 			$organisation = $this->organisationMapper->findByUuid($uuid);
 			$data = $this->extractRequestData();
+			$grantManageBefore = $this->grantManageOf(organisation: $organisation);
 
 			// Apply field updates using extracted helper methods.
+			$detailsBefore = $this->auditedDetailsOf(organisation: $organisation);
 			$this->handleNameAndSlugUpdate(organisation: $organisation, data: $data);
 			$this->handleDescriptionUpdate(organisation: $organisation, data: $data);
 			$this->handleSlugUpdate(organisation: $organisation, data: $data);
@@ -730,11 +762,64 @@ class OrganisationController extends Controller {
 				return $parentUpdateResponse;
 			}
 
-			return $this->saveAndReturnOrganisation(organisation: $organisation);
+			$response = $this->saveAndReturnOrganisation(organisation: $organisation);
+			$this->lifecycleAuditor?->recordUpdate(
+				organisation: $organisation,
+				before: $detailsBefore,
+				after: $this->auditedDetailsOf(organisation: $organisation)
+			);
+
+			// Who holds the right to decide who reads a record is the one change
+			// here that must be on the trail, whoever made it.
+			$grantManageAfter = $this->grantManageOf(organisation: $organisation);
+			if ($grantManageAfter !== $grantManageBefore) {
+				$this->grantAuditor?->recordSpecialRight(
+					organisationUuid: $uuid,
+					before: $grantManageBefore,
+					after: $grantManageAfter
+				);
+			}
+
+			return $response;
 		} catch (Exception $e) {
 			return $this->handleUpdateError(uuid: $uuid, exception: $e);
 		}//end try
 	}//end update()
+
+	/**
+	 * The details of an organisation an edit is audited for.
+	 *
+	 * @param object $organisation Organisation entity.
+	 *
+	 * @return array<string, string|null> The name, description and slug.
+	 *
+	 * @spec openspec/specs/tenant-lifecycle/spec.md
+	 */
+	private function auditedDetailsOf(object $organisation): array {
+		return [
+			'name'        => $organisation->getName(),
+			'description' => $organisation->getDescription(),
+			'slug'        => $organisation->getSlug(),
+		];
+	}//end auditedDetailsOf()
+
+	/**
+	 * The groups that hold the special right `grant_manage` on an organisation's records.
+	 *
+	 * @param object $organisation Organisation entity.
+	 *
+	 * @return array<int|string, mixed> The stored list, empty when there is none.
+	 *
+	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
+	 */
+	private function grantManageOf(object $organisation): array {
+		$list = ($organisation->getAuthorization()[OrganisationSpecialRightsInterface::GRANT_MANAGE] ?? []);
+		if (is_array($list) === false) {
+			return [];
+		}
+
+		return $list;
+	}//end grantManageOf()
 
 	/**
 	 * Patch organisation details (alias for update)
@@ -772,7 +857,7 @@ class OrganisationController extends Controller {
 	 *     children: array,
 	 *     quota: array{storage: int|null, bandwidth: int|null,
 	 *     requests: int|null, users: null, groups: null},
-	 *     usage: array{storage: 0, bandwidth: 0, requests: 0,
+	 *     usage: array{storage: null, bandwidth: null, requests: null,
 	 *     users: int<0, max>, groups: int<0, max>}, authorization: array,
 	 *     created: null|string, updated: null|string}>,
 	 *     limit?: int<1, 100>, offset?: int<0, max>, count?: int<0, max>},
@@ -1054,6 +1139,9 @@ class OrganisationController extends Controller {
 			'storageQuota' => 'setStorageQuota',
 			'bandwidthQuota' => 'setBandwidthQuota',
 			'requestQuota' => 'setRequestQuota',
+			'userQuota' => 'setUserQuota',
+			'objectQuota' => 'setObjectQuota',
+			'objectQuotaSchema' => 'setObjectQuotaSchema',
 		];
 
 		foreach ($simpleFields as $field => $setter) {
@@ -1264,9 +1352,9 @@ class OrganisationController extends Controller {
 	public function activate(string $uuid): JSONResponse {
 		try {
 			$organisation = $this->organisationMapper->findByUuid($uuid);
-			$status = $organisation->getStatus() ?? TenantLifecycleService::STATUS_ACTIVE;
+			$status = $organisation->getStatus() ?? TenantLifecycleServiceInterface::STATUS_ACTIVE;
 
-			if ($status === TenantLifecycleService::STATUS_PROVISIONING) {
+			if ($status === TenantLifecycleServiceInterface::STATUS_PROVISIONING) {
 				$userId = $this->userSession->getUser()?->getUID() ?? 'admin';
 				$result = $this->tenantLifecycleService->provision($organisation, $userId);
 				return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);

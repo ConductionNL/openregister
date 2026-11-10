@@ -46,6 +46,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler
+ * @uses \OCA\OpenRegister\Service\OrganisationContext
  */
 class MagicOrganizationHandlerScopeTest extends TestCase {
 

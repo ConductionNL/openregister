@@ -6,23 +6,24 @@ namespace Unit\Service\GraphQL;
 
 use GraphQL\Type\Definition\ObjectType;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\GraphQL\SchemaGenerator;
+use OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 class SchemaGeneratorTest extends TestCase {
 	private SchemaGenerator $generator;
-	private RegisterMapper&MockObject $registerMapper;
 	private SchemaMapper&MockObject $schemaMapper;
 
 	protected function setUp(): void {
-		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 
-		$this->generator = new SchemaGenerator($this->registerMapper, $this->schemaMapper);
+		$this->generator = new SchemaGenerator(
+			$this->schemaMapper,
+			$this->createMock(\OCP\IUserSession::class),
+			$this->createMock(\OCA\OpenRegister\Service\PropertyRbacHandler::class)
+		);
 	}
 
 	/**
@@ -48,7 +49,6 @@ class SchemaGeneratorTest extends TestCase {
 		]);
 
 		$this->schemaMapper->method('findAll')->willReturn([$schema]);
-		$this->registerMapper->method('findAll')->willReturn([]);
 
 		$this->generator->generate();
 		$objectType = $this->generator->getObjectType($schema);
@@ -63,7 +63,6 @@ class SchemaGeneratorTest extends TestCase {
 		]);
 
 		$this->schemaMapper->method('findAll')->willReturn([$schema]);
-		$this->registerMapper->method('findAll')->willReturn([]);
 
 		$this->generator->generate();
 		$objectType = $this->generator->getObjectType($schema);
@@ -78,7 +77,6 @@ class SchemaGeneratorTest extends TestCase {
 		]);
 
 		$this->schemaMapper->method('findAll')->willReturn([$schema]);
-		$this->registerMapper->method('findAll')->willReturn([]);
 
 		$this->generator->generate();
 		$objectType = $this->generator->getObjectType($schema);
@@ -94,7 +92,6 @@ class SchemaGeneratorTest extends TestCase {
 		]);
 
 		$this->schemaMapper->method('findAll')->willReturn([$schema]);
-		$this->registerMapper->method('findAll')->willReturn([]);
 
 		$this->generator->generate();
 		$objectType = $this->generator->getObjectType($schema);
@@ -110,7 +107,6 @@ class SchemaGeneratorTest extends TestCase {
 		]);
 
 		$this->schemaMapper->method('findAll')->willReturn([$schema]);
-		$this->registerMapper->method('findAll')->willReturn([]);
 
 		$this->generator->generate();
 		$objectType = $this->generator->getObjectType($schema);
@@ -126,7 +122,6 @@ class SchemaGeneratorTest extends TestCase {
 		]);
 
 		$this->schemaMapper->method('findAll')->willReturn([$schema]);
-		$this->registerMapper->method('findAll')->willReturn([]);
 
 		$this->generator->generate();
 		$objectType = $this->generator->getObjectType($schema);
@@ -144,7 +139,6 @@ class SchemaGeneratorTest extends TestCase {
 		]);
 
 		$this->schemaMapper->method('findAll')->willReturn([$schema]);
-		$this->registerMapper->method('findAll')->willReturn([]);
 
 		$graphqlSchema = $this->generator->generate();
 
@@ -158,7 +152,6 @@ class SchemaGeneratorTest extends TestCase {
 		]);
 
 		$this->schemaMapper->method('findAll')->willReturn([$schema]);
-		$this->registerMapper->method('findAll')->willReturn([]);
 
 		$graphqlSchema = $this->generator->generate();
 		$queryType = $graphqlSchema->getQueryType();
@@ -173,7 +166,6 @@ class SchemaGeneratorTest extends TestCase {
 		]);
 
 		$this->schemaMapper->method('findAll')->willReturn([$schema]);
-		$this->registerMapper->method('findAll')->willReturn([]);
 
 		$graphqlSchema = $this->generator->generate();
 		$mutationType = $graphqlSchema->getMutationType();
@@ -191,7 +183,6 @@ class SchemaGeneratorTest extends TestCase {
 		]);
 
 		$this->schemaMapper->method('findAll')->willReturn([$schema]);
-		$this->registerMapper->method('findAll')->willReturn([]);
 
 		$this->generator->generate();
 		$objectType = $this->generator->getObjectType($schema);
@@ -207,11 +198,25 @@ class SchemaGeneratorTest extends TestCase {
 		$this->assertArrayHasKey('_usedBy', $fields);
 	}
 
+	public function testTheAuditTrailFieldGivesNothingEvenWhenTheObjectCarriesTheKey(): void {
+		$schema = $this->createSchema(1, 'items', [
+			'name' => ['type' => 'string'],
+		]);
+
+		$this->schemaMapper->method('findAll')->willReturn([$schema]);
+
+		$this->generator->generate();
+		$field = $this->generator->getObjectType($schema)->getField('_auditTrail');
+
+		$this->assertIsCallable($field->resolveFn);
+		$root = ['_uuid' => 'obj-1', '_auditTrail' => [['action' => 'update', 'ipAddress' => '203.0.113.9']]];
+		$this->assertNull(($field->resolveFn)($root, ['last' => 10], null, null));
+	}
+
 	// ── Register query ──
 
 	public function testGeneratesRegisterQuery(): void {
 		$this->schemaMapper->method('findAll')->willReturn([]);
-		$this->registerMapper->method('findAll')->willReturn([]);
 
 		$graphqlSchema = $this->generator->generate();
 		$queryType = $graphqlSchema->getQueryType();
@@ -231,7 +236,6 @@ class SchemaGeneratorTest extends TestCase {
 		]);
 
 		$this->schemaMapper->method('findAll')->willReturn([$personSchema, $orderSchema]);
-		$this->registerMapper->method('findAll')->willReturn([]);
 
 		$this->generator->generate();
 		$orderType = $this->generator->getObjectType($orderSchema);
@@ -241,11 +245,24 @@ class SchemaGeneratorTest extends TestCase {
 		$this->assertInstanceOf(ObjectType::class, $fields['klant']->getType());
 	}
 
+	public function testRefPropertyResolvesBySchemaUri(): void {
+		$personSchema = $this->createSchema(1, 'personen', []);
+		$personSchema->setUri('https://example.org/personen');
+		$orderSchema = $this->createSchema(2, 'orders', [
+			'klant' => ['type' => 'object', '$ref' => 'https://example.org/personen'],
+		]);
+
+		$this->schemaMapper->method('findAll')->willReturn([$personSchema, $orderSchema]);
+
+		$this->generator->generate();
+
+		$this->assertSame('Personen', $this->generator->getObjectType($orderSchema)->getField('klant')->getType()->name);
+	}
+
 	// ── Empty schema ──
 
 	public function testEmptySchemaGeneratesValidGraphQL(): void {
 		$this->schemaMapper->method('findAll')->willReturn([]);
-		$this->registerMapper->method('findAll')->willReturn([]);
 
 		$graphqlSchema = $this->generator->generate();
 

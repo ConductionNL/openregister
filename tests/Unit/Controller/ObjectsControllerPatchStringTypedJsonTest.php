@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -37,6 +38,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\App\IAppManager;
@@ -81,7 +83,7 @@ class ObjectsControllerPatchStringTypedJsonTest extends TestCase {
 		// controller also asks the container for 'userId' after a save.
 		$this->container->method('get')->willReturnCallback(
 			static function (string $id): mixed {
-				if ($id === SchemaTypeConverter::class) {
+				if ($id === SchemaTypeConverterInterface::class) {
 					return new SchemaTypeConverter();
 				}
 
@@ -89,7 +91,7 @@ class ObjectsControllerPatchStringTypedJsonTest extends TestCase {
 			}
 		);
 
-		$this->controller = new ObjectsController(
+		$this->controller = ObjectsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(IAppConfig::class),
@@ -239,7 +241,7 @@ class ObjectsControllerPatchStringTypedJsonTest extends TestCase {
 		$emptyContainer = $this->createMock(ContainerInterface::class);
 		$emptyContainer->method('get')->willReturn(null);
 
-		$this->controller = new ObjectsController(
+		$this->controller = ObjectsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(IAppConfig::class),

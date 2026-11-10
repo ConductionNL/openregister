@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 
 declare(strict_types=1);
@@ -220,6 +220,30 @@ final class PurposeGuardTest extends TestCase {
 		$this->expectException(PurposeRefusedException::class);
 		$guard->enforce($this->register(null), $this->schema(true));
 	}//end testARefusalThatCannotBeRecordedIsStillARefusal()
+
+	public function testAllowsLetsAnUnannotatedTableThrough(): void {
+		$guard = new PurposeGuard($this->registry(true, false), $this->context(null), $this->createMock(AuditTrailMapper::class), new NullLogger());
+
+		self::assertTrue($guard->allows($this->register(null), $this->schema(null)));
+	}//end testAllowsLetsAnUnannotatedTableThrough()
+
+	public function testAllowsRefusesABoundTableWithoutRecordingARefusal(): void {
+		$audit = $this->createMock(AuditTrailMapper::class);
+		$audit->expects(self::never())->method('createPurposeRefusalEntry');
+		$context = $this->context(null);
+		$guard = new PurposeGuard($this->registry(true, false), $context, $audit, new NullLogger());
+
+		self::assertFalse($guard->allows($this->register(null), $this->schema(true)));
+		self::assertNull($context->accepted());
+	}//end testAllowsRefusesABoundTableWithoutRecordingARefusal()
+
+	public function testAllowsABoundTableUnderADeclaredPurposeAndRemembersIt(): void {
+		$context = $this->context('brp-adresonderzoek');
+		$guard = new PurposeGuard($this->registry(true, true), $context, $this->createMock(AuditTrailMapper::class), new NullLogger());
+
+		self::assertTrue($guard->allows($this->register(true), $this->schema(null)));
+		self::assertSame('activity-uuid', $context->acceptedActivity()?->getUuid());
+	}//end testAllowsABoundTableUnderADeclaredPurposeAndRemembersIt()
 
 	public function testAnAnnotationWithNoAdministeredPurposesDoesNotBrickTheSchema(): void {
 		// Refusing here would refuse every read of this schema with no value

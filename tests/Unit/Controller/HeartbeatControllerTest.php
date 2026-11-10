@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
-use OCA\OpenRegister\Controller\HeartbeatController;
+use OCA\OpenRegister\Notifications\Controller\HeartbeatController;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;

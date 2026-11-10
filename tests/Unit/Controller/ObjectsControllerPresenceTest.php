@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -33,7 +34,8 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\PresenceService;
+use OCA\OpenRegister\Notifications\Service\PresenceService;
+use OCA\OpenRegister\Notifications\Service\PresenceServiceInterface;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
@@ -57,6 +59,7 @@ class ObjectsControllerPresenceTest extends TestCase {
 	private ObjectService&MockObject $objectService;
 	private IUserSession&MockObject $userSession;
 	private PresenceService&MockObject $presence;
+	private IRequest&MockObject $request;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -65,10 +68,11 @@ class ObjectsControllerPresenceTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectService::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->presence = $this->createMock(PresenceService::class);
+		$this->request = $this->createMock(IRequest::class);
 
 		$this->container->method('get')->willReturnCallback(
 			function (string $id) {
-				if ($id === PresenceService::class) {
+				if ($id === PresenceServiceInterface::class) {
 					return $this->presence;
 				}
 
@@ -80,9 +84,9 @@ class ObjectsControllerPresenceTest extends TestCase {
 			}
 		);
 
-		$this->controller = new ObjectsController(
+		$this->controller = ObjectsControllerFactory::create(
 			'openregister',
-			$this->createMock(IRequest::class),
+			$this->request,
 			$this->createMock(IAppConfig::class),
 			$this->createMock(IAppManager::class),
 			$this->container,
@@ -237,4 +241,59 @@ class ObjectsControllerPresenceTest extends TestCase {
 		$this->assertSame(200, $response->getStatus());
 		$this->assertSame([['userId' => 'bob']], $response->getData()['present']);
 	}//end testTheListExcludesTheCaller()
+
+	/**
+	 * A closing tab sends a beacon, which is always a POST marked
+	 * `_method=DELETE`. That POST departs exactly like the DELETE does.
+	 *
+	 * @return void
+	 */
+	public function testABeaconPostMarkedDeleteDeparts(): void {
+		$this->signedIn();
+		$this->request->method('getParam')->willReturnMap([['_method', null, 'DELETE']]);
+		$this->presence->expects($this->once())
+			->method('depart')
+			->with(self::CALLER, 'uuid-123')
+			->willReturn(false);
+		$this->presence->method('present')->willReturn([['userId' => 'bob']]);
+
+		$response = $this->controller->presenceDepartByBeacon('reg', 'sch', 'uuid-123');
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame([['userId' => 'bob']], $response->getData()['present']);
+	}//end testABeaconPostMarkedDeleteDeparts()
+
+	/**
+	 * A POST without the marker is refused and departs nobody, so a stray
+	 * POST never makes a reader vanish from other people's screens.
+	 *
+	 * @return void
+	 */
+	public function testAPostWithoutTheDeleteMarkerIsRefusedAndDepartsNobody(): void {
+		$this->signedIn();
+		$this->request->method('getParam')->willReturnMap([['_method', null, null]]);
+		$this->presence->expects($this->never())->method('depart');
+
+		$response = $this->controller->presenceDepartByBeacon('reg', 'sch', 'uuid-123');
+
+		$this->assertSame(400, $response->getStatus());
+	}//end testAPostWithoutTheDeleteMarkerIsRefusedAndDepartsNobody()
+
+	/**
+	 * The route the beacon calls is registered: POST on the presence url,
+	 * pointing at a method that exists. Without it Nextcloud answered 405.
+	 *
+	 * @return void
+	 */
+	public function testThePresencePostRouteIsRegistered(): void {
+		$routes = include __DIR__.'/../../../appinfo/routes.php';
+		$match  = array_filter(
+			$routes['routes'],
+			static fn (array $route): bool => $route['url'] === '/api/objects/{register}/{schema}/{id}/presence' && $route['verb'] === 'POST'
+		);
+
+		$this->assertCount(1, $match);
+		$this->assertSame('objects#presenceDepartByBeacon', array_values($match)[0]['name']);
+		$this->assertTrue(method_exists(ObjectsController::class, 'presenceDepartByBeacon'));
+	}//end testThePresencePostRouteIsRegistered()
 }//end class

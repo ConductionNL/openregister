@@ -6,7 +6,7 @@
  * Tests: SchemaService, SearchTrailService, OrganisationService, DashboardService,
  * EndpointService, MappingService, ExportService, AuthenticationService,
  * AuthorizationService, McpToolsService, RegisterService, SchemaCacheHandler,
- * FacetCacheHandler, PropertyValidatorHandler.
+ * FacetResultCacheClearer, PropertyValidatorHandler.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Service
@@ -33,12 +33,13 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\AuthenticationException;
 use OCA\OpenRegister\Service\AuthenticationService;
 use OCA\OpenRegister\Service\AuthorizationService;
-use OCA\OpenRegister\Service\DashboardService;
+use OCA\OpenRegister\Search\Service\DashboardScope;
+use OCA\OpenRegister\Search\Service\DashboardService;
 use OCA\OpenRegister\Service\MappingService;
-use OCA\OpenRegister\Service\Mcp\McpToolsService;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterService;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
@@ -691,7 +692,7 @@ class ServicesIntegrationTest extends TestCase {
 		$this->createTestObject();
 		$service = \OC::$server->get(DashboardService::class);
 
-		$result = $service->recalculateSizes(
+		$result = $service->sizes()->recalculateSizes(
 			$this->testRegister->getId(),
 			$this->testSchema->getId()
 		);
@@ -709,7 +710,7 @@ class ServicesIntegrationTest extends TestCase {
 	public function testDashboardServiceRecalculateLogSizes(): void {
 		$service = \OC::$server->get(DashboardService::class);
 
-		$result = $service->recalculateLogSizes(
+		$result = $service->sizes()->recalculateLogSizes(
 			$this->testRegister->getId(),
 			$this->testSchema->getId()
 		);
@@ -726,7 +727,7 @@ class ServicesIntegrationTest extends TestCase {
 	public function testDashboardServiceRecalculateAllSizes(): void {
 		$service = \OC::$server->get(DashboardService::class);
 
-		$result = $service->recalculateAllSizes(
+		$result = $service->sizes()->recalculateAllSizes(
 			$this->testRegister->getId(),
 			$this->testSchema->getId()
 		);
@@ -744,7 +745,7 @@ class ServicesIntegrationTest extends TestCase {
 	public function testDashboardServiceCalculate(): void {
 		$service = \OC::$server->get(DashboardService::class);
 
-		$result = $service->calculate($this->testRegister->getId());
+		$result = $service->sizes()->calculate($this->testRegister->getId());
 
 		$this->assertArrayHasKey('status', $result);
 		$this->assertEquals('success', $result['status']);
@@ -765,7 +766,7 @@ class ServicesIntegrationTest extends TestCase {
 		$service = \OC::$server->get(DashboardService::class);
 
 		// Use register filter to avoid scanning all objects in the system.
-		$result = $service->recalculateSizes($this->testRegister->getId());
+		$result = $service->sizes()->recalculateSizes($this->testRegister->getId());
 
 		$this->assertArrayHasKey('processed', $result);
 		$this->assertArrayHasKey('failed', $result);
@@ -779,11 +780,8 @@ class ServicesIntegrationTest extends TestCase {
 	public function testDashboardServiceAuditTrailChartData(): void {
 		$service = \OC::$server->get(DashboardService::class);
 
-		$result = $service->getAuditTrailActionChartData(
-			new DateTime('-7 days'),
-			new DateTime('now'),
-			$this->testRegister->getId(),
-			$this->testSchema->getId()
+		$result = $service->auditReads()->getAuditTrailActionChartData(
+			(new DashboardScope($this->testRegister->getId(), $this->testSchema->getId()))->during(new DateTime('-7 days'), new DateTime('now'))
 		);
 
 		$this->assertArrayHasKey('labels', $result);
@@ -840,9 +838,8 @@ class ServicesIntegrationTest extends TestCase {
 	public function testDashboardServiceAuditTrailStatistics(): void {
 		$service = \OC::$server->get(DashboardService::class);
 
-		$result = $service->getAuditTrailStatistics(
-			$this->testRegister->getId(),
-			$this->testSchema->getId(),
+		$result = $service->auditReads()->getAuditTrailStatistics(
+			new DashboardScope($this->testRegister->getId(), $this->testSchema->getId()),
 			24
 		);
 
@@ -861,9 +858,8 @@ class ServicesIntegrationTest extends TestCase {
 	public function testDashboardServiceAuditTrailActionDistribution(): void {
 		$service = \OC::$server->get(DashboardService::class);
 
-		$result = $service->getAuditTrailActionDistribution(
-			$this->testRegister->getId(),
-			$this->testSchema->getId(),
+		$result = $service->auditReads()->getAuditTrailActionDistribution(
+			new DashboardScope($this->testRegister->getId(), $this->testSchema->getId()),
 			24
 		);
 
@@ -878,11 +874,8 @@ class ServicesIntegrationTest extends TestCase {
 	public function testDashboardServiceMostActiveObjects(): void {
 		$service = \OC::$server->get(DashboardService::class);
 
-		$result = $service->getMostActiveObjects(
-			$this->testRegister->getId(),
-			$this->testSchema->getId(),
-			5,
-			24
+		$result = $service->auditReads()->getMostActiveObjects(
+			(new DashboardScope($this->testRegister->getId(), $this->testSchema->getId()))->mostActive(5, 24)
 		);
 
 		$this->assertArrayHasKey('objects', $result);
@@ -1143,20 +1136,6 @@ class ServicesIntegrationTest extends TestCase {
 		// Multiple points.
 		$result = $service->coordinateStringToArray('52.37 4.89 52.38 4.90');
 		$this->assertCount(2, $result);
-	}
-
-	/**
-	 * Test MappingService::invalidateMappingCache
-	 *
-	 * @return void
-	 */
-	public function testMappingServiceInvalidateCache(): void {
-		$service = \OC::$server->get(MappingService::class);
-
-		// This should not throw.
-		$service->invalidateMappingCache(99999);
-		$service->invalidateMappingCache('some-uuid');
-		$this->assertTrue(true);
 	}
 
 	/**
@@ -2137,21 +2116,18 @@ class ServicesIntegrationTest extends TestCase {
 	}
 
 	// -------------------------------------------------------------------------
-	// FacetCacheHandler tests
+	// FacetResultCacheClearer tests
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Test FacetCacheHandler::invalidateForSchemaChange (graceful with missing table)
+	 * Test FacetResultCacheClearer::clearAll on the live cache backends
 	 *
 	 * @return void
 	 */
-	public function testFacetCacheHandlerInvalidate(): void {
-		$handler = \OC::$server->get(FacetCacheHandler::class);
+	public function testFacetResultCacheClearerClearsAll(): void {
+		$clearer = \OC::$server->get(FacetResultCacheClearer::class);
 
-		// invalidateForSchemaChange gracefully handles missing table.
-		$handler->invalidateForSchemaChange($this->testSchema->getId(), 'update');
-		$handler->invalidateForSchemaChange($this->testSchema->getId(), 'delete');
-		$handler->invalidateForSchemaChange($this->testSchema->getId(), 'create');
+		$clearer->clearAll();
 
 		$this->assertTrue(true);
 	}

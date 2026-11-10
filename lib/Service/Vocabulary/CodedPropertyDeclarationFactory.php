@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ class CodedPropertyDeclarationFactory {
 	 *
 	 * @return CodedPropertyDeclaration|null The declaration, or null.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function fromProperty(mixed $property): ?CodedPropertyDeclaration {
 		$raw = $this->rawAnnotation(property: $property);
@@ -64,13 +64,17 @@ class CodedPropertyDeclarationFactory {
 
 		return new CodedPropertyDeclaration(
 			scheme: $scheme,
-			store: $store,
-			allowDeprecated: (($raw['allowDeprecated'] ?? false) === true),
-			branch: $this->nonEmpty(value: ($raw['branch'] ?? null)),
-			leafOnly: (($raw['leafOnly'] ?? false) === true),
-			maxDepth: $this->parseMaxDepth(raw: $raw),
-			contextProperty: $this->nonEmpty(value: ($raw['contextProperty'] ?? null)),
-			contextKey: $this->nonEmpty(value: ($raw['contextKey'] ?? null)),
+			rules: new CodedValueRules(
+				store: $store,
+				allowDeprecated: (($raw['allowDeprecated'] ?? false) === true),
+				leafOnly: (($raw['leafOnly'] ?? false) === true)
+			),
+			narrowing: new CodedNarrowing(
+				branch: $this->nonEmpty(value: ($raw['branch'] ?? null)),
+				maxDepth: $this->parseMaxDepth(raw: $raw),
+				contextProperty: $this->nonEmpty(value: ($raw['contextProperty'] ?? null)),
+				contextKey: $this->nonEmpty(value: ($raw['contextKey'] ?? null))
+			),
 			scoreProperty: $this->parseScoreProperty(raw: $raw)
 		);
 	}//end fromProperty()
@@ -82,7 +86,7 @@ class CodedPropertyDeclarationFactory {
 	 *
 	 * @return array<string,CodedPropertyDeclaration> The declarations.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function fromProperties(array $properties): array {
 		$declarations = [];

@@ -322,18 +322,6 @@ class MappingServiceTest extends TestCase {
 		$this->assertCount(2, $result);
 	}
 
-	public function testInvalidateMappingCache(): void {
-		$this->cache->expects($this->once())->method('remove')->with('123');
-
-		$this->service->invalidateMappingCache(123);
-	}
-
-	public function testInvalidateMappingCacheWithStringId(): void {
-		$this->cache->expects($this->once())->method('remove')->with('my-uuid');
-
-		$this->service->invalidateMappingCache('my-uuid');
-	}
-
 	public function testExecuteMappingWithNullableBoolCastNull(): void {
 		$entity = new Mapping();
 		$entity->hydrate([

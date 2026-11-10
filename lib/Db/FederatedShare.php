@@ -59,6 +59,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setPermissions(?string $permissions)
  * @method string|null getSharedWith()
  * @method void setSharedWith(?string $sharedWith)
+ * @method string|null getOwner()
+ * @method void setOwner(?string $owner)
  * @method string|null getStatus()
  * @method void setStatus(?string $status)
  * @method DateTime|null getCreated()
@@ -67,6 +69,9 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUpdated(?DateTime $updated)
  */
 class FederatedShare extends Entity implements JsonSerializable {
+	use JsonFieldsTrait;
+	use OrganisationFieldTrait;
+	use HydrateEmptyJsonAsNullTrait;
 
 	/**
 	 * Public UUID of the share.
@@ -167,6 +172,13 @@ class FederatedShare extends Entity implements JsonSerializable {
 	protected ?string $status = null;
 
 	/**
+	 * User id of the creator of an outgoing share (empty on shares created before it was recorded).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $owner = null;
+
+	/**
 	 * Creation timestamp.
 	 *
 	 * @var DateTime|null
@@ -198,75 +210,10 @@ class FederatedShare extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'organisation', type: 'string');
 		$this->addType(fieldName: 'sharedWith', type: 'string');
 		$this->addType(fieldName: 'status', type: 'string');
+		$this->addType(fieldName: 'owner', type: 'string');
 		$this->addType(fieldName: 'created', type: 'datetime');
 		$this->addType(fieldName: 'updated', type: 'datetime');
 	}//end __construct()
-
-	/**
-	 * Get the JSON field names on this entity.
-	 *
-	 * @return string[] List of JSON field names.
-	 *
-	 * @psalm-return list<string>
-	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				static function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
-
-	/**
-	 * Get the local owning organisation UUID.
-	 *
-	 * @return string|null The organisation UUID.
-	 */
-	public function getOrganisation(): ?string {
-		return $this->organisation;
-	}//end getOrganisation()
-
-	/**
-	 * Set the local owning organisation UUID.
-	 *
-	 * @param string|null $organisation The organisation UUID.
-	 *
-	 * @return void
-	 */
-	public function setOrganisation(?string $organisation): void {
-		$this->organisation = $organisation;
-		$this->markFieldUpdated(attribute: 'organisation');
-	}//end setOrganisation()
-
-	/**
-	 * Hydrate the entity from an array.
-	 *
-	 * @param array<string, mixed> $object The data array to hydrate from.
-	 *
-	 * @return static This instance for chaining.
-	 */
-	public function hydrate(array $object): static {
-		$jsonFields = $this->getJsonFields();
-
-		foreach ($object as $key => $value) {
-			if (in_array($key, $jsonFields, true) === true && $value === []) {
-				$value = null;
-			}
-
-			$method = 'set' . ucfirst($key);
-
-			try {
-				$this->$method($value);
-			} catch (\Exception $exception) {
-				// Silently ignore invalid properties.
-			}
-		}
-
-		return $this;
-	}//end hydrate()
 
 	/**
 	 * Serialize the entity to a JSON-ready array.

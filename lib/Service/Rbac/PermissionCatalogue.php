@@ -43,7 +43,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -64,101 +64,9 @@ use OCP\EventDispatcher\IEventDispatcher;
  *         fires on about forty untouched files in this repo for the same
  *         reason, which is why `composer phpmd` is red on `development` too.
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
-class PermissionCatalogue {
-
-	/**
-	 * The app that owns the canonical verbs.
-	 *
-	 * @var string
-	 */
-	public const CORE_APP = 'openregister';
-
-	/**
-	 * The canonical verbs, with the sentence each one is offered by.
-	 *
-	 * `manage` is here rather than beside the five because it is the verb that
-	 * edits the rules themselves, and the one a deny may not take from the last
-	 * principal holding it.
-	 *
-	 * `assign` is here because handing work to somebody is neither reading nor
-	 * writing (ledger row 13.40), and ADR-010 anticipates exactly this case: a
-	 * concept core Nextcloud has no bit for, which enters the GOVERNED
-	 * vocabulary rather than becoming a parallel model. It is grantable on its
-	 * own and holding `update` does not imply it, which is the whole point:
-	 * reassignment was gated on a coordinator check that resolved to isAdmin,
-	 * so handing work over was an administrator's right rather than an axis.
-	 *
-	 * `destroy` is here because `delete-window-and-recorded-destruction` made it
-	 * a second, narrower right than `delete`: deleting puts an object in the
-	 * trash, where it can come back, and destroying ends it. `PermissionHandler`
-	 * has carried it in its canonical set since that change landed, and
-	 * `DestroyRightService` resolves it on every destruction, so a catalogue
-	 * without it refused a block naming a verb this instance already enforces
-	 * (task 8.5, decision D10).
-	 *
-	 * `export` is here because reading a record and taking a dataset off the
-	 * instance are different acts, and the AVG treats them differently. It is
-	 * the verb `ExportRightService` resolves on every export path. While no
-	 * administrator has written it into a schema's block, it falls back to that
-	 * schema's `read` grant, so an upgraded instance keeps exporting; the
-	 * catalogue publishes it so the narrowing can be made at all.
-	 *
-	 * @var array<string, string>
-	 */
-	public const CANONICAL = [
-		'read' => 'Open one object and read its contents.',
-		'create' => 'Add a new object to the schema.',
-		'update' => 'Change an object that already exists.',
-		'delete' => 'Remove an object.',
-		'destroy' => 'End a deleted object for good, before its recovery window closes.',
-		'list' => 'See the objects of a schema as a list, with totals and facets.',
-		'export' => 'Take the objects of a schema off this instance as a file.',
-		'manage' => 'Change the access rules themselves, including roles and grants.',
-		'assign' => 'Hand the work on an object to somebody else.',
-	];
-
-	/**
-	 * Keys of an authorization block that are settings rather than verbs.
-	 *
-	 * A block mixes rules and behaviour toggles in one object. Reading a toggle
-	 * as a verb would refuse every block that carries one, which is most of
-	 * them, so the list is explicit rather than guessed.
-	 *
-	 * @var array<int, string>
-	 */
-	public const CONTROL_KEYS = [
-		'roles',
-		'public',
-		'inheritFromPublic',
-		ObjectScopeResolver::SCOPE_KEY,
-		DenyResolver::DENY_KEY,
-		// 🔴 THE MATRIX IS A DECLARATION, NOT A VERB, and leaving it out of this
-		// list made the whole of `rbac-department-role-matrix` unreachable: a
-		// block carrying `matrix` had that key read as a verb, `isGrantable()`
-		// answered no, and `assertGrantable()` refused the schema save with
-		// "unknown verb: matrix". Every unit test of that compiler passed,
-		// because none of them goes through this check, and its e2e could not
-		// be run in the phase that built it. Caught here rather than in
-		// production, which is the only reason this comment is short.
-		DepartmentMatrixCompiler::KEY,
-		// The effective token grant a request carries, written into the block
-		// by `TokenGrantNarrower`. Listed here for exactly the reason above:
-		// a key in a block that is not a control key is read as a VERB, and
-		// every schema whose block had been narrowed would then be refused at
-		// save with "unknown verb: x-openregister-token-grant". The defect the
-		// comment above records cost a whole change; this is the same shape,
-		// and the list is the cure.
-		TokenGrantNarrower::MARKER,
-		// `audit: true` on a PROPERTY's block asks for every reveal of that
-		// value to be recorded (RevealCollector, sensitive-field-reveal-audit).
-		// It is a flag, not a verb: read as a verb it refused every schema that
-		// declared it with "Invalid authorization action 'audit'", so the
-		// feature could be declared nowhere. SchemaMapper::validateRevealAudit()
-		// still checks its shape (only on a property with a read rule).
-		RevealCollector::AUDIT_KEY,
-	];
+class PermissionCatalogue implements PermissionCatalogueInterface {
 
 	/**
 	 * The resolved catalogue for this request, or null before it is built.
@@ -197,7 +105,7 @@ class PermissionCatalogue {
 	 * @return array<string, array{verb: string, app: string, description: string, levels: array<int, string>, canonical: bool}>
 	 *         The catalogue.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function all(): array {
 		if ($this->resolved !== null) {
@@ -245,7 +153,7 @@ class PermissionCatalogue {
 	 *
 	 * @return array<string, string> Verb to reason.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function rejectedDeclarations(): array {
 		// Building the catalogue is what fills this, so build it first.
@@ -259,7 +167,7 @@ class PermissionCatalogue {
 	 *
 	 * @return array<int, string> Every grantable verb.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function verbs(): array {
 		return array_keys($this->all());
@@ -272,7 +180,7 @@ class PermissionCatalogue {
 	 *
 	 * @return bool True when the catalogue names it.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function isGrantable(string $verb): bool {
 		return isset($this->all()[$verb]);
@@ -286,7 +194,7 @@ class PermissionCatalogue {
 	 * @return array{verb: string, app: string, description: string, levels: array<int, string>, canonical: bool}|null
 	 *         The entry, or null.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function declarationFor(string $verb): ?array {
 		return ($this->all()[$verb] ?? null);
@@ -303,33 +211,42 @@ class PermissionCatalogue {
 	 *
 	 * @return array<int, string> The unknown verbs, in the order they appear.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function unknownVerbsIn(?array $authorization): array {
 		if (is_array($authorization) === false || $authorization === []) {
 			return [];
 		}
 
-		$unknown = [];
-		foreach (array_keys($authorization) as $key) {
-			if (is_string($key) === false || in_array($key, self::CONTROL_KEYS, true) === true) {
-				continue;
-			}
+		$unknown = $this->unknownKeysOf(authorization: $authorization);
 
-			if ($this->isGrantable(verb: $key) === false) {
-				$unknown[$key] = true;
-			}
-		}
-
-		$deny = ($authorization[DenyResolver::DENY_KEY] ?? null);
+		$deny = ($authorization[DenyResolverInterface::DENY_KEY] ?? null);
 		if (is_array($deny) === true) {
-			foreach ($this->unknownVerbsIn(authorization: $deny) as $verb) {
-				$unknown[$verb] = true;
-			}
+			$unknown += array_fill_keys($this->unknownVerbsIn(authorization: $deny), true);
 		}
 
 		return array_keys($unknown);
 	}//end unknownVerbsIn()
+
+	/**
+	 * The top-level keys of a block that are neither a control key nor a grantable verb.
+	 *
+	 * @param array $authorization The block as written.
+	 *
+	 * @return array<string, true> The unknown verbs as keys, in the order they appear.
+	 */
+	private function unknownKeysOf(array $authorization): array {
+		$unknown = [];
+		foreach (array_keys($authorization) as $key) {
+			if (is_string($key) === true && in_array($key, self::CONTROL_KEYS, true) === false
+				&& $this->isGrantable(verb: $key) === false
+			) {
+				$unknown[$key] = true;
+			}
+		}
+
+		return $unknown;
+	}//end unknownKeysOf()
 
 	/**
 	 * The verbs a set of role definitions names that the catalogue does not.
@@ -343,7 +260,7 @@ class PermissionCatalogue {
 	 *
 	 * @return array<string, array<int, string>> Role name to its unknown verbs.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function unknownActionsInRoles(mixed $roleDefinitions): array {
 		if (is_array($roleDefinitions) === false) {
@@ -392,21 +309,66 @@ class PermissionCatalogue {
 	 *
 	 * @throws AuthorizationBlockException When a verb is not in the catalogue.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function assertGrantable(?array $authorization, mixed $roleDefinitions, string $subject): void {
-		$findings = [];
+		$this->refuseAny(
+			findings: array_merge(
+				$this->verbFindings(authorization: $authorization, subject: $subject),
+				$this->roleFindings(roleDefinitions: $roleDefinitions, subject: $subject)
+			)
+		);
+	}//end assertGrantable()
 
+	/**
+	 * Throw every finding at once, when there is any.
+	 *
+	 * @param string[] $findings The findings.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthorizationBlockException When there is at least one finding.
+	 */
+	private function refuseAny(array $findings): void {
+		if ($findings !== []) {
+			throw new AuthorizationBlockException(message: implode(' ', $findings));
+		}
+	}//end refuseAny()
+
+	/**
+	 * The finding for the verbs a block names that nobody declared, if any.
+	 *
+	 * @param array|null $authorization The block as written.
+	 * @param string     $subject       What this belongs to, for the message.
+	 *
+	 * @return string[] At most one finding.
+	 */
+	private function verbFindings(?array $authorization, string $subject): array {
 		$unknown = $this->unknownVerbsIn(authorization: $authorization);
-		if ($unknown !== []) {
-			$findings[] = sprintf(
+		if ($unknown === []) {
+			return [];
+		}
+
+		return [
+			sprintf(
 				'%s names %s, which no app declares. Grantable here: %s.',
 				ucfirst($subject),
 				$this->quoteList(values: $unknown),
 				$this->quoteList(values: $this->verbs())
-			);
-		}
+			),
+		];
+	}//end verbFindings()
 
+	/**
+	 * One finding per role that names a verb nobody declared.
+	 *
+	 * @param mixed  $roleDefinitions The register's role definitions, when there are any.
+	 * @param string $subject         What this belongs to, for the message.
+	 *
+	 * @return string[] The findings.
+	 */
+	private function roleFindings(mixed $roleDefinitions, string $subject): array {
+		$findings = [];
 		foreach ($this->unknownActionsInRoles(roleDefinitions: $roleDefinitions) as $role => $verbs) {
 			$findings[] = sprintf(
 				'The role "%s" on %s names %s, which no app declares.',
@@ -416,12 +378,8 @@ class PermissionCatalogue {
 			);
 		}
 
-		if ($findings === []) {
-			return;
-		}
-
-		throw new AuthorizationBlockException(message: implode(' ', $findings));
-	}//end assertGrantable()
+		return $findings;
+	}//end roleFindings()
 
 	/**
 	 * Dispatch the declaration event and take what the apps wrote.

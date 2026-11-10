@@ -43,14 +43,14 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Aggregation\AggregationAnnotationValidator;
-use OCA\OpenRegister\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationAnnotationValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use Doctrine\DBAL\Platforms\SqlitePlatform;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
@@ -1545,7 +1545,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 		$this->db->method('getDatabasePlatform')->willReturn($this->createMock(SqlitePlatform::class));
 		$this->db->method('prepare')->willReturnCallback(
 			function (string $sql) use ($pdo): IPreparedStatement {
-				$pdoStmt = $pdo->prepare($sql);
+				$pdoStmt = $pdo->prepare(str_replace('*PREFIX*', 'oc_', $sql));
 				$stmt = $this->createMock(IPreparedStatement::class);
 				$stmt->method('execute')->willReturnCallback(
 					function ($bindings = []) use ($pdoStmt): IResult {
@@ -1585,7 +1585,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 		$pdo->exec(
 			'CREATE TABLE "oc_register_1_commitment_line" (
                 "_deleted" TEXT,
-                "_archived" TEXT,
+                "_archived" TEXT, "_status" TEXT,
                 "_organisation" TEXT,
                 "programme" TEXT,
                 "cost_centre" TEXT,
@@ -1595,7 +1595,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 		$pdo->exec(
 			'CREATE TABLE "oc_register_1_commitment_budget" (
                 "_deleted" TEXT,
-                "_archived" TEXT,
+                "_archived" TEXT, "_status" TEXT,
                 "_organisation" TEXT,
                 "programme_code" TEXT,
                 "authorised_amount" INTEGER
@@ -1723,9 +1723,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 	 */
 	private function makeRunner(): AggregationRunner {
 		return new AggregationRunner(
-			magicMapper: $this->magicMapper,
-			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper),
 			placeholders: new PlaceholderResolver($this->userSession),
 			db: $this->db,
 			cache: $this->cache,

@@ -49,9 +49,9 @@ use DateTimeInterface;
  * @category Service
  * @package  OCA\OpenRegister\Service\Rbac
  *
- * @spec openspec/changes/data-subject-rights-across-the-instance/specs/authorization-rbac/spec.md
+ * @spec openspec/specs/authorization-rbac/spec.md
  */
-class ExternalGrantGuard {
+class ExternalGrantGuard implements ExternalGrantGuardInterface {
 	/**
 	 * The entry key declaring that a principal is outside the organisation.
 	 *
@@ -65,13 +65,6 @@ class ExternalGrantGuard {
 	 * @var string
 	 */
 	public const RULE = 'external-grant-needs-an-end';
-
-	/**
-	 * How many days before an end counts as "about to lapse" by default.
-	 *
-	 * @var int
-	 */
-	public const DEFAULT_WARNING_DAYS = 14;
 
 	/**
 	 * Block keys that are settings rather than lists of entries.
@@ -94,7 +87,7 @@ class ExternalGrantGuard {
 	 *
 	 * @return array<int, array<string, mixed>> The entries that must not be written.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function endlessExternalGrants(?array $authorization): array {
 		$offending = [];
@@ -128,7 +121,7 @@ class ExternalGrantGuard {
 	 *
 	 * @return array<string, mixed>|null The refusal, or null when the block is fine.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function refusalFor(?array $authorization): ?array {
 		$offending = $this->endlessExternalGrants(authorization: $authorization);
@@ -158,35 +151,37 @@ class ExternalGrantGuard {
 	 *
 	 * @return array<int, array<string, mixed>> The grants about to lapse, soonest first.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
-	public function lapsingWithin(
-		?array $authorization,
-		int $days = self::DEFAULT_WARNING_DAYS,
-		?DateTimeInterface $now = null,
-	): array {
-		$now = ($now ?? new DateTimeImmutable());
-		$horizon = ($now->getTimestamp() + ($days * 86400));
+	public function lapsingWithin(?array $authorization, int $days = self::DEFAULT_WARNING_DAYS, ?DateTimeInterface $now = null): array {
+		return $this->lapsingIn(authorization: $authorization, window: new LapseWindow(now: ($now ?? new DateTimeImmutable()), days: $days));
+	}//end lapsingWithin()
 
+	/**
+	 * The external grants whose end falls inside one window, soonest first.
+	 *
+	 * @param array|null  $authorization The block as written.
+	 * @param LapseWindow $window        The moment and how far ahead to look.
+	 *
+	 * @return array<int, array<string, mixed>> The grants about to lapse.
+	 */
+	private function lapsingIn(?array $authorization, LapseWindow $window): array {
 		$lapsing = [];
 		foreach ($this->entries(authorization: $authorization) as $found) {
-			if ($this->isExternal(entry: $found['entry']) === false) {
-				continue;
-			}
-
-			$ends = $this->endOf(entry: $found['entry']);
+			$ends = $this->externalEndOf(entry: $found['entry']);
 			// An end already past is not a warning, it is a lapse. Reporting it
 			// as "about to lapse" would send somebody to renew access that has
 			// already stopped answering.
-			if ($ends === null || $ends <= $now->getTimestamp() || $ends > $horizon) {
+			if ($ends === null || $ends <= $window->now->getTimestamp() || $ends > $window->horizon()) {
 				continue;
 			}
 
 			$lapsing[] = [
 				'action' => $found['action'],
 				'principal' => $this->principalOf(entry: $found['entry']),
+				'holders' => $this->holdersOf(entry: $found['entry']),
 				'endsAt' => date(DATE_ATOM, $ends),
-				'daysLeft' => (int)ceil((($ends - $now->getTimestamp()) / 86400)),
+				'daysLeft' => (int)ceil((($ends - $window->now->getTimestamp()) / 86400)),
 			];
 		}
 
@@ -196,7 +191,22 @@ class ExternalGrantGuard {
 		);
 
 		return $lapsing;
-	}//end lapsingWithin()
+	}//end lapsingIn()
+
+	/**
+	 * The end of an external entry, or null for an internal one or one without an end.
+	 *
+	 * @param mixed $entry One entry.
+	 *
+	 * @return int|null The end, as a Unix timestamp.
+	 */
+	private function externalEndOf(mixed $entry): ?int {
+		if ($this->isExternal(entry: $entry) === false) {
+			return null;
+		}
+
+		return $this->endOf(entry: $entry);
+	}//end externalEndOf()
 
 	/**
 	 * Every entry in a block, with the action it was written under.
@@ -284,6 +294,31 @@ class ExternalGrantGuard {
 
 		return $ends;
 	}//end endOf()
+
+	/**
+	 * Who holds a grant, read by the entry's own keys and compared as access enforcement compares them.
+	 *
+	 * An entry naming both a user and a group is held by both. The ids are kept
+	 * exactly as written, so a padded id resolves to nobody here as it grants
+	 * nobody there.
+	 *
+	 * @param array<string, mixed> $entry The external entry.
+	 *
+	 * @return array<int, array{kind: string, id: string}> The holders.
+	 *
+	 * @spec openspec/specs/authorization-rbac/spec.md
+	 */
+	private function holdersOf(array $entry): array {
+		$holders = [];
+		foreach (['user', 'group'] as $kind) {
+			$id = ($entry[$kind] ?? null);
+			if (is_string($id) === true && $id !== '') {
+				$holders[] = ['kind' => $kind, 'id' => $id];
+			}
+		}
+
+		return $holders;
+	}//end holdersOf()
 
 	/**
 	 * The principal an entry names, for the refusal to be actionable.

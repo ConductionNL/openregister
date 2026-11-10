@@ -16,6 +16,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SearchTrailControllerFactory;
 
 /**
  * Unit tests for SearchTrailController
@@ -47,7 +48,7 @@ class SearchTrailControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 		$this->groupManager->method('isAdmin')->with('admin')->willReturn(true);
 
-		$this->controller = new SearchTrailController(
+		$this->controller = SearchTrailControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->searchTrailService,
@@ -1744,13 +1745,56 @@ class SearchTrailControllerTest extends TestCase {
 			$groupMgr->method('isAdmin')->with($user->getUID())->willReturn($isAdmin);
 		}
 
-		return new SearchTrailController(
+		return SearchTrailControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->searchTrailService,
 			$this->searchTrailMapper,
 			$session,
 			$groupMgr
+		);
+	}
+
+	/**
+	 * @return array<string, array{0: string}>
+	 */
+	public static function adminOnlyEndpoints(): array {
+		return [
+			'statistics' => ['statistics'],
+			'popularTerms' => ['popularTerms'],
+			'activity' => ['activity'],
+			'registerSchemaStats' => ['registerSchemaStats'],
+			'userAgentStats' => ['userAgentStats'],
+			'cleanup' => ['cleanup'],
+			'destroy' => ['destroy'],
+			'destroyMultiple' => ['destroyMultiple'],
+			'clearAll' => ['clearAll'],
+		];
+	}
+
+	#[\PHPUnit\Framework\Attributes\DataProvider('adminOnlyEndpoints')]
+	public function testAdminOnlyEndpointReturns403WhenNonAdmin(string $method): void {
+		$bob = $this->createMock(IUser::class);
+		$bob->method('getUID')->willReturn('bob');
+		$controller = $this->makeControllerWithUser($bob, false);
+		$this->searchTrailService->expects($this->never())->method($this->anything());
+		$this->searchTrailMapper->expects($this->never())->method($this->anything());
+
+		$result = $method === 'destroy' ? $controller->destroy(1) : $controller->$method();
+
+		$this->assertEquals(403, $result->getStatus());
+		$this->assertStringContainsString('admin-only', $result->getData()['error']);
+	}
+
+	public function testClearAllWithNothingToClear(): void {
+		$this->searchTrailMapper->method('clearAllLogs')->willReturn(false);
+
+		$result = $this->controller->clearAll();
+
+		$this->assertSame(200, $result->getStatus());
+		$this->assertSame(
+			['success' => true, 'message' => 'No expired search trails found to clear', 'deleted' => 0],
+			$result->getData()
 		);
 	}
 

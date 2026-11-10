@@ -333,9 +333,9 @@ class SharesProviderTest extends TestCase {
 
 		$container = $this->buildContainer([
 			'OCP\\Share\\IManager' => $shareManager,
-			'OCA\\OpenRegister\\Service\\File\\FolderManagementHandler' => $folderHandler,
+			'OCA\\OpenRegister\\Service\\FileService' => $folderHandler,
 			'OCP\\IUserSession' => $userSession,
-			'OCA\\OpenRegister\\Db\\ObjectEntityMapper' => $objectMapper,
+			'OCA\\OpenRegister\\Db\\MagicMapper' => $objectMapper,
 		]);
 
 		$provider = new SharesProvider(
@@ -384,7 +384,7 @@ class SharesProviderTest extends TestCase {
 
 		$container = $this->buildContainer([
 			'OCP\\Share\\IManager' => $shareManager,
-			'OCA\\OpenRegister\\Service\\File\\FolderManagementHandler' => $folderHandler,
+			'OCA\\OpenRegister\\Service\\FileService' => $folderHandler,
 			'OCP\\IUserSession' => $userSession,
 		]);
 
@@ -468,13 +468,21 @@ class SharesProviderTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	public function testDeleteDelegatesToShareManager(): void {
-		$share = $this->createMock(IShare::class);
+	public function testDeleteGoesThroughTheObjectScopedRevoke(): void {
+		$service = new class {
+
+			public ?array $revoked = null;
+
+			public function revokeShare(string $objectUuid, string $shareId): void {
+				$this->revoked = [$objectUuid, $shareId];
+			}//end revokeShare()
+		};
+
 		$shareManager = $this->createMock(IManager::class);
-		$shareManager->method('getShareById')->with('s-1')->willReturn($share);
-		$shareManager->expects($this->once())->method('deleteShare')->with($share);
+		$shareManager->expects($this->never())->method('deleteShare');
 
 		$container = $this->buildContainer([
+			'OCA\\OpenRegister\\Service\\ShareLinkService' => $service,
 			'OCP\\Share\\IManager' => $shareManager,
 		]);
 
@@ -486,7 +494,8 @@ class SharesProviderTest extends TestCase {
 		);
 
 		$provider->delete('reg', 'sch', 'obj-uuid', 's-1');
-	}//end testDeleteDelegatesToShareManager()
+		$this->assertSame(['obj-uuid', 's-1'], $service->revoked);
+	}//end testDeleteGoesThroughTheObjectScopedRevoke()
 
 	/**
 	 * `delete()` falls back to the abstract base's
@@ -554,9 +563,9 @@ class SharesProviderTest extends TestCase {
 
 		$container = $this->buildContainer([
 			'OCP\\Share\\IManager' => $shareManager,
-			'OCA\\OpenRegister\\Service\\File\\FolderManagementHandler' => $folderHandler,
+			'OCA\\OpenRegister\\Service\\FileService' => $folderHandler,
 			'OCP\\IUserSession' => $userSession,
-			'OCA\\OpenRegister\\Db\\ObjectEntityMapper' => $objectMapper,
+			'OCA\\OpenRegister\\Db\\MagicMapper' => $objectMapper,
 		]);
 
 		$provider = new SharesProvider(
@@ -662,10 +671,10 @@ class SharesProviderTest extends TestCase {
 	public function testDeleteRevokesCaseToken(): void {
 		$tokenService = new class {
 
-			public ?string $revoked = null;
+			public ?array $revoked = null;
 
-			public function revoke(string $tokenOrId): bool {
-				$this->revoked = $tokenOrId;
+			public function revoke(string $objectUuid, string $tokenOrId): bool {
+				$this->revoked = [$objectUuid, $tokenOrId];
 				return true;
 			}//end revoke()
 		};
@@ -687,7 +696,7 @@ class SharesProviderTest extends TestCase {
 		);
 
 		$provider->delete('reg', 'sch', 'obj-uuid', 'token:abc123');
-		$this->assertSame('abc123', $tokenService->revoked);
+		$this->assertSame(['obj-uuid', 'abc123'], $tokenService->revoked);
 	}//end testDeleteRevokesCaseToken()
 
 	/**
@@ -706,9 +715,9 @@ class SharesProviderTest extends TestCase {
 
 		$container = $this->buildContainer([
 			'OCP\\Share\\IManager' => $this->createMock(IManager::class),
-			'OCA\\OpenRegister\\Service\\File\\FolderManagementHandler' => $folderHandler,
+			'OCA\\OpenRegister\\Service\\FileService' => $folderHandler,
 			'OCP\\IUserSession' => $userSession,
-			'OCA\\OpenRegister\\Db\\ObjectEntityMapper' => $objectMapper,
+			'OCA\\OpenRegister\\Db\\MagicMapper' => $objectMapper,
 		]);
 
 		$provider = new SharesProvider(

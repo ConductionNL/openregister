@@ -35,7 +35,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use DateTimeImmutable;
 /**
  * Turns the claims of one sign-in into the grants an administrator declared.
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class DerivedGrantResolver {
 
@@ -81,7 +81,7 @@ class DerivedGrantResolver {
 	 * @return array{grants: array<int, array<string, mixed>>, skipped: array<int, string>}
 	 *         The grants, and one sentence per rule that could not be read.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function derive(array $claims, mixed $rules): array {
 		if (is_array($rules) === false || $rules === []) {
@@ -157,21 +157,28 @@ class DerivedGrantResolver {
 	 *
 	 * @return array<int, string> The group ids this caller holds here.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function groupsFor(array $grants, array $area, GrantConstraints $constraints): array {
 		$now = new DateTimeImmutable();
+		$reaching = array_filter(
+			$grants,
+			static fn (mixed $grant): bool => is_array($grant) === true && $constraints->reaches(entry: $grant, area: $area, now: $now) === true
+		);
 
+		return $this->groupsIn(grants: $reaching);
+	}//end groupsFor()
+
+	/**
+	 * The distinct group ids a set of grants names, in first-seen order.
+	 *
+	 * @param array<int, array<string, mixed>> $grants The grants.
+	 *
+	 * @return array<int, string> The group ids.
+	 */
+	private function groupsIn(array $grants): array {
 		$groups = [];
 		foreach ($grants as $grant) {
-			if (is_array($grant) === false) {
-				continue;
-			}
-
-			if ($constraints->reaches(entry: $grant, area: $area, now: $now) === false) {
-				continue;
-			}
-
 			foreach ($this->stringsIn(value: ($grant['groups'] ?? [])) as $group) {
 				if (in_array($group, $groups, true) === false) {
 					$groups[] = $group;
@@ -180,7 +187,7 @@ class DerivedGrantResolver {
 		}
 
 		return $groups;
-	}//end groupsFor()
+	}//end groupsIn()
 
 	/**
 	 * Whether the asserted claim satisfies one rule.

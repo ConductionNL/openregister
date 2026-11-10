@@ -26,9 +26,12 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\View;
-use OCA\OpenRegister\Db\ViewMapper;
-use OCA\OpenRegister\Service\ViewService;
+use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Service\Rbac\ViewerReach;
+use OCA\OpenRegister\Search\Service\ViewAudience;
+use OCA\OpenRegister\Search\Service\ViewDefinition;
+use OCA\OpenRegister\Search\Service\ViewService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -210,12 +213,16 @@ class ViewServiceTest extends TestCase {
 		);
 
 		$result = $this->service->create(
-			name: 'My View',
-			description: 'Description',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: []
+			definition: new ViewDefinition(
+				name: 'My View',
+				description: 'Description',
+				query: []
+			),
+			audience: new ViewAudience(
+				owner: 'user1',
+				isPublic: false,
+				isDefault: false
+			)
 		);
 
 		$this->assertInstanceOf(expected: View::class, actual: $result);
@@ -258,12 +265,16 @@ class ViewServiceTest extends TestCase {
 		);
 
 		$result = $this->service->create(
-			name: 'Org View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: []
+			definition: new ViewDefinition(
+				name: 'Org View',
+				description: 'Desc',
+				query: []
+			),
+			audience: new ViewAudience(
+				owner: 'user1',
+				isPublic: false,
+				isDefault: false
+			)
 		);
 
 		$this->assertInstanceOf(expected: View::class, actual: $result);
@@ -293,12 +304,16 @@ class ViewServiceTest extends TestCase {
 		);
 
 		$this->service->create(
-			name: 'New Default',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: true,
-			query: []
+			definition: new ViewDefinition(
+				name: 'New Default',
+				description: 'Desc',
+				query: []
+			),
+			audience: new ViewAudience(
+				owner: 'user1',
+				isPublic: false,
+				isDefault: true
+			)
 		);
 	}//end testCreateClearsDefaultWhenSettingDefault()
 
@@ -315,12 +330,16 @@ class ViewServiceTest extends TestCase {
 		$this->expectException(exception: Exception::class);
 
 		$this->service->create(
-			name: 'View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: []
+			definition: new ViewDefinition(
+				name: 'View',
+				description: 'Desc',
+				query: []
+			),
+			audience: new ViewAudience(
+				owner: 'user1',
+				isPublic: false,
+				isDefault: false
+			)
 		);
 	}//end testCreateThrowsAndLogsOnFailure()
 
@@ -450,7 +469,7 @@ class ViewServiceTest extends TestCase {
 		$this->viewMapper->method('find')->willReturn(value: $view);
 		$this->viewMapper->expects($this->once())->method('delete');
 
-		$this->service->delete(id: 1, owner: 'user1');
+		$this->service->delete(id: 1, reach: new ViewerReach(userId: 'user1', groups: [], isAdmin: false));
 	}//end testDeleteRemovesView()
 
 	/**
@@ -464,8 +483,58 @@ class ViewServiceTest extends TestCase {
 
 		$this->expectException(exception: DoesNotExistException::class);
 
-		$this->service->delete(id: 1, owner: 'user2');
+		$this->service->delete(id: 1, reach: new ViewerReach(userId: 'user2', groups: [], isAdmin: false));
 	}//end testDeleteThrowsForPrivateViewOfOtherUser()
+
+	/**
+	 * Test that delete() refuses a public view of another owner before deleting it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/2026-10-30-saved-view-delete-owner-only/tasks.md#task-1
+	 */
+	public function testDeleteThrowsForPublicViewOfOtherUser(): void {
+		$view = $this->createView(id: 1, owner: 'user1', isPublic: true);
+		$this->viewMapper->method('find')->willReturn(value: $view);
+		$this->viewMapper->expects($this->never())->method('delete');
+
+		$this->expectException(exception: DoesNotExistException::class);
+
+		$this->service->delete(id: 1, reach: new ViewerReach(userId: 'user2', groups: [], isAdmin: false));
+	}//end testDeleteThrowsForPublicViewOfOtherUser()
+
+	/**
+	 * Test that a member of a group the view is shared with in write mode cannot delete it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function testDeleteThrowsForWriteMemberOfSharedView(): void {
+		$view = $this->createView(id: 1, owner: 'user1', isPublic: false);
+		$view->setSharedWith([['group' => 'desk', 'mode' => 'write']]);
+		$this->viewMapper->method('find')->willReturn(value: $view);
+		$this->viewMapper->expects($this->never())->method('delete');
+
+		$this->expectException(exception: DoesNotExistException::class);
+
+		$this->service->delete(id: 1, reach: new ViewerReach(userId: 'user2', groups: ['desk'], isAdmin: false));
+	}//end testDeleteThrowsForWriteMemberOfSharedView()
+
+	/**
+	 * Test that an administrator deletes a view of another owner.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/2026-10-30-saved-view-delete-owner-only/tasks.md#task-1
+	 */
+	public function testDeleteByAdministratorRemovesViewOfOtherUser(): void {
+		$view = $this->createView(id: 1, owner: 'user1', isPublic: false);
+		$this->viewMapper->method('find')->willReturn(value: $view);
+		$this->viewMapper->expects($this->once())->method('delete');
+
+		$this->service->delete(id: 1, reach: new ViewerReach(userId: 'admin', groups: [], isAdmin: true));
+	}//end testDeleteByAdministratorRemovesViewOfOtherUser()
 
 	/**
 	 * Test that delete() throws and logs when the mapper throws an exception.
@@ -479,7 +548,7 @@ class ViewServiceTest extends TestCase {
 
 		$this->expectException(exception: Exception::class);
 
-		$this->service->delete(id: 999, owner: 'user1');
+		$this->service->delete(id: 999, reach: new ViewerReach(userId: 'user1', groups: [], isAdmin: false));
 	}//end testDeleteThrowsAndLogsOnFailure()
 
 	// ── presentation config (REQ-VIEW-PRES-01) ──
@@ -502,13 +571,17 @@ class ViewServiceTest extends TestCase {
 		$presentation = ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']];
 
 		$result = $this->service->create(
-			name: 'Kanban View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: ['schemas' => ['status-schema']],
-			presentation: $presentation
+			definition: new ViewDefinition(
+				name: 'Kanban View',
+				description: 'Desc',
+				query: ['schemas' => ['status-schema']],
+				presentation: $presentation
+			),
+			audience: new ViewAudience(
+				owner: 'user1',
+				isPublic: false,
+				isDefault: false
+			)
 		);
 
 		$this->assertSame(expected: $presentation, actual: $result->getPresentation());
@@ -529,13 +602,17 @@ class ViewServiceTest extends TestCase {
 		$this->expectException(exception: InvalidArgumentException::class);
 
 		$this->service->create(
-			name: 'Kanban View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: ['schemas' => ['some-schema']],
-			presentation: ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']]
+			definition: new ViewDefinition(
+				name: 'Kanban View',
+				description: 'Desc',
+				query: ['schemas' => ['some-schema']],
+				presentation: ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']]
+			),
+			audience: new ViewAudience(
+				owner: 'user1',
+				isPublic: false,
+				isDefault: false
+			)
 		);
 	}//end testCreateRejectsKanbanGroupByFieldNotOnSchema()
 
@@ -554,13 +631,17 @@ class ViewServiceTest extends TestCase {
 		$this->expectException(exception: InvalidArgumentException::class);
 
 		$this->service->create(
-			name: 'Calendar View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: ['schemas' => ['some-schema']],
-			presentation: ['viewType' => 'calendar', 'calendar' => ['dateField' => 'dueDate']]
+			definition: new ViewDefinition(
+				name: 'Calendar View',
+				description: 'Desc',
+				query: ['schemas' => ['some-schema']],
+				presentation: ['viewType' => 'calendar', 'calendar' => ['dateField' => 'dueDate']]
+			),
+			audience: new ViewAudience(
+				owner: 'user1',
+				isPublic: false,
+				isDefault: false
+			)
 		);
 	}//end testCreateRejectsCalendarDateFieldNotOnSchema()
 
@@ -590,13 +671,17 @@ class ViewServiceTest extends TestCase {
 		];
 
 		$result = $this->service->create(
-			name: 'Calendar View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: ['schemas' => ['event-schema']],
-			presentation: $presentation
+			definition: new ViewDefinition(
+				name: 'Calendar View',
+				description: 'Desc',
+				query: ['schemas' => ['event-schema']],
+				presentation: $presentation
+			),
+			audience: new ViewAudience(
+				owner: 'user1',
+				isPublic: false,
+				isDefault: false
+			)
 		);
 
 		$this->assertSame(expected: $presentation, actual: $result->getPresentation());
@@ -617,13 +702,17 @@ class ViewServiceTest extends TestCase {
 		$this->expectException(exception: InvalidArgumentException::class);
 
 		$this->service->create(
-			name: 'Calendar View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: ['schemas' => ['event-schema']],
-			presentation: ['viewType' => 'calendar', 'calendar' => ['dateField' => 'startDate', 'endDateField' => 'missingField']]
+			definition: new ViewDefinition(
+				name: 'Calendar View',
+				description: 'Desc',
+				query: ['schemas' => ['event-schema']],
+				presentation: ['viewType' => 'calendar', 'calendar' => ['dateField' => 'startDate', 'endDateField' => 'missingField']]
+			),
+			audience: new ViewAudience(
+				owner: 'user1',
+				isPublic: false,
+				isDefault: false
+			)
 		);
 	}//end testCreateRejectsCalendarEndDateFieldNotOnSchema()
 
@@ -638,13 +727,17 @@ class ViewServiceTest extends TestCase {
 		$this->expectException(exception: InvalidArgumentException::class);
 
 		$this->service->create(
-			name: 'Kanban View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: [],
-			presentation: ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']]
+			definition: new ViewDefinition(
+				name: 'Kanban View',
+				description: 'Desc',
+				query: [],
+				presentation: ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']]
+			),
+			audience: new ViewAudience(
+				owner: 'user1',
+				isPublic: false,
+				isDefault: false
+			)
 		);
 	}//end testCreateRejectsPresentationWithNoSchemaConfigured()
 
@@ -662,13 +755,17 @@ class ViewServiceTest extends TestCase {
 		);
 
 		$result = $this->service->create(
-			name: 'Plain View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: [],
-			presentation: null
+			definition: new ViewDefinition(
+				name: 'Plain View',
+				description: 'Desc',
+				query: [],
+				presentation: null
+			),
+			audience: new ViewAudience(
+				owner: 'user1',
+				isPublic: false,
+				isDefault: false
+			)
 		);
 
 		$this->assertNull(actual: $result->getPresentation());
@@ -776,13 +873,17 @@ class ViewServiceTest extends TestCase {
 		$this->expectException(exception: InvalidArgumentException::class);
 
 		$this->service->create(
-			name: 'View',
-			description: 'Desc',
-			owner: 'user1',
-			isPublic: false,
-			isDefault: false,
-			query: [],
-			presentation: ['viewType' => 'gallery']
+			definition: new ViewDefinition(
+				name: 'View',
+				description: 'Desc',
+				query: [],
+				presentation: ['viewType' => 'gallery']
+			),
+			audience: new ViewAudience(
+				owner: 'user1',
+				isPublic: false,
+				isDefault: false
+			)
 		);
 	}//end testCreateRejectsUnknownViewType()
 }//end class

@@ -157,14 +157,14 @@ export default {
 		 * connecting an existing one — used to swap the search UI for a
 		 * spinner so the user sees the work happening.
 		 *
-		 * @param schema
+		 * @param {object} schema
 		 */
 		isBusy(schema) {
 			return !!this.creating[schema.id] || !!this.linking[schema.id]
 		},
 
 		/**
-		 * @param obj
+		 * @param {object} obj
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		objectName(obj) {
@@ -221,7 +221,44 @@ export default {
 		},
 
 		/**
-		 * @param schema
+		 * The objects endpoint of a schema in a register.
+		 *
+		 * @param {object} register The register
+		 * @param {object} schema The schema
+		 * @return {string} The URL
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		objectsUrl(register, schema) {
+			return generateUrl(
+				'/apps/openregister/api/objects/{register}/{schema}',
+				{
+					register: register.id,
+					schema: schema.id,
+				},
+			)
+		},
+
+		/**
+		 * Fetch up to 20 objects of a schema, narrowed by the given query, and
+		 * keep them as the schema's results.
+		 *
+		 * @param {object} register The register
+		 * @param {object} schema The schema
+		 * @param {object} params Extra query parameters
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		async fetchResults(register, schema, params) {
+			const response = await axios.get(this.objectsUrl(register, schema), {
+				params: { ...params, _limit: 20 },
+				timeout: 10000,
+			})
+			const results = response.data?.results || response.data || []
+			this.searchResults[schema.id] = results
+		},
+
+		/**
+		 * @param {object} schema
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async loadInitialResults(schema) {
@@ -229,19 +266,7 @@ export default {
 			if (!register) return
 
 			try {
-				const url = generateUrl(
-					'/apps/openregister/api/objects/{register}/{schema}',
-					{
-						register: register.id,
-						schema: schema.id,
-					},
-				)
-				const response = await axios.get(url, {
-					params: { _limit: 20 },
-					timeout: 10000,
-				})
-				const results = response.data?.results || response.data || []
-				this.searchResults[schema.id] = results
+				await this.fetchResults(register, schema, {})
 			} catch (err) {
 				console.error(
 					'[ActionsTab] Initial load failed for',
@@ -252,7 +277,7 @@ export default {
 		},
 
 		/**
-		 * @param schema
+		 * @param {object} schema
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		showResults(schema) {
@@ -260,7 +285,7 @@ export default {
 		},
 
 		/**
-		 * @param schema
+		 * @param {object} schema
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		debounceSearch(schema) {
@@ -273,7 +298,7 @@ export default {
 		},
 
 		/**
-		 * @param schema
+		 * @param {object} schema
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async searchObjects(schema) {
@@ -290,19 +315,7 @@ export default {
 			this.searching[schema.id] = true
 			this.visibleResults[schema.id] = true
 			try {
-				const url = generateUrl(
-					'/apps/openregister/api/objects/{register}/{schema}',
-					{
-						register: register.id,
-						schema: schema.id,
-					},
-				)
-				const response = await axios.get(url, {
-					params: { _search: term, _limit: 20 },
-					timeout: 10000,
-				})
-				const results = response.data?.results || response.data || []
-				this.searchResults[schema.id] = results
+				await this.fetchResults(register, schema, { _search: term })
 			} catch (err) {
 				console.error('[ActionsTab] Search failed:', err)
 			} finally {
@@ -337,7 +350,7 @@ export default {
 		 * Schemas opt into create-from-email by declaring a field template in
 		 * `configuration.mailObjectTemplate` (e.g. pipelinq lead, shillinq invoice).
 		 *
-		 * @param schema
+		 * @param {object} schema
 		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		hasCreateTemplate(schema) {
@@ -364,7 +377,7 @@ export default {
 		/**
 		 * Build the placeholder map available to mailObjectTemplate values.
 		 *
-		 * @param envelope
+		 * @param {object} envelope
 		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		buildPlaceholders(envelope) {
@@ -398,8 +411,8 @@ export default {
 		 * Substitute {{placeholder}} tokens in string template values; pass
 		 * non-string values (numbers, booleans) through untouched.
 		 *
-		 * @param template
-		 * @param placeholders
+		 * @param {object} template
+		 * @param {object} placeholders
 		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		applyTemplate(template, placeholders) {
@@ -420,7 +433,7 @@ export default {
 		 * Open the create-object dialog, prefilled from the schema's
 		 * mailObjectTemplate applied to the current email.
 		 *
-		 * @param schema
+		 * @param {object} schema
 		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		async openCreate(schema) {
@@ -458,7 +471,7 @@ export default {
 		 * Create the object from the (possibly edited) dialog data, then
 		 * connect the email to it.
 		 *
-		 * @param data
+		 * @param {object} data
 		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		async submitCreate(data) {
@@ -469,14 +482,11 @@ export default {
 
 			this.createSaving = true
 			try {
-				const url = generateUrl(
-					'/apps/openregister/api/objects/{register}/{schema}',
-					{
-						register: register.id,
-						schema: schema.id,
-					},
+				const response = await axios.post(
+					this.objectsUrl(register, schema),
+					data,
+					{ timeout: 15000 },
 				)
-				const response = await axios.post(url, data, { timeout: 15000 })
 				await this.linkObject(schema, response.data)
 				this.createDialog = { show: false, schema: null, data: {} }
 			} catch (err) {
@@ -493,8 +503,8 @@ export default {
 		},
 
 		/**
-		 * @param schema
-		 * @param obj
+		 * @param {object} schema
+		 * @param {object} obj
 		 * @spec openspec/specs/mail-sidebar/spec.md#requirement-link-and-unlink-actions-from-the-sidebar
 		 */
 		async linkObject(schema, obj) {

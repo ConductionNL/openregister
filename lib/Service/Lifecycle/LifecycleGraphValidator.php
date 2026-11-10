@@ -41,6 +41,28 @@ namespace OCA\OpenRegister\Service\Lifecycle;
  */
 final class LifecycleGraphValidator {
 
+	use LifecycleFieldCheck;
+
+	/**
+	 * The keys a graph block may not carry, with their refusals.
+	 *
+	 * @var array<string, array{code: string, message: string}>
+	 */
+	private const UNSUPPORTED_KEYS = [
+		'condition' => [
+			'code' => 'lifecycle-condition-graph-unsupported',
+			'message' => 'x-openregister-lifecycle.graph does not support `condition`: '
+				. 'graph-mode moves are not enforced on the save path, so a condition '
+				. 'declared here would not hold. Declare conditions on static transitions.',
+		],
+		'autoWhen' => [
+			'code' => 'lifecycle-autowhen-graph-unsupported',
+			'message' => 'x-openregister-lifecycle.graph does not support `autoWhen`: '
+				. 'graph-mode automatic transitions are not supported while graph-mode '
+				. 'moves are unenforced on the save path. Declare `autoWhen` on a static transition.',
+		],
+	];
+
 	/**
 	 * Constructor.
 	 *
@@ -77,79 +99,12 @@ final class LifecycleGraphValidator {
 	 */
 	public function validate(array $annotation, array $schema): array {
 		return array_merge(
-			$this->validateField(annotation: $annotation, schema: $schema),
-			$this->validateEndpoints(annotation: $annotation),
+			$this->declaredFieldErrors(annotation: $annotation, schema: $schema),
+			$this->forms->validateEndpoints(annotation: $annotation),
 			$this->validateBlock(graph: $annotation['graph']),
 			$this->unsupported(graph: $annotation['graph'])
 		);
 	}//end validate()
-
-	/**
-	 * Check the lifecycle `field` itself.
-	 *
-	 * It stays required and non-empty, but the `enum`/`type:string` constraint
-	 * is relaxed: a graph-mode lifecycle field is a `$ref`, which declares no
-	 * enum and is not a plain string in the schema's sense.
-	 *
-	 * @param array<string, mixed> $annotation The normalised annotation block.
-	 * @param array<string, mixed> $schema     Full schema definition.
-	 *
-	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
-	 */
-	private function validateField(array $annotation, array $schema): array {
-		$field = ($annotation['field'] ?? null);
-		if (is_string($field) === false || $field === '') {
-			return [
-				[
-					'code' => 'lifecycle-missing-key',
-					'message' => 'x-openregister-lifecycle is missing required key "field".',
-				],
-			];
-		}
-
-		$properties = ($schema['properties'] ?? []);
-		if (is_array($properties) === true && isset($properties[$field]) === false) {
-			return [
-				[
-					'code' => 'lifecycle-field-missing',
-					'message' => sprintf('x-openregister-lifecycle.field "%s" is not declared in `properties`.', $field),
-				],
-			];
-		}
-
-		return [];
-	}//end validateField()
-
-	/**
-	 * Check the `initial` and `final` declarations beside a graph block.
-	 *
-	 * Both are optional and both are shape-checked, never enum-checked: a
-	 * graph-mode field is a `$ref` with no enum, so the reference form is the
-	 * only one that can name either endpoint.
-	 *
-	 * @param array<string, mixed> $annotation The normalised annotation block.
-	 *
-	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
-	 *
-	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/object-lifecycle/spec.md
-	 */
-	private function validateEndpoints(array $annotation): array {
-		$errors = [];
-
-		if (isset($annotation['initial']) === true) {
-			$initialError = $this->forms->validateInitialForm($annotation['initial']);
-			if ($initialError !== null) {
-				$errors[] = $initialError;
-			}
-		}
-
-		$finalError = $this->forms->validateForm(($annotation['final'] ?? null));
-		if ($finalError !== null) {
-			$errors[] = $finalError;
-		}
-
-		return $errors;
-	}//end validateEndpoints()
 
 	/**
 	 * Check the `graph` block's own keys.
@@ -162,35 +117,38 @@ final class LifecycleGraphValidator {
 	 */
 	private function validateBlock(array $graph): array {
 		$errors = [];
-
 		foreach (['schema', 'parentField', 'parentFrom', 'orderField', 'finalField'] as $key) {
 			$value = ($graph[$key] ?? null);
 			if (is_string($value) === false || $value === '') {
-				$errors[] = [
-					'code' => 'lifecycle-graph-missing-key',
-					'message' => sprintf('x-openregister-lifecycle.graph is missing required string key "%s".', $key),
-				];
+				$message = sprintf('x-openregister-lifecycle.graph is missing required string key "%s".', $key);
+				$errors[] = ['code' => 'lifecycle-graph-missing-key', 'message' => $message];
 			}
 		}
 
-		$allowed = ($graph['allowedMoves'] ?? null);
-		if (in_array($allowed, ['forward', 'adjacent', 'any'], true) === false) {
-			$shown = gettype($allowed);
-			if (is_scalar($allowed) === true) {
-				$shown = (string)$allowed;
-			}
-
-			$errors[] = [
-				'code' => 'lifecycle-graph-allowedmoves-invalid',
-				'message' => sprintf(
-					'x-openregister-lifecycle.graph.allowedMoves "%s" must be one of forward|adjacent|any.',
-					$shown
-				),
-			];
-		}
-
-		return $errors;
+		return array_merge($errors, $this->validateAllowedMoves(allowed: ($graph['allowedMoves'] ?? null)));
 	}//end validateBlock()
+
+	/**
+	 * Check `allowedMoves` against its closed set.
+	 *
+	 * @param mixed $allowed The declared value.
+	 *
+	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
+	 */
+	private function validateAllowedMoves(mixed $allowed): array {
+		if (in_array($allowed, ['forward', 'adjacent', 'any'], true) === true) {
+			return [];
+		}
+
+		$shown = gettype($allowed);
+		if (is_scalar($allowed) === true) {
+			$shown = (string)$allowed;
+		}
+
+		$message = sprintf('x-openregister-lifecycle.graph.allowedMoves "%s" must be one of forward|adjacent|any.', $shown);
+
+		return [['code' => 'lifecycle-graph-allowedmoves-invalid', 'message' => $message]];
+	}//end validateAllowedMoves()
 
 	/**
 	 * Refuse the two keys a graph block may not carry.
@@ -217,23 +175,10 @@ final class LifecycleGraphValidator {
 	 */
 	private function unsupported(array $graph): array {
 		$errors = [];
-
-		if (isset($graph['condition']) === true) {
-			$errors[] = [
-				'code' => 'lifecycle-condition-graph-unsupported',
-				'message' => 'x-openregister-lifecycle.graph does not support `condition`: '
-					. 'graph-mode moves are not enforced on the save path, so a condition '
-					. 'declared here would not hold. Declare conditions on static transitions.',
-			];
-		}
-
-		if (isset($graph['autoWhen']) === true) {
-			$errors[] = [
-				'code' => 'lifecycle-autowhen-graph-unsupported',
-				'message' => 'x-openregister-lifecycle.graph does not support `autoWhen`: '
-					. 'graph-mode automatic transitions are not supported while graph-mode '
-					. 'moves are unenforced on the save path. Declare `autoWhen` on a static transition.',
-			];
+		foreach (self::UNSUPPORTED_KEYS as $key => $refusal) {
+			if (isset($graph[$key]) === true) {
+				$errors[] = $refusal;
+			}
 		}
 
 		return $errors;

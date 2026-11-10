@@ -21,10 +21,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Task;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
-use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
-use OCA\OpenRegister\Service\Notification\TaskNotificationRules;
-use OCA\OpenRegister\Service\Notification\TaskObjectAdapter;
+use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapter;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\Http\Client\IClientService;
 use OCP\IGroupManager;

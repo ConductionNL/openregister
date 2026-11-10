@@ -60,7 +60,7 @@ final class SystemOperationContext {
 	 * Run a callable inside a trusted system-operation scope.
 	 *
 	 * While the callable executes, RBAC checks in MultiTenancyTrait and
-	 * PermissionHandler treat the caller as a trusted system principal —
+	 * PermissionHandlerInterface treat the caller as a trusted system principal —
 	 * mirroring the existing CLI trust. The scope is released in a finally
 	 * block, so an exception inside the operation cannot leak elevation.
 	 *

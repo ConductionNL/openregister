@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -41,16 +41,9 @@ use OCP\IDBConnection;
  *
  * @psalm-suppress PossiblyUnusedMethod
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
-class RuleRunMapper extends QBMapper {
-
-	/**
-	 * How many rows one run-log read returns unless the caller asks for fewer.
-	 *
-	 * @var integer
-	 */
-	public const DEFAULT_LIMIT = 50;
+class RuleRunMapper extends QBMapper implements RuleRunMapperInterface {
 
 	/**
 	 * The most rows one run-log read will ever return.
@@ -100,7 +93,7 @@ class RuleRunMapper extends QBMapper {
 	 *
 	 * @return array<int, RuleRun> The rows.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function findByRule(
 		string $ruleId,
@@ -111,29 +104,10 @@ class RuleRunMapper extends QBMapper {
 		int $offset = 0,
 	): array {
 		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('rule_id', $qb->createNamedParameter($ruleId)))
-			->orderBy('created', 'DESC')
-			->addOrderBy('id', 'DESC')
-			->setMaxResults(max(1, min($limit, self::MAX_LIMIT)))
-			->setFirstResult(max(0, $offset));
-
-		if ($verdict !== null && $verdict !== '') {
-			$qb->andWhere($qb->expr()->eq('verdict', $qb->createNamedParameter($verdict)));
-		}
-
-		if ($since !== null) {
-			$qb->andWhere(
-				$qb->expr()->gte('created', $qb->createNamedParameter($since, IQueryBuilder::PARAM_DATETIME_MUTABLE))
-			);
-		}
-
-		if ($until !== null) {
-			$qb->andWhere(
-				$qb->expr()->lte('created', $qb->createNamedParameter($until, IQueryBuilder::PARAM_DATETIME_MUTABLE))
-			);
-		}
+		$qb->select('*')->from($this->getTableName())
+			->where($qb->expr()->eq('rule_id', $qb->createNamedParameter($ruleId)));
+		$this->newestFirstPage(qb: $qb, page: self::clampedPage(limit: $limit, offset: $offset));
+		(new RuleRunFilter(verdict: $verdict, since: $since, until: $until))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 
@@ -151,38 +125,19 @@ class RuleRunMapper extends QBMapper {
 	 * column the ordering and the window both use, so the console never
 	 * scans the run log (ADR-009).
 	 *
-	 * @param string|null   $verdict Narrow to one verdict.
-	 * @param DateTime|null $since   Only runs at or after this moment.
-	 * @param int           $limit   How many rows to return, capped at MAX_LIMIT.
-	 * @param int           $offset  Where to start.
+	 * @param DateTime|null $since Only runs at or after this moment.
+	 * @param int           $limit How many rows to return, capped at MAX_LIMIT.
 	 *
 	 * @return array<int, RuleRun> The rows, newest first.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
-	public function findRecent(
-		?string $verdict = null,
-		?DateTime $since = null,
-		int $limit = self::DEFAULT_LIMIT,
-		int $offset = 0,
-	): array {
+	public function findRecent(?DateTime $since = null, int $limit = self::DEFAULT_LIMIT): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
-			->from($this->getTableName())
-			->orderBy('created', 'DESC')
-			->addOrderBy('id', 'DESC')
-			->setMaxResults(max(1, min($limit, self::MAX_LIMIT)))
-			->setFirstResult(max(0, $offset));
-
-		if ($verdict !== null && $verdict !== '') {
-			$qb->andWhere($qb->expr()->eq('verdict', $qb->createNamedParameter($verdict)));
-		}
-
-		if ($since !== null) {
-			$qb->andWhere(
-				$qb->expr()->gte('created', $qb->createNamedParameter($since, IQueryBuilder::PARAM_DATETIME_MUTABLE))
-			);
-		}
+			->from($this->getTableName());
+		$this->newestFirstPage(qb: $qb, page: self::clampedPage(limit: $limit, offset: 0));
+		(new RuleRunFilter(since: $since))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 
@@ -198,7 +153,7 @@ class RuleRunMapper extends QBMapper {
 	 *
 	 * @return int The number of matching rows.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function countByRule(
 		string $ruleId,
@@ -207,33 +162,55 @@ class RuleRunMapper extends QBMapper {
 		?DateTime $until = null,
 	): int {
 		$qb = $this->db->getQueryBuilder();
-		$qb->selectAlias($qb->createFunction('COUNT(*)'), 'run_count')
-			->from($this->getTableName())
+		$qb->selectAlias($qb->createFunction('COUNT(*)'), 'run_count')->from($this->getTableName())
 			->where($qb->expr()->eq('rule_id', $qb->createNamedParameter($ruleId)));
+		(new RuleRunFilter(verdict: $verdict, since: $since, until: $until))->applyTo(qb: $qb);
 
-		if ($verdict !== null && $verdict !== '') {
-			$qb->andWhere($qb->expr()->eq('verdict', $qb->createNamedParameter($verdict)));
-		}
+		return $this->fetchRunCount(qb: $qb);
 
-		if ($since !== null) {
-			$qb->andWhere(
-				$qb->expr()->gte('created', $qb->createNamedParameter($since, IQueryBuilder::PARAM_DATETIME_MUTABLE))
-			);
-		}
+	}//end countByRule()
 
-		if ($until !== null) {
-			$qb->andWhere(
-				$qb->expr()->lte('created', $qb->createNamedParameter($until, IQueryBuilder::PARAM_DATETIME_MUTABLE))
-			);
-		}
-
+	/**
+	 * Run a count query and read its `run_count` column; no row counts as zero.
+	 *
+	 * @param IQueryBuilder $qb The count query.
+	 *
+	 * @return int The count.
+	 */
+	private function fetchRunCount(IQueryBuilder $qb): int {
 		$result = $qb->executeQuery();
 		$row = $result->fetch();
 		$result->closeCursor();
 
 		return (int)($row['run_count'] ?? 0);
 
-	}//end countByRule()
+	}//end fetchRunCount()
+
+	/**
+	 * One page with the limit clamped to 1..MAX_LIMIT and the offset to at least 0.
+	 *
+	 * @param int $limit  The page size asked for.
+	 * @param int $offset The offset asked for.
+	 *
+	 * @return QueryPage
+	 */
+	private static function clampedPage(int $limit, int $offset): QueryPage {
+		return new QueryPage(limit: max(1, min($limit, self::MAX_LIMIT)), offset: max(0, $offset));
+	}//end clampedPage()
+
+	/**
+	 * Order newest first (id breaks ties) and take one page.
+	 *
+	 * @param IQueryBuilder $qb   The query.
+	 * @param QueryPage     $page The page, already clamped.
+	 *
+	 * @return void
+	 */
+	private function newestFirstPage(IQueryBuilder $qb, QueryPage $page): void {
+		$qb->orderBy('created', 'DESC')
+			->addOrderBy('id', 'DESC');
+		$page->applyTo(qb: $qb);
+	}//end newestFirstPage()
 
 	/**
 	 * Delete detail rows older than a cut-off, in bounded batches.
@@ -246,7 +223,7 @@ class RuleRunMapper extends QBMapper {
 	 *
 	 * @return int How many rows were deleted.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function pruneBefore(DateTime $before, int $batches = 25): int {
 		$deleted = 0;
@@ -286,7 +263,7 @@ class RuleRunMapper extends QBMapper {
 	 *
 	 * @return array<int, int> The row ids.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function idsBefore(DateTime $before, int $limit): array {
 		$qb = $this->db->getQueryBuilder();

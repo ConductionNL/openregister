@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\TransferControllerFactory;
 use OCA\OpenRegister\BackgroundJob\TransferExecutionJob;
 use OCA\OpenRegister\Controller\TransferController;
 use OCA\OpenRegister\Service\Edepot\TransferListService;
@@ -64,7 +65,7 @@ class TransferControllerTest extends TestCase {
 		$session = $this->createMock(\OCP\IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 
-		$this->controller = new TransferController(
+		$this->controller = TransferControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->recordService,

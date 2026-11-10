@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Db\WebhookMapperInterface;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
@@ -60,9 +60,9 @@ class WebhookDeliveryJob extends QueuedJob {
 	 *
 	 * Handles database operations for webhook entities.
 	 *
-	 * @var WebhookMapper Webhook mapper instance
+	 * @var WebhookMapperInterface Webhook mapper instance
 	 */
-	private readonly WebhookMapper $webhookMapper;
+	private readonly WebhookMapperInterface $webhookMapper;
 
 	/**
 	 * Webhook service
@@ -89,7 +89,7 @@ class WebhookDeliveryJob extends QueuedJob {
 	 * Calls parent constructor to set up base job functionality with time factory.
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling
-	 * @param WebhookMapper $webhookMapper Webhook mapper for database operations
+	 * @param WebhookMapperInterface $webhookMapper Webhook mapper for database operations
 	 * @param WebhookService $webhookService Webhook service for delivery logic
 	 * @param LoggerInterface $logger Logger for error tracking
 	 *
@@ -97,7 +97,7 @@ class WebhookDeliveryJob extends QueuedJob {
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		WebhookMapper $webhookMapper,
+		WebhookMapperInterface $webhookMapper,
 		WebhookService $webhookService,
 		LoggerInterface $logger,
 	) {

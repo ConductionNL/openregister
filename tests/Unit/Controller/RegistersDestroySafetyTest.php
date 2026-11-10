@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\RegistersController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\RegistersControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
@@ -42,7 +43,7 @@ use OCA\OpenRegister\Service\MigrationPackService;
 use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
 use OCA\OpenRegister\Service\RegisterService;
-use OCA\OpenRegister\Service\UploadService;
+use OCA\OpenRegister\Files\Service\UploadService;
 use OCP\App\IAppManager;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -135,7 +136,7 @@ class RegistersDestroySafetyTest extends TestCase {
 			}
 		);
 
-		$this->controller = new RegistersController(
+		$this->controller = RegistersControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->registerService,

@@ -43,7 +43,7 @@ namespace OCA\OpenRegister\Service\ShippedBaseline;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -51,6 +51,9 @@ use Throwable;
 
 /**
  * Guards an app-shipped schema update against local changes.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One guard for every shipped definition kind: baseline read, merge,
+ * audit of each authorization change and the fail-closed fallback share one definition of what "shipped" means.
  *
  * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
  */
@@ -76,7 +79,7 @@ class ShippedConfigurationGuard {
 	 * @param ShippedBaselineStore   $baselines  Where the shipped definitions are kept.
 	 * @param GuardedDescriptorMerge $merge      The per-part merge.
 	 * @param DivergenceComparator   $comparator The four states.
-	 * @param AuditTrailMapper       $audit      The hash-chained trail.
+	 * @param AuditTrailMapperInterface       $audit      The hash-chained trail.
 	 * @param IUserSession           $session    Who is acting.
 	 * @param LoggerInterface        $logger     The logger.
 	 */
@@ -84,7 +87,7 @@ class ShippedConfigurationGuard {
 		private readonly ShippedBaselineStore $baselines,
 		private readonly GuardedDescriptorMerge $merge,
 		private readonly DivergenceComparator $comparator,
-		private readonly AuditTrailMapper $audit,
+		private readonly AuditTrailMapperInterface $audit,
 		private readonly IUserSession $session,
 		private readonly LoggerInterface $logger,
 	) {
@@ -93,26 +96,18 @@ class ShippedConfigurationGuard {
 	/**
 	 * What an upgrade should write for one schema, and what it could not decide.
 	 *
+	 * Kept with its signature for the import seam that calls it; builds the
+	 * operation objects and delegates to {@see self::guardUpgrade()}.
+	 *
 	 * @param string               $slug       The schema slug.
 	 * @param array<string, mixed> $live       What the instance runs.
 	 * @param array<string, mixed> $incoming   What the app now ships.
 	 * @param string               $app        The app.
 	 * @param string               $appVersion The app version.
 	 * @param array<int, string>   $decisions  Paths an administrator decided to take from upstream.
-	 * @param bool                 $record     False leaves the baseline unrecorded: the caller
-	 *                                         records `baseline` with recordShipped() once the
-	 *                                         definition is actually written. A baseline recorded
-	 *                                         for a write that then fails makes the next import read
-	 *                                         the old live definition as a local edit and keep it.
+	 * @param bool                 $record     False leaves the baseline unrecorded, {@see SchemaUpgradeOptions}.
 	 *
-	 * @return array{
-	 *     definition: array<string, mixed>,
-	 *     baseline: array<string, mixed>|null,
-	 *     guarded: bool,
-	 *     applied: array<int, string>,
-	 *     preserved: array<int, string>,
-	 *     conflicts: array<int, array<string, mixed>>
-	 * } What to write, the baseline that goes with it (null: record nothing), and what happened.
+	 * @return array<string, mixed> What {@see self::guardUpgrade()} returns.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The default keeps every existing caller unchanged.
 	 *
@@ -127,92 +122,265 @@ class ShippedConfigurationGuard {
 		array $decisions = [],
 		bool $record = true
 	): array {
-		$subject = $this->baselines->schemaSubject(slug: $slug);
+		$shipped = new ShippedDefinition(definition: $incoming, app: $app, appVersion: $appVersion);
+		$upgrade = new SchemaUpgrade(slug: $slug, live: $live, incoming: $shipped);
+		return $this->guardUpgrade(upgrade: $upgrade, options: new SchemaUpgradeOptions(decisions: $decisions, record: $record));
+	}//end guardSchemaUpdate()
 
+	/**
+	 * What an upgrade should write for one schema, and what it could not decide.
+	 *
+	 * With `record: false` in the options the baseline is left unrecorded: the
+	 * caller records `baseline` with recordShipped() once the definition is
+	 * actually written. A baseline recorded for a write that then fails makes
+	 * the next import read the old live definition as a local edit and keep it.
+	 *
+	 * @param SchemaUpgrade        $upgrade The schema, what the instance runs and what the app now ships.
+	 * @param SchemaUpgradeOptions $options The administrator's decisions and whether to record the baseline.
+	 *
+	 * @return array{
+	 *     definition: array<string, mixed>,
+	 *     baseline: array<string, mixed>|null,
+	 *     guarded: bool,
+	 *     applied: array<int, string>,
+	 *     preserved: array<int, string>,
+	 *     conflicts: array<int, array<string, mixed>>
+	 * } What to write, the baseline that goes with it (null: record nothing), and what happened.
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	public function guardUpgrade(SchemaUpgrade $upgrade, SchemaUpgradeOptions $options=new SchemaUpgradeOptions()): array {
+		$run = new SchemaUpgradeRun(upgrade: $upgrade, options: $options);
 		try {
-			$baseline = $this->baselines->read(subject: $subject);
-
+			$baseline = $this->baselines->read(subject: $this->baselines->schemaSubject(slug: $upgrade->slug));
 			if ($this->comparator->hasBaseline(baseline: ($baseline['definition'] ?? null)) === false) {
 				// Nothing to compare against: import as today, and record what
 				// the app shipped so the NEXT release can be guarded.
-				if ($record === true) {
-					$this->baselines->record(
-						subject: $subject,
-						definition: $incoming,
-						app: $app,
-						appVersion: $appVersion
-					);
-				}
-
-				return [
-					'definition' => $incoming,
-					'baseline' => $incoming,
-					'guarded' => false,
-					'applied' => [],
-					'preserved' => [],
-					'conflicts' => [],
-				];
+				return $this->firstRelease(run: $run);
 			}
 
-			$result = $this->merge->merge(
-				baseline: $baseline['definition'],
-				live: $live,
-				incoming: $incoming,
-				decisions: $decisions
-			);
-
-			if ($record === true) {
-				$this->baselines->record(
-					subject: $subject,
-					definition: $result['baseline'],
-					app: $app,
-					appVersion: $appVersion
-				);
-			}
-
-			if ($result['conflicts'] !== []) {
-				// INFO on the parts that were left alone, because this is the
-				// decision somebody re-reads the upgrade log to find. The
-				// upgrade itself completes either way.
-				$this->logger->info(
-					sprintf(
-						'[ShippedConfigurationGuard] %s: %d part(s) changed on both sides, kept local and reported',
-						$slug,
-						count($result['conflicts'])
-					)
-				);
-			}
-
-			foreach ($decisions as $path) {
-				$this->recordDecision(slug: $slug, path: (string)$path, app: $app);
-			}
-
-			return [
-				'definition' => $result['merged'],
-				'baseline' => $result['baseline'],
-				'guarded' => true,
-				'applied' => $result['applied'],
-				'preserved' => $result['preserved'],
-				'conflicts' => $result['conflicts'],
-			];
+			return $this->guardedRelease(run: $run, baseline: $baseline['definition']);
 		} catch (Throwable $e) {
-			// An upgrade must finish. A guard that cannot run means the import
-			// behaves as it did before the guard existed, which is a known
-			// state, not a broken one.
-			$this->logger->error(
-				sprintf('[ShippedConfigurationGuard] %s: guard skipped, importing unguarded: %s', $slug, $e->getMessage())
-			);
+			// An upgrade must finish, so the import still goes ahead. But a
+			// guard that cannot run must not hand the app's authorization over
+			// what an administrator set here: that is the one thing the guard
+			// exists to prevent, and failing towards the shipped policy is
+			// failing open. The instance's own authorization blocks are kept.
+			return $this->unguardedRelease(upgrade: $upgrade, error: $e);
+		}
+	}//end guardUpgrade()
 
-			return [
-				'definition' => $incoming,
-				'baseline' => null,
-				'guarded' => false,
-				'applied' => [],
-				'preserved' => [],
-				'conflicts' => [],
-			];
-		}//end try
-	}//end guardSchemaUpdate()
+	/**
+	 * The answer for a schema with no baseline yet: the shipped definition as it is, recorded as the baseline.
+	 *
+	 * @param SchemaUpgradeRun $run The upgrade in progress.
+	 *
+	 * @return array<string, mixed> The guard's answer, unguarded.
+	 */
+	private function firstRelease(SchemaUpgradeRun $run): array {
+		$incoming = $run->upgrade->incoming->definition;
+		$this->recordBaseline(run: $run, definition: $incoming);
+
+		return [
+			'definition' => $incoming,
+			'baseline' => $incoming,
+			'guarded' => false,
+			'applied' => [],
+			'preserved' => [],
+			'conflicts' => [],
+		];
+	}//end firstRelease()
+
+	/**
+	 * The merged answer against a recorded baseline, with every decision put on the trail.
+	 *
+	 * @param SchemaUpgradeRun     $run      The upgrade in progress.
+	 * @param array<string, mixed> $baseline The recorded shipped definition.
+	 *
+	 * @return array<string, mixed> The guard's answer, guarded.
+	 */
+	private function guardedRelease(SchemaUpgradeRun $run, array $baseline): array {
+		$upgrade = $run->upgrade;
+		// While an administrator's re-import is in effect, the merge takes
+		// every authorization block from the file (REQ-LCA-003).
+		$revisions = new DescriptorRevisions(baseline: $baseline, live: $upgrade->live, incoming: $upgrade->incoming->definition);
+		$result = $this->merge->mergeRevisions(revisions: $revisions, decisions: $run->options->decisions);
+		$this->recordReplaced(upgrade: $upgrade, roots: $result['replacedLocal']);
+		$this->recordAppliedAuthorization(run: $run, result: $result);
+		$this->recordBaseline(run: $run, definition: $result['baseline']);
+		$this->logKeptLocal(slug: $upgrade->slug, conflicts: $result['conflicts']);
+		foreach ($run->options->decisions as $path) {
+			$this->recordDecision(upgrade: $upgrade, decision: new UpstreamDecision(path: (string)$path));
+		}
+
+		return [
+			'definition' => $result['merged'],
+			'baseline' => $result['baseline'],
+			'guarded' => true,
+			'applied' => $result['applied'],
+			'preserved' => $result['preserved'],
+			'conflicts' => $result['conflicts'],
+		];
+	}//end guardedRelease()
+
+	/**
+	 * The answer when the guard could not run: the shipped definition with the instance's own authorization kept.
+	 *
+	 * @param SchemaUpgrade $upgrade The upgrade.
+	 * @param Throwable     $error   Why the guard could not run.
+	 *
+	 * @return array<string, mixed> The guard's answer, unguarded and recording nothing.
+	 */
+	private function unguardedRelease(SchemaUpgrade $upgrade, Throwable $error): array {
+		$this->logger->error(
+			sprintf(
+				'[ShippedConfigurationGuard] %s: guard skipped, importing unguarded but keeping the instance authorization: %s',
+				$upgrade->slug,
+				$error->getMessage()
+			)
+		);
+
+		return [
+			'definition' => $this->keepingLiveAuthorization(live: $upgrade->live, incoming: $upgrade->incoming->definition),
+			'baseline' => null,
+			'guarded' => false,
+			'applied' => [],
+			'preserved' => [],
+			'conflicts' => [],
+		];
+	}//end unguardedRelease()
+
+	/**
+	 * Record a baseline for the upgrade's release, unless the options leave that to the caller.
+	 *
+	 * @param SchemaUpgradeRun     $run        The upgrade in progress.
+	 * @param array<string, mixed> $definition The baseline to record.
+	 *
+	 * @return void
+	 */
+	private function recordBaseline(SchemaUpgradeRun $run, array $definition): void {
+		if ($run->options->record === false) {
+			return;
+		}
+
+		$incoming = $run->upgrade->incoming;
+		$shipped = new ShippedDefinition(definition: $definition, app: $incoming->app, appVersion: $incoming->appVersion);
+		$this->baselines->record(subject: $this->baselines->schemaSubject(slug: $run->upgrade->slug), shipped: $shipped);
+	}//end recordBaseline()
+
+	/**
+	 * Log, at INFO, the parts that changed on both sides and were left alone.
+	 *
+	 * INFO, because this is the decision somebody re-reads the upgrade log to
+	 * find. The upgrade itself completes either way.
+	 *
+	 * @param string                           $slug      The schema slug.
+	 * @param array<int, array<string, mixed>> $conflicts The parts kept local.
+	 *
+	 * @return void
+	 */
+	private function logKeptLocal(string $slug, array $conflicts): void {
+		if ($conflicts === []) {
+			return;
+		}
+
+		$this->logger->info(
+			sprintf('[ShippedConfigurationGuard] %s: %d part(s) changed on both sides, kept local and reported', $slug, count($conflicts))
+		);
+	}//end logKeptLocal()
+
+	/**
+	 * The incoming definition with the instance's own authorization blocks put back.
+	 *
+	 * For an import the guard could not judge: the schema's `authorization` and
+	 * each existing property's `authorization` stay as the instance has them
+	 * (a block the instance does not have is not added); a property the
+	 * instance does not hold yet brings its shipped block.
+	 *
+	 * @param array<string, mixed> $live     What the instance runs.
+	 * @param array<string, mixed> $incoming What the app now ships.
+	 *
+	 * @return array<string, mixed> The definition to write.
+	 */
+	private function keepingLiveAuthorization(array $live, array $incoming): array {
+		$definition = $this->withAuthorizationOf(target: $incoming, live: $live);
+
+		$liveProperties = ($live['properties'] ?? null);
+		if (is_array($liveProperties) === false || is_array($definition['properties'] ?? null) === false) {
+			return $definition;
+		}
+
+		foreach ($definition['properties'] as $name => $property) {
+			if (is_array($property) === false || is_array($liveProperties[$name] ?? null) === false) {
+				continue;
+			}
+
+			$definition['properties'][$name] = $this->withAuthorizationOf(target: $property, live: $liveProperties[$name]);
+		}
+
+		return $definition;
+	}//end keepingLiveAuthorization()
+
+	/**
+	 * A definition part carrying the `authorization` block of the instance's own part, or none when the instance has none.
+	 *
+	 * @param array<string, mixed> $target The part from the incoming definition.
+	 * @param array<string, mixed> $live   The same part as the instance has it.
+	 *
+	 * @return array<string, mixed> The part with the instance's authorization.
+	 */
+	private function withAuthorizationOf(array $target, array $live): array {
+		if (array_key_exists('authorization', $live) === false) {
+			unset($target['authorization']);
+			return $target;
+		}
+
+		$target['authorization'] = $live['authorization'];
+
+		return $target;
+	}//end withAuthorizationOf()
+
+	/**
+	 * Record, on the audit trail, the authorization blocks an upgrade took from the app because only the app changed them.
+	 *
+	 * An explicit decision is recorded by recordReplaced(); this is the other
+	 * way a block changes under an instance, and who widened access is what
+	 * the trail has to be able to answer. Roots already on the trail (replaced
+	 * locally, or an administrator's decision) are not recorded twice.
+	 *
+	 * @param SchemaUpgradeRun     $run    The upgrade in progress.
+	 * @param array<string, mixed> $result The merge result: `applied` and `replacedLocal`.
+	 *
+	 * @return void
+	 */
+	private function recordAppliedAuthorization(SchemaUpgradeRun $run, array $result): void {
+		$recorded = array_merge($result['replacedLocal'], $run->options->decisions);
+		foreach ($this->authorizationRoots(applied: $result['applied']) as $root) {
+			if (in_array($root, $recorded, true) === false) {
+				$this->recordDecision(upgrade: $run->upgrade, decision: new UpstreamDecision(path: $root, kind: 'applied-shipped'));
+			}
+		}
+	}//end recordAppliedAuthorization()
+
+	/**
+	 * The authorization block roots (schema or property level) the applied paths fall under.
+	 *
+	 * @param array<int, string> $applied The paths the merge took from upstream.
+	 *
+	 * @return array<int, string> Each root once, in first-seen order.
+	 */
+	private function authorizationRoots(array $applied): array {
+		$roots = [];
+		$sep = preg_quote(DescriptorParts::SEPARATOR, '/');
+		$pattern = '/^(authorization|properties' . $sep . '[^' . $sep . ']+' . $sep . 'authorization)(?:' . $sep . '|$)/';
+		foreach ($applied as $path) {
+			if (preg_match($pattern, (string)$path, $matches) === 1) {
+				$roots[$matches[1]] = true;
+			}
+		}
+
+		return array_map('strval', array_keys($roots));
+	}//end authorizationRoots()
 
 	/**
 	 * Record what an app shipped for a schema it has just created.
@@ -227,13 +395,22 @@ class ShippedConfigurationGuard {
 	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
 	 */
 	public function recordShipped(string $slug, array $definition, string $app, string $appVersion): bool {
-		return $this->baselines->record(
-			subject: $this->baselines->schemaSubject(slug: $slug),
-			definition: $definition,
-			app: $app,
-			appVersion: $appVersion
-		);
+		return $this->recordShippedSchema(slug: $slug, shipped: new ShippedDefinition(definition: $definition, app: $app, appVersion: $appVersion));
 	}//end recordShipped()
+
+	/**
+	 * Record what an app shipped for a schema, with the release that shipped it.
+	 *
+	 * @param string            $slug    The schema slug.
+	 * @param ShippedDefinition $shipped What the app ships, and which release.
+	 *
+	 * @return bool True when it was recorded.
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	public function recordShippedSchema(string $slug, ShippedDefinition $shipped): bool {
+		return $this->baselines->record(subject: $this->baselines->schemaSubject(slug: $slug), shipped: $shipped);
+	}//end recordShippedSchema()
 
 	/**
 	 * Where one schema differs from what was shipped.
@@ -295,7 +472,22 @@ class ShippedConfigurationGuard {
 	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
 	 */
 	public function previewReset(string $slug, array $live, string $path): array {
-		$baseline = $this->baselines->read(subject: $this->baselines->schemaSubject(slug: $slug));
+		return $this->previewPartReset(request: new ResetRequest(slug: $slug, live: $live, path: $path));
+	}//end previewReset()
+
+	/**
+	 * What resetting one part to the shipped baseline would change.
+	 *
+	 * Reads nothing back into the schema, for the reason {@see self::previewReset()} gives.
+	 *
+	 * @param ResetRequest $request The schema, what it runs and the part to reset.
+	 *
+	 * @return array{applicable: bool, reason: string, from: mixed, to: mixed, definition: array<string, mixed>} The preview.
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	public function previewPartReset(ResetRequest $request): array {
+		$baseline = $this->baselines->read(subject: $this->baselines->schemaSubject(slug: $request->slug));
 
 		if ($this->comparator->hasBaseline(baseline: ($baseline['definition'] ?? null)) === false) {
 			return [
@@ -303,23 +495,18 @@ class ShippedConfigurationGuard {
 				'reason' => 'no shipped baseline is recorded for this schema, so there is nothing to go back to',
 				'from' => null,
 				'to' => null,
-				'definition' => $live,
+				'definition' => $request->live,
 			];
 		}
 
 		$parts = new DescriptorParts();
 		$flat = [
 			'shipped' => $parts->flatten(descriptor: $baseline['definition']),
-			'live' => $parts->flatten(descriptor: $live),
+			'live' => $parts->flatten(descriptor: $request->live),
 		];
 
-		$refusal = $this->resetRefusal(path: $path, flat: $flat, live: $live);
-		if ($refusal !== null) {
-			return $refusal;
-		}
-
-		return $this->resetPreview(path: $path, flat: $flat, parts: $parts);
-	}//end previewReset()
+		return ($this->resetRefusal(request: $request, flat: $flat) ?? $this->resetPreview(path: $request->path, flat: $flat, parts: $parts));
+	}//end previewPartReset()
 
 	/**
 	 * Why one part cannot be reset, or null when it can.
@@ -327,15 +514,16 @@ class ShippedConfigurationGuard {
 	 * Both answers carry `applicable: false` AND a reason. A reset that simply
 	 * did nothing would look from the outside exactly like one that worked.
 	 *
-	 * @param string                                  $path The part to reset.
-	 * @param array<string, array<string|int, mixed>> $flat The flattened shipped and live parts.
-	 * @param array<string, mixed>                    $live What the instance runs.
+	 * @param ResetRequest                            $request The schema, what it runs and the part to reset.
+	 * @param array<string, array<string|int, mixed>> $flat    The flattened shipped and live parts.
 	 *
 	 * @return array{applicable: bool, reason: string, from: mixed, to: mixed, definition: array<string, mixed>}|null The refusal, or null.
 	 *
 	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
 	 */
-	private function resetRefusal(string $path, array $flat, array $live): ?array {
+	private function resetRefusal(ResetRequest $request, array $flat): ?array {
+		$path = $request->path;
+		$live = $request->live;
 		$hasShipped = array_key_exists($path, $flat['shipped']);
 		$hasLive = array_key_exists($path, $flat['live']);
 
@@ -480,36 +668,64 @@ class ShippedConfigurationGuard {
 	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
 	 */
 	public function recordReset(string $slug, string $path, mixed $from, mixed $to): void {
-		$this->record(
-			action: self::ACTION_RESET,
-			changed: [
-				'schema' => $slug,
-				'path' => $path,
-				'from' => $from,
-				'to' => $to,
-			]
-		);
+		$this->recordPartReset(slug: $slug, reset: new PartReset(path: $path, from: $from, to: $to));
 	}//end recordReset()
+
+	/**
+	 * Put a reset on the trail: who, which schema, which part, from what, to what.
+	 *
+	 * @param string    $slug  The schema slug.
+	 * @param PartReset $reset The part that was reset, from what and to what.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-import/spec.md
+	 */
+	public function recordPartReset(string $slug, PartReset $reset): void {
+		$changed = ['schema' => $slug, 'path' => $reset->path, 'from' => $reset->from, 'to' => $reset->to];
+		$this->record(action: self::ACTION_RESET, changed: $changed);
+	}//end recordPartReset()
+
+	/**
+	 * Record each authorization block an administrator's re-import replaced
+	 * over a local change: on the audit trail, and on the decision for the report.
+	 *
+	 * @param SchemaUpgrade      $upgrade The upgrade: the schema slug and the app that ships it.
+	 * @param array<int, string> $roots   The replaced block roots.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	private function recordReplaced(SchemaUpgrade $upgrade, array $roots): void {
+		$via = (string)$this->merge->decidedVia();
+		foreach ($roots as $root) {
+			$this->recordDecision(upgrade: $upgrade, decision: new UpstreamDecision(path: (string)$root, via: $via));
+		}
+
+		$this->merge->noteReplaced(slug: $upgrade->slug, roots: $roots);
+	}//end recordReplaced()
 
 	/**
 	 * Record that a conflicting part was taken from upstream.
 	 *
-	 * @param string $slug The schema slug.
-	 * @param string $path The part.
-	 * @param string $app  The app.
+	 * @param SchemaUpgrade    $upgrade  The upgrade: the schema slug and the app.
+	 * @param UpstreamDecision $decision The part, the kind of decision and what decided it.
 	 *
 	 * @return void
 	 */
-	private function recordDecision(string $slug, string $path, string $app): void {
-		$this->record(
-			action: self::ACTION_DECIDED,
-			changed: [
-				'schema' => $slug,
-				'path' => $path,
-				'app' => $app,
-				'decision' => 'accept-shipped',
-			]
-		);
+	private function recordDecision(SchemaUpgrade $upgrade, UpstreamDecision $decision): void {
+		$changed = [
+			'schema' => $upgrade->slug,
+			'path' => $decision->path,
+			'app' => $upgrade->incoming->app,
+			'decision' => $decision->kind,
+		];
+		if ($decision->via !== '') {
+			$changed['via'] = $decision->via;
+		}
+
+		$this->record(action: self::ACTION_DECIDED, changed: $changed);
 	}//end recordDecision()
 
 	/**

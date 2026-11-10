@@ -60,9 +60,7 @@ class ExportServicePropertyFilterTest extends TestCase {
 			$this->createMock(IGroupManager::class),
 			$objectService,
 			$this->createMock(CacheHandler::class),
-			$this->createMock(PropertyRbacHandler::class),
-			$this->createMock(TranslationHandler::class)
-		);
+			$this->createMock(PropertyRbacHandler::class));
 
 		$register = new Register();
 		$register->setId(3);
@@ -73,6 +71,15 @@ class ExportServicePropertyFilterTest extends TestCase {
 
 		return $captured;
 	}//end queryFor()
+
+	/**
+	 * An export asks for every row: a number would be cut at the page bound.
+	 *
+	 * @return void
+	 */
+	public function testAnExportAsksForEveryRow(): void {
+		$this->assertFalse($this->queryFor(['format' => 'csv'])['_limit']);
+	}//end testAnExportAsksForEveryRow()
 
 	/**
 	 * A property filter reaches the query; request plumbing does not.

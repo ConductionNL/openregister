@@ -13,7 +13,11 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\WebhookLogMapper;
-use OCA\OpenRegister\Service\DashboardService;
+use OCA\OpenRegister\Search\Service\ActivityWindow;
+use OCA\OpenRegister\Search\Service\DashboardScope;
+use OCA\OpenRegister\Search\Service\DashboardService;
+use OCA\OpenRegister\Search\Service\DashboardSizes;
+use OCA\OpenRegister\Search\Service\RegisterSchemaLookup;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -61,11 +65,13 @@ class DashboardServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new DashboardService(
-			$this->objectMapper,
-			$this->auditTrailMapper,
-			$this->webhookLogMapper,
-			$this->registerMapper,
-			$this->schemaMapper,
+			new \OCA\OpenRegister\Search\Service\DashboardMappers(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), tables: $this->objectMapper), $this->auditTrailMapper, $this->webhookLogMapper),
+			new DashboardSizes(
+				$this->objectMapper,
+				$this->auditTrailMapper,
+				new RegisterSchemaLookup($this->registerMapper, $this->schemaMapper),
+				$this->logger
+			),
 			$this->logger
 		);
 	}
@@ -168,7 +174,7 @@ class DashboardServiceTest extends TestCase {
 			->expects($this->exactly(2))
 			->method('update');
 
-		$result = $this->service->recalculateSizes();
+		$result = $this->service->sizes()->recalculateSizes();
 
 		$this->assertSame(2, $result['processed']);
 		$this->assertSame(0, $result['failed']);
@@ -192,7 +198,7 @@ class DashboardServiceTest extends TestCase {
 				return $obj;
 			});
 
-		$result = $this->service->recalculateSizes();
+		$result = $this->service->sizes()->recalculateSizes();
 
 		$this->assertSame(1, $result['processed']);
 		$this->assertSame(1, $result['failed']);
@@ -225,7 +231,7 @@ class DashboardServiceTest extends TestCase {
 			}
 		);
 
-		$result = $this->service->recalculateSizes($registerId, $schemaId);
+		$result = $this->service->sizes()->recalculateSizes($registerId, $schemaId);
 
 		$this->assertSame(0, $result['processed']);
 		$this->assertSame(0, $result['failed']);
@@ -256,7 +262,7 @@ class DashboardServiceTest extends TestCase {
 		$this->registerMapper->method('find')->willThrowException(new Exception('Register gone'));
 		$this->objectMapper->expects($this->never())->method('findAllInRegisterSchemaTable');
 
-		$result = $this->service->recalculateSizes();
+		$result = $this->service->sizes()->recalculateSizes();
 
 		$this->assertSame(0, $result['processed']);
 		$this->assertSame(1, $result['failed']);
@@ -271,7 +277,7 @@ class DashboardServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Failed to recalculate sizes');
 
-		$this->service->recalculateSizes();
+		$this->service->sizes()->recalculateSizes();
 	}
 
 	// ========== recalculateLogSizes ==========
@@ -288,7 +294,7 @@ class DashboardServiceTest extends TestCase {
 			->expects($this->once())
 			->method('update');
 
-		$result = $this->service->recalculateLogSizes();
+		$result = $this->service->sizes()->recalculateLogSizes();
 
 		$this->assertSame(1, $result['processed']);
 		$this->assertSame(0, $result['failed']);
@@ -315,7 +321,7 @@ class DashboardServiceTest extends TestCase {
 				return $log;
 			});
 
-		$result = $this->service->recalculateLogSizes();
+		$result = $this->service->sizes()->recalculateLogSizes();
 
 		$this->assertSame(1, $result['processed']);
 		$this->assertSame(1, $result['failed']);
@@ -327,7 +333,7 @@ class DashboardServiceTest extends TestCase {
 			->method('findAll')
 			->willReturn([]);
 
-		$result = $this->service->recalculateLogSizes(1, null);
+		$result = $this->service->sizes()->recalculateLogSizes(1, null);
 
 		$this->assertSame(0, $result['processed']);
 		$this->assertSame(0, $result['failed']);
@@ -339,7 +345,7 @@ class DashboardServiceTest extends TestCase {
 			->method('findAll')
 			->willReturn([]);
 
-		$result = $this->service->recalculateLogSizes(null, 2);
+		$result = $this->service->sizes()->recalculateLogSizes(null, 2);
 
 		$this->assertSame(0, $result['processed']);
 		$this->assertSame(0, $result['failed']);
@@ -351,7 +357,7 @@ class DashboardServiceTest extends TestCase {
 			->method('findAll')
 			->willReturn([]);
 
-		$result = $this->service->recalculateLogSizes(1, 2);
+		$result = $this->service->sizes()->recalculateLogSizes(1, 2);
 
 		$this->assertSame(0, $result['processed']);
 		$this->assertSame(0, $result['failed']);
@@ -366,7 +372,7 @@ class DashboardServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Failed to recalculate log sizes');
 
-		$this->service->recalculateLogSizes();
+		$this->service->sizes()->recalculateLogSizes();
 	}
 
 	// ========== recalculateAllSizes ==========
@@ -382,7 +388,7 @@ class DashboardServiceTest extends TestCase {
 			->method('findAll')
 			->willReturn([]);
 
-		$result = $this->service->recalculateAllSizes();
+		$result = $this->service->sizes()->recalculateAllSizes();
 
 		$this->assertArrayHasKey('objects', $result);
 		$this->assertArrayHasKey('logs', $result);
@@ -409,7 +415,7 @@ class DashboardServiceTest extends TestCase {
 			->method('update')
 			->willReturnArgument(0);
 
-		$result = $this->service->recalculateAllSizes();
+		$result = $this->service->sizes()->recalculateAllSizes();
 
 		$this->assertSame(2, $result['objects']['processed']);
 		$this->assertSame(1, $result['logs']['processed']);
@@ -421,7 +427,7 @@ class DashboardServiceTest extends TestCase {
 		$this->objectMapper->method('findAll')->willReturn([]);
 		$this->auditTrailMapper->method('findAll')->willReturn([]);
 
-		$result = $this->service->recalculateAllSizes(1, 2);
+		$result = $this->service->sizes()->recalculateAllSizes(1, 2);
 
 		$this->assertSame(0, $result['total']['processed']);
 	}
@@ -434,7 +440,7 @@ class DashboardServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Failed to recalculate all sizes');
 
-		$this->service->recalculateAllSizes();
+		$this->service->sizes()->recalculateAllSizes();
 	}
 
 	public function testRecalculateAllSizesThrowsWhenLogRecalcFails(): void {
@@ -446,7 +452,7 @@ class DashboardServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Failed to recalculate all sizes');
 
-		$this->service->recalculateAllSizes();
+		$this->service->sizes()->recalculateAllSizes();
 	}
 
 	// ========== getRegistersWithSchemas ==========
@@ -537,6 +543,41 @@ class DashboardServiceTest extends TestCase {
 		// Totals and orphaned bookends still present.
 		$this->assertSame('totals', $result[0]['id']);
 		$this->assertSame('orphaned', $result[count($result) - 1]['id']);
+	}
+
+	/**
+	 * A register whose schemas throw an Error, not an Exception, degrades the
+	 * orphaned entry to zeros: the dashboard still renders for every register.
+	 *
+	 * @return void
+	 */
+	public function testAnErrorFromARegisterLeavesTheDashboardStanding(): void {
+		$this->registerMapper
+			->method('findAll')
+			->willReturn([$this->createRegisterEntity(1, 'Healthy Register'), $this->createRegisterEntity(2, 'Broken Register')]);
+		$this->registerMapper
+			->method('getSchemasByRegisterId')
+			->willReturnCallback(function (int $registerId): array {
+				if ($registerId === 2) {
+					throw new \TypeError('schema conflict');
+				}
+
+				return [$this->createSchemaEntity(10, 'Test Schema')];
+			});
+		$this->setupStatsMappers();
+		$this->logger
+			->expects($this->once())
+			->method('error')
+			->with($this->stringContains('Failed to get orphaned statistics: schema conflict'));
+
+		$result = $this->service->getRegistersWithSchemas();
+
+		$orphaned = $result[count($result) - 1];
+		$this->assertSame('orphaned', $orphaned['id']);
+		$this->assertSame(0, $orphaned['stats']['objects']['total']);
+		$this->assertSame(0, $orphaned['stats']['logs']['total']);
+		$this->assertArrayHasKey('error', $result[2]);
+		$this->assertCount(1, $result[1]['schemas']);
 	}
 
 	public function testGetRegistersWithSchemasFiltersByRegisterId(): void {
@@ -663,7 +704,7 @@ class DashboardServiceTest extends TestCase {
 		$this->objectMapper->method('findAll')->willReturn([]);
 		$this->auditTrailMapper->method('findAll')->willReturn([]);
 
-		$result = $this->service->calculate();
+		$result = $this->service->sizes()->calculate();
 
 		$this->assertSame('success', $result['status']);
 		$this->assertArrayHasKey('timestamp', $result);
@@ -685,7 +726,7 @@ class DashboardServiceTest extends TestCase {
 		$this->objectMapper->method('findAll')->willReturn([]);
 		$this->auditTrailMapper->method('findAll')->willReturn([]);
 
-		$result = $this->service->calculate(1);
+		$result = $this->service->sizes()->calculate(1);
 
 		$this->assertSame(1, $result['scope']['register']['id']);
 		$this->assertSame('My Register', $result['scope']['register']['title']);
@@ -710,7 +751,7 @@ class DashboardServiceTest extends TestCase {
 		$this->objectMapper->method('findAll')->willReturn([]);
 		$this->auditTrailMapper->method('findAll')->willReturn([]);
 
-		$result = $this->service->calculate(1, 10);
+		$result = $this->service->sizes()->calculate(1, 10);
 
 		$this->assertSame(1, $result['scope']['register']['id']);
 		$this->assertSame(10, $result['scope']['schema']['id']);
@@ -732,7 +773,7 @@ class DashboardServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Size calculation failed');
 
-		$this->service->calculate(1, 99);
+		$this->service->sizes()->calculate(1, 99);
 	}
 
 	public function testCalculateWithNonExistentRegisterThrows(): void {
@@ -743,7 +784,7 @@ class DashboardServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Size calculation failed');
 
-		$this->service->calculate(999);
+		$this->service->sizes()->calculate(999);
 	}
 
 	public function testCalculateWithNonExistentSchemaThrows(): void {
@@ -760,7 +801,7 @@ class DashboardServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Size calculation failed');
 
-		$this->service->calculate(1, 999);
+		$this->service->sizes()->calculate(1, 999);
 	}
 
 	public function testCalculateSuccessRateWithProcessed(): void {
@@ -782,7 +823,7 @@ class DashboardServiceTest extends TestCase {
 
 		$this->auditTrailMapper->method('findAll')->willReturn([]);
 
-		$result = $this->service->calculate();
+		$result = $this->service->sizes()->calculate();
 
 		// processed counts only successful updates, failed counts exceptions.
 		// obj1 throws (failed=1), obj2 succeeds (processed=1), logs=0.
@@ -803,7 +844,7 @@ class DashboardServiceTest extends TestCase {
 		$this->auditTrailMapper->method('findAll')->willReturn([$log1]);
 		$this->auditTrailMapper->method('update')->willReturnArgument(0);
 
-		$result = $this->service->calculate();
+		$result = $this->service->sizes()->calculate();
 
 		$this->assertSame(2, $result['summary']['total_processed']);
 		$this->assertSame(0, $result['summary']['total_failed']);
@@ -822,7 +863,7 @@ class DashboardServiceTest extends TestCase {
 		$this->auditTrailMapper->method('findAll')->willReturn([]);
 
 		// No register means fetchSchema won't check in_array.
-		$result = $this->service->calculate(null, 10);
+		$result = $this->service->sizes()->calculate(null, 10);
 
 		$this->assertNull($result['scope']['register']);
 		$this->assertSame(10, $result['scope']['schema']['id']);
@@ -842,7 +883,7 @@ class DashboardServiceTest extends TestCase {
 			->method('getActionChartData')
 			->willReturn($expected);
 
-		$result = $this->service->getAuditTrailActionChartData();
+		$result = $this->service->auditReads()->getAuditTrailActionChartData((new DashboardScope())->during(null, null));
 
 		$this->assertSame($expected, $result);
 	}
@@ -860,7 +901,7 @@ class DashboardServiceTest extends TestCase {
 			->method('getActionChartData')
 			->willReturn($expected);
 
-		$result = $this->service->getAuditTrailActionChartData($from, $till, 1, 2);
+		$result = $this->service->auditReads()->getAuditTrailActionChartData((new DashboardScope(1, 2))->during($from, $till));
 
 		$this->assertSame($expected, $result);
 	}
@@ -870,7 +911,7 @@ class DashboardServiceTest extends TestCase {
 			->method('getActionChartData')
 			->willThrowException(new Exception('DB error'));
 
-		$result = $this->service->getAuditTrailActionChartData();
+		$result = $this->service->auditReads()->getAuditTrailActionChartData((new DashboardScope())->during(null, null));
 
 		$this->assertSame([], $result['labels']);
 		$this->assertSame([], $result['series']);
@@ -1009,7 +1050,7 @@ class DashboardServiceTest extends TestCase {
 			->method('getDetailedStatistics')
 			->willReturn($expected);
 
-		$result = $this->service->getAuditTrailStatistics();
+		$result = $this->service->auditReads()->getAuditTrailStatistics(new DashboardScope());
 
 		$this->assertSame($expected, $result);
 	}
@@ -1021,7 +1062,7 @@ class DashboardServiceTest extends TestCase {
 			->method('getDetailedStatistics')
 			->willReturn($expected);
 
-		$result = $this->service->getAuditTrailStatistics(1, 2, 48);
+		$result = $this->service->auditReads()->getAuditTrailStatistics(new DashboardScope(1, 2), 48);
 
 		$this->assertSame($expected, $result);
 	}
@@ -1031,7 +1072,7 @@ class DashboardServiceTest extends TestCase {
 			->method('getDetailedStatistics')
 			->willThrowException(new Exception('error'));
 
-		$result = $this->service->getAuditTrailStatistics();
+		$result = $this->service->auditReads()->getAuditTrailStatistics(new DashboardScope());
 
 		$this->assertSame(0, $result['total']);
 		$this->assertSame(0, $result['creates']);
@@ -1055,7 +1096,7 @@ class DashboardServiceTest extends TestCase {
 			->method('getActionDistribution')
 			->willReturn($expected);
 
-		$result = $this->service->getAuditTrailActionDistribution();
+		$result = $this->service->auditReads()->getAuditTrailActionDistribution(new DashboardScope());
 
 		$this->assertSame($expected, $result);
 	}
@@ -1067,7 +1108,7 @@ class DashboardServiceTest extends TestCase {
 			->method('getActionDistribution')
 			->willReturn($expected);
 
-		$result = $this->service->getAuditTrailActionDistribution(1, 2, 48);
+		$result = $this->service->auditReads()->getAuditTrailActionDistribution(new DashboardScope(1, 2), 48);
 
 		$this->assertSame($expected, $result);
 	}
@@ -1077,7 +1118,7 @@ class DashboardServiceTest extends TestCase {
 			->method('getActionDistribution')
 			->willThrowException(new Exception('error'));
 
-		$result = $this->service->getAuditTrailActionDistribution();
+		$result = $this->service->auditReads()->getAuditTrailActionDistribution(new DashboardScope());
 
 		$this->assertSame([], $result['actions']);
 	}
@@ -1097,7 +1138,7 @@ class DashboardServiceTest extends TestCase {
 			->method('getMostActiveObjects')
 			->willReturn($expected);
 
-		$result = $this->service->getMostActiveObjects();
+		$result = $this->service->auditReads()->getMostActiveObjects(new ActivityWindow(new DashboardScope()));
 
 		$this->assertSame($expected, $result);
 	}
@@ -1109,7 +1150,7 @@ class DashboardServiceTest extends TestCase {
 			->method('getMostActiveObjects')
 			->willReturn($expected);
 
-		$result = $this->service->getMostActiveObjects(1, 2, 5, 48);
+		$result = $this->service->auditReads()->getMostActiveObjects((new DashboardScope(1, 2))->mostActive(5, 48));
 
 		$this->assertSame($expected, $result);
 	}
@@ -1119,7 +1160,7 @@ class DashboardServiceTest extends TestCase {
 			->method('getMostActiveObjects')
 			->willThrowException(new Exception('error'));
 
-		$result = $this->service->getMostActiveObjects();
+		$result = $this->service->auditReads()->getMostActiveObjects(new ActivityWindow(new DashboardScope()));
 
 		$this->assertSame([], $result['objects']);
 	}

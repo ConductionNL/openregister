@@ -27,6 +27,8 @@ namespace Unit\BackgroundJob;
 
 use DateTime;
 use OCA\OpenRegister\BackgroundJob\AutoTransitionJob;
+use OCA\OpenRegister\BackgroundJob\Support\ActorForwardingServices;
+use OCA\OpenRegister\BackgroundJob\Support\AutoTransitionServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
@@ -73,13 +75,13 @@ class AutoTransitionJobTest extends TestCase {
 
 		$this->job = new AutoTransitionJob(
 			$this->createMock(ITimeFactory::class),
-			$this->createMock(IUserSession::class),
-			$this->userManager,
-			$this->createMock(OrganisationService::class),
-			$this->logger,
-			$this->resolver,
-			$this->engine,
-			$this->pass
+			new ActorForwardingServices(
+				$this->createMock(IUserSession::class),
+				$this->userManager,
+				$this->createMock(OrganisationService::class),
+				$this->logger
+			),
+			new AutoTransitionServices($this->resolver, $this->engine, $this->pass)
 		);
 	}//end setUp()
 

@@ -1,0 +1,1241 @@
+{
+    "backfill makes no progress": {
+        "trace": [
+            {
+                "log.debug": [
+                    "[ChunkVectorizationJob] Starting chunk vectorization batch",
+                    {
+                        "file": "<php-file>"
+                    }
+                ]
+            },
+            {
+                "findUnvectorized": [
+                    50,
+                    null
+                ]
+            },
+            {
+                "getValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_cursor",
+                    "0",
+                    false
+                ]
+            },
+            {
+                "backfillEmbeddingVectors": [
+                    100,
+                    200
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_cursor",
+                    "0"
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_last_run",
+                    "<iso-date>"
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_remaining",
+                    "9"
+                ]
+            },
+            {
+                "log.info": [
+                    "[ChunkVectorizationJob] Batch completed",
+                    {
+                        "file": "<php-file>",
+                        "vectorized": 0,
+                        "failed": 0,
+                        "backfill_converted": 0,
+                        "backfill_failed": 5,
+                        "backfill_remaining": 9,
+                        "execution_time_seconds": "<float>"
+                    }
+                ]
+            }
+        ],
+        "vectorized": []
+    },
+    "backfill sweep complete": {
+        "trace": [
+            {
+                "log.debug": [
+                    "[ChunkVectorizationJob] Starting chunk vectorization batch",
+                    {
+                        "file": "<php-file>"
+                    }
+                ]
+            },
+            {
+                "findUnvectorized": [
+                    50,
+                    null
+                ]
+            },
+            {
+                "getValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_cursor",
+                    "0",
+                    false
+                ]
+            },
+            {
+                "backfillEmbeddingVectors": [
+                    100,
+                    500
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_cursor",
+                    "0"
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_last_run",
+                    "<iso-date>"
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_remaining",
+                    "0"
+                ]
+            },
+            {
+                "log.info": [
+                    "[ChunkVectorizationJob] Batch completed",
+                    {
+                        "file": "<php-file>",
+                        "vectorized": 0,
+                        "failed": 0,
+                        "backfill_converted": 3,
+                        "backfill_failed": 0,
+                        "backfill_remaining": 0,
+                        "execution_time_seconds": "<float>"
+                    }
+                ]
+            }
+        ],
+        "vectorized": []
+    },
+    "embedding key absent, no error text": {
+        "trace": [
+            {
+                "log.debug": [
+                    "[ChunkVectorizationJob] Starting chunk vectorization batch",
+                    {
+                        "file": "<php-file>"
+                    }
+                ]
+            },
+            {
+                "findUnvectorized": [
+                    50,
+                    null
+                ]
+            },
+            {
+                "generateBatchEmbeddings": [
+                    [
+                        "a"
+                    ]
+                ]
+            },
+            {
+                "log.warning": [
+                    "[ChunkVectorizationJob] Embedding failed for chunk, will retry next run",
+                    {
+                        "file": "<php-file>",
+                        "chunk_id": 1,
+                        "error": "No embedding returned"
+                    }
+                ]
+            },
+            {
+                "getValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_cursor",
+                    "0",
+                    false
+                ]
+            },
+            {
+                "backfillEmbeddingVectors": [
+                    100,
+                    0
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_cursor",
+                    "0"
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_last_run",
+                    "<iso-date>"
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_remaining",
+                    "0"
+                ]
+            },
+            {
+                "log.info": [
+                    "[ChunkVectorizationJob] Batch completed",
+                    {
+                        "file": "<php-file>",
+                        "vectorized": 0,
+                        "failed": 1,
+                        "backfill_converted": 0,
+                        "backfill_failed": 0,
+                        "backfill_remaining": 0,
+                        "execution_time_seconds": "<float>"
+                    }
+                ]
+            }
+        ],
+        "vectorized": {
+            "1": false
+        }
+    },
+    "long and null text": {
+        "trace": [
+            {
+                "log.debug": [
+                    "[ChunkVectorizationJob] Starting chunk vectorization batch",
+                    {
+                        "file": "<php-file>"
+                    }
+                ]
+            },
+            {
+                "findUnvectorized": [
+                    50,
+                    null
+                ]
+            },
+            {
+                "generateBatchEmbeddings": [
+                    [
+                        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                        ""
+                    ]
+                ]
+            },
+            {
+                "findBySource": [
+                    "file",
+                    42
+                ]
+            },
+            {
+                "storeVector": [
+                    "file",
+                    "42",
+                    [
+                        0.1,
+                        0.2
+                    ],
+                    "m1",
+                    2,
+                    0,
+                    2,
+                    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    {
+                        "source_id": 42,
+                        "start_offset": 10,
+                        "end_offset": 19
+                    }
+                ]
+            },
+            {
+                "update": [
+                    1,
+                    true,
+                    true
+                ]
+            },
+            {
+                "storeVector": [
+                    "file",
+                    "42",
+                    [
+                        0.2,
+                        0.30000000000000004
+                    ],
+                    "m1",
+                    2,
+                    1,
+                    2,
+                    "",
+                    {
+                        "source_id": 42,
+                        "start_offset": 20,
+                        "end_offset": 29
+                    }
+                ]
+            },
+            {
+                "update": [
+                    2,
+                    true,
+                    true
+                ]
+            },
+            {
+                "getValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_cursor",
+                    "0",
+                    false
+                ]
+            },
+            {
+                "backfillEmbeddingVectors": [
+                    100,
+                    0
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_cursor",
+                    "0"
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_last_run",
+                    "<iso-date>"
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_remaining",
+                    "0"
+                ]
+            },
+            {
+                "log.info": [
+                    "[ChunkVectorizationJob] Batch completed",
+                    {
+                        "file": "<php-file>",
+                        "vectorized": 2,
+                        "failed": 0,
+                        "backfill_converted": 0,
+                        "backfill_failed": 0,
+                        "backfill_remaining": 0,
+                        "execution_time_seconds": "<float>"
+                    }
+                ]
+            }
+        ],
+        "vectorized": {
+            "1": true,
+            "2": true
+        }
+    },
+    "no chunks, backfill progresses": {
+        "trace": [
+            {
+                "log.debug": [
+                    "[ChunkVectorizationJob] Starting chunk vectorization batch",
+                    {
+                        "file": "<php-file>"
+                    }
+                ]
+            },
+            {
+                "findUnvectorized": [
+                    50,
+                    null
+                ]
+            },
+            {
+                "getValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_cursor",
+                    "0",
+                    false
+                ]
+            },
+            {
+                "backfillEmbeddingVectors": [
+                    100,
+                    0
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_cursor",
+                    "140"
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_last_run",
+                    "<iso-date>"
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_remaining",
+                    "60"
+                ]
+            },
+            {
+                "log.info": [
+                    "[ChunkVectorizationJob] Batch completed",
+                    {
+                        "file": "<php-file>",
+                        "vectorized": 0,
+                        "failed": 0,
+                        "backfill_converted": 40,
+                        "backfill_failed": 2,
+                        "backfill_remaining": 60,
+                        "execution_time_seconds": "<float>"
+                    }
+                ]
+            }
+        ],
+        "vectorized": []
+    },
+    "null entry, null embedding, missing index": {
+        "trace": [
+            {
+                "log.debug": [
+                    "[ChunkVectorizationJob] Starting chunk vectorization batch",
+                    {
+                        "file": "<php-file>"
+                    }
+                ]
+            },
+            {
+                "findUnvectorized": [
+                    50,
+                    null
+                ]
+            },
+            {
+                "generateBatchEmbeddings": [
+                    [
+                        "a",
+                        "b",
+                        "c",
+                        "d"
+                    ]
+                ]
+            },
+            {
+                "log.warning": [
+                    "[ChunkVectorizationJob] Embedding failed for chunk, will retry next run",
+                    {
+                        "file": "<php-file>",
+                        "chunk_id": 1,
+                        "error": "No embedding returned"
+                    }
+                ]
+            },
+            {
+                "log.warning": [
+                    "[ChunkVectorizationJob] Embedding failed for chunk, will retry next run",
+                    {
+                        "file": "<php-file>",
+                        "chunk_id": 2,
+                        "error": "timeout"
+                    }
+                ]
+            },
+            {
+                "findBySource": [
+                    "file",
+                    42
+                ]
+            },
+            {
+                "storeVector": [
+                    "file",
+                    "42",
+                    [
+                        0.5,
+                        0.6
+                    ],
+                    "m1",
+                    2,
+                    2,
+                    4,
+                    "c",
+                    {
+                        "source_id": 42,
+                        "start_offset": 30,
+                        "end_offset": 39
+                    }
+                ]
+            },
+            {
+                "update": [
+                    3,
+                    true,
+                    true
+                ]
+            },
+            {
+                "log.warning": [
+                    "[ChunkVectorizationJob] Embedding failed for chunk, will retry next run",
+                    {
+                        "file": "<php-file>",
+                        "chunk_id": 4,
+                        "error": "No embedding returned"
+                    }
+                ]
+            },
+            {
+                "getValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_cursor",
+                    "0",
+                    false
+                ]
+            },
+            {
+                "backfillEmbeddingVectors": [
+                    100,
+                    0
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_cursor",
+                    "0"
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_last_run",
+                    "<iso-date>"
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_remaining",
+                    "0"
+                ]
+            },
+            {
+                "log.info": [
+                    "[ChunkVectorizationJob] Batch completed",
+                    {
+                        "file": "<php-file>",
+                        "vectorized": 1,
+                        "failed": 3,
+                        "backfill_converted": 0,
+                        "backfill_failed": 0,
+                        "backfill_remaining": 0,
+                        "execution_time_seconds": "<float>"
+                    }
+                ]
+            }
+        ],
+        "vectorized": {
+            "1": false,
+            "2": false,
+            "3": true,
+            "4": false
+        }
+    },
+    "provider throws, backfill throws": {
+        "trace": [
+            {
+                "log.debug": [
+                    "[ChunkVectorizationJob] Starting chunk vectorization batch",
+                    {
+                        "file": "<php-file>"
+                    }
+                ]
+            },
+            {
+                "findUnvectorized": [
+                    50,
+                    null
+                ]
+            },
+            {
+                "generateBatchEmbeddings": [
+                    [
+                        "a"
+                    ]
+                ]
+            },
+            {
+                "log.warning": [
+                    "[ChunkVectorizationJob] Chunk vectorization batch failed (embedding provider unavailable or misconfigured?)",
+                    {
+                        "file": "<php-file>",
+                        "error": "no provider"
+                    }
+                ]
+            },
+            {
+                "getValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_cursor",
+                    "0",
+                    false
+                ]
+            },
+            {
+                "backfillEmbeddingVectors": [
+                    100,
+                    0
+                ]
+            },
+            {
+                "log.error": [
+                    "[ChunkVectorizationJob] pgvector warm-up backfill failed",
+                    {
+                        "file": "<php-file>",
+                        "error": "backfill broke"
+                    }
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_last_run",
+                    "<iso-date>"
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_remaining",
+                    "0"
+                ]
+            },
+            {
+                "log.info": [
+                    "[ChunkVectorizationJob] Batch completed",
+                    {
+                        "file": "<php-file>",
+                        "vectorized": 0,
+                        "failed": 0,
+                        "backfill_converted": 0,
+                        "backfill_failed": 0,
+                        "backfill_remaining": 0,
+                        "execution_time_seconds": "<float>"
+                    }
+                ]
+            }
+        ],
+        "vectorized": {
+            "1": false
+        }
+    },
+    "source without chunks counts as one": {
+        "trace": [
+            {
+                "log.debug": [
+                    "[ChunkVectorizationJob] Starting chunk vectorization batch",
+                    {
+                        "file": "<php-file>"
+                    }
+                ]
+            },
+            {
+                "findUnvectorized": [
+                    50,
+                    null
+                ]
+            },
+            {
+                "generateBatchEmbeddings": [
+                    [
+                        "a"
+                    ]
+                ]
+            },
+            {
+                "findBySource": [
+                    "file",
+                    9
+                ]
+            },
+            {
+                "storeVector": [
+                    "file",
+                    "9",
+                    [
+                        0.1,
+                        0.2
+                    ],
+                    "m1",
+                    2,
+                    5,
+                    1,
+                    "a",
+                    {
+                        "source_id": 9,
+                        "start_offset": 10,
+                        "end_offset": 19
+                    }
+                ]
+            },
+            {
+                "update": [
+                    1,
+                    true,
+                    true
+                ]
+            },
+            {
+                "getValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_cursor",
+                    "0",
+                    false
+                ]
+            },
+            {
+                "backfillEmbeddingVectors": [
+                    100,
+                    0
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_cursor",
+                    "0"
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_last_run",
+                    "<iso-date>"
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_remaining",
+                    "0"
+                ]
+            },
+            {
+                "log.info": [
+                    "[ChunkVectorizationJob] Batch completed",
+                    {
+                        "file": "<php-file>",
+                        "vectorized": 1,
+                        "failed": 0,
+                        "backfill_converted": 0,
+                        "backfill_failed": 0,
+                        "backfill_remaining": 0,
+                        "execution_time_seconds": "<float>"
+                    }
+                ]
+            }
+        ],
+        "vectorized": {
+            "1": true
+        }
+    },
+    "store throws for one chunk": {
+        "trace": [
+            {
+                "log.debug": [
+                    "[ChunkVectorizationJob] Starting chunk vectorization batch",
+                    {
+                        "file": "<php-file>"
+                    }
+                ]
+            },
+            {
+                "findUnvectorized": [
+                    50,
+                    null
+                ]
+            },
+            {
+                "generateBatchEmbeddings": [
+                    [
+                        "a",
+                        "b"
+                    ]
+                ]
+            },
+            {
+                "findBySource": [
+                    "file",
+                    42
+                ]
+            },
+            {
+                "storeVector": [
+                    "file",
+                    "42",
+                    [
+                        0.1,
+                        0.2
+                    ],
+                    "m1",
+                    2,
+                    0,
+                    2,
+                    "a",
+                    {
+                        "source_id": 42,
+                        "start_offset": 10,
+                        "end_offset": 19
+                    }
+                ]
+            },
+            {
+                "update": [
+                    1,
+                    true,
+                    true
+                ]
+            },
+            {
+                "storeVector": [
+                    "file",
+                    "42",
+                    [
+                        0.2,
+                        0.30000000000000004
+                    ],
+                    "m1",
+                    2,
+                    1,
+                    2,
+                    "b",
+                    {
+                        "source_id": 42,
+                        "start_offset": 20,
+                        "end_offset": 29
+                    }
+                ]
+            },
+            {
+                "log.warning": [
+                    "[ChunkVectorizationJob] Failed to store vector for chunk, will retry next run",
+                    {
+                        "file": "<php-file>",
+                        "chunk_id": 2,
+                        "error": "store failed 2"
+                    }
+                ]
+            },
+            {
+                "getValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_cursor",
+                    "0",
+                    false
+                ]
+            },
+            {
+                "backfillEmbeddingVectors": [
+                    100,
+                    0
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_cursor",
+                    "0"
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_last_run",
+                    "<iso-date>"
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_remaining",
+                    "0"
+                ]
+            },
+            {
+                "log.info": [
+                    "[ChunkVectorizationJob] Batch completed",
+                    {
+                        "file": "<php-file>",
+                        "vectorized": 1,
+                        "failed": 1,
+                        "backfill_converted": 0,
+                        "backfill_failed": 0,
+                        "backfill_remaining": 0,
+                        "execution_time_seconds": "<float>"
+                    }
+                ]
+            }
+        ],
+        "vectorized": {
+            "1": true,
+            "2": false
+        }
+    },
+    "two sources, total cached per source": {
+        "trace": [
+            {
+                "log.debug": [
+                    "[ChunkVectorizationJob] Starting chunk vectorization batch",
+                    {
+                        "file": "<php-file>"
+                    }
+                ]
+            },
+            {
+                "findUnvectorized": [
+                    50,
+                    null
+                ]
+            },
+            {
+                "generateBatchEmbeddings": [
+                    [
+                        "alpha",
+                        "beta",
+                        "gamma"
+                    ]
+                ]
+            },
+            {
+                "findBySource": [
+                    "file",
+                    42
+                ]
+            },
+            {
+                "storeVector": [
+                    "file",
+                    "42",
+                    [
+                        0.1,
+                        0.2
+                    ],
+                    "m1",
+                    2,
+                    0,
+                    3,
+                    "alpha",
+                    {
+                        "source_id": 42,
+                        "start_offset": 10,
+                        "end_offset": 19
+                    }
+                ]
+            },
+            {
+                "update": [
+                    1,
+                    true,
+                    true
+                ]
+            },
+            {
+                "storeVector": [
+                    "file",
+                    "42",
+                    [
+                        0.2,
+                        0.30000000000000004
+                    ],
+                    "m1",
+                    2,
+                    1,
+                    3,
+                    "beta",
+                    {
+                        "source_id": 42,
+                        "start_offset": 20,
+                        "end_offset": 29
+                    }
+                ]
+            },
+            {
+                "update": [
+                    2,
+                    true,
+                    true
+                ]
+            },
+            {
+                "findBySource": [
+                    "object",
+                    7
+                ]
+            },
+            {
+                "storeVector": [
+                    "object",
+                    "7",
+                    [
+                        0.3,
+                        0.4
+                    ],
+                    "m1",
+                    2,
+                    0,
+                    1,
+                    "gamma",
+                    {
+                        "source_id": 7,
+                        "start_offset": 30,
+                        "end_offset": 39
+                    }
+                ]
+            },
+            {
+                "update": [
+                    3,
+                    true,
+                    true
+                ]
+            },
+            {
+                "getValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_cursor",
+                    "0",
+                    false
+                ]
+            },
+            {
+                "backfillEmbeddingVectors": [
+                    100,
+                    0
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_cursor",
+                    "0"
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_last_run",
+                    "<iso-date>"
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_remaining",
+                    "0"
+                ]
+            },
+            {
+                "log.info": [
+                    "[ChunkVectorizationJob] Batch completed",
+                    {
+                        "file": "<php-file>",
+                        "vectorized": 3,
+                        "failed": 0,
+                        "backfill_converted": 0,
+                        "backfill_failed": 0,
+                        "backfill_remaining": 0,
+                        "execution_time_seconds": "<float>"
+                    }
+                ]
+            }
+        ],
+        "vectorized": {
+            "1": true,
+            "2": true,
+            "3": true
+        }
+    },
+    "update throws for one chunk": {
+        "trace": [
+            {
+                "log.debug": [
+                    "[ChunkVectorizationJob] Starting chunk vectorization batch",
+                    {
+                        "file": "<php-file>"
+                    }
+                ]
+            },
+            {
+                "findUnvectorized": [
+                    50,
+                    null
+                ]
+            },
+            {
+                "generateBatchEmbeddings": [
+                    [
+                        "a",
+                        "b"
+                    ]
+                ]
+            },
+            {
+                "findBySource": [
+                    "file",
+                    42
+                ]
+            },
+            {
+                "storeVector": [
+                    "file",
+                    "42",
+                    [
+                        0.1,
+                        0.2
+                    ],
+                    "m1",
+                    2,
+                    0,
+                    2,
+                    "a",
+                    {
+                        "source_id": 42,
+                        "start_offset": 10,
+                        "end_offset": 19
+                    }
+                ]
+            },
+            {
+                "update": [
+                    1,
+                    true,
+                    true
+                ]
+            },
+            {
+                "log.warning": [
+                    "[ChunkVectorizationJob] Failed to store vector for chunk, will retry next run",
+                    {
+                        "file": "<php-file>",
+                        "chunk_id": 1,
+                        "error": "update failed 1"
+                    }
+                ]
+            },
+            {
+                "storeVector": [
+                    "file",
+                    "42",
+                    [
+                        0.2,
+                        0.30000000000000004
+                    ],
+                    "m1",
+                    2,
+                    1,
+                    2,
+                    "b",
+                    {
+                        "source_id": 42,
+                        "start_offset": 20,
+                        "end_offset": 29
+                    }
+                ]
+            },
+            {
+                "update": [
+                    2,
+                    true,
+                    true
+                ]
+            },
+            {
+                "getValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_cursor",
+                    "0",
+                    false
+                ]
+            },
+            {
+                "backfillEmbeddingVectors": [
+                    100,
+                    0
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_cursor",
+                    "0"
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_last_run",
+                    "<iso-date>"
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "chunk_vectorization_backfill_remaining",
+                    "0"
+                ]
+            },
+            {
+                "log.info": [
+                    "[ChunkVectorizationJob] Batch completed",
+                    {
+                        "file": "<php-file>",
+                        "vectorized": 1,
+                        "failed": 1,
+                        "backfill_converted": 0,
+                        "backfill_failed": 0,
+                        "backfill_remaining": 0,
+                        "execution_time_seconds": "<float>"
+                    }
+                ]
+            }
+        ],
+        "vectorized": {
+            "1": true,
+            "2": true
+        }
+    }
+}

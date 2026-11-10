@@ -38,6 +38,8 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapper\ParentReference;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaComposition;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -71,17 +73,25 @@ class SchemaMapperInlineCompositionTest extends TestCase {
 	}
 
 	/**
-	 * Invoke the private resolveSchemaExtension().
+	 * Composition over the mapper's own schema loading, reached through reflection.
+	 *
+	 * @return SchemaComposition
+	 */
+	private function composition(): SchemaComposition {
+		$method = new ReflectionMethod(SchemaMapper::class, 'composition');
+
+		return $method->invoke($this->mapper);
+	}
+
+	/**
+	 * Resolve a schema.
 	 *
 	 * @param Schema $schema The schema to resolve.
 	 *
 	 * @return Schema
 	 */
 	private function resolve(Schema $schema): Schema {
-		$method = new ReflectionMethod(SchemaMapper::class, 'resolveSchemaExtension');
-		$method->setAccessible(true);
-
-		return $method->invoke($this->mapper, $schema, []);
+		return $this->composition()->resolve(schema: $schema);
 	}
 
 	/**
@@ -157,10 +167,7 @@ class SchemaMapperInlineCompositionTest extends TestCase {
 	 * @return Schema
 	 */
 	private function extractDelta(Schema $schema): Schema {
-		$method = new ReflectionMethod(SchemaMapper::class, 'extractSchemaDelta');
-		$method->setAccessible(true);
-
-		return $method->invoke($this->mapper, $schema);
+		return $this->composition()->extractDelta(schema: $schema);
 	}
 
 	/**
@@ -217,14 +224,16 @@ class SchemaMapperInlineCompositionTest extends TestCase {
 	 * @return void
 	 */
 	public function testRefEntryStillResolvesToAParentIdentifier(): void {
-		$method = new ReflectionMethod(SchemaMapper::class, 'parentIdentifierFromAllOfEntry');
-		$method->setAccessible(true);
+		$reference = new ParentReference();
 
-		$this->assertSame('Person', $method->invoke($this->mapper, ['$ref' => '#/components/schemas/Person']));
-		$this->assertSame('person', $method->invoke($this->mapper, 'person'));
-		$this->assertSame(42, $method->invoke($this->mapper, 42));
-		$this->assertNull($method->invoke($this->mapper, ['if' => [], 'then' => []]));
-		$this->assertNull($method->invoke($this->mapper, ['required' => ['a']]));
-		$this->assertNull($method->invoke($this->mapper, ''));
+		$this->assertSame('Person', $reference->fromEntry(['$ref' => '#/components/schemas/Person']));
+		$this->assertSame('person', $reference->fromEntry('person'));
+		$this->assertSame(42, $reference->fromEntry(42));
+		$this->assertNull($reference->fromEntry(['if' => [], 'then' => []]));
+		$this->assertNull($reference->fromEntry(['required' => ['a']]));
+		$this->assertNull($reference->fromEntry(''));
+		$this->assertNull($reference->fromEntry(0));
+		$this->assertNull($reference->fromEntry(['$ref' => 'schemas/']));
+		$this->assertNull($reference->fromEntry(['$ref' => 5]));
 	}
 }

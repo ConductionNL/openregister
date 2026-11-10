@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Tests\Support\MigratedSqliteDatabase;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -36,6 +37,14 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Db\AuditTrailMapper
+ * @uses \OCA\OpenRegister\Db\AuditFlowAttribution
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Service\Audit\PurposeAttribution
+ * @uses \OCA\OpenRegister\Service\Audit\TokenAttribution
+ * @uses \OCA\OpenRegister\AppInfo\ClassAliasMap
+ * @uses \OCA\OpenRegister\Service\OrganisationContext
+ * @uses \OCA\OpenRegister\Service\Audit\OrganisationContextAttribution
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
  */
 class AuditTrailToolInvocationInsertTest extends TestCase {
 
@@ -48,10 +57,9 @@ class AuditTrailToolInvocationInsertTest extends TestCase {
 
 		$this->mapper = new AuditTrailMapper(
 			db: $this->database->idbConnection(),
-			container: $this->createMock(ContainerInterface::class),
 			userSession: $this->createMock(IUserSession::class),
 			request: $this->createMock(IRequest::class),
-			logger: new NullLogger()
+			services: new AuditTrailMapperServices(container: $this->createMock(ContainerInterface::class), logger: new NullLogger())
 		);
 	}//end setUp()
 
@@ -76,4 +84,25 @@ class AuditTrailToolInvocationInsertTest extends TestCase {
 		$this->assertSame([], json_decode((string) $rows[0]['changed'], true));
 		$this->assertSame('system', $rows[0]['user']);
 	}//end testAToolInvocationIsWrittenToTheAuditTable()
+
+	/**
+	 * A row written inside an organisation context names the organisation in its sealed summary.
+	 */
+	public function testARowInsideAnOrganisationContextNamesTheOrganisation(): void {
+		$entry = \OCA\OpenRegister\Service\OrganisationContext::run(
+			'org-a',
+			fn () => $this->mapper->createToolInvocationEntry(
+				toolId: 'keepiq.listEntries',
+				paramsDigest: hash('sha256', '{}'),
+				resultSummary: ['count' => 3]
+			)
+		);
+
+		$rows = $this->database->connection()->fetchAllAssociative(
+			'SELECT result_summary FROM openregister_audit_trails WHERE id = ?',
+			[$entry->getId()]
+		);
+
+		$this->assertSame(['count' => 3, 'organisationContext' => 'org-a'], json_decode((string) $rows[0]['result_summary'], true));
+	}//end testARowInsideAnOrganisationContextNamesTheOrganisation()
 }//end class

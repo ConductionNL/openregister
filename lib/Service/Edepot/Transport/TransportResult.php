@@ -39,52 +39,82 @@ class TransportResult {
 	 *
 	 * @var boolean
 	 */
-	private bool $success;
+	private bool $success = false;
 
 	/**
 	 * Per-object results mapping UUID to acceptance status.
 	 *
 	 * @var array<string, array{accepted: bool, reference: string|null, error: string|null}>
 	 */
-	private array $objectResults;
+	private array $objectResults = [];
 
 	/**
 	 * Error message if the transport failed entirely.
 	 *
 	 * @var string|null
 	 */
-	private ?string $errorMessage;
+	private ?string $errorMessage = null;
 
 	/**
 	 * The e-Depot's reference identifier for the transfer.
 	 *
 	 * @var string|null
 	 */
-	private ?string $transferReference;
+	private ?string $transferReference = null;
 
 	/**
-	 * Constructor.
+	 * A transfer the e-Depot took: successful unless it rejected an object.
+	 * Use failed() for a transfer that failed as a whole.
 	 *
-	 * @param bool $success Overall success.
-	 * @param array<string, array{accepted: bool, reference: string|null, error: string|null}> $objectResults Per-object results.
-	 * @param string|null $errorMessage Error message.
-	 * @param string|null $transferReference Transfer reference.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+	 * @param string|null                                                                       $transferReference The e-Depot's reference.
+	 * @param array<string, array{accepted: bool, reference: string|null, error: string|null}> $objectResults     Per-object results.
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md
 	 */
-	public function __construct(
-		bool $success = false,
-		array $objectResults = [],
-		?string $errorMessage = null,
-		?string $transferReference = null,
-	) {
-		$this->success = $success;
-		$this->objectResults = $objectResults;
-		$this->errorMessage = $errorMessage;
+	public function __construct(?string $transferReference = null, array $objectResults = []) {
 		$this->transferReference = $transferReference;
+		$this->objectResults = $objectResults;
+		$this->success = $this->hasRejections() === false;
 	}//end __construct()
+
+	/**
+	 * This result as a transfer that failed as a whole.
+	 *
+	 * @param string $errorMessage Why it failed.
+	 *
+	 * @return self A failed copy.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md
+	 */
+	public function failed(string $errorMessage): self {
+		$result = clone $this;
+		$result->success = false;
+		$result->errorMessage = $errorMessage;
+
+		return $result;
+	}//end failed()
+
+	/**
+	 * Whether the e-Depot rejected at least one object.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md
+	 */
+	public function hasRejections(): bool {
+		return count($this->withAcceptance(accepted: false)) > 0;
+	}//end hasRejections()
+
+	/**
+	 * The per-object results with the given acceptance.
+	 *
+	 * @param bool $accepted The acceptance to match.
+	 *
+	 * @return array<string, array{accepted: bool, reference: string|null, error: string|null}>
+	 */
+	private function withAcceptance(bool $accepted): array {
+		return array_filter($this->objectResults, static fn (array $result): bool => $result['accepted'] === $accepted);
+	}//end withAcceptance()
 
 	/**
 	 * Check if the transport succeeded.
@@ -109,18 +139,7 @@ class TransportResult {
 			return false;
 		}
 
-		$accepted = 0;
-		$rejected = 0;
-		foreach ($this->objectResults as $result) {
-			if ($result['accepted'] === true) {
-				$accepted++;
-				continue;
-			}
-
-			$rejected++;
-		}
-
-		return ($accepted > 0 && $rejected > 0);
+		return count($this->withAcceptance(accepted: true)) > 0 && $this->hasRejections() === true;
 	}//end isPartialSuccess()
 
 	/**
@@ -155,42 +174,6 @@ class TransportResult {
 	public function getTransferReference(): ?string {
 		return $this->transferReference;
 	}//end getTransferReference()
-
-	/**
-	 * Get UUIDs of accepted objects.
-	 *
-	 * @return array<int, string> UUIDs of accepted objects.
-	 *
-	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
-	 */
-	public function getAcceptedUuids(): array {
-		$uuids = [];
-		foreach ($this->objectResults as $uuid => $result) {
-			if ($result['accepted'] === true) {
-				$uuids[] = $uuid;
-			}
-		}
-
-		return $uuids;
-	}//end getAcceptedUuids()
-
-	/**
-	 * Get UUIDs of rejected objects.
-	 *
-	 * @return array<int, string> UUIDs of rejected objects.
-	 *
-	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
-	 */
-	public function getRejectedUuids(): array {
-		$uuids = [];
-		foreach ($this->objectResults as $uuid => $result) {
-			if ($result['accepted'] === false) {
-				$uuids[] = $uuid;
-			}
-		}
-
-		return $uuids;
-	}//end getRejectedUuids()
 
 	/**
 	 * Serialize to array.

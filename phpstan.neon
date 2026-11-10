@@ -187,7 +187,7 @@ parameters:
         -
             message: '#Parameter \#[12] \$(entity|systemSlug) of method .+SystemEntityObjectAdapter::__construct\(\) is not optional#'
             identifier: parameter.notOptional
-            path: lib/Service/Notification/SystemEntityObjectAdapter.php
+            path: lib/Notifications/Service/Notification/SystemEntityObjectAdapter.php
 
         # OCP types IDBConnection::executeQuery()'s $params as `string[]`, but
         # bound parameters are legitimately int/float/null too — the narrow stub
@@ -196,7 +196,7 @@ parameters:
         -
             message: '#Parameter \#2 \$params of method OCP\\IDBConnection::executeQuery\(\) expects array<string>#'
             identifier: argument.type
-            path: lib/Service/Vectorization/Handlers/VectorSearchHandler.php
+            path: lib/Search/Service/Vectorization/Handlers/VectorSearchHandler.php
 
         # CredentialStoreResolver probes the credential app's service classes by
         # name, under BOTH namespaces it has shipped (OCA\Keepiq, formerly

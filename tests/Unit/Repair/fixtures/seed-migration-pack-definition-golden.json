@@ -1,0 +1,77 @@
+{
+    "id": "zgw-zaken-json",
+    "name": "ZGW Zaken (JSON) \u2014 template",
+    "description": "TEMPLATE, not a ready-to-run pack. Maps a ZGW (\"Zaakgericht Werken\") Zaken API export (JSON) onto a generic case-like target schema. Before running a real import: (1) select or create a target schema whose properties match the mapping targets below (caseNumber, title, startDate, endDate, status, zaakTypeCode, confidentialityLevel), or edit the targets to match your own schema; (2) replace the placeholder zaaktype-URL lookup map with your own catalogue's zaaktype URL to code mapping \u2014 rows whose zaaktype URL is not in the map will fail import by design (the mapping engine never passes an unresolved reference through as a literal value).",
+    "sourceFormat": "json",
+    "version": "1.0.0",
+    "idStrategy": {
+        "type": "generate"
+    },
+    "fieldMappings": [
+        {
+            "source": "/identificatie",
+            "target": "caseNumber",
+            "required": true,
+            "transform": {
+                "type": "trim"
+            }
+        },
+        {
+            "source": "/omschrijving",
+            "target": "title",
+            "required": true,
+            "transform": {
+                "type": "trim"
+            }
+        },
+        {
+            "source": "/startdatum",
+            "target": "startDate",
+            "required": false,
+            "transform": {
+                "type": "date",
+                "sourceFormat": "Y-m-d",
+                "targetFormat": "Y-m-d"
+            }
+        },
+        {
+            "source": "/einddatum",
+            "target": "endDate",
+            "required": false,
+            "transform": {
+                "type": "date",
+                "sourceFormat": "Y-m-d",
+                "targetFormat": "Y-m-d"
+            }
+        },
+        {
+            "source": "/status",
+            "target": "status",
+            "required": false,
+            "transform": {
+                "type": "trim"
+            }
+        },
+        {
+            "source": "/zaaktype",
+            "target": "zaakTypeCode",
+            "required": false,
+            "transform": {
+                "type": "lookup",
+                "map": {
+                    "https://example.com/catalogi/api/v1/zaaktypen/00000000-0000-0000-0000-000000000000": "VOORBEELD"
+                }
+            }
+        },
+        {
+            "source": "/vertrouwelijkheidaanduiding",
+            "target": "confidentialityLevel",
+            "required": false,
+            "transform": {
+                "type": "trim"
+            }
+        }
+    ],
+    "defaults": [],
+    "skipRows": []
+}

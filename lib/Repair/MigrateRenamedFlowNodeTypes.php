@@ -45,8 +45,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Db\FlowMapper;
-use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
+use OCA\OpenRegister\Db\FlowMapperInterface;
+use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Container\ContainerInterface;
@@ -101,22 +101,17 @@ class MigrateRenamedFlowNodeTypes implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) renamedTypes() is a compiled-in
-	 * catalogue of old-to-current type ids, not collaborator state. Injecting the
-	 * registry here would make a repair step that runs before the container is
-	 * fully warm depend on a service it does not otherwise need.
-	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function run(IOutput $output): void {
-		$renamed = FlowNodeRegistry::renamedTypes();
+		$renamed = $this->renamedTypes();
 		if ($renamed === []) {
 			$output->info('OpenRegister: no flow node types are aliased — nothing to rewrite.');
 			return;
 		}
 
 		try {
-			$mapper = $this->container->get(FlowMapper::class);
+			$mapper = $this->container->get(FlowMapperInterface::class);
 		} catch (Throwable $e) {
 			$this->logger->info(
 				'[MigrateRenamedFlowNodeTypes] flow storage unavailable, skipping: ' . $e->getMessage()
@@ -124,9 +119,7 @@ class MigrateRenamedFlowNodeTypes implements IRepairStep {
 			return;
 		}
 
-		$flowsSeen = 0;
-		$flowsWritten = 0;
-		$nodesRewritten = 0;
+		$rewrite = new FlowNodeTypeRewrite(mapper: $mapper, output: $output);
 		$offset = 0;
 
 		while (true) {
@@ -143,22 +136,8 @@ class MigrateRenamedFlowNodeTypes implements IRepairStep {
 			}
 
 			foreach ($flows as $flow) {
-				$flowsSeen++;
-
-				$changed = $this->rewriteFlow(
-					mapper: $mapper,
-					flow: $flow,
-					renamed: $renamed,
-					output: $output
-				);
-
-				if ($changed === 0) {
-					continue;
-				}
-
-				$flowsWritten++;
-				$nodesRewritten += $changed;
-			}//end foreach
+				$rewrite->rewriteFlow(flow: $flow);
+			}
 
 			if (count($flows) < self::PAGE_SIZE) {
 				break;
@@ -167,120 +146,18 @@ class MigrateRenamedFlowNodeTypes implements IRepairStep {
 			$offset += self::PAGE_SIZE;
 		}//end while
 
-		$this->report(
-			output: $output,
-			flowsSeen: $flowsSeen,
-			flowsWritten: $flowsWritten,
-			nodesRewritten: $nodesRewritten,
-			renamed: $renamed
-		);
+		$rewrite->report();
 
 	}//end run()
 
 	/**
-	 * Rewrite one flow's renamed node types, saving only if something changed.
+	 * The rename map: a compiled-in constant on the registry's interface, not
+	 * collaborator state, so this step reads it without the registry. Typed as
+	 * a map so the empty-map branch stays reachable once the last alias retires.
 	 *
-	 * @param FlowMapper $mapper Persists the flow.
-	 * @param mixed $flow The flow entity.
-	 * @param array $renamed Old type id => current type id.
-	 * @param IOutput $output Migration output.
-	 *
-	 * @return integer How many nodes were rewritten AND saved; 0 if none, or if
-	 *                 the save failed.
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md
+	 * @return array<string, string> Old type id => new type id.
 	 */
-	private function rewriteFlow(FlowMapper $mapper, mixed $flow, array $renamed, IOutput $output): int {
-		$nodes = ($flow->getNodes() ?? []);
-		$changed = 0;
-
-		foreach ($nodes as $index => $node) {
-			if (is_array($node) === false) {
-				continue;
-			}
-
-			$type = (string)($node['type'] ?? '');
-			if ($type === '' || isset($renamed[$type]) === false) {
-				continue;
-			}
-
-			$nodes[$index]['type'] = $renamed[$type];
-			$changed++;
-		}
-
-		// Only write a flow that actually carried an old name. A blanket save
-		// would move every flow's `updated` timestamp for a no-op, which is the
-		// kind of churn that makes a later "what changed and when" impossible to
-		// answer.
-		if ($changed === 0) {
-			return 0;
-		}
-
-		$flow->setNodes($nodes);
-
-		try {
-			$mapper->update($flow);
-		} catch (Throwable $e) {
-			$output->warning(
-				sprintf(
-					'OpenRegister: could not rewrite node types on flow "%s": %s',
-					(string)$flow->getUuid(),
-					$e->getMessage()
-				)
-			);
-
-			return 0;
-		}
-
-		return $changed;
-	}//end rewriteFlow()
-
-	/**
-	 * Say what the pass did, naming the renames it applied.
-	 *
-	 * @param IOutput $output Migration output.
-	 * @param integer $flowsSeen Flows inspected.
-	 * @param integer $flowsWritten Flows saved.
-	 * @param integer $nodesRewritten Nodes rewritten.
-	 * @param array $renamed Old type id => current type id.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md
-	 */
-	private function report(
-		IOutput $output,
-		int $flowsSeen,
-		int $flowsWritten,
-		int $nodesRewritten,
-		array $renamed,
-	): void {
-		if ($nodesRewritten === 0) {
-			$output->info(
-				sprintf('OpenRegister: %d flow(s) checked, no renamed node types stored.', $flowsSeen)
-			);
-
-			return;
-		}
-
-		$pairs = implode(
-			', ',
-			array_map(
-				static fn (string $old, string $new): string => $old . ' → ' . $new,
-				array_keys($renamed),
-				array_values($renamed)
-			)
-		);
-
-		$output->info(
-			sprintf(
-				'OpenRegister: rewrote %d node(s) across %d flow(s) of %d to their current type ids (%s).',
-				$nodesRewritten,
-				$flowsWritten,
-				$flowsSeen,
-				$pairs
-			)
-		);
-
-	}//end report()
+	private function renamedTypes(): array {
+		return FlowNodeRegistryInterface::RENAMED_TYPES;
+	}//end renamedTypes()
 }//end class

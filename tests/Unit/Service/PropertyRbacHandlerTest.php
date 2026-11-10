@@ -30,13 +30,7 @@ class PropertyRbacHandlerTest extends TestCase {
 		$this->conditionMatcher = $this->createMock(ConditionMatcher::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->handler = new PropertyRbacHandler(
-			$this->userSession,
-			$this->groupManager,
-			$this->conditionMatcher,
-			$this->logger,
-			self::stateFieldRuleResolver($this->userSession, $this->groupManager)
-		);
+		$this->handler = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($this->userSession, $this->groupManager), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->conditionMatcher, self::stateFieldRuleResolver($this->userSession, $this->groupManager)), logger: $this->logger);
 	}
 
 	private function mockUser(string $uid, array $groups): IUser&MockObject {

@@ -14,10 +14,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
+use OCA\OpenRegister\Service\File\DeleteFileSources;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\DeleteFileHandler;
 use OCA\OpenRegister\Service\File\FileLockHandler;
-use OCA\OpenRegister\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\ReadFileHandler;
 use OCP\Files\File;
@@ -88,11 +89,8 @@ class DeleteFileHandlerTest extends TestCase {
 		$this->fileLockHandler = $this->createMock(FileLockHandler::class);
 
 		$this->handler = new DeleteFileHandler(
-			$this->rootFolder,
-			$this->readFileHandler,
+			new DeleteFileSources($this->rootFolder, $this->readFileHandler, $this->logger),
 			$this->fileValidHandler,
-			$this->fileOwnershipHandler,
-			$this->logger,
 			$this->fileLockHandler
 		);
 	}//end setUp()
@@ -122,6 +120,19 @@ class DeleteFileHandlerTest extends TestCase {
 	// =========================================================================
 	// deleteFile - a Node is deleted as a Node
 	// =========================================================================
+
+	/**
+	 * A delete that returns without removing the node (an aborted operation) is reported as not deleted.
+	 */
+	public function testADeleteThatLeavesTheNodeBehindIsReportedFalse(): void {
+		$file = $this->createMock(File::class);
+		$file->method('getId')->willReturn(42);
+		$file->method('isDeletable')->willReturn(true);
+		$file->expects($this->once())->method('delete');
+		$this->rootFolder->method('getFirstNodeById')->with(42)->willReturn($file);
+
+		$this->assertFalse($this->handler->deleteFile(file: $file, object: $this->createMock(ObjectEntity::class)));
+	}//end testADeleteThatLeavesTheNodeBehindIsReportedFalse()
 
 	/**
 	 * A Node argument MUST be deleted directly, never cast to string.

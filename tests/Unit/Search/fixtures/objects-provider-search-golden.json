@@ -1,0 +1,1964 @@
+{
+    "full page paginates": [
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search requested",
+            {
+                "search_query": [],
+                "has_search": false,
+                "limit": 3,
+                "offset": 2,
+                "schema_chunks": 1
+            }
+        ],
+        [
+            "searchObjectsPaginated",
+            {
+                "_content_search": true,
+                "@self": {
+                    "schema": [
+                        1,
+                        2,
+                        3
+                    ]
+                },
+                "_limit": 3,
+                "_offset": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search completed",
+            {
+                "results_count": 6,
+                "total_results": 16
+            }
+        ],
+        [
+            "result",
+            {
+                "name": "Open Register Objects",
+                "isPaginated": true,
+                "entries": [
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=1&id=uuid-1-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=1&id=uuid-1-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/2",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=1&id=uuid-1-2",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=2&id=uuid-2-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=2&id=uuid-2-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/2",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=2&id=uuid-2-2",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    }
+                ],
+                "cursor": 5
+            }
+        ]
+    ],
+    "limit above page": [
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search requested",
+            {
+                "search_query": [],
+                "has_search": false,
+                "limit": 25,
+                "offset": 0,
+                "schema_chunks": 1
+            }
+        ],
+        [
+            "searchObjectsPaginated",
+            {
+                "_content_search": true,
+                "@self": {
+                    "schema": [
+                        1,
+                        2,
+                        3
+                    ]
+                },
+                "_limit": 25,
+                "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search completed",
+            {
+                "results_count": 4,
+                "total_results": 14
+            }
+        ],
+        [
+            "result",
+            {
+                "name": "Open Register Objects",
+                "isPaginated": false,
+                "entries": [
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=1&id=uuid-1-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=1&id=uuid-1-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=2&id=uuid-2-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=2&id=uuid-2-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    }
+                ],
+                "cursor": null
+            }
+        ]
+    ],
+    "limit and cursor": [
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search requested",
+            {
+                "search_query": {
+                    "_search": "a"
+                },
+                "has_search": true,
+                "limit": 10,
+                "offset": 5,
+                "schema_chunks": 1
+            }
+        ],
+        [
+            "searchObjectsPaginated",
+            {
+                "_search": "a",
+                "_content_search": true,
+                "@self": {
+                    "schema": [
+                        1,
+                        2,
+                        3
+                    ]
+                },
+                "_limit": 10,
+                "_offset": 5
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search completed",
+            {
+                "results_count": 4,
+                "total_results": 14
+            }
+        ],
+        [
+            "result",
+            {
+                "name": "Open Register Objects",
+                "isPaginated": false,
+                "entries": [
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=1&id=uuid-1-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=1&id=uuid-1-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=2&id=uuid-2-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=2&id=uuid-2-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    }
+                ],
+                "cursor": null
+            }
+        ]
+    ],
+    "limit zero": [
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search requested",
+            {
+                "search_query": [],
+                "has_search": false,
+                "limit": 25,
+                "offset": 0,
+                "schema_chunks": 1
+            }
+        ],
+        [
+            "searchObjectsPaginated",
+            {
+                "_content_search": true,
+                "@self": {
+                    "schema": [
+                        1,
+                        2,
+                        3
+                    ]
+                },
+                "_limit": 25,
+                "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search completed",
+            {
+                "results_count": 4,
+                "total_results": 14
+            }
+        ],
+        [
+            "result",
+            {
+                "name": "Open Register Objects",
+                "isPaginated": false,
+                "entries": [
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=1&id=uuid-1-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=1&id=uuid-1-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=2&id=uuid-2-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=2&id=uuid-2-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    }
+                ],
+                "cursor": null
+            }
+        ]
+    ],
+    "many chunks": [
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search requested",
+            {
+                "search_query": {
+                    "_search": "b"
+                },
+                "has_search": true,
+                "limit": 4,
+                "offset": 1,
+                "schema_chunks": 3
+            }
+        ],
+        [
+            "searchObjectsPaginated",
+            {
+                "_search": "b",
+                "_content_search": true,
+                "@self": {
+                    "schema": [
+                        1,
+                        2,
+                        3,
+                        4,
+                        5,
+                        6,
+                        7,
+                        8,
+                        9,
+                        10,
+                        11,
+                        12,
+                        13,
+                        14,
+                        15,
+                        16,
+                        17,
+                        18,
+                        19,
+                        20,
+                        21,
+                        22,
+                        23,
+                        24,
+                        25,
+                        26,
+                        27,
+                        28,
+                        29,
+                        30,
+                        31,
+                        32,
+                        33,
+                        34,
+                        35,
+                        36,
+                        37,
+                        38,
+                        39,
+                        40,
+                        41,
+                        42,
+                        43,
+                        44,
+                        45,
+                        46,
+                        47,
+                        48,
+                        49,
+                        50
+                    ]
+                },
+                "_limit": 5,
+                "_offset": 0
+            }
+        ],
+        [
+            "searchObjectsPaginated",
+            {
+                "_search": "b",
+                "_content_search": true,
+                "@self": {
+                    "schema": [
+                        51,
+                        52,
+                        53,
+                        54,
+                        55,
+                        56,
+                        57,
+                        58,
+                        59,
+                        60,
+                        61,
+                        62,
+                        63,
+                        64,
+                        65,
+                        66,
+                        67,
+                        68,
+                        69,
+                        70,
+                        71,
+                        72,
+                        73,
+                        74,
+                        75,
+                        76,
+                        77,
+                        78,
+                        79,
+                        80,
+                        81,
+                        82,
+                        83,
+                        84,
+                        85,
+                        86,
+                        87,
+                        88,
+                        89,
+                        90,
+                        91,
+                        92,
+                        93,
+                        94,
+                        95,
+                        96,
+                        97,
+                        98,
+                        99,
+                        100
+                    ]
+                },
+                "_limit": 5,
+                "_offset": 0
+            }
+        ],
+        [
+            "searchObjectsPaginated",
+            {
+                "_search": "b",
+                "_content_search": true,
+                "@self": {
+                    "schema": [
+                        101,
+                        102,
+                        103,
+                        104,
+                        105,
+                        106,
+                        107,
+                        108,
+                        109,
+                        110,
+                        111,
+                        112,
+                        113,
+                        114,
+                        115,
+                        116,
+                        117,
+                        118,
+                        119,
+                        120
+                    ]
+                },
+                "_limit": 5,
+                "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search completed",
+            {
+                "results_count": 4,
+                "total_results": 42
+            }
+        ],
+        [
+            "result",
+            {
+                "name": "Open Register Objects",
+                "isPaginated": true,
+                "entries": [
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 3/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=102&id=uuid-102-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 2/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=51&id=uuid-51-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 2/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=52&id=uuid-52-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=1&id=uuid-1-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    }
+                ],
+                "cursor": 5
+            }
+        ]
+    ],
+    "many chunks one fails": [
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search requested",
+            {
+                "search_query": [],
+                "has_search": false,
+                "limit": 5,
+                "offset": 0,
+                "schema_chunks": 3
+            }
+        ],
+        [
+            "searchObjectsPaginated",
+            {
+                "_content_search": true,
+                "@self": {
+                    "schema": [
+                        1,
+                        2,
+                        3,
+                        4,
+                        5,
+                        6,
+                        7,
+                        8,
+                        9,
+                        10,
+                        11,
+                        12,
+                        13,
+                        14,
+                        15,
+                        16,
+                        17,
+                        18,
+                        19,
+                        20,
+                        21,
+                        22,
+                        23,
+                        24,
+                        25,
+                        26,
+                        27,
+                        28,
+                        29,
+                        30,
+                        31,
+                        32,
+                        33,
+                        34,
+                        35,
+                        36,
+                        37,
+                        38,
+                        39,
+                        40,
+                        41,
+                        42,
+                        43,
+                        44,
+                        45,
+                        46,
+                        47,
+                        48,
+                        49,
+                        50
+                    ]
+                },
+                "_limit": 5,
+                "_offset": 0
+            }
+        ],
+        [
+            "searchObjectsPaginated",
+            {
+                "_content_search": true,
+                "@self": {
+                    "schema": [
+                        51,
+                        52,
+                        53,
+                        54,
+                        55,
+                        56,
+                        57,
+                        58,
+                        59,
+                        60,
+                        61,
+                        62,
+                        63,
+                        64,
+                        65,
+                        66,
+                        67,
+                        68,
+                        69,
+                        70,
+                        71,
+                        72,
+                        73,
+                        74,
+                        75,
+                        76,
+                        77,
+                        78,
+                        79,
+                        80,
+                        81,
+                        82,
+                        83,
+                        84,
+                        85,
+                        86,
+                        87,
+                        88,
+                        89,
+                        90,
+                        91,
+                        92,
+                        93,
+                        94,
+                        95,
+                        96,
+                        97,
+                        98,
+                        99,
+                        100
+                    ]
+                },
+                "_limit": 5,
+                "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "error",
+            "[ObjectsProvider] OpenRegister search failed for schema chunk {chunk} of {chunks}; the other chunks still answer: {error}",
+            {
+                "chunk": 2,
+                "chunks": 3,
+                "schemas": [
+                    51,
+                    52,
+                    53,
+                    54,
+                    55,
+                    56,
+                    57,
+                    58,
+                    59,
+                    60,
+                    61,
+                    62,
+                    63,
+                    64,
+                    65,
+                    66,
+                    67,
+                    68,
+                    69,
+                    70,
+                    71,
+                    72,
+                    73,
+                    74,
+                    75,
+                    76,
+                    77,
+                    78,
+                    79,
+                    80,
+                    81,
+                    82,
+                    83,
+                    84,
+                    85,
+                    86,
+                    87,
+                    88,
+                    89,
+                    90,
+                    91,
+                    92,
+                    93,
+                    94,
+                    95,
+                    96,
+                    97,
+                    98,
+                    99,
+                    100
+                ],
+                "error": "chunk table broken"
+            }
+        ],
+        [
+            "searchObjectsPaginated",
+            {
+                "_content_search": true,
+                "@self": {
+                    "schema": [
+                        101,
+                        102,
+                        103,
+                        104,
+                        105,
+                        106,
+                        107,
+                        108,
+                        109,
+                        110,
+                        111,
+                        112,
+                        113,
+                        114,
+                        115,
+                        116,
+                        117,
+                        118,
+                        119,
+                        120
+                    ]
+                },
+                "_limit": 5,
+                "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search completed",
+            {
+                "results_count": 5,
+                "total_results": 28
+            }
+        ],
+        [
+            "result",
+            {
+                "name": "Open Register Objects",
+                "isPaginated": true,
+                "entries": [
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 3/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=101&id=uuid-101-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 3/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=102&id=uuid-102-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=1&id=uuid-1-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=2&id=uuid-2-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 3/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=101&id=uuid-101-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    }
+                ],
+                "cursor": 5
+            }
+        ]
+    ],
+    "no filters": [
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search requested",
+            {
+                "search_query": [],
+                "has_search": false,
+                "limit": 25,
+                "offset": 0,
+                "schema_chunks": 1
+            }
+        ],
+        [
+            "searchObjectsPaginated",
+            {
+                "_content_search": true,
+                "@self": {
+                    "schema": [
+                        1,
+                        2,
+                        3
+                    ]
+                },
+                "_limit": 25,
+                "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search completed",
+            {
+                "results_count": 4,
+                "total_results": 14
+            }
+        ],
+        [
+            "result",
+            {
+                "name": "Open Register Objects",
+                "isPaginated": false,
+                "entries": [
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=1&id=uuid-1-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=1&id=uuid-1-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=2&id=uuid-2-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=2&id=uuid-2-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    }
+                ],
+                "cursor": null
+            }
+        ]
+    ],
+    "nothing searchable": [
+        [
+            "result",
+            {
+                "name": "Open Register Objects",
+                "isPaginated": false,
+                "entries": [],
+                "cursor": null
+            }
+        ]
+    ],
+    "opt-out lookup throws": [
+        [
+            "log",
+            "warning",
+            "[ObjectsProvider] Failed to resolve non-searchable schemas, treating all as searchable: {error}",
+            {
+                "error": "opt-out lookup down"
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search requested",
+            {
+                "search_query": {
+                    "@self": {
+                        "schema": 5
+                    }
+                },
+                "has_search": false,
+                "limit": 25,
+                "offset": 0,
+                "schema_chunks": 1
+            }
+        ],
+        [
+            "searchObjectsPaginated",
+            {
+                "@self": {
+                    "schema": 5
+                },
+                "_content_search": true,
+                "_limit": 25,
+                "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search completed",
+            {
+                "results_count": 2,
+                "total_results": 12
+            }
+        ],
+        [
+            "result",
+            {
+                "name": "Open Register Objects",
+                "isPaginated": false,
+                "entries": [
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=5&id=uuid-5-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=5&id=uuid-5-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    }
+                ],
+                "cursor": null
+            }
+        ]
+    ],
+    "register slug schema digit": [
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search requested",
+            {
+                "search_query": {
+                    "@self": {
+                        "register": "zaken",
+                        "schema": 3
+                    }
+                },
+                "has_search": false,
+                "limit": 25,
+                "offset": 0,
+                "schema_chunks": 1
+            }
+        ],
+        [
+            "searchObjectsPaginated",
+            {
+                "@self": {
+                    "register": "zaken",
+                    "schema": 3
+                },
+                "_content_search": true,
+                "_limit": 25,
+                "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search completed",
+            {
+                "results_count": 2,
+                "total_results": 12
+            }
+        ],
+        [
+            "result",
+            {
+                "name": "Open Register Objects",
+                "isPaginated": false,
+                "entries": [
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=3&id=uuid-3-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=3&id=uuid-3-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    }
+                ],
+                "cursor": null
+            }
+        ]
+    ],
+    "schema opted out": [
+        [
+            "result",
+            {
+                "name": "Open Register Objects",
+                "isPaginated": false,
+                "entries": [],
+                "cursor": null
+            }
+        ]
+    ],
+    "schema slug opted out": [
+        [
+            "result",
+            {
+                "name": "Open Register Objects",
+                "isPaginated": false,
+                "entries": [],
+                "cursor": null
+            }
+        ]
+    ],
+    "schema slug resolves": [
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search requested",
+            {
+                "search_query": {
+                    "@self": {
+                        "schema": 2
+                    }
+                },
+                "has_search": false,
+                "limit": 25,
+                "offset": 0,
+                "schema_chunks": 1
+            }
+        ],
+        [
+            "searchObjectsPaginated",
+            {
+                "@self": {
+                    "schema": 2
+                },
+                "_content_search": true,
+                "_limit": 25,
+                "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search completed",
+            {
+                "results_count": 2,
+                "total_results": 12
+            }
+        ],
+        [
+            "result",
+            {
+                "name": "Open Register Objects",
+                "isPaginated": false,
+                "entries": [
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=2&id=uuid-2-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=2&id=uuid-2-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    }
+                ],
+                "cursor": null
+            }
+        ]
+    ],
+    "schema slug unknown": [
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search requested",
+            {
+                "search_query": {
+                    "@self": {
+                        "schema": "nope"
+                    }
+                },
+                "has_search": false,
+                "limit": 25,
+                "offset": 0,
+                "schema_chunks": 1
+            }
+        ],
+        [
+            "searchObjectsPaginated",
+            {
+                "@self": {
+                    "schema": "nope"
+                },
+                "_content_search": true,
+                "_limit": 25,
+                "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search completed",
+            {
+                "results_count": 2,
+                "total_results": 12
+            }
+        ],
+        [
+            "result",
+            {
+                "name": "Open Register Objects",
+                "isPaginated": false,
+                "entries": [
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=0&id=uuid-nope-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=0&id=uuid-nope-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    }
+                ],
+                "cursor": null
+            }
+        ]
+    ],
+    "schema zero": [
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search requested",
+            {
+                "search_query": [],
+                "has_search": false,
+                "limit": 25,
+                "offset": 0,
+                "schema_chunks": 1
+            }
+        ],
+        [
+            "searchObjectsPaginated",
+            {
+                "_content_search": true,
+                "@self": {
+                    "schema": [
+                        1,
+                        2,
+                        3
+                    ]
+                },
+                "_limit": 25,
+                "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search completed",
+            {
+                "results_count": 4,
+                "total_results": 14
+            }
+        ],
+        [
+            "result",
+            {
+                "name": "Open Register Objects",
+                "isPaginated": false,
+                "entries": [
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=1&id=uuid-1-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=1&id=uuid-1-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=2&id=uuid-2-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=2&id=uuid-2-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    }
+                ],
+                "cursor": null
+            }
+        ]
+    ],
+    "scope narrows by register": [
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search requested",
+            {
+                "search_query": [],
+                "has_search": false,
+                "limit": 25,
+                "offset": 0,
+                "schema_chunks": 1
+            }
+        ],
+        [
+            "searchObjectsPaginated",
+            {
+                "_content_search": true,
+                "@self": {
+                    "schema": [
+                        1,
+                        3
+                    ]
+                },
+                "_limit": 25,
+                "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search completed",
+            {
+                "results_count": 4,
+                "total_results": 14
+            }
+        ],
+        [
+            "result",
+            {
+                "name": "Open Register Objects",
+                "isPaginated": false,
+                "entries": [
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=1&id=uuid-1-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=1&id=uuid-1-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=3&id=uuid-3-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=3&id=uuid-3-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    }
+                ],
+                "cursor": null
+            }
+        ]
+    ],
+    "scope narrows to nothing": [
+        [
+            "result",
+            {
+                "name": "Open Register Objects",
+                "isPaginated": false,
+                "entries": [],
+                "cursor": null
+            }
+        ]
+    ],
+    "scope narrows to schema": [
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search requested",
+            {
+                "search_query": [],
+                "has_search": false,
+                "limit": 25,
+                "offset": 0,
+                "schema_chunks": 1
+            }
+        ],
+        [
+            "searchObjectsPaginated",
+            {
+                "_content_search": true,
+                "@self": {
+                    "schema": [
+                        2
+                    ]
+                },
+                "_limit": 25,
+                "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search completed",
+            {
+                "results_count": 2,
+                "total_results": 12
+            }
+        ],
+        [
+            "result",
+            {
+                "name": "Open Register Objects",
+                "isPaginated": false,
+                "entries": [
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=2&id=uuid-2-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=2&id=uuid-2-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    }
+                ],
+                "cursor": null
+            }
+        ]
+    ],
+    "scope unparsed": [
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search requested",
+            {
+                "search_query": [],
+                "has_search": false,
+                "limit": 25,
+                "offset": 0,
+                "schema_chunks": 1
+            }
+        ],
+        [
+            "searchObjectsPaginated",
+            {
+                "_content_search": true,
+                "@self": {
+                    "schema": [
+                        1,
+                        2,
+                        3
+                    ]
+                },
+                "_limit": 25,
+                "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search completed",
+            {
+                "results_count": 4,
+                "total_results": 14
+            }
+        ],
+        [
+            "result",
+            {
+                "name": "Open Register Objects",
+                "isPaginated": false,
+                "entries": [
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=1&id=uuid-1-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=1&id=uuid-1-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=2&id=uuid-2-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=2&id=uuid-2-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    }
+                ],
+                "cursor": null
+            }
+        ]
+    ],
+    "searchable lookup throws": [
+        [
+            "log",
+            "error",
+            "[ObjectsProvider] Failed to resolve searchable schemas, returning no results: {error}",
+            {
+                "error": "searchable lookup down"
+            }
+        ],
+        [
+            "result",
+            {
+                "name": "Open Register Objects",
+                "isPaginated": false,
+                "entries": [],
+                "cursor": null
+            }
+        ]
+    ],
+    "since only": [
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search requested",
+            {
+                "search_query": {
+                    "@self": {
+                        "created": {
+                            "$gte": "2026-01-01"
+                        }
+                    }
+                },
+                "has_search": false,
+                "limit": 25,
+                "offset": 0,
+                "schema_chunks": 1
+            }
+        ],
+        [
+            "searchObjectsPaginated",
+            {
+                "@self": {
+                    "created": {
+                        "$gte": "2026-01-01"
+                    },
+                    "schema": [
+                        1,
+                        2,
+                        3
+                    ]
+                },
+                "_content_search": true,
+                "_limit": 25,
+                "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search completed",
+            {
+                "results_count": 4,
+                "total_results": 14
+            }
+        ],
+        [
+            "result",
+            {
+                "name": "Open Register Objects",
+                "isPaginated": false,
+                "entries": [
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=1&id=uuid-1-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=1&id=uuid-1-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=2&id=uuid-2-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=2&id=uuid-2-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    }
+                ],
+                "cursor": null
+            }
+        ]
+    ],
+    "single chunk fails": [
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search requested",
+            {
+                "search_query": {
+                    "@self": {
+                        "schema": 2
+                    }
+                },
+                "has_search": false,
+                "limit": 25,
+                "offset": 0,
+                "schema_chunks": 1
+            }
+        ],
+        [
+            "searchObjectsPaginated",
+            {
+                "@self": {
+                    "schema": 2
+                },
+                "_content_search": true,
+                "_limit": 25,
+                "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "error",
+            "[ObjectsProvider] OpenRegister search failed for schema chunk {chunk} of {chunks}; the other chunks still answer: {error}",
+            {
+                "chunk": 1,
+                "chunks": 1,
+                "schemas": null,
+                "error": "chunk table broken"
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search completed",
+            {
+                "results_count": 0,
+                "total_results": 0
+            }
+        ],
+        [
+            "result",
+            {
+                "name": "Open Register Objects",
+                "isPaginated": false,
+                "entries": [],
+                "cursor": null
+            }
+        ]
+    ],
+    "term register digit dates": [
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search requested",
+            {
+                "search_query": {
+                    "_search": "zaak",
+                    "@self": {
+                        "register": 7,
+                        "created": {
+                            "$gte": "2026-01-01",
+                            "$lte": "2026-02-01"
+                        }
+                    }
+                },
+                "has_search": true,
+                "limit": 25,
+                "offset": 0,
+                "schema_chunks": 1
+            }
+        ],
+        [
+            "searchObjectsPaginated",
+            {
+                "_search": "zaak",
+                "@self": {
+                    "register": 7,
+                    "created": {
+                        "$gte": "2026-01-01",
+                        "$lte": "2026-02-01"
+                    },
+                    "schema": [
+                        1,
+                        2,
+                        3
+                    ]
+                },
+                "_content_search": true,
+                "_limit": 25,
+                "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search completed",
+            {
+                "results_count": 4,
+                "total_results": 14
+            }
+        ],
+        [
+            "result",
+            {
+                "name": "Open Register Objects",
+                "isPaginated": false,
+                "entries": [
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=1&id=uuid-1-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=1&id=uuid-1-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=2&id=uuid-2-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=2&id=uuid-2-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    }
+                ],
+                "cursor": null
+            }
+        ]
+    ],
+    "until only": [
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search requested",
+            {
+                "search_query": {
+                    "@self": {
+                        "created": {
+                            "$lte": "2026-02-01"
+                        }
+                    }
+                },
+                "has_search": false,
+                "limit": 25,
+                "offset": 0,
+                "schema_chunks": 1
+            }
+        ],
+        [
+            "searchObjectsPaginated",
+            {
+                "@self": {
+                    "created": {
+                        "$lte": "2026-02-01"
+                    },
+                    "schema": [
+                        1,
+                        2,
+                        3
+                    ]
+                },
+                "_content_search": true,
+                "_limit": 25,
+                "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectsProvider] OpenRegister search completed",
+            {
+                "results_count": 4,
+                "total_results": 14
+            }
+        ],
+        [
+            "result",
+            {
+                "name": "Open Register Objects",
+                "isPaginated": false,
+                "entries": [
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=1&id=uuid-1-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=1&id=uuid-1-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/0",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=2&id=uuid-2-0",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    },
+                    {
+                        "thumbnailUrl": "",
+                        "title": "row 1/1",
+                        "subline": "Open Register \u00b7 Unknown Register \u00b7 Unknown Schema",
+                        "resourceUrl": "openregister.objects.show?register=1&schema=2&id=uuid-2-1",
+                        "icon": "icon-openregister",
+                        "rounded": false,
+                        "attributes": []
+                    }
+                ],
+                "cursor": null
+            }
+        ]
+    ]
+}

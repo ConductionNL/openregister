@@ -26,10 +26,16 @@ namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\ViewAlertSweepJob;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\View;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
+use OCA\OpenRegister\Service\Object\QueryHandler;
+use OCA\OpenRegister\Service\Object\SearchReferenceResolver;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\View\ViewObjectQuery;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -40,6 +46,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionClass;
 use ReflectionNamedType;
+use OCA\OpenRegister\BackgroundJob\Support\ViewAlertSweepSources;
+use OCA\OpenRegister\BackgroundJob\Support\ViewAlertSweepPlatform;
+use OCA\OpenRegister\Db\SchemaCatalog;
 
 class ViewAlertCountsTheViewQueryTest extends TestCase {
 
@@ -100,7 +109,7 @@ class ViewAlertCountsTheViewQueryTest extends TestCase {
 			}
 		);
 
-		$job = new ViewAlertSweepJob($this->createMock(ITimeFactory::class), $views, $objects, $users, $dispatcher, new NullLogger());
+		$job = new ViewAlertSweepJob($this->createMock(ITimeFactory::class), new ViewAlertSweepSources($views, $objects, new ViewObjectQuery()), new ViewAlertSweepPlatform($users, $dispatcher, new NullLogger()));
 		$run = new \ReflectionMethod(ViewAlertSweepJob::class, 'run');
 		$run->setAccessible(true);
 		$run->invoke($job, null);
@@ -121,8 +130,13 @@ class ViewAlertCountsTheViewQueryTest extends TestCase {
 			}
 
 			$this->assertInstanceOf(ReflectionNamedType::class, $type);
-			if ($type->getName() === MagicMapper::class) {
+			if (in_array($type->getName(), [MagicMapper::class, MagicMapperInterface::class], true) === true) {
 				$args[] = $this->mapper;
+				continue;
+			}
+
+			if ($type->getName() === QueryHandler::class) {
+				$args[] = $this->realQueryHandler();
 				continue;
 			}
 
@@ -141,6 +155,29 @@ class ViewAlertCountsTheViewQueryTest extends TestCase {
 
 		return $service;
 	}//end realObjectService()
+
+	/**
+	 * The real QueryHandler and reference resolver over this test's mapper.
+	 *
+	 * @return QueryHandler
+	 */
+	private function realQueryHandler(): QueryHandler {
+		$resolver = new SearchReferenceResolver(new SchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->createMock(SchemaMapperInterface::class), tables: $this->createMock(MagicMapperInterface::class)), new NullLogger());
+
+		$args = [];
+		foreach ((new ReflectionClass(QueryHandler::class))->getConstructor()->getParameters() as $param) {
+			$type = $param->getType();
+			$this->assertInstanceOf(ReflectionNamedType::class, $type);
+			$args[] = match (true) {
+				$type->getName() === MagicMapperInterface::class => $this->mapper,
+				$type->getName() === SearchReferenceResolver::class => $resolver,
+				$param->isOptional() === true => $param->getDefaultValue(),
+				default => $this->createMock($type->getName()),
+			};
+		}
+
+		return new QueryHandler(...$args);
+	}//end realQueryHandler()
 
 	/**
 	 * 🔴 The live case: three records behind the view, no alert at gte 4.

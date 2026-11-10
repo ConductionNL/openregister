@@ -32,7 +32,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
@@ -40,10 +40,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
-use OCA\OpenRegister\Db\ApiCallRecord;
-use OCA\OpenRegister\Db\ApiCallRecordMapper;
-use OCA\OpenRegister\Service\ApiVersion\ApiVersion;
-use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue;
+use JsonSerializable;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\ApiCallersControllerServices;
+use OCA\OpenRegister\Db\ApiCallRecordMapperInterface;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogueInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -93,31 +94,67 @@ class ApiCallersController extends Controller {
 	private const MAX_ROWS = 500;
 
 	/**
+	 * The user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * The group manager.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * The logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Reads the caller record.
+	 *
+	 * @var ApiCallRecordMapperInterface
+	 */
+	private readonly ApiCallRecordMapperInterface $records;
+
+	/**
+	 * The declared contract versions.
+	 *
+	 * @var ApiVersionCatalogueInterface
+	 */
+	private readonly ApiVersionCatalogueInterface $catalogue;
+
+	/**
+	 * Reads and writes the declaration.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
 	 * @param IRequest $request The incoming request.
-	 * @param ApiCallRecordMapper $records Reads the caller record.
-	 * @param ApiVersionCatalogue $catalogue The declared contract versions.
-	 * @param IAppConfig $appConfig Reads and writes the declaration.
-	 * @param IUserSession $userSession Names the caller.
-	 * @param IGroupManager $groupManager Answers whether that caller is an administrator.
-	 * @param LoggerInterface $logger Records a read or a write that failed.
+	 * @param ApiCallersControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly ApiCallRecordMapper $records,
-		private readonly ApiVersionCatalogue $catalogue,
-		private readonly IAppConfig $appConfig,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly LoggerInterface $logger,
+		ApiCallersControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->records = $services->records;
+		$this->catalogue = $services->catalogue;
+		$this->appConfig = $services->appConfig;
 
+		$this->userSession = $services->session->userSession;
+		$this->groupManager = $services->session->groupManager;
+		$this->logger = $services->session->logger;
 	}//end __construct()
 
 	/**
@@ -131,7 +168,7 @@ class ApiCallersController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<200|403|500, array<string, mixed>, array<never, never>>
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 *
 	 * @contract tests/Unit/Controller/ApiCallersControllerTest.php
 	 */
@@ -178,7 +215,7 @@ class ApiCallersController extends Controller {
 				'total' => count($rows),
 				'truncated' => (count($rows) === self::MAX_ROWS),
 				'callers' => array_map(
-					static fn (ApiCallRecord $record): array => $record->jsonSerialize(),
+					static fn (JsonSerializable $record): array => $record->jsonSerialize(),
 					$rows
 				),
 			]
@@ -193,7 +230,7 @@ class ApiCallersController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<200|403, array<string, mixed>, array<never, never>>
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md#requirement-two-contract-versions-are-served-at-once-with-a-declared-lifecycle-req-avs-005
+	 * @spec openspec/specs/openapi-generation/spec.md#requirement-two-contract-versions-are-served-at-once-with-a-declared-lifecycle-req-avs-005
 	 *
 	 * @contract tests/Unit/Controller/ApiCallersControllerTest.php
 	 */
@@ -208,7 +245,7 @@ class ApiCallersController extends Controller {
 		return new JSONResponse(
 			data: [
 				'versions' => array_values(array_map(
-					static fn (ApiVersion $version): array => $version->jsonSerialize(),
+					static fn (JsonSerializable $version): array => $version->jsonSerialize(),
 					$this->catalogue->all()
 				)),
 				'currentVersion' => $this->catalogue->current()->id,
@@ -233,7 +270,7 @@ class ApiCallersController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<200|400|403|500, array<string, mixed>, array<never, never>>
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md#requirement-two-contract-versions-are-served-at-once-with-a-declared-lifecycle-req-avs-005
+	 * @spec openspec/specs/openapi-generation/spec.md#requirement-two-contract-versions-are-served-at-once-with-a-declared-lifecycle-req-avs-005
 	 *
 	 * @contract tests/Unit/Controller/ApiCallersControllerTest.php
 	 */
@@ -267,7 +304,7 @@ class ApiCallersController extends Controller {
 		try {
 			$this->appConfig->setValueString(
 				'openregister',
-				ApiVersionCatalogue::CONFIG_KEY,
+				ApiVersionCatalogueInterface::CONFIG_KEY,
 				(string)json_encode(array_values($declared))
 			);
 		} catch (Throwable $e) {
@@ -310,7 +347,7 @@ class ApiCallersController extends Controller {
 	 */
 	private function storedDeclaration(): string {
 		try {
-			return trim((string)$this->appConfig->getValueString('openregister', ApiVersionCatalogue::CONFIG_KEY, ''));
+			return trim((string)$this->appConfig->getValueString('openregister', ApiVersionCatalogueInterface::CONFIG_KEY, ''));
 		} catch (Throwable) {
 			return '';
 		}

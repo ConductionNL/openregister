@@ -30,8 +30,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Listener\ObjectMetricsListener;
-use OCA\OpenRegister\Service\MetricsService;
+use OCA\OpenRegister\Search\Listener\ObjectMetricsListener;
+use OCA\OpenRegister\Search\Service\MetricsService;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\IUser;
@@ -40,12 +40,13 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * @covers \OCA\OpenRegister\Listener\ObjectMetricsListener
- * @covers \OCA\OpenRegister\Service\MetricsService::recordMetric
+ * @covers \OCA\OpenRegister\Search\Listener\ObjectMetricsListener
+ * @covers \OCA\OpenRegister\Search\Service\MetricsService::recordMetric
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Event\ObjectCreatedEvent
  * @uses \OCA\OpenRegister\Event\ObjectDeletedEvent
- * @uses \OCA\OpenRegister\Service\MetricsService
+ * @uses \OCA\OpenRegister\Search\Service\MetricsService
+ * @uses \OCA\OpenRegister\Event\ObjectUpdatedEvent
  */
 class ObjectMetricsListenerTest extends TestCase {
 	/**

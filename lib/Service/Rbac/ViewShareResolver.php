@@ -49,7 +49,7 @@ namespace OCA\OpenRegister\Service\Rbac;
  *
  * @spec openspec/specs/saved-search-views/spec.md
  */
-class ViewShareResolver {
+class ViewShareResolver implements ViewShareResolverInterface {
 
 	/**
 	 * The access levels, widest first.
@@ -108,16 +108,33 @@ class ViewShareResolver {
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function accessFor(array $view, string $userId, array $userGroups): ?string {
-		if ($userId !== '' && (string)($view['owner'] ?? '') === $userId) {
+		return $this->accessOf(view: $view, reach: new ViewerReach(userId: $userId, groups: $userGroups, isAdmin: false));
+	}//end accessFor()
+
+	/**
+	 * The access a view grants a reach: owner, write, read, or null.
+	 *
+	 * The reach's administrator flag is not read here, for the reason
+	 * accessFor() gives.
+	 *
+	 * @param array<string, mixed> $view  The view, as the entity serialises it.
+	 * @param ViewerReach          $reach The caller and their group ids.
+	 *
+	 * @return string|null One of owner, write, read, or null when the view grants nothing.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function accessOf(array $view, ViewerReach $reach): ?string {
+		if ($reach->userId !== '' && (string)($view['owner'] ?? '') === $reach->userId) {
 			return self::ACCESS_OWNER;
 		}
 
-		// The widest share the caller's groups carry. A caller in two groups,
-		// one read and one write, holds write: the shares are ways in, not
-		// ceilings on each other.
+		// The widest share that names the caller or one of their groups. A
+		// caller reached read by name and write by a group holds write: the
+		// shares are ways in, not ceilings on each other.
 		$best = null;
 		foreach ($this->sharesOf(view: $view) as $share) {
-			if (in_array($share['group'], $userGroups, true) === false) {
+			if ($this->shareNames(share: $share, reach: $reach) === false) {
 				continue;
 			}
 
@@ -137,7 +154,40 @@ class ViewShareResolver {
 		}
 
 		return null;
-	}//end accessFor()
+	}//end accessOf()
+
+	/**
+	 * Whether one share names the caller, by user id or by one of their groups.
+	 *
+	 * @param array{group?: string, user?: string, mode: string} $share The share.
+	 * @param ViewerReach                                        $reach The caller and their group ids.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/archive/2026-10-30-saved-view-user-shares/tasks.md#task-1
+	 */
+	private function shareNames(array $share, ViewerReach $reach): bool {
+		if (isset($share['user']) === true) {
+			return $reach->userId !== '' && $share['user'] === $reach->userId;
+		}
+
+		return in_array($share['group'], $reach->groups, true);
+	}//end shareNames()
+
+	/**
+	 * One share's target as a single string, `user:<uid>` or the group id.
+	 *
+	 * @param array{group?: string, user?: string, mode: string} $share The share.
+	 *
+	 * @return string
+	 */
+	private function targetKey(array $share): string {
+		if (isset($share['user']) === true) {
+			return 'user:'.$share['user'];
+		}
+
+		return $share['group'];
+	}//end targetKey()
 
 	/**
 	 * Whether this caller may change the shares, the owner, or delete the view.
@@ -151,12 +201,26 @@ class ViewShareResolver {
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function mayAdminister(array $view, string $userId, bool $isAdmin): bool {
-		if ($isAdmin === true) {
+		return $this->mayAdministerAs(view: $view, reach: new ViewerReach(userId: $userId, groups: [], isAdmin: $isAdmin));
+	}//end mayAdminister()
+
+	/**
+	 * Whether this reach may change the shares, the owner, or delete the view.
+	 *
+	 * @param array<string, mixed> $view  The view.
+	 * @param ViewerReach          $reach The caller and whether they administer the instance.
+	 *
+	 * @return bool True for the owner and for an administrator.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function mayAdministerAs(array $view, ViewerReach $reach): bool {
+		if ($reach->isAdmin === true) {
 			return true;
 		}
 
-		return ($userId !== '' && (string)($view['owner'] ?? '') === $userId);
-	}//end mayAdminister()
+		return ($reach->userId !== '' && (string)($view['owner'] ?? '') === $reach->userId);
+	}//end mayAdministerAs()
 
 	/**
 	 * The fields of an update whose value differs from the stored view.
@@ -204,7 +268,7 @@ class ViewShareResolver {
 				return (bool)$value;
 			case 'sharedWith':
 				$shares = array_map(
-					fn (array $share): string => $share['group'].'|'.$share['mode'],
+					fn (array $share): string => $this->targetKey(share: $share).'|'.$share['mode'],
 					$this->sharesOf(view: ['sharedWith' => $value])
 				);
 				sort($shares);
@@ -235,7 +299,9 @@ class ViewShareResolver {
 	}//end sortedKeys()
 
 	/**
-	 * The fields of an update this caller is not allowed to have sent.
+	 * The fields of an update a caller who does not administer the view is not
+	 * allowed to have sent. An owner or an administrator (mayAdministerAs()) may
+	 * change everything and is not asked about here.
 	 *
 	 * Answering with the REFUSED FIELDS rather than a boolean is deliberate: a
 	 * guard that only says no leaves the endpoint to guess what to say, and the
@@ -244,17 +310,12 @@ class ViewShareResolver {
 	 *
 	 * @param array<string, mixed> $update The fields being written.
 	 * @param string $access The caller's resolved access.
-	 * @param bool $mayAdminister Whether the caller owns it or administers the instance.
 	 *
 	 * @return string[] The refused field names, empty when the update is allowed.
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
-	public function refusedFields(array $update, string $access, bool $mayAdminister): array {
-		if ($mayAdminister === true) {
-			return [];
-		}
-
+	public function refusedFields(array $update, string $access): array {
 		if ($access !== self::ACCESS_WRITE) {
 			// A read member and a stranger may change nothing at all. Every
 			// field they sent is refused, which is what lets the endpoint
@@ -281,106 +342,46 @@ class ViewShareResolver {
 	 * group the OWNER is not in is allowed, on purpose — an administrator
 	 * setting up a department's view is not thereby a member of it.
 	 *
-	 * @param mixed $sharedWith The declared share list.
-	 * @param callable $groupExists Answers whether a group id exists.
+	 * A share names a group or a user, never both. Without a user check no
+	 * user is known, so every user share is refused: the fail-closed default.
+	 *
+	 * @param mixed             $sharedWith The declared share list.
+	 * @param ShareTargetLookup $lookup     Answers whether a group id, and a user id, exists.
 	 *
 	 * @return array<int, array{code: string, message: string}> The findings.
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md
+	 * @spec openspec/changes/archive/2026-10-30-saved-view-user-shares/tasks.md#task-2
 	 */
-	public function validateShares(mixed $sharedWith, callable $groupExists): array {
-		if ($sharedWith === null || $sharedWith === []) {
-			return [];
-		}
-
-		if (is_array($sharedWith) === false) {
-			return [['code' => 'share.not-a-list', 'message' => 'sharedWith must be a list of shares.']];
-		}
-
-		$findings = [];
-		$seen = [];
-		foreach ($sharedWith as $index => $share) {
-			$findings = array_merge(
-				$findings,
-				$this->shareFindings(share: $share, index: $index, groupExists: $groupExists, seen: $seen)
-			);
-		}//end foreach
-
-		return $findings;
+	public function validateShares(mixed $sharedWith, ShareTargetLookup $lookup): array {
+		return (new ViewShareListValidator())->findings(
+			sharedWith: $sharedWith,
+			exists: [
+				'group' => $lookup->groupExists,
+				'user'  => $lookup->userExists ?? static fn (): bool => false,
+			]
+		);
 	}//end validateShares()
 
 	/**
-	 * Findings for ONE declared share.
+	 * The groups a view is shared with, in any mode.
 	 *
-	 * `$seen` carries across the whole list because the duplicate-group finding
-	 * is about the list, not about this entry: two shares with one group is an
-	 * authoring mistake with a silent consequence, since which one wins depends
-	 * on the order they happen to be stored in.
+	 * @param array<string, mixed> $view The view.
 	 *
-	 * @param mixed          $share       The declared share.
-	 * @param string|integer $index       Which share it is.
-	 * @param callable       $groupExists Answers whether a group id exists.
-	 * @param array<string, true> $seen   Groups already shared with, updated in place.
-	 *
-	 * @return array<int, array{code: string, message: string}> The findings.
+	 * @return array<int, string> The group ids.
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
-	private function shareFindings(mixed $share, string|int $index, callable $groupExists, array &$seen): array {
-		if (is_array($share) === false) {
-			return [
-				[
-					'code' => 'share.not-an-object',
-					'message' => 'Share ' . (string)$index . ' is not an object.',
-				],
-			];
-		}
-
-		$group = trim((string)($share['group'] ?? ''));
-		$mode = trim((string)($share['mode'] ?? ''));
-
-		if ($group === '') {
-			return [
-				[
-					'code' => 'share.no-group',
-					'message' => 'Share ' . (string)$index . ' names no group.',
-				],
-			];
-		}
-
-		$findings = [];
-		if (in_array($mode, self::MODES, true) === false) {
-			$findings[] = [
-				'code' => 'share.bad-mode',
-				'message' => 'Share with "' . $group . '" must be read or write, not "' . $mode . '".',
-			];
-		}
-
-		if (isset($seen[$group]) === true) {
-			$findings[] = [
-				'code' => 'share.duplicate-group',
-				'message' => 'The group "' . $group . '" is shared with twice.',
-			];
-		}
-
-		$seen[$group] = true;
-
-		if ($groupExists($group) !== true) {
-			$findings[] = [
-				'code' => 'share.unknown-group',
-				'message' => 'The group "' . $group . '" does not exist.',
-			];
-		}
-
-		return $findings;
-	}//end shareFindings()
+	public function shareGroups(array $view): array {
+		return array_values(array_unique(array_column($this->sharesOf(view: $view), 'group')));
+	}//end shareGroups()
 
 	/**
 	 * The share list of a view, normalised and with the unusable entries gone.
 	 *
 	 * @param array<string, mixed> $view The view.
 	 *
-	 * @return array<int, array{group: string, mode: string}> The shares.
+	 * @return array<int, array{group?: string, user?: string, mode: string}> The shares.
 	 */
 	private function sharesOf(array $view): array {
 		$raw = ($view['sharedWith'] ?? null);
@@ -406,11 +407,18 @@ class ViewShareResolver {
 			}
 
 			$group = trim((string)($share['group'] ?? ''));
+			$user = trim((string)($share['user'] ?? ''));
 			$mode = trim((string)($share['mode'] ?? ''));
-			if ($group === '' || in_array($mode, self::MODES, true) === false) {
-				// An unreadable share grants NOTHING. A mode this resolver does
-				// not know is not "probably read": that is the direction that
+			if (($group === '') === ($user === '') || in_array($mode, self::MODES, true) === false) {
+				// An unreadable share grants NOTHING: one naming both a user and
+				// a group, or neither, or a mode this resolver does not know. An
+				// unknown mode is not "probably read": that is the direction that
 				// admits somebody on a typo.
+				continue;
+			}
+
+			if ($user !== '') {
+				$shares[] = ['user' => $user, 'mode' => $mode];
 				continue;
 			}
 

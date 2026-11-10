@@ -36,7 +36,7 @@ On top of that, each copy has methods the other lacks. OpenConnector: `renderTem
 (3 call sites in `SynchronizationService`), `translateVngFilterOperators` and
 `expandRelations` (both live in `EndpointService`), `translatePartijIdentificatorFilter`,
 plus the private `normaliseMapping`, `findMappingByIdentifier`, `resolveExpandValue`.
-OpenRegister: `applyCast`, `getCachedTemplate`, `invalidateMappingCache`.
+OpenRegister: `applyCast`, `getCachedTemplate`, and the write-path cache flush `MappingMapper::invalidateCache()`.
 
 Two copies of a transformation engine is not merely redundant. A mapping that
 behaves differently depending on which app evaluated it is a data-correctness

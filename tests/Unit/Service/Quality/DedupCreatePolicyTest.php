@@ -28,8 +28,8 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\DuplicateBlockedException;
-use OCA\OpenRegister\Service\Quality\DedupCreatePolicy;
-use OCA\OpenRegister\Service\Quality\DuplicateDetectionService;
+use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicy;
+use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -89,8 +89,10 @@ class DedupCreatePolicyTest extends TestCase {
 			$this->duplicates,
 			$this->userSession,
 			$this->groupManager,
-			$this->auditTrailMapper,
-			$this->createMock(LoggerInterface::class)
+			new \OCA\OpenRegister\Search\Service\Quality\DedupOverrideAudit(
+				$this->auditTrailMapper,
+				$this->createMock(LoggerInterface::class)
+			)
 		);
 	}//end setUp()
 

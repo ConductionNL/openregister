@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Search\SearchIndexMaintenance;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
 use OCP\IAppConfig;
@@ -142,14 +142,50 @@ class SearchIndexMaintenanceTest extends TestCase {
 			->willReturn('openregister_table_1_2');
 
 		return new SearchIndexMaintenance(
-			db: $this->db,
-			registerMapper: $this->registerMapper,
-			magicMapper: $this->magicMapper,
+			stores: new \OCA\OpenRegister\Search\Service\Search\SearchIndexStores($this->db, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), tables: $this->magicMapper)),
 			appConfig: $this->appConfig,
 			config: $this->config,
 			logger: $this->createMock(\Psr\Log\LoggerInterface::class)
 		);
 	}//end makeService()
+
+	/**
+	 * The status reads every table's index names in one query, not one per table.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 *
+	 * @return void
+	 */
+	public function testIndexNamesOfManyTablesAreReadInOneQuery(): void {
+		$this->db->method('getDatabasePlatform')->willReturn($this->createMock(PostgreSQLPlatform::class));
+		$statement = $this->createMock(IPreparedStatement::class);
+		$statement->expects($this->once())->method('execute')
+			->with(['oc_openregister_table_1_2', 'oc_openregister_table_1_3', 'oc_openregister_table_1_4'])
+			->willReturn($this->createMock(IResult::class));
+		$statement->method('fetch')->willReturnOnConsecutiveCalls(
+			['tablename' => 'oc_openregister_table_1_2', 'indexname' => 'idx_a'],
+			['tablename' => 'oc_openregister_table_1_2', 'indexname' => 'idx_b'],
+			['tablename' => 'oc_openregister_table_1_3', 'indexname' => 'idx_c'],
+			false
+		);
+		$this->db->expects($this->once())->method('prepare')->willReturn($statement);
+
+		$service = new SearchIndexMaintenance(
+			stores: new \OCA\OpenRegister\Search\Service\Search\SearchIndexStores($this->db, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), tables: $this->magicMapper)),
+			appConfig: $this->appConfig,
+			config: $this->config,
+			logger: $this->createMock(\Psr\Log\LoggerInterface::class)
+		);
+
+		$this->assertSame(
+			expected: [
+				'openregister_table_1_2' => ['idx_a', 'idx_b'],
+				'openregister_table_1_3' => ['idx_c'],
+				'openregister_table_1_4' => [],
+			],
+			actual: $service->indexNamesFor(tableNames: ['openregister_table_1_2', 'openregister_table_1_3', 'openregister_table_1_4'])
+		);
+	}//end testIndexNamesOfManyTablesAreReadInOneQuery()
 
 	/**
 	 * The scenario the design turns on: search keeps answering, because the

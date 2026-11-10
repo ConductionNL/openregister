@@ -22,10 +22,12 @@ namespace Unit\Service\Interaction;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\Watcher;
-use OCA\OpenRegister\Db\WatcherMapper;
+use OCA\OpenRegister\Notifications\Db\Watcher;
+use OCA\OpenRegister\Notifications\Db\WatcherMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
+use OCA\OpenRegister\Service\Interaction\WatcherCaller;
+use OCA\OpenRegister\Service\Interaction\WatcherStore;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCP\IGroupManager;
@@ -111,13 +113,10 @@ class WatcherServiceTest extends TestCase {
 		$schemaMapper->method('find')->willReturn($this->createMock(originalClassName: Schema::class));
 
 		return new WatcherService(
-			$this->mapper,
-			$session,
-			$groupManager,
-			$schemaMapper,
+			new WatcherStore($this->mapper, $schemaMapper, $this->createMock(originalClassName: LoggerInterface::class)),
+			new WatcherCaller($session, $groupManager),
 			$this->permissions,
-			new ObjectScopeResolver(),
-			$this->createMock(originalClassName: LoggerInterface::class)
+			new ObjectScopeResolver()
 		);
 	}//end makeService()
 
@@ -129,11 +128,86 @@ class WatcherServiceTest extends TestCase {
 	public function testWatchingSubscribesTheCaller(): void {
 		$this->mapper->expects($this->once())
 			->method('subscribe')
-			->with('alice', 'uuid-case-1', 'zaken', 'zaak')
+			->with(self::follow('alice', 'uuid-case-1', 'zaken', 'zaak'), null)
 			->willReturn(new Watcher());
 
 		$this->makeService()->watch($this->makeObject(), 'zaken', 'zaak');
 	}//end testWatchingSubscribesTheCaller()
+
+	/**
+	 * `{"notify": false}` keeps the follow and passes the switch to the row.
+	 *
+	 * @return void
+	 */
+	public function testWatchWithNotifyFalseKeepsTheFollowQuiet(): void {
+		$this->mapper->expects($this->once())
+			->method('subscribe')
+			->with(self::follow('alice', 'uuid-case-1', 'zaken', 'zaak'), false)
+			->willReturn(new Watcher());
+
+		$this->makeService()->watch($this->makeObject(), 'zaken', 'zaak', false);
+	}//end testWatchWithNotifyFalseKeepsTheFollowQuiet()
+
+	/**
+	 * The deprecated star follows quietly when the caller did not follow yet.
+	 *
+	 * @return void
+	 */
+	public function testFollowQuietlyWritesAQuietFollow(): void {
+		$this->mapper->method('findOne')->willReturn(null);
+		$this->mapper->expects($this->once())
+			->method('subscribe')
+			->with(self::follow('alice', 'uuid-case-1', 'zaken', 'zaak'), false)
+			->willReturn(new Watcher());
+
+		$this->makeService()->followQuietly($this->makeObject(), 'zaken', 'zaak');
+	}//end testFollowQuietlyWritesAQuietFollow()
+
+	/**
+	 * Starring a case you already follow does not mute it.
+	 *
+	 * @return void
+	 */
+	public function testStarringAFollowedObjectKeepsItsNotifySetting(): void {
+		$existing = new Watcher();
+		$existing->setNotify(true);
+		$this->mapper->method('findOne')->willReturn($existing);
+		$this->mapper->expects($this->never())->method('subscribe');
+
+		$this->assertTrue(
+			condition: $this->makeService()->followQuietly($this->makeObject(), 'zaken', 'zaak')->notifies()
+		);
+	}//end testStarringAFollowedObjectKeepsItsNotifySetting()
+
+	/**
+	 * An assignee follows with notifications on, whoever the caller is.
+	 *
+	 * @return void
+	 */
+	public function testFollowAssignedSwitchesNotificationsOn(): void {
+		$this->mapper->expects($this->once())
+			->method('subscribe')
+			->with(self::follow('jan', 'uuid-case-1', 'zaken', 'zaak'), true)
+			->willReturn(new Watcher());
+
+		$this->makeService()->followAssigned($this->makeObject(), 'jan', 'zaken', 'zaak');
+	}//end testFollowAssignedSwitchesNotificationsOn()
+
+	/**
+	 * The dispatcher is handed only the follows that notify.
+	 *
+	 * @return void
+	 */
+	public function testWatcherUidsLeaveOutQuietFollowers(): void {
+		$loud = new Watcher();
+		$loud->setUserId('teamlead');
+		$this->mapper->expects($this->once())
+			->method('findNotifyingByObject')
+			->with('uuid-case-1')
+			->willReturn([$loud]);
+
+		$this->assertSame(expected: ['teamlead'], actual: $this->makeService()->watcherUids('uuid-case-1'));
+	}//end testWatcherUidsLeaveOutQuietFollowers()
 
 	/**
 	 * An anonymous caller cannot follow anything.
@@ -207,7 +281,7 @@ class WatcherServiceTest extends TestCase {
 	public function testTheOwnerCanAddAnotherUser(): void {
 		$this->mapper->expects($this->once())
 			->method('subscribe')
-			->with('clerk', 'uuid-case-1')
+			->with(self::follow('clerk', 'uuid-case-1', null, null))
 			->willReturn(new Watcher());
 
 		$this->makeService(uid: 'owner')->addWatcher($this->makeObject(), 'clerk');
@@ -262,14 +336,17 @@ class WatcherServiceTest extends TestCase {
 	 */
 	public function testTheFollowMarkerIsLoadedOncePerRequest(): void {
 		$this->mapper->expects($this->once())
-			->method('uuidsForUser')
-			->willReturn(['uuid-case-1', 'uuid-case-2']);
+			->method('notifyMapForUser')
+			->willReturn(['uuid-case-1' => true, 'uuid-case-2' => false]);
 
 		$service = $this->makeService();
 
 		$this->assertTrue(condition: $service->isWatchedByCaller('uuid-case-1'));
 		$this->assertTrue(condition: $service->isWatchedByCaller('uuid-case-2'));
 		$this->assertFalse(condition: $service->isWatchedByCaller('uuid-case-3'));
+		$this->assertTrue(condition: $service->notifyForCaller('uuid-case-1'));
+		$this->assertFalse(condition: $service->notifyForCaller('uuid-case-2'));
+		$this->assertNull(actual: $service->notifyForCaller('uuid-case-3'));
 	}//end testTheFollowMarkerIsLoadedOncePerRequest()
 
 	/**
@@ -278,7 +355,7 @@ class WatcherServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAnonymousReaderFollowsNothing(): void {
-		$this->mapper->expects($this->never())->method('uuidsForUser');
+		$this->mapper->expects($this->never())->method('notifyMapForUser');
 
 		$this->assertFalse(condition: $this->makeService(uid: null)->isWatchedByCaller('uuid-case-1'));
 	}//end testAnAnonymousReaderFollowsNothing()
@@ -313,4 +390,16 @@ class WatcherServiceTest extends TestCase {
 		$this->assertSame(expected: 3, actual: $service->watcherCount('uuid-case-1'));
 		$this->assertSame(expected: 0, actual: $service->watcherCount('uuid-case-2'));
 	}//end testTheFollowerCountIsLoadedOncePerRequest()
+
+	/**
+	 * An unsaved follow, built the way the mapper's callers build one.
+	 */
+	private static function follow(string $userId, string $objectUuid, ?string $register = null, ?string $schema = null): Watcher {
+		$follow = new Watcher();
+		$follow->setUserId($userId);
+		$follow->setObjectUuid($objectUuid);
+		$follow->setRegister($register);
+		$follow->setSchema($schema);
+		return $follow;
+	}//end follow()
 }//end class
