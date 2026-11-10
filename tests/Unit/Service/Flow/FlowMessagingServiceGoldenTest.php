@@ -23,10 +23,13 @@ use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowMessagingService;
 use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\InAppNotice;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\PushRideAlong;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicy;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
 use OCA\OpenRegister\Notifications\Service\Notification\RateLimiter;
@@ -265,7 +268,8 @@ class FlowMessagingServiceGoldenTest extends TestCase {
 		$resolver = $this->createMock(NotificationRecipientResolver::class);
 		$resolver->method('userExists')->willReturnCallback(fn (string $uid): bool => in_array($uid, $users, true));
 		$resolver->method('groupExists')->willReturnCallback(fn (string $gid): bool => $gid === 'team');
-		$resolver->method('resolveWithDiagnostics')->willReturnCallback(function (array $recipientsSpec, array $data) use ($users): array {
+		$resolver->method('resolveFromSource')->willReturnCallback(function (array $recipientsSpec, RecipientSource $source) use ($users): array {
+			$data = $source->data;
 			if (($recipientsSpec[0]['kind'] ?? '') === 'groups') {
 				return ['uids' => ['alice', 'bob'], 'unresolved' => []];
 			}
@@ -289,6 +293,13 @@ class FlowMessagingServiceGoldenTest extends TestCase {
 		});
 		$sender->method('enqueueWebPush')->willReturnCallback(function (array $recipients, string $ruleId, string $originApp, string $subject, string $message, array $actions, $object): void {
 			$this->record(call: 'nc.webPush', args: [$recipients, $ruleId, $subject, $message, $object->getUuid()]);
+		});
+		$sender->method('notify')->willReturnCallback(function (InAppNotice $notice) {
+			$this->record(call: 'nc.send', args: [$notice->uid, $notice->object->getUuid(), $notice->object->getName(), $notice->rule->name, $notice->content->subject, $notice->content->message]);
+			return self::outcome(recipient: $notice->uid);
+		});
+		$sender->method('enqueuePush')->willReturnCallback(function (PushRideAlong $push): void {
+			$this->record(call: 'nc.webPush', args: [$push->recipients, $push->rule->name, $push->content->subject, $push->content->message, $push->object->getUuid()]);
 		});
 		return $sender;
 	}//end ncSender()

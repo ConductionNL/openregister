@@ -75,15 +75,12 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 	/**
 	 * Archive an object.
 	 *
-	 * @param string $identifier Object id, uuid, slug or uri.
-	 * @param string|null $reason Why it is being archived.
-	 * @param string|null $register The register the url names, so an object in
-	 *                              another one is not reachable from this address.
-	 * @param string|null $schema The schema the url names, checked the same way.
+	 * Kept for the apps that call it by class name; archiveWith takes the request.
 	 *
-	 * @throws ArchiveNotOfferedException When the schema does not declare archiving.
-	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the caller lacks `update`.
-	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such object exists.
+	 * @param string      $identifier Object id, uuid, slug or uri.
+	 * @param string|null $reason     Why it is being archived.
+	 * @param string|null $register   The register the url names.
+	 * @param string|null $schema     The schema the url names.
 	 *
 	 * @return array{uuid: string|null, archived: array|null} The stored marker.
 	 *
@@ -95,7 +92,7 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 		?string $register = null,
 		?string $schema = null,
 	): array {
-		return $this->archiveRequested(request: new ObjectStateRequest(identifier: $identifier, reason: $reason, register: $register, schema: $schema));
+		return $this->archiveWith(request: new ObjectStateRequest(identifier: $identifier, reason: $reason, register: $register, schema: $schema));
 	}//end archive()
 
 	/**
@@ -103,11 +100,15 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 	 *
 	 * @param ObjectStateRequest $request The object, its address and the reason.
 	 *
+	 * @throws ArchiveNotOfferedException When the schema does not declare archiving.
+	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the caller lacks `update`.
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such object exists.
+	 *
 	 * @return array{uuid: string|null, archived: array|null} The uuid and the archive marker.
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
-	private function archiveRequested(ObjectStateRequest $request): array {
+	public function archiveWith(ObjectStateRequest $request): array {
 		$context = $this->resolveAndAuthorize(request: $request);
 		$object = $context['object'];
 
@@ -131,20 +132,17 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 			'uuid' => $saved->getUuid(),
 			'archived' => $saved->getArchived(),
 		];
-	}//end archiveRequested()
+	}//end archiveWith()
 
 	/**
 	 * Restore an object from the archive.
 	 *
-	 * @param string $identifier Object id, uuid, slug or uri.
-	 * @param string|null $reason Why it is being restored.
-	 * @param string|null $register The register the url names, so an object in
-	 *                              another one is not reachable from this address.
-	 * @param string|null $schema The schema the url names, checked the same way.
+	 * Kept for the apps that call it by class name; unarchiveWith takes the request.
 	 *
-	 * @throws ArchiveNotOfferedException When the schema does not declare archiving.
-	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the caller lacks `update`.
-	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such object exists.
+	 * @param string      $identifier Object id, uuid, slug or uri.
+	 * @param string|null $reason     Why it is being restored.
+	 * @param string|null $register   The register the url names.
+	 * @param string|null $schema     The schema the url names.
 	 *
 	 * @return array{uuid: string|null, archived: null} The cleared marker.
 	 *
@@ -156,7 +154,7 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 		?string $register = null,
 		?string $schema = null,
 	): array {
-		return $this->unarchiveRequested(request: new ObjectStateRequest(identifier: $identifier, reason: $reason, register: $register, schema: $schema));
+		return $this->unarchiveWith(request: new ObjectStateRequest(identifier: $identifier, reason: $reason, register: $register, schema: $schema));
 	}//end unarchive()
 
 	/**
@@ -164,11 +162,15 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 	 *
 	 * @param ObjectStateRequest $request The object, its address and the reason.
 	 *
+	 * @throws ArchiveNotOfferedException When the schema does not declare archiving.
+	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the caller lacks `update`.
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such object exists.
+	 *
 	 * @return array{uuid: string|null, archived: null} The uuid; the marker is gone.
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
-	private function unarchiveRequested(ObjectStateRequest $request): array {
+	public function unarchiveWith(ObjectStateRequest $request): array {
 		// A read by identifier is deliberately unaffected by the archive: the
 		// exclusion is a property of the LIST, not of the record. That is what
 		// keeps a `$ref` into an archived contact resolving, and it is also
@@ -197,7 +199,7 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 			'uuid' => $saved->getUuid(),
 			'archived' => null,
 		];
-	}//end unarchiveRequested()
+	}//end unarchiveWith()
 
 	/**
 	 * Freeze the object a request names.
@@ -240,15 +242,12 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 	/**
 	 * Unfreeze an object.
 	 *
-	 * @param string $identifier Object id, uuid, slug or uri.
-	 * @param string|null $reason Why it is being unfrozen.
-	 * @param string|null $register The register the url names, so an object in
-	 *                              another one is not reachable from this address.
-	 * @param string|null $schema The schema the url names, checked the same way.
+	 * Kept for the apps that call it by class name; unfreezeWith takes the request.
 	 *
-	 * @throws ArchiveNotOfferedException When the schema does not declare archiving.
-	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the caller lacks `update`.
-	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such object exists.
+	 * @param string      $identifier Object id, uuid, slug or uri.
+	 * @param string|null $reason     Why it is being unfrozen.
+	 * @param string|null $register   The register the url names.
+	 * @param string|null $schema     The schema the url names.
 	 *
 	 * @return array{uuid: string|null, frozen: null} The cleared marker.
 	 *
@@ -260,7 +259,7 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 		?string $register = null,
 		?string $schema = null,
 	): array {
-		return $this->unfreezeRequested(request: new ObjectStateRequest(identifier: $identifier, reason: $reason, register: $register, schema: $schema));
+		return $this->unfreezeWith(request: new ObjectStateRequest(identifier: $identifier, reason: $reason, register: $register, schema: $schema));
 	}//end unfreeze()
 
 	/**
@@ -268,11 +267,15 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 	 *
 	 * @param ObjectStateRequest $request The object, its address and the reason.
 	 *
+	 * @throws ArchiveNotOfferedException When the schema does not declare archiving.
+	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the caller lacks `update`.
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such object exists.
+	 *
 	 * @return array{uuid: string|null, frozen: null} The uuid; the marker is gone.
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
-	private function unfreezeRequested(ObjectStateRequest $request): array {
+	public function unfreezeWith(ObjectStateRequest $request): array {
 		// A frozen object never left the working views, so the ordinary lookup
 		// still finds it and no archive lens is needed here.
 		$context = $this->resolveAndAuthorize(request: $request);
@@ -297,7 +300,7 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 			'uuid' => $saved->getUuid(),
 			'frozen' => null,
 		];
-	}//end unfreezeRequested()
+	}//end unfreezeWith()
 
 	/**
 	 * Find the object, refuse a schema that does not offer archiving, and

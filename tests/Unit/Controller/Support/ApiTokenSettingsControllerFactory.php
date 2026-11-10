@@ -40,12 +40,14 @@ final class ApiTokenSettingsControllerFactory {
 		return [
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ApiTokenSettingsControllerServices(
-				config: $config,
+				reporting: new \OCA\OpenRegister\Controller\Support\ConnectionReporting(
+					connectionReporter: $connectionReporter,
+					appConfig: $config,
+				),
 				settingsService: $settingsService,
 				clientService: $clientService,
-				connectionReporter: $connectionReporter,
+				logger: $logger,
 			),
-			$logger,
 		];
 	}
 

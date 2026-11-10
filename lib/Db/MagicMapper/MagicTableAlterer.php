@@ -22,8 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
-use OCP\IDBConnection;
-use Psr\Log\LoggerInterface;
 
 /**
  * Bring an existing magic table in line with its schema.
@@ -34,15 +32,13 @@ final class MagicTableAlterer {
 	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection          $db     The connection.
-	 * @param LoggerInterface        $logger Receives the outcome.
-	 * @param MagicNumberColumnSizes $sizes  Forgets the sizes of a widened table.
+	 * @param MagicTableSql          $sql   The connection, the table prefix and the logger.
+	 * @param MagicNumberColumnSizes $sizes Forgets the sizes of a widened table.
 	 *
 	 * @spec openspec/specs/magic-table-columns/spec.md
 	 */
 	public function __construct(
-		private readonly IDBConnection $db,
-		private readonly LoggerInterface $logger,
+		private readonly MagicTableSql $sql,
 		private readonly MagicNumberColumnSizes $sizes,
 	) {
 	}//end __construct()
@@ -60,7 +56,7 @@ final class MagicTableAlterer {
 		$changes = $this->applySteps(sync: $sync);
 
 		// A DDL change to a live table is worth a permanent record.
-		$this->logger->info(
+		$this->sql->logger->info(
 			message: '[MagicMapper] Successfully updated table structure',
 			context: ['tableName' => $sync->tableName] + $changes
 		);
@@ -101,10 +97,10 @@ final class MagicTableAlterer {
 	 * @return array Column statistics.
 	 */
 	private function applySteps(TableStructureSync $sync): array {
-		$nullability = new MagicColumnNullability(ddl: $this->runner(), logger: $this->logger);
-		$obsolete = new MagicObsoleteColumns(ddl: $this->runner(), logger: $this->logger);
+		$nullability = new MagicColumnNullability(ddl: $this->runner(), logger: $this->sql->logger);
+		$obsolete = new MagicObsoleteColumns(ddl: $this->runner(), logger: $this->sql->logger);
 
-		$added = (new MagicColumnAdder(db: $this->db, logger: $this->logger))->addMissing(sync: $sync);
+		$added = (new MagicColumnAdder(db: $this->sql->db, logger: $this->sql->logger))->addMissing(sync: $sync);
 		$deRequired = $nullability->apply(change: new MagicNullabilityChange(sync: $sync, nullable: true));
 		$reRequired = $nullability->apply(change: new MagicNullabilityChange(sync: $sync, nullable: false));
 		$dropped = $obsolete->dropDuplicates(sync: $sync);
@@ -124,7 +120,7 @@ final class MagicTableAlterer {
 	 * @return MagicDdlRunner
 	 */
 	private function runner(): MagicDdlRunner {
-		return new MagicDdlRunner(db: $this->db, logger: $this->logger);
+		return new MagicDdlRunner(db: $this->sql->db, logger: $this->sql->logger);
 	}//end runner()
 
 	/**
@@ -133,6 +129,6 @@ final class MagicTableAlterer {
 	 * @return MagicColumnRetyper
 	 */
 	private function retyper(): MagicColumnRetyper {
-		return new MagicColumnRetyper(ddl: $this->runner(), logger: $this->logger);
+		return new MagicColumnRetyper(ddl: $this->runner(), logger: $this->sql->logger);
 	}//end retyper()
 }//end class

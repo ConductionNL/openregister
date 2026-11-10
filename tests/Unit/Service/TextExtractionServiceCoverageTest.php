@@ -928,9 +928,11 @@ class TextExtractionServiceCoverageTest extends TestCase {
 			->willThrowException(new Exception('Risk level computation failed'));
 
 		// Should not throw — warning is logged.
+		$this->logger->expects($this->once())
+			->method('warning')
+			->with('[TextExtractionService] Failed to update risk level', $this->anything());
+
 		$this->service->extractFile(1);
-		// If we reach here, no exception was thrown.
-		$this->assertTrue(true);
 	}
 
 	/**
@@ -970,9 +972,11 @@ class TextExtractionServiceCoverageTest extends TestCase {
 			->willThrowException(new Exception('Entity handler failure'));
 
 		// Should not throw — error is logged.
+		$this->logger->expects($this->once())
+			->method('error')
+			->with('[TextExtractionService] Entity extraction failed', $this->anything());
+
 		$this->service->extractFile(1);
-		// If we reach here, no exception was thrown.
-		$this->assertTrue(true);
 	}
 
 	// ================================================================
