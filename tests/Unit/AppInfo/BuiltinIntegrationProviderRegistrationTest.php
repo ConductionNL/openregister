@@ -141,8 +141,6 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCA\OpenRegister\Db\FormLinkMapperInterface',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\SharesProvider' => [
-			'OCP\IDBConnection',
-			'OCP\App\IAppManager',
 			'OCP\IL10N',
 		],
 		'OCA\OpenRegister\Service\ShareLinkService' => [
