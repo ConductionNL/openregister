@@ -30,6 +30,17 @@ import SectionStatus from '../../../components/shared/SectionStatus.vue'
 import { sectionStatus } from '../../../composables/sectionStatus.js'
 
 /**
+ * Ask the API for the signed-in user's data export.
+ *
+ * @return {Promise<object>} The response; its data is the export blob
+ */
+function fetchExport() {
+	return axios.get(generateUrl('/apps/openregister/api/user/me/export'), {
+		responseType: 'blob',
+	})
+}
+
+/**
  * Let the browser save the export as `openregister-export-<today>.json`.
  *
  * @param {BlobPart} data The export
@@ -74,10 +85,7 @@ export default {
 			this.loading = true
 			this.message = ''
 			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/user/me/export'),
-					{ responseType: 'blob' },
-				)
+				const response = await fetchExport()
 				saveExportFile(response.data)
 				this.setStatus(t('openregister', 'Export downloaded successfully'))
 			} catch (e) {

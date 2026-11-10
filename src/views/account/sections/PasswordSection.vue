@@ -95,13 +95,7 @@ export default {
 			this.loading = true
 			this.message = ''
 			try {
-				const { data } = await axios.put(
-					generateUrl('/apps/openregister/api/user/me/password'),
-					{
-						currentPassword: this.currentPassword,
-						newPassword: this.newPassword,
-					},
-				)
+				const { data } = await this.sendPasswordChange()
 				this.passwordChanged(data)
 			} catch (e) {
 				this.setStatusError(
@@ -111,6 +105,22 @@ export default {
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Send the current and the new password to the API.
+		 *
+		 * @spec openspec/specs/account-self-service/spec.md
+		 * @return {Promise<object>} The response
+		 */
+		sendPasswordChange() {
+			return axios.put(
+				generateUrl('/apps/openregister/api/user/me/password'),
+				{
+					currentPassword: this.currentPassword,
+					newPassword: this.newPassword,
+				},
+			)
 		},
 
 		/**
