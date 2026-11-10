@@ -16,6 +16,7 @@ use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
@@ -395,10 +396,8 @@ class PartyControllerTest extends TestCase {
 			->with(
 				$this->isInstanceOf(Schema::class),
 				'update',
-				null,
-				'marleen',
-				true,
-				$object
+				new PermissionCheckOptions(objectOwner: 'marleen', object: $object),
+				true
 			);
 		$this->roles->method('addParty')->willReturn($this->link(partyUuid: 'party-a'));
 
