@@ -21,6 +21,43 @@ function withSelectedFirst(selected, found) {
 }
 
 /**
+ * A Nextcloud group id as a picker option with a user count.
+ *
+ * @param {string} groupId The group id.
+ * @return {{id: string, name: string, userCount: number}} The option.
+ */
+function countedGroup(groupId) {
+	return { id: groupId, name: groupId, userCount: 0 }
+}
+
+/**
+ * Ask Nextcloud for the groups matching a search.
+ *
+ * @param {string} query The search query.
+ * @return {Promise<Response>} The OCS response.
+ */
+function fetchGroupsMatching(query) {
+	return fetch(
+		`/ocs/v1.php/cloud/groups?format=json&search=${encodeURIComponent(query)}`,
+		{ headers: OCS_HEADERS },
+	)
+}
+
+/**
+ * Offer the found groups on the picker, after the selected ones; nothing
+ * changes when the answer named no groups.
+ *
+ * @param {object} vm The component: `availableGroups` and `selectedGroups`.
+ * @param {Array<object>|undefined} groups The found groups as picker options.
+ * @return {void}
+ */
+function offerGroups(vm, groups) {
+	if (groups) {
+		vm.availableGroups = withSelectedFirst(vm.selectedGroups, groups)
+	}
+}
+
+/**
  * Query the Nextcloud groups matching a search and offer them on the picker.
  *
  * @param {object} vm The component: `availableGroups`, `selectedGroups` and `loadingGroups`.
@@ -30,18 +67,10 @@ function withSelectedFirst(selected, found) {
 async function runGroupSearch(vm, search) {
 	vm.loadingGroups = true
 	try {
-		const response = await fetch(
-			`/ocs/v1.php/cloud/groups?format=json&search=${encodeURIComponent(search.query)}`,
-			{ headers: OCS_HEADERS },
-		)
+		const response = await fetchGroupsMatching(search.query)
 		if (response.ok) {
 			const data = await response.json()
-			if (data.ocs?.data?.groups) {
-				vm.availableGroups = withSelectedFirst(
-					vm.selectedGroups,
-					data.ocs.data.groups.map(search.toGroup),
-				)
-			}
+			offerGroups(vm, data.ocs?.data?.groups?.map(search.toGroup))
 		} else if (search.warnOnRefusal) {
 			// eslint-disable-next-line no-console
 			console.warn('Failed to search groups:', response.statusText)
@@ -95,11 +124,7 @@ export async function loadNextcloudGroupsInto(store) {
 		if (response.ok) {
 			const data = await response.json()
 			if (data.ocs?.data?.groups) {
-				store.nextcloudGroups = data.ocs.data.groups.map((groupId) => ({
-					id: groupId,
-					name: groupId,
-					userCount: 0,
-				}))
+				store.nextcloudGroups = data.ocs.data.groups.map(countedGroup)
 			}
 		}
 	} catch (error) {
