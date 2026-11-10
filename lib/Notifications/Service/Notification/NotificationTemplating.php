@@ -65,7 +65,7 @@ class NotificationTemplating implements NotificationTemplatingInterface {
 	}//end __construct()
 
 	/**
-	 * Interpolate `{{ key }}` placeholders in a template.
+	 * Fill the `{{ key }}` placeholders of a template.
 	 *
 	 * Data keys win over context keys. A UUID-shaped data value is resolved to
 	 * the related object's display name when possible, so `{{client}}` reads
@@ -97,29 +97,16 @@ class NotificationTemplating implements NotificationTemplatingInterface {
 	 * It renders in the first language of $languages it has, else its first
 	 * value, so `Task changed: {{subject}}` no longer keeps the placeholder.
 	 *
-	 * @param string $template The template carrying `{{ key }}` placeholders.
-	 * @param array<string, mixed> $data The primary data (object data, or a flow item's json).
-	 * @param array<string, mixed> $context Secondary lookup values.
-	 * @param array<int, string|null> $languages Language chain for a language map, first wins (recipient, then register default).
+	 * @param string            $template The template carrying `{{ key }}` placeholders.
+	 * @param PlaceholderValues $values   The primary data (object data, or a flow item's json), the secondary
+	 *                                    lookup values and the language chain for a language map.
 	 *
 	 * @return string The interpolated string.
 	 *
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/notificatie-engine/spec.md#requirement-a-translatable-value-must-fill-its-placeholder
 	 */
-	public function interpolate(string $template, array $data, array $context, array $languages = []): string {
-		return $this->render(template: $template, values: new PlaceholderValues(data: $data, context: $context, languages: $languages));
-	}//end interpolate()
-
-	/**
-	 * Fill every placeholder of a template from the values; an unanswered one stays as written.
-	 *
-	 * @param string            $template The template carrying `{{ key }}` placeholders.
-	 * @param PlaceholderValues $values   The data, the context and the language chain.
-	 *
-	 * @return string The interpolated string.
-	 */
-	private function render(string $template, PlaceholderValues $values): string {
+	public function render(string $template, PlaceholderValues $values): string {
 		return preg_replace_callback(
 			self::PLACEHOLDER,
 			fn (array $matches): string => $this->fillPlaceholder(matches: $matches, values: $values),

@@ -69,11 +69,7 @@ class NotificationPlaceholdersAnsweredTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnansweredKeyIsLeftInTheText(): void {
-		$rendered = $this->templating()->interpolate(
-			template: 'Bewaartermijn: {{skippedCount}} records overgeslagen',
-			data: [],
-			context: []
-		);
+		$rendered = $this->templating()->render(template: 'Bewaartermijn: {{skippedCount}} records overgeslagen', values: new PlaceholderValues(data: [], context: []));
 
 		// 🔴 THE ASSERTION THIS FILE EXISTS FOR. The old behaviour produced
 		// "Bewaartermijn:  records overgeslagen", which reads as a typo.
@@ -98,21 +94,17 @@ class NotificationPlaceholdersAnsweredTest extends TestCase {
 
 		$this->assertSame(
 			'Bewaartermijn: 12 records overgeslagen',
-			$templating->interpolate(
-				template: 'Bewaartermijn: {{skippedCount}} records overgeslagen',
-				data: ['skippedCount' => 12],
-				context: []
-			)
+			$templating->render(template: 'Bewaartermijn: {{skippedCount}} records overgeslagen', values: new PlaceholderValues(data: ['skippedCount' => 12], context: []))
 		);
 
 		// Context answers too, and data wins over context.
 		$this->assertSame(
 			'a',
-			$templating->interpolate(template: '{{k}}', data: ['k' => 'a'], context: ['k' => 'b'])
+			$templating->render(template: '{{k}}', values: new PlaceholderValues(data: ['k' => 'a'], context: ['k' => 'b']))
 		);
 		$this->assertSame(
 			'b',
-			$templating->interpolate(template: '{{k}}', data: [], context: ['k' => 'b'])
+			$templating->render(template: '{{k}}', values: new PlaceholderValues(data: [], context: ['k' => 'b']))
 		);
 	}//end testAnAnsweredKeyStillRenders()
 
@@ -124,11 +116,7 @@ class NotificationPlaceholdersAnsweredTest extends TestCase {
 	public function testANonScalarIsUnansweredRatherThanBlank(): void {
 		$this->assertSame(
 			'{{k}}',
-			$this->templating()->interpolate(
-				template: '{{k}}',
-				data: ['k' => ['not', 'scalar']],
-				context: []
-			)
+			$this->templating()->render(template: '{{k}}', values: new PlaceholderValues(data: ['k' => ['not', 'scalar']], context: []))
 		);
 	}//end testANonScalarIsUnansweredRatherThanBlank()
 
@@ -168,7 +156,7 @@ class NotificationPlaceholdersAnsweredTest extends TestCase {
 		$data = ['scalar' => 'a', 'nonScalar' => ['x']];
 		$context = ['fromContext' => 'c'];
 
-		$rendered = $templating->interpolate(template: $template, data: $data, context: $context);
+		$rendered = $templating->render(template: $template, values: new PlaceholderValues(data: $data, context: $context));
 
 		foreach ($templating->unanswered(template: $template, values: new PlaceholderValues(data: $data, context: $context)) as $key) {
 			$this->assertStringContainsString(

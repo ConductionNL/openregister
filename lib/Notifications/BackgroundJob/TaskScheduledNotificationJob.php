@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\TaskInboxOrder;
 use OCA\OpenRegister\Db\TaskInboxSelection;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterEvaluator;
+use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterTarget;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapter;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -223,7 +224,7 @@ class TaskScheduledNotificationJob extends TimedJob {
 		$adapter = new TaskObjectAdapter(task: $task, row: $this->candidates->inbox->enrich(task: $task));
 		$payload = ($adapter->getObject() ?? []);
 
-		if ($this->candidates->filters->matches(objectData: $payload, filter: $run->sweep->filter, now: $run->nowDt) === false) {
+		if ($this->candidates->filters->matchesTarget(filter: $run->sweep->filter, target: new ScheduledFilterTarget(objectData: $payload, now: $run->nowDt)) === false) {
 			return;
 		}
 

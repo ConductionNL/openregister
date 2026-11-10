@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
+use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterTarget;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\ICache;
@@ -442,7 +443,7 @@ final class ScheduledNotificationJob extends TimedJob {
 		}
 
 		$objectData = (array)($object->getObject() ?? []);
-		if ($this->sources->filterEvaluator->matches(objectData: $objectData, filter: $fire->filter, now: $fire->nowDt) === true) {
+		if ($this->sources->filterEvaluator->matchesTarget(filter: $fire->filter, target: new ScheduledFilterTarget(objectData: $objectData, now: $fire->nowDt)) === true) {
 			$fire->matched++;
 			$this->fireOnMatch(fire: $fire, object: $object);
 		}
