@@ -297,7 +297,7 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 	 */
 	private function built(array $args): SaveObjects {
 		return new SaveObjects(
-			stores: new BulkSaveStores(objectEntityMapper: $args['objectEntityMapper'], schemaMapper: $args['schemaMapper'], registerMapper: $args['registerMapper'], saveHandler: $args['saveHandler']),
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $args['registerMapper'], schemas: $args['schemaMapper'], tables: $args['objectEntityMapper']), saveHandler: $args['saveHandler']),
 			session: new BulkSaveSession(userSession: $args['userSession'], organisationService: $args['organisationService'], groupManager: ($args['groupManager'] ?? null)),
 			reporting: new BulkSaveReporting(logger: $args['logger']),
 			checks: new BulkRowChecks(permissionHandler: ($args['permissionHandler'] ?? null), validateHandler: ($args['validateHandler'] ?? null), rowRules: ($args['rowRules'] ?? null))
