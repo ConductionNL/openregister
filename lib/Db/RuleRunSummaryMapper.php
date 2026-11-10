@@ -24,7 +24,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use DateTime;
 use OCA\OpenRegister\Db\RuleRunSummary\RuleEvaluation;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
@@ -169,30 +168,20 @@ class RuleRunSummaryMapper extends QBMapper implements RuleRunSummaryMapperInter
 	 * an error are always written, because those are the two things an
 	 * administrator is reading the summary for.
 	 *
-	 * @param string $ruleId The derived rule id.
-	 * @param string $schemaSlug The schema the rule is declared on.
-	 * @param string $verdict The verdict reached.
-	 * @param DateTime $moment When the evaluation happened.
-	 * @param string|null $error The message, when the verdict was an error.
+	 * @param RuleRun        $run        The run: its derived rule id and the schema the rule is declared on.
+	 * @param RuleEvaluation $evaluation The verdict reached, when, and the message of an error.
 	 *
 	 * @return RuleRunSummary The stored summary, written or not.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function record(
-		string $ruleId,
-		string $schemaSlug,
-		string $verdict,
-		DateTime $moment,
-		string|null $error = null,
-	): RuleRunSummary {
-		$summary = $this->findOrStart(ruleId: $ruleId, schemaSlug: $schemaSlug);
-		$evaluation = new RuleEvaluation(verdict: $verdict, moment: $moment, error: $error);
+	public function record(RuleRun $run, RuleEvaluation $evaluation): RuleRunSummary {
+		$summary = $this->findOrStart(ruleId: $run->getRuleId(), schemaSlug: $run->getSchemaSlug());
 		if ($this->worthWriting(summary: $summary, evaluation: $evaluation) === false) {
 			return $summary;
 		}
 
-		$summary->setSchemaSlug($schemaSlug);
+		$summary->setSchemaSlug($run->getSchemaSlug());
 		return $this->persist(summary: $this->applyEvaluation(summary: $summary, evaluation: $evaluation));
 
 	}//end record()
