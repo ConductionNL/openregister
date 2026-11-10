@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Db\MagicMapper\TableSearch;
@@ -6273,7 +6274,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 		}
 
-		return $this->rbacHandler->buildRbacRowPredicateSql(schema: $schema, action: 'read', tableName: $tableName);
+		return $this->rbacHandler->buildRbacRowPredicateSql(call: (new RbacAccessCall(schema: $schema))->onTable(tableName: $tableName));
 	}//end rbacRowPredicateSql()
 
 	/**
