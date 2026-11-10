@@ -584,6 +584,15 @@ interface AuditTrailMapperInterface {
 	): AuditTrail;
 
 	/**
+	 * Record a non-CRUD action on one object, with an explicit actor when one is named.
+	 *
+	 * @param AuditTrail\ObjectAuditEvent $event The object, action, context, and the explicit actor and address.
+	 *
+	 * @return AuditTrail The created audit trail entry
+	 */
+	public function recordObjectEvent(AuditTrail\ObjectAuditEvent $event): AuditTrail;
+
+	/**
 	 * Create one immutable, hash-chained audit record for an MCP tool
 	 * invocation (ADR-063 chain 2/3, EU AI Act art.12/14).
 	 *

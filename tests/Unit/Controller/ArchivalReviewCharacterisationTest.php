@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\Archival\DestructionService;
 use OCA\OpenRegister\Service\Archival\LegalHoldService;
 use OCA\OpenRegister\Service\Archival\ReviewOutcomeService;
 use OCA\OpenRegister\Service\Archival\ReviewerAnswer;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ArchivalControllerFactory;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
@@ -176,12 +177,12 @@ class ArchivalReviewCharacterisationTest extends TestCase {
 				$this->calls[] = 'save';
 			}
 		);
-		$this->audit->method('createAuditTrailEntry')->willReturnCallback(
+		$this->audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context = []) {
 				$this->calls[] = 'audit:' . $action . ':' . json_encode($context);
 				return new AuditTrail();
 			}
-		);
+		));
 	}
 
 	public function testAnAnswerIsCarriedOutThenSavedThenAudited(): void {
@@ -235,7 +236,7 @@ class ArchivalReviewCharacterisationTest extends TestCase {
 		$this->lists->method('find')->willReturn($this->listObject());
 		$this->withParams(['answer' => 'approve']);
 		$this->lists->expects($this->never())->method('save');
-		$this->audit->expects($this->never())->method('createAuditTrailEntry');
+		$this->audit->expects($this->never())->method('recordObjectEvent');
 
 		$response = $this->controller->decideEntry('dl-1', 'obj-1');
 
@@ -252,7 +253,7 @@ class ArchivalReviewCharacterisationTest extends TestCase {
 		$this->withParams(['answer' => 'retain', 'reason' => 'x']);
 		$this->outcomes->method('apply')->willThrowException(new InvalidArgumentException('A retained record needs a new date'));
 		$this->lists->expects($this->never())->method('save');
-		$this->audit->expects($this->never())->method('createAuditTrailEntry');
+		$this->audit->expects($this->never())->method('recordObjectEvent');
 
 		$response = $this->controller->decideEntry('dl-1', 'obj-1');
 
@@ -266,7 +267,7 @@ class ArchivalReviewCharacterisationTest extends TestCase {
 		$this->withParams(['answer' => 'transfer', 'reason' => 'x']);
 		$this->outcomes->method('apply')->willThrowException(new RuntimeException('e-Depot list could not be made'));
 		$this->lists->expects($this->never())->method('save');
-		$this->audit->expects($this->never())->method('createAuditTrailEntry');
+		$this->audit->expects($this->never())->method('recordObjectEvent');
 		$this->logger->expects($this->once())->method('error')
 			->with('[ArchivalController] Review answer could not be carried out: e-Depot list could not be made');
 
@@ -362,7 +363,7 @@ class ArchivalReviewCharacterisationTest extends TestCase {
 		$this->signIn('archivaris');
 		$this->withParams(['reason' => 'Trying']);
 		$this->recordUnderNomination();
-		$this->audit->expects($this->never())->method('createAuditTrailEntry');
+		$this->audit->expects($this->never())->method('recordObjectEvent');
 		$this->nominations->method('recompute')->willReturn(
 			['status' => ArchivalNominationService::STATUS_NOT_APPLICABLE, 'unnominatableReason' => 'no archive block']
 		);
@@ -385,7 +386,7 @@ class ArchivalReviewCharacterisationTest extends TestCase {
 		$this->recordUnderNomination();
 		$this->nominations->method('nominate')->willReturn(['status' => ArchivalNominationService::STATUS_NOMINATED]);
 		$this->objectMapper->method('update')->willThrowException(new RuntimeException('db down'));
-		$this->audit->expects($this->never())->method('createAuditTrailEntry');
+		$this->audit->expects($this->never())->method('recordObjectEvent');
 		$this->logger->expects($this->once())->method('error')
 			->with('[ArchivalController] Could not recompute the nomination for obj-1: db down');
 

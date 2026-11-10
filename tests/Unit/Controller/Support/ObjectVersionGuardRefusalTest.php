@@ -119,7 +119,7 @@ class ObjectVersionGuardRefusalTest extends TestCase {
 	 * @return void
 	 */
 	public function testNoOrMatchingClaimPasses(): void {
-		$this->auditTrail->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrail->expects($this->never())->method('recordObjectEvent');
 
 		$this->assertNull($this->guard(null)->refusal($this->stored(), new SentWrite(['title' => 'x'])));
 		$this->assertNull($this->guard(self::CURRENT)->refusal($this->stored(), new SentWrite(['title' => 'x'])));
@@ -131,7 +131,7 @@ class ObjectVersionGuardRefusalTest extends TestCase {
 	 * @return void
 	 */
 	public function testAStaleClaimIsRefusedWithThePlainBody(): void {
-		$this->auditTrail->expects($this->once())->method('createAuditTrailEntry')->willReturn(new AuditTrail());
+		$this->auditTrail->expects($this->once())->method('recordObjectEvent')->willReturn(new AuditTrail());
 		$this->container->expects($this->never())->method('get');
 
 		$response = $this->guard('2026-04-01T00:00:00+00:00')->refusal($this->stored(), new SentWrite(['title' => 'x']));

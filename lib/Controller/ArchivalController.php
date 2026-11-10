@@ -37,6 +37,7 @@ use OCA\OpenRegister\Controller\Support\ArchivalControllerServices;
 use OCA\OpenRegister\Controller\Support\ArchivalNominationSubject;
 use OCA\OpenRegister\Controller\Support\ArchivalReviewAnswer;
 use OCA\OpenRegister\Controller\Support\ArchivalReviewEntry;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -876,13 +877,15 @@ class ArchivalController extends Controller {
 
 		$this->lists->save(list: $target->list, listData: $listData);
 
-		$this->auditMapper->createAuditTrailEntry(
-			$target->list,
-			'archival.review_assigned',
-			[
-				'entry' => $entryId,
-				'reviewer' => $reviewer,
-			]
+		$this->auditMapper->recordObjectEvent(
+			event: new ObjectAuditEvent(
+				object: $target->list,
+				action: 'archival.review_assigned',
+				context: [
+					'entry' => $entryId,
+					'reviewer' => $reviewer,
+				]
+			)
 		);
 
 		return new JSONResponse(
@@ -1036,14 +1039,16 @@ class ArchivalController extends Controller {
 		$decisions = ($listData['decisions'] ?? []);
 		$decision = end($decisions);
 
-		$this->auditMapper->createAuditTrailEntry(
-			$target->list,
-			'archival.review_decided',
-			[
-				'entry' => $target->entryId,
-				'answer' => $answer->answer,
-				'reviewer' => $userId,
-			]
+		$this->auditMapper->recordObjectEvent(
+			event: new ObjectAuditEvent(
+				object: $target->list,
+				action: 'archival.review_decided',
+				context: [
+					'entry' => $target->entryId,
+					'answer' => $answer->answer,
+					'reviewer' => $userId,
+				]
+			)
 		);
 
 		return new JSONResponse(
@@ -1273,14 +1278,16 @@ class ArchivalController extends Controller {
 			);
 		}//end try
 
-		$this->auditMapper->createAuditTrailEntry(
-			$object,
-			'archival.nomination_recomputed',
-			[
-				'status' => ($nomination['status'] ?? null),
-				'rule' => ($nomination['rule'] ?? null),
-				'reason' => $reason,
-			]
+		$this->auditMapper->recordObjectEvent(
+			event: new ObjectAuditEvent(
+				object: $object,
+				action: 'archival.nomination_recomputed',
+				context: [
+					'status' => ($nomination['status'] ?? null),
+					'rule' => ($nomination['rule'] ?? null),
+					'reason' => $reason,
+				]
+			)
 		);
 
 		return new JSONResponse(

@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use Psr\Log\LoggerInterface;
 
@@ -106,10 +107,12 @@ final class ConflictTrail {
 	 */
 	public function recordRefusal(VersionMismatch $mismatch, array $body): void {
 		try {
-			$this->auditTrail->createAuditTrailEntry(
-				object: $mismatch->stored,
-				action: 'refused',
-				context: $this->refusalContext(mismatch: $mismatch, body: $body)
+			$this->auditTrail->recordObjectEvent(
+				event: new ObjectAuditEvent(
+					object: $mismatch->stored,
+					action: 'refused',
+					context: $this->refusalContext(mismatch: $mismatch, body: $body)
+				)
 			);
 		} catch (\Throwable $e) {
 			$this->warn(message: 'a refused write could not be recorded: ' . $e->getMessage());
