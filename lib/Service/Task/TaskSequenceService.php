@@ -646,8 +646,7 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 		try {
 			$this->services->tasks->terminateAsMoot(
 				uuid: (string)$sibling->getUuid(),
-				reason: $closure->reason,
-				source: self::ACTOR_PREFIX . (string)$sequence->getUuid()
+				trigger: new TaskTrigger(source: self::ACTOR_PREFIX . (string)$sequence->getUuid(), reason: $closure->reason)
 			);
 		} catch (Throwable $failure) {
 			$this->logger->error(

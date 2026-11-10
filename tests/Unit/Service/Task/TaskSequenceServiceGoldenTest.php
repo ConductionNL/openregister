@@ -112,7 +112,9 @@ class TaskSequenceServiceGoldenTest extends TestCase {
 			}
 		);
 		$tasks->method('terminateAsMoot')->willReturnCallback(
-			function (string $uuid, string $reason, string $source): Task {
+			function (string $uuid, TaskTrigger $trigger): Task {
+				$reason = $trigger->reason;
+				$source = $trigger->source;
 				$this->calls[] = ['terminateAsMoot', $uuid, $reason, $source];
 				if (in_array($uuid, $this->failing, true) === true) {
 					throw new RuntimeException('cannot terminate ' . $uuid);

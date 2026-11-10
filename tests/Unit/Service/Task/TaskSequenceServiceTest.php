@@ -277,7 +277,9 @@ class TaskSequenceServiceTest extends TestCase {
 
 		$terminated = [];
 		$this->tasks->method('terminateAsMoot')->willReturnCallback(
-			function (string $uuid, string $reason, string $source) use (&$terminated): Task {
+			function (string $uuid, TaskTrigger $trigger) use (&$terminated): Task {
+				$reason = $trigger->reason;
+				$source = $trigger->source;
 				$terminated[] = [$uuid, $reason, $source];
 
 				return new Task();
@@ -347,7 +349,9 @@ class TaskSequenceServiceTest extends TestCase {
 	private function recordTerminations(): \ArrayObject {
 		$terminated = new \ArrayObject();
 		$this->tasks->method('terminateAsMoot')->willReturnCallback(
-			static function (string $uuid, string $reason, string $source) use ($terminated): Task {
+			static function (string $uuid, TaskTrigger $trigger) use ($terminated): Task {
+				$reason = $trigger->reason;
+				$source = $trigger->source;
 				$terminated[] = [$uuid, $reason];
 
 				return new Task();

@@ -36,6 +36,8 @@ namespace OCA\OpenRegister\Service\Flow\Timer;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
+use OCA\OpenRegister\Service\Task\TimerOutcome;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -217,9 +219,10 @@ class FlowTimerSweep implements FlowTimerSweepInterface {
 		try {
 			$this->tasks?->taskService?->applyTimerOutcome(
 				uuid: (string)$task->getUuid(),
-				outcome: (string)$task->getOnTimeout(),
-				source: self::TIMEOUT_SOURCE,
-				reason: $this->timeoutReason(task: $task)
+				outcome: new TimerOutcome(
+					outcome: (string)$task->getOnTimeout(),
+					trigger: new TaskTrigger(source: self::TIMEOUT_SOURCE, reason: $this->timeoutReason(task: $task))
+				)
 			);
 			$tally->add(counter: 'taskTimeouts', amount: 1);
 		} catch (Throwable $failure) {
