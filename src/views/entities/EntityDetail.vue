@@ -287,12 +287,7 @@ export default {
 			this.error = null
 
 			try {
-				const entityId = this.$route.params.id
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/entities/{id}', {
-						id: entityId,
-					}),
-				)
+				const response = await axios.get(this.entityUrl())
 				this.showEntityAnswer(response.data)
 			} catch (error) {
 				this.showEntityFailure(error)
@@ -300,6 +295,19 @@ export default {
 				this.loading = false
 				this.loadingRelations = false
 			}
+		},
+
+		/**
+		 * The URL of the entity the route names.
+		 *
+		 * @spec exclude detail-view API fetch plumbing (linked-entity-types contract)
+		 * @return {string} The URL
+		 */
+		entityUrl() {
+			const entityId = this.$route.params.id
+			return generateUrl('/apps/openregister/api/entities/{id}', {
+				id: entityId,
+			})
 		},
 
 		/**

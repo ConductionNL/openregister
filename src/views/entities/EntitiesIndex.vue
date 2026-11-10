@@ -436,16 +436,26 @@ export default {
 					{ params: this.entityListParams() },
 				)
 
-				if (response.data.success) {
-					this.entitiesList = response.data.data
-					this.totalEntities =
-						response.data.count || this.entitiesList.length
-				}
+				this.showEntityList(response.data)
 			} catch (error) {
 				console.error('Failed to load entities:', error)
 				showError(t('openregister', 'Failed to load entities'))
 			} finally {
 				this.loading = false
+			}
+		},
+
+		/**
+		 * Take the page of entities and their total from a successful answer.
+		 *
+		 * @spec exclude list-view API fetch plumbing (linked-entity-types contract)
+		 * @param {object} data The answer
+		 * @return {void}
+		 */
+		showEntityList(data) {
+			if (data.success) {
+				this.entitiesList = data.data
+				this.totalEntities = data.count || this.entitiesList.length
 			}
 		},
 
@@ -456,23 +466,28 @@ export default {
 		 * @return {object} The query parameters
 		 */
 		entityListParams() {
-			const params = {
+			return {
 				limit: this.limit,
 				offset: (this.currentPage - 1) * this.limit,
+				...this.activeFilters(),
 			}
+		},
 
-			if (this.searchQuery) {
-				params.search = this.searchQuery
+		/**
+		 * The search, type and category filters that are set.
+		 *
+		 * @spec exclude list-view API fetch plumbing (linked-entity-types contract)
+		 * @return {object} The set filters by query parameter
+		 */
+		activeFilters() {
+			const filters = {
+				search: this.searchQuery,
+				type: this.typeFilter,
+				category: this.categoryFilter,
 			}
-
-			if (this.typeFilter) {
-				params.type = this.typeFilter
-			}
-
-			if (this.categoryFilter) {
-				params.category = this.categoryFilter
-			}
-			return params
+			return Object.fromEntries(
+				Object.entries(filters).filter(([, value]) => value),
+			)
 		},
 
 		/**
