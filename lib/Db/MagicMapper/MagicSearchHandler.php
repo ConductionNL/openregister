@@ -51,6 +51,7 @@ use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\LikeOperator;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
+use OCA\OpenRegister\Service\Query\RelatedRowFilterTarget;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
@@ -733,13 +734,15 @@ class MagicSearchHandler {
 		$register->setId($registerId);
 
 		$this->relatedRows->apply(
-			qb: $run->qb,
-			query: $query,
-			register: $register,
-			organisationScopeFor: fn (Schema $related, ?int $relatedRegisterId): array => $this->organisationScopeForRelated(
-				query: $query,
-				related: new MagicReadTable(schema: $related, registerId: $relatedRegisterId)
-			)
+			target: new RelatedRowFilterTarget(
+				qb: $run->qb,
+				register: $register,
+				organisationScopeFor: fn (Schema $related, ?int $relatedRegisterId): array => $this->organisationScopeForRelated(
+					query: $query,
+					related: new MagicReadTable(schema: $related, registerId: $relatedRegisterId)
+				)
+			),
+			query: $query
 		);
 	}//end applyRelatedRowFilters()
 
