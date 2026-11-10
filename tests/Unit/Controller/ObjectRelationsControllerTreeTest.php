@@ -169,7 +169,7 @@ class ObjectRelationsControllerTreeTest extends TestCase {
 		$root = $this->object();
 		$this->access->method('readable')->willReturn($root);
 		$this->trees->expects($this->once())->method('tree')
-			->with($root, new ObjectTreeQuery('both', 2, ['kvkNumber', 'tradeName']))
+			->with(new ObjectTreeQuery($root, 'both', 2, ['kvkNumber', 'tradeName']))
 			->willReturn(['nodes' => []]);
 
 		$response = $controller->tree(register: 'r', schema: 's', id: 'x');
@@ -217,7 +217,7 @@ class ObjectRelationsControllerTreeTest extends TestCase {
 		$controller = $this->controller(params: []);
 		$this->access->method('readable')->willReturn($this->object());
 		$this->trees->expects($this->once())->method('tree')
-			->with($this->anything(), new ObjectTreeQuery('descendants', null, []))
+			->with($this->callback(static fn (ObjectTreeQuery $query): bool => [$query->direction, $query->depth, $query->fields] === ['descendants', null, []]))
 			->willReturn([]);
 
 		$controller->tree(register: 'r', schema: 's', id: 'x');
