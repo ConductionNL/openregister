@@ -3697,7 +3697,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @return void
      *
-     * @throws \OCA\OpenRegister\Exception\FolderAccessDeniedException When the user cannot access the bound folder.
+     * @throws \OCA\OpenRegister\Exception\FolderAccessDeniedException When the user cannot access the bound folder, or the check fails.
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
@@ -3708,8 +3708,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         } catch (\OCA\OpenRegister\Exception\FolderAccessDeniedException $e) {
             // Propagate folder-access denials up to the controller.
             throw $e;
-        } catch (Exception $e) {
-            // A missing object or any other error: let SaveObject handle the creation.
+        } catch (OcpDoesNotExistException $e) {
+            // No stored object yet: let SaveObject handle the creation.
             $this->logger->debug(
                 message: '[ObjectService] Folder binding not re-validated, object not loadable',
                 context: [
@@ -3717,6 +3717,13 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                     'exception' => $e->getMessage(),
                 ]
             );
+        } catch (Exception $e) {
+            // The binding could not be checked, so the save is refused.
+            $this->logger->warning(
+                message: '[ObjectService] Folder binding re-check failed, save refused',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid, 'exception' => $e]
+            );
+            throw new \OCA\OpenRegister\Exception\FolderAccessDeniedException(attemptedFolderId: '', previous: $e);
         }//end try
     }//end revalidateFolderBinding()
 
