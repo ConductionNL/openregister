@@ -142,6 +142,11 @@ class ContentProviderOptedInPairsTest extends TestCase {
 		$this->catalogue();
 
 		$this->assertSame([[11, 1]], $this->pairs(11, null));
+	}
+
+	public function testTheRegisterAndSchemaFiltersCombine(): void {
+		$this->catalogue();
+
 		$this->assertSame([[10, 3]], $this->pairs(10, 3));
 	}
 
