@@ -467,10 +467,7 @@ export default {
 				await this.sendSettings()
 				this.markSaved()
 			} catch (error) {
-				console.error('Error saving settings:', error)
-				this.saveError =
-					error.response?.data?.message
-					|| this.t('openregister', 'Failed to save settings')
+				this.showSaveFailure(error)
 			} finally {
 				this.saving = false
 			}
@@ -488,6 +485,20 @@ export default {
 				default_organisation: this.selectedDefaultOrganisation?.uuid || null,
 				auto_create_default_organisation: this.autoCreateDefault,
 			}
+		},
+
+		/**
+		 * Log a failed save and show the server's message, else the default.
+		 *
+		 * @spec exclude settings-section save plumbing; PUTs organisation settings (tenant-lifecycle contract)
+		 * @param {object} error - The failure
+		 * @return {void}
+		 */
+		showSaveFailure(error) {
+			console.error('Error saving settings:', error)
+			this.saveError =
+				error.response?.data?.message
+				|| this.t('openregister', 'Failed to save settings')
 		},
 
 		/**
