@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Object\DraftActivation;
 use OCA\OpenRegister\Service\Object\DraftAddress;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectDraftControllerFactory;
+use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUser;
@@ -107,7 +108,8 @@ final class ObjectDraftControllerA24GoldenTest extends TestCase {
 			activation: $this->activation,
 			session: $session,
 			l10n: $l10n,
-			logger: $this->createMock(LoggerInterface::class)
+			logger: $this->createMock(LoggerInterface::class),
+			groupManager: $this->createMock(IGroupManager::class)
 		);
 	}//end controller()
 

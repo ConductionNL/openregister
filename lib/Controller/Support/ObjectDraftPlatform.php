@@ -23,8 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCP\IL10N;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * The platform services of the object draft API.
@@ -35,16 +33,14 @@ final class ObjectDraftPlatform {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param IUserSession    $session The acting user, who is the asserted owner.
-	 * @param IL10N           $l10n    Translations.
-	 * @param LoggerInterface $logger  Logger.
+	 * @param ControllerSession $session The acting user, who is the asserted owner, and the logger.
+	 * @param IL10N             $l10n    Translations.
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
 	 */
 	public function __construct(
-		public readonly IUserSession $session,
+		public readonly ControllerSession $session,
 		public readonly IL10N $l10n,
-		public readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 }//end class

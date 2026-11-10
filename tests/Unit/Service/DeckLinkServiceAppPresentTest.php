@@ -170,10 +170,15 @@ class DeckLinkServiceAppPresentTest extends TestCase {
 		$this->linkMapper->method('findByObjectAndCard')->willReturn(null);
 		$this->cardService->cards[9] = new DeckEntityDouble(['stackId' => 1, 'title' => 'T']);
 		$this->cardMapper->boardId = new RuntimeException('no board');
-		$this->logger->expects($this->once())->method('debug')
-			->with('Deck CardMapper::findBoardId(9) failed: no board');
+		$debug = [];
+		$this->logger->method('debug')->willReturnCallback(
+			function (string $message) use (&$debug): void {
+				$debug[] = $message;
+			}
+		);
 
 		$this->assertSame(0, $this->service->linkCard($this->target(), 9)->getBoardId());
+		$this->assertContains('Deck CardMapper::findBoardId(9) failed: no board', $debug);
 	}
 
 	public function testLinkCardReportsNotFoundWhenCardServiceReturnsNull(): void {

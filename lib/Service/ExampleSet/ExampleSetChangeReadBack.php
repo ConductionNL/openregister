@@ -28,6 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+
 /**
  * Proves and reverts made changes.
  *
@@ -63,7 +65,7 @@ class ExampleSetChangeReadBack {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	public function lost(array $entry): array {
-		$row = $this->store->get(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id']);
+		$row = $this->store->row(ref: new ObjectRef(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id']));
 		if ($row === null) {
 			return ['(gone)'];
 		}
@@ -131,7 +133,9 @@ class ExampleSetChangeReadBack {
 	public function revert(array $entry): array {
 		// `read()` tells an object that is gone (nothing left to undo) from a read that failed (nothing is known,
 		// so nothing is reported as undone and the record keeps the change).
-		$read = $this->store->read(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id']);
+		$read = $this->store->readRow(
+			ref: new ObjectRef(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id'])
+		);
 		if ($read['row'] === null) {
 			return ['ok' => ($read['error'] === ''), 'left' => []];
 		}

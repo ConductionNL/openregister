@@ -33,6 +33,7 @@ use Exception;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
+use OCA\OpenRegister\Service\SearchMeasurement;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\Vocabulary\CodedFilterExpander;
@@ -780,10 +781,12 @@ class SearchQueryHandler {
 				// the search_term column that the popular-terms stats aggregate.
 				$this->searchTrailService->createSearchTrail(
 					query: $entry['query'],
-					resultCount: $entry['resultCount'],
-					totalResults: $entry['totalResults'],
-					responseTime: $entry['responseTime'],
-					executionType: $entry['executionType']
+					measured: new SearchMeasurement(
+						resultCount: $entry['resultCount'],
+						totalResults: $entry['totalResults'],
+						responseTime: $entry['responseTime'],
+						executionType: $entry['executionType']
+					)
 				);
 				$persisted++;
 			} catch (\Throwable $e) {

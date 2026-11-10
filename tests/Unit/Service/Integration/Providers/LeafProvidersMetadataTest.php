@@ -640,8 +640,6 @@ class LeafProvidersMetadataTest extends TestCase {
 	 */
 	public function testSharesProviderMetadata(): void {
 		$provider = new SharesProvider(
-			db: $this->createMock(IDBConnection::class),
-			appManager: $this->buildAppManager([]),
 			l10n: $this->buildL10n(),
 		);
 
@@ -666,8 +664,6 @@ class LeafProvidersMetadataTest extends TestCase {
 		$mockContainer->method('has')->willReturn(false);
 
 		$provider = new SharesProvider(
-			db: $this->createMock(IDBConnection::class),
-			appManager: $this->buildAppManager([]),
 			l10n: $this->buildL10n(),
 			container: $mockContainer,
 		);
