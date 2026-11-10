@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -839,9 +840,9 @@ abstract class ExampleSetTestCase extends TestCase {
 
 			return $entries;
 		});
-		$mapper->method('findForObjectByAction')->willReturnCallback(
-			fn (string $objectUuid, array $actions = [], int $limit = 50): array => array_values(
-				array_filter($this->auditTrail, static fn (AuditTrail $row): bool => $row->getObjectUuid() === $objectUuid && in_array($row->getAction(), $actions, true))
+		$mapper->method('findObjectActions')->willReturnCallback(
+			fn (string $objectUuid, ActionLookupOptions $options): array => array_values(
+				array_filter($this->auditTrail, static fn (AuditTrail $row): bool => $row->getObjectUuid() === $objectUuid && in_array($row->getAction(), $options->actions, true))
 			)
 		);
 		$mapper->method('find')->willReturnCallback(fn (int $id): AuditTrail => ($this->auditTrail[$id] ?? throw new DoesNotExistException('no entry '.$id)));

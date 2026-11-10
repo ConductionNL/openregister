@@ -22,6 +22,7 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Db\AuditTrail\RevertOptions;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -107,10 +108,9 @@ class RevertHandler implements RevertHandlerInterface {
 		$this->assertMayRevert(context: $context);
 
 		// Revert from the object just checked: looked up again, the URL id could name another row.
-		$revertedObject = $this->stores->auditTrailMapper->revertObject(
+		$revertedObject = $this->stores->auditTrailMapper->revertObjectWith(
 			identifier: $context['object'],
-			until: $point->until,
-			overwriteVersion: $point->overwriteVersion
+			options: new RevertOptions(until: $point->until, overwriteVersion: $point->overwriteVersion)
 		);
 		$savedObject = $this->saveReverted(reverted: $revertedObject, context: $context);
 

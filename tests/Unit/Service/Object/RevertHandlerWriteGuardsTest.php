@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Db\AuditTrail\RevertOptions;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -112,7 +113,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		);
 
 		$this->audit = $this->createMock(AuditTrailMapper::class);
-		$this->audit->method('revertObject')->willReturn($this->reverted);
+		$this->audit->method('revertObjectWith')->willReturn($this->reverted);
 
 		$this->validator = $this->createMock(ValidateObject::class);
 		$this->settings = $this->createMock(SettingsService::class);
@@ -188,7 +189,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 	public function testTheTrailIsHandedTheCheckedObject(): void {
 		$this->validator->method('validateObject')->willReturn($this->valid());
 		$this->magic->method('update')->willReturnArgument(0);
-		$this->audit->expects($this->once())->method('revertObject')->with($this->identicalTo($this->current), '1.0.1', false);
+		$this->audit->expects($this->once())->method('revertObjectWith')->with($this->identicalTo($this->current), $this->equalTo(new RevertOptions('1.0.1', false)));
 
 		$this->handler()->revert(register: '5', schema: '7', id: '11', point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
 	}//end testTheTrailIsHandedTheCheckedObject()
@@ -218,7 +219,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$this->current->setFrozen(['by' => 'bob', 'at' => '2026-09-01T00:00:00+00:00']);
 
 		$this->magic->expects($this->never())->method('update');
-		$this->audit->expects($this->never())->method('revertObject');
+		$this->audit->expects($this->never())->method('revertObjectWith');
 		$this->audit->expects($this->never())->method('createAuditTrail');
 
 		$this->expectException(ObjectStateWriteException::class);
@@ -237,7 +238,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$this->current->setArchived(['by' => 'anna', 'at' => '2026-09-12T00:00:00+00:00', 'reason' => 'closed']);
 
 		$this->magic->expects($this->never())->method('update');
-		$this->audit->expects($this->never())->method('revertObject');
+		$this->audit->expects($this->never())->method('revertObjectWith');
 		$this->audit->expects($this->never())->method('createAuditTrail');
 
 		try {
@@ -258,7 +259,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$this->current->setLocked(['user' => 'bob', 'expiration' => (new \DateTime('+1 hour'))->format('c')]);
 
 		$this->magic->expects($this->never())->method('update');
-		$this->audit->expects($this->never())->method('revertObject');
+		$this->audit->expects($this->never())->method('revertObjectWith');
 
 		$this->expectException(\OCA\OpenRegister\Exception\NotAuthorizedException::class);
 		$this->expectExceptionMessage('You do not have permission to revert this object');
@@ -276,7 +277,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$this->current->setFrozen(['by' => 'bob', 'at' => '2026-09-01T00:00:00+00:00']);
 
 		$this->magic->expects($this->never())->method('update');
-		$this->audit->expects($this->never())->method('revertObject');
+		$this->audit->expects($this->never())->method('revertObjectWith');
 
 		$this->expectException(\OCA\OpenRegister\Exception\LockedException::class);
 		$this->expectExceptionMessage('Object is locked by bob');

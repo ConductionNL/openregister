@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
@@ -223,7 +224,7 @@ class StateHistoryRebuildJob extends TimedJob {
 	 * @return array{property: string, register: string, schema: string}|null The context.
 	 */
 	private function contextFor(string $objectUuid): ?array {
-		$row = $this->audit->findForObjectByAction(objectUuid: $objectUuid, limit: 1);
+		$row = $this->audit->findObjectActions(objectUuid: $objectUuid, options: new ActionLookupOptions(limit: 1));
 		$entry = ($row[0] ?? null);
 		if ($entry === null) {
 			return null;

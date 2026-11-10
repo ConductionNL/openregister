@@ -2109,27 +2109,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end auditIdOfRevertPoint()
 
 	/**
-	 * Revert an object to a previous state
-	 *
-	 * @param ObjectEntity|string|int $identifier The object itself, or its ID, UUID or URI to look it up by
-	 * @param DateTime|string|null $until DateTime or AuditTrail ID to revert to
-	 * @param bool $overwriteVersion Whether to overwrite the version or increment it
-	 *
-	 * @throws DoesNotExistException If object not found
-	 * @throws \Exception If revert fails
-	 *
-	 * @return ObjectEntity The reverted object (unsaved)
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Controls version handling strategy on revert
-	 */
-	public function revertObject($identifier, $until = null, bool $overwriteVersion = false): ObjectEntity {
-		return $this->revertObjectWith(identifier: $identifier, options: new RevertOptions(until: $until, overwriteVersion: $overwriteVersion));
-	}//end revertObject()
-
-	/**
 	 * Revert an object to a point in its trail.
-	 *
-	 * The typed form of {@see revertObject()}, which keeps its signature for other apps.
 	 *
 	 * @param mixed         $identifier The object itself, or its ID, UUID or URI to look it up by.
 	 * @param RevertOptions $options    The reversion point and the version handling.
@@ -2474,28 +2454,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end countObjectTrail()
 
 	/**
-	 * Read the audit rows of one object, by action, newest first.
-	 *
-	 * Keyed on `object_uuid` rather than the numeric `object` id, because the
-	 * caller this exists for reads a destruction record AFTER the object row
-	 * is gone and the numeric id resolves to nothing.
-	 *
-	 * @param string $objectUuid The object's UUID.
-	 * @param array<int, string> $actions Actions to return; every action when empty.
-	 * @param int $limit Maximum rows.
-	 *
-	 * @return array<int, AuditTrail> The matching rows, newest first.
-	 *
-	 * @spec openspec/specs/deletion-audit-trail/spec.md
-	 */
-	public function findForObjectByAction(string $objectUuid, array $actions = [], int $limit = 50): array {
-		return $this->findObjectActions(objectUuid: $objectUuid, options: new ActionLookupOptions(actions: $actions, limit: $limit));
-	}//end findForObjectByAction()
-
-	/**
 	 * One object's entries, optionally only some actions, newest first.
-	 *
-	 * The typed form of {@see findForObjectByAction()}, which keeps its signature for other apps.
 	 *
 	 * @param string              $objectUuid The object's UUID.
 	 * @param ActionLookupOptions $options    The actions to return (every action when empty) and the row cap.

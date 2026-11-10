@@ -210,7 +210,7 @@ class DeletedControllerReadScopeTest extends TestCase {
 	public function testNonAdminCannotReadSomeoneElsesDestructionRecord(): void {
 		$this->signIn(uid: 'burger', isAdmin: false);
 
-		$this->auditTrails->method('findForObjectByAction')->willReturn([$this->destructionRecord(actor: 'recordmanager')]);
+		$this->auditTrails->method('findObjectActions')->willReturn([$this->destructionRecord(actor: 'recordmanager')]);
 
 		$response = $this->controller->destructionRecord('destroyed-1');
 
@@ -227,7 +227,7 @@ class DeletedControllerReadScopeTest extends TestCase {
 	public function testTheActorReadsTheirOwnDestructionRecord(): void {
 		$this->signIn(uid: 'recordmanager', isAdmin: false);
 
-		$this->auditTrails->method('findForObjectByAction')->willReturn([$this->destructionRecord(actor: 'recordmanager')]);
+		$this->auditTrails->method('findObjectActions')->willReturn([$this->destructionRecord(actor: 'recordmanager')]);
 
 		$response = $this->controller->destructionRecord('destroyed-1');
 
@@ -242,7 +242,7 @@ class DeletedControllerReadScopeTest extends TestCase {
 	public function testAdminReadsEveryDestructionRecord(): void {
 		$this->signIn(uid: 'admin', isAdmin: true);
 
-		$this->auditTrails->method('findForObjectByAction')->willReturn([$this->destructionRecord(actor: 'recordmanager')]);
+		$this->auditTrails->method('findObjectActions')->willReturn([$this->destructionRecord(actor: 'recordmanager')]);
 
 		$this->assertSame(1, $this->controller->destructionRecord('destroyed-1')->getData()['total']);
 	}//end testAdminReadsEveryDestructionRecord()
