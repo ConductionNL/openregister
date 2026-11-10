@@ -38,23 +38,20 @@ interface OptOutAuthorityInterface {
 	public const DEFAULT_CATEGORY = 'service';
 
 	/**
-	 * Ask once for a batch of addresses.
+	 * Ask once for the batch of addresses a question names.
 	 *
-	 * @param string $channel The channel, `email` for both OpenRegister paths.
-	 * @param string $category The message category; normalised first.
-	 * @param array<int, string> $addresses The addresses, as they will be mailed.
-	 * @param string $correlationId Ties integriq's log rows to this send.
+	 * @param OptOutQuestion $question The channel, category (normalised first), addresses and correlation id.
 	 *
 	 * @return array<string, array{send: bool, code: string, unsubscribe: array<string, mixed>|null}> By address.
 	 *
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
 	 */
-	public function ask(string $channel, string $category, array $addresses, string $correlationId = ''): array;
+	public function askQuestion(OptOutQuestion $question): array;
 
 	/**
 	 * One address's decision; none means no answer, and no answer is refused.
 	 *
-	 * @param array<string, array{send: bool, code: string, unsubscribe: array|null}> $decisions What ask() returned.
+	 * @param array<string, array{send: bool, code: string, unsubscribe: array|null}> $decisions What askQuestion() returned.
 	 * @param string $address The address.
 	 *
 	 * @return array{send: bool, code: string, unsubscribe: array|null} The decision.

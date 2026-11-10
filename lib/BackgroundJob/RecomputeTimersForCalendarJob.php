@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use OCA\OpenRegister\Db\IdCursor;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapperInterface;
@@ -184,8 +185,7 @@ class RecomputeTimersForCalendarJob extends QueuedJob implements CalendarRecompu
 				try {
 					$page = $this->timers->findByStatePaged(
 						state: $state,
-						afterId: $afterId,
-						limit: CalendarRecomputeInterface::BATCH
+						cursor: new IdCursor(afterId: $afterId, limit: CalendarRecomputeInterface::BATCH)
 					);
 				} catch (Throwable $e) {
 					$this->logger->error(

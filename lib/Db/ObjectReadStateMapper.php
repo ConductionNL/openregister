@@ -117,27 +117,22 @@ class ObjectReadStateMapper extends QBMapper implements ObjectReadStateMapperInt
 	/**
 	 * The uuids one user has already seen, optionally narrowed to a scope.
 	 *
-	 * @param string $userId The reading user's uid.
-	 * @param string|null $register Narrow to this register, as stored on the row.
-	 * @param string|null $schema Narrow to this schema, as stored on the row.
-	 * @param int $limit How many uuids to load at most.
+	 * @param string         $userId The reading user's uid.
+	 * @param ListQuery|null $query  How many uuids to load at most (the limit) and the `register` and `schema`
+	 *                               filters to narrow to, as stored on the row; null for SEEN_SET_LIMIT unnarrowed.
 	 *
 	 * @return array<int, string> The seen object uuids.
 	 *
 	 * @spec openspec/specs/object-read-state/spec.md
 	 */
-	public function uuidsForUser(
-		string $userId,
-		?string $register = null,
-		?string $schema = null,
-		int $limit = self::SEEN_SET_LIMIT
-	): array {
-		$qb = $this->db->getQueryBuilder();
+	public function uuidsForUser(string $userId, ?ListQuery $query = null): array {
+		$query ??= new ListQuery(limit: self::SEEN_SET_LIMIT);
+		$qb      = $this->db->getQueryBuilder();
 		$qb->select('object_uuid')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)))
-			->setMaxResults($limit);
-		(new ReadStateScope(register: $register, schema: $schema))->applyTo(qb: $qb);
+			->setMaxResults($query->limit);
+		(new ReadStateScope(register: ($query->filters['register'] ?? null), schema: ($query->filters['schema'] ?? null)))->applyTo(qb: $qb);
 
 		return $this->distinctSeenUuids(qb: $qb);
 

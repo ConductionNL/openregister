@@ -70,6 +70,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Dto\DeepLinkRegistration;
 
 /**
  * Locks where an `object-detail` action target leads.
@@ -211,12 +212,7 @@ class DispatcherObjectDetailFallbackTest extends TestCase {
 
 	public function testAClaimedSchemaOpensTheAppsDetailPage(): void {
 		$registry = $this->makeRegistry();
-		$registry->register(
-			appId: 'pipelinq',
-			registerSlug: 'pipelinq',
-			schemaSlug: 'client',
-			urlTemplate: '/apps/pipelinq/clients/{uuid}'
-		);
+		$registry->add(registration: new DeepLinkRegistration(appId: 'pipelinq', registerSlug: 'pipelinq', schemaSlug: 'client', urlTemplate: '/apps/pipelinq/clients/{uuid}'));
 
 		$link = $this->resolveOpen($this->makeDispatcher($registry), 42);
 

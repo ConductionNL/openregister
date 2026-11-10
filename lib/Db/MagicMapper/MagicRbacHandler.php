@@ -44,6 +44,8 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\OrganisationContext;
+use OCA\OpenRegister\Service\Rbac\GrantLookup;
+use OCA\OpenRegister\Service\Rbac\AuthorizationColumn;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\GrantedRows;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolverInterface;
@@ -444,8 +446,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 */
 	private function ownedByMyGroupSql(RbacAccessCall $call): ?string {
 		return $this->objectScope()->ownedByMyGroupSql(
-			authColumn: $call->authorizationColumn(),
-			isPostgres: $this->isPostgres(),
+			column: new AuthorizationColumn(name: $call->authorizationColumn(), isPostgres: $this->isPostgres()),
 			quotedUserGroups: $this->quotedCallerGroups()
 		);
 	}//end ownedByMyGroupSql()
@@ -496,9 +497,8 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 */
 	private function notPrivateSqlFor(RbacAccessCall $call): string {
 		return $this->objectScope()->notPrivateSql(
-			columnName: $call->authorizationColumn(),
-			defaultPrivate: $this->objectScope()->schemaDefaultIsPrivate(schemaAuthorization: $call->authorization),
-			isPostgres: $this->isPostgres()
+			column: new AuthorizationColumn(name: $call->authorizationColumn(), isPostgres: $this->isPostgres()),
+			defaultPrivate: $this->objectScope()->schemaDefaultIsPrivate(schemaAuthorization: $call->authorization)
 		);
 	}//end notPrivateSqlFor()
 
@@ -1561,7 +1561,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return false;
 		}
 
-		return $this->objectGrants()?->isGranted(userId: $check->userId, objectUuid: $check->objectUuid, action: $check->action) !== true;
+		return $this->objectGrants()?->isGranted(lookup: new GrantLookup(userId: $check->userId, objectUuid: $check->objectUuid), action: $check->action) !== true;
 	}//end privateObjectRefuses()
 
 	/**

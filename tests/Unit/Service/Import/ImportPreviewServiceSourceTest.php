@@ -129,7 +129,7 @@ class ImportPreviewServiceSourceTest extends TestCase {
 		$this->schemaMapper   = $this->createMock(SchemaMapper::class);
 
 		$importService = $this->createMock(ImportService::class);
-		$importService->method('transformCsvRowToObject')->willReturnCallback(static fn (array $row): array => $row);
+		$importService->method('transformCsvRow')->willReturnCallback(static fn (array $row): array => $row);
 		$validator = $this->createMock(ObjectValidatorInterface::class);
 		$validator->method('validateObject')->willReturn(new ValidationResult(null));
 		$matchResolver = $this->createMock(MatchResolver::class);

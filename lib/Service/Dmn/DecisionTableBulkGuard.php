@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Dmn;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Listener\DecisionTableValidationListenerInterface;
@@ -137,7 +138,10 @@ class DecisionTableBulkGuard {
 		$data = $row;
 		unset($data['@self']);
 		$run->uuid = $this->uuidOf(row: $row, self: $self);
-		$problems  = ($this->listener()->problemsFor(schema: $run->schema, register: $run->register, data: $data, uuid: $run->uuid) ?? []);
+		$problems  = ($this->listener()->problemsOf(
+			row: new ObjectRef(register: (string)$run->register, schema: (string)$run->schema, id: $run->uuid),
+			data: $data
+		) ?? []);
 		$clash     = $this->claim(run: $run, key: trim((string)($data['key'] ?? '')));
 		if ($clash !== null) {
 			$problems[] = $clash;
