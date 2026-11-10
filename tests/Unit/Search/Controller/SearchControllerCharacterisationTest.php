@@ -35,12 +35,23 @@ use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 
 final class SearchControllerCharacterisationTest extends TestCase {
+	/**
+	 * The query the controller handed to searchObjectsPaginated().
+	 *
+	 * @var array<string, mixed>|null
+	 */
 	private ?array $captured = null;
 
 	private function search(array $params, array $result): array {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnCallback(
-			static fn (string $key, mixed $default = null): mixed => array_key_exists($key, $params) ? $params[$key] : $default
+			static function (string $key, mixed $default = null) use ($params): mixed {
+				if (array_key_exists($key, $params) === true) {
+					return $params[$key];
+				}
+
+				return $default;
+			}
 		);
 		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->expects($this->once())->method('searchObjectsPaginated')->willReturnCallback(
