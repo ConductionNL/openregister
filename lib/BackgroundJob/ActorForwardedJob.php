@@ -41,6 +41,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use Generator;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolverInterface;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -75,6 +78,27 @@ abstract class ActorForwardedJob extends QueuedJob {
 	) {
 		parent::__construct(time: $time);
 	}//end __construct()
+
+	/**
+	 * The entries of a chunk whose object still resolves, each with that live object.
+	 *
+	 * Resolved one at a time as the caller iterates, so each entry is
+	 * re-fetched right before it is handled. Entries whose object is gone or
+	 * soft-deleted are stale and skipped.
+	 *
+	 * @param DeferredListenerContext              $context  The captured dispatch-time context.
+	 * @param DeferredEntryObjectResolverInterface $resolver Stale-safe entry re-fetch.
+	 *
+	 * @return Generator<array<string, mixed>, ObjectEntity> Entry => live object.
+	 */
+	protected function liveEntries(DeferredListenerContext $context, DeferredEntryObjectResolverInterface $resolver): Generator {
+		foreach ($context->getEntries() as $entry) {
+			$object = $resolver->resolve(entry: $entry);
+			if ($object !== null) {
+				yield $entry => $object;
+			}
+		}
+	}//end liveEntries()
 
 	/**
 	 * Re-establish the captured actor, run the deferred work, restore.

@@ -91,28 +91,35 @@ class AnnotationNotificationDispatchJob extends ActorForwardedJob {
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	protected function runDeferred(DeferredListenerContext $context): void {
-		foreach ($context->getEntries() as $entry) {
-			$object = $this->resolver->resolve(entry: $entry);
-			if ($object === null) {
-				continue;
-			}
-
-			try {
-				$this->dispatchEntry(entry: $entry, object: $object);
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					message: '[AnnotationNotificationDispatchJob] Dispatch failed for entry',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'uuid' => ($entry['uuid'] ?? null),
-						'trigger' => ($entry['trigger'] ?? null),
-						'error' => $e->getMessage(),
-					]
-				);
-			}
-		}//end foreach
+		foreach ($this->liveEntries(context: $context, resolver: $this->resolver) as $entry => $object) {
+			$this->dispatchSafely(entry: $entry, object: $object);
+		}
 	}//end runDeferred()
+
+	/**
+	 * Dispatch one entry, logging a failure without aborting the chunk.
+	 *
+	 * @param array<string, mixed> $entry  The deferred entry.
+	 * @param ObjectEntity         $object The live object.
+	 *
+	 * @return void
+	 */
+	private function dispatchSafely(array $entry, ObjectEntity $object): void {
+		try {
+			$this->dispatchEntry(entry: $entry, object: $object);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[AnnotationNotificationDispatchJob] Dispatch failed for entry',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'uuid' => ($entry['uuid'] ?? null),
+					'trigger' => ($entry['trigger'] ?? null),
+					'error' => $e->getMessage(),
+				]
+			);
+		}
+	}//end dispatchSafely()
 
 	/**
 	 * Mirror the inline AnnotationNotificationListener dispatch semantics.
