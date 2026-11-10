@@ -537,8 +537,7 @@ class MagicSearchHandler {
 		);
 
 		$this->applyAccessControlFilters(
-			qb: $qb,
-			table: new MagicReadTable(schema: $schema, registerId: $registerId, tableName: $tableName),
+			run: new TableFilterRun(qb: $qb, query: [], table: new MagicReadTable(schema: $schema, registerId: $registerId, tableName: $tableName)),
 			posture: new ReadPosture(rbac: $_rbac, multitenancy: $resolvedMultitenancy, multitenancyExplicit: false)
 		);
 	}//end applyAccessControlToQuery()
@@ -618,8 +617,7 @@ class MagicSearchHandler {
 
 		// Apply multi-tenancy and RBAC access control filters.
 		$this->applyAccessControlFilters(
-			qb: $queryBuilder,
-			table: $run->table,
+			run: $run,
 			posture: new ReadPosture(rbac: $_rbac, multitenancy: $_multitenancy, multitenancyExplicit: $multitenancyExplicit)
 		);
 
@@ -893,7 +891,6 @@ class MagicSearchHandler {
 	private function applyLensAndSearchFilters(TableFilterRun $run): void {
 		$qb     = $run->qb;
 		$query  = $run->query;
-		$schema = $run->schema();
 		// The unread lens, resolved IN the query so the page, the total and the
 		// facets cannot disagree about what was excluded.
 		$this->applyUnreadFilter(qb: $qb, userId: ($query['_unreadFor'] ?? null));
@@ -904,23 +901,14 @@ class MagicSearchHandler {
 		// needs no filter here: it arrives as `_ids`, resolved from the audit
 		// trail's read history at the edge (SearchQueryHandler), so every search
 		// path honours it, the cross-table UNION included.
-		$this->applyPersonalLensFilter(
-			qb: $qb,
-			table: WatcherMapperInterface::TABLE,
-			userId: ($query['_watchingFor'] ?? null)
-		);
+		$this->applyPersonalLensFilter(qb: $qb, userId: ($query['_watchingFor'] ?? null));
 
 		// Apply full-text search if provided.
 		// Fuzzy matching is only enabled when _fuzzy=true parameter is explicitly set.
 		$search = $query['_search'] ?? null;
 		if ($search !== null && trim($search) !== '') {
 			$fuzzyEnabled = $this->isFuzzySearchEnabled(fuzzyParam: $query['_fuzzy'] ?? null);
-			$this->applyFullTextSearch(
-				qb: $qb,
-				search: trim($search),
-				schema: $schema,
-				fuzzyEnabled: $fuzzyEnabled
-			);
+			$this->applyFullTextSearch(run: $run, fuzzyEnabled: $fuzzyEnabled);
 		}
 
 		$this->applyRelationsContains(qb: $qb, query: $query);
@@ -965,7 +953,7 @@ class MagicSearchHandler {
 	 */
 	private function applyRelationFieldFilters(IQueryBuilder $qb, array $query): void {
 		foreach ($this->extractRelationFieldFilters(query: $query) as $relField => $relValue) {
-			$this->applyRelationFieldFilter(qb: $qb, field: $relField, value: $relValue);
+			$this->applyRelationFieldFilter(qb: $qb, match: new RelationFieldMatch(field: $relField, value: $relValue));
 		}
 	}//end applyRelationFieldFilters()
 
@@ -1159,7 +1147,7 @@ class MagicSearchHandler {
 			$owner = (string)$this->db->getQueryBuilder()->getConnection()->quote($userId);
 		}
 
-		$drafts = $this->draftConditionSql(query: $query, columns: $columns, owner: $owner, schema: $schema);
+		$drafts = $this->draftConditionSql(columns: $columns, request: new DraftListRequest(query: $query, schema: $schema, owner: $owner));
 		if ($drafts !== null) {
 			$conditions[] = $drafts;
 		}
@@ -1227,19 +1215,17 @@ class MagicSearchHandler {
 	 * Without a `_status` column no row is a draft, so the default lens keeps
 	 * every row and the drafts-only lens is empty.
 	 *
-	 * @param array            $query   The search query.
-	 * @param LifecycleColumns $columns The table alias and the metadata columns this table lacks.
-	 * @param string|null      $owner   The caller, already quoted or bound; null for nobody.
-	 * @param Schema|null      $schema  The schema being listed, for its draft list default (`draftsListed`).
+	 * @param LifecycleColumns $columns The column prefix and the metadata columns the table lacks.
+	 * @param DraftListRequest $request The query, the schema listed and the caller.
 	 *
 	 * @return string|null The predicate, without a leading AND.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-schema-must-be-able-to-keep-the-callers-own-drafts-out-of-its-lists
 	 */
-	private function draftConditionSql(array $query, LifecycleColumns $columns, ?string $owner, ?Schema $schema = null): ?string {
+	private function draftConditionSql(LifecycleColumns $columns, DraftListRequest $request): ?string {
 		$lens = new DraftListLens();
-		$mode = $lens->modeFor(query: $query, schema: $schema);
+		$mode = $lens->modeFor(query: $request->query, schema: $request->schema);
 
 		if ($columns->lacks(column: '_status') === true) {
 			if ($mode === DraftListLens::ONLY) {
@@ -1249,7 +1235,7 @@ class MagicSearchHandler {
 			return null;
 		}
 
-		return $lens->sql(mode: $mode, columnPrefix: $columns->prefix, owner: $owner);
+		return $lens->sql(mode: $mode, columnPrefix: $columns->prefix, owner: $request->owner);
 	}//end draftConditionSql()
 
 	/**
@@ -1298,17 +1284,19 @@ class MagicSearchHandler {
 
 		if ($multitenancyApplies === true) {
 			$orgCondition = $this->buildOrganizationConditionSql(
-				schema: $schema,
-				registerId: ($table->registerId ?? $this->registerIdFromQuery(query: $query)),
-				connection: $connection,
-				withOrgless: $this->organisationlessRowsAdmitted(
-					schema: $schema,
-					posture: new ReadPosture(
-						rbac: $this->flagFromQuery(value: $rbac),
-						multitenancy: $resolvedMultitenancy,
-						multitenancyExplicit: $multitenancyExplicit
+				boundary: new OrganisationBoundary(
+					registerId: ($table->registerId ?? $this->registerIdFromQuery(query: $query)),
+					schemaId: $schema->getId(),
+					withOrgless: $this->organisationlessRowsAdmitted(
+						schema: $schema,
+						posture: new ReadPosture(
+							rbac: $this->flagFromQuery(value: $rbac),
+							multitenancy: $resolvedMultitenancy,
+							multitenancyExplicit: $multitenancyExplicit
+						)
 					)
-				)
+				),
+				connection: $connection
 			);
 			$crossBranch = null;
 			if ($multitenancyExplicit === false && $this->rbacHandler->hasCrossOrganisationBranch(schema: $schema) === true) {
@@ -1534,10 +1522,8 @@ class MagicSearchHandler {
 	 * back to the PHP path; a UNION arm has nothing to fall back to, so the only
 	 * safe answer to "I cannot render this boundary" is to return no rows.
 	 *
-	 * @param Schema           $schema     The schema being read.
-	 * @param int|null         $registerId The register whose table is being read, for shared master data.
-	 * @param IDBConnection    $connection The connection, used to quote the organisation uuids.
-	 * @param bool             $withOrgless Whether a register-cascade grant also admits org-less rows.
+	 * @param OrganisationBoundary $boundary   The register, schema and org-less admission of the table.
+	 * @param object               $connection The connection that quotes the organisation uuids.
 	 *
 	 * @return string|null The SQL condition, or null when every row is in scope.
 	 *
@@ -1545,15 +1531,8 @@ class MagicSearchHandler {
 	 *
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
 	 */
-	private function buildOrganizationConditionSql(
-		Schema $schema,
-		?int $registerId,
-		IDBConnection $connection,
-		bool $withOrgless = false,
-	): ?string {
-		$scope = $this->organisationScopeFor(
-			table: ['registerId' => $registerId, 'schemaId' => $schema->getId(), 'withOrgless' => $withOrgless]
-		);
+	private function buildOrganizationConditionSql(OrganisationBoundary $boundary, object $connection): ?string {
+		$scope = $this->organisationScopeFor(boundary: $boundary);
 
 		$column = '_organisation';
 
@@ -2531,7 +2510,7 @@ class MagicSearchHandler {
 			$owner = (string)$qb->createNamedParameter($userId);
 		}
 
-		$drafts = $this->draftConditionSql(query: $query, columns: $columns, owner: $owner, schema: $schema);
+		$drafts = $this->draftConditionSql(columns: $columns, request: new DraftListRequest(query: $query, schema: $schema, owner: $owner));
 		if ($drafts !== null) {
 			$qb->andWhere($qb->createFunction($drafts));
 		}
@@ -2667,46 +2646,45 @@ class MagicSearchHandler {
 	/**
 	 * Add the organisation boundary, widened by a cross-organisation branch when there is one.
 	 *
-	 * @param IQueryBuilder $qb          The query builder.
-	 * @param array         $table       The table: `registerId`, `schemaId` and `withOrgless`.
-	 * @param mixed         $crossBranch The rows of the caller's conditional `crossOrganisation` rules, or null.
+	 * @param IQueryBuilder        $qb       The query being built.
+	 * @param OrganisationBoundary $boundary The scope table, the org-less admission and the cross-organisation branch.
 	 *
 	 * @return void
 	 */
-	private function applyOrganisationBoundary(IQueryBuilder $qb, array $table, mixed $crossBranch): void {
-		if ($crossBranch === null) {
+	private function applyOrganisationBoundary(IQueryBuilder $qb, OrganisationBoundary $boundary): void {
+		if ($boundary->crossBranch === null) {
 			$this->organizationHandler->applyOrganizationFilter(
 				qb: $qb,
-				table: new OrganisationScopeTable(registerId: $table['registerId'], schemaId: $table['schemaId']),
+				table: $boundary->scopeTable(),
 				adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
-				withOrgless: $table['withOrgless']
+				withOrgless: $boundary->withOrgless
 			);
 			return;
 		}
 
 		(new OrganisationScopeCondition())->apply(
 			qb: $qb,
-			scope: $this->organisationScopeFor(table: $table),
-			orAlso: $crossBranch
+			scope: $this->organisationScopeFor(boundary: $boundary),
+			orAlso: $boundary->crossBranch
 		);
 	}//end applyOrganisationBoundary()
 
 	/**
 	 * The organisation scope of one table, widened by the org-less rows when asked.
 	 *
-	 * @param array $table The table: `registerId`, `schemaId` and `withOrgless`.
+	 * @param OrganisationBoundary $boundary The register, schema and org-less admission of the table.
 	 *
 	 * @return array{mode: string, uuids: array<int, string>} The scope.
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) admitOrganisationless() is a pure transform of the decided scope.
 	 */
-	private function organisationScopeFor(array $table): array {
+	private function organisationScopeFor(OrganisationBoundary $boundary): array {
 		$scope = $this->organizationHandler->resolveOrganizationScope(
 			adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
-			registerId: $table['registerId'],
-			schemaId: $table['schemaId']
+			registerId: $boundary->registerId,
+			schemaId: $boundary->schemaId
 		);
-		if ($table['withOrgless'] === true) {
+		if ($boundary->withOrgless === true) {
 			$scope = MagicOrganizationHandler::admitOrganisationless(scope: $scope);
 		}
 
@@ -2717,20 +2695,20 @@ class MagicSearchHandler {
 	 * The rows the caller's conditional `crossOrganisation` rules admit, to OR
 	 * into the organisation filter, or null when the filter takes no such branch.
 	 *
-	 * @param IQueryBuilder $qb                   The query builder.
-	 * @param Schema        $schema               The schema being read.
-	 * @param bool          $multitenancyExplicit Whether the caller asked for the strict filter.
+	 * @param TableFilterRun $run     The filter pass: query builder and the table read.
+	 * @param ReadPosture    $posture The posture; an explicit multitenancy request keeps the branch out.
 	 *
 	 * @return mixed The branch, or null.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag is the request posture, mirrored.
 	 */
-	private function crossOrganisationBranch(IQueryBuilder $qb, Schema $schema, bool $multitenancyExplicit): mixed {
-		if ($multitenancyExplicit === true || $this->rbacHandler->hasCrossOrganisationBranch(schema: $schema) === false) {
+	private function crossOrganisationBranch(TableFilterRun $run, ReadPosture $posture): mixed {
+		$schema = $run->schema();
+		if ($posture->multitenancyExplicit === true || $this->rbacHandler->hasCrossOrganisationBranch(schema: $schema) === false) {
 			return null;
 		}
 
-		return $this->rbacHandler->getCrossOrganisationBranch(qb: $qb, schema: $schema);
+		return $this->rbacHandler->getCrossOrganisationBranch(qb: $run->qb, schema: $schema);
 	}//end crossOrganisationBranch()
 
 	/**
@@ -2741,17 +2719,16 @@ class MagicSearchHandler {
 	 * - When user HAS RBAC access AND _multi=true: Apply multitenancy AFTER RBAC
 	 * - When user HAS RBAC access AND _multi=false: Skip multitenancy (RBAC handles access)
 	 *
-	 * @param IQueryBuilder  $qb      Query builder to modify
-	 * @param MagicReadTable $table   The table being read: its schema (access control rules), its register
-	 *                                (shared master data) and its name (a missing `_status` column is left out)
-	 * @param ReadPosture    $posture Whether RBAC and multitenancy filtering are on, and whether
-	 *                                multitenancy was explicitly requested
+	 * @param TableFilterRun $run     The filter pass: query builder and the table read.
+	 * @param ReadPosture    $posture The resolved RBAC and multitenancy posture.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
-	private function applyAccessControlFilters(IQueryBuilder $qb, MagicReadTable $table, ReadPosture $posture): void {
+	private function applyAccessControlFilters(TableFilterRun $run, ReadPosture $posture): void {
+		$qb     = $run->qb;
+		$table  = $run->table;
 		$schema = $table->schema;
 
 		// Whether the organisation boundary applies is decided in ONE place
@@ -2778,12 +2755,12 @@ class MagicSearchHandler {
 			// owns. A pair that cannot be resolved widens by nothing.
 			$this->applyOrganisationBoundary(
 				qb: $qb,
-				table: [
-					'registerId'  => $table->registerId,
-					'schemaId'    => $schema->getId(),
-					'withOrgless' => $this->organisationlessRowsAdmitted(schema: $schema, posture: $posture),
-				],
-				crossBranch: $this->crossOrganisationBranch(qb: $qb, schema: $schema, multitenancyExplicit: $posture->multitenancyExplicit)
+				boundary: new OrganisationBoundary(
+					registerId: $table->registerId,
+					schemaId: $schema->getId(),
+					withOrgless: $this->organisationlessRowsAdmitted(schema: $schema, posture: $posture),
+					crossBranch: $this->crossOrganisationBranch(run: $run, posture: $posture)
+				)
 			);
 		}
 
@@ -3505,15 +3482,15 @@ class MagicSearchHandler {
 	 * than at the call site: `buildFilteredQuery()` already carries every other
 	 * filter's branch.
 	 *
-	 * @param IQueryBuilder $qb Query builder to modify.
-	 * @param string $table The table holding the (user, object) rows.
-	 * @param mixed $userId The user whose rows are read, or null when the lens was not asked for.
+	 * @param IQueryBuilder $qb     The query builder.
+	 * @param mixed         $userId The user whose follows narrow the list; anything but a non-empty string leaves it alone.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
 	 */
-	private function applyPersonalLensFilter(IQueryBuilder $qb, string $table, mixed $userId): void {
+	private function applyPersonalLensFilter(IQueryBuilder $qb, mixed $userId): void {
+		$table = WatcherMapperInterface::TABLE;
 		if (is_string($userId) === false || $userId === '') {
 			return;
 		}
@@ -3751,13 +3728,14 @@ class MagicSearchHandler {
 	 * — including array-indexed keys such as `<field>.0`) and the legacy array
 	 * format (`["<id>", ...]`), so the filter is never silently dropped.
 	 *
-	 * @param IQueryBuilder $qb Query builder to modify.
-	 * @param string $field The relation field name (the part after `_relations.`).
-	 * @param string $value The referenced object id the relation must point at.
+	 * @param IQueryBuilder      $qb    Query builder to modify.
+	 * @param RelationFieldMatch $match The relation field and the referenced object id.
 	 *
 	 * @return void
 	 */
-	private function applyRelationFieldFilter(IQueryBuilder $qb, string $field, string $value): void {
+	private function applyRelationFieldFilter(IQueryBuilder $qb, RelationFieldMatch $match): void {
+		$field = $match->field;
+		$value = $match->value;
 		$valueParam = $qb->createNamedParameter($value);
 		$exactKey = $qb->createNamedParameter($field);
 		// Array-indexed relation keys are stored as `<field>.<n>` (e.g. `keywords.1`).
@@ -3855,19 +3833,15 @@ class MagicSearchHandler {
 	 * Fuzzy matching is only applied when explicitly requested via _fuzzy=true parameter.
 	 * When fuzzy is enabled, results are ordered by relevance (similarity score).
 	 *
-	 * @param IQueryBuilder $qb Query builder to modify
-	 * @param string $search Search term
-	 * @param Schema $schema Schema for determining searchable fields
-	 * @param bool $fuzzyEnabled Whether fuzzy matching is enabled (default: false)
+	 * @param TableFilterRun $run          The filter pass; its query carries the non-empty `_search` term.
+	 * @param bool           $fuzzyEnabled Whether fuzzy matching is enabled.
 	 *
 	 * @return void
 	 */
-	private function applyFullTextSearch(
-		IQueryBuilder $qb,
-		string $search,
-		Schema $schema,
-		bool $fuzzyEnabled = false,
-	): void {
+	private function applyFullTextSearch(TableFilterRun $run, bool $fuzzyEnabled = false): void {
+		$qb     = $run->qb;
+		$search = trim($run->query['_search']);
+		$schema = $run->schema();
 		$isPostgres = $this->isPostgresPlatform();
 
 		// A term carrying AND/OR/NOT, brackets, a quoted phrase or a wildcard is

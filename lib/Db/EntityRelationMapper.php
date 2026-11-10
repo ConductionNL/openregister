@@ -990,21 +990,48 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 		bool $guarded = false,
 	): EntityRelation {
 		if ($guarded === true) {
-			$qb = $this->db->getQueryBuilder();
-			$qb->update($this->getTableName())
-				->set('decision_uuid', $qb->createNamedParameter($decisionUuid))
-				->where($qb->expr()->eq('id', $qb->createNamedParameter($relation->getId(), IQueryBuilder::PARAM_INT)));
-			$qb->andWhere($this->storedLinkIs(qb: $qb, expectedUuid: $expectedUuid));
-
-			if ($qb->executeStatement() === 0) {
-				throw new DecisionConflictException(message: 'The relation was decided by somebody else in the meantime.');
-			}
+			$this->swapStoredLink(qb: $this->decisionLinkUpdate(relation: $relation, decisionUuid: $decisionUuid), expectedUuid: $expectedUuid);
 		}
 
 		$relation->setDecisionUuid($decisionUuid);
 
 		return $this->update(entity: $relation);
 	}//end linkDecision()
+
+	/**
+	 * The update that points one relation at a decision, before its guard.
+	 *
+	 * @param EntityRelation $relation     The relation.
+	 * @param string         $decisionUuid The decision's uuid.
+	 *
+	 * @return IQueryBuilder The update.
+	 */
+	private function decisionLinkUpdate(EntityRelation $relation, string $decisionUuid): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->update($this->getTableName())
+			->set('decision_uuid', $qb->createNamedParameter($decisionUuid))
+			->where($qb->expr()->eq('id', $qb->createNamedParameter($relation->getId(), IQueryBuilder::PARAM_INT)));
+
+		return $qb;
+	}//end decisionLinkUpdate()
+
+	/**
+	 * Run a link update only while the stored link is still the expected one.
+	 *
+	 * @param IQueryBuilder $qb           The link update.
+	 * @param string|null   $expectedUuid The link the caller read before deciding (null: none).
+	 *
+	 * @return void
+	 *
+	 * @throws DecisionConflictException When the stored link changed in the meantime.
+	 */
+	private function swapStoredLink(IQueryBuilder $qb, ?string $expectedUuid): void {
+		$qb->andWhere($this->storedLinkIs(qb: $qb, expectedUuid: $expectedUuid));
+
+		if ($qb->executeStatement() === 0) {
+			throw new DecisionConflictException(message: 'The relation was decided by somebody else in the meantime.');
+		}
+	}//end swapStoredLink()
 
 	/**
 	 * The condition "the stored decision link is still what the caller read".
