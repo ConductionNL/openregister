@@ -1374,3 +1374,4 @@
 2026-11-10T07:14:57Z precheck-20261110T063152-e9e60df2 GREEN tree 5c67a38bee on dev f268e48545 prs 1 front=skip: Tests: 54764, Assertions: 180800, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
 2026-11-10T07:15:29Z integrator-20261110T055831-36ffe96f RESOLVED #8662 7fbd4cb0 -> 01e8713f use/map lines only
 2026-11-10T07:15:49Z precheck-20261110T063045-17ba94e0 GREEN tree 9f4eba611f on dev f268e48545 prs 1 front=skip: Tests: 54764, Assertions: 180800, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
+2026-11-10T07:16:12Z integrator-20261110T055831-36ffe96f RESOLVED #8704 24b250ca -> 455fb4a1 use/map lines only
