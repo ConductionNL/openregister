@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Reference;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -219,7 +220,7 @@ class ObjectPreviewFormatterTest extends TestCase {
 	 */
 	public function testBuildCanonicalUrlsRoundTripThroughParseReference(): void {
 		$uuid = '550e8400-e29b-41d4-a716-446655440000';
-		$urls = $this->formatter->buildCanonicalUrls(5, 12, $uuid);
+		$urls = $this->formatter->buildCanonicalUrls(new ObjectRef(5, 12, $uuid));
 
 		$this->assertCount(3, $urls);
 
@@ -269,7 +270,7 @@ class ObjectPreviewFormatterTest extends TestCase {
 	 */
 	public function testAllCanonicalUrlsCollapseToTheSameCachePrefix(): void {
 		$uuid = '550e8400-e29b-41d4-a716-446655440000';
-		$urls = $this->formatter->buildCanonicalUrls(5, 12, $uuid);
+		$urls = $this->formatter->buildCanonicalUrls(new ObjectRef(5, 12, $uuid));
 
 		$prefixes = array_map(
 			fn (string $url): string => $this->formatter->resolveCachePrefix($url),
@@ -303,7 +304,7 @@ class ObjectPreviewFormatterTest extends TestCase {
 			});
 
 		$invalidatedPrefixes = [];
-		foreach ($this->formatter->buildCanonicalUrls(5, 12, $uuid) as $canonicalUrl) {
+		foreach ($this->formatter->buildCanonicalUrls(new ObjectRef(5, 12, $uuid)) as $canonicalUrl) {
 			$prefix = $this->formatter->resolveCachePrefix($canonicalUrl);
 			if (isset($invalidatedPrefixes[$prefix]) === false) {
 				$referenceManager->invalidateCache($prefix);
