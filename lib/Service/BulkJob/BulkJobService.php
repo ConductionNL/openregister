@@ -565,19 +565,15 @@ class BulkJobService implements BulkJobServiceInterface {
 	 * A page of a job's per-object outcomes.
 	 *
 	 * @param BulkJob $job The job.
-	 * @param string|null $outcome Optional outcome filter.
-	 * @param int $limit Page size.
-	 * @param int $offset Page offset.
+	 * @param OutcomeFilter|null $filter The outcome to keep (any when null) and the page; the first 100 when null.
 	 *
 	 * @return BulkJobMember[] The members.
 	 *
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
-	public function members(BulkJob $job, ?string $outcome = null, int $limit = 100, int $offset = 0): array {
-		return $this->store->memberMapper->findByJob(
-			jobId: (int)$job->getId(),
-			filter: new OutcomeFilter(outcome: $outcome, page: new QueryPage(limit: $limit, offset: $offset))
-		);
+	public function members(BulkJob $job, ?OutcomeFilter $filter=null): array {
+		$filter ??= new OutcomeFilter(outcome: null, page: new QueryPage(limit: 100, offset: 0));
+		return $this->store->memberMapper->findByJob(jobId: (int)$job->getId(), filter: $filter);
 	}//end members()
 
 	/**
