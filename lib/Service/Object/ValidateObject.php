@@ -298,12 +298,18 @@ class ValidateObject implements ValidateObjectInterface {
 	}//end validateImmutableConstraints()
 
 	/**
+	 * Reads and applies the recorded-incompleteness record; constructed on first use.
+	 *
+	 * @var NotSuppliedHandler|null
+	 */
+	private ?NotSuppliedHandler $notSuppliedHandler = null;
+
+	/**
 	 * Constructor for ValidateObject
 	 *
-	 * @param ValidationSchemaSource  $schemas            Loads the schemas and resolves their references.
-	 * @param ValidationLookups       $lookups            Looks existing objects and users up.
-	 * @param LoggerInterface         $logger             Logger for logging operations.
-	 * @param NotSuppliedHandler|null $notSuppliedHandler Reads and applies the recorded-incompleteness record.
+	 * @param ValidationSchemaSource $schemas Loads the schemas and resolves their references.
+	 * @param ValidationLookups      $lookups Looks existing objects and users up.
+	 * @param LoggerInterface        $logger  Logger for logging operations.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
@@ -311,7 +317,6 @@ class ValidateObject implements ValidateObjectInterface {
 		private readonly ValidationSchemaSource $schemas,
 		private readonly ValidationLookups $lookups,
 		private readonly LoggerInterface $logger,
-		private ?NotSuppliedHandler $notSuppliedHandler = null,
 	) {
 	}//end __construct()
 
