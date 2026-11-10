@@ -305,39 +305,64 @@ export default {
 		async loadFiles() {
 			this.loading = true
 			try {
-				const params = {
-					limit: this.limit,
-					offset: this.offset,
-					sort: this.sortField,
-					order: this.sortOrder,
-				}
-
-				if (this.searchQuery) {
-					params.search = this.searchQuery
-				}
-
-				if (this.statusFilter) {
-					params.status = this.statusFilter
-				}
-
-				if (this.riskLevelFilter) {
-					params.riskLevel = this.riskLevelFilter
-				}
-
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/files'),
-					{ params },
+					{ params: this.fileListParams() },
 				)
-
-				if (response.data.success) {
-					this.filesList = response.data.data
-					this.totalFiles = response.data.count || this.filesList.length
-				}
+				this.showFileList(response.data)
 			} catch (error) {
 				console.error('Failed to load files:', error)
 				showError(t('openregister', 'Failed to load files'))
 			} finally {
 				this.loading = false
+			}
+		},
+
+		/**
+		 * The page of files to ask for, in the chosen order, narrowed by the
+		 * filters in use.
+		 *
+		 * @spec exclude list-view API fetch plumbing
+		 * @return {object} The query parameters
+		 */
+		fileListParams() {
+			return {
+				limit: this.limit,
+				offset: this.offset,
+				sort: this.sortField,
+				order: this.sortOrder,
+				...this.activeFilters(),
+			}
+		},
+
+		/**
+		 * The search, status and risk-level filters that are set.
+		 *
+		 * @spec exclude list-view API fetch plumbing
+		 * @return {object} The set filters by query parameter
+		 */
+		activeFilters() {
+			const filters = {
+				search: this.searchQuery,
+				status: this.statusFilter,
+				riskLevel: this.riskLevelFilter,
+			}
+			return Object.fromEntries(
+				Object.entries(filters).filter(([, value]) => value),
+			)
+		},
+
+		/**
+		 * Take the page of files and their total from a successful answer.
+		 *
+		 * @spec exclude list-view API fetch plumbing
+		 * @param {object} data The answer
+		 * @return {void}
+		 */
+		showFileList(data) {
+			if (data.success) {
+				this.filesList = data.data
+				this.totalFiles = data.count || this.filesList.length
 			}
 		},
 
