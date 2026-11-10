@@ -42,6 +42,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Handoff;
 
 use DateTime;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\HandoffQueueEntry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -629,16 +630,18 @@ class HandoffService implements HandoffServiceInterface {
 
 		$queueEntry = $this->ledger->queueMapper->insert(entity: $queueEntry);
 
-		$this->ledger->auditTrailMapper->createAuditTrailEntry(
-			object: $source,
-			action: self::AUDIT_QUEUED,
-			context: [
-				'handoffId' => $handoffId,
-				'targetKind' => $kindUri,
-				'correlationId' => $correlationId,
-				'deferred' => true,
-				'parkedAt' => $queueEntry->getCreated()->format('c'),
-			]
+		$this->ledger->auditTrailMapper->recordObjectEvent(
+			event: new ObjectAuditEvent(
+				object: $source,
+				action: self::AUDIT_QUEUED,
+				context: [
+					'handoffId' => $handoffId,
+					'targetKind' => $kindUri,
+					'correlationId' => $correlationId,
+					'deferred' => true,
+					'parkedAt' => $queueEntry->getCreated()->format('c'),
+				]
+			)
 		);
 
 		return [
@@ -946,15 +949,19 @@ class HandoffService implements HandoffServiceInterface {
 			$context['drainedAt'] = (new DateTime())->format('c');
 		}
 
-		$this->ledger->auditTrailMapper->createAuditTrailEntry(
-			object: $source,
-			action: self::AUDIT_EXECUTED,
-			context: array_merge($context, ['direction' => 'handed-off-to', 'counterpart' => (string)$target->object->getUuid()])
+		$this->ledger->auditTrailMapper->recordObjectEvent(
+			event: new ObjectAuditEvent(
+				object: $source,
+				action: self::AUDIT_EXECUTED,
+				context: array_merge($context, ['direction' => 'handed-off-to', 'counterpart' => (string)$target->object->getUuid()])
+			)
 		);
-		$this->ledger->auditTrailMapper->createAuditTrailEntry(
-			object: $target->object,
-			action: self::AUDIT_EXECUTED,
-			context: array_merge($context, ['direction' => 'originated-from', 'counterpart' => (string)$source->getUuid()])
+		$this->ledger->auditTrailMapper->recordObjectEvent(
+			event: new ObjectAuditEvent(
+				object: $target->object,
+				action: self::AUDIT_EXECUTED,
+				context: array_merge($context, ['direction' => 'originated-from', 'counterpart' => (string)$source->getUuid()])
+			)
 		);
 
 	}//end writeAuditRows()
@@ -982,17 +989,19 @@ class HandoffService implements HandoffServiceInterface {
 				_rbac: false,
 				_multitenancy: false
 			);
-			$this->ledger->auditTrailMapper->createAuditTrailEntry(
-				object: $source,
-				action: self::AUDIT_DEQUEUED,
-				context: [
-					'handoffId' => $entry->getHandoffId(),
-					'targetKind' => $entry->getTargetKind(),
-					'correlationId' => $entry->getCorrelationId(),
-					'deferred' => true,
-					'parkedAt' => $entry->getCreated()->format('c'),
-					'drainedAt' => ($entry->getExecutedAt()?->format('c') ?? (new DateTime())->format('c')),
-				]
+			$this->ledger->auditTrailMapper->recordObjectEvent(
+				event: new ObjectAuditEvent(
+					object: $source,
+					action: self::AUDIT_DEQUEUED,
+					context: [
+						'handoffId' => $entry->getHandoffId(),
+						'targetKind' => $entry->getTargetKind(),
+						'correlationId' => $entry->getCorrelationId(),
+						'deferred' => true,
+						'parkedAt' => $entry->getCreated()->format('c'),
+						'drainedAt' => ($entry->getExecutedAt()?->format('c') ?? (new DateTime())->format('c')),
+					]
+				)
 			);
 		} catch (\Throwable $e) {
 			$this->ledger->logger->warning(

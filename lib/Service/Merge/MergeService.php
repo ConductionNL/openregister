@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Service\Merge;
 use DateInterval;
 use DateTimeImmutable;
 use Exception;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -1305,10 +1306,12 @@ class MergeService implements ObjectMergerInterface {
 
 		foreach ([$pair->fromObject, $pair->intoObject] as $subject) {
 			try {
-				$this->auditTrailMapper->createAuditTrailEntry(
-					object: $subject,
-					action: self::MERGE_REFUSED_ACTION,
-					context: $context
+				$this->auditTrailMapper->recordObjectEvent(
+					event: new ObjectAuditEvent(
+						object: $subject,
+						action: self::MERGE_REFUSED_ACTION,
+						context: $context
+					)
 				);
 			} catch (Throwable $e) {
 				$this->logger->warning('[MergeService] attempted-merge audit failed: ' . $e->getMessage());

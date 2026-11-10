@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Service\Party;
 use Closure;
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -319,7 +320,7 @@ class PartyRoleService implements PartyRoleServiceInterface {
 
 		// The party as the caller named it, exactly as before the link was stored.
 		$context = array_replace(self::replacement(previous: $previous, link: $link), ['to' => $partyUuid]);
-		$this->records->audit->createAuditTrailEntry(object: $object, action: self::PRIMARY_REPLACED_ACTION, context: $context);
+		$this->records->audit->recordObjectEvent(event: new ObjectAuditEvent(object: $object, action: self::PRIMARY_REPLACED_ACTION, context: $context));
 
 		return $link;
 	}//end replacePrimaryParty()

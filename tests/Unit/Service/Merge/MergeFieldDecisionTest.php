@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -422,14 +423,14 @@ class MergeFieldDecisionTest extends TestCase {
 		);
 
 		$audited = [];
-		$this->auditTrailMapper->method('createAuditTrailEntry')->willReturnCallback(
+		$this->auditTrailMapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			static function (...$args) use (&$audited): AuditTrail {
 				$subject = $args[0];
 				$audited[] = [(string)$subject->getUuid(), (string)$args[1], $args[2]];
 
 				return new AuditTrail();
 			}
-		);
+		));
 
 		$this->objectService->expects($this->never())->method('saveObject');
 
@@ -531,7 +532,7 @@ class MergeFieldDecisionTest extends TestCase {
 		$this->propertyRbac->method('canReadProperty')->willReturnCallback(
 			static fn (...$args): bool => (($args[2]['@self']['organisation'] ?? null) === 'org-a')
 		);
-		$this->auditTrailMapper->method('createAuditTrailEntry')->willReturn(new AuditTrail());
+		$this->auditTrailMapper->method('recordObjectEvent')->willReturn(new AuditTrail());
 		$this->objectService->expects($this->never())->method('saveObject');
 
 		$this->expectException(MergeNotFullyReadableException::class);
