@@ -27,16 +27,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\FreezeTerms;
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ArchiveNotOfferedException;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * ArchiveHandler
@@ -60,37 +57,20 @@ use Psr\Log\LoggerInterface;
 class ArchiveHandler implements ArchiveHandlerInterface {
 
 	/**
-	 * Audit entries for each transition.
-	 *
-	 * @var AuditTrailMapperInterface
-	 */
-	private readonly AuditTrailMapperInterface $auditTrailMapper;
-
-	/**
-	 * PSR-3 logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapperInterface $magicMapper Object lookup and persistence.
-	 * @param PermissionEnforcementInterface $permissionHandler The `update` gate.
-	 * @param IUserSession $userSession The acting user.
-	 * @param ObjectStateRecording $recording The audit trail and the log each transition is recorded in.
+	 * @param PermissionEnforcementInterface $permissionHandler The `update` gate (an access guard, so a direct parameter).
+	 * @param IUserSession                   $userSession       The acting user.
+	 * @param ObjectChangeRecording          $recording         Object lookup and persistence, and the audit
+	 *                                                          trail and the log each transition is recorded in.
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $magicMapper,
 		private readonly PermissionEnforcementInterface $permissionHandler,
 		private readonly IUserSession $userSession,
-		ObjectStateRecording $recording,
+		private readonly ObjectChangeRecording $recording,
 	) {
-		$this->auditTrailMapper = $recording->auditTrailMapper;
-		$this->logger           = $recording->logger;
 	}//end __construct()
 
 	/**
@@ -337,7 +317,7 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 	 * @return array{object: ObjectEntity, register: Register, schema: Schema} The resolved context.
 	 */
 	private function resolveAndAuthorize(ObjectStateRequest $request): array {
-		$result = $this->magicMapper->findAcrossAllSources(
+		$result = $this->recording->objects->findAcrossAllSources(
 			identifier: $request->identifier,
 			includeDeleted: false,
 			_rbac: true,
@@ -479,7 +459,7 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 	private function persist(array $context, ObjectStateTransition $transition): ObjectEntity {
 		$before = $transition->before;
 		$object = $context['object'];
-		$saved = $this->magicMapper->updateObjectEntity(
+		$saved = $this->recording->objects->updateObjectEntity(
 			entity: $object,
 			register: $context['register'],
 			schema: $context['schema'],
@@ -490,9 +470,9 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 		// flip (openregister ADR-003). Both directions are recorded: an object
 		// that shows no archive marker today is a different thing from one that
 		// was never archived, and only the trail can tell them apart.
-		$this->auditTrailMapper->createAuditTrail(old: $before, new: $saved, action: $transition->action);
+		$this->recording->auditTrail->createAuditTrail(old: $before, new: $saved, action: $transition->action);
 
-		$this->logger->info(
+		$this->recording->logger->info(
 			message: '[ArchiveHandler] ' . $transition->action,
 			context: [
 				'file' => __FILE__,
