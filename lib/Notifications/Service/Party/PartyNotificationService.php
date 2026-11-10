@@ -96,11 +96,7 @@ class PartyNotificationService {
 	 */
 	public function recipientsForObject(string $objectUuid, ?string $role = null): array {
 		$recipients = [];
-		foreach ($this->links->findPartiesForObject(objectUuid: $objectUuid) as $link) {
-			if ($role !== null && $link->getRole() !== $role) {
-				continue;
-			}
-
+		foreach ($this->linksInRole(objectUuid: $objectUuid, role: $role) as $link) {
 			$recipient = $this->recipientOf(link: $link);
 			if ($recipient !== null) {
 				$recipients[] = $recipient;
@@ -109,6 +105,27 @@ class PartyNotificationService {
 
 		return $recipients;
 	}//end recipientsForObject()
+
+	/**
+	 * The object's party links, narrowed to one role when one is given.
+	 *
+	 * @param string      $objectUuid The object.
+	 * @param string|null $role       Only the parties in this role, or null for all of them.
+	 *
+	 * @return array<int, \OCA\OpenRegister\Db\ContactLink> The links, in the order the mapper returned them.
+	 */
+	private function linksInRole(string $objectUuid, ?string $role): array {
+		$links = [];
+		foreach ($this->links->findPartiesForObject(objectUuid: $objectUuid) as $link) {
+			if ($role !== null && $link->getRole() !== $role) {
+				continue;
+			}
+
+			$links[] = $link;
+		}
+
+		return $links;
+	}//end linksInRole()
 
 	/**
 	 * Send one message to every party on an object that may receive it.
@@ -287,6 +304,17 @@ class PartyNotificationService {
 			$addresses = $this->parties->addresses(party: $party, definition: $definition);
 		}
 
+		return $this->firstEmailAddress(addresses: $addresses);
+	}//end outboundAddress()
+
+	/**
+	 * The value of the first e-mail address in a list.
+	 *
+	 * @param array<int, array<string, mixed>> $addresses The party's addresses, in preference order.
+	 *
+	 * @return string|null The address, or null when none is an e-mail address.
+	 */
+	private function firstEmailAddress(array $addresses): ?string {
 		foreach ($addresses as $address) {
 			if ($address['type'] === 'email') {
 				return $address['value'];
@@ -294,5 +322,5 @@ class PartyNotificationService {
 		}
 
 		return null;
-	}//end outboundAddress()
+	}//end firstEmailAddress()
 }//end class
