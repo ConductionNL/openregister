@@ -396,7 +396,7 @@ class PartyControllerTest extends TestCase {
 			->with(
 				$this->isInstanceOf(Schema::class),
 				'update',
-				$this->equalTo(new PermissionCheckOptions(objectOwner: 'marleen', object: $object)),
+				new PermissionCheckOptions(objectOwner: 'marleen', object: $object),
 				true
 			);
 		$this->roles->method('addParty')->willReturn($this->link(partyUuid: 'party-a'));

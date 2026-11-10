@@ -136,7 +136,7 @@ class LockAuthorizationBehaviourTest extends TestCase {
 		$object->setOwner('alice');
 		$permissions = $this->createMock(PermissionHandlerInterface::class);
 		$permissions->expects($this->once())->method('checkPermission')
-			->with($schema, 'update', $this->equalTo(new PermissionCheckOptions(objectOwner: 'alice', object: $object)), true)
+			->with($schema, 'update', new PermissionCheckOptions(objectOwner: 'alice', object: $object), true)
 			->willThrowException(new RuntimeException('denied'));
 
 		$this->expectExceptionMessage('denied');

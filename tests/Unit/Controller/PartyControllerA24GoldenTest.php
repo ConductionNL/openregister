@@ -246,7 +246,8 @@ final class PartyControllerA24GoldenTest extends TestCase {
 		$this->objectIs($object);
 		$schema = new Schema();
 		$this->objects->method('getCurrentSchemaEntity')->willReturn($schema);
-		$this->permissions->expects($this->exactly(4))->method('checkPermission')->with($schema, 'update', $this->equalTo(new PermissionCheckOptions(objectOwner: 'marleen', object: $object)), true);
+		$asked = new PermissionCheckOptions(objectOwner: 'marleen', object: $object);
+		$this->permissions->expects($this->exactly(4))->method('checkPermission')->with($schema, 'update', $asked, true);
 		$this->params = ['partyUuid' => ' party-b ', 'role' => '  ', 'kind' => 'person'];
 		$this->roles->expects($this->once())->method('addParty')->with('case-1', 3, '7', $this->params)->willReturn($this->link());
 		$this->roles->expects($this->once())->method('replacePrimaryParty')->with($object, 'party-b', null)->willReturn($this->link());

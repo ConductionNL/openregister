@@ -1563,7 +1563,7 @@ class ObjectServiceTest extends TestCase {
 		$this->permissionHandler
 			->expects($this->once())
 			->method('checkPermission')
-			->with($this->schema, 'update', $this->equalTo(new PermissionCheckOptions(objectOwner: 'user1', object: $entity)), true);
+			->with($this->schema, 'update', new PermissionCheckOptions(objectOwner: 'user1', object: $entity), true);
 
 		$this->invokePrivate('checkSavePermissions', ['existing-uuid', true]);
 	}

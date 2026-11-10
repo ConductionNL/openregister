@@ -137,7 +137,7 @@ final class LockHandlerUpdatePermissionTest extends TestCase {
 			->with(
 				$this->schema,
 				'update',
-				$this->equalTo(new PermissionCheckOptions(objectOwner: 'owner-uid', object: $this->object)),
+				new PermissionCheckOptions(objectOwner: 'owner-uid', object: $this->object),
 				true
 			)
 			->willThrowException(new NotAuthorizedException(message: 'No update permission'));
@@ -174,7 +174,7 @@ final class LockHandlerUpdatePermissionTest extends TestCase {
 			->with(
 				$this->schema,
 				'update',
-				$this->equalTo(new PermissionCheckOptions(objectOwner: 'owner-uid', object: $this->object)),
+				new PermissionCheckOptions(objectOwner: 'owner-uid', object: $this->object),
 				true
 			)
 			->willThrowException(new NotAuthorizedException(message: 'No update permission'));
