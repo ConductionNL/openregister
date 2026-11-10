@@ -37,9 +37,9 @@ final class DeckCardRun {
 	/**
 	 * Deck's CardService, set once Deck is known to be available.
 	 *
-	 * @var object
+	 * @var object|null
 	 */
-	public object $cardService;
+	public ?object $cardService = null;
 
 	/**
 	 * The UID of the user who creates and owns the card.
