@@ -28,6 +28,7 @@ use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\FileWriteGuard;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Http\Response;
@@ -645,7 +646,7 @@ class FilesControllerActionsGoldenTest extends TestCase {
 
 			return $this->object;
 		});
-		$service->method('find')->willReturnCallback(fn (string $id, mixed ...$rest): ?ObjectEntity => $this->found(id: $id, rest: $rest));
+		$service->method('find')->willReturnCallback(fn (string $id, mixed ...$rest): ?ObjectEntity => $this->found(id: $id, rest: array_slice(FindCallShape::find(args: [$id, ...$rest]), 1)));
 		return $service;
 	}//end objectService()
 

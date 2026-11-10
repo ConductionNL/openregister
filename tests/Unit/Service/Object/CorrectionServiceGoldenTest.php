@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\CorrectionService;
 use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -83,7 +84,7 @@ class CorrectionServiceGoldenTest extends TestCase {
 		$objects->method('setSchema')->willReturnCallback(fn ($s) => $this->note(['setSchema', $s], $objects));
 		$objects->method('findSilent')->willReturnCallback(
 			function (...$args) use ($o): ObjectEntity {
-				$this->trace[] = ['findSilent', $args];
+				$this->trace[] = ['findSilent', FindCallShape::findSilent(args: $args)];
 				$existing = new ObjectEntity();
 				$existing->setUuid('u-1');
 				$existing->setObject(['name' => 'old', 'age' => 3]);

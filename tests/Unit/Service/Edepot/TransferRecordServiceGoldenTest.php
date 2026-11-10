@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Edepot;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Edepot\TransferRecordService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -78,7 +79,7 @@ class TransferRecordServiceGoldenTest extends TestCase {
 		);
 		$store->method('find')->willReturnCallback(
 			function (mixed ...$args): ?ObjectEntity {
-				$this->calls[] = ['find', $args];
+				$this->calls[] = ['find', FindCallShape::find(args: $args)];
 				if ($this->found === false) {
 					throw new \RuntimeException('not there');
 				}
