@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\CascadeDeleteOrigin;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -165,10 +166,7 @@ class ReferentialIntegrityServiceBranchTest extends TestCase {
 
 		$result = $this->service->applyDeletionActions(
 			$analysis,
-			'admin',
-			'root-uuid',
-			'org-1',
-			'my-schema'
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'root-uuid', triggerSchemaSlug: 'my-schema', organisationId: 'org-1')
 		);
 
 		$this->assertSame(['retained' => []], $result);

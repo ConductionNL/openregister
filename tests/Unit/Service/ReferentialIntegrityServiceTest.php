@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\Object\CascadeDeleteOrigin;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -1025,8 +1026,7 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$this->service->applyDeletionActions(
 			analysis: $analysis,
-			userId: 'admin',
-			cascadeSource: 'root-uuid'
+			origin: new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'root-uuid', triggerSchemaSlug: null, organisationId: null)
 		);
 
 		// No exception means success.
@@ -1113,8 +1113,7 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$this->service->applyDeletionActions(
 			analysis: $analysis,
-			userId: 'admin',
-			cascadeSource: 'root-uuid'
+			origin: new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'root-uuid', triggerSchemaSlug: null, organisationId: null)
 		);
 
 		// SET_NULL first, SET_DEFAULT second, CASCADE third.
@@ -1301,8 +1300,7 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$this->service->applyDeletionActions(
 			analysis: $analysis,
-			userId: 'admin',
-			cascadeSource: 'root-uuid'
+			origin: new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'root-uuid', triggerSchemaSlug: null, organisationId: null)
 		);
 
 		$this->assertContains('cascade-uuid', $deletedUuids);
@@ -1349,8 +1347,7 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$this->service->applyDeletionActions(
 			analysis: $analysis,
-			userId: 'admin',
-			cascadeSource: 'root-uuid'
+			origin: new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'root-uuid', triggerSchemaSlug: null, organisationId: null)
 		);
 
 		$this->assertNotEmpty($updatedObjects);

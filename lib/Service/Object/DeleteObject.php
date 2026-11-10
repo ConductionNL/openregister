@@ -942,10 +942,7 @@ class DeleteObject {
 
 			$integrityResult = $this->integrityService->applyDeletionActions(
 				$analysis,
-				$userId,
-				$uuid,
-				$activeOrg,
-				$triggerSlug
+				new CascadeDeleteOrigin(userId: $userId, cascadeSource: $uuid, triggerSchemaSlug: $triggerSlug, organisationId: $activeOrg)
 			);
 
 			// A RETAINED RECORD STAYS LIVE EVEN WHEN ITS PARENT GOES, so it is not
