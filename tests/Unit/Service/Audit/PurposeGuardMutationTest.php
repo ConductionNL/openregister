@@ -29,6 +29,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Audit;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Db\AuditTrail\PurposeRefusal;
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Register;
@@ -143,8 +145,8 @@ final class PurposeGuardMutationTest extends TestCase {
 	public function testRefusalWithoutRegisterIsRecordedForTheSchema(): void {
 		$this->refusing();
 		$this->audit->expects($this->once())
-			->method('createPurposeRefusalEntry')
-			->with(PurposeRefusedException::RULE_MISSING, null, null, 41)
+			->method('recordPurposeRefusal')
+			->with(new PurposeRefusal(PurposeRefusedException::RULE_MISSING, null, new AuditedObject(null, 41)))
 			->willReturn(new AuditTrail());
 		$this->logger->expects($this->never())->method('error');
 
@@ -155,8 +157,8 @@ final class PurposeGuardMutationTest extends TestCase {
 	public function testRefusalWithoutSchemaIsRecordedForTheRegister(): void {
 		$this->refusing();
 		$this->audit->expects($this->once())
-			->method('createPurposeRefusalEntry')
-			->with(PurposeRefusedException::RULE_MISSING, null, 7, null)
+			->method('recordPurposeRefusal')
+			->with(new PurposeRefusal(PurposeRefusedException::RULE_MISSING, null, new AuditedObject(7, null)))
 			->willReturn(new AuditTrail());
 		$this->logger->expects($this->never())->method('error');
 
@@ -166,7 +168,7 @@ final class PurposeGuardMutationTest extends TestCase {
 
 	public function testUnrecordableRefusalIsLoggedAndStillRefuses(): void {
 		$this->refusing();
-		$this->audit->method('createPurposeRefusalEntry')
+		$this->audit->method('recordPurposeRefusal')
 			->willThrowException(new RuntimeException('trail down'));
 		$this->logger->expects($this->once())
 			->method('error')

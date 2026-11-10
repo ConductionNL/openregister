@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Application;
 use OCA\OpenRegister\Db\ApplicationMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 
@@ -89,9 +90,7 @@ class ApplicationService implements ApplicationServiceInterface {
 	 * Retrieves a list of all applications with optional pagination and filtering.
 	 * Supports limit/offset pagination and custom filter conditions.
 	 *
-	 * @param int|null $limit Maximum number of results to return (null for all)
-	 * @param int|null $offset Number of results to skip for pagination (null for no offset)
-	 * @param array $filters Filter conditions as key-value pairs (default: empty array)
+	 * @param ListQuery $query The page (unbounded for all rows), offset and filter conditions.
 	 *
 	 * @return Application[] Array of application entities
 	 *
@@ -99,13 +98,9 @@ class ApplicationService implements ApplicationServiceInterface {
 	 *
 	 * @spec exclude Facade plumbing: thin delegation to ApplicationMapperInterface::findAll, no standalone behavioral contract.
 	 */
-	public function findAll(?int $limit = null, ?int $offset = null, array $filters = []): array {
+	public function findAll(ListQuery $query): array {
 		// Delegate to mapper to retrieve applications with pagination and filters.
-		return $this->applicationMapper->findAll(
-			limit: $limit,
-			offset: $offset,
-			filters: $filters
-		);
+		return $this->applicationMapper->findAll(limit: $query->limitOrNull(), offset: $query->offset, filters: $query->filters);
 	}//end findAll()
 
 	/**

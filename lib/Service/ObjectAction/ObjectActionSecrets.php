@@ -234,7 +234,7 @@ final class ObjectActionSecrets {
 			return $data;
 		}
 
-		return self::replaceCopies(data: $data, secrets: $secrets, numbers: self::numericSecrets(ref: $ref));
+		return self::replaceCopies(data: $data, copies: new SecretCopies(secrets: $secrets, numbers: self::numericSecrets(ref: $ref)));
 	}//end redactCopies()
 
 	/**
@@ -260,18 +260,17 @@ final class ObjectActionSecrets {
 	/**
 	 * Walk the data, replacing whole-string copies.
 	 *
-	 * @param mixed              $data    The data.
-	 * @param array<int, string> $secrets The secrets a string may equal.
-	 * @param array<int, string> $numbers The numeric secrets a number may equal.
+	 * @param mixed        $data   The data.
+	 * @param SecretCopies $copies The secrets a value may be a copy of.
 	 *
 	 * @return mixed The data.
 	 */
-	private static function replaceCopies(mixed $data, array $secrets, array $numbers): mixed {
-		if (is_string($data) === true && in_array($data, $secrets, true) === true) {
+	private static function replaceCopies(mixed $data, SecretCopies $copies): mixed {
+		if (is_string($data) === true && in_array($data, $copies->secrets, true) === true) {
 			return self::REDACTED;
 		}
 
-		if ((is_int($data) === true || is_float($data) === true) && in_array((string)$data, $numbers, true) === true) {
+		if ((is_int($data) === true || is_float($data) === true) && in_array((string)$data, $copies->numbers, true) === true) {
 			return self::REDACTED;
 		}
 
@@ -285,7 +284,7 @@ final class ObjectActionSecrets {
 				continue;
 			}
 
-			$data[$key] = self::replaceCopies(data: $value, secrets: $secrets, numbers: $numbers);
+			$data[$key] = self::replaceCopies(data: $value, copies: $copies);
 		}
 
 		return $data;

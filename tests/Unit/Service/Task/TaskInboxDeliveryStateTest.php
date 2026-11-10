@@ -66,7 +66,6 @@ class TaskInboxDeliveryStateTest extends TestCase {
 	private function service(?PortalTaskDeliveryMapper $deliveries): TaskInboxService {
 		return new TaskInboxService(
 			tasks: $this->createMock(TaskMapper::class),
-			temporal: new TaskTemporalProjection(),
 			logger: new NullLogger(),
 			objects: null,
 			deliveries: $deliveries

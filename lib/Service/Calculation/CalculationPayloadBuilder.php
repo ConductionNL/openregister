@@ -88,9 +88,10 @@ class CalculationPayloadBuilder implements CalculationPayloadBuilderInterface {
 	 */
 	public function build(ObjectEntity $object, Schema $schema): array {
 		$data = (new CalculationPayload())->withSelf(data: ($object->getObject() ?? []), entity: $object);
-		$data = $this->withReferences(data: $data, object: $object, schema: $schema);
+		$run  = new PayloadBuildRun(object: $object, schema: $schema);
+		$data = $this->withReferences(data: $data, run: $run);
 
-		return $this->withAggregates(data: $data, object: $object, schema: $schema);
+		return $this->withAggregates(data: $data, run: $run);
 	}//end build()
 
 	/**
@@ -98,13 +99,12 @@ class CalculationPayloadBuilder implements CalculationPayloadBuilderInterface {
 	 * names of those that could not be resolved.
 	 *
 	 * @param array<string, mixed> $data The payload with `@self`.
-	 * @param ObjectEntity $object The object whose data is enriched.
-	 * @param Schema $schema The object's schema.
+	 * @param PayloadBuildRun      $run  The object being enriched and its schema.
 	 *
 	 * @return array<string, mixed> The payload, unchanged when the schema declares no references.
 	 */
-	private function withReferences(array $data, ObjectEntity $object, Schema $schema): array {
-		$references = $this->configBlock(schema: $schema, key: 'x-openregister-references');
+	private function withReferences(array $data, PayloadBuildRun $run): array {
+		$references = $this->configBlock(schema: $run->schema, key: 'x-openregister-references');
 		if ($references === null) {
 			return $data;
 		}
@@ -112,8 +112,8 @@ class CalculationPayloadBuilder implements CalculationPayloadBuilderInterface {
 		$outcome = $this->references->resolveAllWithOutcome(
 			payload: $data,
 			references: $references,
-			register: $object->getRegister(),
-			organisation: $object->getOrganisation()
+			register: $run->object->getRegister(),
+			organisation: $run->object->getOrganisation()
 		);
 		$data['@ref'] = $outcome['refs'];
 		$data[self::UNRESOLVED_KEY] = $outcome['unresolved'];
@@ -125,19 +125,15 @@ class CalculationPayloadBuilder implements CalculationPayloadBuilderInterface {
 	 * Add the pre-resolved aggregate references (`@aggregate`).
 	 *
 	 * @param array<string, mixed> $data The payload with `@self` and `@ref`.
-	 * @param ObjectEntity $object The object whose data is enriched.
-	 * @param Schema $schema The object's schema.
+	 * @param PayloadBuildRun      $run  The object being enriched and its schema.
 	 *
 	 * @return array<string, mixed> The payload, unchanged when the schema declares no aggregates.
 	 */
-	private function withAggregates(array $data, ObjectEntity $object, Schema $schema): array {
-		$aggregateRefs = $this->configBlock(schema: $schema, key: 'x-openregister-aggregate-refs');
+	private function withAggregates(array $data, PayloadBuildRun $run): array {
+		$aggregateRefs = $this->configBlock(schema: $run->schema, key: 'x-openregister-aggregate-refs');
 		if ($aggregateRefs !== null) {
-			$data['@aggregate'] = $this->aggregates->resolveAll(
-				payload: $data,
-				aggregates: $aggregateRefs,
-				registerRef: $object->getRegister()
-			);
+			$referrer = new ReferringObject(payload: $data, register: $run->object->getRegister());
+			$data['@aggregate'] = $this->aggregates->resolveAll(referrer: $referrer, aggregates: $aggregateRefs);
 		}
 
 		return $data;
