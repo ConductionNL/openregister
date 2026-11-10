@@ -48,6 +48,7 @@ use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\MigrationPacksControllerServices;
 use OCA\OpenRegister\Exception\MigrationPackRefusedException;
 use OCA\OpenRegister\Service\MigrationPack\MigrationPackErrorResponderInterface;
+use OCA\OpenRegister\Service\MigrationPack\MigrationPackImportResult;
 use OCA\OpenRegister\Service\MigrationPack\MigrationPackRequestReaderInterface;
 use OCA\OpenRegister\Service\MigrationPack\PackRevision;
 use OCA\OpenRegister\Service\MigrationPackServiceInterface;
@@ -297,11 +298,28 @@ class MigrationPacksController extends Controller {
 			return $this->errors->unexpected(action: 'import', exception: $e);
 		}
 
+		$this->logImport(result: $result, userId: $userId);
+
+		$status = 200;
+		if ($result->created === true) {
+			$status = 201;
+		}
+
+		return new JSONResponse(data: $result->pack->jsonSerialize(), statusCode: $status);
+	}//end import()
+
+	/**
+	 * Record who imported which pack, and whether it was created or replaced.
+	 *
+	 * @param MigrationPackImportResult $result The import result
+	 * @param string                    $userId Who imported it
+	 *
+	 * @return void
+	 */
+	private function logImport(MigrationPackImportResult $result, string $userId): void {
 		$outcome = 'replaced';
-		$status  = 200;
 		if ($result->created === true) {
 			$outcome = 'created';
-			$status  = 201;
 		}
 
 		$pack = $result->pack;
@@ -315,9 +333,7 @@ class MigrationPacksController extends Controller {
 				'builtin' => $pack->getBuiltin(),
 			]
 		);
-
-		return new JSONResponse(data: $pack->jsonSerialize(), statusCode: $status);
-	}//end import()
+	}//end logImport()
 
 	/**
 	 * Create a migration pack. Admin only.
