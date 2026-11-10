@@ -57,6 +57,11 @@
         "param null 2",
         "where eq(title,\":p1\")"
     ],
+    "context params": [],
+    "context params and a filter": [
+        "param \"x\" 2",
+        "where eq(title,\":p1\")"
+    ],
     "empty / no schema": [],
     "reserved only / no schema": [],
     "scalar / no schema": [
@@ -111,6 +116,11 @@
     ],
     "null value / no schema": [
         "param null 2",
+        "where eq(title,\":p1\")"
+    ],
+    "context params / no schema": [],
+    "context params and a filter / no schema": [
+        "param \"x\" 2",
         "where eq(title,\":p1\")"
     ]
 }
