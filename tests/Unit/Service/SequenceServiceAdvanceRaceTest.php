@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\SequenceMapper;
+use OCA\OpenRegister\Service\SequenceScope;
 use OCA\OpenRegister\Service\SequenceService;
 use OCP\DB\Exception as DbException;
 use OCP\IDBConnection;
@@ -40,7 +41,7 @@ final class SequenceServiceAdvanceRaceTest extends TestCase {
 		$raised = [];
 		$mapper = $this->createMock(SequenceMapper::class);
 		$mapper->method('raiseTo')->willReturnCallback(
-			function (int $registerId, int $schemaId, string $scopeKey, int $minNextValue) use (&$raised): int {
+			function (SequenceScope $scope, int $minNextValue) use (&$raised): int {
 				$raised[] = $minNextValue;
 				return 0;
 			}

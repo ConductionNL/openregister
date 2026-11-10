@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\SequenceMapper;
+use OCA\OpenRegister\Service\SequenceScope;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
@@ -38,10 +39,10 @@ final class SequenceMapperScopeGoldenTest extends TestCase {
 	public function testOutcomesMatchGolden(): void {
 		$row = ['id' => 7, 'register_id' => 3, 'schema_id' => 4, 'scope_key' => '2026', 'next_value' => 12];
 		$actual = [
-			'find found' => $this->recorded(fn (SequenceMapper $mapper): mixed => $mapper->findForScope(3, 4, '2026')?->getNextValue(), [[$row]]),
-			'find missing' => $this->recorded(fn (SequenceMapper $mapper): mixed => $mapper->findForScope(3, 4, ''), [[]]),
-			'increment' => $this->recorded(fn (SequenceMapper $mapper): mixed => $mapper->incrementScope(3, 4, '2026-06'), []),
-			'raise' => $this->recorded(fn (SequenceMapper $mapper): mixed => $mapper->raiseTo(1, 2, '2026', 121), []),
+			'find found' => $this->recorded(fn (SequenceMapper $mapper): mixed => $mapper->findForScope(new SequenceScope(3, 4, '2026'))?->getNextValue(), [[$row]]),
+			'find missing' => $this->recorded(fn (SequenceMapper $mapper): mixed => $mapper->findForScope(new SequenceScope(3, 4, '')), [[]]),
+			'increment' => $this->recorded(fn (SequenceMapper $mapper): mixed => $mapper->incrementScope(new SequenceScope(3, 4, '2026-06')), []),
+			'raise' => $this->recorded(fn (SequenceMapper $mapper): mixed => $mapper->raiseTo(new SequenceScope(1, 2, '2026'), 121), []),
 		];
 
 		if (getenv('UPDATE_GOLDEN') === '1') {
