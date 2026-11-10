@@ -130,8 +130,9 @@ class TextExtractionServiceTest extends TestCase {
 	}
 
 	public function testChunkDocumentReturnsEmptyArrayForEmptyText(): void {
-		$chunks = $this->service->chunkDocument('');
-		$this->assertIsArray($chunks);
+		$this->assertSame([], $this->service->chunkDocument(''));
+		$this->assertSame([], $this->service->chunkDocument(" \n\t "));
+		$this->assertSame([], $this->service->chunkDocument('', ['strategy' => 'FIXED_SIZE']));
 	}
 
 	public function testChunkDocumentRespectsChunkSizeOption(): void {
@@ -3134,11 +3135,8 @@ class TextExtractionServiceTest extends TestCase {
 
 	public function testChunkDocumentWithOnlyNullBytes(): void {
 		$text = "\0\0\0\0\0";
-		$chunks = $this->service->chunkDocument($text);
-		// After cleanText strips null bytes, text = '' — chunkRecursive returns one empty chunk.
-		$this->assertIsArray($chunks);
-		$this->assertCount(1, $chunks);
-		$this->assertSame('', $chunks[0]['text']);
+		// After cleanText strips null bytes nothing is left to chunk.
+		$this->assertSame([], $this->service->chunkDocument($text));
 	}
 
 	// ────────────────────────────────────────────────────────
