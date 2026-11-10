@@ -353,10 +353,12 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 		$this->permissionHandler->checkPermission(
 			schema: $schemaEntity,
 			action: 'update',
-			userId: $this->userSession->getUser()?->getUID(),
-			objectOwner: $object->getOwner(),
-			_rbac: true,
-			object: $object
+			options: new PermissionCheckOptions(
+				userId: $this->userSession->getUser()?->getUID(),
+				objectOwner: $object->getOwner(),
+				object: $object
+			),
+			_rbac: true
 		);
 
 		return [
