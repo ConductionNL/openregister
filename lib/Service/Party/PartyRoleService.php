@@ -29,7 +29,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Party;
 
-use Closure;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ContactLink;
@@ -246,9 +245,8 @@ class PartyRoleService implements PartyRoleServiceInterface {
 	/**
 	 * Take a party off an object: every role, or the one named.
 	 *
-	 * @param string $objectUuid The object uuid.
-	 * @param string $partyUuid The party.
-	 * @param string|null $role Only this role, or null for all.
+	 * @param string       $objectUuid The object uuid.
+	 * @param PartyHolding $holding    The party, and only this role or null for all.
 	 *
 	 * @return int How many roles went.
 	 *
@@ -256,9 +254,9 @@ class PartyRoleService implements PartyRoleServiceInterface {
 	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
-	public function removeParty(string $objectUuid, string $partyUuid, ?string $role = null): int {
+	public function removeParty(string $objectUuid, PartyHolding $holding): int {
 		$links = $this->records->links->findPartiesForObject(objectUuid: $objectUuid);
-		return $this->unlinkAll(targets: array_values(array_filter($links, self::holding(partyUuid: $partyUuid, role: $role))));
+		return $this->unlinkAll(targets: array_values(array_filter($links, $holding->matches(...))));
 	}//end removeParty()
 
 	/**
@@ -282,19 +280,6 @@ class PartyRoleService implements PartyRoleServiceInterface {
 
 		return count($targets);
 	}//end unlinkAll()
-
-	/**
-	 * Whether a link is the party's, in one role or in every role.
-	 *
-	 * @param string      $partyUuid The party uuid.
-	 * @param string|null $role      The role; null for every role.
-	 *
-	 * @return Closure(ContactLink): bool The match.
-	 */
-	private static function holding(string $partyUuid, ?string $role): Closure {
-		return static fn (ContactLink $link): bool => $link->getPartyUuid() === $partyUuid
-			&& ($role === null || $link->getRole() === $role);
-	}//end holding()
 
 	/**
 	 * Replace the party the object is filed against, and record it.

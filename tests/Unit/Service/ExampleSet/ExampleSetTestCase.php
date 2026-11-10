@@ -87,6 +87,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetWorkRowKinds;
 use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCA\OpenRegister\Db\DeckLinkMapperInterface;
 use OCP\IUserManager;
+use OCA\OpenRegister\Service\Party\PartyHolding;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Db\ContactLink;
@@ -1304,8 +1305,8 @@ abstract class ExampleSetTestCase extends TestCase {
 				return new ContactLink();
 			}
 		);
-		$roles->method('removeParty')->willReturnCallback(function (string $objectUuid, string $partyUuid, ?string $role = null): int {
-			unset($this->partyLinks[$objectUuid.' '.$partyUuid.' '.$role]);
+		$roles->method('removeParty')->willReturnCallback(function (string $objectUuid, PartyHolding $holding): int {
+			unset($this->partyLinks[$objectUuid.' '.$holding->partyUuid.' '.$holding->role]);
 			return 1;
 		});
 
