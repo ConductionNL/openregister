@@ -1642,7 +1642,6 @@ class OrganisationService implements OrganisationServiceInterface {
 	 *
 	 * @return Organisation The reconstructed organisation object
 	 *
-	 *
 	 * @spec openspec/specs/saas-multi-tenant/spec.md
 	 */
 	private function reconstructOrganisationFromCache(array $cachedData): Organisation {
