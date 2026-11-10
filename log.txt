@@ -1728,3 +1728,4 @@
 2026-11-10T09:26:24Z precheck-20261110T063040-46909641 GREEN tree 5ffd89bf63 on dev 4ac4b47879 prs 1 front=skip: Tests: 54800, Assertions: 181012, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
 2026-11-10T09:26:52Z integrator-20261110T083641-bf44b7c8 CONFLICT-DEV #8736 85a3d99a
 2026-11-10T09:27:41Z session-20261110T082318-c4647bf6 wavev-10 lane V10 (cloud continuation) done: PRs #8986 #9010 #9011 #9012 #9013 #9014 #9015 #9026 #9027 #9037 (#9037 stacked on #8986); MEASURE U10 with all v10 branches gt2 467 gt4 199 gt6 129 (main 592/215/134); rest LEFT (Kernel contract, held, guard flags)
+2026-11-10T09:28:12Z precheck-20261110T063008-5e5865e2 GREEN tree f7b04be9d9 on dev 4ac4b47879 prs 1 front=skip: Tests: 54803, Assertions: 181024, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
