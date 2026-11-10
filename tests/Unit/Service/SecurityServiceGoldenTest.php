@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\FailedAttempt;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
 use OCA\OpenRegister\Service\SecurityService;
 use OCP\ICache;
@@ -356,7 +357,7 @@ final class SecurityServiceGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAuthFailureBelowTheCeilingCountsOnly(): void {
-		$this->service->recordFailedAuthAttempt('tok', '1.2.3.4');
+		$this->service->recordFailedAuthAttempt(new FailedAttempt('tok', '1.2.3.4', 'inbound_auth_failed'));
 		$this->assertSame(
 			[
 				['get', 'openregister_auth_attempts_tok_1.2.3.4'],
@@ -383,7 +384,7 @@ final class SecurityServiceGoldenTest extends TestCase {
 	 */
 	public function testCrossingTheIdentityCeilingLocksOut(): void {
 		$this->store['openregister_auth_attempts_tok_1.2.3.4'] = 2;
-		$this->service->recordFailedAuthAttempt('tok', '1.2.3.4', 'r');
+		$this->service->recordFailedAuthAttempt(new FailedAttempt('tok', '1.2.3.4', 'r'));
 		$until = $this->store['openregister_auth_lockout_tok_1.2.3.4'];
 		$this->assertSame(['set', 'openregister_auth_lockout_tok_1.2.3.4', $until, 600], $this->trace[4]);
 		$this->assertSame(
@@ -404,7 +405,7 @@ final class SecurityServiceGoldenTest extends TestCase {
 	 */
 	public function testCrossingTheAddressCeilingLocksOut(): void {
 		$this->store['openregister_auth_ip_attempts_1.2.3.4'] = 9;
-		$this->service->recordFailedAuthAttempt('other', '1.2.3.4');
+		$this->service->recordFailedAuthAttempt(new FailedAttempt('other', '1.2.3.4', 'inbound_auth_failed'));
 		$this->assertArrayHasKey('openregister_auth_lockout_other_1.2.3.4', $this->store);
 		$this->assertSame(
 			['remove', 'openregister_auth_attempts_other_1.2.3.4'],

@@ -355,9 +355,7 @@ class ImportPreviewController extends Controller {
 
 		$rows = $this->rowMapper->findByPreview(
 			previewId: (int)$preview->getId(),
-			decision: $decision,
-			limit: $limit,
-			offset: $offset
+			query: new ListQuery(limit: $limit, offset: $offset, filters: ['decision' => $decision])
 		);
 
 		return new JSONResponse(

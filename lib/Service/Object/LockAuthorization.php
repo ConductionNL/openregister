@@ -76,10 +76,8 @@ class LockAuthorization {
 		$this->permissionHandler?->checkPermission(
 			schema: $context['schema'],
 			action: 'update',
-			userId: null,
-			objectOwner: $object->getOwner(),
-			_rbac: true,
-			object: $object
+			options: new PermissionCheckOptions(objectOwner: $object->getOwner(), object: $object),
+			_rbac: true
 		);
 	}//end assertMayLock()
 

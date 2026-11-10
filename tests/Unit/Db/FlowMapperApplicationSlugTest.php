@@ -175,7 +175,7 @@ class FlowMapperApplicationSlugTest extends TestCase {
 	public function testFindAllFlowsAppliesTheApplicationSlugPredicateWhenGiven(): void {
 		$mapper = new TestableFlowMapperForApplicationSlug($this->db());
 
-		$mapper->findAllFlows(applicationSlug: 'hydra');
+		$mapper->findAllFlows(selection: new FlowSelection(applicationSlug: 'hydra'));
 
 		$this->assertContains(['application_slug', 'hydra'], $this->eqCalls);
 
@@ -207,7 +207,7 @@ class FlowMapperApplicationSlugTest extends TestCase {
 	public function testFindAllFlowsComposesTheAppAndApplicationSlugPredicates(): void {
 		$mapper = new TestableFlowMapperForApplicationSlug($this->db());
 
-		$mapper->findAllFlows(app: 'hermiq', applicationSlug: 'hydra');
+		$mapper->findAllFlows(selection: new FlowSelection(app: 'hermiq', applicationSlug: 'hydra'));
 
 		$this->assertContains(['app', 'hermiq'], $this->eqCalls);
 		$this->assertContains(['application_slug', 'hydra'], $this->eqCalls);

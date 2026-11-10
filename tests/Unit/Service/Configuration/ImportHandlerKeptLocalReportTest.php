@@ -31,7 +31,9 @@ use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\SchemaImportOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ShippedBaseline\DescriptorParts;
 use OCA\OpenRegister\Service\ShippedBaseline\DivergenceComparator;
@@ -169,7 +171,13 @@ class ImportHandlerKeptLocalReportTest extends TestCase {
 			 * @return array<string, mixed>
 			 */
 			public function importFromJson(mixed ...$args): array {
-				$this->importSchema(data: array_shift($this->definitions), slugsAndIdsMap: [], appId: 'dossiq', version: '0.20.90');
+				$this->importSchema(
+					definition: new ImportedSchemaLookup(
+						data: array_shift($this->definitions),
+						options: new SchemaImportOptions(appId: 'dossiq', version: '0.20.90')
+					),
+					slugsAndIdsMap: []
+				);
 
 				return ['registers' => [], 'schemas' => [], 'objects' => []];
 			}//end importFromJson()
@@ -255,7 +263,13 @@ class ImportHandlerKeptLocalReportTest extends TestCase {
 	 */
 	public function testAnEarlierImportIsNotReportedByTheNextAppImport(): void {
 		$handler = $this->handler(definitions: [self::incoming(authorization: self::BASELINE)]);
-		$handler->importSchema(data: self::incoming(authorization: self::SHIPPED), slugsAndIdsMap: [], appId: 'dossiq', version: '0.20.90');
+		$handler->importSchema(
+			definition: new ImportedSchemaLookup(
+				data: self::incoming(authorization: self::SHIPPED),
+				options: new SchemaImportOptions(appId: 'dossiq', version: '0.20.90')
+			),
+			slugsAndIdsMap: []
+		);
 
 		$result = $handler->importFromApp(appId: 'dossiq', data: [], version: '0.20.91');
 

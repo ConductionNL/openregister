@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Formats\UuidFormat;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Rbac\MaskedWrite;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Db\ListQuery;
@@ -94,6 +95,7 @@ use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
+use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
 use OCA\OpenRegister\Service\Geo\GeoJsonGeometryValidator;
 use OCA\OpenRegister\Service\Object\ResultNameCollector;
 use OCA\OpenRegister\Service\Object\LockHandler;
@@ -1403,10 +1405,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->permissionHandler->checkPermission(
             schema: $this->currentSchema,
             action: 'read',
-            userId: null,
-            objectOwner: $object->getOwner(),
-            _rbac: $request->rbac,
-            object: $object
+            options: new PermissionCheckOptions(objectOwner: $object->getOwner(), object: $object),
+            _rbac: $request->rbac
         );
     }//end assertFindAllowed()
 
@@ -2852,11 +2852,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->permissionHandler->checkPermission(
             schema: $this->currentSchema,
             action: 'create',
-            userId: null,
-            objectOwner: null,
-            _rbac: $request->rbac,
-            object: $request->incoming,
-            register: $this->currentRegisterId()
+            options: new PermissionCheckOptions(object: $request->incoming, register: $this->currentRegisterId()),
+            _rbac: $request->rbac
         );
     }//end assertMayCreate()
 
@@ -2877,10 +2874,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->permissionHandler->checkPermission(
             schema: $this->currentSchema,
             action: 'update',
-            userId: null,
-            objectOwner: $stored->getOwner(),
-            _rbac: $_rbac,
-            object: $stored
+            options: new PermissionCheckOptions(objectOwner: $stored->getOwner(), object: $stored),
+            _rbac: $_rbac
         );
     }//end assertMayUpdate()
 
@@ -3442,8 +3437,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         }
 
         return $this->validateHandler->validateReadOnlyConstraints(
-            incomingObject: $candidate,
-            existingObject: $existingData,
+            check: new WriteConstraintCheck(incoming: $candidate, stored: $existingData),
             schema: $this->currentSchema
         );
     }//end readOnlyViolations()
@@ -3466,8 +3460,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     private function immutableViolations(array $candidate, array $existingData): array
     {
         return $this->validateHandler->validateImmutableConstraints(
-            incomingObject: $candidate,
-            existingObject: $existingData,
+            check: new WriteConstraintCheck(incoming: $candidate, stored: $existingData),
             schema: $this->currentSchema
         );
     }//end immutableViolations()
@@ -3705,7 +3698,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @return void
      *
-     * @throws \OCA\OpenRegister\Exception\FolderAccessDeniedException When the user cannot access the bound folder.
+     * @throws \OCA\OpenRegister\Exception\FolderAccessDeniedException When the user cannot access the bound folder, or the check fails.
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
@@ -3716,8 +3709,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         } catch (\OCA\OpenRegister\Exception\FolderAccessDeniedException $e) {
             // Propagate folder-access denials up to the controller.
             throw $e;
-        } catch (Exception $e) {
-            // A missing object or any other error: let SaveObject handle the creation.
+        } catch (OcpDoesNotExistException $e) {
+            // No stored object yet: let SaveObject handle the creation.
             $this->logger->debug(
                 message: '[ObjectService] Folder binding not re-validated, object not loadable',
                 context: [
@@ -3725,6 +3718,13 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                     'exception' => $e->getMessage(),
                 ]
             );
+        } catch (Exception $e) {
+            // The binding could not be checked, so the save is refused.
+            $this->logger->warning(
+                message: '[ObjectService] Folder binding re-check failed, save refused',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid, 'exception' => $e]
+            );
+            throw new \OCA\OpenRegister\Exception\FolderAccessDeniedException(attemptedFolderId: '', previous: $e);
         }//end try
     }//end revalidateFolderBinding()
 
@@ -4263,10 +4263,12 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->permissionHandler->checkPermission(
             schema: $this->currentSchema,
             action: 'delete',
-            userId: $request->actingUserId(),
-            objectOwner: $row->getOwner(),
-            _rbac: $request->rbac,
-            object: $row
+            options: new PermissionCheckOptions(
+                userId: $request->actingUserId(),
+                objectOwner: $row->getOwner(),
+                object: $row
+            ),
+            _rbac: $request->rbac
         );
 
         \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.permitted');
@@ -4366,10 +4368,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->permissionHandler->checkPermission(
             schema: $this->currentSchema,
             action: 'delete',
-            userId: $request->actingUserId(),
-            objectOwner: null,
-            _rbac: $request->rbac,
-            register: $this->currentRegisterId()
+            options: new PermissionCheckOptions(userId: $request->actingUserId(), register: $this->currentRegisterId()),
+            _rbac: $request->rbac
         );
     }//end assertMayDeleteFromSchema()
 
@@ -4421,10 +4421,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->permissionHandler->checkPermission(
             schema: $schema,
             action: 'delete',
-            userId: $request->actingUserId(),
-            objectOwner: null,
-            _rbac: $request->rbac,
-            register: $this->currentRegisterId()
+            options: new PermissionCheckOptions(userId: $request->actingUserId(), register: $this->currentRegisterId()),
+            _rbac: $request->rbac
         );
 
         return $this->deleteHandler->deleteObject(
@@ -5468,8 +5466,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->permissionHandler->checkPermission(
             schema: $schema,
             action: 'read',
-            userId: null,
-            objectOwner: null,
             _rbac: $_rbac
         );
 

@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\Portal\PortalCompletion;
 use OCA\OpenRegister\Service\Portal\PortalSubject;
 use OCA\OpenRegister\Service\Portal\PortalTaskService;
 use OCA\OpenRegister\Service\Portal\PortalTaskSources;
+use OCA\OpenRegister\Service\Task\TaskAct;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
@@ -270,7 +271,7 @@ class PortalTaskServiceBehaviourTest extends TestCase {
 	 */
 	public function testCompleteStreamsATempFileAndReferencesIt(): void {
 		$task = $this->task(metadata: ['upload' => ['maxFiles' => 2]]);
-		$this->tasks->method('openFor')->with('complete', 't-1', 'party:bsn-1')->willReturn($task);
+		$this->tasks->method('openFor')->with(new TaskAct(verb: 'complete', actor: 'party:bsn-1'), 't-1')->willReturn($task);
 		$tmp = tempnam(sys_get_temp_dir(), 'ptb');
 		file_put_contents($tmp, 'BYTES');
 		$stream = null;
