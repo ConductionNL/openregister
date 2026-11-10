@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Object\GroupRuleRequest;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rbac\AccessReviewGate;
@@ -79,18 +80,19 @@ final class AccessReviewGateWrittenRuleGoldenTest extends TestCase {
 		$handler = $this->createMock(PermissionHandlerInterface::class);
 		$handler->method('resolveAuthorization')->willReturn($resolved);
 		$handler->method('hasGroupPermission')->willReturnCallback(
-			static function (
-				?array $authorization,
-				string $groupId,
-				string $action,
-				?string $userId = null,
-				?string $userGroup = null,
-				?string $objectOwner = null,
-				?array $objectData = null,
-				?string $objectOrganisation = null
-			) use (&$checks, $admittingGroup): bool {
-				$checks[] = [$groupId, $action, $userId, $objectData, $objectOrganisation, $authorization, $userGroup, $objectOwner];
-				return in_array($groupId, $admittingGroup, true) && in_array($groupId, ($authorization[$action] ?? []), true);
+			static function (GroupRuleRequest $request) use (&$checks, $admittingGroup): bool {
+				$checks[] = [
+					$request->groupId,
+					$request->action,
+					$request->userId,
+					$request->objectData,
+					$request->objectOrganisation,
+					$request->authorization,
+					$request->userGroup,
+					$request->objectOwner,
+				];
+				return in_array($request->groupId, $admittingGroup, true)
+					&& in_array($request->groupId, ($request->authorization[$request->action] ?? []), true);
 			}
 		);
 		$handler->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(

@@ -62,20 +62,15 @@ class GeoFeatureCollectionBuilder implements GeoFeatureCollectionBuilderInterfac
 	 * `properties` are restricted to that allow-list; the geometry is
 	 * always included regardless of the allow-list (REQ-GEO-008).
 	 *
-	 * @param array $rows Object rows (assoc arrays).
-	 * @param ?string $geoProperty Geo property name; null = auto-detect.
-	 * @param string[]|null $fields Property allow-list, or null for all.
-	 * @param bool $includeArea Add `_area_m2` for polygonal geometries.
+	 * @param array        $rows  Object rows (assoc arrays).
+	 * @param FeatureShape $shape The geo property, the property allow-list and whether to add `_area_m2`.
 	 *
 	 * @return array A GeoJSON FeatureCollection.
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
 	 */
-	public function buildFeatureCollection(array $rows, ?string $geoProperty = null, ?array $fields = null, bool $includeArea = false): array {
-		return $this->collect(
-			rows: $rows,
-			shape: new FeatureShape(geoProperty: $geoProperty, fields: $fields, includeArea: $includeArea)
-		);
+	public function buildFeatureCollection(array $rows, FeatureShape $shape=new FeatureShape()): array {
+		return $this->collect(rows: $rows, shape: $shape);
 	}//end buildFeatureCollection()
 
 	/**
@@ -163,17 +158,16 @@ class GeoFeatureCollectionBuilder implements GeoFeatureCollectionBuilderInterfac
 	 * for `outputFormat=application/json`) plus the `numberReturned`
 	 * count. `$maxFeatures` caps the feature list (WFS `count`/`maxFeatures`).
 	 *
-	 * @param array $rows Object rows (assoc arrays).
-	 * @param ?string $geoProperty Geo property name; null = auto-detect.
-	 * @param int|null $maxFeatures Optional cap on returned features.
+	 * @param array             $rows    Object rows (assoc arrays).
+	 * @param GetFeatureRequest $request The geo property and the optional cap on returned features.
 	 *
 	 * @return array A WFS-compatible GeoJSON FeatureCollection.
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
 	 */
-	public function buildWfsResponse(array $rows, ?string $geoProperty = null, ?int $maxFeatures = null): array {
-		$collection = $this->collect(rows: $rows, shape: new FeatureShape(geoProperty: $geoProperty));
-		return $this->capped(collection: $collection, maxFeatures: $maxFeatures);
+	public function buildWfsResponse(array $rows, GetFeatureRequest $request=new GetFeatureRequest()): array {
+		$collection = $this->collect(rows: $rows, shape: new FeatureShape(geoProperty: $request->geoProperty));
+		return $this->capped(collection: $collection, maxFeatures: $request->maxFeatures);
 	}//end buildWfsResponse()
 
 	/**

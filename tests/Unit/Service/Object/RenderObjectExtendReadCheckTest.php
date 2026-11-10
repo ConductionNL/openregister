@@ -202,9 +202,7 @@ class RenderObjectExtendReadCheckTest extends TestCase {
 return new RenderObject(
 			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
 				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
-					objectEntityMapper: $dependencies['objectEntityMapper'],
-					registerMapper: $dependencies['registerMapper'],
-					schemaMapper: $dependencies['schemaMapper'],
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $dependencies['registerMapper'], schemas: $dependencies['schemaMapper'], tables: $dependencies['objectEntityMapper']),
 					objectCacheService: $dependencies['objectCacheService']
 				),
 				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(

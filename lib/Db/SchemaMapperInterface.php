@@ -214,8 +214,7 @@ interface SchemaMapperInterface {
 	 * multi-tenancy and RBAC filtering.
 	 *
 	 * @param string $slug The slug to search for
-	 * @param int $limit Maximum number of results (default: 10)
-	 * @param int $offset Offset for pagination (default: 0)
+	 * @param ListQuery $query The page: its limit and offset
 	 * @param bool $_rbac Whether to apply RBAC permission checks (default: true)
 	 * @param bool $_multitenancy Whether to apply multi-tenancy filtering (default: true)
 	 *
@@ -225,7 +224,7 @@ interface SchemaMapperInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
 	 */
-	public function findBySlug(string $slug, int $limit = 10, int $offset = 0, bool $_rbac = true, bool $_multitenancy = true): array;
+	public function findBySlug(string $slug, ListQuery $query, bool $_rbac = true, bool $_multitenancy = true): array;
 
 	/**
 	 * Finds all schemas, files: with optional extension for statistics
@@ -488,9 +487,7 @@ interface SchemaMapperInterface {
 	 * Returns an array of schema UUIDs for schemas that reference the given schema
 	 * in their allOf, oneOf, or anyOf composition patterns.
 	 *
-	 * @param int|string $schemaIdentifier The ID, UUID, or slug of the schema.
-	 * @param string|null $knownUuid Pre-known UUID to avoid redundant lookups.
-	 * @param string|null $knownSlug Pre-known slug to avoid redundant lookups.
+	 * @param Schema|int|string $schema The schema, or its ID, UUID or slug to look it up by.
 	 *
 	 * @return array Array of schema UUIDs that compose with this schema
 	 *
@@ -499,7 +496,7 @@ interface SchemaMapperInterface {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      Schema composition search requires many conditional checks
 	 */
-	public function findExtendedBy(int|string $schemaIdentifier, ?string $knownUuid = null, ?string $knownSlug = null): array;
+	public function findExtendedBy(Schema|int|string $schema): array;
 
 	/**
 	 * Find all schema extension relationships in a single query

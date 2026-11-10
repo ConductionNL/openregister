@@ -43,6 +43,7 @@ use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Service\ObjectTranslationRequest;
 
 /**
  * Pins search parameter handling and every response shape.
@@ -293,7 +294,7 @@ class TranslationControllerA24GoldenTest extends TestCase {
 
 			return $object;
 		});
-		$this->bulk->method('translateObject')->with($object, 'nl', 'en', ['title'])->willReturn(['translated' => ['title' => 'T'], 'skipped' => []]);
+		$this->bulk->method('translate')->with(new ObjectTranslationRequest(object: $object, fromLong: 'nl', toLong: 'en'), ['title'])->willReturn(['translated' => ['title' => 'T'], 'skipped' => []]);
 		$c = $this->controller();
 		foreach ([[null, 'en'], ['', 'en'], ['nl', null], ['nl', '']] as [$from, $to]) {
 			$r = $c->bulkTranslate('u', $from, $to);

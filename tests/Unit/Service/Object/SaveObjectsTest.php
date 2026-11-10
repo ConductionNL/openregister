@@ -79,7 +79,7 @@ class SaveObjectsTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->handler = new SaveObjects(
-			stores: new BulkSaveStores(objectEntityMapper: $this->objectMapper, schemaMapper: $this->schemaMapper, registerMapper: $this->registerMapper, saveHandler: $this->saveHandler),
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper), saveHandler: $this->saveHandler),
 			session: new BulkSaveSession(userSession: $this->userSession, organisationService: $this->organisationService),
 			reporting: new BulkSaveReporting(logger: $this->logger),
 			checks: new BulkRowChecks()
@@ -2277,7 +2277,7 @@ class SaveObjectsTest extends TestCase {
 		$this->setupBulkSaveMock(savedCount: 1);
 
 		return new SaveObjects(
-			stores: new BulkSaveStores(objectEntityMapper: $this->objectMapper, schemaMapper: $this->schemaMapper, registerMapper: $this->registerMapper, saveHandler: $this->saveHandler),
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper), saveHandler: $this->saveHandler),
 			session: new BulkSaveSession(userSession: $this->userSession, organisationService: $this->organisationService, groupManager: $groups),
 			reporting: new BulkSaveReporting(logger: $this->logger),
 			checks: new BulkRowChecks(permissionHandler: $permissions)

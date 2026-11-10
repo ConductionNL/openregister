@@ -51,10 +51,14 @@ use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceSe
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
 use OCA\OpenRegister\Notifications\Service\Notification\OutboundTransportInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\RateLimiter;
+use OCA\OpenRegister\Service\Notification\MailingRequest;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
+use OCA\OpenRegister\Service\Notification\ReferenceOrigin;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifierInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\RuleReachRecorder;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
+use OCA\OpenRegister\Notifications\Service\Notification\CoalesceBucket;
+use OCA\OpenRegister\Notifications\Service\Party\PartyMessage;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
 use OCP\Activity\IEvent;
 use OCP\Activity\IManager as IActivityManager;
@@ -383,8 +387,8 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 
 		$party = $this->createMock(PartyNotificationService::class);
 		$party->method('notifyParties')->willReturnCallback(
-			function (...$args) use ($case): array {
-				$this->record(what: 'parties.notifyParties', args: $args);
+			function (PartyMessage $message, ?string $role = null) use ($case): array {
+				$this->record(what: 'parties.notifyParties', args: [$message->objectUuid, $message->subject, $message->body, $role, $message->category]);
 				if (($case['partiesNone'] ?? false) === true) {
 					return [];
 				}
@@ -394,8 +398,9 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 		);
 
 		$addresses = $this->createMock(ReferencedAddressNotifier::class);
-		$addresses->method('notify')->willReturnCallback(
-			function (...$args): array {
+		$addresses->method('mail')->willReturnCallback(
+			function (ReferenceOrigin $origin, MailingRequest $request): array {
+				$args = [$origin->object, $origin->data, $request->recipients, $request->subject, $request->body, $request->category, $origin->schema];
 				$this->record(what: 'addresses.notify', args: $args);
 				return [
 					['field' => 'mail', 'outcome' => EmailSender::OUTCOME_DISPATCHED],
@@ -494,8 +499,9 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 
 		$coalescer = $this->createMock(NotificationCoalescer::class);
 		$coalescer->method('shouldDispatch')->willReturnCallback(
-			function (string $ruleId, string $recipient, ?array $perRuleOverride) use ($prefix): bool {
-				$this->record(what: 'coalescer.shouldDispatch', args: [$ruleId, $recipient, $perRuleOverride]);
+			function (CoalesceBucket $bucket, ?array $perRuleOverride) use ($prefix): bool {
+				$recipient = $bucket->recipient;
+				$this->record(what: 'coalescer.shouldDispatch', args: [$bucket->ruleId, $recipient, $perRuleOverride]);
 				if ($recipient === '__talk__') {
 					return (($perRuleOverride['blockTalk'] ?? false) !== true);
 				}

@@ -121,21 +121,6 @@ class SubscriptionService {
 	}//end pushEvent()
 
 	/**
-	 * Get events since a given event ID, filtered by schema and RBAC.
-	 *
-	 * @param string|null $lastEventId The last event ID the client received
-	 * @param int|null $schemaId Optional schema ID filter
-	 * @param int|null $registerId Optional register ID filter
-	 *
-	 * @return array<array<string, mixed>> The events the user is allowed to see
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
-	 */
-	public function getEventsSince(?string $lastEventId = null, ?int $schemaId = null, ?int $registerId = null): array {
-		return $this->eventsMatching(filter: new EventStreamFilter(lastEventId: $lastEventId, schemaId: $schemaId, registerId: $registerId));
-	}//end getEventsSince()
-
-	/**
 	 * The buffered events after the filter's last event, narrowed by it, that the user may see.
 	 *
 	 * @param EventStreamFilter $filter Where the client resumes, and the schema and register it narrows to.

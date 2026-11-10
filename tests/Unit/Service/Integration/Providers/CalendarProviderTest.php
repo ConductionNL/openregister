@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters
 
+use OCA\OpenRegister\Service\CalendarEvent\CalendarObjectAddress;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\CalendarLinkService;
 use OCA\OpenRegister\Service\Integration\Providers\CalendarProvider;
@@ -118,7 +119,7 @@ class CalendarProviderTest extends TestCase {
 
 	public function testDeleteLegacyShapeOfAnotherObjectIsRefused(): void {
 		$eventSvc = $this->createMock(CalendarEventService::class);
-		$eventSvc->method('requireEventOf')->with('obj-1', '7', 'event.ics')->willThrowException(new \Exception('Calendar event not found', 404));
+		$eventSvc->method('requireEventOf')->with('obj-1', new CalendarObjectAddress(calendarId: '7', uri: 'event.ics'))->willThrowException(new \Exception('Calendar event not found', 404));
 		$eventSvc->expects($this->never())->method('unlinkEvent');
 
 		$provider = new CalendarProvider(

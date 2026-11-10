@@ -44,6 +44,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
+use OCA\OpenRegister\Db\AuditTrail\NamedActor;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -549,15 +552,17 @@ class MoveObject implements MoveObjectInterface {
 		}
 
 		try {
-			$this->recording->auditTrail->createAuditTrailEntry(
-				object: $object,
-				action: self::ACTION,
-				context: [
-					'from' => $move->source->ids(),
-					'to' => $move->target->ids(),
-					'strandedSourceRow' => $stranded,
-				],
-				actorId: $actorId
+			$this->recording->auditTrail->recordObjectEvent(
+				event: new ObjectAuditEvent(
+					object: $object,
+					action: self::ACTION,
+					context: [
+						'from' => $move->source->ids(),
+						'to' => $move->target->ids(),
+						'strandedSourceRow' => $stranded,
+					],
+					options: new ObjectAuditEventOptions(actor: new NamedActor(id: $actorId))
+				)
 			);
 		} catch (Throwable $e) {
 			// The move happened. Failing it now would leave the object moved

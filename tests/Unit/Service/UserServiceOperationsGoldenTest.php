@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\ActionWindow;
+use OCA\OpenRegister\Db\AuditTrail\ActorTrailQuery;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\UserService;
@@ -133,8 +135,8 @@ class UserServiceOperationsGoldenTest extends TestCase {
 		$entry = new AuditTrail();
 		$entry->setAction('update');
 		$entry->setObjectUuid('o-1');
-		$this->audit->expects($this->once())->method('findByActor')
-			->with('jan', 5, 10, 'update', '2026-01-01', '2026-02-01')
+		$this->audit->expects($this->once())->method('findActorTrail')
+			->with(new ActorTrailQuery('jan', 5, 10, new ActionWindow('update', '2026-01-01', '2026-02-01')))
 			->willReturn(['results' => [$entry], 'total' => 7]);
 
 		$result = $this->service->activity($this->user(), new ActivityQuery(5, 10, 'update', new ActivityPeriod('2026-01-01', '2026-02-01')));
@@ -146,8 +148,8 @@ class UserServiceOperationsGoldenTest extends TestCase {
 	}
 
 	public function testActivityDefaultsToTheFirstPageWithoutFilters(): void {
-		$this->audit->expects($this->once())->method('findByActor')
-			->with('jan', 25, 0, null, null, null)
+		$this->audit->expects($this->once())->method('findActorTrail')
+			->with(new ActorTrailQuery('jan', 25, 0, new ActionWindow(null, null, null)))
 			->willReturn(['results' => [], 'total' => 0]);
 
 		$this->assertSame(['results' => [], 'total' => 0], $this->service->activity($this->user(), new ActivityQuery()));

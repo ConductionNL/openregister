@@ -79,25 +79,6 @@ class UnaryTestEvaluator {
 	public const VALID_TYPES = ['string', 'number', 'boolean', 'date'];
 
 	/**
-	 * Check whether a rule cell expression matches an already-coerced value.
-	 *
-	 * @param string $expression The raw cell text (e.g. `'[0..25000]'`, `'-'`, `'in (a,b)'`).
-	 * @param mixed $value The runtime value, already coerced via {@see coerce()} for `$type`.
-	 * @param string $type One of {@see VALID_TYPES}.
-	 *
-	 * @return bool True when the expression matches the value.
-	 *
-	 * @throws DecisionEvaluationException `invalid_expression` on malformed grammar,
-	 *                                     `type_mismatch` when a literal in the expression
-	 *                                     cannot be coerced to `$type`.
-	 *
-	 * @spec openspec/changes/shared-decision-table-evaluator/specs/shared-decision-tables/spec.md
-	 */
-	public function matches(string $expression, mixed $value, string $type): bool {
-		return $this->matchesValue(expression: $expression, subject: new UnaryTestValue(value: $value, type: $type));
-	}//end matches()
-
-	/**
 	 * Check whether a rule cell expression matches a value under test.
 	 *
 	 * @param string         $expression The raw cell text (e.g. `'[0..25000]'`, `'-'`, `'in (a,b)'`).

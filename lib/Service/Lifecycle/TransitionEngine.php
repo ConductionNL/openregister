@@ -150,7 +150,7 @@ class TransitionEngine {
 	/**
 	 * Constructor.
 	 *
-	 * @param TransitionSubjects         $subjects          The object service and the schema and register mappers.
+	 * @param TransitionSubjects         $subjects          The object service and the schema catalog.
 	 * @param TransitionDispatch         $dispatch          The event dispatcher, the write boundary and the action providers.
 	 * @param TransitionPlatform         $platform          The caller's session, the app config and the logger.
 	 * @param PermissionHandlerInterface $permissionHandler The access guard every transition passes.
@@ -164,10 +164,10 @@ class TransitionEngine {
 		private readonly PermissionHandlerInterface $permissionHandler,
 	) {
 		$this->objectService = $subjects->objectService;
-		$this->schemaMapper = $subjects->schemaMapper;
+		$this->schemaMapper = $subjects->catalog->schemas();
 		$this->eventDispatcher = $dispatch->eventDispatcher;
 		$this->userSession = $platform->userSession;
-		$this->registerMapper = $subjects->registerMapper;
+		$this->registerMapper = $subjects->catalog->registers();
 		$this->appConfig = $platform->appConfig;
 		$this->logger = $platform->logger;
 		$this->writeBoundary = $dispatch->writeBoundary;

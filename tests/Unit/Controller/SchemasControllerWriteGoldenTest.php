@@ -22,6 +22,7 @@ use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCA\OpenRegister\Exception\InvalidAuthorizationRuleException;
 use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Service\AuthorizationChange;
 use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeclarationException;
@@ -271,8 +272,8 @@ class SchemasControllerWriteGoldenTest extends TestCase {
 		}
 
 		$audit = $this->createMock(AuthorizationAuditService::class);
-		$audit->method('logSchemaAuthorizationChange')->willReturnCallback(function () use ($case) {
-			$this->record(method: 'audit.logSchemaAuthorizationChange', args: func_get_args());
+		$audit->method('recordSchemaChange')->willReturnCallback(function (AuthorizationChange $change) use ($case) {
+			$this->record(method: 'audit.logSchemaAuthorizationChange', args: [$change->entityId, $change->entityTitle, $change->before, $change->after]);
 			if (($case['auditThrows'] ?? false) === true) {
 				throw new Exception('Audit store down');
 			}

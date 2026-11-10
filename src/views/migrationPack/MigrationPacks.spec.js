@@ -78,62 +78,50 @@ jest.mock('../../services/getTheme.js', () => ({
 	__esModule: true,
 	getTheme: () => 'light',
 }))
-// vue-material-design-icons ships ESM .vue files this repo's jest transform
-// chain does not compile; stub each icon the screens import.
+// Stub each icon the screens import.
 jest.mock(
 	'vue-material-design-icons/ArrowDown.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/ArrowLeft.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/ArrowUp.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/ContentSave.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/Download.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/Eye.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/Finance.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/Pencil.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/Plus.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/TrashCanOutline.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/Upload.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 // Each @nextcloud/vue component is a <div data-nc="Name"> that renders its
 // slots and carries its bindings as attributes, so a mounted screen shows

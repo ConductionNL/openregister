@@ -27,6 +27,8 @@ use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionCall;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRequest;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionAudit;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationEntries;
@@ -219,7 +221,7 @@ class ObjectActionRunnerGoldenTest extends TestCase {
 	 * @return array The answer.
 	 */
 	private function invoke(string $key, array $inputs = [], ?ObjectEntity $object = null): array {
-		return $this->runner()->run(new ObjectActionTarget($object ?? $this->object(), $this->schema(), 'r', 'besluit'), $key, $inputs);
+		return $this->runner()->run(new ObjectActionTarget($object ?? $this->object(), $this->schema(), 'r', 'besluit'), new ObjectActionRequest($key, $inputs));
 	}//end invoke()
 
 	public function testRefusalsInOrderWithTheirExactAnswers(): void {
@@ -264,13 +266,13 @@ class ObjectActionRunnerGoldenTest extends TestCase {
 
 	public function testCheckPreviewsWithoutRunning(): void {
 		$this->flows->expects($this->never())->method('runForAction');
-		$checked = $this->runner()->check($this->object(), $this->schema(), 'publish', ['from' => 'today']);
+		$checked = $this->runner()->rehearse(new ObjectActionCall($this->object(), $this->schema(), 'publish'), ['from' => 'today']);
 
 		$this->assertNull($checked['refusal']);
 		$this->assertSame('publish', $checked['definition']->key);
 		$this->assertSame(['from' => 'today'], $checked['inputs']);
 
-		$refused = $this->runner()->check($this->object(), $this->schema(), 'nope', []);
+		$refused = $this->runner()->rehearse(new ObjectActionCall($this->object(), $this->schema(), 'nope'), []);
 		$this->assertSame(['refusal' => ['status' => 404, 'body' => ['error' => 'No action "nope" runs on this object.']], 'definition' => null, 'inputs' => []], $refused);
 	}//end testCheckPreviewsWithoutRunning()
 

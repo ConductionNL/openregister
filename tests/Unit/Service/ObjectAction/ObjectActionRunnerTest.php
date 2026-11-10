@@ -24,6 +24,7 @@ use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRequest;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionAudit;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationEntries;
@@ -203,7 +204,7 @@ class ObjectActionRunnerTest extends TestCase {
 	 * @return array The answer.
 	 */
 	private function invoke(string $key, array $inputs = [], ?ObjectEntity $object = null): array {
-		return $this->runner()->run(new ObjectActionTarget($object ?? $this->object(), $this->schema(), 'r', 'besluit'), $key, $inputs);
+		return $this->runner()->run(new ObjectActionTarget($object ?? $this->object(), $this->schema(), 'r', 'besluit'), new ObjectActionRequest($key, $inputs));
 	}//end invoke()
 
 	/**
@@ -341,7 +342,7 @@ class ObjectActionRunnerTest extends TestCase {
 			}
 		));
 
-		$answer = $this->runner()->run(new ObjectActionTarget($this->object(), $schema, '', ''), 'reopen', ['reason' => 'x']);
+		$answer = $this->runner()->run(new ObjectActionTarget($this->object(), $schema, '', ''), new ObjectActionRequest('reopen', ['reason' => 'x']));
 
 		$this->assertSame(Http::STATUS_OK, $answer['status']);
 		$this->assertSame(['update'], $asked);

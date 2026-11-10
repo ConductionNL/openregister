@@ -32,6 +32,7 @@ use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\CalendarEventKey;
 use OCA\OpenRegister\Service\CalendarPickerWindow;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\CalendarLinkServiceInterface;
@@ -361,12 +362,10 @@ class CalendarEventsController extends Controller {
 			return new JSONResponse(['error' => 'calendarUri and eventUid are required'], 400);
 		}
 
-		$link = $this->calendarLinkService->linkEvent(
-			objectUuid: $object->getUuid(),
-			registerId: (int)$object->getRegister(),
-			schemaId: (int)$object->getSchema(),
-			calendarUri: $calendarUri,
-			eventUid: $eventUid
+		$link = $this->calendarLinkService->linkLocatedEvent(
+			target: (new LinkTarget(objectUuid: $object->getUuid(), registerId: (int)$object->getRegister()))
+				->inSchema(schemaId: (int)$object->getSchema()),
+			key: new CalendarEventKey(calendarUri: $calendarUri, eventUid: $eventUid)
 		);
 
 		return new JSONResponse($link->jsonSerialize(), 201);

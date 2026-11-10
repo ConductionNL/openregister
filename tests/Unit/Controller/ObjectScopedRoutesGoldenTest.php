@@ -167,7 +167,7 @@ final class ObjectScopedRoutesGoldenTest extends TestCase {
 		$failure = $this->failure(situation: $situation);
 		$links->method('getLinkedEvents')->willReturn([['id' => 'ev.ics', 'calendarId' => 7, 'uid' => 'ev-uid']]);
 		if ($failure !== null) {
-			foreach (['createLinkedEvent', 'linkEvent', 'unlinkEvent'] as $method) {
+			foreach (['createLinkedEvent', 'linkLocatedEvent', 'unlinkEvent'] as $method) {
 				$links->method($method)->willThrowException($failure);
 			}
 

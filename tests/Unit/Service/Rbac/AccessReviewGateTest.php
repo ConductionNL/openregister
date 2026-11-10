@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Object\GroupRuleRequest;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rbac\AccessReviewGate;
@@ -273,17 +274,16 @@ class AccessReviewGateTest extends TestCase {
 	 * `"public": true`, so a gate that hands it more than the verb's own list
 	 * is caught.
 	 *
-	 * @param array|null  $authorization The block.
-	 * @param string      $groupId       The group being tried.
-	 * @param string      $action        The verb.
-	 * @param string|null $userId        The caller.
-	 * @param string|null $userGroup     Unused.
-	 * @param string|null $objectOwner   Unused.
-	 * @param array|null  $objectData    The record.
+	 * @param GroupRuleRequest $request The block, the group being tried, the verb, the caller and the record.
 	 *
 	 * @return bool Whether an entry admits the caller through this group.
 	 */
-	public static function entryAdmits(?array $authorization, string $groupId, string $action, ?string $userId = null, ?string $userGroup = null, ?string $objectOwner = null, ?array $objectData = null): bool {
+	public static function entryAdmits(GroupRuleRequest $request): bool {
+		$authorization = $request->authorization;
+		$groupId       = $request->groupId;
+		$action        = $request->action;
+		$userId        = $request->userId;
+		$objectData    = $request->objectData;
 		if (($authorization['public'] ?? false) === true) {
 			return true;
 		}

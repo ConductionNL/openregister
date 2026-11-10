@@ -39,8 +39,10 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Dto\BulkRowCount;
 use OCA\OpenRegister\Dto\BulkSaveOutcomeInterface;
 use OCA\OpenRegister\Dto\BulkSaveOutcomes;
+use OCA\OpenRegister\Dto\StreamedRowCount;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\LockedException;
@@ -668,15 +670,13 @@ class BulkController extends Controller {
 		if ($result instanceof BatchOperationStatusInterface) {
 			return BulkSaveOutcomes::fromBatchStatus(
 				status: $result,
-				requestedCount: $requestedCount,
-				accountedCount: $accountedCount
+				rows: new StreamedRowCount(requested: $requestedCount, accounted: $accountedCount)
 			);
 		}
 
 		return BulkSaveOutcomes::fromBulkResult(
 			bulkResult: $result,
-			requestedCount: $requestedCount,
-			accountedCount: $accountedCount
+			rows: new BulkRowCount(requested: $requestedCount, accounted: $accountedCount)
 		);
 	}//end saveOutcome()
 

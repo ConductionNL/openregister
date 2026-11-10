@@ -101,7 +101,7 @@ class Wave12BulkSafeguardsTest extends TestCase {
 		// name keeps this fixture correct regardless of order; the positional list
 		// wave-12 shipped would bind permissionHandler into $groupManager here.
 		$this->handler = new SaveObjects(
-			stores: new BulkSaveStores(objectEntityMapper: $this->objectMapper, schemaMapper: $this->schemaMapper, registerMapper: $this->registerMapper, saveHandler: $this->saveHandler),
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper), saveHandler: $this->saveHandler),
 			session: new BulkSaveSession(userSession: $this->userSession, organisationService: $this->organisationService, groupManager: $this->groupManager),
 			reporting: new BulkSaveReporting(logger: $this->logger),
 			checks: new BulkRowChecks(permissionHandler: $this->permissionHandler, validateHandler: $this->validateHandler)

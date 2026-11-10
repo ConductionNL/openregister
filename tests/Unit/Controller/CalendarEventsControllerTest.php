@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use OCA\OpenRegister\Controller\CalendarEventsController;
 use OCA\OpenRegister\Db\CalendarLink;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\CalendarEventKey;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\CalendarLinkService;
@@ -167,8 +168,8 @@ class CalendarEventsControllerTest extends TestCase {
 			'eventUid' => 'ev-uid-1',
 		]);
 		$this->calendarLinkService->expects($this->once())
-			->method('linkEvent')
-			->with(self::OBJ_UUID, 1, 2, 'personal', 'ev-uid-1')
+			->method('linkLocatedEvent')
+			->with((new LinkTarget(objectUuid: self::OBJ_UUID, registerId: 1))->inSchema(schemaId: 2), new CalendarEventKey(calendarUri: 'personal', eventUid: 'ev-uid-1'))
 			->willReturn($this->buildLink());
 
 		$response = $this->controller->link('r', 's', 'id');

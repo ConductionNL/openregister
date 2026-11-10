@@ -26,6 +26,7 @@ namespace Unit\Service\Object;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\GroupRuleRequest;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -164,10 +165,9 @@ class PermissionHandlerMcpScopeSecurityTest extends TestCase {
 		// fails for its own reasons is not a control.
 		$this->assertTrue(
 			$this->handler()->hasGroupPermission(
-				authorization: PermissionHandler::stripMcpScope(authorization: null),
-				groupId: 'users',
-				action: 'read',
-				userId: 'alice'
+				request: (new GroupRuleRequest(authorization: PermissionHandler::stripMcpScope(authorization: null), action: 'read'))
+					->forGroup(groupId: 'users', userGroup: null)
+					->forUser(userId: 'alice', objectOwner: null)
 			),
 			'CONTROL FAILED: a schema with no authorization block stopped being readable.'
 		);
@@ -206,12 +206,11 @@ class PermissionHandlerMcpScopeSecurityTest extends TestCase {
 	public function testAUserOverrideSurvivesTheStrip(): void {
 		$this->assertTrue(
 			$this->handler()->hasGroupPermission(
-				authorization: PermissionHandler::stripMcpScope(
+				request: (new GroupRuleRequest(authorization: PermissionHandler::stripMcpScope(
 					authorization: ['read' => ['mcp', 'user:alice']]
-				),
-				groupId: 'nobody',
-				action: 'read',
-				userId: 'alice'
+				), action: 'read'))
+					->forGroup(groupId: 'nobody', userGroup: null)
+					->forUser(userId: 'alice', objectOwner: null)
 			),
 			'A delegated user grant was dropped by the mcp strip.'
 		);
