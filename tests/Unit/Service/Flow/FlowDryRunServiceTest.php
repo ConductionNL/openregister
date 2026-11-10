@@ -23,6 +23,7 @@ use OCA\OpenRegister\Service\Flow\FlowDryRunService;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
+use OCA\OpenRegister\Service\Flow\FlowRunWalkServices;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\ObjectService;
@@ -100,8 +101,10 @@ class FlowDryRunServiceTest extends TestCase {
 
 		return new FlowDryRunService(
 			lookups: new FlowDryRunLookups(flows: $this->flows, locator: $locator, objects: $this->objects),
-			engine: new FlowEngine(new FlowDefinitionBuilder(), $this->createMock(LoggerInterface::class)),
-			registry: $this->registry
+			walk: new FlowRunWalkServices(
+				engine: new FlowEngine(new FlowDefinitionBuilder(), $this->createMock(LoggerInterface::class)),
+				registry: $this->registry
+			)
 		);
 	}
 

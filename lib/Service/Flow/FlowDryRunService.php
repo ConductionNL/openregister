@@ -41,14 +41,12 @@ class FlowDryRunService implements FlowDryRunServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowDryRunLookups         $lookups  Finds the flow, builds its document and reads the object.
-	 * @param FlowEngine                $engine   The engine runs walk.
-	 * @param FlowNodeRegistryInterface $registry Resolves each step's node.
+	 * @param FlowDryRunLookups   $lookups Finds the flow, builds its document and reads the object.
+	 * @param FlowRunWalkServices $walk    The engine runs walk and the registry resolving each step's node.
 	 */
 	public function __construct(
 		private readonly FlowDryRunLookups $lookups,
-		private readonly FlowEngine $engine,
-		private readonly FlowNodeRegistryInterface $registry,
+		private readonly FlowRunWalkServices $walk,
 	) {
 	}//end __construct()
 
@@ -146,9 +144,9 @@ class FlowDryRunService implements FlowDryRunServiceInterface {
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
 	 */
 	private function walk(array $document, ObjectEntity $object): array {
-		$dispatcher = new PreviewStepDispatcher(registry: $this->registry);
+		$dispatcher = new PreviewStepDispatcher(registry: $this->walk->registry);
 		$start = new FlowRunStart(flow: $document, store: new FlowRunMarkingStore(run: new FlowRun()), subject: $object, dispatcher: $dispatcher);
-		$result = $this->engine->run(start: $start->withContext(context: ['dryRun' => true]));
+		$result = $this->walk->engine->run(start: $start->withContext(context: ['dryRun' => true]));
 
 		$answer = [
 			'status' => (string)($result['status'] ?? ''),
