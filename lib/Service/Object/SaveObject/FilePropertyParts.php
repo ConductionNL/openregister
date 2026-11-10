@@ -146,7 +146,11 @@ final class FilePropertyParts {
 	public function __construct(LoggerInterface $logger, ObjectFilesInterface $fileService) {
 		$log = new FilePropertyLog(logger: $logger);
 		$this->reader = new FileInputReader(log: $log);
-		$this->guard = new FileUploadGuard(log: $log, executableDetector: new ExecutableContentDetector(), dangerousExtensions: self::DANGEROUS_EXECUTABLE_EXTENSIONS);
+		$this->guard = new FileUploadGuard(
+			log: $log,
+			executableDetector: new ExecutableContentDetector(),
+			dangerousExtensions: self::DANGEROUS_EXECUTABLE_EXTENSIONS
+		);
 		$this->files = new FilePropertyFiles(log: $log, fileService: $fileService);
 		$this->configs = new FilePropertyConfigs(log: $log);
 	}//end __construct()
