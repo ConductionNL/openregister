@@ -141,6 +141,20 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	private readonly LoggerInterface $logger;
 
 	/**
+	 * User session service.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Current request.
+	 *
+	 * @var IRequest
+	 */
+	private readonly IRequest $request;
+
+	/**
 	 * Dependency-free payload conversion/reversion helpers.
 	 *
 	 * @var AuditTrailPayloadHelper
@@ -151,19 +165,17 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * Constructor for the AuditTrailMapper
 	 *
 	 * @param IDBConnection $db The database connection
-	 * @param IUserSession $userSession User session service
-	 * @param IRequest $request Current request
-	 * @param AuditTrailMapperServices $services DI container for lazy collaborator resolution, and the logger
+	 * @param AuditTrailMapperServices $services DI container for lazy collaborator resolution, the logger, the user session and the request
 	 */
 	public function __construct(
 		IDBConnection $db,
-		private readonly IUserSession $userSession,
-		private readonly IRequest $request,
 		AuditTrailMapperServices $services,
 	) {
 		parent::__construct(db: $db, tableName: 'openregister_audit_trails', entityClass: AuditTrail::class);
 		$this->container = $services->container;
 		$this->logger = $services->logger;
+		$this->userSession = $services->userSession;
+		$this->request = $services->request;
 		$this->payloadHelper = new AuditTrailPayloadHelper();
 	}//end __construct()
 
