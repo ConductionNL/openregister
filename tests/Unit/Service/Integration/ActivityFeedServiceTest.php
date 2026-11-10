@@ -153,10 +153,10 @@ class ActivityFeedServiceTest extends TestCase {
 	public function testRowsHandedInByTheCallerAreMergedBeside(): void {
 		$service = $this->service([$this->entry('a1', 'update', 100)]);
 
-		$page = $service->page(new ActivityFeedObject('dossiq', 'case', 'obj-1'), [], [
+		$page = $service->page(new ActivityFeedObject('dossiq', 'case', 'obj-1'), new \OCA\OpenRegister\Service\Integration\ActivityFeedOptions(handedIn: [
 			'note' => [['id' => 'n1', 'timestamp' => 400, 'summary' => 'gebeld']],
 			'file' => [['id' => 'f1', 'timestamp' => 200, 'summary' => 'gevel.jpg']],
-		]);
+		]));
 
 		$this->assertSame(['note', 'file', 'audit'], array_column($page['rows'], 'kind'));
 	}//end testRowsHandedInByTheCallerAreMergedBeside()
@@ -182,7 +182,7 @@ class ActivityFeedServiceTest extends TestCase {
 		$capture = null;
 		$service = $this->service([$this->entry('a1', 'update', 100)], [], $capture);
 
-		$service->page(new ActivityFeedObject('dossiq', 'case', 'obj-1'), ['pageSize' => 10]);
+		$service->page(new ActivityFeedObject('dossiq', 'case', 'obj-1'), new \OCA\OpenRegister\Service\Integration\ActivityFeedOptions(criteria: ['pageSize' => 10]));
 
 		$this->assertSame(['register' => 'dossiq', 'schema' => 'case', 'id' => 'obj-1', 'params' => ['limit' => 10]], $capture);
 		// NOT narrowed on the action: the reads toggle has to be able to bring
@@ -199,7 +199,7 @@ class ActivityFeedServiceTest extends TestCase {
 		$this->assertSame(['w1'], array_column($service->page(new ActivityFeedObject('dossiq', 'case', 'obj-1'))['rows'], 'id'));
 		$this->assertSame(
 			['r1', 'w1'],
-			array_column($service->page(new ActivityFeedObject('dossiq', 'case', 'obj-1'), ['includeReads' => true])['rows'], 'id')
+			array_column($service->page(new ActivityFeedObject('dossiq', 'case', 'obj-1'), new \OCA\OpenRegister\Service\Integration\ActivityFeedOptions(criteria: ['includeReads' => true]))['rows'], 'id')
 		);
 	}//end testReadsAreStillHiddenByDefaultOnceMerged()
 
