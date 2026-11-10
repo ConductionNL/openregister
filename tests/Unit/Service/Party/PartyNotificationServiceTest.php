@@ -27,6 +27,8 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\MailAddressee;
+use OCA\OpenRegister\Notifications\Service\Notification\MailContent;
 
 /**
  * A melder with no account is reached over the addresses the party holds.
@@ -112,9 +114,9 @@ class PartyNotificationServiceTest extends TestCase {
 		$this->indicators = $this->createMock(PartyIndicatorGuard::class);
 		$this->email = $this->createMock(EmailSender::class);
 
-		$this->email->method('sendToAddress')->willReturnCallback(
-			function (string $address, string $displayName, string $subject, string $body, ?array $unsubscribe = null): string {
-				$this->sent[] = ['address' => $address, 'name' => $displayName, 'subject' => $subject, 'body' => $body, 'unsubscribe' => $unsubscribe];
+		$this->email->method('sendMailTo')->willReturnCallback(
+			function (MailAddressee $to, MailContent $mail): string {
+				$this->sent[] = ['address' => $to->address, 'name' => $to->displayName, 'subject' => $mail->subject, 'body' => $mail->body, 'unsubscribe' => $mail->unsubscribe];
 
 				return EmailSender::OUTCOME_DISPATCHED;
 			}

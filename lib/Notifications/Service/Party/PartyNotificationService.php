@@ -33,6 +33,8 @@ use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\MailAddressee;
+use OCA\OpenRegister\Notifications\Service\Notification\MailContent;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
@@ -212,12 +214,13 @@ class PartyNotificationService {
 		return [
 			'party' => $recipient['party'],
 			'address' => $recipient['address'],
-			'outcome' => $this->email->sendToAddress(
-				address: $recipient['address'],
-				displayName: (string)($recipient['displayName'] ?? ''),
-				subject: $message['subject'],
-				body: $this->gates->optOut->withLink(body: $message['body'], unsubscribe: $decision['unsubscribe']),
-				unsubscribe: $decision['unsubscribe']
+			'outcome' => $this->email->sendMailTo(
+				addressee: new MailAddressee(address: $recipient['address'], displayName: (string)($recipient['displayName'] ?? '')),
+				content: new MailContent(
+					subject: $message['subject'],
+					body: $this->gates->optOut->withLink(body: $message['body'], unsubscribe: $decision['unsubscribe']),
+					unsubscribe: $decision['unsubscribe']
+				)
 			),
 		];
 	}//end outcomeFor()
