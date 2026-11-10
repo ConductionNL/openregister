@@ -41,7 +41,7 @@ class VectorStatsHandler {
 	/**
 	 * The statistics reported when the database cannot be read.
 	 *
-	 * @var array{total_vectors: int, by_type: array<never>, by_model: array<never>, object_vectors: int, file_vectors: int}
+	 * @var array{total_vectors: int, by_type: array<string, int>, by_model: array<string, int>, object_vectors: int, file_vectors: int}
 	 */
 	private const EMPTY_STATS = [
 		'total_vectors' => 0,
