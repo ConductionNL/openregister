@@ -44,6 +44,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IDateTimeZone;
+use OCP\IUser;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -117,6 +118,18 @@ class ObjectCalendarFeedService {
 			return null;
 		}
 
+		return $this->renderAs(user: $user, token: $token);
+	}//end render()
+
+	/**
+	 * Render a feed as the principal its token names; a failure is logged and answers nothing.
+	 *
+	 * @param IUser             $user  The principal the token names.
+	 * @param CalendarFeedToken $token The token.
+	 *
+	 * @return string|null The calendar, or null.
+	 */
+	private function renderAs(IUser $user, CalendarFeedToken $token): ?string {
 		try {
 			return $this->sources->objects->runAs(
 				$user,
@@ -131,7 +144,7 @@ class ObjectCalendarFeedService {
 			);
 			return null;
 		}
-	}//end render()
+	}//end renderAs()
 
 	/**
 	 * Render the feed as whoever the session currently is.
@@ -234,20 +247,10 @@ class ObjectCalendarFeedService {
 
 		try {
 			if ($token->getScopeType() === CalendarFeedToken::SCOPE_VIEW) {
-				$view = $this->sources->views->find($scopeId);
-				return [
-					'name' => $this->displayName(candidate: (string)$view->getName()),
-					'schemaId' => null,
-					'viewId' => $scopeId,
-				];
+				return $this->viewScope(viewId: $scopeId);
 			}
 
-			$schema = $this->sources->schemas->find($scopeId);
-			return [
-				'name' => $this->displayName(candidate: (string)$schema->getTitle()),
-				'schemaId' => (string)$schema->getId(),
-				'viewId' => null,
-			];
+			return $this->schemaScope(schemaId: $scopeId);
 		} catch (Throwable $missing) {
 			$this->logger->warning(
 				'[ObjectCalendarFeedService] Feed scope no longer resolves: ' . $missing->getMessage()
@@ -255,6 +258,40 @@ class ObjectCalendarFeedService {
 			return null;
 		}
 	}//end resolveScope()
+
+	/**
+	 * The scope of a feed over a saved view.
+	 *
+	 * @param string $viewId The view.
+	 *
+	 * @return array{name: string, schemaId: null, viewId: string} The scope.
+	 */
+	private function viewScope(string $viewId): array {
+		$view = $this->sources->views->find($viewId);
+
+		return [
+			'name' => $this->displayName(candidate: (string)$view->getName()),
+			'schemaId' => null,
+			'viewId' => $viewId,
+		];
+	}//end viewScope()
+
+	/**
+	 * The scope of a feed over a schema.
+	 *
+	 * @param string $schemaId The schema.
+	 *
+	 * @return array{name: string, schemaId: string, viewId: null} The scope.
+	 */
+	private function schemaScope(string $schemaId): array {
+		$schema = $this->sources->schemas->find($schemaId);
+
+		return [
+			'name' => $this->displayName(candidate: (string)$schema->getTitle()),
+			'schemaId' => (string)$schema->getId(),
+			'viewId' => null,
+		];
+	}//end schemaScope()
 
 	/**
 	 * The name a client shows for the feed, never an empty string.
