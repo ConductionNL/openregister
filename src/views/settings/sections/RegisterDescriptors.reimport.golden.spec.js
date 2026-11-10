@@ -79,3 +79,55 @@ describe('RegisterDescriptors.reimport', () => {
 		expect(await reimport()).toMatchSnapshot()
 	})
 })
+
+describe('RegisterDescriptors.load', () => {
+	/**
+	 * Load the inventory into a bare panel state carrying the panel's methods.
+	 *
+	 * @return {Promise<object>} The panel data after loading
+	 */
+	async function load() {
+		const panel = { loading: false, error: 'old', rows: ['stale'], total: 9, absent: 9, behind: 9 }
+		const methods = Object.keys(RegisterDescriptors.methods)
+		for (const name of methods) {
+			panel[name] = RegisterDescriptors.methods[name].bind(panel)
+		}
+		panel.t = (app, text, params) => `${text} ${JSON.stringify(params)}`
+		axios.get.mockImplementation(() => {
+			panel.seenLoading = panel.loading
+			panel.seenError = panel.error
+			return answer()
+		})
+		await panel.load()
+		for (const name of [...methods, 't']) {
+			delete panel[name]
+		}
+		return panel
+	}
+
+	beforeEach(() => axios.get.mockReset())
+
+	it.each([
+		['a full inventory', { results: [{ slug: 'a' }], total: 4, absent: 1, behind: 2 }],
+		['an empty answer', {}],
+	])('shows %s', async (label, data) => {
+		answer = () => Promise.resolve({ data })
+		expect(await load()).toMatchSnapshot()
+		expect(axios.get).toHaveBeenCalledWith('/gen/apps/openregister/api/register-descriptors')
+	})
+
+	it.each([
+		['the server error', { response: { data: { error: 'Denied' } }, message: 'M' }],
+		['the request message', { message: 'Network down' }],
+	])('words a failure from %s', async (label, failure) => {
+		answer = () => Promise.reject(failure)
+		expect(await load()).toMatchSnapshot()
+	})
+
+	it('fails on an answer without data, keeping the rows', async () => {
+		answer = () => Promise.resolve({})
+		const panel = await load()
+		expect(panel.error).toMatch(/^Could not read the descriptor inventory: \{reason\} \{"reason":".+"\}$/)
+		expect(panel).toMatchObject({ loading: false, rows: ['stale'], total: 9, absent: 9, behind: 9 })
+	})
+})
