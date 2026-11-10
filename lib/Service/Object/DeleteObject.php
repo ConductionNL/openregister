@@ -32,6 +32,8 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use DateTime;
 use DateTimeImmutable;
 use Exception;
@@ -42,7 +44,6 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Exception\HookStoppedException;
@@ -1317,9 +1318,15 @@ class DeleteObject {
 		$config = ($objectSource['config'] ?? []);
 
 		// Pre-read for the audit record (best effort).
-		$old = $provider->find(register: $registerEntity, schema: $schema, id: $uuid, config: $config);
+		$old = $provider->find(
+			source: new SourcedTable(table: new RegisterSchema(register: $registerEntity, schema: $schema), config: $config),
+			id: $uuid
+		);
 
-		$deleted = $provider->remove(register: $registerEntity, schema: $schema, id: $uuid, config: $config);
+		$deleted = $provider->remove(
+			source: new SourcedTable(table: new RegisterSchema(register: $registerEntity, schema: $schema), config: $config),
+			id: $uuid
+		);
 		if ($deleted === false) {
 			throw new DoesNotExistException('No external row matches id ' . $uuid);
 		}
