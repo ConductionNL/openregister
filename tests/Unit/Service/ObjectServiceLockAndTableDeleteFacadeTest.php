@@ -23,6 +23,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Service\Object\LockHandler;
+use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Service\Object\LockRunStep;
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SchemaDeletionService;
 use OCP\AppFramework\IAppContainer;
@@ -55,7 +58,10 @@ class ObjectServiceLockAndTableDeleteFacadeTest extends TestCase {
 	public function testLockObjectForwardsAllSixArguments(): void {
 		$lock = $this->createMock(LockHandler::class);
 		$lock->expects($this->once())->method('lock')
-			->with('obj-1', 'import', 600, true, 'run-1', 'node-1')
+			->with(
+				new LockRequest(identifier: 'obj-1', process: 'import', duration: 600, runStep: new LockRunStep(runUuid: 'run-1', nodeId: 'node-1')),
+				advisory: true
+			)
 			->willReturn(['locked' => true]);
 
 		$result = $this->service($lock, $this->createMock(IAppContainer::class))
@@ -67,7 +73,10 @@ class ObjectServiceLockAndTableDeleteFacadeTest extends TestCase {
 	public function testLockObjectDefaultsStayOff(): void {
 		$lock = $this->createMock(LockHandler::class);
 		$lock->expects($this->once())->method('lock')
-			->with('obj-1', null, null, false, null, null)
+			->with(
+				new LockRequest(identifier: 'obj-1', process: null, duration: null, runStep: new LockRunStep(runUuid: null, nodeId: null)),
+				advisory: false
+			)
 			->willReturn([]);
 
 		$this->service($lock, $this->createMock(IAppContainer::class))->lockObject('obj-1');

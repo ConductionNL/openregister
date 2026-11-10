@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -155,7 +156,7 @@ final class LockHandlerReleaseReportTest extends TestCase {
 		self::assertTrue($object->isLocked(), 'the fixture really is locked');
 		$this->resolvesTo($object);
 
-		self::assertTrue($this->handler()->unlock(identifier: self::OBJ));
+		self::assertTrue($this->handler()->unlock(request: new UnlockRequest(identifier: self::OBJ, advisory: false, runUuid: null, break: false)));
 
 		// 🔑 THE CLEARING ITSELF IS NOT ASSERTED HERE, ON PURPOSE. The handler
 		// hands the release to `MagicMapper::unlockObject()`, which is a mock,
@@ -180,7 +181,7 @@ final class LockHandlerReleaseReportTest extends TestCase {
 		// returns rather than throwing. An unlock that raised here would break
 		// every defensive release in the engine.
 		self::assertFalse(
-			$this->handler()->unlock(identifier: self::OBJ),
+			$this->handler()->unlock(request: new UnlockRequest(identifier: self::OBJ, advisory: false, runUuid: null, break: false)),
 			'"there was nothing to release" is not the same answer as "I released it"'
 		);
 	}
@@ -200,12 +201,12 @@ final class LockHandlerReleaseReportTest extends TestCase {
 		$held->setUp();
 		$heldObject = $held->object(locked: true);
 		$held->resolvesTo($heldObject);
-		$releasedAnswer = $held->handler()->unlock(identifier: self::OBJ);
+		$releasedAnswer = $held->handler()->unlock(request: new UnlockRequest(identifier: self::OBJ, advisory: false, runUuid: null, break: false));
 
 		$none = new self('none');
 		$none->setUp();
 		$none->resolvesTo($none->object(locked: false));
-		$noOpAnswer = $none->handler()->unlock(identifier: self::OBJ);
+		$noOpAnswer = $none->handler()->unlock(request: new UnlockRequest(identifier: self::OBJ, advisory: false, runUuid: null, break: false));
 
 		self::assertNotSame($releasedAnswer, $noOpAnswer);
 	}
