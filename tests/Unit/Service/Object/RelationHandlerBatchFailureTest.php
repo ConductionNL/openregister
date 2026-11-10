@@ -43,30 +43,22 @@ class RelationHandlerBatchFailureTest extends TestCase {
 	public function testAFailingBatchIsLoggedAndSkipped(): void {
 		$ids = array_map(static fn (int $i): string => 'u' . $i, range(1, 120));
 
-		$position = 0;
-		foreach ((new \ReflectionMethod(MagicMapperInterface::class, 'findAll'))->getParameters() as $i => $param) {
-			$position = $param->getName() === 'ids' ? $i : $position;
-		}
-
+		$rows = [];
 		$mapper = $this->createMock(MagicMapperInterface::class);
-		$mapper->method('findAll')->willReturnCallback(
-			function (...$args) use ($position): array {
-				$batch = $args[$position];
-				if (in_array('u51', $batch, true) === true) {
-					$broken = $this->createMock(ObjectEntity::class);
-					$broken->method('getUuid')->willThrowException(new RuntimeException('corrupt row'));
-					return [$broken];
+		$mapper->method('findMultipleAcrossAllMagicTables')->willReturnCallback(
+			function (array $uuids) use (&$rows): array {
+				$located = [];
+				foreach ($uuids as $id) {
+					$rows[$id] = $this->row(id: $id, broken: in_array('u51', $uuids, true));
+					$located[] = $rows[$id];
 				}
 
-				return array_map(
-					static function (string $id): ObjectEntity {
-						$object = new ObjectEntity();
-						$object->setUuid($id);
-						$object->setId((int)substr($id, 1) + 1000);
-						return $object;
-					},
-					$batch
-				);
+				return $located;
+			}
+		);
+		$mapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
+			static function ($register, $schema, $limit = null, $offset = null, ?array $filters = null) use (&$rows): array {
+				return array_values(array_intersect_key($rows, array_flip($filters['_ids'] ?? [])));
 			}
 		);
 
@@ -84,7 +76,7 @@ class RelationHandlerBatchFailureTest extends TestCase {
 				schemas: $this->createMock(SchemaMapperInterface::class),
 				registers: $this->createMock(RegisterMapperInterface::class)
 			),
-			$this->createMock(RelatedRowRbacInterface::class),
+			$this->admin(),
 			$logger
 		);
 
@@ -98,4 +90,40 @@ class RelationHandlerBatchFailureTest extends TestCase {
 		$this->assertCount(140, $loaded, '70 objects from batches 1 and 3, each under uuid and id');
 
 	}//end testAFailingBatchIsLoggedAndSkipped()
+
+	/**
+	 * A related row in register 1, schema 1; a broken one cannot give its id.
+	 *
+	 * @param string $id     The uuid.
+	 * @param bool   $broken Whether the row is broken.
+	 *
+	 * @return ObjectEntity The row.
+	 */
+	private function row(string $id, bool $broken): ObjectEntity {
+		$object = new ObjectEntity();
+		if ($broken === true) {
+			$object = new class extends ObjectEntity {
+				public function getId(): int {
+					throw new RuntimeException('corrupt row');
+				}
+			};
+		}
+
+		$object->setUuid($id);
+		$object->setId((int)substr($id, 1) + 1000);
+		$object->setRegister('1');
+		$object->setSchema('1');
+		return $object;
+	}//end row()
+
+	/**
+	 * An RBAC handler for an admin, who may read every row.
+	 *
+	 * @return RelatedRowRbacInterface The handler.
+	 */
+	private function admin(): RelatedRowRbacInterface {
+		$rbac = $this->createMock(RelatedRowRbacInterface::class);
+		$rbac->method('isAdmin')->willReturn(true);
+		return $rbac;
+	}//end admin()
 }//end class

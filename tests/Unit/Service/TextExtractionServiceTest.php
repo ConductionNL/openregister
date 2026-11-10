@@ -130,8 +130,9 @@ class TextExtractionServiceTest extends TestCase {
 	}
 
 	public function testChunkDocumentReturnsEmptyArrayForEmptyText(): void {
-		$chunks = $this->service->chunkDocument('');
-		$this->assertIsArray($chunks);
+		$this->assertSame([], $this->service->chunkDocument(''));
+		$this->assertSame([], $this->service->chunkDocument(" \n\t "));
+		$this->assertSame([], $this->service->chunkDocument('', ['strategy' => 'FIXED_SIZE']));
 	}
 
 	public function testChunkDocumentRespectsChunkSizeOption(): void {
@@ -204,6 +205,7 @@ class TextExtractionServiceTest extends TestCase {
 		$chunks = $this->service->chunkDocument($text);
 
 		$this->assertIsArray($chunks);
+		$this->assertSame([['text' => 'This is a short text that fits in one chunk easily.', 'start_offset' => 0, 'end_offset' => 51]], $chunks);
 		// Short text should be a single chunk (if it meets MIN_CHUNK_SIZE).
 		// The text is 51 chars, less than MIN_CHUNK_SIZE (100), so it may be empty.
 		// Let's use a longer short text:
@@ -1279,6 +1281,8 @@ class TextExtractionServiceTest extends TestCase {
 
 		// After cleanText: "Hello\n\nWorld\n\nFoo" — short text, single chunk.
 		$this->assertIsArray($chunks);
+		$this->assertCount(1, $chunks);
+		$this->assertSame("Hello\n\nWorld\n\nFoo", $chunks[0]['text']);
 	}
 
 	public function testChunkDocumentWithZeroOverlap(): void {
@@ -2940,9 +2944,7 @@ class TextExtractionServiceTest extends TestCase {
 			1, ['mimetype' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'path' => '/empty.xlsx'],
 		]);
 
-		// "Sheet: Empty\n\n" — after trim this is "Sheet: Empty" which is not empty,
-		// so it returns the text. Let's just verify it's a string.
-		$this->assertIsString($result);
+		$this->assertNull($result);
 	}
 
 	// ────────────────────────────────────────────────────────
@@ -3121,6 +3123,8 @@ class TextExtractionServiceTest extends TestCase {
 		$result = $this->invokePrivate('recursiveSplit', [$text, new SplitLevel(separators: ["\n\n", ' '], sizing: new ChunkSizing(200, 0))]);
 
 		$this->assertIsArray($result);
+		$this->assertCount(1, $result);
+		$this->assertStringEndsWith('small part that is exactly small', $result[0]['text']);
 	}
 
 	// ────────────────────────────────────────────────────────
@@ -3129,11 +3133,8 @@ class TextExtractionServiceTest extends TestCase {
 
 	public function testChunkDocumentWithOnlyNullBytes(): void {
 		$text = "\0\0\0\0\0";
-		$chunks = $this->service->chunkDocument($text);
-		// After cleanText strips null bytes, text = '' — chunkRecursive returns one empty chunk.
-		$this->assertIsArray($chunks);
-		$this->assertCount(1, $chunks);
-		$this->assertSame('', $chunks[0]['text']);
+		// After cleanText strips null bytes nothing is left to chunk.
+		$this->assertSame([], $this->service->chunkDocument($text));
 	}
 
 	// ────────────────────────────────────────────────────────
@@ -3158,15 +3159,23 @@ class TextExtractionServiceTest extends TestCase {
 		$this->db->method('beginTransaction');
 		$this->db->method('commit');
 		$this->chunkMapper->method('deleteBySource');
-		$this->chunkMapper->method('insert');
+		$inserted = [];
+		$this->chunkMapper->expects($this->atLeastOnce())
+			->method('insert')
+			->willReturnCallback(
+				function ($chunk) use (&$inserted) {
+					$inserted[] = $chunk->getTextContent();
+					return $chunk;
+				}
+			);
 
 		$this->settingsService->method('getFileSettingsOnly')->willReturn([
 			'entityRecognitionEnabled' => false,
 		]);
 
 		$this->service->extractFile(1);
-		// Test passes if no exception thrown and extraction succeeds for HTML.
-		$this->assertTrue(true);
+
+		$this->assertStringContainsString('Content.', implode(' ', $inserted));
 	}
 
 	public function testExtractFileWithApplicationJsonMimeType(): void {
@@ -3187,14 +3196,23 @@ class TextExtractionServiceTest extends TestCase {
 		$this->db->method('beginTransaction');
 		$this->db->method('commit');
 		$this->chunkMapper->method('deleteBySource');
-		$this->chunkMapper->method('insert');
+		$inserted = [];
+		$this->chunkMapper->expects($this->atLeastOnce())
+			->method('insert')
+			->willReturnCallback(
+				function ($chunk) use (&$inserted) {
+					$inserted[] = $chunk->getTextContent();
+					return $chunk;
+				}
+			);
 
 		$this->settingsService->method('getFileSettingsOnly')->willReturn([
 			'entityRecognitionEnabled' => false,
 		]);
 
 		$this->service->extractFile(1);
-		$this->assertTrue(true);
+
+		$this->assertStringContainsString('value', implode(' ', $inserted));
 	}
 
 	// ────────────────────────────────────────────────────────

@@ -29,8 +29,11 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\FormLink;
 use OCA\OpenRegister\Db\FormLinkMapper;
+use OCA\OpenRegister\Db\FormSubmissionRef;
+use OCA\OpenRegister\Service\FormLinkScope;
 use OCA\OpenRegister\Service\FormLinkService;
 use OCA\OpenRegister\Service\LinkServiceRuntime;
+use OCA\OpenRegister\Service\NewForm;
 use OCP\App\IAppManager;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -168,7 +171,7 @@ final class FormLinkServiceGoldenTest extends TestCase {
 		$this->appManager->method('isInstalled')->willReturn(false);
 		$this->mapper->method('findFormLink')->willReturn(null);
 
-		$link = $this->service->linkForm(objectUuid: 'obj-1', registerId: 3, formId: 42, schemaId: 7);
+		$link = $this->service->linkFormTo(scope: (new FormLinkScope(objectUuid: 'obj-1', registerId: 3))->inSchema(schemaId: 7), formId: 42);
 
 		$expected = [
 			'objectUuid' => 'obj-1', 'registerId' => 3, 'schemaId' => 7, 'formId' => 42,
@@ -188,7 +191,7 @@ final class FormLinkServiceGoldenTest extends TestCase {
 		$this->mapper->method('findSubmissionLink')->willReturn(null);
 		$this->queries([$this->rowsResult([['id' => 42, 'hash' => 'h42', 'title' => 'Intake', 'expires' => 1700000000, 'state' => 2]])]);
 
-		$link = $this->service->linkFormSubmission(objectUuid: 'obj-1', registerId: 3, formId: 42, submissionId: 9);
+		$link = $this->service->linkSubmissionTo(scope: new FormLinkScope(objectUuid: 'obj-1', registerId: 3), submission: new FormSubmissionRef(formId: 42, submissionId: 9));
 
 		$row = $this->row($link);
 		$this->assertSame(
@@ -215,9 +218,9 @@ final class FormLinkServiceGoldenTest extends TestCase {
 			]
 		);
 
-		$archived = $this->service->linkForm(objectUuid: 'o', registerId: 1, formId: 1);
-		$missing  = $this->service->linkForm(objectUuid: 'o', registerId: 1, formId: 2);
-		$failing  = $this->service->linkForm(objectUuid: 'o', registerId: 1, formId: 3);
+		$archived = $this->service->linkFormTo(scope: new FormLinkScope(objectUuid: 'o', registerId: 1), formId: 1);
+		$missing  = $this->service->linkFormTo(scope: new FormLinkScope(objectUuid: 'o', registerId: 1), formId: 2);
+		$failing  = $this->service->linkFormTo(scope: new FormLinkScope(objectUuid: 'o', registerId: 1), formId: 3);
 
 		$this->assertSame(['', '', 'archived', null], [$archived->getTitle(), $archived->getFormHash(), $archived->getStatus(), $archived->getExpiresAt()]);
 		$this->assertSame([null, null, null, null], [$missing->getTitle(), $missing->getFormHash(), $missing->getStatus(), $missing->getExpiresAt()]);
@@ -293,7 +296,7 @@ final class FormLinkServiceGoldenTest extends TestCase {
 		$codes = [];
 		foreach (['NC Forms app is not installed', 'NC Forms classes not available'] as $message) {
 			try {
-				$this->service->createAndLinkForm(objectUuid: 'o', registerId: 1, title: 't');
+				$this->service->createAndLinkForm(scope: new FormLinkScope(objectUuid: 'o', registerId: 1), form: new NewForm(title: 't'));
 				$codes[] = 'none';
 			} catch (Exception $e) {
 				$codes[] = $e->getMessage() . ':' . $e->getCode();

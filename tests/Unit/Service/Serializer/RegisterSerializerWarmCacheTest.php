@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Serializer;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Serializer\RegisterListExtension;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
@@ -98,12 +99,12 @@ class RegisterSerializerWarmCacheTest extends TestCase {
 
 		$serializer = new RegisterSerializer($mapper, $this->createMock(LoggerInterface::class));
 
-		$out = $serializer->serializeMany(
+		$out = $serializer->serializePage(
 			[
 				$this->register(10, [1, 2]),
 				$this->register(11, [2, 3]),
 			],
-			['schemas']
+			new RegisterListExtension(extend: ['schemas'])
 		);
 
 		$this->assertCount(2, $out);
@@ -131,7 +132,7 @@ class RegisterSerializerWarmCacheTest extends TestCase {
 
 		$serializer = new RegisterSerializer($mapper, $this->createMock(LoggerInterface::class));
 
-		$serializer->serializeMany([$this->register(10, [1, 'my-slug'])], ['schemas']);
+		$serializer->serializePage([$this->register(10, [1, 'my-slug'])], new RegisterListExtension(extend: ['schemas']));
 	}//end testNonNumericIdentifierFallsBackToFind()
 
 	/**
@@ -153,7 +154,7 @@ class RegisterSerializerWarmCacheTest extends TestCase {
 
 		$serializer = new RegisterSerializer($mapper, $this->createMock(LoggerInterface::class));
 
-		$out = $serializer->serializeMany([$this->register(10, [1, 404])], ['schemas']);
+		$out = $serializer->serializePage([$this->register(10, [1, 404])], new RegisterListExtension(extend: ['schemas']));
 
 		// Serialization still succeeds — the orphan is retained, not fatal.
 		$this->assertCount(1, $out);
@@ -172,6 +173,6 @@ class RegisterSerializerWarmCacheTest extends TestCase {
 
 		$serializer = new RegisterSerializer($mapper, $this->createMock(LoggerInterface::class));
 
-		$serializer->serializeMany([$this->register(10, [1, 2])], []);
+		$serializer->serializePage([$this->register(10, [1, 2])], new RegisterListExtension(extend: []));
 	}//end testNoBatchWhenSchemasNotExtended()
 }//end class

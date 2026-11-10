@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\Gdpr\Export\SignedBundle;
 use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry;
 use OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider;
 use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolver;
+use OCA\OpenRegister\Service\Gdpr\Redaction\FieldRedaction;
 use OCA\OpenRegister\Service\Gdpr\Redaction\RedactionWriteService;
 use OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry;
@@ -479,7 +480,7 @@ class DsarCaseControllerTest extends TestCase {
 		$redaction = $this->createMock(RedactionWriteService::class);
 		$redaction->expects($this->once())
 			->method('applyRedaction')
-			->with('case-1', 'evidence.0.bsn', '[REDACTED]', 'art-15-4')
+			->with('case-1', $this->equalTo(new FieldRedaction('evidence.0.bsn', '[REDACTED]', 'art-15-4')))
 			->willReturn(['field' => 'evidence.0.bsn', 'ground' => 'art-15-4', 'applied' => true]);
 
 		$controller = $this->buildForBundleSurface(

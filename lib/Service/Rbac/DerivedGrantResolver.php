@@ -163,7 +163,7 @@ class DerivedGrantResolver {
 		$now = new DateTimeImmutable();
 		$reaching = array_filter(
 			$grants,
-			static fn (mixed $grant): bool => is_array($grant) === true && $constraints->reaches(entry: $grant, area: $area, now: $now) === true
+			static fn (mixed $grant): bool => is_array($grant) === true && $constraints->reaches(entry: $grant, point: new ConstraintPoint(area: $area, now: $now)) === true
 		);
 
 		return $this->groupsIn(grants: $reaching);

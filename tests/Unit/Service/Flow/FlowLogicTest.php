@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunStart;
@@ -94,7 +95,9 @@ class FlowLogicTest extends TestCase {
 	private function walk(array $flow, array $items, TrackingDispatcher $dispatcher): array {
 		return $this->engine->run(
 			start: (new FlowRunStart(flow: $flow, store: new MethodMarkingStore(false, 'marking'), subject: new LogicSubject(), dispatcher: $dispatcher)),
-			items: $items
+			origin: new FlowRunOrigin(
+				items: $items
+			)
 		);
 	}
 
@@ -297,7 +300,9 @@ class FlowLogicTest extends TestCase {
 		$d = new RouteTaggingDispatcher(tag: 'no');
 		$result = $this->engine->run(
 			start: (new FlowRunStart(flow: $flow, store: new MethodMarkingStore(false, 'marking'), subject: new LogicSubject(), dispatcher: $d)),
-			items: [FlowItems::item(json: ['name' => 'Case 7'])]
+			origin: new FlowRunOrigin(
+				items: [FlowItems::item(json: ['name' => 'Case 7'])]
+			)
 		);
 
 		$this->assertSame(['route', 'rejected'], $d->ran, 'the rejection branch, and only it, fires');
@@ -331,7 +336,9 @@ class FlowLogicTest extends TestCase {
 		$d = new RouteTaggingDispatcher(tag: 'no');
 		$this->engine->run(
 			start: (new FlowRunStart(flow: $flow, store: new MethodMarkingStore(false, 'marking'), subject: new LogicSubject(), dispatcher: $d)),
-			items: [FlowItems::item(json: ['name' => 'Case 7'])]
+			origin: new FlowRunOrigin(
+				items: [FlowItems::item(json: ['name' => 'Case 7'])]
+			)
 		);
 
 		$this->assertSame(['route', 'rejected'], $d->ran, 'the token follows the routing decision, not declaration order');

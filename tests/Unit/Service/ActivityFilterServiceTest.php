@@ -31,7 +31,11 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Service\ActivityFilter;
+use OCA\OpenRegister\Service\ActivityEntriesOptions;
 use OCA\OpenRegister\Service\ActivityFilterService;
+use OCP\IUserSession;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCP\App\IAppManager;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -68,7 +72,7 @@ class ActivityFilterServiceTest extends TestCase {
 			);
 		}
 
-		return new ActivityFilterService(db: $db, appManager: $appManager, logger: $this->createMock(LoggerInterface::class));
+		return new ActivityFilterService(db: $db, runtime: new LinkServiceRuntime(appManager: $appManager, userSession: $this->createMock(IUserSession::class), logger: $this->createMock(LoggerInterface::class)));
 	}//end buildService()
 
 	/**
@@ -130,7 +134,7 @@ class ActivityFilterServiceTest extends TestCase {
 		$service = $this->buildService(rows: [], installed: false);
 		self::assertFalse($service->isActivityAvailable());
 
-		$result = $service->getActivityEntries(objectUuid: 'u');
+		$result = $service->getActivityEntries(filter: new ActivityFilter(objectUuid: 'u', type: null, actor: null, after: null), options: new ActivityEntriesOptions());
 		self::assertSame([], $result['results']);
 		self::assertSame(0, $result['total']);
 		self::assertNull($result['nextCursor']);
@@ -149,7 +153,7 @@ class ActivityFilterServiceTest extends TestCase {
 		];
 		$service = $this->buildService(rows: $rows);
 
-		$result = $service->getActivityEntries(objectUuid: 'u', limit: 10);
+		$result = $service->getActivityEntries(filter: new ActivityFilter(objectUuid: 'u', type: null, actor: null, after: null), options: new ActivityEntriesOptions(limit: 10));
 		self::assertCount(1, $result['results']);
 		$row = $result['results'][0];
 		self::assertSame('5', $row['id']);
@@ -174,7 +178,7 @@ class ActivityFilterServiceTest extends TestCase {
 		];
 		$service = $this->buildService(rows: $rows);
 
-		$result = $service->getActivityEntries(objectUuid: 'u', limit: 10);
+		$result = $service->getActivityEntries(filter: new ActivityFilter(objectUuid: 'u', type: null, actor: null, after: null), options: new ActivityEntriesOptions(limit: 10));
 		self::assertSame('internal', $result['results'][0]['visibility']);
 	}//end testEveryRowCarriesInternalVisibility()
 
@@ -191,7 +195,7 @@ class ActivityFilterServiceTest extends TestCase {
 		];
 		$service = $this->buildService(rows: $rows);
 
-		$result = $service->getActivityEntries(objectUuid: 'u', limit: 10, visibility: 'public');
+		$result = $service->getActivityEntries(filter: new ActivityFilter(objectUuid: 'u', type: null, actor: null, after: null), options: new ActivityEntriesOptions(limit: 10, visibility: 'public'));
 		self::assertSame([], $result['results']);
 		self::assertSame(0, $result['total']);
 		self::assertNull($result['nextCursor']);
@@ -210,7 +214,7 @@ class ActivityFilterServiceTest extends TestCase {
 		];
 		$service = $this->buildService(rows: $rows);
 
-		$result = $service->getActivityEntries(objectUuid: 'u', limit: 10, visibility: 'internal');
+		$result = $service->getActivityEntries(filter: new ActivityFilter(objectUuid: 'u', type: null, actor: null, after: null), options: new ActivityEntriesOptions(limit: 10, visibility: 'internal'));
 		self::assertCount(1, $result['results']);
 	}//end testInternalReadKeepsTheRows()
 
@@ -224,7 +228,7 @@ class ActivityFilterServiceTest extends TestCase {
 		];
 		$service = $this->buildService(rows: $rows);
 
-		$result = $service->getActivityEntries(objectUuid: 'u', limit: 2);
+		$result = $service->getActivityEntries(filter: new ActivityFilter(objectUuid: 'u', type: null, actor: null, after: null), options: new ActivityEntriesOptions(limit: 2));
 		self::assertCount(2, $result['results']);
 		self::assertSame(200, $result['nextCursor']);
 	}//end testCursorPaginationSlicesAndSetsNextCursor()

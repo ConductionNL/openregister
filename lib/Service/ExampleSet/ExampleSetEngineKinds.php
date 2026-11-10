@@ -62,19 +62,19 @@ class ExampleSetEngineKinds {
 	/**
 	 * Check the tasks and views of one fragment.
 	 *
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param array<string, mixed> $context  The context placeholders draw on.
-	 * @param array<int, string>   $users    The account ids the set creates or adopts.
-	 * @param ExampleSetValues     $values   Fills placeholders.
+	 * @param ExampleSetFragmentWrite $write The fragment, the context placeholders draw on and their filler.
+	 * @param array<int, string>      $users The account ids the set creates or adopts.
 	 *
 	 * @return array<int, string> Refusals, also for each row of a kind this OpenRegister cannot write.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
-	public function check(array $fragment, array $context, array $users, ExampleSetValues $values): array {
+	public function check(ExampleSetFragmentWrite $write, array $users): array {
+		$fragment         = $write->fragment;
 		$refusals         = $this->addressRefusals(fragment: $fragment);
-		$context['tasks'] = $values->tasksOf(fragment: $fragment, record: null);
-		$write            = new ExampleSetFragmentWrite(fragment: $fragment, context: $context, values: $values);
+		$context          = $write->context;
+		$context['tasks'] = $write->values->tasksOf(fragment: $fragment, record: null);
+		$write            = new ExampleSetFragmentWrite(fragment: $fragment, context: $context, values: $write->values);
 		return array_merge($refusals, $this->kindRefusals(write: $write, users: $users));
 	}//end check()
 
@@ -98,7 +98,10 @@ class ExampleSetEngineKinds {
 
 			$refusals = array_merge(
 				$refusals,
-				$rows->checkFragment(fragment: $write->fragment, context: $write->context, users: $users, values: $write->values)
+				$rows->checkFragment(
+					fragment: $write->fragment,
+					check: new ExampleSetFragmentCheck(context: $write->context, users: $users, values: $write->values)
+				)
 			);
 		}
 
@@ -201,29 +204,18 @@ class ExampleSetEngineKinds {
 	}//end anyQuotesAddress()
 
 	/**
-	 * Write the tasks and views of one fragment that the record does not hold.
+	 * Write the rows of one fragment that the record does not hold, but for the parts installBeforeChanges() wrote:
+	 * the tasks and views among them.
 	 *
 	 * @param ExampleSetFragmentWrite $write  The fragment, the context placeholders draw on and their filler.
-	 * @param array<string, mixed>    $report The report; gains `tasks`, `views` and `dropped`.
-	 * @param array<string, mixed>    $record The record; gains the rows written.
+	 * @param RecordLedger            $ledger The report (gains `tasks`, `views` and `dropped`) and the record (gains
+	 *                                        the rows written), held by reference.
 	 *
 	 * @return bool Whether the record changed and is to be written.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
-	public function install(ExampleSetFragmentWrite $write, array &$report, array &$record): bool {
-		return $this->installAfterChanges(write: $write, ledger: new RecordLedger(report: $report, record: $record));
-	}//end install()
-
-	/**
-	 * Write the rows of one fragment that the record does not hold, but for the parts installBeforeChanges() wrote.
-	 *
-	 * @param ExampleSetFragmentWrite $write  The fragment, the context placeholders draw on and their filler.
-	 * @param RecordLedger            $ledger The report and the record, held by reference.
-	 *
-	 * @return bool Whether the record changed and is to be written.
-	 */
-	private function installAfterChanges(ExampleSetFragmentWrite $write, RecordLedger $ledger): bool {
+	public function install(ExampleSetFragmentWrite $write, RecordLedger $ledger): bool {
 		$changed = false;
 		foreach ($this->kinds() as $part => [$rows]) {
 			// Written earlier, by installBeforeChanges(), so a change may quote one.
@@ -231,7 +223,7 @@ class ExampleSetEngineKinds {
 				continue;
 			}
 
-			if ($rows?->installFragment(write: $write, report: $ledger->report, record: $ledger->record) === true) {
+			if ($rows?->installFragment(write: $write, ledger: $ledger) === true) {
 				$changed = true;
 			}
 
@@ -242,44 +234,32 @@ class ExampleSetEngineKinds {
 		}
 
 		return $changed;
-	}//end installAfterChanges()
+	}//end install()
 
 	/**
 	 * Write the flows, access links and grants of one fragment that the record does not hold, before its changes, so
 	 * a change may quote one (`{{flow:key.uuid}}`, `{{accessLink:key.url}}`).
 	 *
 	 * @param ExampleSetFragmentWrite $write  The fragment, the context placeholders draw on and their filler.
-	 * @param array<string, mixed>    $report The report; gains `flows`, `accessLinks` and `grants`.
-	 * @param array<string, mixed>    $record The record; gains the rows written.
+	 * @param RecordLedger            $ledger The report (gains `flows`, `accessLinks` and `grants`) and the record
+	 *                                        (gains the rows written), held by reference.
 	 *
 	 * @return bool Whether the record changed and is to be written.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-change-may-quote-a-flow-of-its-fragment
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-change-may-quote-an-access-link-of-its-fragment
 	 */
-	public function installBeforeChanges(ExampleSetFragmentWrite $write, array &$report, array &$record): bool {
-		return $this->installQuoted(write: $write, ledger: new RecordLedger(report: $report, record: $record));
-	}//end installBeforeChanges()
-
-	/**
-	 * Write the flows, access links and grants of one fragment that the record does not hold.
-	 *
-	 * @param ExampleSetFragmentWrite $write  The fragment, the context placeholders draw on and their filler.
-	 * @param RecordLedger            $ledger The report and the record, held by reference.
-	 *
-	 * @return bool Whether the record changed and is to be written.
-	 */
-	private function installQuoted(ExampleSetFragmentWrite $write, RecordLedger $ledger): bool {
+	public function installBeforeChanges(ExampleSetFragmentWrite $write, RecordLedger $ledger): bool {
 		$changed = false;
 		$kinds   = $this->kinds();
 		foreach (self::BEFORE_CHANGES as $part) {
-			if ($kinds[$part][0]?->installFragment(write: $write, report: $ledger->report, record: $ledger->record) === true) {
+			if ($kinds[$part][0]?->installFragment(write: $write, ledger: $ledger) === true) {
 				$changed = true;
 			}
 		}
 
 		return $changed;
-	}//end installQuoted()
+	}//end installBeforeChanges()
 
 	/**
 	 * The access links a fragment declares, by key, for `{{accessLink:key.id|uuid|url}}`: as minted, or stand-ins
