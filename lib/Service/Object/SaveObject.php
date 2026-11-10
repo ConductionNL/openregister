@@ -69,6 +69,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
 use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload;
+use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectWriteTarget;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectUpdateRun;
 use OCA\OpenRegister\Service\Object\SaveObject\OutdatedTranslations;
@@ -3810,38 +3811,28 @@ class SaveObject implements SaveObjectInterface {
 	 * re-validation is sequenced after this primitive lands and is
 	 * tracked separately.
 	 *
-	 * @param Register|null $register Register context for the batch.
-	 * @param Schema|int|string|null $schema Schema context for the batch.
-	 * @param iterable $rows Input rows (each is the same
-	 *                       shape `saveObject` accepts).
-	 * @param BatchOperationStatus|null $status Optional pre-existing status
-	 *                                          (for callers that want to
-	 *                                          accumulate across multiple
-	 *                                          calls).
+	 * @param StreamingSave $save The register and schema context of the batch, its rows (each the shape
+	 *                            `saveObject` accepts) and an optional pre-existing status for callers
+	 *                            that accumulate across multiple calls.
 	 *
 	 * @return BatchOperationStatus
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	public function saveObjectsStreaming(
-		Register|int|string|null $register,
-		Schema|int|string|null $schema,
-		iterable $rows,
-		?BatchOperationStatus $status = null,
-	): BatchOperationStatus {
-		$status ??= new BatchOperationStatus();
+	public function saveObjectsStreaming(StreamingSave $save): BatchOperationStatus {
+		$status = ($save->status ?? new BatchOperationStatus());
 		$status->start();
 
 		$run = new StreamRun();
-		$run->register = $register;
-		$run->schema = $schema;
+		$run->register = $save->register;
+		$run->schema = $save->schema;
 		$run->status = $status;
 
 		// Position in the submitted batch. A failed create has no UUID yet, so
 		// this is the only thing that lets a caller identify the row it lost
 		// (issue #2778). Counted rather than read from the key because $rows is
 		// an iterable and may be a generator.
-		foreach ($rows as $row) {
+		foreach ($save->rows as $row) {
 			$run->rowIndex++;
 			$run->row = $row;
 			$cacheBefore = $this->referenceExistence()->verdictCount();
