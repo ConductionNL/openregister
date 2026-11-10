@@ -508,6 +508,6 @@ class GetObject
         unset($filters['object'], $filters['register'], $filters['schema']);
         $filters['object_uuid'] = $object->getUuid();
 
-        return $this->auditTrailMapper->findAll(filters: $filters, sort: ['created' => 'DESC']);
+        return $this->auditTrailMapper->findTrail(query: ListQuery::unbounded(filters: $filters, sort: ['created' => 'DESC']));
     }//end findLogs()
 }//end class

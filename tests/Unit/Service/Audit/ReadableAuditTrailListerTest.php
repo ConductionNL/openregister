@@ -52,6 +52,7 @@ use OCA\OpenRegister\Service\Audit\ReadEventVisibility;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Tests\Support\AuditTrailListing;
 use OCA\OpenRegister\Tests\Support\BuildsAuditCursors;
 use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
 use OCP\IGroupManager;
@@ -227,13 +228,13 @@ class ReadableAuditTrailListerTest extends TestCase {
 		?ReadEventVisibility $reads = null,
 	): ReadableAuditTrailLister {
 		$auditMapper = $this->createMock(AuditTrailMapper::class);
-		$auditMapper->method('findAll')->willReturnCallback(
+		$auditMapper->method('findTrail')->willReturnCallback(AuditTrailListing::positional(
 			function (...$args) use ($entries): array {
 				$this->queries[] = $args;
 				// One page of candidates, then nothing: the trail is short.
 				return (($args[1] ?? 0) > 0) ? [] : $entries;
 			}
-		);
+		));
 
 		$objectMapper = $this->createMock(MagicMapper::class);
 		$objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn($located);
@@ -404,12 +405,12 @@ class ReadableAuditTrailListerTest extends TestCase {
 	 */
 	public function testAShortRedactionHidesTheRows(): void {
 		$auditMapper = $this->createMock(AuditTrailMapper::class);
-		$auditMapper->method('findAll')->willReturnCallback(
+		$auditMapper->method('findTrail')->willReturnCallback(AuditTrailListing::positional(
 			fn (...$args): array => (($args[1] ?? 0) > 0) ? [] : [
 				$this->entry(objectUuid: self::READABLE, action: 'create'),
 				$this->entry(objectUuid: self::READABLE, action: 'update'),
 			]
-		);
+		));
 		$objectMapper = $this->createMock(MagicMapper::class);
 		$objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn([$this->object(uuid: self::READABLE)]);
 		$history = $this->createMock(ObjectHistoryForReaders::class);
@@ -464,9 +465,9 @@ class ReadableAuditTrailListerTest extends TestCase {
 		$history->method('readerColumns')->willReturnArgument(0);
 
 		$auditMapper = $this->createMock(AuditTrailMapper::class);
-		$auditMapper->method('findAll')->willReturnCallback(
+		$auditMapper->method('findTrail')->willReturnCallback(AuditTrailListing::positional(
 			fn (...$args): array => (($args[1] ?? 0) > 0) ? [] : [$this->entry(objectUuid: self::READABLE)]
-		);
+		));
 		$objectMapper = $this->createMock(MagicMapper::class);
 		$objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn([$this->object(uuid: self::READABLE)]);
 
@@ -648,7 +649,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 	 */
 	public function testAnonymousCallerGetsNothingAndAsksTheMapperNothing(): void {
 		$auditMapper = $this->createMock(AuditTrailMapper::class);
-		$auditMapper->expects($this->never())->method('findAll');
+		$auditMapper->expects($this->never())->method('findTrail');
 
 		$lister = new ReadableAuditTrailLister(
 			auditTrailMapper: $auditMapper,
@@ -686,9 +687,9 @@ class ReadableAuditTrailListerTest extends TestCase {
 	 */
 	public function testAnEntryWhoseSchemaIsGoneIsAbsent(): void {
 		$auditMapper = $this->createMock(AuditTrailMapper::class);
-		$auditMapper->method('findAll')->willReturnCallback(
+		$auditMapper->method('findTrail')->willReturnCallback(AuditTrailListing::positional(
 			fn (...$args): array => (($args[1] ?? 0) > 0) ? [] : [$this->entry(objectUuid: self::READABLE)]
-		);
+		));
 		$objectMapper = $this->createMock(MagicMapper::class);
 		$objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn([$this->object(uuid: self::READABLE)]);
 
@@ -724,9 +725,9 @@ class ReadableAuditTrailListerTest extends TestCase {
 	 */
 	public function testAThrowingReadPathHidesTheRow(): void {
 		$auditMapper = $this->createMock(AuditTrailMapper::class);
-		$auditMapper->method('findAll')->willReturnCallback(
+		$auditMapper->method('findTrail')->willReturnCallback(AuditTrailListing::positional(
 			fn (...$args): array => (($args[1] ?? 0) > 0) ? [] : [$this->entry(objectUuid: self::READABLE)]
-		);
+		));
 		$objectMapper = $this->createMock(MagicMapper::class);
 		$objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn([$this->object(uuid: self::READABLE)]);
 		$history = $this->createMock(ObjectHistoryForReaders::class);
@@ -750,9 +751,9 @@ class ReadableAuditTrailListerTest extends TestCase {
 	 */
 	public function testAThrowingLookupHidesTheBatch(): void {
 		$auditMapper = $this->createMock(AuditTrailMapper::class);
-		$auditMapper->method('findAll')->willReturnCallback(
+		$auditMapper->method('findTrail')->willReturnCallback(AuditTrailListing::positional(
 			fn (...$args): array => (($args[1] ?? 0) > 0) ? [] : [$this->entry(objectUuid: self::READABLE)]
-		);
+		));
 		$objectMapper = $this->createMock(MagicMapper::class);
 		$objectMapper->method('findMultipleAcrossAllMagicTables')->willThrowException(new \RuntimeException('db down'));
 		$history = $this->createMock(ObjectHistoryForReaders::class);
@@ -807,14 +808,14 @@ class ReadableAuditTrailListerTest extends TestCase {
 
 		$calls = 0;
 		$auditMapper = $this->createMock(AuditTrailMapper::class);
-		$auditMapper->method('findAll')->willReturnCallback(
+		$auditMapper->method('findTrail')->willReturnCallback(AuditTrailListing::positional(
 			function () use ($full, &$calls): array {
 				$calls++;
 
 				// An endless trail: every query answers a full batch.
 				return $full;
 			}
-		);
+		));
 
 		$objectMapper = $this->createMock(MagicMapper::class);
 		$objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn([]);
@@ -1089,9 +1090,9 @@ class ReadableAuditTrailListerTest extends TestCase {
 
 		$history = $this->historyWithRealGuard(located: $located, trail: $trail);
 		$auditMapper = $this->createMock(AuditTrailMapper::class);
-		$auditMapper->method('findAll')->willReturnCallback(
+		$auditMapper->method('findTrail')->willReturnCallback(AuditTrailListing::positional(
 			static fn (...$args): array => (($args[1] ?? 0) > 0) ? [] : $entries
-		);
+		));
 		$objectMapper = $this->createMock(MagicMapper::class);
 		$objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn($located);
 
@@ -1179,7 +1180,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 	 */
 	private function rw126Lister(array $trails, array $located, array $readable): ReadableAuditTrailLister {
 		$auditMapper = $this->createMock(AuditTrailMapper::class);
-		$auditMapper->method('findAll')->willReturnCallback(
+		$auditMapper->method('findTrail')->willReturnCallback(AuditTrailListing::positional(
 			function (...$args) use ($trails): array {
 				$this->queries[] = $args;
 				$limit = (int)($args[0] ?? 200);
@@ -1187,7 +1188,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 				$key = (string)(($args[2] ?? [])['object_uuid'] ?? '');
 				return array_slice(($trails[$key] ?? []), $offset, $limit);
 			}
-		);
+		));
 		$objectMapper = $this->createMock(MagicMapper::class);
 		$objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn($located);
 

@@ -75,7 +75,7 @@ class ObjectVersionGuardRefusalTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->auditTrail = $this->createMock(AuditTrailMapperInterface::class);
-		$this->auditTrail->method('findAll')->willReturn([]);
+		$this->auditTrail->method('findTrail')->willReturn([]);
 		$this->container = $this->createMock(ContainerInterface::class);
 		$this->logger    = $this->createMock(LoggerInterface::class);
 	}//end setUp()
