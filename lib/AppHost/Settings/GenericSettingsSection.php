@@ -5,7 +5,8 @@
  *
  * Engine-owned generalisation of the per-app `SettingsSection`. Defines the
  * leaf app's section in the Nextcloud admin settings, parameterised by id,
- * display name, icon file, priority and the owning app id (for the icon path).
+ * display name, icon file, priority and the owning app id (for the icon path),
+ * passed as a {@see SettingsPlacement} plus a {@see SectionAppearance}.
  *
  * NC instantiates the section by the class name in info.xml
  * `<settings><admin-section>`, so the leaf keeps a one-line subclass.
@@ -39,23 +40,57 @@ use OCP\Settings\IIconSection;
  */
 class GenericSettingsSection implements IIconSection {
 	/**
+	 * The section identifier.
+	 *
+	 * @var string
+	 */
+	protected readonly string $sectionId;
+
+	/**
+	 * Human-readable section display name.
+	 *
+	 * @var string
+	 */
+	protected readonly string $name;
+
+	/**
+	 * Owning app id (for the icon image path).
+	 *
+	 * @var string
+	 */
+	protected readonly string $appId;
+
+	/**
+	 * Icon file name within the app's img/ dir.
+	 *
+	 * @var string
+	 */
+	protected readonly string $iconFile;
+
+	/**
+	 * Section ordering priority.
+	 *
+	 * @var integer
+	 */
+	protected readonly int $priority;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $sectionId The section identifier.
-	 * @param string $name Human-readable section display name.
-	 * @param string $appId Owning app id (for the icon image path).
-	 * @param string $iconFile Icon file name within the app's img/ dir.
-	 * @param int $priority Section ordering priority.
-	 * @param IURLGenerator $urlGenerator URL generator (icon path).
+	 * @param SettingsPlacement $placement    Owning app id, section id and the section's priority.
+	 * @param SectionAppearance $appearance   Display name and icon file.
+	 * @param IURLGenerator     $urlGenerator URL generator (icon path).
 	 */
 	public function __construct(
-		protected readonly string $sectionId,
-		protected readonly string $name,
-		protected readonly string $appId,
-		protected readonly string $iconFile,
-		protected readonly int $priority,
+		SettingsPlacement $placement,
+		SectionAppearance $appearance,
 		protected readonly IURLGenerator $urlGenerator,
 	) {
+		$this->sectionId = $placement->sectionId;
+		$this->appId     = $placement->appId;
+		$this->priority  = $placement->priority;
+		$this->name      = $appearance->name;
+		$this->iconFile  = $appearance->iconFile;
 	}//end __construct()
 
 	/**
