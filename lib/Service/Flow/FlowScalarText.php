@@ -27,6 +27,8 @@ namespace OCA\OpenRegister\Service\Flow;
  *
  * FlowRecipientAddresses reads recipient entries with it and FlowEmailAnnouncer
  * reads the sent message with it, so "empty" means the same in both.
+ *
+ * @spec openspec/specs/flow-send-email-external-recipients/spec.md
  */
 final class FlowScalarText {
 
