@@ -29,6 +29,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -181,9 +183,9 @@ class TablesObjectSourceProviderTest extends TestCase {
 		$this->reader->expects($this->never())->method('countRows');
 		$this->reader->expects($this->never())->method('listColumns');
 
-		$this->assertSame([], $provider->findAll($register, $schema, [], ['tableId' => 5]));
-		$this->assertSame(0, $provider->count($register, $schema, [], ['tableId' => 5]));
-		$this->assertNull($provider->find($register, $schema, '1', ['tableId' => 5]));
+		$this->assertSame([], $provider->findAll(new SourcedTable(new RegisterSchema($register, $schema), ['tableId' => 5]), []));
+		$this->assertSame(0, $provider->count(new SourcedTable(new RegisterSchema($register, $schema), ['tableId' => 5]), []));
+		$this->assertNull($provider->find(new SourcedTable(new RegisterSchema($register, $schema), ['tableId' => 5]), '1'));
 	}//end testFailsClosedWithoutUser()
 
 	/**
@@ -200,7 +202,7 @@ class TablesObjectSourceProviderTest extends TestCase {
 			->with((new TablesReadScope(5, 'alice'))->withPage(limit: 10, offset: 20))
 			->willReturn([['id' => 42, 'cells' => [['columnId' => 1, 'value' => 'Swing']]]]);
 
-		$objects = $this->provider()->findAll($register, $schema, ['limit' => 10, 'offset' => 20], ['tableId' => 5]);
+		$objects = $this->provider()->findAll(new SourcedTable(new RegisterSchema($register, $schema), ['tableId' => 5]), ['limit' => 10, 'offset' => 20]);
 
 		$this->assertCount(1, $objects);
 		$this->assertSame('Swing', $objects[0]->getObject()['name']);
@@ -222,7 +224,7 @@ class TablesObjectSourceProviderTest extends TestCase {
 			->with(42, new TablesReadScope(5, 'alice'))
 			->willReturn(['id' => 42, 'cells' => [['columnId' => 1, 'value' => 'Swing']]]);
 
-		$object = $this->provider()->find($register, $schema, '42', ['tableId' => 5]);
+		$object = $this->provider()->find(new SourcedTable(new RegisterSchema($register, $schema), ['tableId' => 5]), '42');
 
 		$this->assertNotNull($object);
 		$this->assertSame('Swing', $object->getObject()['name']);
@@ -238,7 +240,7 @@ class TablesObjectSourceProviderTest extends TestCase {
 
 		$this->reader->method('findRow')->willReturn(null);
 
-		$this->assertNull($this->provider()->find($register, $schema, '42', ['tableId' => 5]));
+		$this->assertNull($this->provider()->find(new SourcedTable(new RegisterSchema($register, $schema), ['tableId' => 5]), '42'));
 	}//end testFindDeniedIsNull()
 
 	/**
@@ -258,7 +260,7 @@ class TablesObjectSourceProviderTest extends TestCase {
 			]
 		);
 
-		$object = $this->provider()->find($register, $schema, $uuid, ['tableId' => 5]);
+		$object = $this->provider()->find(new SourcedTable(new RegisterSchema($register, $schema), ['tableId' => 5]), $uuid);
 
 		$this->assertNotNull($object);
 		$this->assertSame($uuid, $object->getUuid());
@@ -279,8 +281,8 @@ class TablesObjectSourceProviderTest extends TestCase {
 			}
 		);
 
-		$this->assertSame(3, $this->provider()->count($register, $schema, [], ['tableId' => 5]));
-		$this->assertSame(7, $this->provider()->count($register, $schema, [], ['tableId' => 5, 'viewId' => 9]));
+		$this->assertSame(3, $this->provider()->count(new SourcedTable(new RegisterSchema($register, $schema), ['tableId' => 5]), []));
+		$this->assertSame(7, $this->provider()->count(new SourcedTable(new RegisterSchema($register, $schema), ['tableId' => 5, 'viewId' => 9]), []));
 	}//end testCountTableAndView()
 
 	/**
@@ -297,7 +299,7 @@ class TablesObjectSourceProviderTest extends TestCase {
 			->with((new TablesReadScope(5, 'alice'))->withView(viewId: 9)->withPage(limit: 200, offset: 0))
 			->willReturn([['id' => 1, 'cells' => []]]);
 
-		$objects = $this->provider()->findAll($register, $schema, [], ['tableId' => 5, 'viewId' => 9]);
+		$objects = $this->provider()->findAll(new SourcedTable(new RegisterSchema($register, $schema), ['tableId' => 5, 'viewId' => 9]), []);
 
 		$this->assertCount(1, $objects);
 	}//end testViewIdBindsView()
@@ -309,7 +311,7 @@ class TablesObjectSourceProviderTest extends TestCase {
 	 */
 	public function testFindRejectsGarbageId(): void {
 		[$register, $schema] = $this->binding();
-		$this->assertNull($this->provider()->find($register, $schema, 'nonsense', ['tableId' => 5]));
+		$this->assertNull($this->provider()->find(new SourcedTable(new RegisterSchema($register, $schema), ['tableId' => 5]), 'nonsense'));
 	}//end testFindRejectsGarbageId()
 
 	/**
@@ -327,14 +329,14 @@ class TablesObjectSourceProviderTest extends TestCase {
 		);
 		$provider = $this->provider();
 
-		$full = $provider->find($register, $schema, '42', ['tableId' => 5]);
+		$full = $provider->find(new SourcedTable(new RegisterSchema($register, $schema), ['tableId' => 5]), '42');
 		$this->assertSame('alice', $full->getOwner());
 		$this->assertSame('2026-01-02', $full->getCreated()->format('Y-m-d'));
 		$this->assertSame('2026-02-03', $full->getUpdated()->format('Y-m-d'));
 		$this->assertSame('30', $full->getRegister());
 		$this->assertSame('300', $full->getSchema());
 
-		$bare = $provider->find($register, $schema, '43', ['tableId' => 5]);
+		$bare = $provider->find(new SourcedTable(new RegisterSchema($register, $schema), ['tableId' => 5]), '43');
 		$this->assertNull($bare->getOwner());
 		$this->assertNull($bare->getCreated());
 		$this->assertNull($bare->getUpdated());
@@ -351,9 +353,9 @@ class TablesObjectSourceProviderTest extends TestCase {
 		$this->reader->expects($this->never())->method('findRow');
 		$provider = $this->provider();
 
-		$this->assertSame(0, $provider->count($register, $schema));
-		$this->assertSame([], $provider->findAll($register, $schema));
-		$this->assertNull($provider->find($register, $schema, '42'));
+		$this->assertSame(0, $provider->count(new SourcedTable(new RegisterSchema($register, $schema))));
+		$this->assertSame([], $provider->findAll(new SourcedTable(new RegisterSchema($register, $schema))));
+		$this->assertNull($provider->find(new SourcedTable(new RegisterSchema($register, $schema)), '42'));
 	}//end testNoBindingReadsNothing()
 
 	/**
@@ -366,8 +368,8 @@ class TablesObjectSourceProviderTest extends TestCase {
 		$this->reader->method('countRows')->willReturn(4);
 		$provider = $this->provider();
 
-		$this->assertSame(4, $provider->count($register, $schema, [], ['viewId' => 9]));
-		$this->assertSame([], $provider->findAll($register, $schema, [], ['viewId' => 9]));
+		$this->assertSame(4, $provider->count(new SourcedTable(new RegisterSchema($register, $schema), ['viewId' => 9]), []));
+		$this->assertSame([], $provider->findAll(new SourcedTable(new RegisterSchema($register, $schema), ['viewId' => 9]), []));
 	}//end testViewWithoutTableCountsButDoesNotList()
 
 	/**
@@ -383,7 +385,7 @@ class TablesObjectSourceProviderTest extends TestCase {
 			->willReturn([['id' => 1, 'cells' => []]]);
 
 		$uuid = $this->deriver->deriveObjectUuid(tableId: 5, rowId: 2);
-		$this->assertNull($this->provider()->find($register, $schema, $uuid, ['tableId' => 5, 'viewId' => 9]));
+		$this->assertNull($this->provider()->find(new SourcedTable(new RegisterSchema($register, $schema), ['tableId' => 5, 'viewId' => 9]), $uuid));
 	}//end testUnknownUuidIsNull()
 
 	/**
@@ -432,7 +434,7 @@ class TablesObjectSourceProviderTest extends TestCase {
 		[$register, $schema] = $this->binding();
 		$this->threeRows();
 
-		$this->assertSame($expected, $this->ids($this->provider()->findAll($register, $schema, $query, ['tableId' => 5])));
+		$this->assertSame($expected, $this->ids($this->provider()->findAll(new SourcedTable(new RegisterSchema($register, $schema), ['tableId' => 5]), $query)));
 	}//end testAQueryIsApplied()
 
 	/**
@@ -475,7 +477,7 @@ class TablesObjectSourceProviderTest extends TestCase {
 			->willReturn([]);
 
 		$query = ['limit' => 10, 'offset' => 20, 'filters' => [], 'sort' => [], 'search' => null, 'ids' => null];
-		$this->assertSame([], $this->provider()->findAll($register, $schema, $query, ['tableId' => 5]));
+		$this->assertSame([], $this->provider()->findAll(new SourcedTable(new RegisterSchema($register, $schema), ['tableId' => 5]), $query));
 	}//end testEmptyOperatorsStayNative()
 
 	/**
@@ -488,7 +490,7 @@ class TablesObjectSourceProviderTest extends TestCase {
 		$this->threeRows();
 		$this->reader->expects($this->never())->method('countRows');
 
-		$this->assertSame(2, $this->provider()->count($register, $schema, ['filters' => ['name' => 'Swing'], 'limit' => 1], ['tableId' => 5]));
+		$this->assertSame(2, $this->provider()->count(new SourcedTable(new RegisterSchema($register, $schema), ['tableId' => 5]), ['filters' => ['name' => 'Swing'], 'limit' => 1]));
 	}//end testCountFollowsTheQuery()
 
 	/**
@@ -504,7 +506,7 @@ class TablesObjectSourceProviderTest extends TestCase {
 			->with((new TablesReadScope(5, 'alice'))->withPage(limit: 1000, offset: 0))
 			->willReturn([['id' => 1, 'cells' => []], ['id' => 2, 'cells' => []]]);
 
-		$this->provider()->findAll($register, $schema, ['search' => 'x'], ['tableId' => 5]);
+		$this->provider()->findAll(new SourcedTable(new RegisterSchema($register, $schema), ['tableId' => 5]), ['search' => 'x']);
 	}//end testAQueryScansBoundedAndReadsColumnsOnce()
 
 	/**
@@ -521,8 +523,8 @@ class TablesObjectSourceProviderTest extends TestCase {
 			->willReturn([]);
 
 		$config = ['tableId' => 5, 'viewId' => 9];
-		$this->provider()->findAll($register, $schema, ['search' => 'x'], $config);
-		$this->provider()->count($register, $schema, ['search' => 'x'], $config);
+		$this->provider()->findAll(new SourcedTable(new RegisterSchema($register, $schema), $config), ['search' => 'x']);
+		$this->provider()->count(new SourcedTable(new RegisterSchema($register, $schema), $config), ['search' => 'x']);
 	}//end testAQueryOnAViewScansTheView()
 
 	/**
@@ -546,6 +548,6 @@ class TablesObjectSourceProviderTest extends TestCase {
 			),
 			session: new \OCA\OpenRegister\Service\LinkSessionRuntime(userSession: $this->session(), logger: $logger)
 		);
-		$provider->findAll($register, $schema, ['search' => 'x'], ['tableId' => 5]);
+		$provider->findAll(new SourcedTable(new RegisterSchema($register, $schema), ['tableId' => 5]), ['search' => 'x']);
 	}//end testAScanAtTheCapWarns()
 }//end class

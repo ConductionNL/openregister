@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Search\Service\Quality\DedupRun;
 use OCA\OpenRegister\Search\Service\Quality\DismissedPairStore;
 use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService;
 use OCA\OpenRegister\Search\Service\Quality\SimilarityCalculator;
@@ -114,7 +115,7 @@ class DuplicateAbsentFieldWeightTest extends TestCase {
 		$object->setObject($stored);
 		$this->objectService->method('findAll')->willReturn([$object]);
 
-		$matches = $this->service->checkCandidate(1, 1, $candidate);
+		$matches = $this->service->checkCandidate(new DedupRun(1, 1), $candidate);
 
 		return (float)($matches[0]['score'] ?? 0.0);
 	}//end scoreOf()

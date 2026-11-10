@@ -143,6 +143,7 @@ class ExplicitReveal implements ExplicitRevealInterface {
 	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
 	 */
 	public function isTrusted(): bool {
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return $this->trusted > 0 || SystemOperationContext::isActive() === true;
 	}//end isTrusted()
 
@@ -311,17 +312,16 @@ class ExplicitReveal implements ExplicitRevealInterface {
 	/**
 	 * Put a stored value back where a write sends its mask.
 	 *
-	 * @param Schema|null          $schema   The schema.
-	 * @param array<string, mixed> $incoming The write payload.
-	 * @param array<string, mixed> $stored   The stored object, unrendered.
+	 * @param MaskedWrite $write The schema, the write payload and the stored object, unrendered.
 	 *
 	 * @return array<string, mixed> The payload.
 	 *
 	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
 	 */
-	public static function restoreMasked(?Schema $schema, array $incoming, array $stored): array {
-		foreach (array_intersect(self::explicitProperties(schema: $schema), array_keys($incoming), array_keys($stored)) as $name) {
-			$incoming[$name] = self::unmasked(sent: $incoming[$name], stored: $stored[$name]);
+	public static function restoreMasked(MaskedWrite $write): array {
+		$incoming = $write->incoming;
+		foreach (array_intersect(self::explicitProperties(schema: $write->schema), array_keys($incoming), array_keys($write->stored)) as $name) {
+			$incoming[$name] = self::unmasked(sent: $incoming[$name], stored: $write->stored[$name]);
 		}
 
 		return $incoming;

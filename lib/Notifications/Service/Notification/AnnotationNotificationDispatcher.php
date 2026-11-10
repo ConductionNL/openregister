@@ -44,6 +44,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Notifications\Service\Party\PartyMessage;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\Activity\IManager as IActivityManager;
@@ -59,6 +60,8 @@ use OCP\IUserManager;
 use OCP\Mail\IMailer;
 use OCP\Notification\IManager as INotificationManager;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Notification\MailingRequest;
+use OCA\OpenRegister\Service\Notification\ReferenceOrigin;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifierInterface;
 
 /**
@@ -2182,11 +2185,8 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			}
 
 			$sent = $this->integrations->serverContainer->get(PartyNotificationService::class)->notifyParties(
-				objectUuid: $objectUuid,
-				subject: $firing->broadcastSubject,
-				body: $firing->addressBody,
-				role: $onlyRole,
-				category: $firing->category
+				message: new PartyMessage(objectUuid: $objectUuid, subject: $firing->broadcastSubject, body: $firing->addressBody, category: $firing->category),
+				role: $onlyRole
 			);
 
 			foreach ($sent as $outcome) {
@@ -2237,14 +2237,14 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			return 0;
 		}
 
-		$outcomes = $this->integrations->serverContainer->get(ReferencedAddressNotifierInterface::class)->notify(
-			object: $firing->object,
-			data: $firing->data,
-			recipientsSpec: $firing->recipientsSpec(),
-			subject: $firing->broadcastSubject,
-			body: $firing->addressBody,
-			category: $firing->category,
-			schema: $firing->schema
+		$outcomes = $this->integrations->serverContainer->get(ReferencedAddressNotifierInterface::class)->mail(
+			origin: new ReferenceOrigin(object: $firing->object, data: $firing->data, schema: $firing->schema),
+			request: new MailingRequest(
+				recipients: $firing->recipientsSpec(),
+				subject: $firing->broadcastSubject,
+				body: $firing->addressBody,
+				category: $firing->category
+			)
 		);
 
 		$reached = 0;

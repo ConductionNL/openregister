@@ -45,6 +45,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\NoticeContent;
 use OCA\OpenRegister\Notifications\Service\Notification\NoticeRule;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicyInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\PlaceholderValues;
 use OCA\OpenRegister\Notifications\Service\Notification\PushRideAlong;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkMessage;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSenderInterface;
@@ -297,10 +298,9 @@ class FlowMessagingService {
 	 */
 	private function postTalkItem(FlowSend $send, array $json): void {
 		$token = $this->conversationToken(send: $send, json: $json);
-		$message = $this->platform->templating->interpolate(
+		$message = $this->platform->templating->render(
 			template: (string)($send->config['message'] ?? ''),
-			data: $json,
-			context: $this->scalarContext(context: $send->context)
+			values: new PlaceholderValues(data: $json, context: $this->scalarContext(context: $send->context))
 		);
 		if ($token === '') {
 			$send->failures[] = 'No Talk conversation resolved for an item; nothing was posted for it.';
@@ -531,10 +531,10 @@ class FlowMessagingService {
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function sendItem(FlowSend $send, FlowSendItem $item): void {
-		$scalars = $this->scalarContext(context: $send->context);
+		$values = new PlaceholderValues(data: $item->json, context: $this->scalarContext(context: $send->context));
 		$templating = $this->platform->templating;
-		$item->title = $templating->interpolate(template: (string)($send->config[$send->titleKey] ?? ''), data: $item->json, context: $scalars);
-		$item->body = $templating->interpolate(template: (string)($send->config[$send->bodyKey] ?? ''), data: $item->json, context: $scalars);
+		$item->title = $templating->render(template: (string)($send->config[$send->titleKey] ?? ''), values: $values);
+		$item->body = $templating->render(template: (string)($send->config[$send->bodyKey] ?? ''), values: $values);
 		$item->kind = FlowEmailSentEvent::KIND_USER;
 		foreach ($item->uids as $uid) {
 			$item->recipient = $uid;
@@ -640,12 +640,13 @@ class FlowMessagingService {
 	 */
 	private function mailAddress(FlowSend $send, FlowSendItem $item): void {
 		$unsubscribe = $this->optOut->decisionFor(decisions: $send->decisions, address: $item->recipient)['unsubscribe'];
-		$outcome = $this->channels->emailSender->sendToAddress(
-			address: $item->recipient,
-			displayName: $item->name,
-			subject: $item->title,
-			body: $this->optOut->withLink(body: $item->body, unsubscribe: $unsubscribe),
-			unsubscribe: $unsubscribe
+		$outcome = $this->channels->emailSender->sendMailTo(
+			addressee: new \OCA\OpenRegister\Notifications\Service\Notification\MailAddressee(address: $item->recipient, displayName: $item->name),
+			content: new \OCA\OpenRegister\Notifications\Service\Notification\MailContent(
+				subject: $item->title,
+				body: $this->optOut->withLink(body: $item->body, unsubscribe: $unsubscribe),
+				unsubscribe: $unsubscribe
+			)
 		);
 		if ($outcome === EmailSenderInterface::OUTCOME_DISPATCHED) {
 			$send->add(bucket: 'delivered', recipient: $item->recipient);
@@ -843,6 +844,7 @@ class FlowMessagingService {
 			return $value;
 		}
 
-		return trim($this->platform->templating->interpolate(template: $value, data: $json, context: $this->scalarContext(context: $send->context)));
+		$values = new PlaceholderValues(data: $json, context: $this->scalarContext(context: $send->context));
+		return trim($this->platform->templating->render(template: $value, values: $values));
 	}//end conversationToken()
 }//end class

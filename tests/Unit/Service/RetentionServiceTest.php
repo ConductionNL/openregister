@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\HoldOrder;
 use OCA\OpenRegister\Service\RetentionClock;
 use OCA\OpenRegister\Service\RecordUpdate;
 use OCA\OpenRegister\Service\ExecutedDestruction;
@@ -573,7 +574,7 @@ class RetentionServiceTest extends TestCase {
 		$user->method('getUID')->willReturn('test-user');
 		$this->userSession->method('getUser')->willReturn($user);
 
-		$result = $this->service->placeLegalHold($object, 'WOO-verzoek 2025-0142');
+		$result = $this->service->placeHold($object, new HoldOrder('WOO-verzoek 2025-0142'));
 		$retention = $result->getRetention();
 
 		$this->assertTrue($retention['legalHold']['active']);
@@ -600,7 +601,7 @@ class RetentionServiceTest extends TestCase {
 		$user->method('getUID')->willReturn('test-user');
 		$this->userSession->method('getUser')->willReturn($user);
 
-		$result = $this->service->releaseLegalHold($object, 'WOO afgehandeld');
+		$result = $this->service->releaseHold($object, new HoldOrder('WOO afgehandeld'));
 		$retention = $result->getRetention();
 
 		$this->assertFalse($retention['legalHold']['active']);

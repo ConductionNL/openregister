@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\RuleRun;
 use OCA\OpenRegister\Db\RuleRunMapper;
 use OCA\OpenRegister\Db\RuleRunSummary;
+use OCA\OpenRegister\Db\RuleRunSummary\RuleEvaluation;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalog;
@@ -66,6 +67,7 @@ use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
 use OCA\OpenRegister\Service\Rules\RuleRunStores;
 use OCA\OpenRegister\Service\Rules\RuleTargets;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
+use OCA\OpenRegister\Service\Rules\RuleInventoryOptions;
 use OCA\OpenRegister\Service\Rules\RuleTrialService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Rules\RuleTrialRequest;
@@ -215,9 +217,9 @@ class RulesServicesGoldenTest extends TestCase {
 		$now = new DateTime('2026-09-14T00:00:00+00:00');
 		$actual = [
 			'describe' => array_map(static fn ($rule): array => $rule->jsonSerialize(), $inventory->describe($schema)),
-			'window30' => $inventory->inventory($schema, 30, $now),
-			'window0' => $inventory->inventory($schema, 0, $now),
-			'scoped' => $inventory->inventory($schema, 365, $now, ['zaaktype' => 'c']),
+			'window30' => $inventory->inventory($schema, new RuleInventoryOptions(30, $now)),
+			'window0' => $inventory->inventory($schema, new RuleInventoryOptions(0, $now)),
+			'scoped' => $inventory->inventory($schema, new RuleInventoryOptions(365, $now, ['zaaktype' => 'c'])),
 			'find' => $inventory->find($schema, 'flow:bezwaar:flow-b')?->jsonSerialize(),
 			'missing' => $inventory->find($schema, 'flow:bezwaar:nope'),
 		];
@@ -426,8 +428,8 @@ class RulesServicesGoldenTest extends TestCase {
 		);
 		$summaries = $this->createMock(RuleRunSummaryMapper::class);
 		$summaries->method('record')->willReturnCallback(
-			function (...$args) use ($failSummary): RuleRunSummary {
-				$args[3] = $args[3]->format(DATE_ATOM);
+			function (RuleRun $run, RuleEvaluation $evaluation) use ($failSummary): RuleRunSummary {
+				$args = [$run->getRuleId(), $run->getSchemaSlug(), $evaluation->verdict, $evaluation->moment->format(DATE_ATOM), $evaluation->error];
 				$this->calls[] = ['summary', $args];
 				if ($failSummary === true) {
 					throw new RuntimeException('summary failed');
