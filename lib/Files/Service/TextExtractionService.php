@@ -1652,12 +1652,18 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	/**
 	 * Split cleaned text with a chunking strategy; any strategy but FIXED_SIZE splits recursively.
 	 *
+	 * Empty text has no chunks.
+	 *
 	 * @param string       $text The cleaned text.
 	 * @param ChunkingPlan $plan The chunking strategy and the target chunk sizing.
 	 *
 	 * @return array The chunks.
 	 */
 	private function splitText(string $text, ChunkingPlan $plan): array {
+		if ($text === '') {
+			return [];
+		}
+
 		if ($plan->strategy === self::FIXED_SIZE) {
 			return $this->chunkFixedSize(text: $text, sizing: $plan->sizing);
 		}
