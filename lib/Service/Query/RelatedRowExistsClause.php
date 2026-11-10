@@ -103,6 +103,16 @@ final class RelatedRowExistsClause {
 	private const NUMERIC_PATTERN = '^-?[0-9]+(\\.[0-9]+)?$';
 
 	/**
+	 * The guarded numeric comparison per engine: field expression (1), placeholder (2), number pattern (3), operator (4).
+	 *
+	 * @var array<string, string>
+	 */
+	private const NUMERIC_COMPARISONS = [
+		self::ENGINE_POSTGRES => '(CASE WHEN %1$s ~ \'%3$s\' THEN (%1$s)::numeric %4$s :%2$s ELSE FALSE END)',
+		self::ENGINE_MARIADB  => '(CASE WHEN %1$s REGEXP \'%3$s\' THEN CAST(%1$s AS DECIMAL(65,30)) %4$s :%2$s ELSE FALSE END)',
+	];
+
+	/**
 	 * The SQL operator for each of the parser's operators.
 	 *
 	 * `in` is absent on purpose: it renders as `IN (...)` with one placeholder
@@ -423,32 +433,14 @@ final class RelatedRowExistsClause {
 	 * @throws InvalidArgumentException When the engine is unknown.
 	 */
 	private function numericComparison(string $engine, RelatedRowBoundCondition $bound): string {
-		$left        = $bound->left;
-		$placeholder = $bound->placeholder;
-		$operator    = self::SQL_OPERATORS[$bound->operator];
-		if ($engine === self::ENGINE_POSTGRES) {
-			return sprintf(
-				'(CASE WHEN %1$s ~ \'%3$s\' THEN (%1$s)::numeric %4$s :%2$s ELSE FALSE END)',
-				$left,
-				$placeholder,
-				self::NUMERIC_PATTERN,
-				$operator
+		$operator = self::SQL_OPERATORS[$bound->operator];
+		if (isset(self::NUMERIC_COMPARISONS[$engine]) === false) {
+			throw new InvalidArgumentException(
+				sprintf('No related-row SQL for engine \'%s\'.', $engine)
 			);
 		}
 
-		if ($engine === self::ENGINE_MARIADB) {
-			return sprintf(
-				'(CASE WHEN %1$s REGEXP \'%3$s\' THEN CAST(%1$s AS DECIMAL(65,30)) %4$s :%2$s ELSE FALSE END)',
-				$left,
-				$placeholder,
-				self::NUMERIC_PATTERN,
-				$operator
-			);
-		}
-
-		throw new InvalidArgumentException(
-			sprintf('No related-row SQL for engine \'%s\'.', $engine)
-		);
+		return sprintf(self::NUMERIC_COMPARISONS[$engine], $bound->left, $bound->placeholder, self::NUMERIC_PATTERN, $operator);
 	}//end numericComparison()
 
 	/**
