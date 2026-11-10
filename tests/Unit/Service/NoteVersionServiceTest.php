@@ -83,8 +83,9 @@ class NoteVersionServiceTest extends TestCase {
 		$previous->method('getMessage')->willReturn('Applicant called');
 		$previous->method('getActorId')->willReturn('a');
 		$previous->method('getActorType')->willReturn('users');
+		$previous->method('getId')->willReturn('7');
 
-		$this->service->record(7, $previous, 'b');
+		$this->service->record($previous, 'b');
 
 		$this->assertInstanceOf(NoteVersion::class, $stored);
 		$this->assertSame(7, $stored->getCommentId());
