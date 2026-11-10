@@ -2086,23 +2086,6 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	}//end getLockedBy()
 
 	/**
-	 * Delete the object
-	 *
-	 * @param IUserSession $userSession Current user session
-	 * @param string $deletedReason Reason for deletion
-	 * @param int $retentionPeriod Retention period in days (default: 30 days)
-	 *
-	 * @throws Exception If no user is logged in
-	 *
-	 * @return static Returns the entity
-	 *
-	 * @spec openspec/specs/deletion-audit-trail/spec.md
-	 */
-	public function delete(IUserSession $userSession, ?string $deletedReason = null, ?int $retentionPeriod = 30): static {
-		return $this->softDelete(userSession: $userSession, deletion: new SoftDeletion(reason: $deletedReason, retentionDays: $retentionPeriod));
-	}//end delete()
-
-	/**
 	 * Soft-delete the object: record who deleted it, why, and until when it stays recoverable.
 	 *
 	 * The retention handed in is the window (a non-positive one takes the
@@ -2122,7 +2105,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		$this->setDeleted($deletion->metadataFor(userId: $userId, now: new DateTime()));
 
 		return $this;
-	}//end delete()
+	}//end softDelete()
 
 	/**
 	 * Whether an active legal hold keeps this record from being destroyed.

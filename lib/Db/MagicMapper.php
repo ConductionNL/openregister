@@ -6980,7 +6980,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private function softDeleteRow(MagicTableTarget $target, ObjectEntity $entity): void {
 		if ($entity->getDeleted() === null || empty($entity->getDeleted()) === true) {
 			// Mark as deleted using entity method.
-			$entity->delete($this->userSession, 'Soft deleted via MagicMapper', 30);
+			$entity->softDelete(userSession: $this->userSession, deletion: new SoftDeletion(reason: 'Soft deleted via MagicMapper', retentionDays: 30));
 		}
 
 		// Update entity in table with deleted field set.

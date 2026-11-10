@@ -31,6 +31,7 @@ namespace Unit\Db;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\SoftDeletion;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -57,7 +58,7 @@ final class ObjectEntityDeleteWindowTest extends TestCase {
 	public function testTheStatedRetentionIsTheWindowThatGetsWritten(): void {
 		$object = new ObjectEntity();
 		$object->setUuid('vertrouwelijk-1');
-		$object->delete($this->session(), 'no longer needed', 365);
+		$object->softDelete($this->session(), new SoftDeletion('no longer needed', 365));
 
 		$deleted = $object->getDeleted();
 		self::assertSame(365, $deleted['retentionPeriod']);
@@ -67,10 +68,10 @@ final class ObjectEntityDeleteWindowTest extends TestCase {
 
 	public function testADifferentRetentionGivesADifferentWindow(): void {
 		$short = new ObjectEntity();
-		$short->delete($this->session(), null, 7);
+		$short->softDelete($this->session(), new SoftDeletion(null, 7));
 
 		$long = new ObjectEntity();
-		$long->delete($this->session(), null, 3650);
+		$long->softDelete($this->session(), new SoftDeletion(null, 3650));
 
 		self::assertSame(7, $this->daysBetween($short->getDeleted()['deletedAt'], $short->getDeleted()['purgeDate']));
 		self::assertSame(3650, $this->daysBetween($long->getDeleted()['deletedAt'], $long->getDeleted()['purgeDate']));
@@ -78,7 +79,7 @@ final class ObjectEntityDeleteWindowTest extends TestCase {
 
 	public function testANonPositiveRetentionFallsBackToTheDefault(): void {
 		$object = new ObjectEntity();
-		$object->delete($this->session(), null, 0);
+		$object->softDelete($this->session(), new SoftDeletion(null, 0));
 
 		$deleted = $object->getDeleted();
 		self::assertSame(DeletionWindowService::DEFAULT_RETENTION_DAYS, $deleted['retentionPeriod']);
