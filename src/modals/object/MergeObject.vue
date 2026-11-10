@@ -560,31 +560,7 @@ import {
 					</ul>
 				</div>
 
-				<!-- Warnings -->
-				<div v-if="mergeResult.warnings?.length" class="report-section">
-					<h4>Warnings</h4>
-					<ul>
-						<li
-							v-for="warning in mergeResult.warnings"
-							:key="warning"
-							class="warning-text">
-							{{ warning }}
-						</li>
-					</ul>
-				</div>
-
-				<!-- Errors -->
-				<div v-if="mergeResult.errors?.length" class="report-section">
-					<h4>Errors</h4>
-					<ul>
-						<li
-							v-for="error in mergeResult.errors"
-							:key="error"
-							class="error-text">
-							{{ error }}
-						</li>
-					</ul>
-				</div>
+				<TransferMessages :result="mergeResult" />
 			</div>
 		</div>
 
@@ -658,7 +634,9 @@ import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import Merge from 'vue-material-design-icons/Merge.vue'
+import TransferMessages from './TransferMessages.vue'
 import { refreshObjectLists } from './selectedObjectsDialog.js'
+import { failedTransfer } from './transferResult.js'
 
 /**
  * The outgoing relations of an object, from its `@self` relations or its
@@ -709,6 +687,20 @@ function incomingReference(obj) {
 	}
 }
 
+/**
+ * The actual value of a merge choice: the `value` of a label/value option,
+ * anything else as it is.
+ *
+ * @param {*} value The chosen value
+ * @return {*} The value to save
+ */
+function optionValue(value) {
+	if (value && typeof value === 'object' && value.value !== undefined) {
+		return value.value
+	}
+	return value
+}
+
 export default {
 	name: 'MergeObject',
 	components: {
@@ -727,6 +719,7 @@ export default {
 		Eye,
 		ChevronDown,
 		ChevronUp,
+		TransferMessages,
 	},
 
 	data() {
@@ -1009,42 +1002,10 @@ export default {
 
 			this.loading = true
 			try {
-				// Prepare merged data with custom values resolved - ensure no ID is included
-				const finalMergedData = {}
-
-				Object.keys(this.mergedData).forEach((property) => {
-					// Skip any ID-related properties
-					if (property === 'id' || property === '@self') {
-						return
-					}
-
-					if (this.mergedData[property] === 'custom') {
-						finalMergedData[property] = this.customValues[property] || ''
-					} else {
-						// Ensure we extract the actual value if it's an object with label/value structure
-						const value = this.mergedData[property]
-						if (
-							value
-							&& typeof value === 'object'
-							&& value.value !== undefined
-						) {
-							finalMergedData[property] = value.value
-						} else {
-							finalMergedData[property] = value
-						}
-					}
-				})
-
 				const result = await objectStore.mergeObjects(
 					objectStore.currentType,
 					this.sourceObject['@self'].id,
-					{
-						target: this.selectedTargetObject['@self'].id,
-						object: finalMergedData,
-						fileAction: this.fileAction,
-						relationAction: this.relationAction,
-						referenceAction: this.referenceAction,
-					},
+					this.mergeRequest(),
 				)
 				if (!result) {
 					throw new Error(objectStore.lifecycleError?.message)
@@ -1055,14 +1016,50 @@ export default {
 				refreshObjectLists()
 			} catch (error) {
 				console.error('Error performing merge:', error)
-				this.mergeResult = {
-					success: false,
-					errors: [error.message || 'An error occurred during merge'],
-				}
+				this.mergeResult = failedTransfer(
+					error,
+					'An error occurred during merge',
+				)
 				this.step = 3
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * The merge the store is asked for: the target, the resolved data and
+		 * what happens to files, relations and references.
+		 *
+		 * @return {object} The merge request
+		 */
+		mergeRequest() {
+			return {
+				target: this.selectedTargetObject['@self'].id,
+				object: this.finalMergedData(),
+				fileAction: this.fileAction,
+				relationAction: this.relationAction,
+				referenceAction: this.referenceAction,
+			}
+		},
+
+		/**
+		 * The merged data with custom values resolved and no id included.
+		 *
+		 * @return {object} The data to save on the target
+		 */
+		finalMergedData() {
+			const finalMergedData = {}
+			Object.keys(this.mergedData).forEach((property) => {
+				// Skip any ID-related properties
+				if (property === 'id' || property === '@self') {
+					return
+				}
+				finalMergedData[property] =
+					this.mergedData[property] === 'custom'
+						? this.customValues[property] || ''
+						: optionValue(this.mergedData[property])
+			})
+			return finalMergedData
 		},
 
 		/**
