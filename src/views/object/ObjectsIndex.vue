@@ -76,28 +76,49 @@ async function loadListContext(register, schema) {
 }
 
 /**
- * Fetch the object a deep link names.
+ * The API URL of the object a deep link names.
  *
  * @param {{register: string, schema: string, id: string}} params The route params
- * @return {Promise<object|undefined>} The object, or undefined when the server refused
+ * @return {string} The URL
  */
-async function fetchLinkedObject(params) {
+function linkedObjectUrl(params) {
 	const { register, schema, id } = params
-	const url = `/index.php/apps/openregister/api/objects/${encodeURIComponent(register)}/${encodeURIComponent(schema)}/${encodeURIComponent(id)}`
-	const response = await fetch(url, {
+	return `/index.php/apps/openregister/api/objects/${encodeURIComponent(register)}/${encodeURIComponent(schema)}/${encodeURIComponent(id)}`
+}
+
+/**
+ * Fetch a JSON API URL as the signed-in user.
+ *
+ * @param {string} url The URL
+ * @return {Promise<Response>} The response
+ */
+function fetchAsUser(url) {
+	return fetch(url, {
 		headers: {
 			Accept: 'application/json',
 			'OCS-APIRequest': 'true',
 			requesttoken: OC?.requestToken,
 		},
 	})
+}
+
+/**
+ * Fetch the object a deep link names and open it, or log why the server
+ * refused it.
+ *
+ * @param {{register: string, schema: string, id: string}} params The route params
+ * @return {Promise<void>}
+ */
+async function openLinkedObject(params) {
+	const url = linkedObjectUrl(params)
+	const response = await fetchAsUser(url)
 	if (!response.ok) {
 		console.error(
 			`[ObjectsIndex] deep-link fetch ${url} returned ${response.status}`,
 		)
-		return undefined
+		return
 	}
-	return response.json()
+	objectStore.setObjectItem(await response.json())
 }
 
 export default {
@@ -164,10 +185,7 @@ export default {
 			try {
 				primeListFilters(register, schema)
 				await loadListContext(register, schema)
-				const item = await fetchLinkedObject(params)
-				if (item !== undefined) {
-					objectStore.setObjectItem(item)
-				}
+				await openLinkedObject(params)
 			} catch (e) {
 				console.error('[ObjectsIndex] deep-link fetch failed', e)
 			}

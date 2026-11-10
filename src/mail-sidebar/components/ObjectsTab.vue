@@ -111,6 +111,16 @@ import { ATTACHMENT_MIME } from '../composables/useAttachmentDrag.js'
 import { schemaIconComponent } from '../icons.js'
 
 /**
+ * The toast for an attachment added to an object.
+ *
+ * @param {string} name The object's display name
+ * @return {string} The message
+ */
+function addedToText(name) {
+	return t('openregister', 'Attachment added to {name}', { name })
+}
+
+/**
  * Where an attachment dropped on an object is uploaded to.
  *
  * @param {object} obj The linked object
@@ -318,11 +328,7 @@ export default {
 				const attachment = JSON.parse(raw)
 				this.uploadingObjectUuid = obj.uuid
 				await this.uploadAttachmentToObject(attachment, uploadTargetOf(obj))
-				showSuccess(
-					t('openregister', 'Attachment added to {name}', {
-						name: this.displayName(obj),
-					}),
-				)
+				showSuccess(addedToText(this.displayName(obj)))
 			} catch (err) {
 				showError(t('openregister', 'Failed to add attachment'))
 				console.error('[ObjectsTab] Attachment drop upload failed:', err)

@@ -405,17 +405,25 @@ export default {
 			this.error = null
 
 			try {
-				await viewsStore.updateView(
-					this.view.id || this.view.uuid,
-					this.viewUpdate(),
-				)
-				await this.showSaved()
+				await this.persistView()
 			} catch (error) {
-				console.error('Error updating view:', error)
-				this.error = this.saveFailureMessage(error)
+				this.showSaveFailure(error)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Save the view as the form describes it, then say so.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async persistView() {
+			await viewsStore.updateView(
+				this.view.id || this.view.uuid,
+				this.viewUpdate(),
+			)
+			await this.showSaved()
 		},
 
 		/**
@@ -457,18 +465,18 @@ export default {
 		},
 
 		/**
-		 * Why the save failed: the server's error, the error's message, or a
-		 * generic one.
+		 * Log a failed save and say why it failed: the server's error, the
+		 * error's message, or a generic one.
 		 *
 		 * @param {Error} error What went wrong
-		 * @return {string} The message
+		 * @return {void}
 		 */
-		saveFailureMessage(error) {
-			return (
+		showSaveFailure(error) {
+			console.error('Error updating view:', error)
+			this.error =
 				error.response?.data?.error
 				|| error.message
 				|| this.t('openregister', 'Failed to update view')
-			)
 		},
 
 		/**

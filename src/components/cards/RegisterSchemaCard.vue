@@ -746,6 +746,17 @@ function deletionFailureText(schema, error) {
 }
 
 /**
+ * Ask the server to delete a schema's objects.
+ *
+ * @param {string} url The bulk delete URL
+ * @param {boolean} hardDelete Whether the objects are deleted permanently
+ * @return {Promise<object>} The axios response
+ */
+function postDeletion(url, hardDelete) {
+	return axios.post(url, { hardDelete }, { headers: JSON_HEADERS })
+}
+
+/**
  * Refresh the register list and the dashboard's registers together.
  *
  * @return {Promise<void>}
@@ -1263,11 +1274,7 @@ export default {
 			const url = apiUrl(`bulk/${this.item.id}/${schema.id}/delete-objects`)
 			try {
 				announceDeletionStart(schema, hardDelete)
-				const response = await axios.post(
-					url,
-					{ hardDelete },
-					{ headers: JSON_HEADERS },
-				)
+				const response = await postDeletion(url, hardDelete)
 				showSuccess(deletionResult(response.data, schema))
 				await refreshRegisterViews()
 			} catch (error) {

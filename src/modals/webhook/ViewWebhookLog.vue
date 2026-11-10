@@ -185,6 +185,21 @@ function announceDelivered(vm) {
 }
 
 /**
+ * Say how a retry went: delivered, or why not.
+ *
+ * @param {object} vm The modal
+ * @param {object|undefined} data The retry answer
+ * @return {void}
+ */
+function reportRetry(vm, data) {
+	if (data && data.success === true) {
+		announceDelivered(vm)
+	} else {
+		showError(undeliveredMessage(data))
+	}
+}
+
+/**
  * Why a retry was not delivered: the answer's message or error, or a generic one.
  *
  * @param {object|undefined} data The retry answer
@@ -369,11 +384,7 @@ export default {
 			this.retrying = true
 			try {
 				const response = await requestRetry(this.logItem.id)
-				if (response.data && response.data.success === true) {
-					announceDelivered(this)
-				} else {
-					showError(undeliveredMessage(response.data))
-				}
+				reportRetry(this, response.data)
 			} catch (error) {
 				showError(retryErrorMessage(error))
 			} finally {
