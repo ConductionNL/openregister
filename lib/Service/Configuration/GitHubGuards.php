@@ -188,19 +188,42 @@ class GitHubGuards implements GitHubGuardsInterface {
 			return new JSONResponse(['error' => 'rate_limiter_unavailable'], Http::STATUS_SERVICE_UNAVAILABLE);
 		}
 
-		$retryAfter = $this->rateLimiter->consumeFromBudget(
-			budget: new DistinctKeyBudget(bucketKey: 'getmiss:' . $user->getUID(), maxKeys: self::GET_RATE_LIMIT_MAX, windowSeconds: self::GET_RATE_LIMIT_WINDOW),
-			distinctKey: $cacheKey
-		);
+		$retryAfter = $this->consumeMissBudget(userId: $user->getUID(), cacheKey: $cacheKey);
 		if ($retryAfter === null) {
 			return null;
 		}
 
+		return $this->tooManyRequests(retryAfter: $retryAfter);
+	}//end enforceGetRateLimit()
+
+	/**
+	 * Count a cache miss against a user's budget of distinct keys.
+	 *
+	 * @param string $userId   The user.
+	 * @param string $cacheKey The key that missed.
+	 *
+	 * @return int|null Seconds until the budget frees up, or null while it holds.
+	 */
+	private function consumeMissBudget(string $userId, string $cacheKey): ?int {
+		return $this->rateLimiter->consumeFromBudget(
+			budget: new DistinctKeyBudget(bucketKey: 'getmiss:' . $userId, maxKeys: self::GET_RATE_LIMIT_MAX, windowSeconds: self::GET_RATE_LIMIT_WINDOW),
+			distinctKey: $cacheKey
+		);
+	}//end consumeMissBudget()
+
+	/**
+	 * The 429 answer for a user over their budget, naming when to retry.
+	 *
+	 * @param int $retryAfter Seconds until the budget frees up.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function tooManyRequests(int $retryAfter): JSONResponse {
 		$resp = new JSONResponse(
 			['error' => 'user_rate_limited', 'retry_after' => $retryAfter],
 			Http::STATUS_TOO_MANY_REQUESTS
 		);
 		$resp->addHeader('Retry-After', (string)$retryAfter);
 		return $resp;
-	}//end enforceGetRateLimit()
+	}//end tooManyRequests()
 }//end class

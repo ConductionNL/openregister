@@ -177,6 +177,21 @@ class ApiCallRecorder implements ApiCallRecorderInterface {
 	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public static function routeOf(string $path): string {
+		$segments = explode('/', trim(self::endpointPath(path: $path), '/'));
+		$route    = ('/' . implode('/', self::collapseIdentifiers(segments: $segments)));
+
+		return substr($route, 0, 255);
+
+	}//end routeOf()
+
+	/**
+	 * A request path without its query string and without the `/index.php` prefix.
+	 *
+	 * @param string $path The request path.
+	 *
+	 * @return string The endpoint path.
+	 */
+	private static function endpointPath(string $path): string {
 		$withoutQuery = strtok($path, '?');
 		if ($withoutQuery === false) {
 			$withoutQuery = $path;
@@ -187,10 +202,21 @@ class ApiCallRecorder implements ApiCallRecorderInterface {
 		// a report an administrator has to add up by hand.
 		$normalised = preg_replace('#^/index\.php#', '', $withoutQuery);
 		if (is_string($normalised) === false) {
-			$normalised = $withoutQuery;
+			return $withoutQuery;
 		}
 
-		$segments = explode('/', trim($normalised, '/'));
+		return $normalised;
+
+	}//end endpointPath()
+
+	/**
+	 * The path segments with every identifier replaced by `{id}`.
+	 *
+	 * @param array<int, string> $segments The path segments.
+	 *
+	 * @return array<int, string> The route segments.
+	 */
+	private static function collapseIdentifiers(array $segments): array {
 		$collapsed = [];
 		foreach ($segments as $segment) {
 			if ($segment !== '' && preg_match(self::IDENTIFIER_PATTERN, $segment) === 1) {
@@ -201,9 +227,7 @@ class ApiCallRecorder implements ApiCallRecorderInterface {
 			$collapsed[] = $segment;
 		}
 
-		$route = ('/' . implode('/', $collapsed));
+		return $collapsed;
 
-		return substr($route, 0, 255);
-
-	}//end routeOf()
+	}//end collapseIdentifiers()
 }//end class
