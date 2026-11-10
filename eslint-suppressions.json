@@ -769,7 +769,7 @@
   },
   "src/store/modules/auditTrail.js": {
     "no-console": {
-      "count": 7
+      "count": 5
     }
   },
   "src/store/modules/avg.js": {
@@ -789,7 +789,7 @@
   },
   "src/store/modules/deleted.js": {
     "no-console": {
-      "count": 7
+      "count": 6
     }
   },
   "src/store/modules/endpoints.ts": {
@@ -834,10 +834,15 @@
   },
   "src/store/modules/searchTrail.js": {
     "no-console": {
-      "count": 12
+      "count": 11
     }
   },
   "src/store/modules/source.js": {
+    "no-console": {
+      "count": 2
+    }
+  },
+  "src/store/modules/trailStatistics.js": {
     "no-console": {
       "count": 2
     }
