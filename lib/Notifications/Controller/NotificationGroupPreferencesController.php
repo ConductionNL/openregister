@@ -288,7 +288,7 @@ class NotificationGroupPreferencesController extends Controller {
 
 		$scope = $target['scope'];
 		$stored = $this->preferenceService->getGroupDefault(groupId: $groupId, schemaSlug: $schema, notificationKey: $notification, scope: $scope);
-		return $this->settingResponse(target: $target, key: 'default', stored: $stored);
+		return $this->settingResponse(target: $target, stored: ['default' => $stored]);
 	}//end writeGroupDefault()
 
 	/**
