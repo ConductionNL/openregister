@@ -106,6 +106,7 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class Configuration extends Entity implements JsonSerializable {
+	use IsoTimestampsTrait;
 	use JsonFieldsTrait;
 	use HydrateEmptyJsonAsNullTrait {
 		hydrate as private hydrateEmptyJsonAsNull;
