@@ -47,6 +47,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\TalkSenderInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSendException;
 use LogicException;
 use RuntimeException;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion;
 
 /**
  * Sends on behalf of a flow run, through the notification subsystem.
@@ -542,11 +543,13 @@ class FlowMessagingService {
 	 */
 	private function askOptOut(FlowSend $send): void {
 		$runId = (string)($this->scalarContext(context: $send->context)[FlowRunContext::CONTEXT_RUN] ?? '');
-		$send->decisions = $this->optOut->ask(
-			channel: 'email',
-			category: (string)($this->scalarContext(context: $send->config)['messageCategory'] ?? ''),
-			addresses: array_map('strval', array_keys($send->distinctAddresses)),
-			correlationId: 'openregister-flow:' . $runId . ':' . $send->stepName
+		$send->decisions = $this->optOut->askQuestion(
+			question: new OptOutQuestion(
+				channel: 'email',
+				category: (string)($this->scalarContext(context: $send->config)['messageCategory'] ?? ''),
+				addresses: array_map('strval', array_keys($send->distinctAddresses)),
+				correlationId: 'openregister-flow:' . $runId . ':' . $send->stepName
+			)
 		);
 	}//end askOptOut()
 

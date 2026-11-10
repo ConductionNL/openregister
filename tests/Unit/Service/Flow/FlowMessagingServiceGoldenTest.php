@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\Flow\FlowMessagingChannels;
 use OCA\OpenRegister\Service\Flow\FlowMessagingOverrides;
 use OCA\OpenRegister\Service\Flow\FlowMessagingPlatform;
 use OCA\OpenRegister\Service\Flow\FlowMessagingRecipients;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion;
 
 /**
  * Runs sendEmail(), sendNotification() and sendTalkMessage() over a fixed
@@ -404,10 +405,10 @@ class FlowMessagingServiceGoldenTest extends TestCase {
 	 */
 	private function optOut(): OptOutAuthority {
 		$optOut = $this->createMock(OptOutAuthority::class);
-		$optOut->method('ask')->willReturnCallback(function (string $channel, string $category, array $addresses, string $correlationId): array {
-			$this->record(call: 'optOut.ask', args: [$channel, $category, $addresses, $correlationId]);
+		$optOut->method('askQuestion')->willReturnCallback(function (OptOutQuestion $question): array {
+			$this->record(call: 'optOut.ask', args: [$question->channel, $question->category, $question->addresses, $question->correlationId]);
 			$decisions = [];
-			foreach ($addresses as $address) {
+			foreach ($question->addresses as $address) {
 				$decisions[$address] = match ($address) {
 					'optout@x.example' => ['send' => false, 'code' => 'opted-out', 'unsubscribe' => null],
 					'auth@x.example' => ['send' => false, 'code' => OptOutAuthority::CODE_AUTHORITY_UNAVAILABLE, 'unsubscribe' => null],
