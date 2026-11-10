@@ -119,21 +119,41 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	private string $targetSource = self::SOURCE_ID;
 
 	/**
+	 * External-call router.
+	 *
+	 * @var ExternalIntegrationRouterInterface
+	 */
+	private ExternalIntegrationRouterInterface $router;
+
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ExternalIntegrationRouterInterface $router External-call router.
-	 * @param IAppManager $appManager NC app manager (isEnabled check).
-	 * @param IL10N $l10n Localisation.
-	 * @param LoggerInterface $logger Logger for degraded paths.
+	 * @param ConnectorRouting $routing The router, app manager (isEnabled check) and localisation.
+	 * @param LoggerInterface  $logger  Logger for degraded paths.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private ExternalIntegrationRouterInterface $router,
-		private IAppManager $appManager,
-		private IL10N $l10n,
+		ConnectorRouting $routing,
 		private LoggerInterface $logger,
 	) {
+		$this->router     = $routing->router;
+		$this->appManager = $routing->appManager;
+		$this->l10n       = $routing->l10n;
 	}//end __construct()
 
 	/**
@@ -245,20 +265,33 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	 * @spec openspec/changes/archive/2026-10-05-messaging-dispatch-leaf/tasks.md
 	 */
 	public function dispatch(string $source, array $body, string $path, array $headers = []): array {
-		$source = trim($source);
+		$options = ['body' => $body, 'headers' => $this->withJsonAccept(headers: $headers)];
+
+		return $this->sendThrough(source: trim($source), send: fn (): array => $this->send(path: $path, options: $options));
+	}//end dispatch()
+
+	/**
+	 * Make one call through an allowed messaging source; refuse any other source.
+	 *
+	 * @param string                       $source The messaging source, trimmed.
+	 * @param callable(): array<mixed>     $send   The call to make through it.
+	 *
+	 * @return array<string,mixed> The upstream response, or the degraded envelope.
+	 */
+	private function sendThrough(string $source, callable $send): array {
 		if (in_array($source, self::ALLOWED_SOURCES, true) === false) {
 			return $this->rejectUnknownSource();
 		}
 
 		$this->targetSource = $source;
 		try {
-			return $this->send(path: $path, options: ['body' => $body, 'headers' => $this->withJsonAccept(headers: $headers)]);
+			return $send();
 		} finally {
 			// Reset to the advertised default so a later contract caller
 			// (health/probe) never inherits a stale per-call source.
 			$this->targetSource = self::SOURCE_ID;
 		}
-	}//end dispatch()
+	}//end sendThrough()
 
 	/**
 	 * Refuse a source slug outside {@see ALLOWED_SOURCES} before the router

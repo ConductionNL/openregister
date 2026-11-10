@@ -23,15 +23,9 @@
 namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
-use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
-use OCA\OpenRegister\Service\Audit\SecuritySettingAnnouncer;
 use OCA\OpenRegister\Service\Party\PartySearchService;
-use OCP\App\IAppManager;
 use OCP\IAppConfig;
-use OCP\IGroupManager;
-use OCP\IUserManager;
-use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
@@ -102,63 +96,6 @@ class ConfigurationSettingsHandler {
 	];
 
 	/**
-	 * Configuration service
-	 *
-	 * @var IAppConfig
-	 */
-	private IAppConfig $appConfig;
-
-	/**
-	 * Group manager
-	 *
-	 * @var IGroupManager
-	 */
-	private IGroupManager $groupManager;
-
-	/**
-	 * User manager
-	 *
-	 * @var IUserManager
-	 */
-	private IUserManager $userManager;
-
-	/**
-	 * Organisation mapper
-	 *
-	 * @var OrganisationMapperInterface
-	 */
-	private OrganisationMapperInterface $organisationMapper;
-
-	/**
-	 * Logger
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
-
-
-	/**
-	 * App manager, read for the app's own version info.
-	 *
-	 * @var IAppManager
-	 */
-	private readonly IAppManager $appManager;
-
-	/**
-	 * Tells the administrators when a marked setting moves.
-	 *
-	 * @var SecuritySettingAnnouncer|null
-	 */
-	private readonly ?SecuritySettingAnnouncer $announcer;
-
-	/**
-	 * Records every save on the audit trail, and announces it.
-	 *
-	 * @var OwnSettingsChangeRecorder|null
-	 */
-	private readonly ?OwnSettingsChangeRecorder $changeRecorder;
-
-	/**
 	 * Constructor for ConfigurationSettingsHandler
 	 *
 	 * @param IAppConfig                   $appConfig Configuration service.
@@ -168,18 +105,10 @@ class ConfigurationSettingsHandler {
 	 * @return void
 	 */
 	public function __construct(
-		IAppConfig $appConfig,
-		SettingsDirectory $directory,
-		ConfigurationSettingsSupport $support,
+		private readonly IAppConfig $appConfig,
+		private readonly SettingsDirectory $directory,
+		private readonly ConfigurationSettingsSupport $support,
 	) {
-		$this->appConfig = $appConfig;
-		$this->groupManager = $directory->groupManager;
-		$this->userManager = $directory->userManager;
-		$this->organisationMapper = $directory->organisationMapper;
-		$this->logger = $support->logger;
-		$this->appManager = $support->appManager;
-		$this->announcer = $support->announcer;
-		$this->changeRecorder = $support->changeRecorder;
 	}//end __construct()
 
 	/**
@@ -365,7 +294,7 @@ class ConfigurationSettingsHandler {
 		$groups['public'] = 'Public (No restrictions)';
 
 		// Get all Nextcloud groups.
-		$nextcloudGroups = $this->groupManager->search('');
+		$nextcloudGroups = $this->directory->groupManager->search('');
 		foreach ($nextcloudGroups as $group) {
 			$groups[$group->getGID()] = $group->getDisplayName();
 		}
@@ -382,7 +311,7 @@ class ConfigurationSettingsHandler {
 	 */
 	private function getAvailableOrganisations(): array {
 		try {
-			$organisations = $this->organisationMapper->findAllWithUserCount();
+			$organisations = $this->directory->organisationMapper->findAllWithUserCount();
 			$tenants = [];
 
 			foreach ($organisations as $organisation) {
@@ -407,7 +336,7 @@ class ConfigurationSettingsHandler {
 		$users = [];
 
 		// Get all Nextcloud users (limit to prevent performance issues).
-		$nextcloudUsers = $this->userManager->search('', 100);
+		$nextcloudUsers = $this->directory->userManager->search('', 100);
 		foreach ($nextcloudUsers as $user) {
 			$users[$user->getUID()] = $user->getUID();
 			if (($user->getDisplayName() !== null) === true && ($user->getDisplayName() !== '') === true) {
@@ -467,8 +396,8 @@ class ConfigurationSettingsHandler {
 		// request would announce changes nobody made and miss the ones they
 		// did. Cheap by construction: the registry reads only the marked keys,
 		// never getSettings(), which also lists every group and user.
-		$beforeSecurity = $this->announcer?->snapshot();
-		$beforeChange = $this->changeRecorder?->snapshot(keys: OwnSettingsChangeRecorder::FULL_SAVE_KEYS);
+		$beforeSecurity = $this->support->announcer?->snapshot();
+		$beforeChange = $this->support->changeRecorder?->snapshot(keys: OwnSettingsChangeRecorder::FULL_SAVE_KEYS);
 
 		try {
 			$this->storeSubmittedSections(data: $data);
@@ -481,9 +410,9 @@ class ConfigurationSettingsHandler {
 			// successful save into an error. Without a recorder (older wiring)
 			// the announcer still tells a person on its own.
 			if ($beforeChange !== null) {
-				$this->changeRecorder?->record(before: $beforeChange, keys: OwnSettingsChangeRecorder::FULL_SAVE_KEYS);
-			} elseif ($this->announcer !== null && $beforeSecurity !== null) {
-				$this->announcer->announce($beforeSecurity, $this->announcer->snapshot());
+				$this->support->changeRecorder?->record(before: $beforeChange, keys: OwnSettingsChangeRecorder::FULL_SAVE_KEYS);
+			} elseif ($this->support->announcer !== null && $beforeSecurity !== null) {
+				$this->support->announcer->announce($beforeSecurity, $this->support->announcer->snapshot());
 			}
 
 			return $this->getSettings();
@@ -608,7 +537,7 @@ class ConfigurationSettingsHandler {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
 	 */
 	public function updateRbacSettingsOnly(array $rbacData): array {
-		$beforeChange = $this->changeRecorder?->snapshot(keys: ['rbac']);
+		$beforeChange = $this->support->changeRecorder?->snapshot(keys: ['rbac']);
 		try {
 			$rbacConfig = $this->storeSection(key: 'rbac', values: $rbacData);
 			$this->recordSettingsChange(before: $beforeChange, keys: ['rbac']);
@@ -666,7 +595,7 @@ class ConfigurationSettingsHandler {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
 	 */
 	public function updateOrganisationSettingsOnly(array $organisationData): array {
-		$beforeChange = $this->changeRecorder?->snapshot(keys: ['organisation']);
+		$beforeChange = $this->support->changeRecorder?->snapshot(keys: ['organisation']);
 		try {
 			$organisationConfig = $this->storeSection(key: 'organisation', values: $organisationData);
 			$this->recordSettingsChange(before: $beforeChange, keys: ['organisation']);
@@ -692,7 +621,7 @@ class ConfigurationSettingsHandler {
 			$settings = $this->getOrganisationSettingsOnly();
 			return $settings['organisation']['default_organisation'] ?? null;
 		} catch (Exception $e) {
-			$this->logger->warning(
+			$this->support->logger->warning(
 				message: '[ConfigurationSettingsHandler] Failed to get default organisation UUID: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
@@ -713,7 +642,7 @@ class ConfigurationSettingsHandler {
 			$multitenancySettings = $this->getMultitenancySettingsOnly();
 			return $multitenancySettings['multitenancy']['defaultUserTenant'] ?? null;
 		} catch (Exception $e) {
-			$this->logger->warning(
+			$this->support->logger->warning(
 				message: '[ConfigurationSettingsHandler] Failed to get tenant ID: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
@@ -748,7 +677,7 @@ class ConfigurationSettingsHandler {
 			$settings['organisation']['default_organisation'] = $uuid;
 			$this->updateOrganisationSettingsOnly(organisationData: $settings['organisation']);
 		} catch (Exception $e) {
-			$this->logger->error(
+			$this->support->logger->error(
 				message: '[ConfigurationSettingsHandler] Failed to set default organisation UUID: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
@@ -798,7 +727,7 @@ class ConfigurationSettingsHandler {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
 	 */
 	public function updateMultitenancySettingsOnly(array $multitenancyData): array {
-		$beforeChange = $this->changeRecorder?->snapshot(keys: ['multitenancy']);
+		$beforeChange = $this->support->changeRecorder?->snapshot(keys: ['multitenancy']);
 		try {
 			$multitenancyConfig = $this->storeSection(key: 'multitenancy', values: $multitenancyData);
 			$this->recordSettingsChange(before: $beforeChange, keys: ['multitenancy']);
@@ -823,11 +752,11 @@ class ConfigurationSettingsHandler {
 	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
 	 */
 	private function recordSettingsChange(?array $before, array $keys): void {
-		if ($before === null || $this->changeRecorder === null) {
+		if ($before === null || $this->support->changeRecorder === null) {
 			return;
 		}
 
-		$this->changeRecorder->record(before: $before, keys: $keys);
+		$this->support->changeRecorder->record(before: $before, keys: $keys);
 	}//end recordSettingsChange()
 
 
@@ -844,7 +773,7 @@ class ConfigurationSettingsHandler {
 	 */
 	public function getVersionInfoOnly(): array {
 		try {
-			$appInfo = $this->appManager->getAppInfo(AppIdentity::APP_ID);
+			$appInfo = $this->support->appManager->getAppInfo(AppIdentity::APP_ID);
 
 			return [
 				'version' => ($appInfo['version'] ?? null) ?? 'unknown',

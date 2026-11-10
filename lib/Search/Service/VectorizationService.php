@@ -175,7 +175,7 @@ class VectorizationService implements VectorizationServiceInterface {
 				run: new VectorizationRun(strategy: $strategy, options: $options, entityType: $entityType)
 			);
 
-			return $this->completedBatch(entityType: $entityType, entityCount: count($entities), tally: $tally);
+			return $this->completedBatch(entityType: $entityType, tally: $tally);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[VectorizationService] Batch vectorization failed',
@@ -196,7 +196,7 @@ class VectorizationService implements VectorizationServiceInterface {
 	 * @param array            $entities The entities to vectorize
 	 * @param VectorizationRun $run      Strategy, processing options and entity type
 	 *
-	 * @return array{total_items: int, vectorized: int, failed: int, errors: array<int, array<string, mixed>>}
+	 * @return array{total_items: int, vectorized: int, failed: int, errors: array<int, array<string, mixed>>, total_entities: int}
 	 */
 	private function vectorizeEntities(array $entities, VectorizationRun $run): array {
 		$this->logger->info(
@@ -217,26 +217,26 @@ class VectorizationService implements VectorizationServiceInterface {
 			);
 		}
 
+		$tally['total_entities'] = count($entities);
 		return $tally;
 	}//end vectorizeEntities()
 
 	/**
 	 * Log a completed batch and build its result.
 	 *
-	 * @param string $entityType  Entity type
-	 * @param int    $entityCount How many entities the batch held
-	 * @param array  $tally       The batch's tally
+	 * @param string $entityType Entity type
+	 * @param array  $tally      The batch's tally, with how many entities it held
 	 *
 	 * @return array The vectorization result.
 	 */
-	private function completedBatch(string $entityType, int $entityCount, array $tally): array {
+	private function completedBatch(string $entityType, array $tally): array {
 		$this->logger->info(
 			message: '[VectorizationService] Batch vectorization completed',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'entityType' => $entityType,
-				'totalEntities' => $entityCount,
+				'totalEntities' => $tally['total_entities'],
 				'totalItems' => $tally['total_items'],
 				'vectorized' => $tally['vectorized'],
 				'failed' => $tally['failed'],
@@ -247,7 +247,7 @@ class VectorizationService implements VectorizationServiceInterface {
 			'success' => true,
 			'message' => "Batch vectorization completed: {$tally['vectorized']} vectorized, {$tally['failed']} failed",
 			'entity_type' => $entityType,
-			'total_entities' => $entityCount,
+			'total_entities' => $tally['total_entities'],
 			'total_items' => $tally['total_items'],
 			'vectorized' => $tally['vectorized'],
 			'failed' => $tally['failed'],
@@ -411,7 +411,7 @@ class VectorizationService implements VectorizationServiceInterface {
 		$part = self::NO_ITEMS;
 		try {
 			$embeddingData = $this->vectorService->generateEmbedding($item[1]['text']);
-			$this->storeVector(target: $target, item: $item[1], embeddingData: $embeddingData);
+			$this->storeVector(target: $target, embedded: ['item' => $item[1], 'embeddingData' => $embeddingData]);
 			$part['vectorized'] = 1;
 		} catch (\Exception $e) {
 			$part['failed']   = 1;
@@ -443,10 +443,12 @@ class VectorizationService implements VectorizationServiceInterface {
 			$embeddings = $this->vectorService->generateBatchEmbeddings($texts);
 
 			foreach ($batch as $index => $item) {
-				$part = $this->storeBatchItem(
-					target: $target,
-					part: $part,
-					embedded: ['index' => $index, 'item' => $item, 'embeddingData' => ($embeddings[$index] ?? null)]
+				$part = $this->addTally(
+					tally: $part,
+					part: $this->storeBatchItem(
+						target: $target,
+						embedded: ['index' => $index, 'item' => $item, 'embeddingData' => ($embeddings[$index] ?? null)]
+					)
 				);
 			}
 		} catch (\Exception $e) {
@@ -469,15 +471,15 @@ class VectorizationService implements VectorizationServiceInterface {
 	 * Store one item of a batch, or list it as failed when it has no embedding.
 	 *
 	 * @param VectorizedEntity                                     $target   The entity, its strategy and identifier
-	 * @param array                                                $part     The batch tally so far
 	 * @param array{index: int, item: array, embeddingData: mixed} $embedded The item, its index and its batch embedding
 	 *
 	 * @return array{total_items: int, vectorized: int, failed: int, errors: array<int, array<string, mixed>>}
 	 */
-	private function storeBatchItem(VectorizedEntity $target, array $part, array $embedded): array {
+	private function storeBatchItem(VectorizedEntity $target, array $embedded): array {
+		$part = self::NO_ITEMS;
 		$embeddingData = $embedded['embeddingData'];
 		if ($embeddingData !== null && (($embeddingData['embedding'] ?? null) !== null)) {
-			$this->storeVector(target: $target, item: $embedded['item'], embeddingData: $embeddingData);
+			$this->storeVector(target: $target, embedded: $embedded);
 			$part['vectorized']++;
 			return $part;
 		}
@@ -511,34 +513,42 @@ class VectorizationService implements VectorizationServiceInterface {
 	/**
 	 * Store a vector using strategy-provided metadata
 	 *
-	 * @param VectorizedEntity $target        Original entity and its strategy
-	 * @param array            $item          Vectorization item with text
-	 * @param array            $embeddingData Embedding result
+	 * @param VectorizedEntity                     $target   Original entity and its strategy
+	 * @param array{item: array, embeddingData: array} $embedded The vectorization item (with text) and its embedding result
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	private function storeVector(VectorizedEntity $target, array $item, array $embeddingData): void {
-		$metadata = $target->strategy->prepareVectorMetadata(entity: $target->entity, item: $item);
-
-		$this->vectorService->storeVector(
-			vector: new StoredVector(
-				subject: new VectorSubject(entityType: $metadata['entity_type'], entityId: $metadata['entity_id']),
-				payload: new VectorPayload(
-					embedding: $embeddingData['embedding'],
-					model: $embeddingData['model'],
-					dimensions: $embeddingData['dimensions']
-				),
-				position: new VectorChunkPosition(
-					chunkIndex: $metadata['chunk_index'] ?? 0,
-					totalChunks: $metadata['total_chunks'] ?? 1,
-					chunkText: $metadata['chunk_text'] ?? null
-				),
-				metadata: $metadata['additional_metadata'] ?? []
-			)
-		);
+	private function storeVector(VectorizedEntity $target, array $embedded): void {
+		$metadata = $target->strategy->prepareVectorMetadata(entity: $target->entity, item: $embedded['item']);
+		$this->vectorService->storeVector(vector: $this->storedVector(metadata: $metadata, embeddingData: $embedded['embeddingData']));
 	}//end storeVector()
+
+	/**
+	 * The vector to store for one item: its subject and chunk position from the strategy's metadata, its payload from the embedding.
+	 *
+	 * @param array $metadata      The strategy's vector metadata for the item
+	 * @param array $embeddingData Embedding result
+	 *
+	 * @return StoredVector
+	 */
+	private function storedVector(array $metadata, array $embeddingData): StoredVector {
+		return new StoredVector(
+			subject: new VectorSubject(entityType: $metadata['entity_type'], entityId: $metadata['entity_id']),
+			payload: new VectorPayload(
+				embedding: $embeddingData['embedding'],
+				model: $embeddingData['model'],
+				dimensions: $embeddingData['dimensions']
+			),
+			position: new VectorChunkPosition(
+				chunkIndex: $metadata['chunk_index'] ?? 0,
+				totalChunks: $metadata['total_chunks'] ?? 1,
+				chunkText: $metadata['chunk_text'] ?? null
+			),
+			metadata: $metadata['additional_metadata'] ?? []
+		);
+	}//end storedVector()
 
 	/**
 	 * Get strategy for entity type
@@ -635,12 +645,7 @@ class VectorizationService implements VectorizationServiceInterface {
 		int $limit = 20,
 		array $weights = ['keyword' => 0.5, 'vector' => 0.5],
 	): array {
-		return $this->vectorService->hybridSearch(
-			query: $query,
-			keywordResults: $keywordResults,
-			limit: $limit,
-			weights: $weights
-		);
+		return $this->vectorService->hybridSearch(query: $query, keywordResults: $keywordResults, limit: $limit, weights: $weights);
 	}//end hybridSearch()
 
 	/**

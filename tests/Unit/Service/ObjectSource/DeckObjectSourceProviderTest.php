@@ -71,7 +71,7 @@ class DeckObjectSourceProviderTest extends TestCase {
 
 		$container = $this->createMock(ContainerInterface::class);
 
-		return new DeckObjectSourceProvider($appManager, $userSession, $container, new NullLogger());
+		return new DeckObjectSourceProvider(app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $appManager, container: $container, logger: new NullLogger()), userSession: $userSession);
 	}//end provider()
 
 	/**

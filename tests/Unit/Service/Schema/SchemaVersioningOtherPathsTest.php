@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Schema;
 
+use OCA\OpenRegister\Service\Schema\SchemaPopulationRuns;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\SchemaImportControllerFactory;
 use OCA\OpenRegister\Controller\SchemaImportController;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -35,6 +36,8 @@ use OCA\OpenRegister\Service\Schema\SchemaDiffService;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
 use OCA\OpenRegister\Mcp\Tool\SchemaTool;
+use OCA\OpenRegister\Mcp\Tool\UpdateSchemaCommand;
+use OCA\OpenRegister\Mcp\Tool\ToolCallTrail;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -88,8 +91,7 @@ class SchemaVersioningOtherPathsTest extends TestCase {
 		return new SchemaVersioningService(
 			diffService: new SchemaDiffService(),
 			changelogMapper: $this->changelogMapper,
-			runMapper: $this->createMock(SchemaRunMapper::class),
-			runEntryMapper: $this->createMock(SchemaRunEntryMapper::class),
+			runs: new SchemaPopulationRuns($this->createMock(SchemaRunMapper::class), $this->createMock(SchemaRunEntryMapper::class), $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), $this->createMock(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class)),
 			userSession: $this->userSession,
 			logger: ($logger ?? $this->createMock(LoggerInterface::class))
 		);
@@ -111,8 +113,8 @@ class SchemaVersioningOtherPathsTest extends TestCase {
 				$this->callback(static fn (array $c): bool => $c['schema_id'] === 12 && $c['origin'] === 'agent tool' && $c['version'] === '2.0.0')
 			);
 
-		$tool = new SchemaTool($this->userSession, $this->createMock(LoggerInterface::class), $this->schemaMapper, $this->versioning(logger: $logger));
-		$result = $tool->updateSchema(id: '12', properties: ['title' => ['type' => 'string']]);
+		$tool = new SchemaTool(new ToolCallTrail($this->userSession, $this->createMock(LoggerInterface::class)), $this->schemaMapper, $this->versioning(logger: $logger));
+		$result = $tool->updateSchema(new UpdateSchemaCommand(id: '12', properties: ['title' => ['type' => 'string']]));
 
 		$this->assertSame('2.0.0', $result['data']['version']);
 	}//end testAnAgentBreakingChangeIsLoggedNotRefused()
@@ -146,8 +148,8 @@ class SchemaVersioningOtherPathsTest extends TestCase {
 			->with($this->callback(static fn (array $e): bool => $e['schemaId'] === 12 && $e['classification'] === 'breaking' && $e['version'] === '2.0.0'))
 			->willReturn(new SchemaChangelog());
 
-		$tool = new SchemaTool($this->userSession, $this->createMock(LoggerInterface::class), $this->schemaMapper, $this->versioning());
-		$result = $tool->updateSchema(id: '12', properties: ['title' => ['type' => 'string']]);
+		$tool = new SchemaTool(new ToolCallTrail($this->userSession, $this->createMock(LoggerInterface::class)), $this->schemaMapper, $this->versioning());
+		$result = $tool->updateSchema(new UpdateSchemaCommand(id: '12', properties: ['title' => ['type' => 'string']]));
 
 		$this->assertSame('2.0.0', $result['data']['version']);
 	}//end testTheSchemaToolRecordsABreakingChange()
@@ -160,8 +162,8 @@ class SchemaVersioningOtherPathsTest extends TestCase {
 	public function testATitleEditThroughTheToolRecordsNothing(): void {
 		$this->changelogMapper->expects($this->never())->method('createFromArray');
 
-		$tool = new SchemaTool($this->userSession, $this->createMock(LoggerInterface::class), $this->schemaMapper, $this->versioning());
-		$result = $tool->updateSchema(id: '12', title: 'Case, renamed');
+		$tool = new SchemaTool(new ToolCallTrail($this->userSession, $this->createMock(LoggerInterface::class)), $this->schemaMapper, $this->versioning());
+		$result = $tool->updateSchema(new UpdateSchemaCommand(id: '12', title: 'Case, renamed'));
 
 		$this->assertSame('1.0.0', $result['data']['version']);
 	}//end testATitleEditThroughTheToolRecordsNothing()

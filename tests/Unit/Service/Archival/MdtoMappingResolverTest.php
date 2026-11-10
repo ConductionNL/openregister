@@ -47,11 +47,7 @@ class MdtoMappingResolverTest extends TestCase {
 			->onlyMethods(['find'])
 			->getMock();
 
-		$this->resolver = new MdtoMappingResolver(
-			$this->schemaMapper,
-			new MdtoElementCatalogue(),
-			$this->createMock(LoggerInterface::class)
-		);
+		$this->resolver = new MdtoMappingResolver(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($this->schemaMapper, $this->createMock(LoggerInterface::class)), new MdtoElementCatalogue());
 	}
 
 	/**

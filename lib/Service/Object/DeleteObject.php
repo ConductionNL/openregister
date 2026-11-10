@@ -145,9 +145,8 @@ class DeleteObject {
 	 * @param MagicMapperInterface $objectEntityMapper Object entity data mapper.
 	 * @param CacheHandlerInterface $cacheHandler Object entity and query cache
 	 * @param IUserSession $userSession User session service
-	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for logs
+	 * @param AuditRecording $audit Audit trail mapper for logs, and the logger for error handling
 	 * @param SettingsServiceInterface $settingsService Settings service for trail settings
-	 * @param LoggerInterface $logger Logger for error handling
 	 * @param ReferentialIntegrityService $integrityService Referential integrity service
 	 * @param IDBConnection $db Database connection for transactions
 	 * @param OrganisationMapperInterface $organisationMapper Resolves the deleting user's active organisation for the audit trail
@@ -164,9 +163,8 @@ class DeleteObject {
 		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly CacheHandlerInterface $cacheHandler,
 		private readonly IUserSession $userSession,
-		AuditTrailMapperInterface $auditTrailMapper,
+		AuditRecording $audit,
 		SettingsServiceInterface $settingsService,
-		LoggerInterface $logger,
 		ReferentialIntegrityService $integrityService,
 		IDBConnection $db,
 		private readonly OrganisationMapperInterface $organisationMapper,
@@ -175,9 +173,9 @@ class DeleteObject {
 		private readonly ?\OCA\OpenRegister\Db\RegisterMapperInterface $registerMapper = null,
 		private readonly ?DeletionWindowService $windowService = null,
 	) {
-		$this->auditTrailMapper = $auditTrailMapper;
+		$this->auditTrailMapper = $audit->trail;
 		$this->settingsService = $settingsService;
-		$this->logger = $logger;
+		$this->logger = $audit->logger;
 		$this->integrityService = $integrityService;
 		$this->db = $db;
 	}//end __construct()
@@ -1012,9 +1010,7 @@ class DeleteObject {
 
 		if ($contextRegister instanceof Register && $contextSchema instanceof Schema) {
 			$this->cascadeDeleteObjects(
-				register: $contextRegister,
-				schema: $contextSchema,
-				object: $object,
+				root: new DeletionTarget(object: $object, register: $contextRegister, schema: $contextSchema),
 				originalObjectId: $uuid
 			);
 		}
@@ -1088,22 +1084,21 @@ class DeleteObject {
 	 * Cascade depth is unchanged: children are sub-deletions (originalObjectId
 	 * set) and never cascade further, exactly like the per-id pipeline.
 	 *
-	 * @param Register $register The register containing the object.
-	 * @param Schema $schema The schema of the object.
-	 * @param ObjectEntity $object The object being deleted.
-	 * @param string $originalObjectId The ID of original object for cascading.
+	 * @param DeletionTarget $root             The object being deleted with its register and schema.
+	 * @param string         $originalObjectId The ID of original object for cascading.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function cascadeDeleteObjects(
-		Register $register,
-		Schema $schema,
-		ObjectEntity $object,
-		string $originalObjectId,
-	): void {
-		$cascadeIds = $this->collectCascadeTargetIds(schema: $schema, object: $object);
+	private function cascadeDeleteObjects(DeletionTarget $root, string $originalObjectId): void {
+		$register = $root->register;
+		$schema = $root->schema;
+		if ($register === null || $schema === null) {
+			return;
+		}
+
+		$cascadeIds = $this->collectCascadeTargetIds(schema: $schema, object: $root->object);
 		if (empty($cascadeIds) === true) {
 			return;
 		}

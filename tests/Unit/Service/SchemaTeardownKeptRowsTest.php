@@ -121,7 +121,7 @@ class SchemaTeardownKeptRowsTest extends TestCase {
 
 		$this->service = new SchemaDeletionService(
 			$this->db,
-			new SchemaDeletionStores($this->magicMapper, $this->registerMapper, $this->schemaMapper, $this->auditTrailMapper),
+			new SchemaDeletionStores(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper), $this->auditTrailMapper),
 			$this->createMock(LoggerInterface::class)
 		);
 
@@ -570,7 +570,7 @@ class SchemaTeardownKeptRowsTest extends TestCase {
 
 		$service = new SchemaDeletionService(
 			$this->db,
-			new SchemaDeletionStores($mapper, $this->registerMapper, $this->schemaMapper, $this->auditTrailMapper),
+			new SchemaDeletionStores(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $mapper), $this->auditTrailMapper),
 			$this->createMock(LoggerInterface::class)
 		);
 
@@ -595,7 +595,7 @@ class SchemaTeardownKeptRowsTest extends TestCase {
 
 		$service = new SchemaDeletionService(
 			$this->db,
-			new SchemaDeletionStores($mapper, $this->registerMapper, $this->schemaMapper, $this->auditTrailMapper),
+			new SchemaDeletionStores(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $mapper), $this->auditTrailMapper),
 			$this->createMock(LoggerInterface::class)
 		);
 

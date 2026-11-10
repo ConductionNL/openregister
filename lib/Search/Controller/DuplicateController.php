@@ -303,12 +303,8 @@ class DuplicateController extends Controller {
 			);
 		}
 
-		$fingerprint = $this->fingerprintOf(
-			register: $register,
-			schema: $schema,
-			objectA: $objectA,
-			objectB: $objectB
-		);
+		$pair = new ReviewedPair(first: $objectA, second: $objectB, registerSlug: $register, schemaSlug: $schema);
+		$fingerprint = $this->fingerprintOf(pair: $pair);
 		if ($fingerprint === null) {
 			return new JSONResponse(
 				['error' => 'One of the objects could not be read.'],
@@ -317,7 +313,7 @@ class DuplicateController extends Controller {
 		}
 
 		$row = $this->dismissals->dismiss(
-			pair: new ReviewedPair(first: $objectA, second: $objectB, registerSlug: $register, schemaSlug: $schema),
+			pair: $pair,
 			fingerprint: $fingerprint,
 			reason: $reason,
 			dismissedBy: ((string)($this->session->userSession->getUser()?->getUID() ?? ''))
@@ -413,10 +409,7 @@ class DuplicateController extends Controller {
 	 * The fingerprint of the pair being dismissed, computed by the SAME
 	 * function the scorer will later compare against.
 	 *
-	 * @param string $register Register reference.
-	 * @param string $schema Schema reference.
-	 * @param string $objectA One uuid.
-	 * @param string $objectB The other uuid.
+	 * @param ReviewedPair $pair The two uuids and the register and schema references.
 	 *
 	 * @return string|null The fingerprint, or null when either object cannot be read.
 	 *
@@ -424,10 +417,10 @@ class DuplicateController extends Controller {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
-	private function fingerprintOf(string $register, string $schema, string $objectA, string $objectB): ?string {
+	private function fingerprintOf(ReviewedPair $pair): ?string {
 		try {
-			$a = WriteCause::asLookup(fn () => $this->objectService->find(id: $objectA));
-			$b = WriteCause::asLookup(fn () => $this->objectService->find(id: $objectB));
+			$a = WriteCause::asLookup(fn () => $this->objectService->find(id: $pair->first));
+			$b = WriteCause::asLookup(fn () => $this->objectService->find(id: $pair->second));
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -439,7 +432,7 @@ class DuplicateController extends Controller {
 		return $this->duplicates->pairFingerprint(
 			dataA: ($a->getObject() ?? []),
 			dataB: ($b->getObject() ?? []),
-			rules: $this->duplicates->effectiveRules(register: $register, schema: $schema)
+			rules: $this->duplicates->effectiveRules(register: $pair->registerSlug, schema: $pair->schemaSlug)
 		);
 	}//end fingerprintOf()
 }//end class

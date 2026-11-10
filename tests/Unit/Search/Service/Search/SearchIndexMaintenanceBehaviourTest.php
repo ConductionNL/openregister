@@ -101,7 +101,7 @@ class SearchIndexMaintenanceBehaviourTest extends TestCase
         }
 
         return new SearchIndexMaintenance(
-            new SearchIndexStores($this->db, $this->registerMapper, $this->magicMapper),
+            new SearchIndexStores($this->db, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), tables: $this->magicMapper)),
             $this->appConfig,
             $config,
             $logger

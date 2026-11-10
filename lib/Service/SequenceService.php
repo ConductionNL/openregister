@@ -74,7 +74,22 @@ class SequenceService implements SequenceServiceInterface {
 	 * @throws DbException When the reservation cannot be completed.
 	 */
 	public function reserveNext(int $registerId, int $schemaId, string $scopeKey): int {
-		$scope = ['registerId' => $registerId, 'schemaId' => $schemaId, 'scopeKey' => $scopeKey];
+		return $this->reserveNextIn(sequence: new SequenceScope(registerId: $registerId, schemaId: $schemaId, scopeKey: $scopeKey));
+	}//end reserveNext()
+
+	/**
+	 * Atomically reserve and return the next number for the given scope.
+	 *
+	 * @param SequenceScope $sequence The register, schema and scope key of the counter.
+	 *
+	 * @return int The reserved running number (>= 1).
+	 *
+	 * @throws DbException When the reservation cannot be completed.
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
+	 */
+	public function reserveNextIn(SequenceScope $sequence): int {
+		$scope = $sequence->toArray();
 		$this->db->beginTransaction();
 		try {
 			$reserved = $this->reserveInScope(scope: $scope);
@@ -84,7 +99,7 @@ class SequenceService implements SequenceServiceInterface {
 			$this->db->rollBack();
 			throw $e;
 		}
-	}//end reserveNext()
+	}//end reserveNextIn()
 
 	/**
 	 * Reserve the next number inside the open transaction.
@@ -192,11 +207,27 @@ class SequenceService implements SequenceServiceInterface {
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
 	 */
 	public function advanceTo(int $registerId, int $schemaId, string $scopeKey, int $reserved): void {
+		$this->advanceScopeTo(sequence: new SequenceScope(registerId: $registerId, schemaId: $schemaId, scopeKey: $scopeKey), reserved: $reserved);
+	}//end advanceTo()
+
+	/**
+	 * Raise the counter of one scope so it never issues a number already issued elsewhere.
+	 *
+	 * @param SequenceScope $sequence The register, schema and scope key of the counter.
+	 * @param int           $reserved The number already issued elsewhere.
+	 *
+	 * @return void
+	 *
+	 * @throws DbException When the counter cannot be read or written.
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
+	 */
+	public function advanceScopeTo(SequenceScope $sequence, int $reserved): void {
 		if ($reserved < 1) {
 			return;
 		}
 
-		$scope = ['registerId' => $registerId, 'schemaId' => $schemaId, 'scopeKey' => $scopeKey];
+		$scope = $sequence->toArray();
 		$target = ($reserved + 1);
 		if ($this->mapper->raiseTo(...$scope, minNextValue: $target) > 0) {
 			return;
@@ -210,7 +241,7 @@ class SequenceService implements SequenceServiceInterface {
 		}
 
 		$this->seedOrRaise(scope: $scope, target: $target);
-	}//end advanceTo()
+	}//end advanceScopeTo()
 
 	/**
 	 * Seed a missing counter at the target; if the seed fails, raise the counter instead.

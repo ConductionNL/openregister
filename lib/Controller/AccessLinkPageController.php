@@ -31,6 +31,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\AccessLinkPageControllerServices;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -55,20 +57,32 @@ class AccessLinkPageController extends Controller {
 	public const TEMPLATE = 'accessLink';
 
 	/**
+	 * Hands the anchor to the page script.
+	 *
+	 * @var IInitialState
+	 */
+	private readonly IInitialState $initialState;
+
+	/**
+	 * Translates the page title.
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string        $appName      The app name.
-	 * @param IRequest      $request      The request.
-	 * @param IInitialState $initialState Hands the anchor to the page script.
-	 * @param IL10N         $l10n         Translates the page title.
+	 * @param IRequest                         $request  The request.
+	 * @param AccessLinkPageControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly IInitialState $initialState,
-		private readonly IL10N $l10n,
+		AccessLinkPageControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->initialState = $services->initialState;
+		$this->l10n = $services->l10n;
 	}//end __construct()
 
 	/**

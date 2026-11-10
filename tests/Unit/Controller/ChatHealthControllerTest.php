@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\ChatHealthController;
+use OCA\OpenRegister\Controller\Support\ChatHealthControllerServices;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -55,10 +56,11 @@ class ChatHealthControllerTest extends TestCase {
 
 	private function makeController(): ChatHealthController {
 		return new ChatHealthController(
-			appName: 'openregister',
 			request: $this->request,
-			settingsService: $this->settingsService,
-			logger: $this->logger
+			services: new ChatHealthControllerServices(
+				settingsService: $this->settingsService,
+				logger: $this->logger
+			)
 		);
 	}//end makeController()
 

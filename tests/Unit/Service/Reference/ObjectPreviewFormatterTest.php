@@ -356,6 +356,9 @@ class ObjectPreviewFormatterTest extends TestCase {
 		$this->assertNotNull($reference);
 		$richObject = $reference->jsonSerialize()['richObject'] ?? null;
 		$this->assertIsArray($richObject);
+		$this->assertSame('Test Object', $richObject['title']);
+		$this->assertSame(['id' => 12, 'title' => 'Producten'], $richObject['schema']);
+		$this->assertSame(['id' => 5, 'title' => 'Gemeente'], $richObject['register']);
 	}//end testBuildReferenceSuccess()
 
 	/**

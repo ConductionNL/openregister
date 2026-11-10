@@ -18,12 +18,12 @@ namespace OCA\OpenRegister\Tests\Unit\Search;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\StateHistoryMapper;
 use OCA\OpenRegister\Service\Search\HistoryNarrowing;
 use OCA\OpenRegister\Service\Search\HistoryPredicate;
 use OCA\OpenRegister\Service\Search\SearchDictionary;
-use OCA\OpenRegister\Service\Search\SearchDictionaryMappers;
 use OCA\OpenRegister\Service\Search\SearchDictionaryProvider;
 use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCP\IAppConfig;
@@ -353,8 +353,7 @@ class SearchUnitsCharacterisationTest extends TestCase {
 		);
 
 		return new SearchDictionaryProvider(
-			$objects,
-			new SearchDictionaryMappers(registers: $registers, schemas: $schemas),
+			new SchemaCatalog(registers: $registers, schemas: $schemas, tables: $objects),
 			$this->createMock(IAppConfig::class),
 			$this->createMock(LoggerInterface::class)
 		);

@@ -21,6 +21,8 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\ConsumersControllerServices;
 use OCA\OpenRegister\Db\Consumer;
 use OCA\OpenRegister\Db\ConsumerMapperInterface;
 use OCP\AppFramework\Controller;
@@ -38,21 +40,32 @@ use OCP\IRequest;
  */
 class ConsumersController extends Controller {
 	/**
+	 * The consumer database mapper
+	 *
+	 * @var ConsumerMapperInterface
+	 */
+	private readonly ConsumerMapperInterface $consumerMapper;
+
+	/**
+	 * The localization service
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The application name
-	 * @param IRequest $request The request object
-	 * @param ConsumerMapperInterface $consumerMapper The consumer database mapper
-	 * @param IL10N $l10n The localization service
+	 * @param IRequest                    $request  The request object
+	 * @param ConsumersControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly ConsumerMapperInterface $consumerMapper,
-		private readonly IL10N $l10n,
+		ConsumersControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
-
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->consumerMapper = $services->consumerMapper;
+		$this->l10n = $services->l10n;
 	}//end __construct()
 
 	/**

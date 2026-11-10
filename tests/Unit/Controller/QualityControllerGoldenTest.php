@@ -48,7 +48,7 @@ class QualityControllerGoldenTest extends TestCase {
 	protected function setUp(): void {
 		$this->request = $this->createMock(IRequest::class);
 		$this->statistics = $this->createMock(QualityStatisticsService::class);
-		$this->controller = new QualityController('openregister', $this->request, $this->statistics);
+		$this->controller = new QualityController($this->request, $this->statistics);
 	}
 
 	public function testIndexClampsNonPositiveLimitAndNegativeOffsetAndCastsStatus(): void {

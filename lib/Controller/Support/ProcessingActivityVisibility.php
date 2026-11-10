@@ -75,6 +75,19 @@ final class ProcessingActivityVisibility {
 	}//end accessibleOrgs()
 
 	/**
+	 * The viewer a caller is: admin, or a non-admin scoped to the accessible organisations.
+	 *
+	 * @param bool $isAdmin Whether the caller is an admin.
+	 *
+	 * @return ProcessingActivityViewer The viewer.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	public function viewer(bool $isAdmin): ProcessingActivityViewer {
+		return new ProcessingActivityViewer(isAdmin: $isAdmin, accessibleOrgs: $this->accessibleOrgs(isAdmin: $isAdmin));
+	}//end viewer()
+
+	/**
 	 * Whether the caller may see an activity given its organisation binding.
 	 *
 	 * @param Verwerkingsactiviteit $activity       Candidate activity.
@@ -86,17 +99,22 @@ final class ProcessingActivityVisibility {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function maySee(Verwerkingsactiviteit $activity, array $accessibleOrgs, bool $isAdmin): bool {
-		if ($isAdmin === true) {
-			return true;
-		}
-
-		$org = (string)$activity->getOrganisationId();
-		if ($org === '') {
-			return false;
-		}
-
-		return in_array($org, $accessibleOrgs, true);
+		return (new ProcessingActivityViewer(isAdmin: $isAdmin, accessibleOrgs: $accessibleOrgs))->sees(activity: $activity);
 	}//end maySee()
+
+	/**
+	 * Reduce a list of activities to the ones the viewer may see.
+	 *
+	 * @param array<int, Verwerkingsactiviteit> $activities Candidates.
+	 * @param ProcessingActivityViewer          $viewer     Who is looking.
+	 *
+	 * @return array<int, Verwerkingsactiviteit> Visible activities.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	public function visibleTo(array $activities, ProcessingActivityViewer $viewer): array {
+		return array_values(array_filter($activities, static fn (Verwerkingsactiviteit $activity): bool => $viewer->sees(activity: $activity)));
+	}//end visibleTo()
 
 	/**
 	 * Reduce a list of activities to the ones the caller may see.
@@ -110,13 +128,6 @@ final class ProcessingActivityVisibility {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function filter(array $activities, array $accessibleOrgs, bool $isAdmin): array {
-		$visible = [];
-		foreach ($activities as $activity) {
-			if ($this->maySee(activity: $activity, accessibleOrgs: $accessibleOrgs, isAdmin: $isAdmin) === true) {
-				$visible[] = $activity;
-			}
-		}
-
-		return $visible;
+		return $this->visibleTo(activities: $activities, viewer: new ProcessingActivityViewer(isAdmin: $isAdmin, accessibleOrgs: $accessibleOrgs));
 	}//end filter()
 }//end class

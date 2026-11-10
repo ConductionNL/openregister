@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Oas;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Controller\OasController;
+use OCA\OpenRegister\Controller\Support\OasControllerServices;
 use OCA\OpenRegister\Service\OasServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -46,7 +47,7 @@ class OasUnknownRegisterTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturn(null);
 		$this->oasService = $this->createMock(OasServiceInterface::class);
-		$this->controller = new OasController('openregister', $request, $this->oasService);
+		$this->controller = new OasController($request, new OasControllerServices($this->oasService));
 	}
 
 	public function testUnknownRegisterAnswers404WithoutTheQuery(): void {

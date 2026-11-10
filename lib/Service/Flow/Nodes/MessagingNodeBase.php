@@ -41,18 +41,31 @@ use UnexpectedValueException;
  */
 abstract class MessagingNodeBase {
 	/**
+	 * Translations for palette text and refusals.
+	 *
+	 * @var IL10N
+	 */
+	protected readonly IL10N $l10n;
+
+	/**
+	 * For the palette icon.
+	 *
+	 * @var IURLGenerator
+	 */
+	protected readonly IURLGenerator $urls;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowMessagingService $messaging The shared send pipeline.
-	 * @param IL10N                $l10n      Translations for palette text and refusals.
-	 * @param IURLGenerator        $urls      For the palette icon.
+	 * @param FlowMessagingService $messaging    The shared send pipeline.
+	 * @param FlowNodePresentation $presentation Translations and the palette icon.
 	 */
 	public function __construct(
 		protected readonly FlowMessagingService $messaging,
-		protected readonly IL10N $l10n,
-		protected readonly IURLGenerator $urls,
+		FlowNodePresentation $presentation,
 	) {
-
+		$this->l10n = $presentation->l10n;
+		$this->urls = $presentation->urls;
 	}//end __construct()
 
 	/**

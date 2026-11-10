@@ -22,7 +22,8 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Kernel\Contracts\ViewInterface;
+use OCP\AppFramework\Db\Entity;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -32,22 +33,22 @@ abstract class AbstractViewEvent extends Event {
 	/**
 	 * Constructor for AbstractViewEvent.
 	 *
-	 * @param View $view The entity the event is about.
+	 * @param ViewInterface&Entity $view The entity the event is about.
 	 *
 	 * @return void
 	 */
-	public function __construct(private readonly View $view) {
+	public function __construct(private readonly ViewInterface $view) {
 		parent::__construct();
 	}//end __construct()
 
 	/**
 	 * Get the entity the event is about.
 	 *
-	 * @return View The entity.
+	 * @return ViewInterface&Entity The entity.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
-	public function getView(): View {
+	public function getView(): ViewInterface {
 		return $this->view;
 	}//end getView()
 }//end class

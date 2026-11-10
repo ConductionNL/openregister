@@ -42,6 +42,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 use OCA\OpenRegister\BackgroundJob\Support\DeferredObjectEventActor;
 use OCA\OpenRegister\BackgroundJob\Support\DeferredObjectEventLookup;
 use OCA\OpenRegister\BackgroundJob\Support\DeferredObjectEventPlatform;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
@@ -92,9 +93,11 @@ class DeferredObjectEventJob extends QueuedJob {
 		$restored = $this->restoreActingUser(uid: (string)(((array)$argument)['user'] ?? ''), uuid: $uuid);
 		try {
 			$this->dispatchCreated(
-				uuid: $uuid,
-				registerId: (int)(((array)$argument)['registerId'] ?? 0),
-				schemaId: (int)(((array)$argument)['schemaId'] ?? 0)
+				ref: new ObjectRef(
+					register: (int)(((array)$argument)['registerId'] ?? 0),
+					schema: (int)(((array)$argument)['schemaId'] ?? 0),
+					id: $uuid
+				)
 			);
 		} catch (Throwable $e) {
 			// The object may legitimately be gone by now — a create followed by
@@ -158,29 +161,27 @@ class DeferredObjectEventJob extends QueuedJob {
 	/**
 	 * Re-read the object, scoped to its register and schema, and dispatch its created event.
 	 *
-	 * @param string $uuid       The object's uuid.
-	 * @param int    $registerId The register id, 0 when unknown.
-	 * @param int    $schemaId   The schema id, 0 when unknown.
+	 * @param ObjectRef $ref The object's register id and schema id (0 when unknown) and its uuid.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/draft-creation-side-effects/specs/object-events/spec.md#requirement-creation-side-effects-must-be-held-for-a-draft-and-run-once-when-it-leaves-draft
 	 */
-	private function dispatchCreated(string $uuid, int $registerId, int $schemaId): void {
+	private function dispatchCreated(ObjectRef $ref): void {
 		$register = null;
 		$schema = null;
-		if ($registerId > 0) {
-			$register = $this->lookup->registerMapper->find($registerId);
+		if ((int)$ref->register > 0) {
+			$register = $this->lookup->registerMapper->find((int)$ref->register);
 		}
 
-		if ($schemaId > 0) {
-			$schema = $this->lookup->schemaMapper->find($schemaId);
+		if ((int)$ref->schema > 0) {
+			$schema = $this->lookup->schemaMapper->find((int)$ref->schema);
 		}
 
 		// Scoped read: the register and schema are known, so this never
 		// reaches the cross-table fan-out.
 		$object = $this->lookup->objectMapper->find(
-			identifier: $uuid,
+			identifier: $ref->id,
 			register: $register,
 			schema: $schema,
 			includeDeleted: false,

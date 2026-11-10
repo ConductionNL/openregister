@@ -154,9 +154,9 @@ class GeoSpatialEvaluatorGoldenTest extends TestCase {
 	public function testHaversine(): void {
 		$evaluator = new GeoSpatialEvaluator();
 		$distances = [
-			round($evaluator->haversineMeters(4.9, 52.37, 4.48, 51.92), 6),
-			round($evaluator->haversineMeters(0.0, 0.0, 0.0, 0.0), 6),
-			round($evaluator->haversineMeters(-179.5, 10.0, 179.5, -10.0), 6),
+			round($evaluator->haversineMeters(new \OCA\OpenRegister\Search\Service\Geo\GeoPoint(4.9, 52.37), new \OCA\OpenRegister\Search\Service\Geo\GeoPoint(4.48, 51.92)), 6),
+			round($evaluator->haversineMeters(new \OCA\OpenRegister\Search\Service\Geo\GeoPoint(0.0, 0.0), new \OCA\OpenRegister\Search\Service\Geo\GeoPoint(0.0, 0.0)), 6),
+			round($evaluator->haversineMeters(new \OCA\OpenRegister\Search\Service\Geo\GeoPoint(-179.5, 10.0), new \OCA\OpenRegister\Search\Service\Geo\GeoPoint(179.5, -10.0)), 6),
 		];
 		$this->assertGolden('haversine', $distances);
 	}

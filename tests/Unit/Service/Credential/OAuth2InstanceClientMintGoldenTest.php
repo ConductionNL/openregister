@@ -110,11 +110,11 @@ class OAuth2InstanceClientMintGoldenTest extends TestCase {
 	 */
 	#[DataProvider('flows')]
 	public function testTheClientSecretIsMintedForTheFlowsOwner(array $claims, array $expected): void {
-		$result = $this->client(['client_id' => 'CID', 'client_secret' => 'ISSUED_SECRET'])->ensure(
+		$result = $this->client(['client_id' => 'CID', 'client_secret' => 'ISSUED_SECRET'])->ensure(registration: new \OCA\OpenRegister\Service\Credential\OAuth2ClientRegistration(
 			provider: $this->mastodon(),
 			claims: $claims,
 			redirectUri: 'https://home.example/cb'
-		);
+		));
 
 		$this->assertSame([$expected], $this->mints);
 		$this->assertSame('CID', $result['cl']);
@@ -132,11 +132,11 @@ class OAuth2InstanceClientMintGoldenTest extends TestCase {
 	 */
 	public function testARefusedRegistrationMintsNothing(): void {
 		try {
-			$this->client(['client_secret' => 'ISSUED_SECRET'])->ensure(
+			$this->client(['client_secret' => 'ISSUED_SECRET'])->ensure(registration: new \OCA\OpenRegister\Service\Credential\OAuth2ClientRegistration(
 				provider: $this->mastodon(),
 				claims: ['u' => 'alice', 's' => 'personal', 'h' => 'https://mastodon.example'],
 				redirectUri: 'https://home.example/cb'
-			);
+			));
 			$this->fail('A registration without a client id must be refused.');
 		} catch (OAuth2RegistrationFailedException $refused) {
 			$this->assertSame([], $this->mints);

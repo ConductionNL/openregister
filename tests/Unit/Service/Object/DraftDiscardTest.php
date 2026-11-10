@@ -13,10 +13,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\DiscardDraftRequest;
 use OCA\OpenRegister\Service\Object\DraftDiscard;
@@ -101,7 +103,8 @@ class DraftDiscardTest extends TestCase {
 			}
 		);
 
-		$this->discard = new DraftDiscard(objects: $objects, registers: $registers, schemas: $schemas);
+		$catalog = new SchemaCatalog(registers: $registers, schemas: $schemas, tables: $this->createMock(MagicMapperInterface::class));
+		$this->discard = new DraftDiscard(objects: $objects, catalog: $catalog);
 	}//end setUp()
 
 	/**

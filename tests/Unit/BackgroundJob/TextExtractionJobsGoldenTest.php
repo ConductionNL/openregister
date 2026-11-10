@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime;
 use OCA\OpenRegister\BackgroundJob\FileTextExtractionJob;
 use OCA\OpenRegister\BackgroundJob\ObjectTextExtractionJob;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
@@ -91,7 +92,7 @@ class TextExtractionJobsGoldenTest extends TestCase {
 		}
 
 		$class = $job === 'file' ? FileTextExtractionJob::class : ObjectTextExtractionJob::class;
-		$instance = new $class($this->createMock(ITimeFactory::class), $config, $logger, $extractor);
+		$instance = new $class(new ConfiguredJobRuntime($this->createMock(ITimeFactory::class), $config, $logger), $extractor);
 		$argument = [
 			'missing' => ['other' => 1],
 		][$case] ?? ['file_id' => '12', 'object_id' => '34'];

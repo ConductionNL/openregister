@@ -121,11 +121,27 @@ class FormUploadStore implements FormUploadStoreInterface {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
 	 */
 	public function issue(string $formId, string $property, array $rule, array $file): array {
-		$fileConfig = $this->fileConfigFor(property: $property, rule: $rule);
-		$path = $this->arrivedPath(property: $property, file: $file);
+		return $this->issueFor(target: new FormUploadTarget(formId: $formId, property: $property, rule: $rule), file: $file);
+	}//end issue()
+
+	/**
+	 * Hold one uploaded file for its target property and return its token.
+	 *
+	 * @param FormUploadTarget                                                               $target The form, property and that property's rules.
+	 * @param array{name?: mixed, type?: mixed, tmp_name?: mixed, error?: mixed, size?: mixed} $file   The PHP upload array.
+	 *
+	 * @return array{token: string, expiresAt: int} The token and its expiry (unix seconds).
+	 *
+	 * @throws FormSubmitRefusedException 422 when the file breaks the property's rules or did not arrive.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
+	 */
+	public function issueFor(FormUploadTarget $target, array $file): array {
+		$fileConfig = $this->fileConfigFor(property: $target->property, rule: $target->rule);
+		$path = $this->arrivedPath(property: $target->property, file: $file);
 		$meta = [
-			'formId' => $formId,
-			'property' => $property,
+			'formId' => $target->formId,
+			'property' => $target->property,
 			'name' => basename((string)($file['name'] ?? 'upload')),
 			'type' => (string)($file['type'] ?? 'application/octet-stream'),
 			'size' => (int)($file['size'] ?? filesize($path)),
@@ -134,7 +150,7 @@ class FormUploadStore implements FormUploadStoreInterface {
 		$this->assertType(meta: $meta, fileConfig: $fileConfig);
 
 		return $this->hold(path: $path, meta: $meta);
-	}//end issue()
+	}//end issueFor()
 
 	/**
 	 * The file rules of the property an upload is for.
@@ -149,7 +165,8 @@ class FormUploadStore implements FormUploadStoreInterface {
 	private function fileConfigFor(string $property, array $rule): array {
 		$fileConfig = $this->rules->fileConfigOf(property: $rule);
 		if ($fileConfig === null) {
-			$this->refuse(property: $property, code: 'property-holds-no-files', message: $this->l10n->t('"%1$s" does not hold files.', [$property]));
+			$message = $this->l10n->t('"%1$s" does not hold files.', [$property]);
+			$this->refuse(finding: new FormFinding(property: $property, code: 'property-holds-no-files', message: $message));
 		}
 
 		return $fileConfig;
@@ -168,7 +185,8 @@ class FormUploadStore implements FormUploadStoreInterface {
 	private function arrivedPath(string $property, array $file): string {
 		$path = (string)($file['tmp_name'] ?? '');
 		if ((int)($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || is_readable($path) === false) {
-			$this->refuse(property: $property, code: 'upload-failed', message: $this->l10n->t('The file did not arrive. Please try again.'));
+			$message = $this->l10n->t('The file did not arrive. Please try again.');
+			$this->refuse(finding: new FormFinding(property: $property, code: 'upload-failed', message: $message));
 		}
 
 		return $path;
@@ -195,7 +213,7 @@ class FormUploadStore implements FormUploadStoreInterface {
 				'The file is %1$s MB; "%2$s" takes at most %3$s MB.',
 				[$this->megabytes(bytes: $meta['size']), $meta['property'], $this->megabytes(bytes: $limit)]
 			);
-			$this->refuse(property: $meta['property'], code: 'file-too-large', message: $message);
+			$this->refuse(finding: new FormFinding(property: $meta['property'], code: 'file-too-large', message: $message));
 		}
 	}//end assertSize()
 
@@ -213,7 +231,7 @@ class FormUploadStore implements FormUploadStoreInterface {
 		$allowed = $this->rules->allowedTypes(fileConfig: $fileConfig);
 		if ($allowed !== [] && in_array($meta['type'], $allowed, true) === false) {
 			$message = $this->l10n->t('"%1$s" takes these file types: %2$s.', [$meta['property'], implode(', ', $allowed)]);
-			$this->refuse(property: $meta['property'], code: 'file-type-not-allowed', message: $message);
+			$this->refuse(finding: new FormFinding(property: $meta['property'], code: 'file-type-not-allowed', message: $message));
 		}
 	}//end assertType()
 
@@ -276,7 +294,7 @@ class FormUploadStore implements FormUploadStoreInterface {
 		$meta = $this->meta(token: $token);
 		if ($meta === null || $meta['formId'] !== $formId || $meta['expiresAt'] <= $this->time->getTime()) {
 			$message = $this->l10n->t('An uploaded file has expired or is unknown. Please add it again.');
-			$this->refuse(property: '', code: 'upload-token-unknown', message: $message);
+			$this->refuse(finding: new FormFinding(property: '', code: 'upload-token-unknown', message: $message));
 		}
 
 		return $meta;
@@ -303,27 +321,15 @@ class FormUploadStore implements FormUploadStoreInterface {
 			return;
 		}
 
+		$claims = new FormUploadClaims(time: $this->time, folder: $folder);
 		foreach ($tokens as $token) {
-			$this->claimOne(folder: $folder, token: $token, draftId: $draftId);
+			$meta = $this->meta(token: $token);
+			$this->deleteToken(folder: $folder, token: $token);
+			if ($draftId !== null && $meta !== null) {
+				$claims->record(token: $token, claim: new FormUploadClaim(formId: $meta['formId'], property: $meta['property'], draftId: $draftId));
+			}
 		}
 	}//end claim()
-
-	/**
-	 * Delete one claimed token, leaving a claim record when a draft claimed it.
-	 *
-	 * @param ISimpleFolder $folder  The store folder.
-	 * @param string        $token   The token.
-	 * @param string|null   $draftId The draft the file now sits on; null for a final submit.
-	 *
-	 * @return void
-	 */
-	private function claimOne(ISimpleFolder $folder, string $token, ?string $draftId): void {
-		$meta = $this->meta(token: $token);
-		$this->deleteToken(folder: $folder, token: $token);
-		if ($draftId !== null && $meta !== null) {
-			(new FormUploadClaims(time: $this->time))->record(folder: $folder, token: $token, meta: $meta, draftId: $draftId);
-		}
-	}//end claimOne()
 
 	/**
 	 * A token as the upload for the property a payload put it on, or null when the draft already holds that file.
@@ -340,14 +346,29 @@ class FormUploadStore implements FormUploadStoreInterface {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
 	 */
 	public function redeem(string $formId, string $property, string $token, ?string $draftId = null): ?array {
-		$claims = new FormUploadClaims(time: $this->time);
-		$claim = new FormUploadClaim(formId: $formId, property: $property, draftId: $draftId);
-		if ($claims->isClaimedBy(folder: $this->folder(create: false), token: $token, claim: $claim) === true) {
+		return $this->redeemClaim(claim: new FormUploadClaim(formId: $formId, property: $property, draftId: $draftId), token: $token);
+	}//end redeem()
+
+	/**
+	 * A token as the upload for the claim's property, or null when the claim's draft already holds that file.
+	 *
+	 * @param FormUploadClaim $claim The form, destination property and draft redeeming it.
+	 * @param string          $token The token.
+	 *
+	 * @return array{name: string, type: string, tmp_name: string, error: int, size: int}|null The upload, null when satisfied.
+	 *
+	 * @throws FormSubmitRefusedException 422 when the token is unknown, expired, another form's or issued for another property.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
+	 */
+	public function redeemClaim(FormUploadClaim $claim, string $token): ?array {
+		$claims = new FormUploadClaims(time: $this->time, folder: $this->folder(create: false));
+		if ($claims->isClaimedBy(token: $token, claim: $claim) === true) {
 			return null;
 		}
 
-		return $this->forProperty(file: $this->materialise(formId: $formId, token: $token), property: $property);
-	}//end redeem()
+		return $this->forProperty(file: $this->materialise(formId: $claim->formId, token: $token), property: $claim->property);
+	}//end redeemClaim()
 
 	/**
 	 * A materialised upload for the property it was issued for, without that property.
@@ -362,7 +383,7 @@ class FormUploadStore implements FormUploadStoreInterface {
 	private function forProperty(array $file, string $property): array {
 		if ($file['property'] !== $property) {
 			$message = $this->l10n->t('An uploaded file was sent for another question. Please add it again.');
-			$this->refuse(property: $property, code: 'upload-token-unknown', message: $message);
+			$this->refuse(finding: new FormFinding(property: $property, code: 'upload-token-unknown', message: $message));
 		}
 
 		unset($file['property']);
@@ -397,25 +418,23 @@ class FormUploadStore implements FormUploadStoreInterface {
 			return 0;
 		}
 
-		return $this->purgeFolder(folder: $folder, now: $this->time->getTime());
+		return $this->purgeFolder(run: new FormUploadPurgeRun(folder: $folder, now: $this->time->getTime()));
 	}//end purge()
 
 	/**
 	 * Purge the store folder, file by file in listing order.
 	 *
-	 * @param ISimpleFolder $folder The store folder.
-	 * @param int           $now    The moment of the purge.
+	 * @param FormUploadPurgeRun $run The purge.
 	 *
 	 * @return int How many files were deleted.
 	 */
-	private function purgeFolder(ISimpleFolder $folder, int $now): int {
+	private function purgeFolder(FormUploadPurgeRun $run): int {
 		$deleted = 0;
-		$gone = [];
-		foreach ($folder->getDirectoryListing() as $file) {
-			[$count, $token] = $this->purgeFile(folder: $folder, file: $file, gone: $gone, now: $now);
+		foreach ($run->folder->getDirectoryListing() as $file) {
+			[$count, $token] = $this->purgeFile(run: $run, file: $file);
 			$deleted += $count;
 			if ($token !== null) {
-				$gone[$token] = true;
+				$run->gone[$token] = true;
 			}
 		}
 
@@ -425,24 +444,22 @@ class FormUploadStore implements FormUploadStoreInterface {
 	/**
 	 * Purge one file of the store: an expired record with its bytes, an expired claim, or orphaned bytes.
 	 *
-	 * @param ISimpleFolder       $folder The store folder.
-	 * @param ISimpleFile         $file   A file of the folder.
-	 * @param array<string, true> $gone   Tokens this purge already deleted.
-	 * @param int                 $now    The moment of the purge.
+	 * @param FormUploadPurgeRun $run  The purge.
+	 * @param ISimpleFile        $file A file of the folder.
 	 *
 	 * @return array{0: int, 1: string|null} How many were deleted, and the token deleted with its record.
 	 */
-	private function purgeFile(ISimpleFolder $folder, ISimpleFile $file, array $gone, int $now): array {
+	private function purgeFile(FormUploadPurgeRun $run, ISimpleFile $file): array {
 		$name = $file->getName();
 		if (str_ends_with($name, '.json') === true) {
-			return $this->purgeRecord(folder: $folder, token: substr($name, 0, -5), now: $now);
+			return $this->purgeRecord(run: $run, token: substr($name, 0, -5));
 		}
 
 		if (str_ends_with($name, FormUploadClaims::SUFFIX) === true) {
 			return [(new FormUploadClaims(time: $this->time))->purgeIfExpired(file: $file), null];
 		}
 
-		if ($this->isOrphanedBytes(folder: $folder, file: $file, gone: $gone, now: $now) === true) {
+		if ($this->isOrphanedBytes(run: $run, file: $file) === true) {
 			$file->delete();
 
 			return [1, null];
@@ -454,19 +471,18 @@ class FormUploadStore implements FormUploadStoreInterface {
 	/**
 	 * Delete a token whose record expired or cannot be read.
 	 *
-	 * @param ISimpleFolder $folder The store folder.
-	 * @param string        $token  The token.
-	 * @param int           $now    The moment of the purge.
+	 * @param FormUploadPurgeRun $run   The purge.
+	 * @param string             $token The token.
 	 *
 	 * @return array{0: int, 1: string|null} 1 and the token when deleted, else 0 and null.
 	 */
-	private function purgeRecord(ISimpleFolder $folder, string $token, int $now): array {
+	private function purgeRecord(FormUploadPurgeRun $run, string $token): array {
 		$meta = $this->meta(token: $token);
-		if ($meta !== null && $meta['expiresAt'] > $now) {
+		if ($meta !== null && $meta['expiresAt'] > $run->now) {
 			return [0, null];
 		}
 
-		$this->deleteToken(folder: $folder, token: $token);
+		$this->deleteToken(folder: $run->folder, token: $token);
 
 		return [1, $token];
 	}//end purgeRecord()
@@ -478,14 +494,12 @@ class FormUploadStore implements FormUploadStoreInterface {
 	 * nothing else lists. One younger than a token's lifetime may still be an
 	 * upload in flight, and is left alone.
 	 *
-	 * @param ISimpleFolder       $folder The store folder.
-	 * @param ISimpleFile         $file   A file of the folder.
-	 * @param array<string, true> $gone   Tokens this purge already deleted.
-	 * @param int                 $now    The moment of the purge.
+	 * @param FormUploadPurgeRun $run  The purge, with the tokens it already deleted.
+	 * @param ISimpleFile        $file A file of the folder.
 	 *
 	 * @return bool True when the purge deletes it.
 	 */
-	private function isOrphanedBytes(ISimpleFolder $folder, ISimpleFile $file, array $gone, int $now): bool {
+	private function isOrphanedBytes(FormUploadPurgeRun $run, ISimpleFile $file): bool {
 		$name = $file->getName();
 		if (str_ends_with($name, '.bin') === false) {
 			return false;
@@ -493,9 +507,9 @@ class FormUploadStore implements FormUploadStoreInterface {
 
 		$token = substr($name, 0, -4);
 
-		return isset($gone[$token]) === false
-			&& $folder->fileExists($token . '.json') === false
-			&& ($file->getMTime() + self::TTL) <= $now;
+		return isset($run->gone[$token]) === false
+			&& $run->folder->fileExists($token . '.json') === false
+			&& ($file->getMTime() + self::TTL) <= $run->now;
 	}//end isOrphanedBytes()
 
 	/**
@@ -572,19 +586,17 @@ class FormUploadStore implements FormUploadStoreInterface {
 	/**
 	 * Refuse with one finding.
 	 *
-	 * @param string $property The property.
-	 * @param string $code     The code.
-	 * @param string $message  The translated message.
+	 * @param FormFinding $finding The finding.
 	 *
 	 * @return never
 	 *
 	 * @throws FormSubmitRefusedException Always, 422.
 	 */
-	private function refuse(string $property, string $code, string $message): never {
+	private function refuse(FormFinding $finding): never {
 		throw new FormSubmitRefusedException(
-			message: $message,
+			message: $finding->message,
 			status: 422,
-			findings: [['property' => $property, 'code' => $code, 'message' => $message]]
+			findings: [$finding->toArray()]
 		);
 	}//end refuse()
 

@@ -74,11 +74,9 @@ final class FlowItemPlacementTest extends TestCase {
 		$item = FlowItems::item(json: ['issue' => 1549], output: 'build-blocked');
 
 		// The routing node fires with work and tags the item for one exit.
-		$placeItems = $this->placement->advanceItems(
-			transition: new Transition('built-gate', ['built-gate'], ['run-stage', 'nothing-built', 'build-blocked']),
-			placeItems: ['built-gate' => [$item]],
-			items: [$item],
-			taken: ['run-stage', 'nothing-built', 'build-blocked']
+		$placeItems = $this->placement->advance(
+			firing: new \OCA\OpenRegister\Service\Flow\ItemFiring(transition: new Transition('built-gate', ['built-gate'], ['run-stage', 'nothing-built', 'build-blocked']), items: [$item], taken: ['run-stage', 'nothing-built', 'build-blocked']),
+			placeItems: ['built-gate' => [$item]]
 		);
 
 		$this->assertCount(
@@ -89,11 +87,9 @@ final class FlowItemPlacementTest extends TestCase {
 
 		// A DIFFERENT branch of the same pass now fires with nothing, and it
 		// happens to share that output place.
-		$placeItems = $this->placement->advanceItems(
-			transition: new Transition('verdict-gate', ['verdict-gate'], ['advance', 'run-fix', 'build-blocked']),
-			placeItems: $placeItems,
-			items: [],
-			taken: ['advance', 'run-fix', 'build-blocked']
+		$placeItems = $this->placement->advance(
+			firing: new \OCA\OpenRegister\Service\Flow\ItemFiring(transition: new Transition('verdict-gate', ['verdict-gate'], ['advance', 'run-fix', 'build-blocked']), items: [], taken: ['advance', 'run-fix', 'build-blocked']),
+			placeItems: $placeItems
 		);
 
 		$this->assertCount(
@@ -115,11 +111,9 @@ final class FlowItemPlacementTest extends TestCase {
 	public function testAnEmptyFiringStillClearsItsOwnInputPlaces(): void {
 		$stale = FlowItems::item(json: ['stale' => true]);
 
-		$placeItems = $this->placement->advanceItems(
-			transition: new Transition('gate', ['gate'], ['next']),
-			placeItems: ['gate' => [$stale]],
-			items: [],
-			taken: ['next']
+		$placeItems = $this->placement->advance(
+			firing: new \OCA\OpenRegister\Service\Flow\ItemFiring(transition: new Transition('gate', ['gate'], ['next']), items: [], taken: ['next']),
+			placeItems: ['gate' => [$stale]]
 		);
 
 		$this->assertArrayNotHasKey(
@@ -143,11 +137,9 @@ final class FlowItemPlacementTest extends TestCase {
 		$old = FlowItems::item(json: ['from' => 'an earlier pass']);
 		$item = FlowItems::item(json: ['issue' => 1549], output: 'taken');
 
-		$placeItems = $this->placement->advanceItems(
-			transition: new Transition('gate', ['gate'], ['taken', 'not-taken']),
-			placeItems: ['gate' => [$item], 'not-taken' => [$old]],
-			items: [$item],
-			taken: ['taken']
+		$placeItems = $this->placement->advance(
+			firing: new \OCA\OpenRegister\Service\Flow\ItemFiring(transition: new Transition('gate', ['gate'], ['taken', 'not-taken']), items: [$item], taken: ['taken']),
+			placeItems: ['gate' => [$item], 'not-taken' => [$old]]
 		);
 
 		$this->assertArrayNotHasKey(
@@ -171,11 +163,9 @@ final class FlowItemPlacementTest extends TestCase {
 	public function testAnUntaggedItemStillReachesEveryTakenOutput(): void {
 		$item = FlowItems::item(json: ['issue' => 1549]);
 
-		$placeItems = $this->placement->advanceItems(
-			transition: new Transition('split', ['split'], ['left', 'right']),
-			placeItems: ['split' => [$item]],
-			items: [$item],
-			taken: ['left', 'right']
+		$placeItems = $this->placement->advance(
+			firing: new \OCA\OpenRegister\Service\Flow\ItemFiring(transition: new Transition('split', ['split'], ['left', 'right']), items: [$item], taken: ['left', 'right']),
+			placeItems: ['split' => [$item]]
 		);
 
 		$this->assertCount(expectedCount: 1, haystack: $placeItems['left']);
@@ -196,17 +186,17 @@ final class FlowItemPlacementTest extends TestCase {
 		$marked = $this->workflowMarking(places: ['left' => 1, 'right' => 1]);
 		$this->assertSame(
 			['left' => [['json' => ['n' => 'left']]], 'right' => $seed],
-			$this->placement->seedPlaceItems(workflow: $marked, subject: new \stdClass(), items: $seed, stored: $stored)
+			$this->placement->seed(seed: new \OCA\OpenRegister\Service\Flow\ItemSeed(workflow: $marked, subject: new \stdClass(), items: $seed, stored: $stored))
 		);
 		$this->assertSame(
 			['left' => $seed, 'right' => $seed],
-			$this->placement->seedPlaceItems(workflow: $marked, subject: new \stdClass(), items: $seed)
+			$this->placement->seed(seed: new \OCA\OpenRegister\Service\Flow\ItemSeed(workflow: $marked, subject: new \stdClass(), items: $seed))
 		);
 
 		$empty = $this->workflowMarking(places: []);
 		$this->assertSame(
 			['start' => $seed],
-			$this->placement->seedPlaceItems(workflow: $empty, subject: new \stdClass(), items: $seed, stored: $stored)
+			$this->placement->seed(seed: new \OCA\OpenRegister\Service\Flow\ItemSeed(workflow: $empty, subject: new \stdClass(), items: $seed, stored: $stored))
 		);
 	}//end testSeedingPrefersStoredItemsAndFallsBackToTheInitialPlaces()
 

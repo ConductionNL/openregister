@@ -233,7 +233,10 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 		}
 
 		return $this->normaliseAll(
-			bookmarks: $this->findBookmarks(mapper: $mapper, userId: $user->getUID(), search: $search ?? '', tags: $tags ?? [])
+			bookmarks: $this->findBookmarks(
+				mapper: $mapper,
+				search: new BookmarkSearch(userId: $user->getUID(), text: $search ?? '', tags: $tags ?? [])
+			)
 		);
 	}//end getAvailableBookmarks()
 
@@ -373,16 +376,14 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 	/**
 	 * List the user's bookmarks matching the optional search and tags; a failure is logged and yields none.
 	 *
-	 * @param object            $mapper The NC Bookmarks BookmarkMapper.
-	 * @param string            $userId The current user's id.
-	 * @param string            $search Title/url substring filter; '' for none.
-	 * @param array<int,string> $tags   Tag filter; empty for none.
+	 * @param object         $mapper The NC Bookmarks BookmarkMapper.
+	 * @param BookmarkSearch $search Whose bookmarks, and the text and tag filters.
 	 *
 	 * @return iterable<object>
 	 */
-	private function findBookmarks(object $mapper, string $userId, string $search, array $tags): iterable {
+	private function findBookmarks(object $mapper, BookmarkSearch $search): iterable {
 		try {
-			return $mapper->findAll($userId, $this->queryParameters(search: $search, tags: $tags));
+			return $mapper->findAll($search->userId, $this->queryParameters(search: $search));
 		} catch (Throwable $e) {
 			$this->runtime->logger()->warning('BookmarkLinkService::getAvailableBookmarks failed: ' . $e->getMessage());
 			return [];
@@ -392,19 +393,18 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 	/**
 	 * Build the NC Bookmarks query parameters for a picker listing.
 	 *
-	 * @param string            $search Title/url substring filter; '' for none.
-	 * @param array<int,string> $tags   Tag filter; empty for none.
+	 * @param BookmarkSearch $search The text and tag filters.
 	 *
 	 * @return object
 	 */
-	private function queryParameters(string $search, array $tags): object {
+	private function queryParameters(BookmarkSearch $search): object {
 		$queryParameters = new \OCA\Bookmarks\QueryParameters();
-		if ($search !== '') {
-			$queryParameters->setSearch([$search]);
+		if ($search->text !== '') {
+			$queryParameters->setSearch([$search->text]);
 		}
 
-		if (count($tags) > 0) {
-			$queryParameters->setTags(array_values($tags));
+		if (count($search->tags) > 0) {
+			$queryParameters->setTags(array_values($search->tags));
 		}
 
 		return $queryParameters;

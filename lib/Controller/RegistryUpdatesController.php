@@ -31,6 +31,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\RegistryUpdatesControllerServices;
 use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionLifecycleInterface;
@@ -50,20 +52,32 @@ class RegistryUpdatesController extends Controller {
 	use HandlesExceptionsTrait;
 
 	/**
+	 * Applies the update.
+	 *
+	 * @var RegistrySubscriptionLifecycleInterface
+	 */
+	private readonly RegistrySubscriptionLifecycleInterface $subscriptions;
+
+	/**
+	 * Consumed by HandlesExceptionsTrait for server-side 500 logging.
+	 *
+	 * @var ?LoggerInterface
+	 */
+	private readonly ?LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app id.
-	 * @param IRequest $request The request.
-	 * @param RegistrySubscriptionLifecycleInterface $subscriptions Applies the update.
-	 * @param LoggerInterface|null $logger Consumed by HandlesExceptionsTrait for server-side 500 logging.
+	 * @param IRequest                          $request  The request.
+	 * @param RegistryUpdatesControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly RegistrySubscriptionLifecycleInterface $subscriptions,
-		private readonly ?LoggerInterface $logger = null,
+		RegistryUpdatesControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->subscriptions = $services->subscriptions;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**

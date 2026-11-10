@@ -22,7 +22,6 @@ final class ConfigurationsControllerFactory {
 	 * @param ConfigurationMapper $configurationMapper Constructor argument.
 	 * @param ConfigurationService $configurationService Constructor argument.
 	 * @param UploadService $uploadService Constructor argument.
-	 * @param ?string $userId Constructor argument.
 	 * @param IUserSession $userSession Constructor argument.
 	 * @param IGroupManager $groupManager Constructor argument.
 	 *
@@ -33,20 +32,23 @@ final class ConfigurationsControllerFactory {
 		\OCA\OpenRegister\Db\ConfigurationMapper $configurationMapper,
 		\OCA\OpenRegister\Service\ConfigurationService $configurationService,
 		\OCA\OpenRegister\Files\Service\UploadService $uploadService,
-		?string $userId,
 		\OCP\IUserSession $userSession,
 		\OCP\IGroupManager $groupManager,
 	): array {
 		return [
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ConfigurationsControllerServices(
-				configurationMapper: $configurationMapper,
-				configurationService: $configurationService,
+				records: new \OCA\OpenRegister\Service\Config\ConfigurationRecords(
+					configurationMapper: $configurationMapper,
+					configurationService: $configurationService,
+				),
 				uploadService: $uploadService,
-				userSession: $userSession,
+				session: new \OCA\OpenRegister\Controller\Support\ControllerSession(
+					userSession: $userSession,
+					groupManager: $groupManager,
+					logger: new \Psr\Log\NullLogger(),
+				),
 			),
-			$userId,
-			$groupManager,
 		];
 	}
 

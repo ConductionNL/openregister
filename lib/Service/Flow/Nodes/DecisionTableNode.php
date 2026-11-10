@@ -214,14 +214,11 @@ class DecisionTableNode extends LogicNodeBase implements IFlowNode, DecisionTabl
 	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
 	 */
 	public function validateConfig(array $config): void {
-		$table = $this->resolveTable(config: $config);
+		$check = new TableConfigCheck(config: $config, table: $this->resolveTable(config: $config));
 
-		$inputNames = $this->columnNames(columns: (array)($table['inputs'] ?? []));
-		$outputNames = $this->columnNames(columns: (array)($table['outputs'] ?? []));
-
-		$this->assertMapping(config: $config, key: 'inputMapping', declared: $inputNames);
-		$this->assertMapping(config: $config, key: 'outputMapping', declared: $outputNames);
-		$this->assertDefaults(config: $config, table: $table, outputNames: $outputNames);
+		$this->assertMapping(check: $check, side: 'input');
+		$this->assertMapping(check: $check, side: 'output');
+		$this->assertDefaults(check: $check);
 
 		if (array_key_exists('resultKey', $config) === true) {
 			$this->assertPath(path: $config['resultKey'], where: 'resultKey');
@@ -247,26 +244,39 @@ class DecisionTableNode extends LogicNodeBase implements IFlowNode, DecisionTabl
 	 * @throws DecisionEvaluationException When an item cannot be decided and no default row is configured.
 	 *
 	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-the-step-is-deterministic-and-never-suspends
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) `$context` is part of the
-	 * node contract; a deterministic rule step deliberately reads none of it.
-	 * @SuppressWarnings(PHPMD.StaticAccess) `FlowItems::item()` and
-	 * `FlowValueTemplate::render()` are the engine's canonical constructors.
 	 */
 	public function execute(array $items, array $config, array $context): array {
-		if ($items === []) {
+		return $this->decideItems(step: new NodeInvocation(items: $items, config: $config, context: $context));
+	}//end execute()
+
+	/**
+	 * Decide every item; see {@see self::execute()}. The run metadata is not read.
+	 *
+	 * @param NodeInvocation $step The items and the step configuration.
+	 *
+	 * @return array The output items, one per input item.
+	 *
+	 * @throws UnexpectedValueException When the configuration is refused.
+	 * @throws DecisionEvaluationException When an item cannot be decided and no default row is configured.
+	 *
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-the-step-is-deterministic-and-never-suspends
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) `FlowItems::item()` is the engine's canonical constructor.
+	 */
+	private function decideItems(NodeInvocation $step): array {
+		if ($step->items === []) {
 			return [];
 		}
 
 		// A flow written by hand or imported past the editor must meet the
 		// same bar as one saved through it, so the refusals run here too —
 		// the same belt-and-braces ObjectReadNode wears.
-		$this->validateConfig(config: $config);
+		$this->validateConfig(config: $step->config);
 
-		$plan = new DecisionTablePlan(table: $this->resolveTable(config: $config), config: $config);
+		$plan = new DecisionTablePlan(table: $this->resolveTable(config: $step->config), config: $step->config);
 
 		$out = [];
-		foreach ($items as $index => $item) {
+		foreach ($step->items as $index => $item) {
 			$out[] = FlowItems::item(
 				json: $this->decidedRecord(plan: $plan, json: (array)($item[FlowItems::JSON] ?? [])),
 				binary: (array)($item[FlowItems::BINARY] ?? []),
@@ -275,7 +285,7 @@ class DecisionTableNode extends LogicNodeBase implements IFlowNode, DecisionTabl
 		}
 
 		return $out;
-	}//end execute()
+	}//end decideItems()
 
 	/**
 	 * One item's record with the decision written into it.
@@ -501,9 +511,9 @@ class DecisionTableNode extends LogicNodeBase implements IFlowNode, DecisionTabl
 	 * data choose the write position on a RULE step, which no migrating
 	 * table needs and which is refused rather than half-supported.
 	 *
-	 * @param array<string, mixed> $config The step configuration.
-	 * @param string $key `inputMapping` or `outputMapping`.
-	 * @param array<int, string> $declared The declared names for that side.
+	 * @param TableConfigCheck $check The step configuration and its table.
+	 * @param string           $side  `input` or `output`: checks `<side>Mapping`
+	 *                                against the table's declared `<side>s`.
 	 *
 	 * @return void
 	 *
@@ -511,7 +521,9 @@ class DecisionTableNode extends LogicNodeBase implements IFlowNode, DecisionTabl
 	 *
 	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
 	 */
-	private function assertMapping(array $config, string $key, array $declared): void {
+	private function assertMapping(TableConfigCheck $check, string $side): void {
+		$config = $check->config;
+		$key    = $side . 'Mapping';
 		if (array_key_exists($key, $config) === false) {
 			return;
 		}
@@ -522,6 +534,7 @@ class DecisionTableNode extends LogicNodeBase implements IFlowNode, DecisionTabl
 			);
 		}
 
+		$declared = $this->columnNames(columns: (array)($check->table[$side . 's'] ?? []));
 		foreach ($config[$key] as $name => $path) {
 			if (in_array((string)$name, $declared, true) === false) {
 				throw new UnexpectedValueException(
@@ -543,9 +556,7 @@ class DecisionTableNode extends LogicNodeBase implements IFlowNode, DecisionTabl
 	 * list is a real answer, so a default would be unreachable configuration
 	 * that looks like behaviour.
 	 *
-	 * @param array<string, mixed> $config The step configuration.
-	 * @param array<string, mixed> $table The table definition.
-	 * @param array<int, string> $outputNames The declared output names.
+	 * @param TableConfigCheck $check The step configuration and its table.
 	 *
 	 * @return void
 	 *
@@ -553,14 +564,14 @@ class DecisionTableNode extends LogicNodeBase implements IFlowNode, DecisionTabl
 	 *
 	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-no-match-takes-the-authors-explicit-default-or-fails-loudly
 	 */
-	private function assertDefaults(array $config, array $table, array $outputNames): void {
-		if (array_key_exists('defaultOutputs', $config) === false) {
+	private function assertDefaults(TableConfigCheck $check): void {
+		if (array_key_exists('defaultOutputs', $check->config) === false) {
 			return;
 		}
 
-		$defaults = $config['defaultOutputs'];
-		$this->assertDefaultsShape(defaults: $defaults, table: $table);
-		$this->assertDefaultsCover(defaults: $defaults, outputNames: $outputNames);
+		$defaults = $check->config['defaultOutputs'];
+		$this->assertDefaultsShape(defaults: $defaults, table: $check->table);
+		$this->assertDefaultsCover(defaults: $defaults, outputNames: $this->columnNames(columns: (array)($check->table['outputs'] ?? [])));
 
 	}//end assertDefaults()
 

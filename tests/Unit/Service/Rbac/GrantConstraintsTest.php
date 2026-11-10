@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Rbac\ConstraintPoint;
 use OCA\OpenRegister\Service\Rbac\GrantConstraints;
 use PHPUnit\Framework\TestCase;
 
@@ -92,7 +93,7 @@ class GrantConstraintsTest extends TestCase {
 
 		$this->assertSame(
 			$block,
-			$this->constraints->apply(authorization: $block, area: $this->area(), now: $this->now)
+			$this->constraints->applyAt(authorization: $block, point: new ConstraintPoint(area: $this->area(), now: $this->now))
 		);
 		$this->assertFalse($this->constraints->declaresAnyConstraint(authorization: $block));
 	}//end testABlockWithoutConstraintsIsUnchanged()
@@ -110,7 +111,7 @@ class GrantConstraintsTest extends TestCase {
 			],
 		];
 
-		$filtered = $this->constraints->apply(authorization: $block, area: $this->area(), now: $this->now);
+		$filtered = $this->constraints->applyAt(authorization: $block, point: new ConstraintPoint(area: $this->area(), now: $this->now));
 
 		$this->assertSame(['behandelaars'], $filtered['read'], 'the expired entry survived, or the control went with it');
 	}//end testAGrantWhoseEndHasPassedIsGone()
@@ -126,7 +127,7 @@ class GrantConstraintsTest extends TestCase {
 	public function testAGrantWhoseEndIsAheadStillAnswers(): void {
 		$block = ['read' => [['group' => 'waarnemers', 'until' => '2026-09-15T17:00:00+02:00']]];
 
-		$filtered = $this->constraints->apply(authorization: $block, area: $this->area(), now: $this->now);
+		$filtered = $this->constraints->applyAt(authorization: $block, point: new ConstraintPoint(area: $this->area(), now: $this->now));
 
 		$this->assertCount(1, $filtered['read']);
 		$this->assertSame('waarnemers', $filtered['read'][0]['group']);
@@ -145,7 +146,7 @@ class GrantConstraintsTest extends TestCase {
 
 		$this->assertSame(
 			[],
-			$this->constraints->apply(authorization: $block, area: $this->area(), now: $this->now)['read']
+			$this->constraints->applyAt(authorization: $block, point: new ConstraintPoint(area: $this->area(), now: $this->now))['read']
 		);
 	}//end testAnUnreadableEndIsTreatedAsPassed()
 
@@ -160,7 +161,7 @@ class GrantConstraintsTest extends TestCase {
 			'deny' => ['read' => [['group' => 'behandelaars', 'until' => '2026-09-01T00:00:00+02:00']]],
 		];
 
-		$filtered = $this->constraints->apply(authorization: $block, area: $this->area(), now: $this->now);
+		$filtered = $this->constraints->applyAt(authorization: $block, point: new ConstraintPoint(area: $this->area(), now: $this->now));
 
 		$this->assertSame([], $filtered['deny']['read'], 'an expired deny still removes a verb');
 		$this->assertSame(['behandelaars'], $filtered['read']);
@@ -178,13 +179,12 @@ class GrantConstraintsTest extends TestCase {
 			'manage' => [['group' => 'beheerders', 'scopedTo' => ['registers' => ['zaken']]]],
 		];
 
-		$here = $this->constraints->apply(authorization: $block, area: $this->area(), now: $this->now);
+		$here = $this->constraints->applyAt(authorization: $block, point: new ConstraintPoint(area: $this->area(), now: $this->now));
 		$this->assertCount(1, $here['manage'], 'the scoped grant does not reach the register it names');
 
-		$elsewhere = $this->constraints->apply(
+		$elsewhere = $this->constraints->applyAt(
 			authorization: $block,
-			area: ['register' => 'besluiten', 'schema' => 'besluit'],
-			now: $this->now
+			point: new ConstraintPoint(area: ['register' => 'besluiten', 'schema' => 'besluit'], now: $this->now)
 		);
 		$this->assertSame([], $elsewhere['manage'], 'the scoped grant administers a register it does not name');
 	}//end testScopedManageDoesNotReachAnotherRegister()
@@ -203,7 +203,7 @@ class GrantConstraintsTest extends TestCase {
 
 		$this->assertSame(
 			[],
-			$this->constraints->apply(authorization: $block, area: $this->area(), now: $this->now)['update'],
+			$this->constraints->applyAt(authorization: $block, point: new ConstraintPoint(area: $this->area(), now: $this->now))['update'],
 			'the right register was enough, so the schema half of the area does nothing'
 		);
 	}//end testAnAreaNamingBothMustMatchBoth()
@@ -221,7 +221,7 @@ class GrantConstraintsTest extends TestCase {
 
 		$this->assertSame(
 			[],
-			$this->constraints->apply(authorization: $block, area: $this->area(), now: $this->now)['read']
+			$this->constraints->applyAt(authorization: $block, point: new ConstraintPoint(area: $this->area(), now: $this->now))['read']
 		);
 	}//end testAnEmptyAreaCoversNothing()
 
@@ -236,10 +236,9 @@ class GrantConstraintsTest extends TestCase {
 	public function testAnAreaMayBeNamedById(): void {
 		$block = ['read' => [['group' => 'behandelaars', 'scopedTo' => ['registers' => [7]]]]];
 
-		$filtered = $this->constraints->apply(
+		$filtered = $this->constraints->applyAt(
 			authorization: $block,
-			area: ['register' => '7', 'schema' => 'zaak'],
-			now: $this->now
+			point: new ConstraintPoint(area: ['register' => '7', 'schema' => 'zaak'], now: $this->now)
 		);
 
 		$this->assertCount(1, $filtered['read']);
@@ -261,7 +260,7 @@ class GrantConstraintsTest extends TestCase {
 			],
 		];
 
-		$filtered = $this->constraints->apply(authorization: $block, area: $this->area(), now: $this->now);
+		$filtered = $this->constraints->applyAt(authorization: $block, point: new ConstraintPoint(area: $this->area(), now: $this->now));
 
 		$this->assertArrayNotHasKey('waarnemer', $filtered['roles'], 'the expired role assignment survived');
 		$this->assertSame(['behandelaars'], $filtered['roles']['behandelaar'], 'the control role went with it');

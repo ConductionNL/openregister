@@ -52,8 +52,7 @@ class ViewsControllerTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->viewers = new ViewerReachResolver(
-			userSession: $this->userSession,
-			groupManager: $this->groupManager,
+			caller: new \OCA\OpenRegister\Service\Rbac\CallerContext($this->userSession, $this->groupManager),
 			logger: $this->logger
 		);
 

@@ -170,18 +170,14 @@ class ExampleSetAuditEntries extends ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-a-history-by-named-people
 	 */
 	public function write(ExampleSetRow $row): array {
-		$app = $row->app;
-		$key = $row->key;
-		$data = $row->data;
-		$objectUuid = (string) $data['object'];
+		$objectUuid = (string) $row->data['object'];
 		$object     = $this->container->get(PartyService::class)->findUnscoped(uuid: $objectUuid);
 		if ($object === null) {
 			return ['error' => 'no object "'.$objectUuid.'" to give the entry', 'entry' => null];
 		}
 
-		$mapper = $this->mapper();
 		try {
-			$id = $this->writeOnce(mapper: $mapper, object: $object, data: $data, run: 'example-set:'.$app.'/'.$key);
+			$id = $this->writeOnce(row: $row, object: $object);
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];
 		}
@@ -192,34 +188,43 @@ class ExampleSetAuditEntries extends ExampleSetEngineRows {
 	/**
 	 * The id of the entry this row wrote: the one an earlier install wrote, or one written now.
 	 *
-	 * @param AuditTrailMapperInterface $mapper The audit trail mapper.
-	 * @param ObjectEntity              $object The object.
-	 * @param array<string, mixed>      $data   The row's fields.
-	 * @param string                    $run    The row's cause run, `example-set:<app>/<key>`.
+	 * @param ExampleSetRow $row    The row: its app and key (its cause run) and its fields.
+	 * @param ObjectEntity  $object The object.
 	 *
 	 * @return int
 	 */
-	private function writeOnce(AuditTrailMapperInterface $mapper, ObjectEntity $object, array $data, string $run): int {
-		$id = $this->earlierId(mapper: $mapper, objectUuid: (string) $data['object'], action: (string) $data['action'], run: $run);
+	private function writeOnce(ExampleSetRow $row, ObjectEntity $object): int {
+		$mapper = $this->mapper();
+		$id     = $this->earlierId(mapper: $mapper, row: $row);
 		if ($id !== null) {
 			return $id;
 		}
 
-		return (int) $mapper->insertAuditTrails([$this->trail(object: $object, data: $data, run: $run)])[0]->getId();
+		return (int) $mapper->insertAuditTrails([$this->trail(row: $row, object: $object)])[0]->getId();
 	}//end writeOnce()
 
 	/**
-	 * The id of the entry an earlier install wrote for this row (the same cause run), or null.
+	 * The row's cause run, `example-set:<app>/<key>`.
 	 *
-	 * @param AuditTrailMapperInterface $mapper     The audit trail mapper.
-	 * @param string                    $objectUuid The object's uuid.
-	 * @param string                    $action     The entry's action.
-	 * @param string                    $run        The row's cause run, `example-set:<app>/<key>`.
+	 * @param ExampleSetRow $row The row.
+	 *
+	 * @return string
+	 */
+	private function causeRun(ExampleSetRow $row): string {
+		return 'example-set:'.$row->app.'/'.$row->key;
+	}//end causeRun()
+
+	/**
+	 * The id of the entry an earlier install wrote for this row (the same cause run, object and action), or null.
+	 *
+	 * @param AuditTrailMapperInterface $mapper The audit trail mapper.
+	 * @param ExampleSetRow             $row    The row: its cause run, and the object and action in its fields.
 	 *
 	 * @return int|null
 	 */
-	private function earlierId(AuditTrailMapperInterface $mapper, string $objectUuid, string $action, string $run): ?int {
-		foreach ($mapper->findForObjectByAction($objectUuid, [$action], 500) as $earlier) {
+	private function earlierId(AuditTrailMapperInterface $mapper, ExampleSetRow $row): ?int {
+		$run = $this->causeRun(row: $row);
+		foreach ($mapper->findForObjectByAction((string) $row->data['object'], [(string) $row->data['action']], 500) as $earlier) {
 			if ($earlier->getCauseRun() === $run) {
 				return (int) $earlier->getId();
 			}
@@ -231,13 +236,13 @@ class ExampleSetAuditEntries extends ExampleSetEngineRows {
 	/**
 	 * The audit entry a row declares, by the named person, as an import of this row.
 	 *
-	 * @param ObjectEntity         $object The object.
-	 * @param array<string, mixed> $data   The row's fields.
-	 * @param string               $run    The row's cause run.
+	 * @param ExampleSetRow $row    The row: its cause run and its fields.
+	 * @param ObjectEntity  $object The object.
 	 *
 	 * @return AuditTrail
 	 */
-	private function trail(ObjectEntity $object, array $data, string $run): AuditTrail {
+	private function trail(ExampleSetRow $row, ObjectEntity $object): AuditTrail {
+		$data  = $row->data;
 		$user  = (string) $data['user'];
 		$trail = $this->trailOn(object: $object, uuid: (string) $data['object']);
 		$trail->setAction((string) $data['action']);
@@ -246,7 +251,7 @@ class ExampleSetAuditEntries extends ExampleSetEngineRows {
 		$trail->setUserName($this->container->get(IUserManager::class)->get($user)?->getDisplayName() ?? $user);
 		$trail->setCreated(new DateTime((string) $data['at']));
 		$trail->setCause(WriteCause::IMPORT);
-		$trail->setCauseRun($run);
+		$trail->setCauseRun($this->causeRun(row: $row));
 
 		return $trail;
 	}//end trail()

@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Lifecycle\StateMove;
+use OCA\OpenRegister\Service\Lifecycle\SchemaReading;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
@@ -49,11 +51,7 @@ class LifecycleEditReaderBehaviourTest extends TestCase {
 	}
 
 	private function reader(SchemaMapperInterface $mapper, ?LoggerInterface $logger=null): LifecycleEditReader {
-		return new LifecycleEditReader(
-			$mapper,
-			$this->createMock(LifecycleTransitionResolverInterface::class),
-			$logger ?? $this->createMock(LoggerInterface::class)
-		);
+		return new LifecycleEditReader(new SchemaReading($mapper, $logger ?? $this->createMock(LoggerInterface::class)), $this->createMock(LifecycleTransitionResolverInterface::class));
 	}
 
 	public function testAnEditWithoutAStoredObjectHasNoLifecycleEdit(): void {
@@ -134,7 +132,7 @@ class LifecycleEditReaderBehaviourTest extends TestCase {
 		$transitions = ['publish' => ['from' => 'draft', 'to' => 'final']];
 		$mapper      = $this->createMock(SchemaMapperInterface::class);
 		$mapper->method('find')->willReturn($this->schema(['x-openregister-lifecycle' => ['field' => 'status', 'transitions' => $transitions]]));
-		$reader = new LifecycleEditReader($mapper, $resolver, $this->createMock(LoggerInterface::class));
+		$reader = new LifecycleEditReader(new SchemaReading($mapper, $this->createMock(LoggerInterface::class)), $resolver);
 		$stored = $this->object('7');
 		$stored->setUuid('u-1');
 		$stored->setObject(['status' => 'draft']);
@@ -147,7 +145,7 @@ class LifecycleEditReaderBehaviourTest extends TestCase {
 	public function testAMatchedTransitionBecomesAnAttemptWithItsActionAndSpec(): void {
 		$resolver = $this->createMock(LifecycleTransitionResolverInterface::class);
 		$resolver->expects($this->once())->method('resolve')
-			->with(['publish' => ['from' => 'draft', 'to' => 'final']], 'u-1', 'draft', 'final')
+			->with(['publish' => ['from' => 'draft', 'to' => 'final']], new StateMove('u-1', 'draft', 'final'))
 			->willReturn(['publish', ['from' => 'draft', 'to' => 'final']]);
 		[$reader, $edit] = $this->editWith($resolver);
 

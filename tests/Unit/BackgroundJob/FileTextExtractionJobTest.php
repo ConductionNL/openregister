@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime;
 use OCA\OpenRegister\BackgroundJob\FileTextExtractionJob;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -69,9 +70,7 @@ class FileTextExtractionJobTest extends TestCase {
 		$this->config = $this->createMock(IAppConfig::class);
 
 		$this->job = new FileTextExtractionJob(
-			$this->timeFactory,
-			$this->config,
-			$this->logger,
+			new ConfiguredJobRuntime($this->timeFactory, $this->config, $this->logger),
 			$this->textExtractor
 		);
 	}

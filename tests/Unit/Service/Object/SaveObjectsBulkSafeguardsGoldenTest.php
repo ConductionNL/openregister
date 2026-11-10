@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\SafeguardBatchRun;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\BulkRowRules;
 use OCA\OpenRegister\Service\Object\BulkRowChecks;
@@ -230,15 +231,14 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 			'statistics' => ['totalProcessed' => count($case['rows']), 'saved' => 0, 'updated' => 0, 'unchanged' => 0, 'invalid' => 0, 'errors' => 0],
 		];
 		$method = new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards');
-		$passed = $method->invokeArgs(
-			$this->handler(case: $case, logger: $logger),
-			[
-				$case['rows'],
-				new BulkBatchDefaults($this->defaultRegister(register: ($case['register'] ?? 'object')), $this->defaultSchema(case: $case)),
-				['rbac' => ($case['rbac'] ?? true), 'validation' => ($case['validation'] ?? false)],
-				&$result,
-			]
+		$batch  = new SafeguardBatchRun(
+			objects: $case['rows'],
+			defaults: new BulkBatchDefaults($this->defaultRegister(register: ($case['register'] ?? 'object')), $this->defaultSchema(case: $case)),
+			flags: ['rbac' => ($case['rbac'] ?? true), 'validation' => ($case['validation'] ?? false)],
+			result: $result
 		);
+		$passed = $method->invokeArgs($this->handler(case: $case, logger: $logger), [$batch]);
+		$result = $batch->result;
 
 		return ['passed' => $passed, 'result' => $result, 'calls' => $this->calls, 'log' => $logger->lines];
 	}//end runCase()

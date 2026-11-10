@@ -86,7 +86,7 @@ final class IpRange {
 			return false;
 		}
 
-		return self::sharesPrefix(left: $packedAddress, right: $packedNetwork, bits: $bits);
+		return self::prefix(packed: $packedAddress, bits: $bits) === self::prefix(packed: $packedNetwork, bits: $bits);
 
 	}//end matches()
 
@@ -152,32 +152,25 @@ final class IpRange {
 	}//end prefixBits()
 
 	/**
-	 * Whether two packed addresses agree on their first N bits.
+	 * The leading bits of a packed address, as a string that compares equal
+	 * for two addresses exactly when those bits are equal.
 	 *
-	 * @param string $left The packed address.
-	 * @param string $right The packed network.
-	 * @param int $bits How many leading bits must agree.
+	 * @param string $packed The packed address.
+	 * @param int    $bits   The prefix length, at most the address length in bits.
 	 *
-	 * @return bool True when they agree.
+	 * @return string The whole leading bytes, then the masked partial byte when the prefix ends inside one.
 	 */
-	private static function sharesPrefix(string $left, string $right, int $bits): bool {
-		if ($bits === 0) {
-			return true;
-		}
-
+	private static function prefix(string $packed, int $bits): string {
 		$wholeBytes = intdiv($bits, 8);
-		if ($wholeBytes > 0 && substr($left, 0, $wholeBytes) !== substr($right, 0, $wholeBytes)) {
-			return false;
-		}
-
+		$prefix = substr($packed, 0, $wholeBytes);
 		$remainder = ($bits % 8);
 		if ($remainder === 0) {
-			return true;
+			return $prefix;
 		}
 
 		$mask = (0xFF << (8 - $remainder)) & 0xFF;
 
-		return ((ord($left[$wholeBytes]) & $mask) === (ord($right[$wholeBytes]) & $mask));
+		return $prefix . chr(ord($packed[$wholeBytes]) & $mask);
 
-	}//end sharesPrefix()
+	}//end prefix()
 }//end class

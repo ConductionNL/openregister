@@ -48,10 +48,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\CredentialOauth2ControllerServices;
 use OCA\OpenRegister\Controller\Support\OAuth2StartRequest;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\OAuth2ClientNotConfiguredException;
+use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRecord;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepositoryInterface;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectServiceInterface;
 use OCA\OpenRegister\Service\Credential\OAuth2EndpointsInterface;
@@ -174,7 +176,6 @@ class CredentialOauth2Controller extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app id.
 	 * @param IRequest $request The current request.
 	 * @param CredentialOauth2ControllerServices $services The credential oauth2 controller services.
 	 * @param OAuth2InstanceHostInterface $instanceHost The per-account host check, a guard kept as its own parameter.
@@ -191,12 +192,11 @@ class CredentialOauth2Controller extends Controller {
 	 * is the security property, not an accident of layering.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		CredentialOauth2ControllerServices $services,
 		OAuth2InstanceHostInterface $instanceHost,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->connect = $services->domain->connect;
 		$this->states = $services->domain->states;
 		$this->relay = $services->domain->relay;
@@ -324,11 +324,7 @@ class CredentialOauth2Controller extends Controller {
 			$url = $this->connect->authorizationUrl(
 				provider: $provider,
 				claims: $claims,
-				request: $this->connect->authorizationRequest(
-					redirectUri: $this->endpoints->callbackUrl(),
-					state: $issued['state'],
-					challenge: $issued['challenge']
-				)
+				request: $this->connect->authorizationRequest(redirectUri: $this->endpoints->callbackUrl(), issued: $issued)
 			);
 		} catch (OAuth2ClientNotConfiguredException $notConfigured) {
 			$this->withdrawState(nonce: $nonce);
@@ -543,7 +539,7 @@ class CredentialOauth2Controller extends Controller {
 		}
 
 		try {
-			$this->connections->disable(credentialId: $uuid, data: $data, lastError: $lastError);
+			$this->connections->disable(connection: new OAuth2ConnectionRecord(credentialId: $uuid, data: $data), lastError: $lastError);
 		} catch (Throwable $failure) {
 			return new JSONResponse(['message' => 'Unable to disconnect'], Http::STATUS_INTERNAL_SERVER_ERROR);
 		}

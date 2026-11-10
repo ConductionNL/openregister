@@ -41,9 +41,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Authorization;
 
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\Rbac\McpScope;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
@@ -102,14 +101,12 @@ class GrantableRightsIndex implements GrantableRightsIndexInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapperInterface    $schemaMapper   Source of the schemas to walk.
-	 * @param RegisterMapperInterface  $registerMapper Source of register → schema membership.
-	 * @param ICacheFactory   $cacheFactory   Distributed cache for the built index.
-	 * @param LoggerInterface $logger         Diagnostics.
+	 * @param SchemaCatalogInterface $catalog      Schemas to walk and register → schema membership.
+	 * @param ICacheFactory          $cacheFactory Distributed cache for the built index.
+	 * @param LoggerInterface        $logger       Diagnostics.
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly ICacheFactory $cacheFactory,
 		private readonly LoggerInterface $logger,
 	) {
@@ -185,7 +182,7 @@ class GrantableRightsIndex implements GrantableRightsIndexInterface {
 		$registersBySchemaId = $this->registersBySchemaId();
 
 		$entries = [];
-		foreach ($this->schemaMapper->findAll(_rbac: false) as $schema) {
+		foreach ($this->catalog->schemas()->findAll(_rbac: false) as $schema) {
 			$offered = $this->offeredActions(schema: $schema);
 			if ($offered === []) {
 				continue;
@@ -311,7 +308,7 @@ class GrantableRightsIndex implements GrantableRightsIndexInterface {
 	private function registersBySchemaId(): array {
 		$map = [];
 
-		foreach ($this->registerMapper->findAll() as $register) {
+		foreach ($this->catalog->registers()->findAll() as $register) {
 			$entry = [
 				'id' => $register->getId(),
 				'application' => $register->getApplication(),

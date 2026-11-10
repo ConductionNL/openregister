@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\JobRuntime;
 use OCA\OpenRegister\BackgroundJob\HandoffQueueDrainJob;
 use OCA\OpenRegister\Service\Handoff\HandoffServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -45,7 +46,7 @@ class HandoffQueueDrainJobTest extends TestCase {
 	protected function setUp(): void {
 		$this->handoff = $this->createMock(HandoffServiceInterface::class);
 		$this->logger  = $this->createMock(LoggerInterface::class);
-		$this->job     = new HandoffQueueDrainJob($this->createMock(ITimeFactory::class), $this->handoff, $this->logger);
+		$this->job     = new HandoffQueueDrainJob(new JobRuntime($this->createMock(ITimeFactory::class), $this->logger), $this->handoff);
 	}
 
 	private function runJob(): void {

@@ -31,6 +31,8 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 
 /**
  * Unit tests for McpResourcesService.
@@ -63,8 +65,7 @@ class McpResourcesServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new McpResourcesService(
-			$this->registerMapper,
-			$this->schemaMapper,
+			new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->createMock(MagicMapperInterface::class)),
 			$this->objectService,
 			$this->logger
 		);

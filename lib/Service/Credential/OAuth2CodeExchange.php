@@ -53,10 +53,7 @@ class OAuth2CodeExchange {
 	/**
 	 * Perform the authorization-code exchange.
 	 *
-	 * @param array<string, mixed> $provider The catalogue provider entry.
-	 * @param array{code: string, code_verifier: string, redirect_uri: string} $grant The code, PKCE verifier and callback.
-	 * @param array{clientId: string, clientSecret: string|null} $client The resolved client.
-	 * @param string|null $instanceBaseUrl The pinned host, when the provider has one.
+	 * @param OAuth2CodeRedemption $redemption The provider, grant, client and pinned host.
 	 *
 	 * @return array<string, mixed> The decoded token response.
 	 *
@@ -64,13 +61,13 @@ class OAuth2CodeExchange {
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-callback-exchanges-the-code-and-mints-a-token-set-credential
 	 */
-	public function redeem(array $provider, array $grant, array $client, ?string $instanceBaseUrl): array {
-		$config = new OAuth2ProviderConfig(provider: $provider);
-		$options = $this->options(config: $config, grant: $grant, client: $client);
+	public function redeem(OAuth2CodeRedemption $redemption): array {
+		$config = new OAuth2ProviderConfig(provider: $redemption->provider);
+		$options = $this->options(config: $config, redemption: $redemption);
 
 		try {
 			$response = $this->clientService->newClient()->post(
-				$config->endpoint(key: 'tokenEndpoint', instanceBaseUrl: $instanceBaseUrl),
+				$config->endpoint(key: 'tokenEndpoint', instanceBaseUrl: $redemption->instanceBaseUrl),
 				$options
 			);
 			$decoded = json_decode((string)$response->getBody(), true);
@@ -84,22 +81,22 @@ class OAuth2CodeExchange {
 	/**
 	 * The request options: the form, and basic auth where the provider wants it.
 	 *
-	 * @param OAuth2ProviderConfig $config The provider's oauth2 block.
-	 * @param array{code: string, code_verifier: string, redirect_uri: string} $grant The code, PKCE verifier and callback.
-	 * @param array{clientId: string, clientSecret: string|null} $client The resolved client.
+	 * @param OAuth2ProviderConfig $config     The provider's oauth2 block.
+	 * @param OAuth2CodeRedemption $redemption The grant and the resolved client.
 	 *
 	 * @return array<string, mixed> The HTTP client options.
 	 *
 	 * @spec exclude private request builder with no behaviour of its own
 	 */
-	private function options(OAuth2ProviderConfig $config, array $grant, array $client): array {
+	private function options(OAuth2ProviderConfig $config, OAuth2CodeRedemption $redemption): array {
+		$client = $redemption->client;
 		$secret = $client['clientSecret'];
 		$basic = ($secret !== null && $config->usesBasicClientAuth() === true);
 
-		$form = ['grant_type' => 'authorization_code', 'code' => $grant['code'], 'redirect_uri' => $grant['redirect_uri']];
+		$form = ['grant_type' => 'authorization_code', 'code' => $redemption->grant->code, 'redirect_uri' => $redemption->grant->redirectUri];
 		$form['client_id'] = $client['clientId'];
 		if ($config->usesPkce() === true) {
-			$form['code_verifier'] = $grant['code_verifier'];
+			$form['code_verifier'] = $redemption->grant->verifier;
 		}
 
 		if ($secret !== null && $basic === false) {
@@ -107,27 +104,12 @@ class OAuth2CodeExchange {
 		}
 
 		$options = ['body' => $form, 'headers' => ['Accept' => 'application/json'], 'timeout' => 20];
-		return $this->withBasicAuth(options: $options, client: $client, basic: $basic);
-	}//end options()
-
-	/**
-	 * Add basic client authentication to the options when the provider wants it.
-	 *
-	 * @param array<string, mixed> $options The HTTP client options.
-	 * @param array{clientId: string, clientSecret: string|null} $client The resolved client.
-	 * @param boolean $basic Whether the client authenticates with basic auth.
-	 *
-	 * @return array<string, mixed> The options.
-	 *
-	 * @spec exclude private request builder with no behaviour of its own
-	 */
-	private function withBasicAuth(array $options, array $client, bool $basic): array {
 		if ($basic === true) {
-			$options['auth'] = [$client['clientId'], $client['clientSecret']];
+			$options['auth'] = [$client['clientId'], $secret];
 		}
 
 		return $options;
-	}//end withBasicAuth()
+	}//end options()
 
 	/**
 	 * Refuse a token response that is not JSON or names an error.

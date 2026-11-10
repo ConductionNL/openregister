@@ -49,6 +49,7 @@ use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSecrets;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
+use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUseLog;
@@ -172,14 +173,16 @@ class AccessLinkGoldenTest extends TestCase {
 
 		$before = new DateTime();
 		$minted = $this->service()->mint(
-			userId: '  owner  ',
-			subjectType: ' OBJECT ',
-			subjectId: '  object-uuid  ',
-			terms: new AccessLinkTerms(
-				capabilities: ['Upload', ' ', 'comment', 'READ', 'upload'],
-				expiresAt: '+7 days',
-				password: ' geheim ',
-				label: '  Advice request  '
+			new LinkMintRequest(
+				minter: '  owner  ',
+				subjectType: ' OBJECT ',
+				subjectId: '  object-uuid  ',
+				terms: new AccessLinkTerms(
+					capabilities: ['Upload', ' ', 'comment', 'READ', 'upload'],
+					expiresAt: '+7 days',
+					password: ' geheim ',
+					label: '  Advice request  '
+				)
 			)
 		);
 		$after = new DateTime();
@@ -219,13 +222,15 @@ class AccessLinkGoldenTest extends TestCase {
 		$this->hasher->expects($this->never())->method('hash');
 
 		$minted = $this->service()->mint(
-			userId: 'owner',
-			subjectType: AccessLink::SUBJECT_FILE,
-			subjectId: 'object-uuid/12',
-			terms: new AccessLinkTerms(
-				expiresAt: '+1 day',
-				password: '',
-				label: '   '
+			new LinkMintRequest(
+				minter: 'owner',
+				subjectType: AccessLink::SUBJECT_FILE,
+				subjectId: 'object-uuid/12',
+				terms: new AccessLinkTerms(
+					expiresAt: '+1 day',
+					password: '',
+					label: '   '
+				)
 			)
 		);
 
@@ -318,14 +323,16 @@ class AccessLinkGoldenTest extends TestCase {
 
 		try {
 			$this->service()->mint(
-				userId: $request['userId'],
-				subjectType: $request['subjectType'],
-				subjectId: $request['subjectId'],
-				terms: new AccessLinkTerms(
-					capabilities: $request['capabilities'],
-					expiresAt: $request['expiresAt'],
-					password: 'geheim',
-					label: 'label'
+				new LinkMintRequest(
+					minter: $request['userId'],
+					subjectType: $request['subjectType'],
+					subjectId: $request['subjectId'],
+					terms: new AccessLinkTerms(
+						capabilities: $request['capabilities'],
+						expiresAt: $request['expiresAt'],
+						password: 'geheim',
+						label: 'label'
+					)
 				)
 			);
 			$this->fail('The mint was not refused.');

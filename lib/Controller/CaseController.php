@@ -41,11 +41,15 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\CaseControllerServices;
+use OCA\OpenRegister\Controller\Support\CasePlanRequest;
+use OCA\OpenRegister\Controller\Support\CaseTransitionCommand;
 use OCA\OpenRegister\Exception\CaseAccessDeniedException;
 use OCA\OpenRegister\Exception\CaseCascadeBoundException;
 use OCA\OpenRegister\Exception\CaseTransitionException;
 use OCA\OpenRegister\Exception\CaseValidationException;
+use OCA\OpenRegister\Service\Case\CaseAnchor;
 use OCA\OpenRegister\Service\Case\CasePlanAuthorizationServiceInterface;
+use OCA\OpenRegister\Service\Case\CasePlanProvenance;
 use OCA\OpenRegister\Service\Case\CasePlanServiceInterface;
 use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapperInterface;
 use OCP\AppFramework\Controller;
@@ -202,19 +206,35 @@ class CaseController extends Controller {
 		?string $flowUuid = null,
 		?int $flowVersion = null,
 	): JSONResponse {
+		$anchor = new CaseAnchor(objectUuid: $objectUuid, registerId: $register, schemaId: $schema);
+		$provenance = new CasePlanProvenance(flowUuid: $flowUuid, flowVersion: $flowVersion);
+
+		return $this->createPlan(request: new CasePlanRequest(anchor: $anchor, definition: ($definition ?? []), provenance: $provenance));
+	}//end create()
+
+	/**
+	 * Create the requested plan for the acting user.
+	 *
+	 * @param CasePlanRequest $request The anchor, definition and provenance.
+	 *
+	 * @return JSONResponse The plan, 201.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 */
+	private function createPlan(CasePlanRequest $request): JSONResponse {
 		return $this->guard(
 			action: fn (): array => $this->plans->createPlan(
-				objectUuid: $objectUuid,
-				registerId: $register,
-				schemaId: $schema,
-				definition: ($definition ?? []),
+				objectUuid: $request->anchor->objectUuid,
+				registerId: $request->anchor->registerId,
+				schemaId: $request->anchor->schemaId,
+				definition: $request->definition,
 				uid: $this->uid(),
-				flowUuid: $flowUuid,
-				flowVersion: $flowVersion
+				flowUuid: $request->provenance->flowUuid,
+				flowVersion: $request->provenance->flowVersion
 			),
 			status: Http::STATUS_CREATED
 		);
-	}//end create()
+	}//end createPlan()
 
 	/**
 	 * Re-evaluate a plan.
@@ -292,26 +312,27 @@ class CaseController extends Controller {
 		?string $expiresAt = null,
 		bool $required = true,
 	): JSONResponse {
-		$data = array_filter(
-			[
-				'key' => $key,
-				'type' => $type,
-				'name' => $name,
-				'description' => $description,
-				'parent' => $parent,
-				'entryCriteria' => $entryCriteria,
-				'exitCriteria' => $exitCriteria,
-				'candidateUsers' => $candidateUsers,
-				'candidateGroups' => $candidateGroups,
-				'candidateRole' => $candidateRole,
-				'dueAt' => $dueAt,
-				'expiresAt' => $expiresAt,
-			],
-			static fn (mixed $value): bool => $value !== null
-		);
-		$data['required'] = $required;
-		// An ad-hoc item may not declare its own authorization; the body key,
-		// if sent, is refused inside the service, so it is forwarded as-is.
+		$criteria = compact('entryCriteria', 'exitCriteria', 'candidateUsers', 'candidateGroups', 'candidateRole', 'dueAt', 'expiresAt');
+		$fields = compact('key', 'type', 'name', 'description', 'parent') + $criteria;
+		$data = array_filter($fields, static fn (mixed $value): bool => $value !== null);
+
+		return $this->attachItem(objectUuid: $objectUuid, data: $data + ['required' => $required]);
+	}//end attach()
+
+	/**
+	 * Attach an ad-hoc item with the given fields to the plan of an object.
+	 *
+	 * An ad-hoc item may not declare its own authorization; the body key,
+	 * if sent, is refused inside the service, so it is forwarded as-is.
+	 *
+	 * @param string $objectUuid The anchoring object.
+	 * @param array<string, mixed> $data The item fields that were sent, with `required`.
+	 *
+	 * @return JSONResponse The item, 201.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 */
+	private function attachItem(string $objectUuid, array $data): JSONResponse {
 		$body = $this->request->getParams();
 		if (array_key_exists('authorization', $body) === true) {
 			$data['authorization'] = $body['authorization'];
@@ -321,7 +342,7 @@ class CaseController extends Controller {
 			action: fn (): array => $this->plans->attachAdHoc(objectUuid: $objectUuid, data: $data, uid: $this->uid())->jsonSerialize(),
 			status: Http::STATUS_CREATED
 		);
-	}//end attach()
+	}//end attachItem()
 
 	/**
 	 * Finish the case with a result.
@@ -376,16 +397,30 @@ class CaseController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function transition(string $uuid, ?string $to = null, ?string $reason = null): JSONResponse {
-		return $this->guard(
-			action: function () use ($uuid, $to, $reason): array {
-				if ($to === null || trim($to) === '') {
-					throw new CaseValidationException(message: 'A target state `to` is required.');
-				}
+		$command = new CaseTransitionCommand(itemUuid: $uuid, to: $to, reason: $reason);
 
-				return $this->plans->transition(itemUuid: $uuid, to: $to, uid: $this->uid(), reason: $reason)->jsonSerialize();
-			}
-		);
+		return $this->guard(action: fn (): array => $this->transitioned(command: $command));
 	}//end transition()
+
+	/**
+	 * Transition one item by hand; a missing target state is refused first.
+	 *
+	 * @param CaseTransitionCommand $command The item, target state and reason.
+	 *
+	 * @return array<string, mixed> The item.
+	 *
+	 * @throws CaseValidationException Without a target state.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
+	 */
+	private function transitioned(CaseTransitionCommand $command): array {
+		$to = $command->to;
+		if ($to === null || trim($to) === '') {
+			throw new CaseValidationException(message: 'A target state `to` is required.');
+		}
+
+		return $this->plans->transition(itemUuid: $command->itemUuid, to: $to, uid: $this->uid(), reason: $command->reason)->jsonSerialize();
+	}//end transitioned()
 
 	/**
 	 * Enable a discretionary item.
