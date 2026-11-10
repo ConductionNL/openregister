@@ -415,27 +415,14 @@ class FormLinkService implements FormLinkServiceInterface {
 	 *
 	 * Form-level row (if any) is left untouched.
 	 *
-	 * @param string $objectUuid The OR object UUID.
-	 * @param integer $formId The parent form id.
-	 * @param integer $submissionId The submission id.
+	 * @param string            $objectUuid The OR object UUID.
+	 * @param FormSubmissionRef $submission The parent form and the submission ids.
 	 *
 	 * @return boolean True when a row was removed, false when none existed.
 	 *
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the unlink-submission contract is owned by the integration-forms capability.
 	 */
-	public function unlinkSubmission(string $objectUuid, int $formId, int $submissionId): bool {
-		return $this->unlinkSubmissionRef(objectUuid: $objectUuid, submission: new FormSubmissionRef(formId: $formId, submissionId: $submissionId));
-	}//end unlinkSubmission()
-
-	/**
-	 * Remove the link of one submission from an object, when there is one.
-	 *
-	 * @param string            $objectUuid The OR object UUID.
-	 * @param FormSubmissionRef $submission The form and submission ids.
-	 *
-	 * @return boolean True when a row was removed, false when none existed.
-	 */
-	private function unlinkSubmissionRef(string $objectUuid, FormSubmissionRef $submission): bool {
+	public function unlinkSubmission(string $objectUuid, FormSubmissionRef $submission): bool {
 		$link = $this->formLinkMapper->findSubmissionLink(objectUuid: $objectUuid, submission: $submission);
 		if ($link === null) {
 			return false;
@@ -443,7 +430,7 @@ class FormLinkService implements FormLinkServiceInterface {
 
 		$this->formLinkMapper->delete($link);
 		return true;
-	}//end unlinkSubmissionRef()
+	}//end unlinkSubmission()
 
 	/**
 	 * Create a new NC Forms form via the FormMapper and immediately
@@ -459,11 +446,8 @@ class FormLinkService implements FormLinkServiceInterface {
 	 * `FormMapper` not on the classpath), an exception is thrown so
 	 * the caller can return a clean 503/501.
 	 *
-	 * @param string $objectUuid The OR object UUID.
-	 * @param integer $registerId The OR register id.
-	 * @param string $title Initial form title.
-	 * @param string $description Initial form description.
-	 * @param integer $schemaId Optional OR schema id.
+	 * @param FormLinkScope $scope The object, register and schema.
+	 * @param NewForm       $form  The initial title and description.
 	 *
 	 * @return FormLink The link row pointing at the freshly-created form.
 	 *
@@ -471,36 +455,16 @@ class FormLinkService implements FormLinkServiceInterface {
 	 *
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-and-link contract is owned by the integration-forms capability.
 	 */
-	public function createAndLinkForm(
-		string $objectUuid,
-		int $registerId,
-		string $title,
-		string $description = '',
-		?int $schemaId = null,
-	): FormLink {
-		$scope = (new FormLinkScope(objectUuid: $objectUuid, registerId: $registerId))->inSchema(schemaId: $schemaId);
-		return $this->createAndLinkTo(scope: $scope, form: ['title' => $title, 'description' => $description]);
-	}//end createAndLinkForm()
-
-	/**
-	 * Create a new NC Forms form owned by the current user and link it to the scope's object.
-	 *
-	 * @param FormLinkScope                            $scope The object, register and schema.
-	 * @param array{title:string, description:string} $form  The initial title and description.
-	 *
-	 * @return FormLink The link row pointing at the freshly-created form.
-	 *
-	 * @throws Exception When no user is logged in, the Forms app is missing or the create fails.
-	 */
-	private function createAndLinkTo(FormLinkScope $scope, array $form): FormLink {
+	public function createAndLinkForm(FormLinkScope $scope, NewForm $form): FormLink {
 		$uid      = $this->requireUid();
 		$services = $this->resolveFormsServices();
 		// Mirror NC Forms' own ApiController::newForm shape.
-		$entity = $this->draftForm(services: $services, fields: ['ownerId' => $uid] + $form);
+		$fields = ['ownerId' => $uid, 'title' => $form->title, 'description' => $form->description];
+		$entity = $this->draftForm(services: $services, fields: $fields);
 		$services['mapper']->insert($entity);
 
 		return $this->linkFormTo(scope: $scope, formId: (int)$entity->getId());
-	}//end createAndLinkTo()
+	}//end createAndLinkForm()
 
 	/**
 	 * NC Forms' FormMapper and FormsService plus a new Form entity, or an exception when Forms cannot be reached.

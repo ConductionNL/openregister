@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Service\NewForm;
+use OCA\OpenRegister\Service\FormLinkScope;
 use Exception;
 use OCA\OpenRegister\Db\FormLink;
 use OCA\OpenRegister\Db\FormLinkMapper;
@@ -228,11 +230,7 @@ class FormLinkServiceTest extends TestCase {
 		$this->formLinkMapper->method('findSubmissionLink')->willReturn(null);
 		$this->formLinkMapper->expects($this->never())->method('delete');
 
-		$result = $this->service->unlinkSubmission(
-			objectUuid: 'obj-1',
-			formId: 42,
-			submissionId: 9999
-		);
+		$result = $this->service->unlinkSubmission(objectUuid: 'obj-1', submission: new FormSubmissionRef(formId: 42, submissionId: 9999));
 
 		$this->assertFalse($result);
 
@@ -245,11 +243,7 @@ class FormLinkServiceTest extends TestCase {
 		$this->formLinkMapper->method('findSubmissionLink')->willReturn($existing);
 		$this->formLinkMapper->expects($this->once())->method('delete')->with($existing);
 
-		$result = $this->service->unlinkSubmission(
-			objectUuid: 'obj-1',
-			formId: 42,
-			submissionId: 1001
-		);
+		$result = $this->service->unlinkSubmission(objectUuid: 'obj-1', submission: new FormSubmissionRef(formId: 42, submissionId: 1001));
 
 		$this->assertTrue($result);
 
@@ -263,11 +257,7 @@ class FormLinkServiceTest extends TestCase {
 		$this->expectExceptionCode(503);
 		$this->expectExceptionMessage('NC Forms app is not installed');
 
-		$this->service->createAndLinkForm(
-			objectUuid: 'obj-1',
-			registerId: 1,
-			title: 'Demo form'
-		);
+		$this->service->createAndLinkForm(scope: new FormLinkScope(objectUuid: 'obj-1', registerId: 1), form: new NewForm(title: 'Demo form'));
 
 	}//end testCreateAndLinkFormRequiresFormsApp()
 
