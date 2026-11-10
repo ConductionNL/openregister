@@ -41,4 +41,22 @@ final class ObjectPayload {
 		public readonly array $selfData = [],
 	) {
 	}//end __construct()
+
+	/**
+	 * The slug the client sent: `@self.slug`, else a top-level `slug` property.
+	 *
+	 * Keep in step with BulkObjectSlugs::apply(), which reads the same two places for a bulk row.
+	 *
+	 * @return string|null The non-empty string, or null.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
+	 */
+	public function clientSlug(): ?string {
+		$slug = $this->selfData['slug'] ?? $this->data['slug'] ?? null;
+		if (is_string($slug) === false || $slug === '') {
+			return null;
+		}
+
+		return $slug;
+	}//end clientSlug()
 }//end class
