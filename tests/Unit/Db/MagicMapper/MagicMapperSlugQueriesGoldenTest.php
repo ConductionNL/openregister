@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -183,7 +184,12 @@ class MagicMapperSlugQueriesGoldenTest extends TestCase {
 		$schema = new Schema();
 		$schema->setId(2);
 
-		$answer = $this->mapper()->{$method}($register, $schema, ...$args);
+		$table  = [$register, $schema];
+		if (in_array($method, ['findSlugsByPrefix', 'findSlugHolders', 'findSlugState', 'updateSlugColumn'], true) === true) {
+			$table = [new RegisterSchema($register, $schema)];
+		}
+
+		$answer = $this->mapper()->{$method}(...$table, ...$args);
 
 		return ['calls' => $this->calls, 'answer' => $answer];
 	}//end outcome()

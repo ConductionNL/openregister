@@ -30,6 +30,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting;
 use OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider;
 use OCP\App\IAppManager;
@@ -86,12 +88,14 @@ class OpenProjectProviderCallsTest extends TestCase {
 		$this->router->expects($this->once())->method('call')
 			->with(
 				$this->provider,
-				'GET',
-				rawurlencode('12/3'),
-				['query' => ['register' => 'r', 'schema' => 's', 'object' => 'o'], 'headers' => ['Accept' => 'application/json']]
+				new UpstreamRequest(
+					method: 'GET',
+					path: rawurlencode('12/3'),
+					options: ['query' => ['register' => 'r', 'schema' => 's', 'object' => 'o'], 'headers' => ['Accept' => 'application/json']]
+				)
 			)
 			->willReturn(['id' => '12', 'subject' => 'Fix']);
-		$row = $this->provider->get('r', 's', 'o', '12/3');
+		$row = $this->provider->get(new ObjectRef(register: 'r', schema: 's', id: 'o'), '12/3');
 		$this->assertSame('12', $row['id']);
 		$this->assertSame('Fix', $row['title']);
 	}//end testGetSendsTheEncodedIdWithTheContextQuery()
@@ -100,41 +104,47 @@ class OpenProjectProviderCallsTest extends TestCase {
 		$this->router->expects($this->once())->method('call')
 			->with(
 				$this->provider,
-				'POST',
-				'',
-				[
-					'body' => ['subject' => 'New', 'register' => 'r', 'schema' => 's', 'object' => 'o'],
-					'headers' => ['Accept' => 'application/json', 'Content-Type' => 'application/json'],
-				]
+				new UpstreamRequest(
+					method: 'POST',
+					path: '',
+					options: [
+						'body' => ['subject' => 'New', 'register' => 'r', 'schema' => 's', 'object' => 'o'],
+						'headers' => ['Accept' => 'application/json', 'Content-Type' => 'application/json'],
+					]
+				)
 			)
 			->willReturn(['id' => '7', 'subject' => 'New']);
-		$this->assertSame('7', $this->provider->create('r', 's', 'o', ['subject' => 'New', 'object' => 'x'])['id']);
+		$this->assertSame('7', $this->provider->create(new ObjectRef(register: 'r', schema: 's', id: 'o'), ['subject' => 'New', 'object' => 'x'])['id']);
 	}//end testCreatePostsThePayloadWithTheContext()
 
 	public function testUpdatePutsThePayloadToTheEncodedId(): void {
 		$this->router->expects($this->once())->method('call')
 			->with(
 				$this->provider,
-				'PUT',
-				rawurlencode('a b'),
-				[
-					'body' => ['status' => 'done', 'register' => 'r', 'schema' => 's', 'object' => 'o'],
-					'headers' => ['Accept' => 'application/json', 'Content-Type' => 'application/json'],
-				]
+				new UpstreamRequest(
+					method: 'PUT',
+					path: rawurlencode('a b'),
+					options: [
+						'body' => ['status' => 'done', 'register' => 'r', 'schema' => 's', 'object' => 'o'],
+						'headers' => ['Accept' => 'application/json', 'Content-Type' => 'application/json'],
+					]
+				)
 			)
 			->willReturn(['id' => 'a b']);
-		$this->assertSame('a b', $this->provider->update('r', 's', 'o', 'a b', ['status' => 'done'])['id']);
+		$this->assertSame('a b', $this->provider->update(new ObjectRef(register: 'r', schema: 's', id: 'o'), 'a b', ['status' => 'done'])['id']);
 	}//end testUpdatePutsThePayloadToTheEncodedId()
 
 	public function testDeleteSendsTheContextQuery(): void {
 		$this->router->expects($this->once())->method('call')
 			->with(
 				$this->provider,
-				'DELETE',
-				rawurlencode('9'),
-				['query' => ['register' => 'r', 'schema' => 's', 'object' => 'o'], 'headers' => ['Accept' => 'application/json']]
+				new UpstreamRequest(
+					method: 'DELETE',
+					path: rawurlencode('9'),
+					options: ['query' => ['register' => 'r', 'schema' => 's', 'object' => 'o'], 'headers' => ['Accept' => 'application/json']]
+				)
 			)
 			->willReturn([]);
-		$this->provider->delete('r', 's', 'o', '9');
+		$this->provider->delete(new ObjectRef(register: 'r', schema: 's', id: 'o'), '9');
 	}//end testDeleteSendsTheContextQuery()
 }//end class

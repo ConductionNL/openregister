@@ -19,6 +19,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Service;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -153,13 +155,7 @@ class ObjectInteractionsIntegrationTest extends TestCase {
 		// Replaces the manual smoke for "File Attachments on Objects" —
 		// verifies the file lands in the object's folder via IRootFolder
 		// and is enumerable via FileService::getFiles.
-		$file = $this->fileService->addFile(
-			$this->testObject,
-			'integration-test.txt',
-			'object-interactions integration test content',
-			false,
-			['integration-test']
-		);
+		$file = $this->fileService->addFile(new FileTarget($this->testObject), new FileUpload('integration-test.txt', 'object-interactions integration test content', false, ['integration-test']));
 
 		$this->assertSame('integration-test.txt', $file->getName());
 		$this->assertSame(strlen('object-interactions integration test content'), $file->getSize());
@@ -177,9 +173,9 @@ class ObjectInteractionsIntegrationTest extends TestCase {
 		// Defence-in-depth: each addFile call MUST land an independent
 		// file on the same object's folder; nothing should silently
 		// overwrite a previously-added file.
-		$this->fileService->addFile($this->testObject, 'attachment-a.txt', 'A', false, []);
-		$this->fileService->addFile($this->testObject, 'attachment-b.txt', 'B', false, []);
-		$this->fileService->addFile($this->testObject, 'attachment-c.txt', 'C', false, []);
+		$this->fileService->addFile(new FileTarget($this->testObject), new FileUpload('attachment-a.txt', 'A', false, []));
+		$this->fileService->addFile(new FileTarget($this->testObject), new FileUpload('attachment-b.txt', 'B', false, []));
+		$this->fileService->addFile(new FileTarget($this->testObject), new FileUpload('attachment-c.txt', 'C', false, []));
 
 		$files = $this->fileService->getFiles($this->testObject);
 		$names = array_map(fn ($f) => $f->getName(), is_array($files) ? $files : iterator_to_array($files));
@@ -193,13 +189,7 @@ class ObjectInteractionsIntegrationTest extends TestCase {
 		// Replaces the manual smoke for "Tags for Object Categorization":
 		// tags supplied at addFile time MUST be readable from the file
 		// entity afterward via the standard NC tag lookup.
-		$file = $this->fileService->addFile(
-			$this->testObject,
-			'tagged.txt',
-			'has tags',
-			false,
-			['urgent', 'review-needed']
-		);
+		$file = $this->fileService->addFile(new FileTarget($this->testObject), new FileUpload('tagged.txt', 'has tags', false, ['urgent', 'review-needed']));
 
 		$tagManager = \OC::$server->get(\OCP\SystemTag\ISystemTagObjectMapper::class);
 		$appliedTags = $tagManager->getTagIdsForObjects([(string)$file->getId()], 'files');

@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Event\ObjectLeavingEvent;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\EventDispatcher\IEventDispatcher;
 use Opis\JsonSchema\Errors\ValidationError;
 use Opis\JsonSchema\Info\DataInfo;
@@ -329,12 +330,12 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 	 */
 	private function audit(): AuditTrailMapper {
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('createAuditTrailEntry')->willReturnCallback(
+		$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context): AuditTrail {
 				$this->auditEntries[] = [$action, $context];
 				return new AuditTrail();
 			}
-		);
+		));
 		$audit->method('createAuditTrail')->willReturnCallback(
 			function (ObjectEntity $old, ObjectEntity $new, string $action): AuditTrail {
 				if ($this->auditFails === true) {

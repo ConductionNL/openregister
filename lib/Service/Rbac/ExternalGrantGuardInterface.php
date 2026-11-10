@@ -20,7 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use DateTimeInterface;
 
 /**
  * The methods of ExternalGrantGuard that callers outside its component use.
@@ -53,17 +52,12 @@ interface ExternalGrantGuardInterface {
 	 * mid-sentence, which is only possible if somebody can ask which grants are
 	 * about to run out.
 	 *
-	 * @param array|null             $authorization The block as written.
-	 * @param int                    $days          How far ahead to look.
-	 * @param DateTimeInterface|null $now           The moment, or null for the real one.
+	 * @param array|null       $authorization The block as written.
+	 * @param LapseWindow|null $window        The moment and how far ahead to look; null for now and the default window.
 	 *
 	 * @return array<int, array<string, mixed>> The grants about to lapse, soonest first.
 	 *
 	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
-	public function lapsingWithin(
-		?array $authorization,
-		int $days = self::DEFAULT_WARNING_DAYS,
-		?DateTimeInterface $now = null,
-	): array;
+	public function lapsingWithin(?array $authorization, ?LapseWindow $window = null): array;
 }//end interface

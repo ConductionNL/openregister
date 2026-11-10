@@ -22,6 +22,7 @@ use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IGroup;
@@ -266,12 +267,12 @@ class DestructionExecutionJobGoldenTest extends TestCase
     private function audit(): AuditTrailMapperInterface
     {
         $mapper = $this->createMock(AuditTrailMapperInterface::class);
-        $mapper->method('createAuditTrailEntry')->willReturnCallback(
+        $mapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
             function (ObjectEntity $object, string $action, array $context=[]): AuditTrail {
                 $this->record('audit', [$object->getUuid(), $object->getRetention(), $action, $context]);
                 return new AuditTrail();
             }
-        );
+        ));
         return $mapper;
     }//end audit()
 

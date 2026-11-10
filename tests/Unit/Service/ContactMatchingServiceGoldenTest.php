@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\ContactDetails;
 use OCA\OpenRegister\Service\ContactMatchingMappers;
 use OCA\OpenRegister\Service\ContactMatchingService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -160,6 +161,10 @@ class ContactMatchingServiceGoldenTest extends TestCase {
 		}
 
 		$service = new ContactMatchingService($objects, new ContactMatchingMappers($schemas, $registers), $factory, $this->createMock(LoggerInterface::class));
+		if ($call === 'matchContact') {
+			$args = [new ContactDetails(...$args)];
+		}
+
 		$actual = ['result' => $service->$call(...$args), 'log' => $log];
 		$actual = json_decode(json_encode($actual, JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION), true);
 

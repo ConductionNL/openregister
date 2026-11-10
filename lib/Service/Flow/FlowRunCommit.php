@@ -100,9 +100,9 @@ class FlowRunCommit {
 	 * its updated-field tracking reset, so a later whole-entity update by the
 	 * run service cannot carry a stale marking over what was just committed.
 	 *
-	 * @param FlowRun $run The run (refreshed in place).
-	 * @param FlowFiring $firing What fired, on which stream, with what effect.
-	 * @param string $owner The pass token whose claims on the firing's places are released.
+	 * @param FlowRun        $run    The run (refreshed in place).
+	 * @param FlowPassFiring $firing What fired, on which stream, with what effect, and the pass token whose
+	 *                               claims on the firing's places are released.
 	 *
 	 * @return FlowFiringResult The committed marking, place items, and the streams now live.
 	 *
@@ -110,10 +110,8 @@ class FlowRunCommit {
 	 *
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-marking-must-be-written-as-a-delta-never-as-a-whole-overwrite
 	 */
-	public function commitFiring(FlowRun $run, FlowFiring $firing, string $owner): FlowFiringResult {
-		$release = new FlowStreamRelease(claimedPlaces: $firing->getClaimedPlaces(), owner: $owner, enabled: $firing->isEnabledAfter());
-
-		return $this->commit(run: $run, commit: new FlowFiringCommitRun(firing: $firing, release: $release));
+	public function commitFiring(FlowRun $run, FlowPassFiring $firing): FlowFiringResult {
+		return $this->commit(run: $run, commit: new FlowFiringCommitRun(firing: $firing->firing, release: $firing->release()));
 	}//end commitFiring()
 
 	/**

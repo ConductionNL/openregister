@@ -27,6 +27,8 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Event\FlowTimerFiredEvent;
+use OCA\OpenRegister\Kernel\Contracts\TimerChange;
+use OCA\OpenRegister\Kernel\Contracts\TimerSubjectRef;
 use OCA\OpenRegister\Service\Case\CasePlanItemTimers;
 use OCA\OpenRegister\Service\Case\UnarmedTimerMarkers;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
@@ -256,7 +258,10 @@ class CasePlanItemTimersTest extends TestCase {
 	public function testTerminalCancels(): void {
 		$item = CaseFixtures::row(id: 5, key: 'beoordeling', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_COMPLETED);
 		$this->timers->expects($this->once())->method('cancelForSubject')
-			->with(CasePlanItemTimers::SUBJECT_TYPE, 'item-5', $this->stringContains('completed'), 'case-plan')
+			->with(
+				new TimerSubjectRef(type: CasePlanItemTimers::SUBJECT_TYPE, uuid: 'item-5'),
+				$this->callback(static fn (TimerChange $change): bool => str_contains($change->reason, 'completed') === true && $change->actor === 'case-plan')
+			)
 			->willReturn(2);
 		$this->assertSame(2, $this->service()->onTerminal(item: $item));
 

@@ -140,7 +140,7 @@ class ObjectActionsControllerSelectionAddressTest extends TestCase {
 				],
 			]
 		);
-		$definition = (new ObjectActionDefinitions($this->createMock(RegisterMapper::class)))->find($declaring, 'declared');
+		$definition = (new ObjectActionDefinitions($this->createMock(RegisterMapper::class)))->forSchema($declaring)['declared'] ?? null;
 		$this->assertNotNull($definition);
 
 		return $definition;
@@ -163,8 +163,8 @@ class ObjectActionsControllerSelectionAddressTest extends TestCase {
 				return $schema;
 			}
 		);
-		$this->definitions->expects($this->once())->method('find')->with($schema, 'assign', 'r')
-			->willReturn($this->definition(bulk: true));
+		$this->definitions->expects($this->once())->method('forSchema')->with($schema, 'r')
+			->willReturn(['assign' => $this->definition(bulk: true)]);
 		$subjects = [];
 		$this->runner->expects($this->exactly(2))->method('run')->willReturnCallback(
 			static function (ObjectActionTarget $target, ObjectActionRequest $request) use (&$subjects): array {
@@ -199,8 +199,8 @@ class ObjectActionsControllerSelectionAddressTest extends TestCase {
 	public function testAnActionNotOfferedOnASelectionNeverRuns(): void {
 		$controller = $this->controller(params: ['ids' => ['a'], 'inputs' => []]);
 		$this->macros->method('loadSchema')->willReturn(new Schema());
-		$this->definitions->expects($this->once())->method('find')->with($this->anything(), 'publish', 'r')
-			->willReturn($this->definition(bulk: false));
+		$this->definitions->expects($this->once())->method('forSchema')->with($this->anything(), 'r')
+			->willReturn(['publish' => $this->definition(bulk: false)]);
 		$this->runner->expects($this->never())->method('run');
 
 		$response = $controller->invokeOnSelection('r', 'ticket', 'publish');
@@ -219,7 +219,7 @@ class ObjectActionsControllerSelectionAddressTest extends TestCase {
 	public function testASchemaThatDoesNotLoadIsNotOffered(): void {
 		$controller = $this->controller(params: ['ids' => ['a'], 'inputs' => []]);
 		$this->macros->method('loadSchema')->willReturn(null);
-		$this->definitions->expects($this->never())->method('find');
+		$this->definitions->expects($this->never())->method('forSchema');
 		$this->runner->expects($this->never())->method('run');
 
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $controller->invokeOnSelection('r', 'ticket', 'assign')->getStatus());

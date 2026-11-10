@@ -61,6 +61,7 @@ use OCA\OpenRegister\Service\File\CreateFileHandler;
 use OCA\OpenRegister\Service\File\FileRename;
 use OCA\OpenRegister\Service\File\FileTransfer;
 use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\DocumentAnonymization;
 use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\ShareLinkRequest;
 use OCA\OpenRegister\Service\File\DeleteFileHandler;
@@ -1121,30 +1122,12 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	}//end getCurrentUser()
 
 	/**
-	 * Creates and returns a share link for a file (or folder).
+	 * Creates and returns a share link for a file or folder.
 	 *
 	 * See https://docs.nextcloud.com/server/latest/developer_manual/client_apis/OCS/ocs-share-api.html#create-a-new-share.
 	 *
-	 * @param string $path Path (from root) to the file/folder which should be shared
-	 * @param int|null $shareType The share type (0=user, 1=group, 3=public link, 4=email, etc.)
-	 * @param int|null $permissions Permissions (1=read, 2=update, 4=create, 8=delete, 16=share, 31=all)
-	 *
-	 * @throws Exception If creating the share link fails
-	 *
-	 * @return string The share link
-	 *
-	 * @psalm-suppress PossiblyUnusedReturnValue
-	 *
-	 * @spec exclude Public share-link creation; deferred to the file-actions FileSharingHandler follow-up pass (see file-actions tasks.md DROP list).
-	 */
-	public function createShareLink(string $path, ?int $shareType = 3, ?int $permissions = null): string {
-		return $this->createShareLinkFor(request: new ShareLinkRequest(path: $path, shareType: $shareType, permissions: $permissions));
-	}//end createShareLink()
-
-	/**
-	 * Creates and returns a share link for a file or folder, as one share link request.
-	 *
-	 * @param ShareLinkRequest $request The path, share type and permissions.
+	 * @param ShareLinkRequest $request The path (from root), the share type (0=user, 1=group, 3=public link, 4=email,
+	 *                                  etc.) and the permissions (1=read, 2=update, 4=create, 8=delete, 16=share, 31=all).
 	 *
 	 * @throws Exception If creating the share link fails
 	 *
@@ -1152,7 +1135,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 *
 	 * @spec exclude Public share-link creation; deferred to the file-actions FileSharingHandler follow-up pass (see file-actions tasks.md DROP list).
 	 */
-	public function createShareLinkFor(ShareLinkRequest $request): string {
+	public function createShareLink(ShareLinkRequest $request): string {
 		$path = trim(string: $request->path, characters: '/');
 
 		try {
@@ -1199,7 +1182,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 			);
 			throw new Exception('Can\'t create share link.');
 		}
-	}//end createShareLinkFor()
+	}//end createShareLink()
 
 	/**
 	 * Creates a new folder in NextCloud, unless it already exists.
@@ -1239,12 +1222,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 			$this->fileLockHandler->assertCanModify($overwrite->filePath);
 		}
 
-		return $this->updateFileHandler->updateFile(
-			filePath: $overwrite->filePath,
-			content: $overwrite->content,
-			tags: $overwrite->tags,
-			object: $overwrite->object
-		);
+		return $this->updateFileHandler->updateFile(overwrite: $overwrite);
 	}//end overwriteFile()
 
 	/**
@@ -1361,42 +1339,18 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 *
 	 * Delegates to CreateFileHandler for single-responsibility file creation operations.
 	 *
-	 * @param ObjectEntity|string $objectEntity The object entity to add the file to.
-	 * @param string $fileName The name of the file to create.
-	 * @param string|resource $content File content: a byte string, or a readable stream resource.
-	 * @param bool $share Whether to create a share link for the file.
-	 * @param array $tags Optional array of tags to attach to the file.
-	 * @param int|string|Schema|null $_schema The register of the object to add the file to.
-	 * @param int|string|Register|null $_register The register of the object to add the file to.
-	 * @param int|string|null $registerId The registerId of the object to add the file to.
+	 * @param FileTarget $target The object (or its id) and, when the object does not name it, its register.
+	 * @param FileUpload $upload The file name, content, share toggle and tags.
 	 *
 	 * @return File The created file.
 	 *
 	 * @throws NotPermittedException If file creation fails due to permissions.
 	 * @throws Exception If file creation fails for other reasons.
 	 *
-	 * @phpstan-param array<int, string> $tags
-	 * @psalm-param   array<int, string> $tags
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $_schema and $_register stay in this fixed public signature; moved here from CreateFileHandler.
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
 	 */
-	public function addFile(
-		ObjectEntity|string $objectEntity,
-		string $fileName,
-		mixed $content,
-		bool $share = false,
-		array $tags = [],
-		int|string|Schema|null $_schema = null,
-		int|string|Register|null $_register = null,
-		int|string|null $registerId = null,
-	): File {
-		return $this->createFileHandler->addFile(
-			target: new FileTarget(object: $objectEntity, registerId: $registerId),
-			upload: new FileUpload(fileName: $fileName, content: $content, share: $share, tags: $tags)
-		);
+	public function addFile(FileTarget $target, FileUpload $upload): File {
+		return $this->createFileHandler->addFile(target: $target, upload: $upload);
 	}//end addFile()
 
 	/**
@@ -1405,35 +1359,18 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 * Delegates to CreateFileHandler for single-responsibility upsert operations.
 	 *
 	 * @param ObjectEntity $objectEntity The object entity to save the file to.
-	 * @param string $fileName The name of the file to save.
-	 * @param string|resource $content File content: a byte string, or a readable stream resource.
-	 * @param bool $share Whether to create a share link for the file (only for new files).
-	 * @param array $tags Optional array of tags to attach to the file.
+	 * @param FileUpload   $upload       The file name, content, share toggle (new files only) and tags.
 	 *
 	 * @return File The saved file.
 	 *
 	 * @throws NotPermittedException If file operations fail due to permissions.
 	 * @throws Exception If file operations fail for other reasons.
 	 *
-	 * @phpstan-param array<int, string> $tags
-	 * @psalm-param   array<int, string> $tags
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle
-	 *
 	 * @spec openspec/specs/file-actions/spec.md#file-creation-and-upsert-run-a-fixed-validate-write-own-tag-pipeline
 	 *   (creates/writes a file into an object's folder with optional tags and share toggle)
 	 */
-	public function saveFile(
-		ObjectEntity $objectEntity,
-		string $fileName,
-		mixed $content,
-		bool $share = false,
-		array $tags = [],
-	): File {
-		return $this->createFileHandler->saveFile(
-			objectEntity: $objectEntity,
-			upload: new FileUpload(fileName: $fileName, content: $content, share: $share, tags: $tags)
-		);
+	public function saveFile(ObjectEntity $objectEntity, FileUpload $upload): File {
+		return $this->createFileHandler->saveFile(objectEntity: $objectEntity, upload: $upload);
 	}//end saveFile()
 
 	/**
@@ -1803,14 +1740,8 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 * This is a convenience method that creates replacement mappings
 	 * from entity detection results and applies them to a document.
 	 *
-	 * @param Node $node The file node to anonymize.
-	 * @param array $entities Array of detected entities with 'text' and 'key' fields.
-	 * @param string $scope Placeholder-numbering scope: 'document' (default) or 'dossier'.
-	 * @param string|null $fileKey Stable folder id of the dossier (per-dossier scope); null falls
-	 *                             back to the file's parent folder.
-	 * @param bool|null $preserveStructure PDF only (REQ-ORTPR-004): tri-state structure-preservation
-	 *                                     option — null/absent = auto (preserve iff the input is a
-	 *                                     tagged PDF), true = attempt, false = skip but still measure.
+	 * @param Node                  $node         The file node to anonymize.
+	 * @param DocumentAnonymization $anonymization The entities, the placeholder scope and the PDF structure option.
 	 *
 	 * @throws Exception If anonymization fails.
 	 *
@@ -1818,11 +1749,13 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 *
 	 * @spec exclude One-line delegation to DocumentProcessingHandler::anonymizeDocument; no facade-owned logic.
 	 */
-	public function anonymizeDocument(
-		Node $node, array $entities, string $scope = 'document', ?string $fileKey = null, ?bool $preserveStructure = null
-	): Node {
+	public function anonymizeDocument(Node $node, DocumentAnonymization $anonymization): Node {
 		return $this->documentProcessingHandler->anonymizeDocument(
-			node: $node, entities: $entities, scope: $scope, fileKey: $fileKey, preserveStructure: $preserveStructure
+			node: $node,
+			entities: $anonymization->entities,
+			scope: $anonymization->scope,
+			fileKey: $anonymization->fileKey,
+			preserveStructure: $anonymization->preserveStructure
 		);
 	}//end anonymizeDocument()
 
@@ -1992,23 +1925,6 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 			// Name is available.
 		}
 	}//end assertNameIsFree()
-
-	/**
-	 * Copy a file to another object.
-	 *
-	 * @param ObjectEntity $sourceObject The source object entity.
-	 * @param int $fileId The source file ID.
-	 * @param ObjectEntity $targetObject The target object entity.
-	 *
-	 * @return File The new file copy.
-	 *
-	 * @throws Exception If the copy fails.
-	 *
-	 * @spec openspec/specs/file-actions/spec.md
-	 */
-	public function copyFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File {
-		return $this->copyAttachedFile(transfer: new FileTransfer(source: $sourceObject, fileId: $fileId, target: $targetObject));
-	}//end copyFile()
 
 	/**
 	 * Copy a file to another object, as one transfer.
