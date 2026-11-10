@@ -42,7 +42,7 @@ class ExportRunSweepFilesTest extends TestCase {
 	/**
 	 * A due run.
 	 */
-	private function run(?int $fileId, ?string $actor): ExportRun {
+	private function dueRun(?int $fileId, ?string $actor): ExportRun {
 		$run = new ExportRun();
 		$run->setUuid('run-' . (string)$fileId . '-' . (string)$actor);
 		$run->setFileId($fileId);
@@ -79,7 +79,7 @@ class ExportRunSweepFilesTest extends TestCase {
 		$root = $this->createMock(IRootFolder::class);
 		$root->expects($this->never())->method('getUserFolder');
 
-		$runs = [$this->run(null, 'alice'), $this->run(7, null), $this->run(7, '')];
+		$runs = [$this->dueRun(null, 'alice'), $this->dueRun(7, null), $this->dueRun(7, '')];
 
 		$this->assertSame(3, $this->sweep($runs, $root));
 		foreach ($runs as $run) {
@@ -100,7 +100,7 @@ class ExportRunSweepFilesTest extends TestCase {
 		$root = $this->createMock(IRootFolder::class);
 		$root->expects($this->once())->method('getUserFolder')->with('alice')->willReturn($folder);
 
-		$this->assertSame(1, $this->sweep([$this->run(7, 'alice')], $root));
+		$this->assertSame(1, $this->sweep([$this->dueRun(7, 'alice')], $root));
 		$this->assertSame(2, $deleted);
 	}
 
@@ -113,7 +113,7 @@ class ExportRunSweepFilesTest extends TestCase {
 			$this->callback(static fn (array $context): bool => $context['uuid'] === 'run-7-bob')
 		);
 
-		$run = $this->run(7, 'bob');
+		$run = $this->dueRun(7, 'bob');
 
 		$this->assertSame(1, $this->sweep([$run], $root, $logger));
 		$this->assertSame(ExportRun::STATUS_EXPIRED, $run->getStatus());
