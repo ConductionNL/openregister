@@ -46,6 +46,7 @@ use OCP\WorkflowEngine\IManager;
 use OCP\WorkflowEngine\IRuleMatcher;
 use Psr\Log\LoggerInterface;
 use UnexpectedValueException;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 /**
  * Runs a named OpenRegister flow when a matching Nextcloud Flow rule fires.
@@ -218,15 +219,17 @@ class RunFlowOperation implements RunFlowOperationInterface {
 		}
 
 		try {
-			$this->flowRuns->runner->queue(
+			$this->flowRuns->runner->queueRun(
 				flowId: (string)$flow->getUuid(),
-				subject: [
-					'uuid' => $object->getUuid(),
-					'register' => (string)$object->getRegister(),
-					'schema' => (string)$object->getSchema(),
-				],
-				trigger: 'nextcloud-flow',
-				user: $flow->getOwner()
+				options: new FlowRunQueueOptions(
+					subject: [
+						'uuid' => $object->getUuid(),
+						'register' => (string)$object->getRegister(),
+						'schema' => (string)$object->getSchema(),
+					],
+					trigger: 'nextcloud-flow',
+					user: $flow->getOwner()
+				)
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning('RunFlowOperation: could not queue flow "' . $name . '": ' . $e->getMessage());
