@@ -206,6 +206,37 @@ import AppTabs from '../../components/tabs/AppTabs.vue'
 import { searchGroupsDebounced } from '../../services/groupSearch.js'
 import { quotaFields, unlimitedQuota } from '../../services/quotaFields.js'
 
+/**
+ * An authorization map that grants no group anything.
+ *
+ * @return {object} The map, per action.
+ */
+function emptyAuthorization() {
+	return {
+		create: [],
+		read: [],
+		update: [],
+		delete: [],
+	}
+}
+
+/**
+ * The form of a new application: no name, no groups, unlimited quotas.
+ *
+ * @return {object} The application.
+ */
+function blankApplication() {
+	return {
+		name: '',
+		description: '',
+		// Organisation will be set automatically by backend based on active organisation
+		quota: unlimitedQuota(),
+
+		groups: [],
+		authorization: emptyAuthorization(),
+	}
+}
+
 export default {
 	name: 'EditApplication',
 	components: {
@@ -233,20 +264,7 @@ export default {
 	data() {
 		return {
 			activeTab: 0,
-			applicationItem: {
-				name: '',
-				description: '',
-				// Organisation will be set automatically by backend based on active organisation
-				quota: unlimitedQuota(),
-
-				groups: [],
-				authorization: {
-					create: [],
-					read: [],
-					update: [],
-					delete: [],
-				},
-			},
+			applicationItem: blankApplication(),
 
 			selectedGroups: [],
 			availableGroups: [],
@@ -377,26 +395,34 @@ export default {
 					Array.isArray(this.applicationItem.groups)
 					&& this.applicationItem.groups.length > 0
 				) {
-					this.selectedGroups = this.applicationItem.groups
-						.map((groupId) => {
-							// Find the group in availableGroups
-							const group = this.availableGroups.find(
-								(g) => g.id === groupId,
-							)
-							if (group) {
-								return group
-							}
-							// If not found in availableGroups, create a temporary object
-							// This ensures we show the group even if the groups API failed
-							return {
-								id: groupId,
-								name: groupId,
-								userCount: 0,
-							}
-						})
-						.filter((g) => g !== null)
+					this.selectedGroups = this.groupsOf(this.applicationItem.groups)
 				}
 			}
+		},
+
+		/**
+		 * The groups for the select component of the stored group ids.
+		 *
+		 * @param {Array<string>} groupIds The stored group ids
+		 * @return {Array<object>} The groups
+		 */
+		groupsOf(groupIds) {
+			return groupIds
+				.map((groupId) => {
+					// Find the group in availableGroups
+					const group = this.availableGroups.find((g) => g.id === groupId)
+					if (group) {
+						return group
+					}
+					// If not found in availableGroups, create a temporary object
+					// This ensures we show the group even if the groups API failed
+					return {
+						id: groupId,
+						name: groupId,
+						userCount: 0,
+					}
+				})
+				.filter((g) => g !== null)
 		},
 
 		/**
@@ -423,37 +449,42 @@ export default {
 		 */
 		updateApplicationPermission(payload) {
 			const { groupId, action, hasPermission } = payload
-
-			// Initialize authorization if not present
-			if (!this.applicationItem.authorization) {
-				this.applicationItem.authorization = {
-					create: [],
-					read: [],
-					update: [],
-					delete: [],
-				}
-			}
-
-			// Ensure the action array exists
-			if (!Array.isArray(this.applicationItem.authorization[action])) {
-				this.applicationItem.authorization[action] = []
-			}
+			const permitted = this.permittedGroups(action)
 
 			// Update the permission
-			const groupIndex =
-				this.applicationItem.authorization[action].indexOf(groupId)
+			const groupIndex = permitted.indexOf(groupId)
 			if (hasPermission && groupIndex === -1) {
 				// Add the group
-				this.applicationItem.authorization[action].push(groupId)
+				permitted.push(groupId)
 			} else if (!hasPermission && groupIndex !== -1) {
 				// Remove the group
-				this.applicationItem.authorization[action].splice(groupIndex, 1)
+				permitted.splice(groupIndex, 1)
 			}
 
 			// Force Vue to detect the change
 			this.applicationItem.authorization = {
 				...this.applicationItem.authorization,
 			}
+		},
+
+		/**
+		 * The groups allowed an action, creating the authorization map and the
+		 * action's list when they are missing.
+		 *
+		 * @param {string} action The action (create, read, update, delete)
+		 * @return {Array<string>} The group ids; changes to it change the map
+		 */
+		permittedGroups(action) {
+			// Initialize authorization if not present
+			if (!this.applicationItem.authorization) {
+				this.applicationItem.authorization = emptyAuthorization()
+			}
+
+			// Ensure the action array exists
+			if (!Array.isArray(this.applicationItem.authorization[action])) {
+				this.applicationItem.authorization[action] = []
+			}
+			return this.applicationItem.authorization[action]
 		},
 
 		/**
@@ -482,31 +513,63 @@ export default {
 			this.loading = true
 			this.error = null
 
-			// Validate required fields
-			if (!this.applicationItem.name.trim()) {
-				this.error = 'Application name is required'
-				this.loading = false
+			if (this.refusedBlankName()) {
 				return
 			}
 
 			try {
-				const { response } = await applicationStore.saveApplication({
-					...this.applicationItem,
-				})
-
-				this.success = response.ok
-				this.error = false
-
-				if (response.ok) {
-					this.closeModalTimeout = setTimeout(this.closeModal, 2000)
-				}
+				await this.storeApplication()
 			} catch (error) {
-				this.success = false
-				this.error =
-					error.message || 'An error occurred while saving the application'
+				this.showSaveFailure(error)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Refuse a form without a name, saying so.
+		 *
+		 * @return {boolean} True when the name is blank
+		 */
+		refusedBlankName() {
+			// Validate required fields
+			if (!this.applicationItem.name.trim()) {
+				this.error = 'Application name is required'
+				this.loading = false
+				return true
+			}
+			return false
+		},
+
+		/**
+		 * Send a copy of the form to the store; on success, close after two
+		 * seconds.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async storeApplication() {
+			const { response } = await applicationStore.saveApplication({
+				...this.applicationItem,
+			})
+
+			this.success = response.ok
+			this.error = false
+
+			if (response.ok) {
+				this.closeModalTimeout = setTimeout(this.closeModal, 2000)
+			}
+		},
+
+		/**
+		 * Say why the save failed.
+		 *
+		 * @param {Error} error What went wrong
+		 * @return {void}
+		 */
+		showSaveFailure(error) {
+			this.success = false
+			this.error =
+				error.message || 'An error occurred while saving the application'
 		},
 
 		/**
