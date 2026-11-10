@@ -28,7 +28,6 @@ use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ProcessingLogMapperInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -85,22 +84,34 @@ class ProcessingLogRetentionJob extends TimedJob {
 	private readonly AuditTrailMapperInterface $auditTrail;
 
 	/**
+	 * Config, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $config;
+
+	/**
+	 * Logger, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory        $time       The clock.
+	 * @param ConfiguredJobRuntime $runtime The job runtime: scheduler clock, app settings and run log.
 	 * @param ProcessingLogRetentionStores $stores Processing log and the audit trail of each purge.
-	 * @param IAppConfig          $config     Reads the retention period.
-	 * @param LoggerInterface     $logger     Logger.
 	 */
 	public function __construct(
-		ITimeFactory $time,
+		ConfiguredJobRuntime $runtime,
 		ProcessingLogRetentionStores $stores,
-		private readonly IAppConfig $config,
-		private readonly LoggerInterface $logger,
 	) {
+		$this->logger = $runtime->logger;
+		$this->config = $runtime->appConfig;
 		$this->entries = $stores->entries;
 		$this->auditTrail = $stores->auditTrail;
-		parent::__construct(time: $time);
+		parent::__construct(time: $runtime->time);
 
 		$this->setInterval(seconds: 86400);
 

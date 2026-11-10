@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime;
 use OCA\OpenRegister\BackgroundJob\StateHistoryRebuildJob;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
@@ -83,10 +84,8 @@ class StateHistoryRebuildJobTest extends TestCase {
 	 */
 	private function runJob(): void {
 		$job = new StateHistoryRebuildJob(
-			$this->createMock(ITimeFactory::class),
-			new StateHistoryRebuildSources($this->rebuild, $this->audit, $this->schemas),
-			$this->appConfig,
-			$this->createMock(LoggerInterface::class)
+			new ConfiguredJobRuntime($this->createMock(ITimeFactory::class), $this->appConfig, $this->createMock(LoggerInterface::class)),
+			new StateHistoryRebuildSources($this->rebuild, $this->audit, $this->schemas)
 		);
 		$method = (new \ReflectionClass($job))->getMethod('run');
 		$method->invoke($job, null);

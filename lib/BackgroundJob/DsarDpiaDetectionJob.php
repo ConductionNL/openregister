@@ -52,7 +52,6 @@ use OCA\OpenRegister\Service\Gdpr\DpiaPatternDetectorInterface;
 use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolverInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -129,24 +128,36 @@ class DsarDpiaDetectionJob extends TimedJob {
 	private readonly AuditTrailMapperInterface $auditTrailMapper;
 
 	/**
+	 * AppConfig, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Logger, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Time factory required by parent.
-	 * @param IAppConfig $appConfig App-config reader.
+	 * @param ConfiguredJobRuntime $runtime The job runtime: scheduler clock, app settings and run log.
 	 * @param DsarDpiaDetectionServices $services Object path, policy packs, pattern detector and audit trail.
-	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		ITimeFactory $time,
-		private readonly IAppConfig $appConfig,
+		ConfiguredJobRuntime $runtime,
 		DsarDpiaDetectionServices $services,
-		private readonly LoggerInterface $logger,
 	) {
+		$this->logger = $runtime->logger;
+		$this->appConfig = $runtime->appConfig;
 		$this->objectService = $services->objectService;
 		$this->packResolver = $services->packResolver;
 		$this->detectionService = $services->detectionService;
 		$this->auditTrailMapper = $services->auditTrailMapper;
-		parent::__construct(time: $time);
+		parent::__construct(time: $runtime->time);
 		$this->setInterval(seconds: self::RUN_INTERVAL_SECONDS);
 
 	}//end __construct()
