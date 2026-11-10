@@ -241,9 +241,36 @@ class CredentialBrokerService {
 		?string $body = null,
 		?string $actingUserId = null,
 	): array {
-		$method = strtoupper($method);
-		$matchPath = $this->normalisePath(path: $path);
+		$run = new BrokerCallRun();
+		$run->credentialId = $credentialId;
+		$run->appId        = $appId;
+		$run->method       = strtoupper($method);
+		$run->matchPath    = $this->normalisePath(path: $path);
+		$run->path         = $path;
+		$run->headers      = $headers;
+		$run->body         = $body;
+		$run->actingUserId = $actingUserId;
 
+		$this->admitCall(run: $run);
+		$resolvedUrl = $this->lockedCallUrl(run: $run);
+
+		return $this->dispatchCall(run: $run, url: $resolvedUrl);
+	}//end request()
+
+	/**
+	 * Guards 1 to 3 of a brokered call: admit the caller to the credential, check the
+	 * calling app is allowed, and resolve the provider; the run takes the credential's
+	 * document, scope and provider.
+	 *
+	 * @param BrokerCallRun $run The call.
+	 *
+	 * @return void
+	 *
+	 * @throws CredentialAccessDeniedException When a guard fails closed.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function admitCall(BrokerCallRun $run): void {
 		// Guard 1 — access (per-object IDOR): scope-dispatched owner/membership check.
 		// TRUST BOUNDARY (openregister#450): request() is HTTP-routed (credential#brokerRequest),
 		// so it MUST NEVER let a caller assert an acting organisation — passing null keeps the
@@ -252,58 +279,103 @@ class CredentialBrokerService {
 		// against an organisation credential therefore still denies; only the non-routed
 		// resolveInjectable() path may carry an in-process organisation assertion.
 		$credential = $this->loadAdmittedCredential(
-			credentialId: $credentialId,
-			actingUserId: $actingUserId,
+			credentialId: $run->credentialId,
+			actingUserId: $run->actingUserId,
 			actingOrganisationId: null
 		);
-		$data = $credential->jsonSerialize();
-		$scope = $this->scopeOf(data: $data);
+		$run->data  = $credential->jsonSerialize();
+		$run->scope = $this->scopeOf(data: $run->data);
 
 		// Guard 2 — allowed app.
-		$this->assertAppAllowed(data: $data, appId: $appId, credentialId: $credentialId);
+		$this->assertAppAllowed(data: $run->data, appId: $run->appId, credentialId: $run->credentialId);
 
 		// Guard 3 + 4 — provider resolution, allow-rules, host-lock.
-		$provider = $this->resolveProvider(data: $data, credentialId: $credentialId);
+		$run->provider = $this->resolveProvider(data: $run->data, credentialId: $run->credentialId);
+	}//end admitCall()
 
+	/**
+	 * Guard 4 of a brokered call: refuse an inject-only provider, match the allow-rules,
+	 * and resolve the host-locked URL.
+	 *
+	 * @param BrokerCallRun $run The admitted call.
+	 *
+	 * @return string The resolved, host-locked URL.
+	 *
+	 * @throws CredentialAccessDeniedException When a guard fails closed.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function lockedCallUrl(BrokerCallRun $run): string {
 		// An inject-only provider carries no baseUrl/allowRules and MUST NEVER be proxied
 		// (an unbounded host is exactly what the constrained proxy exists to prevent). Its
 		// secret is reachable only app-side via resolveInjectable(); fail closed here.
-		if ($this->isInjectOnly(provider: $provider) === true) {
-			$this->deny(reason: 'inject-only provider cannot be proxied; use resolveInjectable', credentialId: $credentialId);
+		if ($this->isInjectOnly(provider: $run->provider) === true) {
+			$this->deny(reason: 'inject-only provider cannot be proxied; use resolveInjectable', credentialId: $run->credentialId);
 		}
 
-		$this->assertRuleAllowed(provider: $provider, method: $method, matchPath: $matchPath, credentialId: $credentialId);
-		$resolvedUrl = $this->resolveAndLockUrl(
-			provider: $provider,
-			path: $path,
-			credentialId: $credentialId,
-			data: $data
-		);
+		$this->assertRuleAllowed(provider: $run->provider, method: $run->method, matchPath: $run->matchPath, credentialId: $run->credentialId);
 
+		return $this->resolveAndLockUrl(
+			provider: $run->provider,
+			path: $run->path,
+			credentialId: $run->credentialId,
+			data: $run->data
+		);
+	}//end lockedCallUrl()
+
+	/**
+	 * Inject the credential's value and make the call, once every guard has passed.
+	 *
+	 * @param BrokerCallRun $run The admitted call.
+	 * @param string        $url The resolved, host-locked URL.
+	 *
+	 * @return array{status: int, headers: array<string, mixed>, body: string} The upstream status, headers, and body.
+	 *
+	 * @throws CredentialUpstreamException When a refresh or the outbound call fails.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function dispatchCall(BrokerCallRun $run, string $url): array {
 		// All guards passed — resolve the value to inject. For the pre-existing
 		// `secret` kind that is the stored secret verbatim; for `oauth2-token-set`
 		// it is the access token in force after any refresh the margin required.
 		// The dispatch is deliberately BELOW every guard, so a caller who is not
 		// admitted never causes a token endpoint to be contacted.
-		$secret = $this->injectionSecret(
-			data: $data,
-			provider: $provider,
-			credentialId: $credentialId,
-			scope: $scope,
-			actingUserId: $actingUserId
-		);
+		$secret = $this->callSecret(run: $run);
 
-		$requestHeaders = $this->injectAuth(provider: $provider, headers: $headers, secret: (string)$secret);
+		$requestHeaders = $this->injectAuth(provider: $run->provider, headers: $run->headers, secret: (string)$secret);
 
 		return $this->performCall(
-			method: $method,
-			url: $resolvedUrl,
+			method: $run->method,
+			url: $url,
 			headers: $requestHeaders,
-			body: $body,
-			credentialId: $credentialId,
+			body: $run->body,
+			credentialId: $run->credentialId,
 			secret: (string)$secret
 		);
-	}//end request()
+	}//end dispatchCall()
+
+	/**
+	 * The value a brokered call injects: the stored secret, or the access token in force
+	 * after any refresh the margin required.
+	 *
+	 * @param BrokerCallRun $run The admitted call.
+	 *
+	 * @return string The value to inject.
+	 *
+	 * @throws CredentialUpstreamException When a required refresh could not be completed.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md#requirement-injection-is-selected-by-kind
+	 */
+	private function callSecret(BrokerCallRun $run): string {
+		return $this->injectionSecret(
+			data: $run->data,
+			provider: $run->provider,
+			credentialId: $run->credentialId,
+			scope: $run->scope,
+			actingUserId: $run->actingUserId
+		);
+	}//end callSecret()
 
 	/**
 	 * Resolve the raw secret for an INJECT-ONLY credential, for same-instance app-side injection.
