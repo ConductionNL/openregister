@@ -105,19 +105,31 @@ class ExampleSetCollectivesStore {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
 	 */
 	public function collective(string $owner, string $name, array $groups): array {
+		return $this->collectiveOf(team: new CollectiveTeam(owner: $owner, groups: $groups), name: $name);
+	}//end collective()
+
+	/**
+	 * The collective of this name the team's owner is in, or a new one, with the team's groups added.
+	 *
+	 * @param CollectiveTeam $team The owner and the groups added to the collective's team.
+	 * @param string         $name The collective's name.
+	 *
+	 * @return array{id: int, created: bool}
+	 */
+	private function collectiveOf(CollectiveTeam $team, string $name): array {
 		$service = $this->container->get(self::COLLECTIVES);
 		try {
-			$found = $service->findCollectiveByName($owner, $name);
-			$this->addGroups(owner: $owner, circleId: (string) $found->getCircleId(), groups: $groups);
+			$found = $service->findCollectiveByName($team->owner, $name);
+			$this->addGroups(team: $team, circleId: (string) $found->getCircleId());
 			return ['id' => (int) $found->getId(), 'created' => false];
 		} catch (Throwable) {
-			$made = $service->createCollective($owner, 'nl', $name)[0];
+			$made = $service->createCollective($team->owner, 'nl', $name)[0];
 		}
 
-		$this->addGroups(owner: $owner, circleId: (string) $made->getCircleId(), groups: $groups);
+		$this->addGroups(team: $team, circleId: (string) $made->getCircleId());
 
 		return ['id' => (int) $made->getId(), 'created' => true];
-	}//end collective()
+	}//end collectiveOf()
 
 	/**
 	 * The top-level page of this title in the collective, or a new one with the content.
@@ -132,17 +144,34 @@ class ExampleSetCollectivesStore {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
 	 */
 	public function page(int $collective, string $owner, string $title, string $content): array {
-		$pages = $this->container->get(self::PAGES);
-		foreach ($pages->findAll($collective, $owner) as $page) {
-			if ($page->getTitle() === $title) {
-				return ['id' => (int) $page->getId(), 'created' => false];
-			}
+		$seat  = new CollectiveSeat(collective: $collective, owner: $owner);
+		$found = $this->titledPage(seat: $seat, title: $title);
+		if ($found !== null) {
+			return ['id' => $found, 'created' => false];
 		}
 
-		$page = $pages->createBase($collective, 0, $title, null, $owner, null, $content);
+		$page = $this->container->get(self::PAGES)->createBase($collective, 0, $title, null, $owner, null, $content);
 
 		return ['id' => (int) $page->getId(), 'created' => true];
 	}//end page()
+
+	/**
+	 * The id of the collective's page of this title, as the account reads the collective, or null.
+	 *
+	 * @param CollectiveSeat $seat  The collective id and the account that reads it.
+	 * @param string         $title The page title.
+	 *
+	 * @return int|null
+	 */
+	private function titledPage(CollectiveSeat $seat, string $title): ?int {
+		foreach ($this->container->get(self::PAGES)->findAll($seat->collective, $seat->owner) as $page) {
+			if ($page->getTitle() === $title) {
+				return (int) $page->getId();
+			}
+		}
+
+		return null;
+	}//end titledPage()
 
 	/**
 	 * Whether the page is still in the collective.
@@ -156,14 +185,26 @@ class ExampleSetCollectivesStore {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
 	 */
 	public function pageExists(int $collective, int $page, string $owner): bool {
+		return $this->pageFound(seat: new CollectiveSeat(collective: $collective, owner: $owner), page: $page);
+	}//end pageExists()
+
+	/**
+	 * Whether the page is still in the collective, as the account reads it.
+	 *
+	 * @param CollectiveSeat $seat The collective id and the account that reads it.
+	 * @param int            $page The page id.
+	 *
+	 * @return bool
+	 */
+	private function pageFound(CollectiveSeat $seat, int $page): bool {
 		try {
-			$this->container->get(self::PAGES)->find($collective, $page, $owner);
+			$this->container->get(self::PAGES)->find($seat->collective, $page, $seat->owner);
 		} catch (Throwable) {
 			return false;
 		}
 
 		return true;
-	}//end pageExists()
+	}//end pageFound()
 
 	/**
 	 * Delete a page the set wrote, without passing through the trash.
@@ -199,22 +240,22 @@ class ExampleSetCollectivesStore {
 	/**
 	 * Add Nextcloud groups to a collective's team; a group already in it stays.
 	 *
-	 * @param string             $owner    The account that manages the team.
-	 * @param string             $circleId The team's id.
-	 * @param array<int, string> $groups   The group ids.
+	 * @param CollectiveTeam $team     The account that manages the team, and the group ids.
+	 * @param string         $circleId The team's id.
 	 *
 	 * @return void
 	 */
-	private function addGroups(string $owner, string $circleId, array $groups): void {
-		if ($groups === [] || class_exists(self::CIRCLES) === false) {
+	private function addGroups(CollectiveTeam $team, string $circleId): void {
+		if ($team->groups === [] || class_exists(self::CIRCLES) === false) {
 			return;
 		}
 
 		$circles = $this->container->get(self::CIRCLES);
-		$circles->startSession($circles->getFederatedUser($owner, self::USER_MEMBER));
+		$circles->startSession($circles->getFederatedUser($team->owner, self::USER_MEMBER));
+		$add = fn (string $group): mixed => $circles->addMember($circleId, $circles->getFederatedUser($group, self::GROUP_MEMBER));
 		try {
-			foreach ($groups as $group) {
-				$this->addGroup(circles: $circles, circleId: $circleId, group: $group);
+			foreach ($team->groups as $group) {
+				$this->addGroup(add: $add, group: $group);
 			}
 		} finally {
 			$circles->stopSession();
@@ -224,15 +265,14 @@ class ExampleSetCollectivesStore {
 	/**
 	 * Add one group to the circle; a group Circles refuses is left out.
 	 *
-	 * @param mixed  $circles  The Circles manager, in the owner's session.
-	 * @param string $circleId The circle id.
-	 * @param string $group    The group.
+	 * @param callable $add   Adds a group to the circle, through the Circles manager in the owner's session.
+	 * @param string   $group The group.
 	 *
 	 * @return void
 	 */
-	private function addGroup(mixed $circles, string $circleId, string $group): void {
+	private function addGroup(callable $add, string $group): void {
 		try {
-			$circles->addMember($circleId, $circles->getFederatedUser($group, self::GROUP_MEMBER));
+			$add($group);
 		} catch (Throwable) {
 			return;
 		}

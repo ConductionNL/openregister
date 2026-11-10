@@ -132,6 +132,7 @@ import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import AutoFix from 'vue-material-design-icons/AutoFix.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import { isValidJson } from '../../composables/jsonText.js'
 import { getTheme } from '../../services/getTheme.js'
 
 export default {
@@ -307,18 +308,7 @@ export default {
 			this.object = JSON.stringify(JSON.parse(this.object), null, 2)
 		},
 
-		/**
-		 * @param {string} json
-		 * @spec exclude client-side JSON validation helper
-		 */
-		validateJson(json) {
-			try {
-				JSON.parse(json)
-				return true
-			} catch {
-				return false
-			}
-		},
+		validateJson: isValidJson,
 	},
 }
 </script>

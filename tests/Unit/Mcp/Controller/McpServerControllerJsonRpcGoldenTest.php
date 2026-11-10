@@ -134,7 +134,7 @@ class McpServerControllerJsonRpcGoldenTest extends TestCase {
 			platform: new McpServerPlatform(logger: $this->logger(), userSession: $this->session(scenario: $scenario)),
 		);
 
-		return new McpServerController(appName: 'openregister', request: $request, services: $services);
+		return new McpServerController(request: $request, services: $services);
 	}//end controller()
 
 	/**

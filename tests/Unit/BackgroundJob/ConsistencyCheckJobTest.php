@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\RecordedJobRuntime;
 use OCA\OpenRegister\BackgroundJob\ConsistencyCheckJob;
 use OCA\OpenRegister\Service\Operations\ConsistencyCheckServiceInterface;
 use OCA\OpenRegister\Service\Operations\JobRunRecorderInterface;
@@ -53,8 +54,7 @@ class ConsistencyCheckJobTest extends TestCase {
 		);
 
 		$job = new ConsistencyCheckJob(
-			$this->createMock(ITimeFactory::class),
-			$this->createMock(JobRunRecorderInterface::class),
+			new RecordedJobRuntime($this->createMock(ITimeFactory::class), $this->createMock(JobRunRecorderInterface::class)),
 			$check,
 			$config
 		);

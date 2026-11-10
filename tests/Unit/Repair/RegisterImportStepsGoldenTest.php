@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Repair;
 
+use OCA\OpenRegister\Repair\RegisterDescriptorImport;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
@@ -116,7 +117,7 @@ class RegisterImportStepsGoldenTest extends TestCase {
 			});
 		}
 
-		$instance = new $class($config, $apps, $logger);
+		$instance = new $class(new RegisterDescriptorImport($config, $apps, $logger));
 		$seen[] = 'name ' . $instance->getName();
 		$instance->run($output);
 		return $seen;

@@ -48,27 +48,6 @@ use Psr\Log\LoggerInterface;
 class ToolManagementHandler {
 
 	/**
-	 * Agent mapper
-	 *
-	 * @var AgentMapper
-	 */
-	private AgentMapper $agentMapper;
-
-	/**
-	 * Tool registry
-	 *
-	 * @var ToolRegistry
-	 */
-	private ToolRegistry $toolRegistry;
-
-	/**
-	 * Logger
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
-
-	/**
 	 * Constructor
 	 *
 	 * @param AgentMapper $agentMapper Agent mapper.
@@ -80,13 +59,10 @@ class ToolManagementHandler {
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function __construct(
-		AgentMapper $agentMapper,
-		ToolRegistry $toolRegistry,
-		LoggerInterface $logger,
+		private readonly AgentMapper $agentMapper,
+		private readonly ToolRegistry $toolRegistry,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->agentMapper = $agentMapper;
-		$this->toolRegistry = $toolRegistry;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**

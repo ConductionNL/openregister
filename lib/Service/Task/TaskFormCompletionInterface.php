@@ -36,12 +36,10 @@ interface TaskFormCompletionInterface {
 	/**
 	 * Complete a task, validating and writing its form payload.
 	 *
-	 * @param string               $uuid       The task uuid.
-	 * @param string               $outcome    The completion outcome.
-	 * @param string|null          $resultText Free-text result.
-	 * @param string|null          $comment    Completion comment.
-	 * @param array<string, mixed> $data       The declared field values; empty for a form-less completion.
-	 * @param string|null          $actor      The completing identity.
+	 * @param string               $uuid   The task uuid.
+	 * @param TaskAnswer           $answer The completion outcome, result and comment.
+	 * @param array<string, mixed> $data   The declared field values; empty for a form-less completion.
+	 * @param string|null          $actor  The completing identity.
 	 *
 	 * @return Task The completed task.
 	 *
@@ -49,12 +47,5 @@ interface TaskFormCompletionInterface {
 	 * @throws TaskSubjectWriteRefusedException When the subject's own validation or lifecycle refuses the write.
 	 * @throws TaskAccessDeniedException When the task verb or the object write is not authorized.
 	 */
-	public function complete(
-		string $uuid,
-		string $outcome,
-		?string $resultText,
-		?string $comment,
-		array $data,
-		?string $actor
-	): Task;
+	public function complete(string $uuid, TaskAnswer $answer, array $data, ?string $actor): Task;
 }//end interface

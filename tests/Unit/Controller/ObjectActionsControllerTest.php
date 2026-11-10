@@ -73,7 +73,6 @@ class ObjectActionsControllerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->controller = ObjectActionsControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->objects,
 			$this->macros,

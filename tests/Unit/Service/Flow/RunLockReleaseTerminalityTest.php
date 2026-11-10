@@ -47,8 +47,10 @@ use OCA\OpenRegister\Listener\FlowRunLockReleaseListener;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FiringClaim;
 use OCA\OpenRegister\Service\Flow\FlowPlaceClaims;
 use OCA\OpenRegister\Service\Flow\FlowRunCommit;
+use OCA\OpenRegister\Service\Flow\FlowRunCommitRows;
 use OCA\OpenRegister\Service\Flow\FlowRunMarkingStore;
 use OCA\OpenRegister\Service\Flow\FlowRunStart;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
@@ -57,6 +59,7 @@ use OCA\OpenRegister\Service\Flow\FlowStreamWalk;
 use OCA\OpenRegister\Service\Flow\FlowStreamWalkLimits;
 use OCA\OpenRegister\Service\Flow\FlowStreamWalkParts;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
 use OCA\OpenRegister\Tests\Unit\Db\FluentQueryBuilderTrait;
 use OCP\EventDispatcher\Event;
@@ -85,7 +88,7 @@ class InMemoryFlowRunMapper extends FlowRunMapper {
 		IEventDispatcher $dispatcher,
 		private readonly FlowRun $row,
 	) {
-		parent::__construct(db: $db, dispatcher: $dispatcher);
+		parent::__construct(db: $db, entityEvents: new EntityEventPublisher(dispatcher: $dispatcher));
 	}
 
 	/**
@@ -298,16 +301,14 @@ class RunLockReleaseTerminalityTest extends TestCase {
 
 		$commit = new FlowRunCommit(
 			db: $db,
-			runs: $runs,
-			streams: $streams,
-			claims: $claims,
-			steps: $steps,
+			rows: new FlowRunCommitRows(runs: $runs, streams: $streams, claims: $claims, steps: $steps),
 			logger: new NullLogger()
 		);
 
 		// Claims are not the property under test: every acquire succeeds.
 		$places = $this->createMock(FlowPlaceClaims::class);
-		$places->method('acquire')->willReturnCallback(static function (string $runUuid, string $streamId, string $transition, array $places): ?array {
+		$places->method('claim')->willReturnCallback(static function (FiringClaim $firing): ?array {
+			$places = $firing->places;
 			sort($places, SORT_STRING);
 			return $places;
 		});

@@ -69,25 +69,54 @@ class AppHostSettingsService {
 	private ?array $featureDeclarations = null;
 
 	/**
+	 * App config store.
+	 *
+	 * @var IAppConfig
+	 */
+	protected readonly IAppConfig $appConfig;
+
+	/**
+	 * App manager (OR availability).
+	 *
+	 * @var IAppManager
+	 */
+	protected readonly IAppManager $appManager;
+
+	/**
+	 * DI container (lazy OR service resolution).
+	 *
+	 * @var ContainerInterface
+	 */
+	protected readonly ContainerInterface $container;
+
+	/**
+	 * PSR logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	protected readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
+	 * The group manager and user session decide the admin check, so they stay
+	 * direct parameters rather than part of the platform bundle.
+	 *
 	 * @param string $appId The calling (leaf) app id.
-	 * @param IAppConfig $appConfig App config store.
-	 * @param IAppManager $appManager App manager (OR availability).
-	 * @param ContainerInterface $container DI container (lazy OR service resolution).
+	 * @param AppHostSettingsServices $services Config store, app manager, container and logger.
 	 * @param IGroupManager $groupManager Group manager (admin check).
 	 * @param IUserSession $userSession Current user session.
-	 * @param LoggerInterface $logger PSR logger.
 	 */
 	public function __construct(
 		protected readonly string $appId,
-		protected readonly IAppConfig $appConfig,
-		protected readonly IAppManager $appManager,
-		protected readonly ContainerInterface $container,
+		AppHostSettingsServices $services,
 		protected readonly IGroupManager $groupManager,
 		protected readonly IUserSession $userSession,
-		protected readonly LoggerInterface $logger,
 	) {
+		$this->appConfig = $services->appConfig;
+		$this->appManager = $services->appManager;
+		$this->container = $services->container;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**

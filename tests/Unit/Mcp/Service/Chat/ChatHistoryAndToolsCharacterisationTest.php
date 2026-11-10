@@ -23,6 +23,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
+use OCA\OpenRegister\Mcp\Service\Chat\ChatReply;
 
 /**
  * Pins message-history building, message storage and agent tool loading.
@@ -146,7 +147,7 @@ class ChatHistoryAndToolsCharacterisationTest extends TestCase
         $mapper->expects($this->once())->method('insert')->willReturnArgument(0);
         $handler = new MessageHistoryHandler($mapper, $this->createMock(ConversationMapper::class), $this->logger());
 
-        $message = $handler->storeAssistantMessage(5, 'body', ['s']);
+        $message = $handler->storeAssistantMessage(5, new ChatReply('body', ['s']));
 
         $this->assertSame(5, $message->getConversationId());
         $this->assertSame('assistant', $message->getRole());

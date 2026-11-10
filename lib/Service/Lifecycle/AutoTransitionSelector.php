@@ -81,8 +81,18 @@ class AutoTransitionSelector implements AutoTransitionSelectorInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function select(array $annotation, array $objectData, array $previous, string $schemaSlug): ?AutoTransitionCandidate {
-		$write   = ['objectData' => $objectData, 'previous' => $previous, 'schemaSlug' => $schemaSlug];
-		$context = self::contextFor(annotation: $annotation, write: $write);
+		$write = ['objectData' => $objectData, 'previous' => $previous, 'schemaSlug' => $schemaSlug];
+		return $this->selectIn(context: self::contextFor(annotation: $annotation, write: $write));
+	}//end select()
+
+	/**
+	 * The one eligible move within a write's context, or null.
+	 *
+	 * @param AutoTransitionContext|null $context The write and its candidates, or null when nothing is declared.
+	 *
+	 * @return AutoTransitionCandidate|null The one eligible move, or null.
+	 */
+	private function selectIn(?AutoTransitionContext $context): ?AutoTransitionCandidate {
 		if ($context === null) {
 			return null;
 		}
@@ -93,7 +103,7 @@ class AutoTransitionSelector implements AutoTransitionSelectorInterface {
 		}
 
 		return $this->eligible(candidate: $candidate, context: $context);
-	}//end select()
+	}//end selectIn()
 
 	/**
 	 * What a selection reads, or null when the annotation names no field, declares no transitions
@@ -310,13 +320,15 @@ class AutoTransitionSelector implements AutoTransitionSelectorInterface {
 	private function ruleHolds(array $candidate, AutoTransitionContext $context): bool {
 		return $this->evaluator->holds(
 			rule: $candidate['spec']['autoWhen'],
-			write: new LifecycleWrite(
-				newData: $context->objectData,
-				oldData: $context->previous,
-				schemaSlug: $context->schemaSlug,
-				field: $context->field
-			),
-			move: new TransitionMove(action: $candidate['action'], from: $context->current, to: $candidate['to'])
+			attempt: new TransitionAttempt(
+				write: new LifecycleWrite(
+					newData: $context->objectData,
+					oldData: $context->previous,
+					schemaSlug: $context->schemaSlug,
+					field: $context->field
+				),
+				move: new TransitionMove(action: $candidate['action'], from: $context->current, to: $candidate['to'])
+			)
 		);
 	}//end ruleHolds()
 

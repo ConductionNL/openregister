@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Object\BulkSaveSession;
 use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -96,7 +97,10 @@ class SaveObjectsSingleSchemaPreparationGoldenTest extends TestCase {
 		$schema->setProperties(['title' => ['type' => 'string'], 'parent' => ['type' => 'string', 'format' => 'uuid']]);
 
 		$method = new ReflectionMethod(SaveObjects::class, 'prepareSingleSchemaObjectsOptimized');
-		return $method->invoke($handler, $objects, $register, $schema)[0];
+		$run           = new BulkSaveRun();
+		$run->register = $register;
+		$run->schema   = $schema;
+		return $method->invoke($handler, $objects, $run)[0];
 	}//end prepare()
 
 	public function testProvidedIdOwnerOrganisationMetadataAndRelations(): void {

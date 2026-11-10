@@ -12,6 +12,7 @@
   SPDX-FileCopyrightText: 2026 Conduction B.V.
 -->
 <template>
+	<!-- eslint-disable vue/no-undef-components -- registered through pageShellComponents, which the rule cannot follow -->
 	<NcAppContent>
 		<div class="migration-packs">
 			<div class="migration-packs__header">
@@ -162,13 +163,6 @@
 <script>
 import { CnDataTable } from '@conduction/nextcloud-vue'
 import { getCanonicalLocale } from '@nextcloud/l10n'
-import {
-	NcAppContent,
-	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -183,6 +177,7 @@ import {
 	importPack,
 	listPacks,
 } from '../../services/migrationPacks.js'
+import { pageShellComponents } from '../pageShell.js'
 import { t } from './l10n.js'
 
 export default {
@@ -192,11 +187,7 @@ export default {
 		DeleteMigrationPackDialog,
 		Download,
 		Eye,
-		NcAppContent,
-		NcButton,
-		NcEmptyContent,
-		NcLoadingIcon,
-		NcNoteCard,
+		...pageShellComponents,
 		Pencil,
 		TrashCanOutline,
 		Upload,

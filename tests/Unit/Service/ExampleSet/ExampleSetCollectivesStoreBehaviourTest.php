@@ -171,7 +171,7 @@ class ExampleSetCollectivesStoreBehaviourTest extends TestCase {
 	public function testAnExistingCollectiveIsReusedNotCreated(): void {
 		$service = $this->collectives(existing: self::entity(id: 12));
 
-		$this->assertSame(['id' => 12, 'created' => false], $this->store()->collective('admin', 'Demo', ['g1']));
+		$this->assertSame(['id' => 12, 'created' => false], $this->store()->collective('admin', 'Demo', []));
 		$this->assertSame([['find', 'admin', 'Demo']], $service->calls);
 	}
 

@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Service\Case\CaseAnchor;
+use OCA\OpenRegister\Service\Case\CaseItemsEnsureRequest;
 use OCA\OpenRegister\Service\Case\CaseAnchorReader;
 use OCA\OpenRegister\Service\Case\CaseBusinessStateWriter;
 use OCA\OpenRegister\Service\Case\CaseCascadeReaders;
@@ -47,8 +48,11 @@ use OCA\OpenRegister\Service\Case\CasePlanBringOver;
 use OCA\OpenRegister\Service\Case\CasePlanCascade;
 use OCA\OpenRegister\Service\Case\CasePlanDefinition;
 use OCA\OpenRegister\Service\Case\CasePlanEnsurer;
+use OCA\OpenRegister\Service\Case\CasePlanInsertion;
 use OCA\OpenRegister\Service\Case\CasePlanItemTimers;
 use OCA\OpenRegister\Service\Case\CasePlanMechanics;
+use OCA\OpenRegister\Service\Case\CasePlanPlacement;
+use OCA\OpenRegister\Service\Case\CasePlanProvenance;
 use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Service\Case\CasePlanStateMachine;
 use OCA\OpenRegister\Service\Case\CasePlanStore;
@@ -329,7 +333,7 @@ class CaseUnitsGoldenTest extends TestCase {
 		$realiser = $this->realiser();
 		$anchor = $this->createMock(CaseAnchorReader::class);
 		$anchor->method('read')->willReturn(['status' => 'open']);
-		$anchor->method('mayRead')->willReturnCallback(static fn (string $objectUuid): bool => $objectUuid !== self::THIRD);
+		$anchor->method('mayRead')->willReturnCallback(static fn (CaseAnchor $anchor): bool => $anchor->objectUuid !== self::THIRD);
 		$writer = $this->createMock(CaseBusinessStateWriter::class);
 		$writer->method('mirrorStatus')->willReturnCallback(
 			static function (CaseItem $milestone) use (&$writes): bool {
@@ -467,17 +471,13 @@ class CaseUnitsGoldenTest extends TestCase {
 		];
 		$rowFrom = static fn (array $node, string $origin, ?string $flowUuid = null, ?int $flowVersion = null): mixed => self::attempt(
 			static fn (): CaseItem => $definitions->rowFrom(
-				node: $node,
-				objectUuid: 'obj',
-				registerId: 1,
-				schemaId: null,
-				parentId: 9,
-				position: 3,
-				settings: ['a' => 1],
-				origin: $origin,
-				actor: 'alice',
-				flowUuid: $flowUuid,
-				flowVersion: $flowVersion
+				placed: new CasePlanPlacement(node: $node, parentId: 9, position: 3),
+				insertion: new CasePlanInsertion(
+					anchor: new CaseAnchor(objectUuid: 'obj', registerId: 1, schemaId: null),
+					settings: ['a' => 1],
+					actor: 'alice',
+					provenance: new CasePlanProvenance(flowUuid: $flowUuid, flowVersion: $flowVersion, origin: $origin)
+				)
 			)
 		);
 		$out['rowFrom']['full'] = $rowFrom($full, CaseItem::ORIGIN_DISCRETIONARY, 'f', 4);
@@ -504,22 +504,22 @@ class CaseUnitsGoldenTest extends TestCase {
 		];
 		$out = [];
 		$out['fresh'] = self::attempt(
-			fn (): array => $this->ensurer()->ensure(
+			fn (): array => $this->ensurer()->ensure(request: new CaseItemsEnsureRequest(
 				anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 2),
 				definition: CasePlanEnsurerTest::migrated(),
 				history: $history,
 				actor: 'system:dossiq'
-			)
+			))
 		);
 		$grown = CasePlanEnsurerTest::migrated();
 		$grown['items'][] = ['key' => 'archief', 'type' => CaseItem::TYPE_MILESTONE, 'state' => CaseItem::STATE_COMPLETED];
 		$out['resumed'] = self::attempt(
-			fn (): array => $this->ensurer()->ensure(
+			fn (): array => $this->ensurer()->ensure(request: new CaseItemsEnsureRequest(
 				anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: null, schemaId: 2),
 				definition: $grown,
 				history: [],
 				actor: 'system:dossiq'
-			)
+			))
 		);
 
 		$refusals = [
@@ -559,30 +559,30 @@ class CaseUnitsGoldenTest extends TestCase {
 		];
 		foreach ($refusals as $label => [$definition, $entries]) {
 			$out['refusals'][$label] = self::attempt(
-				fn (): array => $this->ensurer()->ensure(
+				fn (): array => $this->ensurer()->ensure(request: new CaseItemsEnsureRequest(
 					anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 2),
 					definition: $definition,
 					history: $entries,
 					actor: 'system:dossiq'
-				)
+				))
 			);
 		}
 
 		$out['anchor register'] = self::attempt(
-			fn (): array => $this->ensurer()->ensure(
+			fn (): array => $this->ensurer()->ensure(request: new CaseItemsEnsureRequest(
 				anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 5, schemaId: 2),
 				definition: CasePlanEnsurerTest::migrated(),
 				history: [],
 				actor: 'system:dossiq'
-			)
+			))
 		);
 		$out['anchor schema'] = self::attempt(
-			fn (): array => $this->ensurer()->ensure(
+			fn (): array => $this->ensurer()->ensure(request: new CaseItemsEnsureRequest(
 				anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 7),
 				definition: CasePlanEnsurerTest::migrated(),
 				history: [],
 				actor: 'system:dossiq'
-			)
+			))
 		);
 
 		$armed = [];
@@ -611,12 +611,12 @@ class CaseUnitsGoldenTest extends TestCase {
 		];
 		$timers = new CasePlanItemTimers(timers: $core, logger: new NullLogger(), markers: $markers);
 		$out['timed'] = self::attempt(
-			fn (): array => $this->ensurer($timers)->ensure(
+			fn (): array => $this->ensurer($timers)->ensure(request: new CaseItemsEnsureRequest(
 				anchor: new CaseAnchor(objectUuid: self::OTHER, registerId: 1, schemaId: 2),
 				definition: $timed,
 				history: [],
 				actor: 'system:dossiq'
-			)
+			))
 		);
 		$timed['items'][] = [
 			'key' => 'oud',
@@ -625,12 +625,12 @@ class CaseUnitsGoldenTest extends TestCase {
 			'expiresAt' => '2999-03-01T00:00:00+00:00'
 		];
 		$out['timed again'] = self::attempt(
-			fn (): array => $this->ensurer($timers)->ensure(
+			fn (): array => $this->ensurer($timers)->ensure(request: new CaseItemsEnsureRequest(
 				anchor: new CaseAnchor(objectUuid: self::OTHER, registerId: 1, schemaId: 2),
 				definition: $timed,
 				history: [],
 				actor: 'system:dossiq'
-			)
+			))
 		);
 		$out['armed'] = $armed;
 		$out['marked'] = array_keys($markers->all());
@@ -754,6 +754,9 @@ class CaseUnitsGoldenTest extends TestCase {
 				data: ['key' => 'x5', 'type' => 'humanTask', 'parent' => 'assessment'],
 				uid: 'mallory'
 			)
+		);
+		$out['attach denied at root'] = self::attempt(
+			static fn (): CaseItem => $service->attachAdHoc(objectUuid: $obj, data: ['key' => 'x8', 'type' => 'humanTask'], uid: 'mallory')
 		);
 		$out['attach invalid'] = self::attempt(
 			static fn (): CaseItem => $service->attachAdHoc(

@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
 use OCA\OpenRegister\Service\ObjectSource\TablesColumnMapper;
+use OCA\OpenRegister\Service\ObjectSource\TablesRowProjection;
 use OCA\OpenRegister\Service\ObjectSource\TablesUuidDeriver;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -171,7 +172,7 @@ class TablesColumnMapperTest extends TestCase {
 		];
 
 		$map = $this->mapper->buildColumnMap(columns: $columns);
-		$data = $this->mapper->projectRow(row: $row, columns: $columns, columnMap: $map, targetSchemaExists: static fn (int $t) => false);
+		$data = $this->mapper->projectRow(row: $row, projection: new TablesRowProjection(columns: $columns, columnMap: $map, targetSchemaExists: static fn (int $t) => false));
 
 		$this->assertSame('Swing', $data['name']);
 		$this->assertSame(4, $data['score']);
@@ -193,7 +194,7 @@ class TablesColumnMapperTest extends TestCase {
 		];
 
 		$map = $this->mapper->buildColumnMap(columns: $columns);
-		$data = $this->mapper->projectRow(row: $row, columns: $columns, columnMap: $map, targetSchemaExists: static fn (int $t) => false);
+		$data = $this->mapper->projectRow(row: $row, projection: new TablesRowProjection(columns: $columns, columnMap: $map, targetSchemaExists: static fn (int $t) => false));
 
 		$this->assertFalse($data['done']);
 	}//end testProjectRowCoercesStringFalseCheckCell()
@@ -214,7 +215,7 @@ class TablesColumnMapperTest extends TestCase {
 		];
 
 		$map = $this->mapper->buildColumnMap(columns: $columns);
-		$data = $this->mapper->projectRow(row: $row, columns: $columns, columnMap: $map, targetSchemaExists: static fn (int $t) => false);
+		$data = $this->mapper->projectRow(row: $row, projection: new TablesRowProjection(columns: $columns, columnMap: $map, targetSchemaExists: static fn (int $t) => false));
 
 		$this->assertSame(['name' => 'Swing'], $data);
 	}//end testProjectRowSkipsUnknownColumn()
@@ -229,7 +230,7 @@ class TablesColumnMapperTest extends TestCase {
 		$row = ['id' => 9, 'cells' => [['columnId' => 8, 'value' => 34]]];
 
 		$map = $this->mapper->buildColumnMap(columns: $columns);
-		$data = $this->mapper->projectRow(row: $row, columns: $columns, columnMap: $map, targetSchemaExists: static fn (int $t) => $t === 12);
+		$data = $this->mapper->projectRow(row: $row, projection: new TablesRowProjection(columns: $columns, columnMap: $map, targetSchemaExists: static fn (int $t) => $t === 12));
 
 		$this->assertSame($this->deriver->deriveObjectUuid(tableId: 12, rowId: 34), $data['contract']);
 	}//end testRelationMapsToDerivedUuid()
@@ -244,7 +245,7 @@ class TablesColumnMapperTest extends TestCase {
 		$row = ['id' => 9, 'cells' => [['columnId' => 8, 'value' => 34]]];
 
 		$map = $this->mapper->buildColumnMap(columns: $columns);
-		$data = $this->mapper->projectRow(row: $row, columns: $columns, columnMap: $map, targetSchemaExists: static fn (int $t) => false);
+		$data = $this->mapper->projectRow(row: $row, projection: new TablesRowProjection(columns: $columns, columnMap: $map, targetSchemaExists: static fn (int $t) => false));
 
 		$this->assertSame(34, $data['contract']);
 	}//end testRelationFallsBackToRawRowId()

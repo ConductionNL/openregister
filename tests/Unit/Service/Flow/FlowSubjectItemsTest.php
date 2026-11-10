@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowSubjectItems;
+use OCA\OpenRegister\Service\Flow\LiveSubject;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 
@@ -103,7 +104,7 @@ class FlowSubjectItemsTest extends TestCase {
 			'not-an-item',
 		];
 
-		$out = FlowSubjectItems::refreshSubjectProjection($items, $subject, ' s-1 ');
+		$out = FlowSubjectItems::refreshSubjectProjection($items, new LiveSubject($subject, ' s-1 '));
 
 		$this->assertSame(
 			['closed', 'closed', 'closed', 'open', 'closed', 'open'],
@@ -123,8 +124,8 @@ class FlowSubjectItemsTest extends TestCase {
 		$subject->status = 'closed';
 		$items           = [['json' => ['id' => 's-1', 'status' => 'open']]];
 
-		$this->assertSame($items, FlowSubjectItems::refreshSubjectProjection($items, $subject, '  '));
-		$this->assertSame([], FlowSubjectItems::refreshSubjectProjection([], $subject, 's-1'));
-		$this->assertSame($items, FlowSubjectItems::refreshSubjectProjection($items, new stdClass(), 's-1'));
+		$this->assertSame($items, FlowSubjectItems::refreshSubjectProjection($items, new LiveSubject($subject, '  ')));
+		$this->assertSame([], FlowSubjectItems::refreshSubjectProjection([], new LiveSubject($subject, 's-1')));
+		$this->assertSame($items, FlowSubjectItems::refreshSubjectProjection($items, new LiveSubject(new stdClass(), 's-1')));
 	}
 }

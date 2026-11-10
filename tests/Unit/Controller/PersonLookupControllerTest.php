@@ -69,7 +69,6 @@ class PersonLookupControllerTest extends TestCase {
 		$this->brp = $this->createMock(BrpPersonProvider::class);
 
 		$this->controller = new PersonLookupController(
-			'openregister',
 			$this->request,
 			$this->brp
 		);

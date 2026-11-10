@@ -1,0 +1,36 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`MergeOperationsIndex table draws the header row and a row per merge operation 1`] = `
+"<table class="mergeOperationsTable">
+  <thead>
+    <tr>
+      <th scope="col">t:Survivor</th>
+      <th scope="col">t:Merged from</th>
+      <th scope="col">t:Reason</th>
+      <th scope="col">t:Merged at</th>
+      <th scope="col">t:Status</th>
+      <th scope="col">t:Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr data-testid="mdm-merge-operation-row">
+      <td>a</td>
+      <td>b</td>
+      <td>same</td>
+      <td>2026-01-02</td>
+      <td><span class="badge badge-status-reversible">t:Reversible</span></td>
+      <td><button variant="tertiary" data-testid="mdm-merge-reverse"> t:Reverse</button></td>
+    </tr>
+    <tr data-testid="mdm-merge-operation-row">
+      <td>c</td>
+      <td>d</td>
+      <td>—</td>
+      <td>—</td>
+      <td><span class="badge badge-status-final">t:Reversed / final</span></td>
+      <td>
+        <!--v-if-->
+      </td>
+    </tr>
+  </tbody>
+</table>"
+`;

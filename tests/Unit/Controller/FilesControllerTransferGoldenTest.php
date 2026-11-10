@@ -108,7 +108,6 @@ class FilesControllerTransferGoldenTest extends TestCase {
 	public function testTransferMatchesTheRecording(string $action, array $case): void {
 		$this->calls = [];
 		$controller = FilesControllerFactory::create(
-			'openregister',
 			$this->request(case: $case),
 			$this->fileService(case: $case),
 			$this->objectService(case: $case),

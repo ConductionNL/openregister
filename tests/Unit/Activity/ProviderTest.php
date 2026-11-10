@@ -21,9 +21,7 @@ use OCA\OpenRegister\Activity\Provider;
 use OCA\OpenRegister\Activity\ProviderSubjectHandler;
 use OCP\Activity\Exceptions\UnknownActivityException;
 use OCP\Activity\IEvent;
-use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\L10N\IFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -31,9 +29,6 @@ use PHPUnit\Framework\TestCase;
  * Unit tests for Activity Provider.
  */
 class ProviderTest extends TestCase {
-	/** @var IFactory&MockObject */
-	private IFactory $l10nFactory;
-
 	/** @var IURLGenerator&MockObject */
 	private IURLGenerator $urlGenerator;
 
@@ -44,12 +39,10 @@ class ProviderTest extends TestCase {
 
 	protected function setUp(): void {
 		parent::setUp();
-		$this->l10nFactory = $this->createMock(IFactory::class);
 		$this->urlGenerator = $this->createMock(IURLGenerator::class);
 		$this->subjectHandler = $this->createMock(ProviderSubjectHandler::class);
 
 		$this->provider = new Provider(
-			$this->l10nFactory,
 			$this->urlGenerator,
 			$this->subjectHandler,
 		);
@@ -71,15 +64,13 @@ class ProviderTest extends TestCase {
 	 * Test: parse() processes a valid openregister event correctly.
 	 */
 	public function testParseHandlesValidEvent(): void {
-		$l = $this->createMock(IL10N::class);
-		$this->l10nFactory->method('get')->willReturn($l);
 		$this->urlGenerator->method('getAbsoluteURL')->willReturn('https://example.com/icon.svg');
 		$this->urlGenerator->method('imagePath')->willReturn('/apps/openregister/img/app-dark.svg');
 
 		$event = $this->mockEvent();
 		$event->expects($this->once())->method('setIcon');
 
-		$this->subjectHandler->expects($this->once())->method('applySubjectText');
+		$this->subjectHandler->expects($this->once())->method('applySubjectText')->with($event, 'en');
 
 		$result = $this->provider->parse('en', $event);
 		$this->assertSame($event, $result);
@@ -109,8 +100,6 @@ class ProviderTest extends TestCase {
 	 * @dataProvider validSubjectsProvider
 	 */
 	public function testParseHandlesAllNineSubjects(string $subject): void {
-		$l = $this->createMock(IL10N::class);
-		$this->l10nFactory->method('get')->willReturn($l);
 		$this->urlGenerator->method('getAbsoluteURL')->willReturn('https://example.com/icon.svg');
 		$this->urlGenerator->method('imagePath')->willReturn('/icon.svg');
 

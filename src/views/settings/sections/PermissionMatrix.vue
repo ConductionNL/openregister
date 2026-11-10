@@ -273,6 +273,34 @@ import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import { useRegisterStore } from '../../../store/modules/register.js'
 import { useSchemaStore } from '../../../store/modules/schema.js'
 
+/**
+ * Group names of authorization entries, which are a group name or `{ group }`.
+ *
+ * @param {Array} entries The authorization entries of one action
+ * @return {Array<string>} The group names, in entry order
+ */
+function groupNames(entries) {
+	return entries
+		.map((entry) => {
+			if (typeof entry === 'string') return entry
+			if (entry && entry.group) return entry.group
+			return null
+		})
+		.filter(Boolean)
+}
+
+/**
+ * Whether a schema configures the action itself rather than inheriting it.
+ *
+ * @param {object} schema The schema
+ * @param {string} action The action
+ * @return {boolean} True for a direct permission
+ */
+function hasDirectAction(schema, action) {
+	const schemaAuth = schema.authorization
+	return Boolean(schemaAuth && Object.keys(schemaAuth).length > 0 && schemaAuth[action])
+}
+
 export default {
 	name: 'PermissionMatrix',
 
@@ -368,13 +396,7 @@ export default {
 		getRegisterGroups(register, action) {
 			const auth = register.authorization
 			if (!auth || !auth[action]) return []
-			return auth[action]
-				.map((entry) => {
-					if (typeof entry === 'string') return entry
-					if (entry && entry.group) return entry.group
-					return null
-				})
-				.filter(Boolean)
+			return groupNames(auth[action])
 		},
 
 		/**
@@ -386,14 +408,7 @@ export default {
 		getEffectiveGroups(schema, register, action) {
 			const schemaAuth = schema.authorization
 			if (schemaAuth && Object.keys(schemaAuth).length > 0) {
-				const rules = schemaAuth[action] || []
-				return rules
-					.map((entry) => {
-						if (typeof entry === 'string') return entry
-						if (entry && entry.group) return entry.group
-						return null
-					})
-					.filter(Boolean)
+				return groupNames(schemaAuth[action] || [])
 			}
 			// Inherit from register
 			return this.getRegisterGroups(register, action)
@@ -419,12 +434,7 @@ export default {
 		 * @spec exclude settings-matrix CSS-class helper for direct/inherited permission cells
 		 */
 		getPermissionClass(schema, register, action) {
-			const schemaAuth = schema.authorization
-			if (
-				schemaAuth
-				&& Object.keys(schemaAuth).length > 0
-				&& schemaAuth[action]
-			) {
+			if (hasDirectAction(schema, action)) {
 				return 'group-list direct'
 			}
 			if (this.getRegisterGroups(register, action).length > 0) {
@@ -440,12 +450,7 @@ export default {
 		 * @spec exclude settings-matrix tooltip-text display helper
 		 */
 		getEffectiveTooltip(schema, register, action) {
-			const schemaAuth = schema.authorization
-			if (
-				schemaAuth
-				&& Object.keys(schemaAuth).length > 0
-				&& schemaAuth[action]
-			) {
+			if (hasDirectAction(schema, action)) {
 				return 'Directly configured on this schema'
 			}
 			const registerGroups = this.getRegisterGroups(register, action)
@@ -568,25 +573,10 @@ export default {
 		getGroupOptions() {
 			// Collect all unique groups from all registers and schemas
 			const groups = new Set()
-			this.registers.forEach((r) => {
-				const auth = r.authorization || {}
-				Object.values(auth).forEach((entries) => {
+			;[...this.registers, ...this.schemas].forEach((item) => {
+				Object.values(item.authorization || {}).forEach((entries) => {
 					if (Array.isArray(entries)) {
-						entries.forEach((e) => {
-							if (typeof e === 'string') groups.add(e)
-							if (e && e.group) groups.add(e.group)
-						})
-					}
-				})
-			})
-			this.schemas.forEach((s) => {
-				const auth = s.authorization || {}
-				Object.values(auth).forEach((entries) => {
-					if (Array.isArray(entries)) {
-						entries.forEach((e) => {
-							if (typeof e === 'string') groups.add(e)
-							if (e && e.group) groups.add(e.group)
-						})
+						groupNames(entries).forEach((g) => groups.add(g))
 					}
 				})
 			})

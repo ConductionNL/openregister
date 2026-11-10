@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use DateTime;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunQueueExpiry;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -213,9 +214,7 @@ class FlowRunMapperFairnessTest extends TestCase {
 		$mapper->method('update')->willReturnArgument(0);
 
 		$expired = $mapper->expireQueuedBefore(
-			before: new DateTime('-1 day'),
-			reason: 'Expired: waited too long.',
-			limit: 500
+			expiry: new FlowRunQueueExpiry(before: new DateTime('-1 day'), reason: 'Expired: waited too long.', limit: 500)
 		);
 
 		$this->assertCount(1, $expired, 'only the still-queued run may be expired');

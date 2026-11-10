@@ -136,7 +136,6 @@ final class B15GuardedControllersGoldenTest extends TestCase {
 			}
 
 			$controller = HardeningControllerFactory::create(
-				'openregister',
 				$this->request(['controls' => ['csp' => 1]]),
 				$this->createMock(HardeningReportService::class),
 				$settings,
@@ -157,7 +156,6 @@ final class B15GuardedControllersGoldenTest extends TestCase {
 			$elevation = $this->createMock(ElevationService::class);
 			$elevation->method('elevate')->willReturn($accepted);
 			$controller = HardeningControllerFactory::create(
-				'openregister',
 				$this->request(['password' => 'secret']),
 				$this->createMock(HardeningReportService::class),
 				$this->createMock(HardeningSettingsService::class),
@@ -187,7 +185,6 @@ final class B15GuardedControllersGoldenTest extends TestCase {
 				}
 
 				$controller = HardeningStatementControllerFactory::create(
-					'openregister',
 					$this->request([]),
 					$statements,
 					$elevation,
@@ -250,7 +247,6 @@ final class B15GuardedControllersGoldenTest extends TestCase {
 			$runner = $this->createMock(FlowRunServiceInterface::class);
 			$runner->expects($this->never())->method($this->anything());
 			$controller = FlowTestRunControllerFactory::create(
-				'openregister',
 				$this->request(['flowId' => 'flow-1']),
 				$runner,
 				$this->createMock(FlowLocatorInterface::class),
@@ -308,7 +304,6 @@ final class B15GuardedControllersGoldenTest extends TestCase {
 			}
 
 			$controller = ErasurePreviewControllerFactory::create(
-				'openregister',
 				$this->request([]),
 				$this->createMock(ErasurePreviewService::class),
 				$store,

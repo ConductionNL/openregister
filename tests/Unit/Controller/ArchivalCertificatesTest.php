@@ -48,6 +48,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 
 class ArchivalCertificatesTest extends TestCase {
 
@@ -108,7 +109,7 @@ class ArchivalCertificatesTest extends TestCase {
 		$schemaMapper->method('find')->willReturn(new Schema());
 
 		$repository = new DestructionListRepository(
-			new ArchivalRegisterMappers($registerMapper, $schemaMapper, $objectMapper),
+			new ArchivalRegisterMappers(new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $objectMapper)),
 			$settings,
 			$this->createMock(LoggerInterface::class)
 		);
