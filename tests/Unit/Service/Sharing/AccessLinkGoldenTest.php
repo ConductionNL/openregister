@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Sharing;
 // phpcs:disable PEAR.Commenting.FunctionComment.MissingReturn -- PHPUnit fixtures and tests; the signature IS the contract.
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AccessLink;
@@ -41,6 +42,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapper;
@@ -130,8 +132,7 @@ class AccessLinkGoldenTest extends TestCase {
 	private function guard(): AccessLinkMintGuard {
 		return new AccessLinkMintGuard(
 			objects: $this->objects,
-			subjects: new AccessLinkSubject(),
-			viewReaders: new AccessLinkViewReaders(views: $this->views, registers: $this->registers, schemas: $this->schemas)
+			viewReaders: new AccessLinkViewReaders(views: $this->views, catalog: new SchemaCatalog(registers: $this->registers, schemas: $this->schemas, tables: $this->createMock(MagicMapperInterface::class)))
 		);
 	}
 
