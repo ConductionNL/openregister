@@ -117,7 +117,13 @@ final class AuditAttributionGoldenTest extends TestCase {
 		$this->assertSame('brp-adresonderzoek', $row->getPurpose());
 		$this->assertSame('activity-uuid', $row->getProcessingActivityId());
 		$this->assertSame(
-			[0 => 'first', 'tool' => ['name' => 'x'], 'purpose' => ['code' => 'brp-adresonderzoek', 'activity' => 'VA-01', 'activityUuid' => 'activity-uuid'], 1 => 'second', 'token' => 'old'],
+			[
+				0 => 'first',
+				'tool' => ['name' => 'x'],
+				'purpose' => ['code' => 'brp-adresonderzoek', 'activity' => 'VA-01', 'activityUuid' => 'activity-uuid'],
+				1 => 'second',
+				'token' => 'old',
+			],
 			$row->getResultSummary()
 		);
 
