@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\PersonLinkTarget;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\PersonLinkEvents;
 use OCA\OpenRegister\Service\PersonLinkService;
@@ -126,12 +127,12 @@ class PersonLinkWriteGoldenTest extends TestCase {
 	 */
 	public function testLink(): void {
 		$service = $this->personLinks();
-		$service->link('case-1', 9, 3, ['userId' => ' jan ', 'role' => ' handler ']);
-		$service->link('case-1', 9, 3, ['userId' => 'jan']);
-		$service->link('case-1', 9, 4, ['userId' => 'jan', 'role' => 'anything']);
-		$service->link('case-1', 9, 5, ['userId' => 'jan', 'role' => 'anything']);
-		$service->link('case-1', 9, null, ['addressbookId' => '2', 'contactUri' => ' c.vcf ', 'role' => 'x']);
-		$service->link('case-1', 9, 3, ['userId' => '  ', 'addressbookId' => 2, 'contactUri' => 'c.vcf', 'role' => 'initiator']);
+		$service->linkPerson(new PersonLinkTarget('case-1', 9, 3), ['userId' => ' jan ', 'role' => ' handler ']);
+		$service->linkPerson(new PersonLinkTarget('case-1', 9, 3), ['userId' => 'jan']);
+		$service->linkPerson(new PersonLinkTarget('case-1', 9, 4), ['userId' => 'jan', 'role' => 'anything']);
+		$service->linkPerson(new PersonLinkTarget('case-1', 9, 5), ['userId' => 'jan', 'role' => 'anything']);
+		$service->linkPerson(new PersonLinkTarget('case-1', 9, null), ['addressbookId' => '2', 'contactUri' => ' c.vcf ', 'role' => 'x']);
+		$service->linkPerson(new PersonLinkTarget('case-1', 9, 3), ['userId' => '  ', 'addressbookId' => 2, 'contactUri' => 'c.vcf', 'role' => 'initiator']);
 		$this->assertSame(
 			[
 				'schema:3',
@@ -150,10 +151,10 @@ class PersonLinkWriteGoldenTest extends TestCase {
 		);
 
 		$this->calls = [];
-		$this->assertRefused(fn () => $service->link('case-1', 9, 3, ['userId' => 'jan', 'role' => 'boss']), 400, 'Role "boss" is not one of: initiator, handler');
-		$this->assertRefused(fn () => $service->link('case-1', 9, 3, ['role' => 'handler']), 400, 'Either userId or addressbookId+contactUri is required');
-		$this->assertRefused(fn () => $service->link('case-1', 9, 3, ['addressbookId' => 0, 'contactUri' => 'c.vcf']), 400, 'Either userId or addressbookId+contactUri is required');
-		$this->assertRefused(fn () => $service->link('case-1', 9, 3, ['addressbookId' => 2, 'contactUri' => ' ']), 400, 'Either userId or addressbookId+contactUri is required');
+		$this->assertRefused(fn () => $service->linkPerson(new PersonLinkTarget('case-1', 9, 3), ['userId' => 'jan', 'role' => 'boss']), 400, 'Role "boss" is not one of: initiator, handler');
+		$this->assertRefused(fn () => $service->linkPerson(new PersonLinkTarget('case-1', 9, 3), ['role' => 'handler']), 400, 'Either userId or addressbookId+contactUri is required');
+		$this->assertRefused(fn () => $service->linkPerson(new PersonLinkTarget('case-1', 9, 3), ['addressbookId' => 0, 'contactUri' => 'c.vcf']), 400, 'Either userId or addressbookId+contactUri is required');
+		$this->assertRefused(fn () => $service->linkPerson(new PersonLinkTarget('case-1', 9, 3), ['addressbookId' => 2, 'contactUri' => ' ']), 400, 'Either userId or addressbookId+contactUri is required');
 		$this->assertSame(['schema:3', 'schema:3', 'schema:3', 'schema:3'], $this->calls);
 	}//end testLink()
 

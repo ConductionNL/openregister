@@ -25,7 +25,10 @@ use OCA\OpenRegister\Service\ContactMatchingService;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\PersonLinkChange;
+use OCA\OpenRegister\Service\PersonLinkRef;
 use OCA\OpenRegister\Service\PersonLinkService;
+use OCA\OpenRegister\Service\PersonLinkTarget;
 use OCP\IL10N;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -202,8 +205,8 @@ class ContactsControllerTest extends TestCase {
 		// people-on-objects: a non-numeric uid names a person, whose links on
 		// this object go through PersonLinkService (one role, or all of them).
 		$this->personLinks->expects($this->once())
-			->method('unlink')
-			->with('abc-123', 'jan-uid', null)
+			->method('removeLinks')
+			->with(new PersonLinkRef('abc-123', 'jan-uid', null))
 			->willReturn(1);
 
 		$response = $this->controller->destroy('reg', 'sch', 'oid', 'jan-uid');
@@ -258,7 +261,7 @@ class ContactsControllerTest extends TestCase {
 	public function testDestroyOnAnObjectWithoutAUuidRemovesNothing(): void {
 		$this->objectService->method('getObject')->willReturn(new \OCA\OpenRegister\Db\ObjectEntity());
 		$this->contactService->expects($this->never())->method('unlinkContact');
-		$this->personLinks->expects($this->never())->method('unlink');
+		$this->personLinks->expects($this->never())->method('removeLinks');
 
 		$this->assertSame(404, $this->controller->destroy('reg', 'sch', 'oid', '42')->getStatus());
 		$this->assertSame(404, $this->controller->destroy('reg', 'sch', 'oid', 'jan-uid')->getStatus());
@@ -387,8 +390,8 @@ class ContactsControllerTest extends TestCase {
 		$link->setContactUid('user:jan');
 		$this->contactService->expects($this->never())->method('createAndLinkContact');
 		$this->personLinks->expects($this->once())
-			->method('link')
-			->with('abc-123', 5, 7, ['userId' => 'jan', 'role' => 'handler'])
+			->method('linkPerson')
+			->with(new PersonLinkTarget('abc-123', 5, 7), ['userId' => 'jan', 'role' => 'handler'])
 			->willReturn($link);
 
 		$response = $this->controller->create('reg', 'sch', 'oid');
@@ -411,7 +414,7 @@ class ContactsControllerTest extends TestCase {
 		$object->setSchema('7');
 		$this->objectService->method('getObject')->willReturn($object);
 		$this->request->method('getParams')->willReturn(['userId' => 'ghost']);
-		$this->personLinks->method('link')->willThrowException(new \Exception('User not found', 404));
+		$this->personLinks->method('linkPerson')->willThrowException(new \Exception('User not found', 404));
 
 		$response = $this->controller->create('reg', 'sch', 'oid');
 
@@ -471,8 +474,8 @@ class ContactsControllerTest extends TestCase {
 			}
 		);
 		$this->personLinks->expects($this->once())
-			->method('update')
-			->with('abc-123', 'user:jan', 7, ['validUntil' => '2026-12-31', 'note' => 'Until the handover'], 'handler')
+			->method('changeLink')
+			->with(new PersonLinkChange(new PersonLinkRef('abc-123', 'user:jan', 'handler'), 7, ['validUntil' => '2026-12-31', 'note' => 'Until the handover']))
 			->willReturn(new \OCA\OpenRegister\Db\ContactLink());
 
 		$response = $this->controller->update('reg', 'sch', 'oid', 'user:jan');
@@ -497,8 +500,8 @@ class ContactsControllerTest extends TestCase {
 			}
 		);
 		$this->personLinks->expects($this->once())
-			->method('unlink')
-			->with('abc-123', 'user:jan', 'advisor')
+			->method('removeLinks')
+			->with(new PersonLinkRef('abc-123', 'user:jan', 'advisor'))
 			->willReturn(1);
 
 		$response = $this->controller->destroy('reg', 'sch', 'oid', 'user:jan');
@@ -518,9 +521,9 @@ class ContactsControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn(['userId' => 'jan', 'role' => 'applicant', 'fullName' => 'Jan']);
 		$this->mayUpdate = false;
 
-		$this->personLinks->expects($this->never())->method('link');
-		$this->personLinks->expects($this->never())->method('update');
-		$this->personLinks->expects($this->never())->method('unlink');
+		$this->personLinks->expects($this->never())->method('linkPerson');
+		$this->personLinks->expects($this->never())->method('changeLink');
+		$this->personLinks->expects($this->never())->method('removeLinks');
 		$this->contactService->expects($this->never())->method('unlinkContact');
 		$this->contactService->expects($this->never())->method('createAndLinkContact');
 
